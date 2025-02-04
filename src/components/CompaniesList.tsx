@@ -11,6 +11,7 @@ type Company = {
   cnae: string;
   contact_email: string;
   contact_phone: string;
+  metadata?: { units?: any[] };
 };
 
 export function CompaniesList() {
@@ -69,6 +70,9 @@ export function CompaniesList() {
               <p>CNAE: {company.cnae || "Não informado"}</p>
               {company.contact_email && <p>Email: {company.contact_email}</p>}
               {company.contact_phone && <p>Telefone: {company.contact_phone}</p>}
+              {company.metadata?.units && (
+                <p>Unidades: {company.metadata.units.length}</p>
+              )}
             </div>
           </CardContent>
         </Card>

@@ -63,7 +63,7 @@ export function CompanyForm() {
         .insert([{
           ...companyData,
           risk_level: riskLevel,
-          units: units,
+          metadata: { units }, // Store units in metadata
           user_id: (await supabase.auth.getUser()).data.user?.id
         }]);
 
