@@ -4,6 +4,7 @@ import { useToast } from "./ui/use-toast";
 import { useAuth } from "./AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "./Logo";
+import { LayoutDashboard, Building2, ClipboardCheck, History } from "lucide-react";
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -29,22 +30,60 @@ export function Navbar() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="w-40">
-            {/* Logo area kept empty as requested */}
+            <Link to="/">
+              <Logo />
+            </Link>
           </div>
           <div className="flex items-center space-x-6">
             {user ? (
-              <Button
-                variant="ghost"
-                onClick={handleLogout}
-                className="text-gray-300 hover:text-primary transition-colors"
-              >
-                Sair
-              </Button>
+              <>
+                <Link 
+                  to="/" 
+                  className="flex items-center gap-2 text-gray-300 hover:text-primary transition-colors"
+                >
+                  <LayoutDashboard className="h-4 w-4" />
+                  Dashboard
+                </Link>
+                <Link 
+                  to="/companies" 
+                  className="flex items-center gap-2 text-gray-300 hover:text-primary transition-colors"
+                >
+                  <Building2 className="h-4 w-4" />
+                  Empresas
+                </Link>
+                <Link 
+                  to="/inspections" 
+                  className="flex items-center gap-2 text-gray-300 hover:text-primary transition-colors"
+                >
+                  <ClipboardCheck className="h-4 w-4" />
+                  Inspeções
+                </Link>
+                <Link 
+                  to="/reports" 
+                  className="flex items-center gap-2 text-gray-300 hover:text-primary transition-colors"
+                >
+                  <History className="h-4 w-4" />
+                  Relatórios
+                </Link>
+                <Button
+                  variant="ghost"
+                  onClick={handleLogout}
+                  className="text-gray-300 hover:text-primary transition-colors"
+                >
+                  Sair
+                </Button>
+              </>
             ) : (
               <div className="flex space-x-6 font-opensans">
-                <Link to="/plans" className="text-gray-300 hover:text-primary transition-colors">Planos</Link>
-                <Link to="/blog" className="text-gray-300 hover:text-primary transition-colors">Blog</Link>
-                <Link to="/contact" className="text-gray-300 hover:text-primary transition-colors">Contato</Link>
+                <Link to="/plans" className="text-gray-300 hover:text-primary transition-colors">
+                  Planos
+                </Link>
+                <Link to="/blog" className="text-gray-300 hover:text-primary transition-colors">
+                  Blog
+                </Link>
+                <Link to="/contact" className="text-gray-300 hover:text-primary transition-colors">
+                  Contato
+                </Link>
                 <Link to="/auth" className="text-gray-300 hover:text-primary transition-colors">
                   <Button variant="secondary">Teste Grátis</Button>
                 </Link>

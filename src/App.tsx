@@ -23,58 +23,30 @@ const App = () => (
         <AuthProvider>
           <Toaster />
           <Sonner />
+          <Navbar />
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route path="/plans" element={
-              <>
-                <Navbar />
-                <main className="container mx-auto px-4 py-8">
-                  <Plans />
-                </main>
-              </>
-            } />
+            <Route path="/plans" element={<Plans />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/contact" element={<Contact />} />
             <Route
               path="/"
               element={
-                <ProtectedRoute>
-                  <>
-                    <Navbar />
-                    <main className="container mx-auto px-4 py-8">
-                      <Home />
-                    </main>
-                  </>
-                </ProtectedRoute>
+                <main className="container mx-auto px-4 py-8">
+                  <Home />
+                </main>
               }
             />
             <Route
               path="/companies"
               element={
                 <ProtectedRoute>
-                  <>
-                    <Navbar />
-                    <main className="container mx-auto px-4 py-8">
-                      <Companies />
-                    </main>
-                  </>
+                  <main className="container mx-auto px-4 py-8">
+                    <Companies />
+                  </main>
                 </ProtectedRoute>
               }
             />
-            <Route path="/blog" element={
-              <>
-                <Navbar />
-                <main className="container mx-auto px-4 py-8">
-                  <Blog />
-                </main>
-              </>
-            } />
-            <Route path="/contact" element={
-              <>
-                <Navbar />
-                <main className="container mx-auto px-4 py-8">
-                  <Contact />
-                </main>
-              </>
-            } />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
