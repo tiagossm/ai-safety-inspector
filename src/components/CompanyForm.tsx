@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export function CompanyForm() {
   const [cnpj, setCnpj] = useState("");
@@ -24,18 +25,35 @@ export function CompanyForm() {
     setLoading(true);
 
     try {
-      // In a real app, this would call the Receita Federal API
-      // For now, we'll just simulate a success
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // First validate and fetch company data
+      const { data: companyData, error: validationError } = await supabase.functions.invoke('validate-cnpj', {
+        body: { cnpj: cnpj.replace(/\D/g, '') }
+      });
+
+      if (validationError) throw validationError;
+
+      // Then insert into database
+      const { error: insertError } = await supabase
+        .from('companies')
+        .insert([{
+          ...companyData,
+          user_id: (await supabase.auth.getUser()).data.user?.id
+        }]);
+
+      if (insertError) throw insertError;
       
       toast({
         title: "Empresa cadastrada com sucesso!",
-        description: "Os dados foram salvos no sistema.",
+        description: "Os dados foram validados e salvos no sistema.",
       });
+
+      // Reset form
+      setCnpj("");
     } catch (error) {
+      console.error('Error:', error);
       toast({
         title: "Erro ao cadastrar empresa",
-        description: "Verifique o CNPJ e tente novamente.",
+        description: error.message || "Verifique o CNPJ e tente novamente.",
         variant: "destructive",
       });
     } finally {

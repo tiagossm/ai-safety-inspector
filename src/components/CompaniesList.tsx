@@ -1,25 +1,46 @@
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
 
-// Mock data - in a real app this would come from your backend
-const companies = [
-  {
-    id: 1,
-    name: "Empresa Exemplo LTDA",
-    cnpj: "00.000.000/0000-00",
-    riskLevel: "Alto",
-    pendingInspections: 2,
-  },
-  {
-    id: 2,
-    name: "Indústria Modelo S.A.",
-    cnpj: "11.111.111/1111-11",
-    riskLevel: "Médio",
-    pendingInspections: 0,
-  },
-];
+type Company = {
+  id: string;
+  fantasy_name: string;
+  cnpj: string;
+  risk_level: string;
+  cnae: string;
+  contact_email: string;
+  contact_phone: string;
+};
 
 export function CompaniesList() {
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCompanies();
+  }, []);
+
+  const fetchCompanies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setCompanies(data || []);
+    } catch (error) {
+      console.error('Error fetching companies:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <div>Carregando empresas...</div>;
+  }
+
   return (
     <div className="space-y-4">
       {companies.map((company) => (
@@ -27,21 +48,27 @@ export function CompaniesList() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold">
-                {company.name}
+                {company.fantasy_name || "Nome não informado"}
               </CardTitle>
               <Badge
-                variant={company.pendingInspections > 0 ? "destructive" : "secondary"}
+                variant={
+                  company.risk_level === 'Alto' 
+                    ? "destructive" 
+                    : company.risk_level === 'Médio' 
+                    ? "warning" 
+                    : "secondary"
+                }
               >
-                {company.pendingInspections > 0
-                  ? `${company.pendingInspections} inspeções pendentes`
-                  : "Em dia"}
+                Risco {company.risk_level || "Não avaliado"}
               </Badge>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-muted-foreground space-y-1">
               <p>CNPJ: {company.cnpj}</p>
-              <p>Grau de Risco: {company.riskLevel}</p>
+              <p>CNAE: {company.cnae || "Não informado"}</p>
+              {company.contact_email && <p>Email: {company.contact_email}</p>}
+              {company.contact_phone && <p>Telefone: {company.contact_phone}</p>}
             </div>
           </CardContent>
         </Card>
