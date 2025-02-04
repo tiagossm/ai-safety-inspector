@@ -9,6 +9,80 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      companies: {
+        Row: {
+          cnae: string | null
+          cnpj: string
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          fantasy_name: string | null
+          id: string
+          risk_level: string | null
+          user_id: string
+        }
+        Insert: {
+          cnae?: string | null
+          cnpj: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          fantasy_name?: string | null
+          id?: string
+          risk_level?: string | null
+          user_id: string
+        }
+        Update: {
+          cnae?: string | null
+          cnpj?: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          fantasy_name?: string | null
+          id?: string
+          risk_level?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      inspection_files: {
+        Row: {
+          created_at: string
+          file_type: string
+          file_url: string
+          id: string
+          inspection_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_type: string
+          file_url: string
+          id?: string
+          inspection_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_type?: string
+          file_url?: string
+          id?: string
+          inspection_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_files_inspection_id_fkey"
+            columns: ["inspection_id"]
+            isOneToOne: false
+            referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inspections: {
         Row: {
           audio_url: string | null
