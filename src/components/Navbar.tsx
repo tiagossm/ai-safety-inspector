@@ -1,5 +1,4 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "./ui/button";
 import { useToast } from "./ui/use-toast";
@@ -26,9 +25,13 @@ export function Navbar() {
     <nav className="bg-gray-900 border-b border-gray-800 shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center space-x-2 text-xl font-bold text-primary font-montserrat">
-            <Shield className="h-6 w-6" />
-            <span>IA SST Inspections</span>
+          <Link to="/" className="flex items-center space-x-2">
+            <img 
+              src="/lovable-uploads/f92f8422-bdfc-4623-a16d-379964720226.png" 
+              alt="IA SST Logo" 
+              className="h-10 w-10"
+            />
+            <span className="text-xl font-bold text-primary font-montserrat">IA SST Inspections</span>
           </Link>
           <div className="flex items-center space-x-6">
             <div className="flex space-x-6 font-opensans">
