@@ -25,11 +25,11 @@ export default {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: {
-          DEFAULT: "hsl(221 83% 53%)",
+          DEFAULT: "hsl(221 83% 53%)", // Brand blue
           foreground: "hsl(210 40% 98%)",
         },
         secondary: {
-          DEFAULT: "hsl(210 40% 96.1%)",
+          DEFAULT: "hsl(142 76% 36%)", // Brand green
           foreground: "hsl(222.2 47.4% 11.2%)",
         },
         destructive: {
@@ -52,6 +52,10 @@ export default {
           DEFAULT: "hsl(0 0% 100%)",
           foreground: "hsl(222.2 47.4% 11.2%)",
         },
+      },
+      fontFamily: {
+        montserrat: ['Montserrat', 'sans-serif'],
+        opensans: ['Open Sans', 'sans-serif'],
       },
       borderRadius: {
         lg: "var(--radius)",
