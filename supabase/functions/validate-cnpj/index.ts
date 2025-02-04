@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,7 +26,7 @@ serve(async (req) => {
     const data = await response.json()
 
     if (data.status === 'ERROR') {
-      throw new Error(data.message)
+      throw new Error(data.message || 'CNPJ não encontrado')
     }
 
     // Calculate risk level based on CNAE (simplified example)
@@ -40,6 +39,7 @@ serve(async (req) => {
       risk_level: riskLevel,
       contact_email: data.email,
       contact_phone: data.telefone,
+      contact_name: data.qsa?.[0]?.nome,
     }
 
     return new Response(
@@ -58,7 +58,9 @@ function calculateRiskLevel(cnae: string): string {
   // This is a simplified example. In a real application,
   // you would have a more comprehensive mapping of CNAE codes to risk levels
   const firstDigit = parseInt(cnae[0])
-  if (firstDigit <= 2) return 'Baixo'
-  if (firstDigit <= 4) return 'Médio'
-  return 'Alto'
+  if (firstDigit <= 2) return '1'
+  if (firstDigit <= 4) return '2'
+  if (firstDigit <= 6) return '3'
+  if (firstDigit <= 8) return '4'
+  return '5'
 }

@@ -4,9 +4,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+interface Unit {
+  address: string;
+  geolocation: string;
+  technicalResponsible: string;
+}
 
 export function CompanyForm() {
   const [cnpj, setCnpj] = useState("");
+  const [riskLevel, setRiskLevel] = useState<string>("");
+  const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -18,6 +33,16 @@ export function CompanyForm() {
       .replace(/(\d{3})(\d)/, "$1/$2")
       .replace(/(\d{4})(\d)/, "$1-$2")
       .replace(/(-\d{2})\d+?$/, "$1");
+  };
+
+  const addUnit = () => {
+    setUnits([...units, { address: "", geolocation: "", technicalResponsible: "" }]);
+  };
+
+  const updateUnit = (index: number, field: keyof Unit, value: string) => {
+    const newUnits = [...units];
+    newUnits[index][field] = value;
+    setUnits(newUnits);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,6 +62,8 @@ export function CompanyForm() {
         .from('companies')
         .insert([{
           ...companyData,
+          risk_level: riskLevel,
+          units: units,
           user_id: (await supabase.auth.getUser()).data.user?.id
         }]);
 
@@ -49,6 +76,8 @@ export function CompanyForm() {
 
       // Reset form
       setCnpj("");
+      setRiskLevel("");
+      setUnits([]);
     } catch (error) {
       console.error('Error:', error);
       toast({
@@ -74,6 +103,61 @@ export function CompanyForm() {
           required
         />
       </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="riskLevel">Grau de Risco</Label>
+        <Select value={riskLevel} onValueChange={setRiskLevel}>
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione o grau de risco" />
+          </SelectTrigger>
+          <SelectContent>
+            {[1, 2, 3, 4, 5].map((level) => (
+              <SelectItem key={level} value={level.toString()}>
+                Risco {level}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <Label>Unidades</Label>
+          <Button type="button" variant="outline" onClick={addUnit}>
+            Adicionar Unidade
+          </Button>
+        </div>
+        
+        {units.map((unit, index) => (
+          <div key={index} className="space-y-4 p-4 border rounded-lg">
+            <div className="space-y-2">
+              <Label>Endereço</Label>
+              <Input
+                value={unit.address}
+                onChange={(e) => updateUnit(index, "address", e.target.value)}
+                placeholder="Endereço completo"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Geolocalização</Label>
+              <Input
+                value={unit.geolocation}
+                onChange={(e) => updateUnit(index, "geolocation", e.target.value)}
+                placeholder="Latitude, Longitude"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Responsável Técnico</Label>
+              <Input
+                value={unit.technicalResponsible}
+                onChange={(e) => updateUnit(index, "technicalResponsible", e.target.value)}
+                placeholder="Nome do responsável"
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
       <Button type="submit" disabled={loading}>
         {loading ? "Cadastrando..." : "Cadastrar Empresa"}
       </Button>
