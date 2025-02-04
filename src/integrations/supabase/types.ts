@@ -19,6 +19,7 @@ export type Database = {
           created_at: string
           fantasy_name: string | null
           id: string
+          metadata: Json | null
           risk_level: string | null
           user_id: string
         }
@@ -31,6 +32,7 @@ export type Database = {
           created_at?: string
           fantasy_name?: string | null
           id?: string
+          metadata?: Json | null
           risk_level?: string | null
           user_id: string
         }
@@ -43,6 +45,7 @@ export type Database = {
           created_at?: string
           fantasy_name?: string | null
           id?: string
+          metadata?: Json | null
           risk_level?: string | null
           user_id?: string
         }

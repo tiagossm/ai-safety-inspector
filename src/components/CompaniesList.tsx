@@ -6,12 +6,12 @@ import { Json } from "@/integrations/supabase/types";
 
 type Company = {
   id: string;
-  fantasy_name: string;
+  fantasy_name: string | null;
   cnpj: string;
-  risk_level: string;
-  cnae: string;
-  contact_email: string;
-  contact_phone: string;
+  risk_level: string | null;
+  cnae: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
   metadata: Json | null;
 };
 
@@ -71,7 +71,7 @@ export function CompaniesList() {
               <p>CNAE: {company.cnae || "Não informado"}</p>
               {company.contact_email && <p>Email: {company.contact_email}</p>}
               {company.contact_phone && <p>Telefone: {company.contact_phone}</p>}
-              {company.metadata?.units && Array.isArray(company.metadata.units) && (
+              {company.metadata && typeof company.metadata === 'object' && 'units' in company.metadata && Array.isArray(company.metadata.units) && (
                 <p>Unidades: {company.metadata.units.length}</p>
               )}
             </div>
