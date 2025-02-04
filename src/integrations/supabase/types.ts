@@ -21,7 +21,6 @@ export type Database = {
           id: string
           risk_level: string | null
           user_id: string
-          metadata: Json | null
         }
         Insert: {
           cnae?: string | null
@@ -34,7 +33,6 @@ export type Database = {
           id?: string
           risk_level?: string | null
           user_id: string
-          metadata?: Json | null
         }
         Update: {
           cnae?: string | null
@@ -47,7 +45,6 @@ export type Database = {
           id?: string
           risk_level?: string | null
           user_id?: string
-          metadata?: Json | null
         }
         Relationships: []
       }

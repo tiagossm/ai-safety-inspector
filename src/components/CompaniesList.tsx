@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { Json } from "@/integrations/supabase/types";
 
 type Company = {
   id: string;
@@ -11,7 +12,7 @@ type Company = {
   cnae: string;
   contact_email: string;
   contact_phone: string;
-  metadata?: { units?: any[] };
+  metadata: Json | null;
 };
 
 export function CompaniesList() {
@@ -70,7 +71,7 @@ export function CompaniesList() {
               <p>CNAE: {company.cnae || "Não informado"}</p>
               {company.contact_email && <p>Email: {company.contact_email}</p>}
               {company.contact_phone && <p>Telefone: {company.contact_phone}</p>}
-              {company.metadata?.units && (
+              {company.metadata?.units && Array.isArray(company.metadata.units) && (
                 <p>Unidades: {company.metadata.units.length}</p>
               )}
             </div>
