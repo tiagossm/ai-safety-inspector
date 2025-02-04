@@ -29,7 +29,7 @@ export function Navbar() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="w-40">
-            <Logo />
+            {/* Logo area kept empty as requested */}
           </div>
           <div className="flex items-center space-x-6">
             {user ? (
