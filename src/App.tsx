@@ -11,6 +11,7 @@ import Home from "./pages/Home";
 import Companies from "./pages/Companies";
 import Blog from "./pages/Blog";
 import Contact from "./pages/Contact";
+import Plans from "./pages/Plans";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,14 @@ const App = () => (
           <Sonner />
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/plans" element={
+              <>
+                <Navbar />
+                <main className="container mx-auto px-4 py-8">
+                  <Plans />
+                </main>
+              </>
+            } />
             <Route
               path="/"
               element={
@@ -50,32 +59,22 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/blog"
-              element={
-                <ProtectedRoute>
-                  <>
-                    <Navbar />
-                    <main className="container mx-auto px-4 py-8">
-                      <Blog />
-                    </main>
-                  </>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/contact"
-              element={
-                <ProtectedRoute>
-                  <>
-                    <Navbar />
-                    <main className="container mx-auto px-4 py-8">
-                      <Contact />
-                    </main>
-                  </>
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/blog" element={
+              <>
+                <Navbar />
+                <main className="container mx-auto px-4 py-8">
+                  <Blog />
+                </main>
+              </>
+            } />
+            <Route path="/contact" element={
+              <>
+                <Navbar />
+                <main className="container mx-auto px-4 py-8">
+                  <Contact />
+                </main>
+              </>
+            } />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
