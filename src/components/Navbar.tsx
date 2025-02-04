@@ -27,24 +27,18 @@ export function Navbar() {
     <nav className="bg-gray-900 border-b border-gray-800 shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <Link to="/" className="text-xl font-bold text-primary font-montserrat">
-            IA SST Inspections
-          </Link>
+          <div className="w-40"> {/* Empty space where logo was */}
+          </div>
           <div className="flex items-center space-x-6">
             {user ? (
-              // Logged in menu
-              <div className="flex space-x-6 font-opensans">
-                <Link to="/plans" className="text-gray-300 hover:text-primary transition-colors">Planos</Link>
-                <Link to="/blog" className="text-gray-300 hover:text-primary transition-colors">Blog</Link>
-                <Link to="/contact" className="text-gray-300 hover:text-primary transition-colors">Contato</Link>
-                <Button
-                  variant="ghost"
-                  onClick={handleLogout}
-                  className="text-gray-300 hover:text-primary transition-colors"
-                >
-                  Sair
-                </Button>
-              </div>
+              // Logged in menu - only show logout button
+              <Button
+                variant="ghost"
+                onClick={handleLogout}
+                className="text-gray-300 hover:text-primary transition-colors"
+              >
+                Sair
+              </Button>
             ) : (
               // Public menu
               <div className="flex space-x-6 font-opensans">
