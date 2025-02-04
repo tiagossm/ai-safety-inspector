@@ -55,8 +55,8 @@ export function CompaniesList() {
                   company.risk_level === 'Alto' 
                     ? "destructive" 
                     : company.risk_level === 'Médio' 
-                    ? "warning" 
-                    : "secondary"
+                    ? "secondary" 
+                    : "outline"
                 }
               >
                 Risco {company.risk_level || "Não avaliado"}
