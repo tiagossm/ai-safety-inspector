@@ -3,6 +3,7 @@ import { Button } from "./ui/button";
 import { useToast } from "./ui/use-toast";
 import { useAuth } from "./AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
+import { Logo } from "./Logo";
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -27,11 +28,11 @@ export function Navbar() {
     <nav className="bg-gray-900 border-b border-gray-800 shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <div className="w-40"> {/* Empty space where logo was */}
+          <div className="w-40">
+            <Logo />
           </div>
           <div className="flex items-center space-x-6">
             {user ? (
-              // Logged in menu - only show logout button
               <Button
                 variant="ghost"
                 onClick={handleLogout}
@@ -40,7 +41,6 @@ export function Navbar() {
                 Sair
               </Button>
             ) : (
-              // Public menu
               <div className="flex space-x-6 font-opensans">
                 <Link to="/plans" className="text-gray-300 hover:text-primary transition-colors">Planos</Link>
                 <Link to="/blog" className="text-gray-300 hover:text-primary transition-colors">Blog</Link>

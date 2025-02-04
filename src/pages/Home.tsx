@@ -2,12 +2,16 @@ import { Brain, ClipboardCheck, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
+import { Logo } from "@/components/Logo";
 
 const Home = () => (
   <div className="min-h-screen bg-background">
     {/* Hero Section */}
     <section className="py-16 px-4">
       <div className="container mx-auto max-w-6xl text-center">
+        <div className="flex justify-center mb-8">
+          <Logo size="large" />
+        </div>
         <h1 className="text-4xl md:text-5xl font-bold text-primary font-montserrat leading-tight mb-6">
           Inspeções de Segurança Automatizadas com IA
         </h1>
