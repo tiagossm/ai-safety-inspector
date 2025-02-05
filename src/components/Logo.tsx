@@ -6,7 +6,7 @@ interface LogoProps {
 }
 
 export function Logo({ className = "", size = "small" }: LogoProps) {
-  const dimensions = size === "large" ? "h-32" : "h-16";
+  const dimensions = size === "large" ? "h-64" : "h-32";
   
   return (
     <Link to="/" className={`block ${className}`}>
