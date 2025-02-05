@@ -3,10 +3,28 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Edit2 } from "lucide-react";
+import { Search, Trash2, PencilIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
 import { useToast } from "./ui/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type Company = {
   id: string;
@@ -41,6 +59,11 @@ export function CompaniesList() {
       setCompanies(data || []);
     } catch (error) {
       console.error('Error fetching companies:', error);
+      toast({
+        title: "Erro ao carregar empresas",
+        description: "Não foi possível carregar a lista de empresas.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -77,6 +100,30 @@ export function CompaniesList() {
     }
   };
 
+  const handleDeleteCompany = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('companies')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Empresa excluída",
+        description: "A empresa foi excluída com sucesso.",
+      });
+
+      fetchCompanies();
+    } catch (error) {
+      toast({
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir a empresa.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const filteredCompanies = companies.filter(company => 
     company.fantasy_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     company.cnpj.includes(searchTerm) ||
@@ -104,89 +151,112 @@ export function CompaniesList() {
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-semibold">
-                {editingCompany?.id === company.id ? (
-                  <Input
-                    value={editingCompany.fantasy_name || ""}
-                    onChange={(e) => setEditingCompany({
-                      ...editingCompany,
-                      fantasy_name: e.target.value
-                    })}
-                  />
-                ) : (
-                  company.fantasy_name || "Nome não informado"
-                )}
+                {company.fantasy_name || "Nome não informado"}
               </CardTitle>
               <div className="flex items-center gap-2">
-                <Badge
-                  variant={
-                    company.risk_level === 'Alto' 
-                      ? "destructive" 
-                      : company.risk_level === 'Médio' 
-                      ? "secondary" 
-                      : "outline"
-                  }
-                >
+                <Badge variant="outline">
                   Risco {company.risk_level || "Não avaliado"}
                 </Badge>
-                {editingCompany?.id === company.id ? (
-                  <Button
-                    size="sm"
-                    onClick={() => handleUpdateCompany(editingCompany)}
-                  >
-                    Salvar
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setEditingCompany(company)}
-                  >
-                    <Edit2 className="h-4 w-4" />
-                  </Button>
-                )}
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setEditingCompany(company)}
+                    >
+                      <PencilIcon className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Editar Empresa</DialogTitle>
+                    </DialogHeader>
+                    {editingCompany && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium">Nome Fantasia</label>
+                          <Input
+                            value={editingCompany.fantasy_name || ""}
+                            onChange={(e) => setEditingCompany({
+                              ...editingCompany,
+                              fantasy_name: e.target.value
+                            })}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">CNAE</label>
+                          <Input
+                            value={editingCompany.cnae || ""}
+                            onChange={(e) => setEditingCompany({
+                              ...editingCompany,
+                              cnae: e.target.value
+                            })}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Email</label>
+                          <Input
+                            value={editingCompany.contact_email || ""}
+                            onChange={(e) => setEditingCompany({
+                              ...editingCompany,
+                              contact_email: e.target.value
+                            })}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Telefone</label>
+                          <Input
+                            value={editingCompany.contact_phone || ""}
+                            onChange={(e) => setEditingCompany({
+                              ...editingCompany,
+                              contact_phone: e.target.value
+                            })}
+                          />
+                        </div>
+                        <Button 
+                          className="w-full"
+                          onClick={() => handleUpdateCompany(editingCompany)}
+                        >
+                          Salvar Alterações
+                        </Button>
+                      </div>
+                    )}
+                  </DialogContent>
+                </Dialog>
+
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="ghost">
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Tem certeza que deseja excluir esta empresa? Esta ação não pode ser desfeita.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() => handleDeleteCompany(company.id)}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        Excluir
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
           </CardHeader>
           <CardContent>
             <div className="text-sm text-muted-foreground space-y-1">
               <p>CNPJ: {company.cnpj}</p>
-              {editingCompany?.id === company.id ? (
-                <>
-                  <Input
-                    value={editingCompany.cnae || ""}
-                    onChange={(e) => setEditingCompany({
-                      ...editingCompany,
-                      cnae: e.target.value
-                    })}
-                    placeholder="CNAE"
-                    className="mt-2"
-                  />
-                  <Input
-                    value={editingCompany.contact_email || ""}
-                    onChange={(e) => setEditingCompany({
-                      ...editingCompany,
-                      contact_email: e.target.value
-                    })}
-                    placeholder="Email"
-                    className="mt-2"
-                  />
-                  <Input
-                    value={editingCompany.contact_phone || ""}
-                    onChange={(e) => setEditingCompany({
-                      ...editingCompany,
-                      contact_phone: e.target.value
-                    })}
-                    placeholder="Telefone"
-                    className="mt-2"
-                  />
-                </>
-              ) : (
-                <>
-                  <p>CNAE: {company.cnae || "Não informado"}</p>
-                  {company.contact_email && <p>Email: {company.contact_email}</p>}
-                  {company.contact_phone && <p>Telefone: {company.contact_phone}</p>}
-                </>
-              )}
+              <p>CNAE: {company.cnae || "Não informado"}</p>
+              {company.contact_email && <p>Email: {company.contact_email}</p>}
+              {company.contact_phone && <p>Telefone: {company.contact_phone}</p>}
               {company.metadata && typeof company.metadata === 'object' && 'units' in company.metadata && Array.isArray(company.metadata.units) && (
                 <p>Unidades: {company.metadata.units.length}</p>
               )}
