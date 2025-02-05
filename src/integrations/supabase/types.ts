@@ -89,32 +89,38 @@ export type Database = {
       inspections: {
         Row: {
           audio_url: string | null
+          checklist: Json | null
           cnae: string
           created_at: string
           id: string
           photos: string[] | null
           report_url: string | null
           risks: Json | null
+          status: string | null
           user_id: string
         }
         Insert: {
           audio_url?: string | null
+          checklist?: Json | null
           cnae: string
           created_at?: string
           id?: string
           photos?: string[] | null
           report_url?: string | null
           risks?: Json | null
+          status?: string | null
           user_id: string
         }
         Update: {
           audio_url?: string | null
+          checklist?: Json | null
           cnae?: string
           created_at?: string
           id?: string
           photos?: string[] | null
           report_url?: string | null
           risks?: Json | null
+          status?: string | null
           user_id?: string
         }
         Relationships: []

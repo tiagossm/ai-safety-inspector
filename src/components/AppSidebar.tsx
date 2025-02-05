@@ -24,24 +24,27 @@ const menuItems = [
 
 export function AppSidebar() {
   return (
-    <Sidebar>
+    <Sidebar className="border-r border-gray-800">
       <SidebarHeader className="p-4 flex items-center justify-between">
         <Logo size="small" />
         <SidebarTrigger className="hover:bg-muted rounded-md p-2">
-          <Menu className="h-6 w-6" />
+          <Menu className="h-6 w-6 text-gray-400" />
         </SidebarTrigger>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-gray-400">Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <Link to={item.url} className="flex items-center gap-2">
-                      <item.icon className="h-5 w-5" />
-                      <span>{item.title}</span>
+                    <Link 
+                      to={item.url} 
+                      className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-800 transition-colors"
+                    >
+                      <item.icon className="h-5 w-5 text-gray-400" />
+                      <span className="text-gray-300">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
-import { Camera } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -17,42 +18,50 @@ interface Profile {
 
 const Profile = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        if (!user?.id) return;
+
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+
+        if (error) throw error;
+        setProfile(data);
+      } catch (error: any) {
+        toast({
+          title: "Erro ao carregar perfil",
+          description: error.message,
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchProfile();
   }, [user]);
 
-  const fetchProfile = async () => {
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profile) return;
+
     try {
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (error) throw error;
-      setProfile(data);
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const updateProfile = async (updates: Partial<Profile>) => {
-    try {
-      if (!user) return;
-
       const { error } = await supabase
         .from('profiles')
-        .update(updates)
-        .eq('id', user.id);
+        .update({
+          full_name: profile.full_name,
+          email: profile.email,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', profile.id);
 
       if (error) throw error;
 
@@ -60,125 +69,66 @@ const Profile = () => {
         title: "Perfil atualizado",
         description: "Suas informações foram atualizadas com sucesso.",
       });
-
-      fetchProfile();
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: "Erro ao atualizar",
-        description: "Não foi possível atualizar suas informações.",
+        title: "Erro ao atualizar perfil",
+        description: error.message,
         variant: "destructive",
       });
-    }
-  };
-
-  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    try {
-      if (!event.target.files || !event.target.files[0]) return;
-
-      const file = event.target.files[0];
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${user?.id}-${Math.random()}.${fileExt}`;
-
-      setUploading(true);
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      await updateProfile({ avatar_url: publicUrl });
-    } catch (error) {
-      toast({
-        title: "Erro ao fazer upload",
-        description: "Não foi possível atualizar sua foto de perfil.",
-        variant: "destructive",
-      });
-    } finally {
-      setUploading(false);
     }
   };
 
   if (loading) {
-    return <div>Carregando perfil...</div>;
+    return (
+      <DashboardLayout>
+        <div>Carregando...</div>
+      </DashboardLayout>
+    );
   }
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto px-4 py-8">
+      <div className="max-w-2xl mx-auto space-y-8">
         <Card>
           <CardHeader>
             <CardTitle>Seu Perfil</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex flex-col items-center space-y-4">
-              <div className="relative">
-                <img
-                  src={profile?.avatar_url || "https://via.placeholder.com/150"}
-                  alt="Avatar"
-                  className="w-32 h-32 rounded-full object-cover"
-                />
-                <label
-                  htmlFor="avatar-upload"
-                  className="absolute bottom-0 right-0 p-2 bg-primary rounded-full cursor-pointer hover:bg-primary/90 transition-colors"
-                >
-                  <Camera className="h-5 w-5 text-white" />
-                  <input
-                    id="avatar-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={uploadAvatar}
-                    disabled={uploading}
-                    className="hidden"
-                  />
-                </label>
+          <CardContent>
+            <div className="flex items-center gap-6 mb-8">
+              <Avatar className="h-20 w-20">
+                <AvatarImage src={profile?.avatar_url || ''} />
+                <AvatarFallback>{profile?.full_name?.charAt(0) || 'U'}</AvatarFallback>
+              </Avatar>
+              <div>
+                <h2 className="text-2xl font-semibold">{profile?.full_name || 'Usuário'}</h2>
+                <p className="text-muted-foreground">{profile?.email}</p>
               </div>
             </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Nome Completo</label>
+            <form onSubmit={handleUpdateProfile} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Nome Completo</Label>
                 <Input
-                  value={profile?.full_name || ""}
-                  onChange={(e) => setProfile(prev => ({
-                    ...prev!,
-                    full_name: e.target.value
-                  }))}
-                  placeholder="Seu nome completo"
+                  id="fullName"
+                  value={profile?.full_name || ''}
+                  onChange={(e) => setProfile(prev => ({ ...prev!, full_name: e.target.value }))}
                 />
               </div>
-
-              <div>
-                <label className="text-sm font-medium">Email</label>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  value={profile?.email || ""}
-                  onChange={(e) => setProfile(prev => ({
-                    ...prev!,
-                    email: e.target.value
-                  }))}
-                  placeholder="Seu email"
+                  id="email"
                   type="email"
+                  value={profile?.email || ''}
+                  onChange={(e) => setProfile(prev => ({ ...prev!, email: e.target.value }))}
                 />
               </div>
-
-              <Button
-                onClick={() => profile && updateProfile({
-                  full_name: profile.full_name,
-                  email: profile.email,
-                })}
-              >
-                Salvar Alterações
-              </Button>
-            </div>
+              <Button type="submit">Salvar Alterações</Button>
+            </form>
           </CardContent>
         </Card>
       </div>
     </DashboardLayout>
   );
-}
+};
 
 export default Profile;
