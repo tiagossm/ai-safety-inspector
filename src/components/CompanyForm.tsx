@@ -45,11 +45,38 @@ export function CompanyForm() {
     setUnits(newUnits);
   };
 
+  const checkExistingCNPJ = async (cnpj: string) => {
+    const { data, error } = await supabase
+      .from('companies')
+      .select('cnpj')
+      .eq('cnpj', cnpj.replace(/\D/g, ''))
+      .single();
+    
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error checking CNPJ:', error);
+      return false;
+    }
+    
+    return !!data;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      // Check if CNPJ already exists
+      const exists = await checkExistingCNPJ(cnpj);
+      if (exists) {
+        toast({
+          title: "CNPJ já cadastrado",
+          description: "Uma empresa com este CNPJ já existe no sistema.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
       // First validate and fetch company data
       const { data: companyData, error: validationError } = await supabase.functions.invoke('validate-cnpj', {
         body: { cnpj: cnpj.replace(/\D/g, '') }
@@ -63,7 +90,7 @@ export function CompanyForm() {
         .insert([{
           ...companyData,
           risk_level: riskLevel,
-          metadata: { units }, // Store units in metadata
+          metadata: { units },
           user_id: (await supabase.auth.getUser()).data.user?.id
         }]);
 
