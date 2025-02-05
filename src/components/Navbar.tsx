@@ -3,7 +3,6 @@ import { Button } from "./ui/button";
 import { useToast } from "./ui/use-toast";
 import { useAuth } from "./AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
-import { LayoutDashboard, Building2, ClipboardCheck, History } from "lucide-react";
 
 export function Navbar() {
   const navigate = useNavigate();
@@ -25,7 +24,7 @@ export function Navbar() {
   };
 
   return (
-    <nav className="bg-gray-900 border-b border-gray-800 shadow-sm">
+    <nav className="bg-gray-900 border-b border-gray-800 shadow-sm fixed top-0 left-0 w-full z-40">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-6">
@@ -35,28 +34,24 @@ export function Navbar() {
                   to="/" 
                   className="flex items-center gap-2 text-gray-300 hover:text-primary transition-colors"
                 >
-                  <LayoutDashboard className="h-4 w-4" />
                   Dashboard
                 </Link>
                 <Link 
                   to="/companies" 
                   className="flex items-center gap-2 text-gray-300 hover:text-primary transition-colors"
                 >
-                  <Building2 className="h-4 w-4" />
                   Empresas
                 </Link>
                 <Link 
                   to="/inspections" 
                   className="flex items-center gap-2 text-gray-300 hover:text-primary transition-colors"
                 >
-                  <ClipboardCheck className="h-4 w-4" />
                   Inspeções
                 </Link>
                 <Link 
                   to="/reports" 
                   className="flex items-center gap-2 text-gray-300 hover:text-primary transition-colors"
                 >
-                  <History className="h-4 w-4" />
                   Relatórios
                 </Link>
                 <Button
