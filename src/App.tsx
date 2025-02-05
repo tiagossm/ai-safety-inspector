@@ -12,6 +12,7 @@ import Companies from "./pages/Companies";
 import Blog from "./pages/Blog";
 import Contact from "./pages/Contact";
 import Plans from "./pages/Plans";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -44,6 +45,14 @@ const App = () => (
                   <main className="container mx-auto px-4 py-8">
                     <Companies />
                   </main>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
                 </ProtectedRoute>
               }
             />
