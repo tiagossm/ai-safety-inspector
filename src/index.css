@@ -37,13 +37,11 @@
   }
 }
 
-/* 🔹 Remover logo duplicada */
 .header-logo, 
 .footer-branding { 
   display: none !important; 
 }
 
-/* 🔹 Ajustar imagem de fundo no Hero */
 .hero-background {
   position: relative;
 }
@@ -63,94 +61,3 @@
   opacity: 0.1;
   z-index: 0;
 }
-
-/* 🔹 Sidebar corrigida */
-.sidebar {
-  position: fixed;
-  width: 250px;
-  height: 100vh;
-  background-color: #111;
-  overflow-y: auto;
-  transition: all 0.3s ease;
-  display: block !important; /* Garante que nunca fique oculta */
-  z-index: 1000;
-}
-
-/* 🔹 Melhorias visuais nos botões de edição/exclusão */
-.edit-btn {
-  background-color: #007bff;
-  color: white;
-  padding: 5px 10px;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.delete-btn {
-  background-color: #dc3545;
-  color: white;
-  padding: 5px 10px;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.search-box {
-  width: 100%;
-  padding: 8px;
-  font-size: 14px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-}
-/* Botão de cadastro */
-.cadastrar-btn {
-  background-color: #007bff;
-  color: white;
-  padding: 10px 15px;
-  font-size: 16px;
-  border-radius: 5px;
-  cursor: pointer;
-  margin-bottom: 15px;
-}
-.cadastrar-btn:hover {
-  background-color: #0056b3;
-}
-
-/* Estilos do Modal */
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.modal-content {
-  background: #1c1c1c;
-  padding: 20px;
-  border-radius: 8px;
-  width: 400px;
-  text-align: center;
-}
-
-.input-field {
-  width: 100%;
-  padding: 10px;
-  margin: 10px 0;
-  border-radius: 5px;
-}
-
-.fechar-btn {
-  background-color: #dc3545;
-  color: white;
-  padding: 10px 15px;
-  border-radius: 5px;
-  cursor: pointer;
-  margin-top: 10px;
-}
-.fechar-btn:hover {
-  background-color: #c82333;
-}
-
