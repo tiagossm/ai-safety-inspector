@@ -11,7 +11,7 @@ export function Logo({ className = "", size = "small" }: LogoProps) {
   return (
     <Link to="/" className={`block ${className}`}>
       <img 
-        src="/lovable-uploads/556ba9a4-9912-4d74-96a7-0f4630a0386f.png"
+        src="/lovable-uploads/5f39a04e-2f8f-449b-ab7f-7b2d67216c79.png"
         alt="IA SST Logo"
         className={`${dimensions} w-auto`}
       />

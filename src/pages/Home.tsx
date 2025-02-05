@@ -63,9 +63,9 @@ const DashboardView = () => (
 );
 
 const LandingView = () => (
-  <div className="min-h-screen bg-background">
+  <div className="min-h-screen bg-background hero-background">
     {/* Hero Section */}
-    <section className="py-16 px-4">
+    <section className="py-16 px-4 relative z-10">
       <div className="container mx-auto max-w-6xl text-center">
         <div className="flex justify-center mb-8">
           <Logo size="large" />
@@ -83,7 +83,7 @@ const LandingView = () => (
     </section>
 
     {/* Features Section */}
-    <section className="py-16 px-4 bg-muted/30">
+    <section className="py-16 px-4 bg-muted/30 relative z-10">
       <div className="container mx-auto max-w-6xl">
         <h2 className="text-3xl font-bold text-center mb-12">
           Como gerar relatórios automáticos em 3 passos
