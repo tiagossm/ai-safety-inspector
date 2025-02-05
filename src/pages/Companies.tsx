@@ -1,33 +1,37 @@
-import { DashboardLayout } from "@/components/DashboardLayout";
-import { CompanyForm } from "@/components/CompanyForm";
-import { CompaniesList } from "@/components/CompaniesList";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from "react";
 
-const Companies = () => {
-  return (
-    <DashboardLayout>
-      <div className="grid gap-8 md:grid-cols-2">
-        <div className="space-y-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Cadastrar Nova Empresa</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CompanyForm />
-            </CardContent>
-          </Card>
-        </div>
-        <div className="space-y-8">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Empresas Cadastradas</h2>
-            <Button variant="outline">Nova Inspeção</Button>
-          </div>
-          <CompaniesList />
-        </div>
-      </div>
-    </DashboardLayout>
-  );
-};
+export default function CompanyList() {
+    const [showForm, setShowForm] = useState(false);
 
-export default Companies;
+    return (
+        <div>
+            {/* Botão para abrir o formulário */}
+            <button 
+                className="cadastrar-btn" 
+                onClick={() => setShowForm(true)}
+            >
+                + Cadastrar Empresa
+            </button>
+
+            {/* Modal com o formulário */}
+            {showForm && (
+                <div className="modal">
+                    <div className="modal-content">
+                        <h2>Cadastrar Nova Empresa</h2>
+                        
+                        <input type="text" placeholder="CNPJ da Empresa" className="input-field"/>
+                        <select className="input-field">
+                            <option>Selecione o grau de risco</option>
+                            <option value="1">Risco 1</option>
+                            <option value="2">Risco 2</option>
+                            <option value="3">Risco 3</option>
+                        </select>
+
+                        <button className="cadastrar-btn">Cadastrar</button>
+                        <button className="fechar-btn" onClick={() => setShowForm(false)}>Fechar</button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
