@@ -37,11 +37,13 @@
   }
 }
 
+/* 🔹 Remover logo duplicada */
 .header-logo, 
 .footer-branding { 
   display: none !important; 
 }
 
+/* 🔹 Ajustar imagem de fundo no Hero */
 .hero-background {
   position: relative;
 }
@@ -60,4 +62,41 @@
   border-radius: 50%;
   opacity: 0.1;
   z-index: 0;
+}
+
+/* 🔹 Sidebar corrigida */
+.sidebar {
+  position: fixed;
+  width: 250px;
+  height: 100vh;
+  background-color: #111;
+  overflow-y: auto;
+  transition: all 0.3s ease;
+  display: block !important; /* Garante que nunca fique oculta */
+  z-index: 1000;
+}
+
+/* 🔹 Melhorias visuais nos botões de edição/exclusão */
+.edit-btn {
+  background-color: #007bff;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.delete-btn {
+  background-color: #dc3545;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.search-box {
+  width: 100%;
+  padding: 8px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
 }
