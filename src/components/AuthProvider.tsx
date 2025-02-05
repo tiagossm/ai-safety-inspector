@@ -20,6 +20,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
+    let mounted = true;
+
     // Check active sessions and sets the user
     const checkSession = async () => {
       try {
@@ -27,17 +29,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (error) {
           console.error("Session error:", error);
-          setUser(null);
-          navigate("/auth");
+          if (mounted) {
+            setUser(null);
+            setLoading(false);
+            navigate("/auth");
+          }
           return;
         }
 
-        setUser(session?.user ?? null);
+        if (mounted) {
+          setUser(session?.user ?? null);
+          setLoading(false);
+        }
       } catch (error) {
         console.error("Session check failed:", error);
-        setUser(null);
-      } finally {
-        setLoading(false);
+        if (mounted) {
+          setUser(null);
+          setLoading(false);
+          navigate("/auth");
+        }
       }
     };
 
@@ -47,24 +57,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event);
       
-      if (event === 'TOKEN_REFRESHED') {
-        setUser(session?.user ?? null);
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-        navigate("/auth");
-      } else if (session) {
-        setUser(session.user);
-      } else {
-        setUser(null);
+      if (mounted) {
+        if (event === 'SIGNED_IN') {
+          setUser(session?.user ?? null);
+          toast({
+            title: "Login realizado com sucesso",
+            description: "Bem-vindo de volta!",
+          });
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          navigate("/auth");
+          toast({
+            title: "Logout realizado",
+            description: "Até logo!",
+          });
+        } else if (event === 'TOKEN_REFRESHED') {
+          setUser(session?.user ?? null);
+        } else if (event === 'USER_UPDATED') {
+          setUser(session?.user ?? null);
+        }
+        
+        setLoading(false);
       }
-      
-      setLoading(false);
     });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, toast]);
 
   return (
     <AuthContext.Provider value={{ user, loading }}>
