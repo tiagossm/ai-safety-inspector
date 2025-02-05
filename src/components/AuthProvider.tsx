@@ -49,11 +49,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (event === 'TOKEN_REFRESHED') {
         setUser(session?.user ?? null);
-      } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+      } else if (event === 'SIGNED_OUT') {
         setUser(null);
         navigate("/auth");
+      } else if (session) {
+        setUser(session.user);
       } else {
-        setUser(session?.user ?? null);
+        setUser(null);
       }
       
       setLoading(false);
