@@ -27,8 +27,8 @@ export function AppSidebar() {
     <Sidebar className="border-r border-gray-800">
       <SidebarHeader className="p-4 flex items-center justify-between">
         <Logo size="small" />
-        <SidebarTrigger className="hover:bg-muted rounded-md p-2">
-          <Menu className="h-6 w-6 text-gray-400" />
+        <SidebarTrigger className="p-3 hover:bg-muted rounded-md">
+          <Menu className="h-8 w-8 text-gray-400" />
         </SidebarTrigger>
       </SidebarHeader>
       <SidebarContent>

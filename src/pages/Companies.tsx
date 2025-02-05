@@ -2,32 +2,40 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { CompanyForm } from "@/components/CompanyForm";
 import { CompaniesList } from "@/components/CompaniesList";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const Companies = () => {
   return (
     <DashboardLayout>
-      <div className="grid gap-8 md:grid-cols-2">
-        <div className="space-y-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Cadastrar Nova Empresa</CardTitle>
-            </CardHeader>
-            <CardContent>
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold">Empresas Cadastradas</h2>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-5 w-5 mr-2" />
+                Adicionar Empresa
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Cadastrar Nova Empresa</DialogTitle>
+              </DialogHeader>
               <CompanyForm />
-            </CardContent>
-          </Card>
+            </DialogContent>
+          </Dialog>
         </div>
-        <div className="space-y-8">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Empresas Cadastradas</h2>
-            <Button variant="outline">Nova Inspeção</Button>
-          </div>
-          <CompaniesList />
-        </div>
+        <CompaniesList />
       </div>
     </DashboardLayout>
   );
-};
+}
 
 export default Companies;

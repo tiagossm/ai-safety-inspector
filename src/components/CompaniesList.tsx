@@ -42,6 +42,7 @@ export function CompaniesList() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [showAll, setShowAll] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -130,6 +131,8 @@ export function CompaniesList() {
     company.cnae?.includes(searchTerm)
   );
 
+  const displayedCompanies = showAll ? filteredCompanies : filteredCompanies.slice(0, 3);
+
   if (loading) {
     return <div>Carregando empresas...</div>;
   }
@@ -146,7 +149,7 @@ export function CompaniesList() {
         />
       </div>
 
-      {filteredCompanies.map((company) => (
+      {displayedCompanies.map((company) => (
         <Card key={company.id}>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
@@ -264,6 +267,16 @@ export function CompaniesList() {
           </CardContent>
         </Card>
       ))}
+
+      {filteredCompanies.length > 3 && !showAll && (
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={() => setShowAll(true)}
+        >
+          Ver todas as empresas ({filteredCompanies.length})
+        </Button>
+      )}
     </div>
   );
 }
