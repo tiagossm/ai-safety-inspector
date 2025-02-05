@@ -50,9 +50,9 @@ export function CompanyForm() {
       .from('companies')
       .select('cnpj')
       .eq('cnpj', cnpj.replace(/\D/g, ''))
-      .single();
+      .maybeSingle();
     
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       console.error('Error checking CNPJ:', error);
       return false;
     }
