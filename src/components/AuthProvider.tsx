@@ -19,6 +19,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const handleAuthError = async (error: any) => {
+    console.error("Auth error:", error);
+    // Clear the session on auth errors
+    await supabase.auth.signOut();
+    setUser(null);
+    setLoading(false);
+    navigate("/auth");
+    
+    // Show appropriate error message
+    toast({
+      title: "Erro de autenticação",
+      description: "Por favor, faça login novamente.",
+      variant: "destructive",
+    });
+  };
+
   useEffect(() => {
     let mounted = true;
 
@@ -28,11 +44,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error("Session error:", error);
           if (mounted) {
-            setUser(null);
-            setLoading(false);
-            navigate("/auth");
+            await handleAuthError(error);
           }
           return;
         }
@@ -40,13 +53,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (mounted) {
           setUser(session?.user ?? null);
           setLoading(false);
+          
+          // If we have a session but we're on the auth page, redirect to companies
+          if (session?.user && window.location.pathname === "/auth") {
+            navigate("/companies");
+          }
         }
       } catch (error) {
-        console.error("Session check failed:", error);
         if (mounted) {
-          setUser(null);
-          setLoading(false);
-          navigate("/auth");
+          await handleAuthError(error);
         }
       }
     };
@@ -60,6 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (mounted) {
         if (event === 'SIGNED_IN') {
           setUser(session?.user ?? null);
+          navigate("/companies");
           toast({
             title: "Login realizado com sucesso",
             description: "Bem-vindo de volta!",
@@ -75,6 +91,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(session?.user ?? null);
         } else if (event === 'USER_UPDATED') {
           setUser(session?.user ?? null);
+        } else if (event === 'INITIAL_SESSION') {
+          // Handle initial session load
+          setUser(session?.user ?? null);
+          setLoading(false);
         }
         
         setLoading(false);
