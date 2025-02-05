@@ -25,12 +25,12 @@ const menuItems = [
 export function AppSidebar() {
   return (
     <Sidebar className="border-r border-gray-800">
-      <SidebarHeader className="p-4 flex items-center justify-between">
+      <SidebarHeader className="p-4 flex items-center">
         <Logo size="small" />
-        <SidebarTrigger className="fixed z-50 p-6 hover:bg-muted rounded-md">
-          <Menu className="h-12 w-12 text-gray-400" />
-        </SidebarTrigger>
       </SidebarHeader>
+      <SidebarTrigger className="fixed top-4 right-4 z-50 p-6 hover:bg-muted rounded-md">
+        <Menu className="h-12 w-12 text-gray-400" />
+      </SidebarTrigger>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="text-gray-400">Menu</SidebarGroupLabel>
