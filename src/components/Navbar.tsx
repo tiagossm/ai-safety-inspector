@@ -3,7 +3,6 @@ import { Button } from "./ui/button";
 import { useToast } from "./ui/use-toast";
 import { useAuth } from "./AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
-import { Logo } from "./Logo";
 import { LayoutDashboard, Building2, ClipboardCheck, History } from "lucide-react";
 
 export function Navbar() {
@@ -29,11 +28,6 @@ export function Navbar() {
     <nav className="bg-gray-900 border-b border-gray-800 shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <div className="w-40">
-            <Link to="/">
-              <Logo />
-            </Link>
-          </div>
           <div className="flex items-center space-x-6">
             {user ? (
               <>
