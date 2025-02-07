@@ -17,6 +17,7 @@ export type Database = {
           contact_name: string | null
           contact_phone: string | null
           created_at: string
+          employee_count: number | null
           fantasy_name: string | null
           id: string
           metadata: Json | null
@@ -30,6 +31,7 @@ export type Database = {
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string
+          employee_count?: number | null
           fantasy_name?: string | null
           id?: string
           metadata?: Json | null
@@ -43,6 +45,7 @@ export type Database = {
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string
+          employee_count?: number | null
           fantasy_name?: string | null
           id?: string
           metadata?: Json | null

@@ -21,6 +21,7 @@ interface Unit {
 export function CompanyForm() {
   const [cnpj, setCnpj] = useState("");
   const [riskLevel, setRiskLevel] = useState<string>("");
+  const [employeeCount, setEmployeeCount] = useState<string>("");
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -65,7 +66,6 @@ export function CompanyForm() {
     setLoading(true);
 
     try {
-      // Check if CNPJ already exists
       const exists = await checkExistingCNPJ(cnpj);
       if (exists) {
         toast({
@@ -77,20 +77,19 @@ export function CompanyForm() {
         return;
       }
 
-      // First validate and fetch company data
       const { data: companyData, error: validationError } = await supabase.functions.invoke('validate-cnpj', {
         body: { cnpj: cnpj.replace(/\D/g, '') }
       });
 
       if (validationError) throw validationError;
 
-      // Then insert into database
       const { error: insertError } = await supabase
         .from('companies')
         .insert([{
           ...companyData,
           risk_level: riskLevel,
           metadata: { units },
+          employee_count: parseInt(employeeCount) || null,
           user_id: (await supabase.auth.getUser()).data.user?.id
         }]);
 
@@ -101,9 +100,9 @@ export function CompanyForm() {
         description: "Os dados foram validados e salvos no sistema.",
       });
 
-      // Reset form
       setCnpj("");
       setRiskLevel("");
+      setEmployeeCount("");
       setUnits([]);
     } catch (error) {
       console.error('Error:', error);
@@ -128,6 +127,18 @@ export function CompanyForm() {
           onChange={(e) => setCnpj(formatCNPJ(e.target.value))}
           maxLength={18}
           required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="employeeCount">Quantidade de Funcionários</Label>
+        <Input
+          id="employeeCount"
+          type="number"
+          placeholder="Ex: 50"
+          value={employeeCount}
+          onChange={(e) => setEmployeeCount(e.target.value)}
+          min="0"
         />
       </div>
 

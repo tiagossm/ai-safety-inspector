@@ -3,10 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Trash2, PencilIcon } from "lucide-react";
+import { Search, Trash2, PencilIcon, ClipboardList } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
 import { useToast } from "./ui/use-toast";
+import { useNavigate } from "react-router-dom";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +35,7 @@ type Company = {
   cnae: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  employee_count: number | null;
   metadata: Json | null;
 };
 
@@ -44,6 +46,7 @@ export function CompaniesList() {
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [showAll, setShowAll] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchCompanies();
@@ -137,6 +140,10 @@ export function CompaniesList() {
     return <div>Carregando empresas...</div>;
   }
 
+  const handleStartInspection = (company: Company) => {
+    navigate(`/inspections/new?company=${company.id}`);
+  };
+
   return (
     <div className="space-y-4">
       <div className="relative">
@@ -160,6 +167,14 @@ export function CompaniesList() {
                 <Badge variant="outline">
                   Risco {company.risk_level || "Não avaliado"}
                 </Badge>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleStartInspection(company)}
+                >
+                  <ClipboardList className="h-4 w-4 mr-2" />
+                  Iniciar Inspeção
+                </Button>
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button
@@ -258,6 +273,9 @@ export function CompaniesList() {
             <div className="text-sm text-muted-foreground space-y-1">
               <p>CNPJ: {company.cnpj}</p>
               <p>CNAE: {company.cnae || "Não informado"}</p>
+              {company.employee_count && (
+                <p>Funcionários: {company.employee_count}</p>
+              )}
               {company.contact_email && <p>Email: {company.contact_email}</p>}
               {company.contact_phone && <p>Telefone: {company.contact_phone}</p>}
               {company.metadata && typeof company.metadata === 'object' && 'units' in company.metadata && Array.isArray(company.metadata.units) && (
