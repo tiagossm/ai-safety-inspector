@@ -21,7 +21,6 @@ export type Database = {
           fantasy_name: string | null
           id: string
           metadata: Json | null
-          risk_level: string | null
           user_id: string
         }
         Insert: {
@@ -35,7 +34,6 @@ export type Database = {
           fantasy_name?: string | null
           id?: string
           metadata?: Json | null
-          risk_level?: string | null
           user_id: string
         }
         Update: {
@@ -49,7 +47,6 @@ export type Database = {
           fantasy_name?: string | null
           id?: string
           metadata?: Json | null
-          risk_level?: string | null
           user_id?: string
         }
         Relationships: []
