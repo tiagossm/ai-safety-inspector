@@ -1,7 +1,6 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Trash2, PencilIcon, ClipboardList } from "lucide-react";
@@ -37,6 +36,7 @@ type Company = {
   contact_phone: string | null;
   employee_count: number | null;
   metadata: Json | null;
+  created_at: string;
 };
 
 export function CompaniesList() {
@@ -277,6 +277,7 @@ export function CompaniesList() {
               {company.metadata && typeof company.metadata === 'object' && 'units' in company.metadata && Array.isArray(company.metadata.units) && (
                 <p>Unidades: {company.metadata.units.length}</p>
               )}
+              <p>Data de cadastro: {new Date(company.created_at).toLocaleDateString()}</p>
             </div>
           </CardContent>
         </Card>
