@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +32,6 @@ type Company = {
   id: string;
   fantasy_name: string | null;
   cnpj: string;
-  risk_level: string | null;
   cnae: string | null;
   contact_email: string | null;
   contact_phone: string | null;
@@ -80,7 +80,6 @@ export function CompaniesList() {
         .update({
           fantasy_name: company.fantasy_name,
           cnae: company.cnae,
-          risk_level: company.risk_level,
           contact_email: company.contact_email,
           contact_phone: company.contact_phone,
         })
@@ -164,9 +163,6 @@ export function CompaniesList() {
                 {company.fantasy_name || "Nome não informado"}
               </CardTitle>
               <div className="flex items-center gap-2">
-                <Badge variant="outline">
-                  Risco {company.risk_level || "Não avaliado"}
-                </Badge>
                 <Button
                   size="sm"
                   variant="outline"
