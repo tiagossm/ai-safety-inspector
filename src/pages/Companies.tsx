@@ -3,6 +3,7 @@ import { CompanyForm } from "@/components/CompanyForm";
 import { CompaniesList } from "@/components/CompaniesList";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +13,12 @@ import {
 } from "@/components/ui/dialog";
 
 const Companies = () => {
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const handleCompanyCreated = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-8">
@@ -28,11 +35,11 @@ const Companies = () => {
               <DialogHeader>
                 <DialogTitle>Cadastrar Nova Empresa</DialogTitle>
               </DialogHeader>
-              <CompanyForm />
+              <CompanyForm onCompanyCreated={handleCompanyCreated} />
             </DialogContent>
           </Dialog>
         </div>
-        <CompaniesList />
+        <CompaniesList key={refreshTrigger} />
       </div>
     </DashboardLayout>
   );

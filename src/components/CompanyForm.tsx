@@ -4,13 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 interface Unit {
   address: string;
@@ -18,9 +11,12 @@ interface Unit {
   technicalResponsible: string;
 }
 
-export function CompanyForm() {
+interface CompanyFormProps {
+  onCompanyCreated?: () => void;
+}
+
+export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
   const [cnpj, setCnpj] = useState("");
-  const [riskLevel, setRiskLevel] = useState<string>("");
   const [employeeCount, setEmployeeCount] = useState<string>("");
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(false);
@@ -87,7 +83,6 @@ export function CompanyForm() {
         .from('companies')
         .insert([{
           ...companyData,
-          risk_level: riskLevel,
           metadata: { units },
           employee_count: parseInt(employeeCount) || null,
           user_id: (await supabase.auth.getUser()).data.user?.id
@@ -101,9 +96,13 @@ export function CompanyForm() {
       });
 
       setCnpj("");
-      setRiskLevel("");
       setEmployeeCount("");
       setUnits([]);
+      
+      // Call the callback to refresh the companies list
+      if (onCompanyCreated) {
+        onCompanyCreated();
+      }
     } catch (error) {
       console.error('Error:', error);
       toast({
@@ -140,22 +139,6 @@ export function CompanyForm() {
           onChange={(e) => setEmployeeCount(e.target.value)}
           min="0"
         />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="riskLevel">Grau de Risco</Label>
-        <Select value={riskLevel} onValueChange={setRiskLevel}>
-          <SelectTrigger>
-            <SelectValue placeholder="Selecione o grau de risco" />
-          </SelectTrigger>
-          <SelectContent>
-            {[1, 2, 3, 4, 5].map((level) => (
-              <SelectItem key={level} value={level.toString()}>
-                Risco {level}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
       <div className="space-y-4">
