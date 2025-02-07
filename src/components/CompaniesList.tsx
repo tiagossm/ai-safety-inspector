@@ -128,6 +128,10 @@ export function CompaniesList() {
     }
   };
 
+  const handleStartInspection = (company: Company) => {
+    navigate(`/inspections/new?company=${company.id}`);
+  };
+
   const filteredCompanies = companies.filter(company => 
     company.fantasy_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     company.cnpj.includes(searchTerm) ||
@@ -139,10 +143,6 @@ export function CompaniesList() {
   if (loading) {
     return <div>Carregando empresas...</div>;
   }
-
-  const handleStartInspection = (company: Company) => {
-    navigate(`/inspections/new?company=${company.id}`);
-  };
 
   return (
     <div className="space-y-4">

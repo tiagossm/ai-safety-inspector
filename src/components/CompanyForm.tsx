@@ -196,7 +196,7 @@ export function CompanyForm() {
         ))}
       </div>
 
-      <Button type="submit" disabled={loading}>
+      <Button type="submit" disabled={loading} className="w-full">
         {loading ? "Cadastrando..." : "Cadastrar Empresa"}
       </Button>
     </form>
