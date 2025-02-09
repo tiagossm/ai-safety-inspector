@@ -1,31 +1,15 @@
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Trash2, PencilIcon, ClipboardList, BookOpen } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
 import { useToast } from "./ui/use-toast";
 import { useNavigate } from "react-router-dom";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Dialog } from "@/components/ui/dialog";
+import { CompanyCard } from "./CompanyCard";
+import { CompanyEditDialog } from "./CompanyEditDialog";
 
 type Company = {
   id: string;
@@ -111,7 +95,6 @@ export function CompaniesList() {
 
       if (error) throw error;
 
-      // Remove the company from the local state
       setCompanies(prevCompanies => prevCompanies.filter(company => company.id !== id));
 
       toast({
@@ -161,139 +144,21 @@ export function CompaniesList() {
       </div>
 
       {displayedCompanies.map((company) => (
-        <Card key={company.id}>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold">
-                {company.fantasy_name || "Nome não informado"}
-              </CardTitle>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleStartInspection(company)}
-                >
-                  <ClipboardList className="h-4 w-4 mr-2" />
-                  Iniciar Inspeção
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleViewLegalNorms(company)}
-                >
-                  <BookOpen className="h-4 w-4 mr-2" />
-                  Normas Legais Aplicáveis
-                </Button>
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setEditingCompany(company)}
-                    >
-                      <PencilIcon className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Editar Empresa</DialogTitle>
-                    </DialogHeader>
-                    {editingCompany && (
-                      <div className="space-y-4">
-                        <div>
-                          <label className="text-sm font-medium">Nome Fantasia</label>
-                          <Input
-                            value={editingCompany.fantasy_name || ""}
-                            onChange={(e) => setEditingCompany({
-                              ...editingCompany,
-                              fantasy_name: e.target.value
-                            })}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">CNAE</label>
-                          <Input
-                            value={editingCompany.cnae || ""}
-                            onChange={(e) => setEditingCompany({
-                              ...editingCompany,
-                              cnae: e.target.value
-                            })}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">Email</label>
-                          <Input
-                            value={editingCompany.contact_email || ""}
-                            onChange={(e) => setEditingCompany({
-                              ...editingCompany,
-                              contact_email: e.target.value
-                            })}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">Telefone</label>
-                          <Input
-                            value={editingCompany.contact_phone || ""}
-                            onChange={(e) => setEditingCompany({
-                              ...editingCompany,
-                              contact_phone: e.target.value
-                            })}
-                          />
-                        </div>
-                        <Button 
-                          className="w-full"
-                          onClick={() => handleUpdateCompany(editingCompany)}
-                        >
-                          Salvar Alterações
-                        </Button>
-                      </div>
-                    )}
-                  </DialogContent>
-                </Dialog>
-
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button size="sm" variant="ghost">
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Tem certeza que deseja arquivar esta empresa? Esta ação não pode ser desfeita.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => handleDeleteCompany(company.id)}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        Arquivar
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm text-muted-foreground space-y-1">
-              <p>CNPJ: {company.cnpj}</p>
-              <p>CNAE: {company.cnae || "Não informado"}</p>
-              {company.employee_count && (
-                <p>Funcionários: {company.employee_count}</p>
-              )}
-              {company.contact_email && <p>Email: {company.contact_email}</p>}
-              {company.contact_phone && <p>Telefone: {company.contact_phone}</p>}
-              {company.metadata && typeof company.metadata === 'object' && 'units' in company.metadata && Array.isArray(company.metadata.units) && (
-                <p>Unidades: {company.metadata.units.length}</p>
-              )}
-              <p>Data de cadastro: {new Date(company.created_at).toLocaleDateString()}</p>
-            </div>
-          </CardContent>
-        </Card>
+        <Dialog key={company.id}>
+          {editingCompany && (
+            <CompanyEditDialog
+              company={editingCompany}
+              onUpdate={handleUpdateCompany}
+            />
+          )}
+          <CompanyCard
+            company={company}
+            onDelete={handleDeleteCompany}
+            onEdit={setEditingCompany}
+            onStartInspection={handleStartInspection}
+            onViewLegalNorms={handleViewLegalNorms}
+          />
+        </Dialog>
       ))}
 
       {filteredCompanies.length > 3 && !showAll && (
