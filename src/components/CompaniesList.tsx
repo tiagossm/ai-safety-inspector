@@ -58,7 +58,7 @@ export function CompaniesList() {
     try {
       const { data, error } = await supabase
         .from('companies')
-        .select('*')
+        .select('id, fantasy_name, cnpj, cnae, contact_email, contact_phone, employee_count, metadata, created_at')
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
