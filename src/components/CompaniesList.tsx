@@ -18,6 +18,7 @@ type Company = {
   cnae: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  contact_name: string | null;
   employee_count: number | null;
   metadata: Json | null;
   created_at: string;
@@ -58,7 +59,7 @@ export function CompaniesList() {
     try {
       const { data, error } = await supabase
         .from('companies')
-        .select('id, fantasy_name, cnpj, cnae, contact_email, contact_phone, employee_count, metadata, created_at')
+        .select('id, fantasy_name, cnpj, cnae, contact_email, contact_phone, contact_name, employee_count, metadata, created_at')
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
