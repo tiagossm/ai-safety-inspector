@@ -57,6 +57,7 @@ export function CompaniesList() {
       const { data, error } = await supabase
         .from('companies')
         .select('*')
+        .eq('status', 'active')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -106,24 +107,22 @@ export function CompaniesList() {
   const handleDeleteCompany = async (id: string) => {
     try {
       const { error } = await supabase
-        .from('companies')
-        .delete()
-        .eq('id', id);
+        .rpc('archive_company', { company_id: id });
 
       if (error) throw error;
 
-      // Atualizar a lista local após a exclusão bem-sucedida
+      // Remove the company from the local state
       setCompanies(prevCompanies => prevCompanies.filter(company => company.id !== id));
 
       toast({
-        title: "Empresa excluída",
-        description: "A empresa foi excluída com sucesso.",
+        title: "Empresa arquivada",
+        description: "A empresa foi arquivada com sucesso.",
       });
     } catch (error) {
-      console.error('Error deleting company:', error);
+      console.error('Error archiving company:', error);
       toast({
-        title: "Erro ao excluir",
-        description: "Não foi possível excluir a empresa.",
+        title: "Erro ao arquivar",
+        description: "Não foi possível arquivar a empresa.",
         variant: "destructive",
       });
     }
@@ -134,7 +133,6 @@ export function CompaniesList() {
   };
 
   const handleViewLegalNorms = (company: Company) => {
-    // TODO: Implementar visualização das normas legais
     navigate(`/legal-norms?company=${company.id}`);
   };
 
@@ -263,7 +261,7 @@ export function CompaniesList() {
                     <AlertDialogHeader>
                       <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
                       <AlertDialogDescription>
-                        Tem certeza que deseja excluir esta empresa? Esta ação não pode ser desfeita.
+                        Tem certeza que deseja arquivar esta empresa? Esta ação não pode ser desfeita.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -272,7 +270,7 @@ export function CompaniesList() {
                         onClick={() => handleDeleteCompany(company.id)}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
-                        Excluir
+                        Arquivar
                       </AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>

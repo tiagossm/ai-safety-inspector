@@ -17,10 +17,12 @@ export type Database = {
           contact_name: string | null
           contact_phone: string | null
           created_at: string
+          deactivated_at: string | null
           employee_count: number | null
           fantasy_name: string | null
           id: string
           metadata: Json | null
+          status: string
           user_id: string
         }
         Insert: {
@@ -30,10 +32,12 @@ export type Database = {
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string
+          deactivated_at?: string | null
           employee_count?: number | null
           fantasy_name?: string | null
           id?: string
           metadata?: Json | null
+          status?: string
           user_id: string
         }
         Update: {
@@ -43,10 +47,12 @@ export type Database = {
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string
+          deactivated_at?: string | null
           employee_count?: number | null
           fantasy_name?: string | null
           id?: string
           metadata?: Json | null
+          status?: string
           user_id?: string
         }
         Relationships: []
@@ -252,9 +258,62 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      active_companies: {
+        Row: {
+          cnae: string | null
+          cnpj: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string | null
+          deactivated_at: string | null
+          employee_count: number | null
+          fantasy_name: string | null
+          id: string | null
+          metadata: Json | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          cnae?: string | null
+          cnpj?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          deactivated_at?: string | null
+          employee_count?: number | null
+          fantasy_name?: string | null
+          id?: string | null
+          metadata?: Json | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          cnae?: string | null
+          cnpj?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          deactivated_at?: string | null
+          employee_count?: number | null
+          fantasy_name?: string | null
+          id?: string | null
+          metadata?: Json | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      archive_company: {
+        Args: {
+          company_id: string
+        }
+        Returns: undefined
+      }
       binary_quantize:
         | {
             Args: {
