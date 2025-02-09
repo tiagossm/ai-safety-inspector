@@ -32,6 +32,24 @@ export function CompaniesList() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Setup realtime subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel('companies_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'companies' },
+        () => {
+          fetchCompanies(); // Refresh data when changes occur
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   useEffect(() => {
     fetchCompanies();
   }, []);
@@ -90,11 +108,13 @@ export function CompaniesList() {
 
   const handleDeleteCompany = async (id: string) => {
     try {
+      // Use the archive_company RPC function
       const { error } = await supabase
         .rpc('archive_company', { company_id: id });
 
       if (error) throw error;
 
+      // Optimistically update the UI
       setCompanies(prevCompanies => prevCompanies.filter(company => company.id !== id));
 
       toast({
