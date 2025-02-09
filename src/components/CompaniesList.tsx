@@ -77,17 +77,18 @@ export function CompaniesList() {
     }
   };
 
-  const handleUpdateCompany = async (company: Company) => {
+  const handleUpdateCompany = async (companyData: Company) => {
     try {
       const { error } = await supabase
         .from('companies')
         .update({
-          fantasy_name: company.fantasy_name,
-          cnae: company.cnae,
-          contact_email: company.contact_email,
-          contact_phone: company.contact_phone,
+          fantasy_name: companyData.fantasy_name,
+          cnae: companyData.cnae,
+          contact_email: companyData.contact_email,
+          contact_phone: companyData.contact_phone,
+          contact_name: companyData.contact_name,
         })
-        .eq('id', company.id);
+        .eq('id', companyData.id);
 
       if (error) throw error;
 
@@ -109,13 +110,11 @@ export function CompaniesList() {
 
   const handleDeleteCompany = async (id: string) => {
     try {
-      // Use the archive_company RPC function
       const { error } = await supabase
         .rpc('archive_company', { company_id: id });
 
       if (error) throw error;
 
-      // Optimistically update the UI
       setCompanies(prevCompanies => prevCompanies.filter(company => company.id !== id));
 
       toast({
