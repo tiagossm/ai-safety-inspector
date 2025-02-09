@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Trash2, PencilIcon, ClipboardList } from "lucide-react";
+import { Search, Trash2, PencilIcon, ClipboardList, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
 import { useToast } from "./ui/use-toast";
@@ -112,13 +112,15 @@ export function CompaniesList() {
 
       if (error) throw error;
 
+      // Atualizar a lista local após a exclusão bem-sucedida
+      setCompanies(prevCompanies => prevCompanies.filter(company => company.id !== id));
+
       toast({
         title: "Empresa excluída",
         description: "A empresa foi excluída com sucesso.",
       });
-
-      fetchCompanies();
     } catch (error) {
+      console.error('Error deleting company:', error);
       toast({
         title: "Erro ao excluir",
         description: "Não foi possível excluir a empresa.",
@@ -129,6 +131,11 @@ export function CompaniesList() {
 
   const handleStartInspection = (company: Company) => {
     navigate(`/inspections/new?company=${company.id}`);
+  };
+
+  const handleViewLegalNorms = (company: Company) => {
+    // TODO: Implementar visualização das normas legais
+    navigate(`/legal-norms?company=${company.id}`);
   };
 
   const filteredCompanies = companies.filter(company => 
@@ -170,6 +177,14 @@ export function CompaniesList() {
                 >
                   <ClipboardList className="h-4 w-4 mr-2" />
                   Iniciar Inspeção
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleViewLegalNorms(company)}
+                >
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  Normas Legais Aplicáveis
                 </Button>
                 <Dialog>
                   <DialogTrigger asChild>
