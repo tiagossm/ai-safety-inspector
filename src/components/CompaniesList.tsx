@@ -33,7 +33,6 @@ export function CompaniesList() {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Setup realtime subscription
   useEffect(() => {
     const channel = supabase
       .channel('companies_changes')
@@ -41,7 +40,7 @@ export function CompaniesList() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'companies' },
         () => {
-          fetchCompanies(); // Refresh data when changes occur
+          fetchCompanies();
         }
       )
       .subscribe();
