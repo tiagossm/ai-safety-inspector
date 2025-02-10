@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
 import { BasicInfo } from "./company/BasicInfo";
@@ -95,7 +95,7 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
         title: "Dados do CNPJ carregados",
         description: "Os dados da empresa foram preenchidos automaticamente.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching CNPJ data:', error);
       toast({
         title: "Erro ao buscar dados do CNPJ",
@@ -108,7 +108,7 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
   const handleCNAEChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newCnae = e.target.value;
     setCnae(newCnae);
-    if (newCnae.length >= 7) { // Basic validation for CNAE format
+    if (newCnae.length >= 7) {
       fetchRiskLevel(newCnae);
     }
   };
@@ -197,7 +197,7 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
       if (onCompanyCreated) {
         onCompanyCreated();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error:', error);
       toast({
         title: "Erro ao cadastrar empresa",
