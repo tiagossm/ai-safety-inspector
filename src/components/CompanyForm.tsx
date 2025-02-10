@@ -5,11 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Json } from "@/integrations/supabase/types";
 
 interface Unit {
   address: string;
   geolocation: string;
   technicalResponsible: string;
+  [key: string]: string; // Add index signature to make it compatible with Json type
 }
 
 interface CompanyFormProps {
@@ -78,15 +80,17 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError) throw userError;
 
+      const companyData = {
+        cnpj: cnpj.replace(/\D/g, ''),
+        fantasy_name: fantasyName,
+        employee_count: parseInt(employeeCount) || null,
+        metadata: { units } as Json,
+        user_id: userData.user.id
+      };
+
       const { error: insertError } = await supabase
         .from('companies')
-        .insert([{
-          cnpj: cnpj.replace(/\D/g, ''),
-          fantasy_name: fantasyName,
-          employee_count: parseInt(employeeCount) || null,
-          metadata: { units },
-          user_id: userData.user.id
-        }]);
+        .insert(companyData);
 
       if (insertError) throw insertError;
       
@@ -100,7 +104,6 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
       setEmployeeCount("");
       setUnits([]);
       
-      // Call the callback to refresh the companies list
       if (onCompanyCreated) {
         onCompanyCreated();
       }
