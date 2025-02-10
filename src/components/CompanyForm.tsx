@@ -11,7 +11,7 @@ interface Unit {
   address: string;
   geolocation: string;
   technicalResponsible: string;
-  [key: string]: string; // Add index signature to make it compatible with Json type
+  [key: string]: string;
 }
 
 interface CompanyFormProps {
@@ -24,6 +24,11 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
   const [employeeCount, setEmployeeCount] = useState<string>("");
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(false);
+  const [cnae, setCnae] = useState("");
+  const [riskLevel, setRiskLevel] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [contactName, setContactName] = useState("");
   const { toast } = useToast();
 
   const formatCNPJ = (value: string) => {
@@ -34,6 +39,35 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
       .replace(/(\d{3})(\d)/, "$1/$2")
       .replace(/(\d{4})(\d)/, "$1-$2")
       .replace(/(-\d{2})\d+?$/, "$1");
+  };
+
+  const fetchCNPJData = async (cnpj: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('validate-cnpj', {
+        body: { cnpj: cnpj.replace(/\D/g, '') }
+      });
+
+      if (error) throw error;
+
+      setFantasyName(data.fantasy_name || "");
+      setCnae(data.cnae || "");
+      setRiskLevel(data.risk_level || "");
+      setContactEmail(data.contact_email || "");
+      setContactPhone(data.contact_phone || "");
+      setContactName(data.contact_name || "");
+
+      toast({
+        title: "Dados do CNPJ carregados",
+        description: "Os dados da empresa foram preenchidos automaticamente.",
+      });
+    } catch (error) {
+      console.error('Error fetching CNPJ data:', error);
+      toast({
+        title: "Erro ao buscar dados do CNPJ",
+        description: error.message || "Verifique o CNPJ e tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   const addUnit = () => {
@@ -83,8 +117,15 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
       const companyData = {
         cnpj: cnpj.replace(/\D/g, ''),
         fantasy_name: fantasyName,
+        cnae,
+        contact_email: contactEmail,
+        contact_phone: contactPhone,
+        contact_name: contactName,
         employee_count: parseInt(employeeCount) || null,
-        metadata: { units } as Json,
+        metadata: { 
+          units,
+          risk_level: riskLevel 
+        } as Json,
         user_id: userData.user.id
       };
 
@@ -99,10 +140,16 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
         description: "Os dados foram validados e salvos no sistema.",
       });
 
+      // Limpa o formulário
       setCnpj("");
       setFantasyName("");
       setEmployeeCount("");
       setUnits([]);
+      setCnae("");
+      setRiskLevel("");
+      setContactEmail("");
+      setContactPhone("");
+      setContactName("");
       
       if (onCompanyCreated) {
         onCompanyCreated();
@@ -119,6 +166,17 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
     }
   };
 
+  // Handler para quando o CNPJ é alterado
+  const handleCNPJChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedCNPJ = formatCNPJ(e.target.value);
+    setCnpj(formattedCNPJ);
+    
+    // Se o CNPJ estiver completo (14 dígitos), busca os dados
+    if (e.target.value.replace(/\D/g, '').length === 14) {
+      fetchCNPJData(formattedCNPJ);
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
@@ -127,7 +185,7 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
           id="cnpj"
           placeholder="00.000.000/0000-00"
           value={cnpj}
-          onChange={(e) => setCnpj(formatCNPJ(e.target.value))}
+          onChange={handleCNPJChange}
           maxLength={18}
           required
         />
@@ -141,6 +199,57 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
           value={fantasyName}
           onChange={(e) => setFantasyName(e.target.value)}
           required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="cnae">CNAE</Label>
+        <Input
+          id="cnae"
+          placeholder="00.00-0-00"
+          value={cnae}
+          onChange={(e) => setCnae(e.target.value)}
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="riskLevel">Grau de Risco (NR 4)</Label>
+        <Input
+          id="riskLevel"
+          value={riskLevel}
+          readOnly
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="contactName">Nome do Contato</Label>
+        <Input
+          id="contactName"
+          placeholder="Nome do contato"
+          value={contactName}
+          onChange={(e) => setContactName(e.target.value)}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="contactEmail">Email de Contato</Label>
+        <Input
+          id="contactEmail"
+          type="email"
+          placeholder="email@empresa.com"
+          value={contactEmail}
+          onChange={(e) => setContactEmail(e.target.value)}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="contactPhone">Telefone de Contato</Label>
+        <Input
+          id="contactPhone"
+          placeholder="(00) 0000-0000"
+          value={contactPhone}
+          onChange={(e) => setContactPhone(e.target.value)}
         />
       </div>
 

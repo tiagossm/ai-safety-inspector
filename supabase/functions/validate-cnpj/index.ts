@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
@@ -6,7 +7,6 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -15,13 +15,13 @@ serve(async (req) => {
     const { cnpj } = await req.json()
     
     if (!cnpj) {
-      throw new Error('CNPJ is required')
+      throw new Error('CNPJ é obrigatório')
     }
 
-    // Remove non-numeric characters
+    // Remove caracteres não numéricos
     const cleanCNPJ = cnpj.replace(/\D/g, '')
     
-    // Call ReceitaWS API
+    // Chama a API ReceitaWS
     const response = await fetch(`https://www.receitaws.com.br/v1/cnpj/${cleanCNPJ}`)
     const data = await response.json()
 
@@ -29,8 +29,25 @@ serve(async (req) => {
       throw new Error(data.message || 'CNPJ não encontrado')
     }
 
-    // Calculate risk level based on CNAE (simplified example)
-    const riskLevel = calculateRiskLevel(data.atividade_principal[0].code)
+    // Calcula o grau de risco baseado no CNAE
+    const cnae = data.atividade_principal[0].code
+    let riskLevel = '1'
+
+    // Consulta o grau de risco no banco de dados
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    const { data: riskData, error: riskError } = await supabase
+      .from('risk_levels')
+      .select('risk_level')
+      .eq('cnae', cnae)
+      .single()
+
+    if (!riskError && riskData) {
+      riskLevel = riskData.risk_level
+    }
 
     const companyData = {
       cnpj: cleanCNPJ,
@@ -53,14 +70,3 @@ serve(async (req) => {
     )
   }
 })
-
-function calculateRiskLevel(cnae: string): string {
-  // This is a simplified example. In a real application,
-  // you would have a more comprehensive mapping of CNAE codes to risk levels
-  const firstDigit = parseInt(cnae[0])
-  if (firstDigit <= 2) return '1'
-  if (firstDigit <= 4) return '2'
-  if (firstDigit <= 6) return '3'
-  if (firstDigit <= 8) return '4'
-  return '5'
-}
