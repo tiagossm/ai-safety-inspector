@@ -15,12 +15,15 @@ export const useCompanyAPI = () => {
       }
       
       const formattedCnae = cleanCnae.replace(/(\d{4})(\d)(\d{2})/, '$1-$2/$3');
+      console.log('Buscando grau de risco para CNAE:', formattedCnae); // Log para debug
       
       const { data, error } = await supabase
         .from('nr4_riscos')
         .select('grau_risco')
         .eq('cnae', formattedCnae)
         .maybeSingle();
+
+      console.log('Resultado da busca:', { data, error }); // Log para debug
 
       if (error) throw error;
       
@@ -29,7 +32,7 @@ export const useCompanyAPI = () => {
       } else {
         toast({
           title: "CNAE não encontrado",
-          description: "Não foi possível encontrar o grau de risco para este CNAE.",
+          description: `Não foi possível encontrar o grau de risco para o CNAE ${formattedCnae}`,
           variant: "destructive",
         });
         return "";
@@ -53,6 +56,12 @@ export const useCompanyAPI = () => {
 
       if (error) throw error;
 
+      // Buscar o grau de risco imediatamente após obter o CNAE
+      let riskLevel = "";
+      if (data.cnae) {
+        riskLevel = await fetchRiskLevel(data.cnae);
+      }
+
       toast({
         title: "Dados do CNPJ carregados",
         description: "Os dados da empresa foram preenchidos automaticamente.",
@@ -61,6 +70,7 @@ export const useCompanyAPI = () => {
       return {
         fantasyName: data.fantasy_name || "",
         cnae: data.cnae || "",
+        riskLevel: riskLevel,
         contactEmail: data.contact_email || "",
         contactPhone: data.contact_phone || "",
         contactName: data.contact_name || "",
