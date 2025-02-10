@@ -8,14 +8,18 @@ export const useCompanyAPI = () => {
 
   const fetchRiskLevel = async (cnae: string) => {
     try {
-      // Format CNAE to try both formats (with and without formatting)
-      const rawCnae = cnae.replace(/[^\d]/g, '');
-      const formattedCnae = rawCnae.replace(/(\d{4})(\d)(\d{2})/, '$1-$2/$3');
+      // Format CNAE to standard format 0000-0/00
+      const cleanCnae = cnae.replace(/[^\d]/g, '');
+      if (cleanCnae.length !== 7) {
+        throw new Error('CNAE deve ter 7 dígitos');
+      }
+      
+      const formattedCnae = cleanCnae.replace(/(\d{4})(\d)(\d{2})/, '$1-$2/$3');
       
       const { data, error } = await supabase
         .from('nr4_riscos')
         .select('grau_risco')
-        .or(`cnae.eq.${formattedCnae},cnae.eq.${rawCnae}`)
+        .eq('cnae', formattedCnae)
         .maybeSingle();
 
       if (error) throw error;
@@ -30,11 +34,11 @@ export const useCompanyAPI = () => {
         });
         return "";
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching risk level:', error);
       toast({
         title: "Erro ao buscar grau de risco",
-        description: "Ocorreu um erro ao buscar o grau de risco do CNAE.",
+        description: error.message || "Verifique o formato do CNAE (0000-0/00)",
         variant: "destructive",
       });
       return "";
