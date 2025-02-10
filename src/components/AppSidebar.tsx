@@ -14,6 +14,7 @@ import {
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
 import { Logo } from "./Logo";
+import { useState } from "react";
 
 const menuItems = [
   { title: "Dashboard", icon: LayoutDashboard, url: "/" },
@@ -24,19 +25,28 @@ const menuItems = [
 ];
 
 export function AppSidebar() {
+  const [isOpen, setIsOpen] = useState(true);
+
   return (
-    <Sidebar className="fixed left-0 top-0 h-screen w-64 bg-gray-900 border-r border-gray-800 z-50">
-      <SidebarTrigger className="absolute top-4 left-4 z-50 p-2 bg-gray-800 hover:bg-gray-700 rounded-md">
+    <Sidebar 
+      className={`fixed left-0 top-0 h-screen bg-gray-900 border-r border-gray-800 z-50 transition-all duration-300 ${
+        isOpen ? 'w-64' : 'w-20'
+      }`}
+    >
+      <SidebarTrigger 
+        className="absolute top-4 right-4 z-50 p-2 bg-gray-800 hover:bg-gray-700 rounded-md"
+        onClick={() => setIsOpen(!isOpen)}
+      >
         <Menu className="h-6 w-6 text-white" />
       </SidebarTrigger>
 
       <SidebarHeader className="p-4 flex items-center justify-center border-b border-gray-800">
-        <Logo size="small" />
+        {isOpen ? <Logo size="small" /> : null}
       </SidebarHeader>
 
       <SidebarContent className="p-4">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-gray-400">Menu</SidebarGroupLabel>
+          {isOpen && <SidebarGroupLabel className="text-gray-400">Menu</SidebarGroupLabel>}
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
@@ -44,10 +54,13 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <Link 
                       to={item.url} 
-                      className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-800 transition-colors"
+                      className={`flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-800 transition-colors ${
+                        !isOpen ? 'justify-center' : ''
+                      }`}
+                      title={!isOpen ? item.title : undefined}
                     >
                       <item.icon className="h-5 w-5 text-gray-400" />
-                      <span className="text-gray-300">{item.title}</span>
+                      {isOpen && <span className="text-gray-300">{item.title}</span>}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

@@ -8,11 +8,14 @@ export const useCompanyAPI = () => {
 
   const fetchRiskLevel = async (cnae: string) => {
     try {
-      const formattedCnae = cnae.replace(/[^\d]/g, '').replace(/(\d{4})(\d)(\d{2})/, '$1-$2/$3');
+      // Format CNAE to try both formats (with and without formatting)
+      const rawCnae = cnae.replace(/[^\d]/g, '');
+      const formattedCnae = rawCnae.replace(/(\d{4})(\d)(\d{2})/, '$1-$2/$3');
+      
       const { data, error } = await supabase
         .from('nr4_riscos')
         .select('grau_risco')
-        .eq('cnae', formattedCnae)
+        .or(`cnae.eq.${formattedCnae},cnae.eq.${rawCnae}`)
         .maybeSingle();
 
       if (error) throw error;
@@ -29,6 +32,11 @@ export const useCompanyAPI = () => {
       }
     } catch (error) {
       console.error('Error fetching risk level:', error);
+      toast({
+        title: "Erro ao buscar grau de risco",
+        description: "Ocorreu um erro ao buscar o grau de risco do CNAE.",
+        variant: "destructive",
+      });
       return "";
     }
   };
