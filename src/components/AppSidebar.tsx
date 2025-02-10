@@ -1,3 +1,4 @@
+
 import { LayoutDashboard, Building2, ClipboardCheck, History, User, Menu } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
@@ -24,7 +25,7 @@ const menuItems = [
 
 export function AppSidebar() {
   return (
-    <Sidebar className="border-r border-gray-800 fixed left-0 top-0 h-full w-64 bg-gray-900 z-50">
+    <Sidebar className="fixed left-0 top-0 h-screen w-64 bg-gray-900 border-r border-gray-800 z-50">
       <SidebarTrigger className="absolute top-4 left-4 z-50 p-2 bg-gray-800 hover:bg-gray-700 rounded-md">
         <Menu className="h-6 w-6 text-white" />
       </SidebarTrigger>

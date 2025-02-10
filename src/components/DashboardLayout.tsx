@@ -1,3 +1,4 @@
+
 import { ReactNode } from "react";
 import { AppSidebar } from "./AppSidebar";
 import { SidebarProvider } from "./ui/sidebar";
@@ -11,7 +12,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gray-900">
         <AppSidebar />
-        <main className="flex-1 overflow-x-hidden p-8">
+        <main className="flex-1 ml-64 p-8">
           {children}
         </main>
       </div>
