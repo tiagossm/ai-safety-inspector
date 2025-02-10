@@ -1,3 +1,4 @@
+
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { CompanyForm } from "@/components/CompanyForm";
 import { CompaniesList } from "@/components/CompaniesList";
@@ -21,17 +22,17 @@ const Companies = () => {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8">
+      <div className="space-y-8 max-w-7xl mx-auto">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-semibold">Empresas Cadastradas</h2>
           <Dialog>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="ml-auto">
                 <Plus className="h-5 w-5 mr-2" />
                 Adicionar Empresa
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Cadastrar Nova Empresa</DialogTitle>
               </DialogHeader>

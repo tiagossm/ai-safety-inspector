@@ -178,91 +178,93 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-2">
-        <Label htmlFor="cnpj">CNPJ da Empresa</Label>
-        <Input
-          id="cnpj"
-          placeholder="00.000.000/0000-00"
-          value={cnpj}
-          onChange={handleCNPJChange}
-          maxLength={18}
-          required
-        />
-      </div>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="cnpj">CNPJ da Empresa</Label>
+          <Input
+            id="cnpj"
+            placeholder="00.000.000/0000-00"
+            value={cnpj}
+            onChange={handleCNPJChange}
+            maxLength={18}
+            required
+          />
+        </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="fantasyName">Nome Fantasia</Label>
-        <Input
-          id="fantasyName"
-          placeholder="Nome Fantasia da Empresa"
-          value={fantasyName}
-          onChange={(e) => setFantasyName(e.target.value)}
-          required
-        />
-      </div>
+        <div className="space-y-2">
+          <Label htmlFor="fantasyName">Nome Fantasia</Label>
+          <Input
+            id="fantasyName"
+            placeholder="Nome Fantasia da Empresa"
+            value={fantasyName}
+            onChange={(e) => setFantasyName(e.target.value)}
+            required
+          />
+        </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="cnae">CNAE</Label>
-        <Input
-          id="cnae"
-          placeholder="00.00-0-00"
-          value={cnae}
-          onChange={(e) => setCnae(e.target.value)}
-          required
-        />
-      </div>
+        <div className="space-y-2">
+          <Label htmlFor="cnae">CNAE</Label>
+          <Input
+            id="cnae"
+            placeholder="00.00-0-00"
+            value={cnae}
+            onChange={(e) => setCnae(e.target.value)}
+            required
+          />
+        </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="riskLevel">Grau de Risco (NR 4)</Label>
-        <Input
-          id="riskLevel"
-          value={riskLevel}
-          readOnly
-        />
-      </div>
+        <div className="space-y-2">
+          <Label htmlFor="riskLevel">Grau de Risco (NR 4)</Label>
+          <Input
+            id="riskLevel"
+            value={riskLevel}
+            readOnly
+          />
+        </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="contactName">Nome do Contato</Label>
-        <Input
-          id="contactName"
-          placeholder="Nome do contato"
-          value={contactName}
-          onChange={(e) => setContactName(e.target.value)}
-        />
-      </div>
+        <div className="space-y-2">
+          <Label htmlFor="employeeCount">Quantidade de Funcionários</Label>
+          <Input
+            id="employeeCount"
+            type="number"
+            placeholder="Ex: 50"
+            value={employeeCount}
+            onChange={(e) => setEmployeeCount(e.target.value)}
+            min="0"
+          />
+        </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="contactEmail">Email de Contato</Label>
-        <Input
-          id="contactEmail"
-          type="email"
-          placeholder="email@empresa.com"
-          value={contactEmail}
-          onChange={(e) => setContactEmail(e.target.value)}
-        />
-      </div>
+        <div className="space-y-2">
+          <Label htmlFor="contactName">Nome do Contato</Label>
+          <Input
+            id="contactName"
+            placeholder="Nome do contato"
+            value={contactName}
+            onChange={(e) => setContactName(e.target.value)}
+          />
+        </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="contactPhone">Telefone de Contato</Label>
-        <Input
-          id="contactPhone"
-          placeholder="(00) 0000-0000"
-          value={contactPhone}
-          onChange={(e) => setContactPhone(e.target.value)}
-        />
-      </div>
+        <div className="space-y-2">
+          <Label htmlFor="contactEmail">Email de Contato</Label>
+          <Input
+            id="contactEmail"
+            type="email"
+            placeholder="email@empresa.com"
+            value={contactEmail}
+            onChange={(e) => setContactEmail(e.target.value)}
+          />
+        </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="employeeCount">Quantidade de Funcionários</Label>
-        <Input
-          id="employeeCount"
-          type="number"
-          placeholder="Ex: 50"
-          value={employeeCount}
-          onChange={(e) => setEmployeeCount(e.target.value)}
-          min="0"
-        />
+        <div className="space-y-2">
+          <Label htmlFor="contactPhone">Telefone de Contato</Label>
+          <Input
+            id="contactPhone"
+            placeholder="(00) 0000-0000"
+            value={contactPhone}
+            onChange={(e) => setContactPhone(e.target.value)}
+          />
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -275,37 +277,41 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
         
         {units.map((unit, index) => (
           <div key={index} className="space-y-4 p-4 border rounded-lg">
-            <div className="space-y-2">
-              <Label>Endereço</Label>
-              <Input
-                value={unit.address}
-                onChange={(e) => updateUnit(index, "address", e.target.value)}
-                placeholder="Endereço completo"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Geolocalização</Label>
-              <Input
-                value={unit.geolocation}
-                onChange={(e) => updateUnit(index, "geolocation", e.target.value)}
-                placeholder="Latitude, Longitude"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Responsável Técnico</Label>
-              <Input
-                value={unit.technicalResponsible}
-                onChange={(e) => updateUnit(index, "technicalResponsible", e.target.value)}
-                placeholder="Nome do responsável"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Endereço</Label>
+                <Input
+                  value={unit.address}
+                  onChange={(e) => updateUnit(index, "address", e.target.value)}
+                  placeholder="Endereço completo"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Geolocalização</Label>
+                <Input
+                  value={unit.geolocation}
+                  onChange={(e) => updateUnit(index, "geolocation", e.target.value)}
+                  placeholder="Latitude, Longitude"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Responsável Técnico</Label>
+                <Input
+                  value={unit.technicalResponsible}
+                  onChange={(e) => updateUnit(index, "technicalResponsible", e.target.value)}
+                  placeholder="Nome do responsável"
+                />
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      <Button type="submit" disabled={loading} className="w-full">
-        {loading ? "Cadastrando..." : "Cadastrar Empresa"}
-      </Button>
+      <div className="pt-4 flex justify-end">
+        <Button type="submit" disabled={loading}>
+          {loading ? "Cadastrando..." : "Cadastrar Empresa"}
+        </Button>
+      </div>
     </form>
   );
 }

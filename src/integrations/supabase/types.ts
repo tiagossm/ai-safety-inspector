@@ -239,18 +239,21 @@ export type Database = {
         Row: {
           cnae: string
           created_at: string
+          description: string | null
           id: string
           risk_level: string
         }
         Insert: {
           cnae: string
           created_at?: string
+          description?: string | null
           id?: string
           risk_level: string
         }
         Update: {
           cnae?: string
           created_at?: string
+          description?: string | null
           id?: string
           risk_level?: string
         }
