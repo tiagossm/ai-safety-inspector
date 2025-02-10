@@ -1,6 +1,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 
 interface BasicInfoProps {
   cnpj: string;
@@ -25,6 +26,13 @@ export function BasicInfo({
   onCNAEChange,
   onEmployeeCountChange,
 }: BasicInfoProps) {
+  const getRiskLevelVariant = (level: string) => {
+    const riskNumber = parseInt(level);
+    if (riskNumber <= 2) return "success";
+    if (riskNumber === 3) return "warning";
+    return "danger";
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="space-y-2">
@@ -63,11 +71,19 @@ export function BasicInfo({
 
       <div className="space-y-2">
         <Label htmlFor="riskLevel">Grau de Risco (NR 4)</Label>
-        <Input
-          id="riskLevel"
-          value={riskLevel}
-          readOnly
-        />
+        <div className="flex items-center space-x-2">
+          <Input
+            id="riskLevel"
+            value={riskLevel}
+            readOnly
+            className="flex-1"
+          />
+          {riskLevel && (
+            <Badge variant={getRiskLevelVariant(riskLevel)}>
+              Risco {riskLevel}
+            </Badge>
+          )}
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -84,3 +100,4 @@ export function BasicInfo({
     </div>
   );
 }
+
