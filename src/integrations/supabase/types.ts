@@ -235,6 +235,27 @@ export type Database = {
           },
         ]
       }
+      risk_levels: {
+        Row: {
+          cnae: string
+          created_at: string
+          id: string
+          risk_level: string
+        }
+        Insert: {
+          cnae: string
+          created_at?: string
+          id?: string
+          risk_level: string
+        }
+        Update: {
+          cnae?: string
+          created_at?: string
+          id?: string
+          risk_level?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
