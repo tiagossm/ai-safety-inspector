@@ -18,6 +18,7 @@ interface CompanyFormProps {
 
 export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
   const [cnpj, setCnpj] = useState("");
+  const [fantasyName, setFantasyName] = useState("");
   const [employeeCount, setEmployeeCount] = useState<string>("");
   const [units, setUnits] = useState<Unit[]>([]);
   const [loading, setLoading] = useState(false);
@@ -74,19 +75,17 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
         return;
       }
 
-      const { data: companyData, error: validationError } = await supabase.functions.invoke('validate-cnpj', {
-        body: { cnpj: cnpj.replace(/\D/g, '') }
-      });
-
-      if (validationError) throw validationError;
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
 
       const { error: insertError } = await supabase
         .from('companies')
         .insert([{
-          ...companyData,
-          metadata: { units },
+          cnpj: cnpj.replace(/\D/g, ''),
+          fantasy_name: fantasyName,
           employee_count: parseInt(employeeCount) || null,
-          user_id: (await supabase.auth.getUser()).data.user?.id
+          metadata: { units },
+          user_id: userData.user.id
         }]);
 
       if (insertError) throw insertError;
@@ -97,6 +96,7 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
       });
 
       setCnpj("");
+      setFantasyName("");
       setEmployeeCount("");
       setUnits([]);
       
@@ -108,7 +108,7 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
       console.error('Error:', error);
       toast({
         title: "Erro ao cadastrar empresa",
-        description: error.message || "Verifique o CNPJ e tente novamente.",
+        description: error.message || "Verifique os dados e tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -126,6 +126,17 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
           value={cnpj}
           onChange={(e) => setCnpj(formatCNPJ(e.target.value))}
           maxLength={18}
+          required
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="fantasyName">Nome Fantasia</Label>
+        <Input
+          id="fantasyName"
+          placeholder="Nome Fantasia da Empresa"
+          value={fantasyName}
+          onChange={(e) => setFantasyName(e.target.value)}
           required
         />
       </div>
