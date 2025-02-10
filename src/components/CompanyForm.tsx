@@ -19,6 +19,11 @@ interface CompanyFormProps {
   onCompanyCreated?: () => void;
 }
 
+interface NR4Risk {
+  cnae: string;
+  grau_risco: number;
+}
+
 export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
   const [cnpj, setCnpj] = useState("");
   const [fantasyName, setFantasyName] = useState("");

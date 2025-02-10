@@ -152,6 +152,27 @@ export type Database = {
         }
         Relationships: []
       }
+      nr4_riscos: {
+        Row: {
+          cnae: string
+          created_at: string
+          grau_risco: number
+          id: string
+        }
+        Insert: {
+          cnae: string
+          created_at?: string
+          grau_risco: number
+          id?: string
+        }
+        Update: {
+          cnae?: string
+          created_at?: string
+          grau_risco?: number
+          id?: string
+        }
+        Relationships: []
+      }
       nrs: {
         Row: {
           content: string
