@@ -138,6 +138,10 @@ export function CompaniesList() {
     navigate(`/legal-norms?company=${company.id}`);
   };
 
+  const handleEditCompany = (company: Company) => {
+    setEditingCompany(company);
+  };
+
   const filteredCompanies = companies.filter(company => 
     company.fantasy_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     company.cnpj.includes(searchTerm) ||
@@ -173,7 +177,7 @@ export function CompaniesList() {
           <CompanyCard
             company={company}
             onDelete={handleDeleteCompany}
-            onEdit={setEditingCompany}
+            onEdit={handleEditCompany}
             onStartInspection={handleStartInspection}
             onViewLegalNorms={handleViewLegalNorms}
           />
@@ -192,4 +196,3 @@ export function CompaniesList() {
     </div>
   );
 }
-
