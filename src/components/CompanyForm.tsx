@@ -42,6 +42,33 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
       .replace(/(-\d{2})\d+?$/, "$1");
   };
 
+  const fetchRiskLevel = async (cnae: string) => {
+    try {
+      const formattedCnae = cnae.replace(/[^\d]/g, '').replace(/(\d{4})(\d)(\d{2})/, '$1-$2/$3');
+      const { data, error } = await supabase
+        .from('nr4_riscos')
+        .select('grau_risco')
+        .eq('cnae', formattedCnae)
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      if (data) {
+        setRiskLevel(data.grau_risco.toString());
+      } else {
+        setRiskLevel("");
+        toast({
+          title: "CNAE não encontrado",
+          description: "Não foi possível encontrar o grau de risco para este CNAE.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching risk level:', error);
+      setRiskLevel("");
+    }
+  };
+
   const fetchCNPJData = async (cnpj: string) => {
     try {
       const { data, error } = await supabase.functions.invoke('validate-cnpj', {
@@ -52,7 +79,9 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
 
       setFantasyName(data.fantasy_name || "");
       setCnae(data.cnae || "");
-      setRiskLevel(data.risk_level || "");
+      if (data.cnae) {
+        fetchRiskLevel(data.cnae);
+      }
       setContactEmail(data.contact_email || "");
       setContactPhone(data.contact_phone || "");
       setContactName(data.contact_name || "");
@@ -68,6 +97,14 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
         description: error.message || "Verifique o CNPJ e tente novamente.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleCNAEChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newCnae = e.target.value;
+    setCnae(newCnae);
+    if (newCnae.length >= 7) { // Basic validation for CNAE format
+      fetchRiskLevel(newCnae);
     }
   };
 
@@ -186,7 +223,7 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
         employeeCount={employeeCount}
         onCNPJChange={handleCNPJChange}
         onFantasyNameChange={(e) => setFantasyName(e.target.value)}
-        onCNAEChange={(e) => setCnae(e.target.value)}
+        onCNAEChange={handleCNAEChange}
         onEmployeeCountChange={(e) => setEmployeeCount(e.target.value)}
       />
 
