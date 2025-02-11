@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash2, PencilIcon, ClipboardList, BookOpen } from "lucide-react";
+import { Trash2, PencilIcon, ClipboardList, Zap } from "lucide-react";
 import { Json } from "@/integrations/supabase/types";
 import {
   AlertDialog,
@@ -64,15 +64,19 @@ export function CompanyCard({
               variant="outline"
               onClick={() => onViewLegalNorms(company)}
             >
-              <BookOpen className="h-4 w-4 mr-2" />
-              Normas Legais Aplicáveis
+              <Zap className="h-4 w-4 mr-2" />
+              Dimensione NRs com IA
             </Button>
             <Dialog>
-              <DialogTrigger asChild>
+              <DialogTrigger>
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => onEdit(company)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onEdit(company);
+                  }}
                 >
                   <PencilIcon className="h-4 w-4" />
                 </Button>
