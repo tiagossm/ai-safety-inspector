@@ -280,6 +280,82 @@ export type Database = {
         }
         Relationships: []
       }
+      units: {
+        Row: {
+          address: string | null
+          cnae: string | null
+          cnpj: string
+          company_id: string
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          fantasy_name: string | null
+          geolocation: string | null
+          id: string
+          parent_unit_id: string | null
+          technical_responsible: string | null
+          unit_type: Database["public"]["Enums"]["unit_type"]
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          cnae?: string | null
+          cnpj: string
+          company_id: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          fantasy_name?: string | null
+          geolocation?: string | null
+          id?: string
+          parent_unit_id?: string | null
+          technical_responsible?: string | null
+          unit_type: Database["public"]["Enums"]["unit_type"]
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          cnae?: string | null
+          cnpj?: string
+          company_id?: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          fantasy_name?: string | null
+          geolocation?: string | null
+          id?: string
+          parent_unit_id?: string | null
+          technical_responsible?: string | null
+          unit_type?: Database["public"]["Enums"]["unit_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "units_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "active_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "units_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "units_parent_unit_id_fkey"
+            columns: ["parent_unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -559,6 +635,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      unit_type: "matriz" | "filial"
     }
     CompositeTypes: {
       [_ in never]: never

@@ -14,7 +14,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 type Company = {
   id: string;
@@ -67,20 +67,23 @@ export function CompanyCard({
               <Zap className="h-4 w-4 mr-2" />
               Dimensione NRs com IA
             </Button>
+
             <Dialog>
-              <DialogTrigger>
+              <DialogTrigger asChild>
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    onEdit(company);
                   }}
                 >
                   <PencilIcon className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
+              <DialogContent>
+                {/* O conteúdo do diálogo será renderizado pelo CompanyEditDialog */}
+              </DialogContent>
             </Dialog>
 
             <AlertDialog>

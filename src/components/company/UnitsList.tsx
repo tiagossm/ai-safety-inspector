@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCompanyAPI } from "@/hooks/useCompanyAPI";
-import { Zap } from "lucide-react";
 
 interface Unit {
   address: string;
@@ -137,12 +136,6 @@ export function UnitsList({ units, onAddUnit, onUpdateUnit }: UnitsListProps) {
                 placeholder="Nome do responsável"
               />
             </div>
-          </div>
-          <div className="pt-2">
-            <Button variant="outline" className="w-full" size="sm">
-              <Zap className="h-4 w-4 mr-2" />
-              Dimensione NRs com IA
-            </Button>
           </div>
         </div>
       ))}
