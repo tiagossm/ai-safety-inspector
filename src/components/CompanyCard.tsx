@@ -23,6 +23,13 @@ type CompanyMetadata = {
   units?: Array<{
     name?: string;
     address?: string;
+    cnpj?: string;
+    cnae?: string;
+    fantasyName?: string;
+    riskLevel?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+    contactName?: string;
   }>;
 }
 
@@ -96,7 +103,7 @@ export function CompanyCard({
     let csvContent = "Nome,CNPJ,CNAE,Tipo,Funcionários\n";
     csvContent += `${company.fantasy_name || ""},${company.cnpj},${company.cnae || ""},${isMatriz(company.cnpj) ? "Matriz" : "Filial"},${company.employee_count || ""}\n`;
     
-    // Add units
+    // Add units with safe property access
     units.forEach(unit => {
       csvContent += `${unit.name || ""},${unit.cnpj || ""},${unit.cnae || ""},"Unidade",\n`;
     });

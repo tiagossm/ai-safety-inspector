@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -172,6 +171,7 @@ export function CompaniesList() {
             <CompanyEditDialog
               company={editingCompany}
               onUpdate={handleUpdateCompany}
+              onClose={() => setEditingCompany(null)}
             />
           )}
           <CompanyCard
