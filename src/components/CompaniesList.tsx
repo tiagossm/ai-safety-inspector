@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { Dialog } from "@/components/ui/dialog";
 import { CompanyCard } from "./CompanyCard";
 import { CompanyEditDialog } from "./CompanyEditDialog";
-import { Company } from "@/types/company";
+import { Company, CompanyStatus } from "@/types/company";
 
 export function CompaniesList() {
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -50,7 +51,14 @@ export function CompaniesList() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setCompanies(data || []);
+
+      // Cast the data to ensure status is of type CompanyStatus
+      const typedData = (data || []).map(company => ({
+        ...company,
+        status: (company.status || 'active') as CompanyStatus
+      }));
+
+      setCompanies(typedData);
     } catch (error) {
       console.error('Error fetching companies:', error);
       toast({
