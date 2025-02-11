@@ -19,6 +19,13 @@ import {
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 
+type CompanyMetadata = {
+  units?: Array<{
+    name?: string;
+    address?: string;
+  }>;
+}
+
 type Company = {
   id: string;
   fantasy_name: string | null;
@@ -54,7 +61,8 @@ export function CompanyCard({
   onViewLegalNorms,
 }: CompanyCardProps) {
   const [unitsExpanded, setUnitsExpanded] = useState(false);
-  const units = company.metadata?.units as any[] || [];
+  const metadata = company.metadata as CompanyMetadata | null;
+  const units = metadata?.units || [];
 
   const generatePDF = () => {
     const doc = new jsPDF();
@@ -73,7 +81,7 @@ export function CompanyCard({
     
     // Unidades
     doc.text("Unidades:", 20, 100);
-    units.forEach((unit: any, index: number) => {
+    units.forEach((unit, index) => {
       doc.text(`- ${unit.name || `Unidade ${index + 1}`}`, 30, 110 + (index * 10));
     });
     
@@ -188,7 +196,7 @@ export function CompanyCard({
           {units.length > 0 && unitsExpanded && (
             <div className="mt-4 space-y-2">
               <h4 className="font-medium">Unidades Vinculadas:</h4>
-              {units.map((unit: any, index: number) => (
+              {units.map((unit, index) => (
                 <div key={index} className="pl-4 border-l-2 border-muted">
                   <p className="font-medium">{unit.name || `Unidade ${index + 1}`}</p>
                   {unit.address && <p className="text-xs">{unit.address}</p>}
