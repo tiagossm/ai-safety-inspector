@@ -1,8 +1,10 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash2, PencilIcon, ClipboardList, Zap } from "lucide-react";
+import { Trash2, PencilIcon, ClipboardList, Zap, Printer, ChevronDown, ChevronUp } from "lucide-react";
 import { Json } from "@/integrations/supabase/types";
+import { jsPDF } from "jspdf";
+import { useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,6 +17,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 
 type Company = {
   id: string;
@@ -36,6 +39,13 @@ interface CompanyCardProps {
   onViewLegalNorms: (company: Company) => void;
 }
 
+const isMatriz = (cnpj: string) => {
+  // Remove caracteres não numéricos
+  const cleanCnpj = cnpj.replace(/\D/g, '');
+  // Verifica se termina com 0001
+  return cleanCnpj.substring(8, 12) === '0001';
+};
+
 export function CompanyCard({
   company,
   onDelete,
@@ -43,13 +53,46 @@ export function CompanyCard({
   onStartInspection,
   onViewLegalNorms,
 }: CompanyCardProps) {
+  const [unitsExpanded, setUnitsExpanded] = useState(false);
+  const units = company.metadata?.units as any[] || [];
+
+  const generatePDF = () => {
+    const doc = new jsPDF();
+    
+    // Título
+    doc.setFontSize(16);
+    doc.text("Relatório da Empresa", 20, 20);
+    
+    // Informações da empresa
+    doc.setFontSize(12);
+    doc.text(`Nome: ${company.fantasy_name || "Não informado"}`, 20, 40);
+    doc.text(`CNPJ: ${company.cnpj}`, 20, 50);
+    doc.text(`CNAE: ${company.cnae || "Não informado"}`, 20, 60);
+    doc.text(`Tipo: ${isMatriz(company.cnpj) ? "Matriz" : "Filial"}`, 20, 70);
+    doc.text(`Funcionários: ${company.employee_count || "Não informado"}`, 20, 80);
+    
+    // Unidades
+    doc.text("Unidades:", 20, 100);
+    units.forEach((unit: any, index: number) => {
+      doc.text(`- ${unit.name || `Unidade ${index + 1}`}`, 30, 110 + (index * 10));
+    });
+    
+    // Salvar o PDF
+    doc.save(`relatorio_${company.cnpj}.pdf`);
+  };
+
   return (
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold">
-            {company.fantasy_name || "Nome não informado"}
-          </CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-lg font-semibold">
+              {company.fantasy_name || "Nome não informado"}
+            </CardTitle>
+            <Badge variant={isMatriz(company.cnpj) ? "default" : "secondary"}>
+              {isMatriz(company.cnpj) ? "Matriz" : "Filial"}
+            </Badge>
+          </div>
           <div className="flex items-center gap-2">
             <Button
               size="sm"
@@ -66,6 +109,26 @@ export function CompanyCard({
             >
               <Zap className="h-4 w-4 mr-2" />
               Dimensione NRs com IA
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setUnitsExpanded(!unitsExpanded)}
+            >
+              {unitsExpanded ? (
+                <ChevronUp className="h-4 w-4 mr-2" />
+              ) : (
+                <ChevronDown className="h-4 w-4 mr-2" />
+              )}
+              {units.length} Unidades
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={generatePDF}
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Imprimir
             </Button>
 
             <Dialog>
@@ -122,8 +185,16 @@ export function CompanyCard({
           )}
           {company.contact_email && <p>Email: {company.contact_email}</p>}
           {company.contact_phone && <p>Telefone: {company.contact_phone}</p>}
-          {company.metadata && typeof company.metadata === 'object' && 'units' in company.metadata && Array.isArray(company.metadata.units) && (
-            <p>Unidades: {company.metadata.units.length}</p>
+          {units.length > 0 && unitsExpanded && (
+            <div className="mt-4 space-y-2">
+              <h4 className="font-medium">Unidades Vinculadas:</h4>
+              {units.map((unit: any, index: number) => (
+                <div key={index} className="pl-4 border-l-2 border-muted">
+                  <p className="font-medium">{unit.name || `Unidade ${index + 1}`}</p>
+                  {unit.address && <p className="text-xs">{unit.address}</p>}
+                </div>
+              ))}
+            </div>
           )}
           <p>Data de cadastro: {new Date(company.created_at).toLocaleDateString()}</p>
         </div>
