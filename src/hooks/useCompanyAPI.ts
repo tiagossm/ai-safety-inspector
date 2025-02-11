@@ -6,16 +6,29 @@ import { supabase } from "@/integrations/supabase/client";
 export const useCompanyAPI = () => {
   const { toast } = useToast();
 
+  const formatCNAE = (cnae: string): string => {
+    // Remove todos os caracteres não numéricos
+    const numbers = cnae.replace(/[^\d]/g, '');
+    
+    // Verifica se tem pelo menos 5 dígitos
+    if (numbers.length >= 5) {
+      // Retorna no formato XXXX-X
+      return `${numbers.slice(0, 4)}-${numbers.slice(4, 5)}`;
+    }
+    // Se não tiver 5 dígitos, preenche com zeros
+    const paddedNumbers = numbers.padEnd(5, '0');
+    return `${paddedNumbers.slice(0, 4)}-${paddedNumbers.slice(4, 5)}`;
+  };
+
   const fetchRiskLevel = async (cnae: string) => {
     try {
-      // Format CNAE to standard format 0000-0/00
-      const cleanCnae = cnae.replace(/[^\d]/g, '');
-      if (cleanCnae.length !== 7) {
-        throw new Error('CNAE deve ter 7 dígitos');
+      if (!cnae) {
+        throw new Error('CNAE é obrigatório');
       }
       
-      const formattedCnae = cleanCnae.replace(/(\d{4})(\d)(\d{2})/, '$1-$2/$3');
-      console.log('Buscando grau de risco para CNAE:', formattedCnae); // Log para debug
+      // Formata o CNAE antes de buscar
+      const formattedCnae = formatCNAE(cnae);
+      console.log('Buscando grau de risco para CNAE:', formattedCnae);
       
       const { data, error } = await supabase
         .from('nr4_riscos')
@@ -23,7 +36,7 @@ export const useCompanyAPI = () => {
         .eq('cnae', formattedCnae)
         .maybeSingle();
 
-      console.log('Resultado da busca:', { data, error }); // Log para debug
+      console.log('Resultado da busca:', { data, error });
 
       if (error) throw error;
       
@@ -41,7 +54,7 @@ export const useCompanyAPI = () => {
       console.error('Error fetching risk level:', error);
       toast({
         title: "Erro ao buscar grau de risco",
-        description: error.message || "Verifique o formato do CNAE (0000-0/00)",
+        description: error.message || "Verifique o formato do CNAE (XXXX-X)",
         variant: "destructive",
       });
       return "";
@@ -56,10 +69,11 @@ export const useCompanyAPI = () => {
 
       if (error) throw error;
 
-      // Buscar o grau de risco imediatamente após obter o CNAE
+      // Formata o CNAE antes de buscar o grau de risco
       let riskLevel = "";
       if (data.cnae) {
-        riskLevel = await fetchRiskLevel(data.cnae);
+        const formattedCnae = formatCNAE(data.cnae);
+        riskLevel = await fetchRiskLevel(formattedCnae);
       }
 
       toast({
@@ -69,7 +83,7 @@ export const useCompanyAPI = () => {
 
       return {
         fantasyName: data.fantasy_name || "",
-        cnae: data.cnae || "",
+        cnae: data.cnae ? formatCNAE(data.cnae) : "",
         riskLevel: riskLevel,
         contactEmail: data.contact_email || "",
         contactPhone: data.contact_phone || "",

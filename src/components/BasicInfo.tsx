@@ -34,15 +34,12 @@ export function BasicInfo({
   };
 
   const formatCNAE = (value: string) => {
-    const numbers = value.replace(/\D/g, '');
+    // Remove caracteres não numéricos
+    const numbers = value.replace(/[^\d]/g, '');
+    
+    // Formata para XXXX-X
     if (numbers.length >= 4) {
-      if (numbers.length >= 5) {
-        if (numbers.length >= 7) {
-          return `${numbers.slice(0, 4)}-${numbers.slice(4, 5)}/${numbers.slice(5, 7)}`;
-        }
-        return `${numbers.slice(0, 4)}-${numbers.slice(4)}`;
-      }
-      return numbers.slice(0, 4);
+      return `${numbers.slice(0, 4)}${numbers.length >= 5 ? '-' + numbers.slice(4, 5) : ''}`;
     }
     return numbers;
   };
@@ -82,10 +79,10 @@ export function BasicInfo({
         <Label htmlFor="cnae">CNAE</Label>
         <Input
           id="cnae"
-          placeholder="0000-0/00"
+          placeholder="XXXX-X"
           value={cnae}
           onChange={handleCNAEChange}
-          maxLength={9}
+          maxLength={6}
           required
         />
       </div>

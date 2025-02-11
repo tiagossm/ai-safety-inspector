@@ -489,6 +489,12 @@ export type Database = {
           similarity: number
         }[]
       }
+      normalize_cnae: {
+        Args: {
+          cnae: string
+        }
+        Returns: string
+      }
       sparsevec_out: {
         Args: {
           "": unknown
