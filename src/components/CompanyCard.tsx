@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { useState } from "react";
 import { CompanyEditDialog } from "@/components/CompanyEditDialog";
-import { Company } from "@/types/company";
+import { Company, CompanyMetadata } from "@/types/company";
 import { CompanyActions } from "@/components/company/CompanyActions";
 import { CompanyDetails, CompanyTitle } from "@/components/company/CompanyDetails";
 import { CompanyUnits } from "@/components/company/CompanyUnits";
