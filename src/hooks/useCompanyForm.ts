@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +8,14 @@ interface Unit {
   address: string;
   geolocation: string;
   technicalResponsible: string;
-  [key: string]: string;
+  cnpj?: string;
+  fantasyName?: string;
+  cnae?: string;
+  riskLevel?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  contactName?: string;
+  [key: string]: string | undefined;
 }
 
 export const useCompanyForm = (onCompanyCreated?: () => void) => {
@@ -131,7 +137,18 @@ export const useCompanyForm = (onCompanyCreated?: () => void) => {
   };
 
   const addUnit = () => {
-    setUnits([...units, { address: "", geolocation: "", technicalResponsible: "" }]);
+    setUnits([...units, {
+      address: "",
+      geolocation: "",
+      technicalResponsible: "",
+      cnpj: "",
+      fantasyName: "",
+      cnae: "",
+      riskLevel: "",
+      contactEmail: "",
+      contactPhone: "",
+      contactName: "",
+    }]);
   };
 
   const updateUnit = (index: number, field: keyof Unit, value: string) => {
