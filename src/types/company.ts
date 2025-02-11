@@ -1,6 +1,20 @@
 
 import { Json } from "@/integrations/supabase/types";
 
+export type CompanyStatus = 'active' | 'inactive' | 'potential';
+
+export type Contact = {
+  id: string;
+  company_id: string;
+  name: string;
+  role: string;
+  email: string;
+  phone: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type CompanyMetadata = {
   units?: Array<{
     name?: string;
@@ -26,4 +40,5 @@ export type Company = {
   employee_count: number | null;
   metadata: Json | null;
   created_at: string;
+  status: CompanyStatus;
 };
