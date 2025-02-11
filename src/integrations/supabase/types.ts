@@ -21,6 +21,8 @@ export type Database = {
           employee_count: number | null
           fantasy_name: string | null
           id: string
+          import_errors: Json | null
+          import_status: string | null
           metadata: Json | null
           status: string
           user_id: string
@@ -36,6 +38,8 @@ export type Database = {
           employee_count?: number | null
           fantasy_name?: string | null
           id?: string
+          import_errors?: Json | null
+          import_status?: string | null
           metadata?: Json | null
           status?: string
           user_id: string
@@ -51,8 +55,49 @@ export type Database = {
           employee_count?: number | null
           fantasy_name?: string | null
           id?: string
+          import_errors?: Json | null
+          import_status?: string | null
           metadata?: Json | null
           status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      company_imports: {
+        Row: {
+          created_at: string
+          error_log: Json | null
+          failed_records: number | null
+          filename: string
+          id: string
+          processed_records: number | null
+          status: string | null
+          total_records: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_log?: Json | null
+          failed_records?: number | null
+          filename: string
+          id?: string
+          processed_records?: number | null
+          status?: string | null
+          total_records?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_log?: Json | null
+          failed_records?: number | null
+          filename?: string
+          id?: string
+          processed_records?: number | null
+          status?: string | null
+          total_records?: number | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

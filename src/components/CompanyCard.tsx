@@ -1,7 +1,6 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trash2, PencilIcon, ClipboardList, Zap, Printer, ChevronDown, ChevronUp } from "lucide-react";
+import { Trash2, PencilIcon, ClipboardList, Zap, Printer, ChevronDown, ChevronUp, Download } from "lucide-react";
 import { Json } from "@/integrations/supabase/types";
 import { jsPDF } from "jspdf";
 import { useState } from "react";
@@ -18,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { CompanyEditDialog } from "@/components/CompanyEditDialog";
 
 type CompanyMetadata = {
   units?: Array<{
@@ -33,6 +33,7 @@ type Company = {
   cnae: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  contact_name: string | null;
   employee_count: number | null;
   metadata: Json | null;
   created_at: string;
@@ -61,6 +62,7 @@ export function CompanyCard({
   onViewLegalNorms,
 }: CompanyCardProps) {
   const [unitsExpanded, setUnitsExpanded] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const metadata = company.metadata as CompanyMetadata | null;
   const units = metadata?.units || [];
 
@@ -87,6 +89,35 @@ export function CompanyCard({
     
     // Salvar o PDF
     doc.save(`relatorio_${company.cnpj}.pdf`);
+  };
+
+  const generateCSV = () => {
+    // Create CSV content
+    let csvContent = "Nome,CNPJ,CNAE,Tipo,Funcionários\n";
+    csvContent += `${company.fantasy_name || ""},${company.cnpj},${company.cnae || ""},${isMatriz(company.cnpj) ? "Matriz" : "Filial"},${company.employee_count || ""}\n`;
+    
+    // Add units
+    units.forEach(unit => {
+      csvContent += `${unit.name || ""},${unit.cnpj || ""},${unit.cnae || ""},"Unidade",\n`;
+    });
+
+    // Create and trigger download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `empresa_${company.cnpj}_relatorio.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+    onEdit(company);
+  };
+
+  const handleCloseEdit = () => {
+    setIsEditing(false);
   };
 
   return (
@@ -133,28 +164,29 @@ export function CompanyCard({
             <Button
               size="sm"
               variant="outline"
-              onClick={generatePDF}
+              onClick={generateCSV}
             >
-              <Printer className="h-4 w-4 mr-2" />
-              Imprimir
+              <Download className="h-4 w-4 mr-2" />
+              Exportar CSV
             </Button>
 
-            <Dialog>
+            <Dialog open={isEditing} onOpenChange={setIsEditing}>
               <DialogTrigger asChild>
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
+                  onClick={handleEdit}
                 >
                   <PencilIcon className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
-              <DialogContent>
-                {/* O conteúdo do diálogo será renderizado pelo CompanyEditDialog */}
-              </DialogContent>
+              {isEditing && (
+                <CompanyEditDialog
+                  company={company}
+                  onUpdate={onEdit}
+                  onClose={handleCloseEdit}
+                />
+              )}
             </Dialog>
 
             <AlertDialog>
@@ -193,6 +225,7 @@ export function CompanyCard({
           )}
           {company.contact_email && <p>Email: {company.contact_email}</p>}
           {company.contact_phone && <p>Telefone: {company.contact_phone}</p>}
+          {company.contact_name && <p>Contato: {company.contact_name}</p>}
           {units.length > 0 && unitsExpanded && (
             <div className="mt-4 space-y-2">
               <h4 className="font-medium">Unidades Vinculadas:</h4>
