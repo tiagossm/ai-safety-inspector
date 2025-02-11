@@ -11,6 +11,7 @@ import { CompanyContacts } from "@/components/company/CompanyContacts";
 import { generateCSV } from "@/utils/companyUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface CompanyCardProps {
   company: Company;
@@ -75,14 +76,19 @@ export function CompanyCard({
     }
   };
 
+  const getStatusDisplay = (status: string | undefined) => {
+    if (!status) return 'Unknown';
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  };
+
   return (
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <CompanyTitle company={company} />
-            <Badge variant="outline" className={getStatusColor(company.status)}>
-              {company.status.charAt(0).toUpperCase() + company.status.slice(1)}
+            <Badge variant="outline" className={getStatusColor(company.status || '')}>
+              {getStatusDisplay(company.status)}
             </Badge>
           </div>
           <CompanyActions

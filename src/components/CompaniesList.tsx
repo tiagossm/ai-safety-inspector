@@ -9,19 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { Dialog } from "@/components/ui/dialog";
 import { CompanyCard } from "./CompanyCard";
 import { CompanyEditDialog } from "./CompanyEditDialog";
-
-type Company = {
-  id: string;
-  fantasy_name: string | null;
-  cnpj: string;
-  cnae: string | null;
-  contact_email: string | null;
-  contact_phone: string | null;
-  contact_name: string | null;
-  employee_count: number | null;
-  metadata: Json | null;
-  created_at: string;
-};
+import { Company } from "@/types/company";
 
 export function CompaniesList() {
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -57,7 +45,7 @@ export function CompaniesList() {
     try {
       const { data, error } = await supabase
         .from('companies')
-        .select('id, fantasy_name, cnpj, cnae, contact_email, contact_phone, contact_name, employee_count, metadata, created_at')
+        .select('id, fantasy_name, cnpj, cnae, contact_email, contact_phone, contact_name, employee_count, metadata, created_at, status')
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
@@ -85,6 +73,7 @@ export function CompaniesList() {
           contact_email: companyData.contact_email,
           contact_phone: companyData.contact_phone,
           contact_name: companyData.contact_name,
+          status: companyData.status,
         })
         .eq('id', companyData.id);
 
