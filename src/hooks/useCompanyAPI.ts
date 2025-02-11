@@ -105,7 +105,6 @@ export const useCompanyAPI = () => {
       .from('companies')
       .select('cnpj')
       .eq('cnpj', cnpj.replace(/\D/g, ''))
-      .eq('status', 'active')  // Apenas empresas ativas
       .maybeSingle();
     
     if (error) {
