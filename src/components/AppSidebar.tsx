@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -8,9 +9,9 @@ import {
   User,
   Settings,
   LogOut,
-  Menu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/components/ui/ThemeContext";
 
 const menuItems = [
   { title: "Dashboard", icon: LayoutDashboard, url: "/" },
@@ -18,12 +19,13 @@ const menuItems = [
   { title: "Inspeções", icon: ClipboardCheck, url: "/inspections" },
   { title: "Relatórios", icon: History, url: "/reports" },
   { title: "Configurações", icon: Settings, url: "/settings" },
-  { title: "Perfil", icon: User, url: "/profile" }, // Agora o perfil está dentro do menu
+  { title: "Perfil", icon: User, url: "/profile" },
 ];
 
 export function AppSidebar() {
   const [isOpen, setIsOpen] = useState(true);
   const navigate = useNavigate();
+  const { theme } = useTheme();
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if ((e.ctrlKey && e.key === "b") || e.key === "m") {
@@ -49,17 +51,35 @@ export function AppSidebar() {
         isOpen ? "w-64" : "w-20"
       )}
     >
-      {/* Botão de alternância da Sidebar */}
+      {/* Logo no topo */}
+      <div className="p-4 flex items-center justify-center">
+        <img
+          src="/logo-iasst.png"
+          alt="IA SST"
+          className={cn("h-12 w-auto transition-all duration-300", 
+            !isOpen && "scale-75"
+          )}
+        />
+      </div>
+
+      {/* Botão de alternância do menu - movido um pouco para baixo */}
       <button
         aria-label={isOpen ? "Fechar menu lateral" : "Abrir menu lateral"}
-        className="absolute top-4 right-4 p-2 bg-accent rounded-md transition-all duration-300 hover:scale-105 focus:outline-none"
+        className="absolute top-20 right-4 p-2 rounded-md transition-all duration-300 hover:scale-105 focus:outline-none"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <Menu className="h-5 w-5 text-foreground" />
+        <img 
+          src={theme === 'light' 
+            ? "/lovable-uploads/a6fd1c5f-60a6-4a71-8da0-78642ba6a53b.png"
+            : "/lovable-uploads/43bf933c-37d3-4e4a-94d0-2cc388c3e6d0.png"
+          }
+          alt="Menu"
+          className="h-6 w-6"
+        />
       </button>
 
       {/* Menu de navegação */}
-      <nav className="p-4 space-y-2" role="navigation" aria-label="Menu principal">
+      <nav className="mt-8 p-4 space-y-2" role="navigation" aria-label="Menu principal">
         {menuItems.map((item) => {
           const Icon = item.icon;
           return (
