@@ -1,5 +1,5 @@
 
-import { LayoutDashboard, Building2, ClipboardCheck, History, User, Menu, ArrowRight } from "lucide-react";
+import { LayoutDashboard, Building2, ClipboardCheck, History, User, Menu, ArrowRight, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   Sidebar,
@@ -22,6 +22,7 @@ const menuItems = [
   { title: "Empresas", icon: Building2, url: "/companies" },
   { title: "Inspeções", icon: ClipboardCheck, url: "/inspections" },
   { title: "Relatórios", icon: History, url: "/reports" },
+  { title: "Configurações", icon: Settings, url: "/settings" },
   { title: "Perfil", icon: User, url: "/profile" },
 ];
 
