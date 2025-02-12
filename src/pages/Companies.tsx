@@ -82,7 +82,7 @@ const Companies = () => {
       <div className="space-y-8 max-w-7xl mx-auto">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-semibold">Empresas Cadastradas</h2>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-6">
             <div className="relative">
               <Input
                 type="file"
@@ -96,6 +96,7 @@ const Companies = () => {
                 variant="outline"
                 onClick={() => document.getElementById('csv-upload')?.click()}
                 disabled={uploading}
+                className="min-w-[140px]"
               >
                 <Upload className="h-5 w-5 mr-2" />
                 Importar CSV
@@ -103,7 +104,7 @@ const Companies = () => {
             </div>
             <Dialog>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="min-w-[180px]">
                   <Plus className="h-5 w-5 mr-2" />
                   Adicionar Empresa
                 </Button>

@@ -1,10 +1,10 @@
+
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
 import { CompanyEditDialog } from "@/components/CompanyEditDialog";
 import { Company, CompanyMetadata, Contact } from "@/types/company";
-import { CompanyActions } from "@/components/company/CompanyActions";
-import { CompanyDetails, CompanyTitle } from "@/components/company/CompanyDetails";
+import { CompanyDetails } from "@/components/company/CompanyDetails";
 import { CompanyUnits } from "@/components/company/CompanyUnits";
 import { CompanyContacts } from "@/components/company/CompanyContacts";
 import { generateCSV } from "@/utils/companyUtils";
@@ -86,7 +86,7 @@ export function CompanyCard({
   return (
     <Card className="hover:shadow-lg transition-shadow duration-300">
       <CardHeader className="pb-2">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div className="space-y-2">
             <div className="flex items-center gap-4">
               <h2 className="text-2xl font-semibold bg-gradient-to-r from-gray-100 to-gray-300 bg-clip-text text-transparent">
@@ -102,17 +102,14 @@ export function CompanyCard({
                 {getStatusDisplay(company.status)}
               </Badge>
             </div>
-            <p className="text-sm text-muted-foreground">
-              CNPJ: {company.cnpj}
-            </p>
           </div>
           
-          <div className="flex flex-wrap gap-2 justify-end">
+          <div className="flex flex-wrap gap-4 justify-end">
             <Button
               variant="default"
               size="sm"
               onClick={() => onStartInspection(company)}
-              className="bg-primary hover:bg-primary/90 transition-colors duration-300"
+              className="bg-primary hover:bg-primary/90 transition-colors duration-300 min-w-[160px]"
             >
               <ClipboardList className="h-4 w-4 mr-2" />
               Iniciar Inspeção
@@ -121,7 +118,7 @@ export function CompanyCard({
               variant="secondary"
               size="sm"
               onClick={() => onViewLegalNorms(company)}
-              className="hover:bg-secondary/90 transition-colors duration-300"
+              className="hover:bg-secondary/90 transition-colors duration-300 min-w-[160px]"
             >
               <Zap className="h-4 w-4 mr-2" />
               Dimensione NRs com IA
@@ -160,7 +157,9 @@ export function CompanyCard({
               ) : (
                 <ChevronDown className="h-4 w-4 mr-2" />
               )}
-              {units.length} Unidades
+              {units.length === 0 
+                ? "Selecione ou adicione uma unidade" 
+                : `${units.length} Unidade${units.length !== 1 ? 's' : ''}`}
             </Button>
           </div>
         </div>
@@ -185,12 +184,12 @@ export function CompanyCard({
           )}
         </div>
 
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-4">
           <Button
             variant="ghost"
             size="sm"
             onClick={handleEdit}
-            className="hover:bg-gray-100/10 transition-colors duration-300"
+            className="hover:bg-gray-100/10 transition-colors duration-300 p-3"
           >
             <Pencil className="h-4 w-4" />
           </Button>
@@ -199,7 +198,7 @@ export function CompanyCard({
               <Button 
                 variant="ghost"
                 size="sm"
-                className="hover:bg-red-500/10 transition-colors duration-300"
+                className="hover:bg-red-500/10 transition-colors duration-300 p-3"
               >
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
