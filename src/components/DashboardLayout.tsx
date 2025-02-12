@@ -3,6 +3,7 @@ import { AppSidebar } from "./AppSidebar";
 import { SidebarProvider } from "./ui/sidebar";
 import { useAuth } from "@/components/AuthProvider";
 import { useNavigate } from "react-router-dom";
+import { LogOut } from "lucide-react";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -28,17 +29,26 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         )}
 
-        {/* Cabeçalho fixo no topo, com logotipo no canto direito */}
+        {/* Cabeçalho fixo no topo - Logotipo no topo direito */}
         {user && (
           <header className="fixed top-0 right-0 left-64 flex items-center justify-between px-6 py-3 bg-gray-800 shadow-md">
-            <div className="flex-1"></div> {/* Espaço para alinhar a logo à direita */}
+            {/* Logo no topo direito */}
+            <div className="flex justify-end w-full">
+              <img
+                src="/logo-iasst.png"
+                alt="IA SST"
+                className="h-10 w-auto"
+              />
+            </div>
 
-            {/* Logotipo fixo no canto superior direito */}
-            <img
-              src="/logo-iasst.png" // Certifique-se de que este caminho está correto
-              alt="IA SST"
-              className="h-10 w-auto"
-            />
+            {/* Botão de Logout */}
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 rounded-md bg-destructive text-white hover:bg-destructive/80 transition-all"
+            >
+              <LogOut className="h-6 w-6" />
+              <span>Sair</span>
+            </button>
           </header>
         )}
 
