@@ -1,19 +1,8 @@
 import { 
-  LayoutDashboard, Building2, ClipboardCheck, History, User, Menu, ArrowRight, Settings, Sun, Moon 
+  LayoutDashboard, Building2, ClipboardCheck, History, User, Menu, ArrowRight, Settings 
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarTrigger,
-  SidebarHeader,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-} from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarTrigger, SidebarHeader, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
 import { Logo } from "./Logo";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -30,25 +19,12 @@ const menuItems = [
 export function AppSidebar() {
   const [isOpen, setIsOpen] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
-  const [theme, setTheme] = useState(localStorage.getItem("theme") || "dark");
-
-  // Alternar tema e armazenar no localStorage
-  const toggleTheme = () => {
-    const newTheme = theme === "dark" ? "light" : "dark";
-    setTheme(newTheme);
-    document.documentElement.classList.toggle("dark", newTheme === "dark");
-    localStorage.setItem("theme", newTheme);
-  };
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-  }, [theme]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey && e.key === 'b') || e.key === 'm') {
         e.preventDefault();
-        setIsOpen((prev) => !prev);
+        setIsOpen(prev => !prev);
       }
     };
 
@@ -67,23 +43,17 @@ export function AppSidebar() {
         onMouseEnter={() => !isOpen && setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        {/* Botão para ocultar/exibir a sidebar */}
         <SidebarTrigger 
-          className={cn(
-            "absolute top-4 right-4 p-2 bg-gray-800 hover:bg-gray-700 rounded-md transition-all duration-300",
-            "hover:scale-105 active:scale-95"
-          )}
+          className={cn("absolute top-4 right-4 p-2 bg-gray-800 hover:bg-gray-700 rounded-md transition-all duration-300")}
           onClick={() => setIsOpen(!isOpen)}
         >
           <Menu className="h-5 w-5 text-white" />
         </SidebarTrigger>
 
-        {/* Header do Sidebar */}
         <SidebarHeader className="p-4 flex items-center justify-center border-b border-gray-800">
           {isOpen ? <Logo size="small" /> : null}
         </SidebarHeader>
 
-        {/* Conteúdo do Sidebar */}
         <SidebarContent className="p-4">
           <SidebarGroup>
             {isOpen && <SidebarGroupLabel className="text-gray-400">Menu</SidebarGroupLabel>}
@@ -94,11 +64,7 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild>
                       <Link 
                         to={item.url} 
-                        className={cn(
-                          "flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-800 transition-all duration-300",
-                          !isOpen ? 'justify-center' : '',
-                          "hover:scale-105 active:scale-95"
-                        )}
+                        className={cn("flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-800 transition-all duration-300")}
                         title={!isOpen ? item.title : undefined}
                       >
                         <item.icon className="h-5 w-5 text-gray-400" />
@@ -107,45 +73,11 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
-
-                {/* Botão para alternar tema claro/escuro */}
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <button
-                      className={cn(
-                        "flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-800 transition-all duration-300",
-                        !isOpen ? 'justify-center' : '',
-                        "hover:scale-105 active:scale-95"
-                      )}
-                      title={!isOpen ? "Trocar Tema" : undefined}
-                      onClick={toggleTheme}
-                    >
-                      {theme === "dark" ? <Sun className="h-5 w-5 text-yellow-400" /> : <Moon className="h-5 w-5 text-blue-400" />}
-                      {isOpen && <span className="text-gray-300">Trocar Tema</span>}
-                    </button>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
       </Sidebar>
-
-      {/* Botão para reexibir a sidebar quando oculta */}
-      {!isOpen && !isHovered && (
-        <button
-          onClick={() => setIsOpen(true)}
-          className={cn(
-            "fixed left-16 top-1/2 -translate-y-1/2 z-40",
-            "p-2 bg-gray-800 hover:bg-gray-700 rounded-r-md transition-all duration-300",
-            "opacity-30 hover:opacity-100",
-            "group"
-          )}
-          title="Expandir menu (Ctrl+B ou M)"
-        >
-          <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-white" />
-        </button>
-      )}
     </>
   );
 }
