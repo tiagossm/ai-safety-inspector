@@ -1,10 +1,18 @@
 import { 
-  LayoutDashboard, Building2, ClipboardCheck, History, User, Menu, ArrowRight, Settings
+  LayoutDashboard, Building2, ClipboardCheck, History, User, Menu, ArrowRight, Settings 
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { 
-  Sidebar, SidebarContent, SidebarTrigger, SidebarHeader, SidebarGroup, SidebarGroupContent, 
-  SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton 
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarTrigger,
+  SidebarHeader,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
 } from "@/components/ui/sidebar";
 import { Logo } from "./Logo";
 import { useEffect, useState } from "react";
@@ -21,7 +29,6 @@ const menuItems = [
 
 export function AppSidebar() {
   const [isOpen, setIsOpen] = useState(true);
-  const [isHovered, setIsHovered] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -40,11 +47,8 @@ export function AppSidebar() {
       <Sidebar 
         className={cn(
           "fixed left-0 top-0 h-screen bg-gray-900 dark:bg-gray-800 border-r border-gray-700 transition-all duration-300",
-          isOpen ? 'w-64' : isHovered ? 'w-20' : 'w-16',
-          "hover:shadow-xl"
+          isOpen ? "w-64" : "w-16"
         )}
-        onMouseEnter={() => !isOpen && setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
       >
         {/* Botão para ocultar/exibir a sidebar */}
         <SidebarTrigger 
@@ -71,7 +75,6 @@ export function AppSidebar() {
                       <Link 
                         to={item.url} 
                         className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-800 transition-all duration-300"
-                        title={!isOpen ? item.title : undefined}
                       >
                         <item.icon className="h-5 w-5 text-gray-400" />
                         {isOpen && <span className="text-gray-300">{item.title}</span>}
@@ -85,14 +88,14 @@ export function AppSidebar() {
         </SidebarContent>
       </Sidebar>
 
-      {/* Botão para reexibir a sidebar quando oculta */}
-      {!isOpen && !isHovered && (
+      {/* ✅ Novo botão para reexibir a sidebar quando oculta */}
+      {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed left-16 top-1/2 -translate-y-1/2 z-40 p-2 bg-gray-800 hover:bg-gray-700 rounded-r-md transition-all duration-300 opacity-30 hover:opacity-100 group"
+          className="fixed left-2 top-10 p-2 bg-gray-800 hover:bg-gray-700 rounded-md transition-all duration-300"
           title="Expandir menu (Ctrl+B ou M)"
         >
-          <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-white" />
+          <ArrowRight className="h-4 w-4 text-white" />
         </button>
       )}
     </>
