@@ -7,7 +7,7 @@ interface DashboardLayoutProps {
   children: ReactNode;
 }
 
-export function DashboardLayout({ children }: DashboardLayoutProps) {
+function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gray-900">
@@ -19,3 +19,5 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     </SidebarProvider>
   );
 }
+
+export default DashboardLayout;
