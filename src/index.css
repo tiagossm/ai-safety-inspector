@@ -2,50 +2,98 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Ajustes gerais */
 @layer base {
   :root {
-    /* 🎨 Tema Claro */
+    /* ===== Tema Claro ===== */
     --background: rgb(255, 255, 255);
     --foreground: rgb(0, 0, 0);
     --card: rgb(245, 245, 245);
     --card-foreground: rgb(0, 0, 0);
-    --accent: rgb(70, 130, 180); /* Cor clara p/ botões */
+
+    /* Botões usam accent (azul médio) no modo claro */
+    --accent: rgb(70, 130, 180); /* SteelBlue, por exemplo */
     --accent-foreground: rgb(255, 255, 255);
 
-    /* Outras variáveis que você quiser usar */
-    --primary: rgb(60, 130, 246);
-    --primary-foreground: rgb(255, 255, 255);
+    /* Outras variáveis se precisar */
     --border: rgb(200, 200, 200);
+    --destructive: rgb(244, 67, 54);
+    --destructive-foreground: rgb(255, 255, 255);
   }
 
   .dark {
-    /* 🌙 Tema Escuro */
+    /* ===== Tema Escuro ===== */
     --background: rgb(20, 22, 24);
     --foreground: rgb(230, 230, 230);
     --card: rgb(30, 30, 30);
     --card-foreground: rgb(220, 220, 220);
-    --accent: rgb(90, 140, 180); /* Levemente mais claro p/ ficar visível no escuro */
+
+    /* Botões usam accent (azul um pouco mais claro) no modo escuro */
+    --accent: rgb(90, 140, 180);
     --accent-foreground: rgb(255, 255, 255);
 
-    --primary: rgb(80, 140, 250);
-    --primary-foreground: rgb(255, 255, 255);
+    /* Outras variáveis se precisar */
     --border: rgb(80, 80, 80);
+    --destructive: rgb(200, 50, 60);
+    --destructive-foreground: rgb(255, 255, 255);
   }
 
+  /* ===== Reset e estilo base ===== */
   body {
     background-color: var(--background);
     color: var(--foreground);
     transition: background-color 0.3s, color 0.3s;
   }
 
-  /* Se estiver usando classes personalizadas (button-primary) */
+  /* Ajusta bordas para usar var(--border) se precisar */
+  * {
+    border-color: var(--border);
+  }
+
+  /* ===== Botões básicos ===== */
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    border-radius: 0.375rem;
+    transition: background-color 0.3s, color 0.3s;
+    text-decoration: none; /* caso seja <a> */
+    border: 1px solid transparent; /* se quiser borda */
+  }
+
+  /* Botão padrão (usa accent) */
   .button-primary {
+    @apply button;
     background-color: var(--accent);
     color: var(--accent-foreground);
-    transition: background-color 0.3s;
   }
 
   .button-primary:hover {
-    background-color: rgb(100, 160, 210); /* um pouco mais claro no hover */
+    background-color: rgb(100, 160, 210);
+  }
+
+  /* Botão destrutivo (vermelho) */
+  .button-destructive {
+    @apply button;
+    background-color: var(--destructive);
+    color: var(--destructive-foreground);
+  }
+
+  .button-destructive:hover {
+    background-color: rgb(180, 40, 50);
+  }
+
+  /* Exemplo secundário se quiser outro tom */
+  .button-secondary {
+    @apply button;
+    background-color: rgb(100, 100, 100); /* troque se quiser */
+    color: var(--accent-foreground);
+  }
+
+  .button-secondary:hover {
+    background-color: rgb(120, 120, 120);
   }
 }
