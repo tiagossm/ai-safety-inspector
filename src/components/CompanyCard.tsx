@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { useState, useEffect } from "react";
@@ -12,6 +11,9 @@ import { generateCSV } from "@/utils/companyUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ClipboardList, Zap, Download, ChevronUp, ChevronDown, PencilIcon, Trash2 } from "@heroicons/react/24/outline";
+import { cn } from "@/utils/cn";
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 
 interface CompanyCardProps {
   company: Company;
@@ -82,43 +84,98 @@ export function CompanyCard({
   };
 
   return (
-    <Card>
+    <Card className="hover:shadow-lg transition-shadow duration-300">
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <CompanyTitle company={company} />
-            <Badge variant="outline" className={getStatusColor(company.status || '')}>
-              {getStatusDisplay(company.status)}
-            </Badge>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-2">
+            <div className="flex items-center gap-4">
+              <h2 className="text-2xl font-semibold bg-gradient-to-r from-gray-100 to-gray-300 bg-clip-text text-transparent">
+                {company.fantasy_name || "Nome não informado"}
+              </h2>
+              <Badge 
+                variant="outline" 
+                className={cn(
+                  "px-3 py-1 text-sm font-medium transition-colors duration-300",
+                  getStatusColor(company.status || '')
+                )}
+              >
+                {getStatusDisplay(company.status)}
+              </Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              CNPJ: {company.cnpj}
+            </p>
           </div>
-          <CompanyActions
-            company={company}
-            unitsExpanded={unitsExpanded}
-            unitsCount={units.length}
-            onDelete={onDelete}
-            onEdit={handleEdit}
-            onStartInspection={onStartInspection}
-            onViewLegalNorms={onViewLegalNorms}
-            onToggleUnits={() => setUnitsExpanded(!unitsExpanded)}
-            onExportCSV={() => generateCSV(company, units)}
-          />
+          
+          <div className="flex flex-wrap gap-2 justify-end">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => onStartInspection(company)}
+              className="bg-primary hover:bg-primary/90 transition-colors duration-300"
+            >
+              <ClipboardList className="h-4 w-4 mr-2" />
+              Iniciar Inspeção
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => onViewLegalNorms(company)}
+              className="hover:bg-secondary/90 transition-colors duration-300"
+            >
+              <Zap className="h-4 w-4 mr-2" />
+              Dimensione NRs com IA
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => generateCSV(company, units)}
+              className="hover:bg-gray-100/10 transition-colors duration-300"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Exportar CSV
+            </Button>
+          </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <CompanyDetails company={company} />
-        <CompanyUnits units={units} expanded={unitsExpanded} />
-        
-        <div className="mt-4">
+
+      <CardContent className="space-y-6">
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Informações Básicas</h3>
+            <CompanyDetails company={company} />
+          </div>
+          
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Unidades</h3>
+            <CompanyUnits units={units} expanded={unitsExpanded} />
+            
+            <Button
+              variant="outline"
+              onClick={() => setUnitsExpanded(!unitsExpanded)}
+              className="w-full transition-colors duration-300"
+            >
+              {unitsExpanded ? (
+                <ChevronUp className="h-4 w-4 mr-2" />
+              ) : (
+                <ChevronDown className="h-4 w-4 mr-2" />
+              )}
+              {units.length} Unidades
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-4">
           <Button
             variant="outline"
             onClick={() => setContactsExpanded(!contactsExpanded)}
-            className="w-full"
+            className="w-full transition-colors duration-300"
           >
             {contactsExpanded ? "Ocultar Contatos" : "Ver Contatos"}
           </Button>
           
           {contactsExpanded && (
-            <div className="mt-4">
+            <div className="animate-fade-in">
               <CompanyContacts
                 companyId={company.id}
                 contacts={contacts}
@@ -126,6 +183,45 @@ export function CompanyCard({
               />
             </div>
           )}
+        </div>
+
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleEdit}
+            className="hover:bg-gray-100/10 transition-colors duration-300"
+          >
+            <PencilIcon className="h-4 w-4" />
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button 
+                variant="ghost"
+                size="sm"
+                className="hover:bg-red-500/10 transition-colors duration-300"
+              >
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tem certeza que deseja arquivar esta empresa? Esta ação não pode ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => onDelete(company.id)}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors duration-300"
+                >
+                  Arquivar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </CardContent>
 

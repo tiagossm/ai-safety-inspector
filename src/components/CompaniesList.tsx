@@ -151,40 +151,42 @@ export function CompaniesList() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
         <Input
           placeholder="Buscar empresas..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
+          className="pl-10 bg-gray-800/50 border-gray-700 focus:border-primary transition-colors duration-300"
         />
       </div>
 
-      {displayedCompanies.map((company) => (
-        <Dialog key={company.id}>
-          {editingCompany && (
-            <CompanyEditDialog
-              company={editingCompany}
-              onUpdate={handleUpdateCompany}
-              onClose={() => setEditingCompany(null)}
+      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-1">
+        {displayedCompanies.map((company) => (
+          <Dialog key={company.id}>
+            {editingCompany && (
+              <CompanyEditDialog
+                company={editingCompany}
+                onUpdate={handleUpdateCompany}
+                onClose={() => setEditingCompany(null)}
+              />
+            )}
+            <CompanyCard
+              company={company}
+              onDelete={handleDeleteCompany}
+              onEdit={handleEditCompany}
+              onStartInspection={handleStartInspection}
+              onViewLegalNorms={handleViewLegalNorms}
             />
-          )}
-          <CompanyCard
-            company={company}
-            onDelete={handleDeleteCompany}
-            onEdit={handleEditCompany}
-            onStartInspection={handleStartInspection}
-            onViewLegalNorms={handleViewLegalNorms}
-          />
-        </Dialog>
-      ))}
+          </Dialog>
+        ))}
+      </div>
 
       {filteredCompanies.length > 3 && !showAll && (
         <Button
           variant="outline"
-          className="w-full"
+          className="w-full hover:bg-gray-800 transition-colors duration-300"
           onClick={() => setShowAll(true)}
         >
           Ver todas as empresas ({filteredCompanies.length})
