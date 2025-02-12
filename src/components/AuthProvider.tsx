@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,9 +8,14 @@ import { useToast } from "./ui/use-toast";
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  logout: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
+const AuthContext = createContext<AuthContextType>({ 
+  user: null, 
+  loading: true,
+  logout: async () => {} 
+});
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -33,6 +39,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       description: "Por favor, faça login novamente.",
       variant: "destructive",
     });
+  };
+
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      navigate("/auth");
+      toast({
+        title: "Logout realizado",
+        description: "Até logo!",
+      });
+    } catch (error) {
+      console.error("Error during logout:", error);
+      toast({
+        title: "Erro ao fazer logout",
+        description: "Tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   useEffect(() => {
@@ -108,7 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [navigate, toast]);
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, logout }}>
       {children}
     </AuthContext.Provider>
   );

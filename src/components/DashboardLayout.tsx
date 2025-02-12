@@ -1,3 +1,4 @@
+
 import { ReactNode } from "react";
 import { AppSidebar } from "./AppSidebar";
 import { SidebarProvider } from "./ui/sidebar";
@@ -13,16 +14,13 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout(); // Chama a função de logout do contexto
-    localStorage.removeItem("authToken"); // Remove o token do usuário
-    navigate("/login"); // Redireciona para a tela de login
+  const handleLogout = async () => {
+    await logout();
   };
 
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-background">
-        {/* Sidebar aparece apenas para usuários logados */}
         {user && (
           <div className="fixed left-0 top-0 h-screen w-64 bg-card border-r border-border/40">
             <AppSidebar />
