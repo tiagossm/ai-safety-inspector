@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -22,11 +23,10 @@ const menuItems = [
   { title: "Perfil", icon: User, url: "/profile" },
 ];
 
-export function Sidebar() {
+export function AppSidebar() {
   const [isOpen, setIsOpen] = useState(true);
   const navigate = useNavigate();
 
-  // Memoriza a função de tratamento de eventos para evitar re-renderizações desnecessárias
   const handleKeyDown = useCallback((e) => {
     if ((e.ctrlKey && e.key === "b") || e.key === "m") {
       e.preventDefault();
@@ -40,7 +40,7 @@ export function Sidebar() {
   }, [handleKeyDown]);
 
   const handleLogout = () => {
-    localStorage.removeItem("authToken"); // Ajuste conforme seu sistema de autenticação
+    localStorage.removeItem("authToken");
     navigate("/login");
   };
 
