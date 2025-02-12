@@ -1,5 +1,5 @@
 
-import DashboardLayout from "@/components/DashboardLayout";
+import { useAuth } from "@/components/AuthProvider";
 import { CompanyForm } from "@/components/CompanyForm";
 import { CompaniesList } from "@/components/CompaniesList";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ const Companies = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleCompanyCreated = () => {
     setRefreshTrigger(prev => prev + 1);
@@ -40,7 +41,6 @@ const Companies = () => {
 
     setUploading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
       const filename = `${user.id}/${Date.now()}_${file.name}`;
@@ -78,49 +78,47 @@ const Companies = () => {
   };
 
   return (
-    <DashboardLayout>
-      <div className="space-y-8 max-w-7xl mx-auto">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-semibold">Empresas Cadastradas</h2>
-          <div className="flex items-center gap-6">
-            <div className="relative">
-              <Input
-                type="file"
-                accept=".csv"
-                className="hidden"
-                id="csv-upload"
-                onChange={handleFileUpload}
-                disabled={uploading}
-              />
-              <Button
-                variant="outline"
-                onClick={() => document.getElementById('csv-upload')?.click()}
-                disabled={uploading}
-                className="min-w-[140px]"
-              >
-                <Upload className="h-5 w-5 mr-2" />
-                Importar CSV
-              </Button>
-            </div>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button className="min-w-[180px]">
-                  <Plus className="h-5 w-5 mr-2" />
-                  Adicionar Empresa
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Cadastrar Nova Empresa</DialogTitle>
-                </DialogHeader>
-                <CompanyForm onCompanyCreated={handleCompanyCreated} />
-              </DialogContent>
-            </Dialog>
+    <div className="space-y-8 max-w-7xl mx-auto">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-semibold">Empresas Cadastradas</h2>
+        <div className="flex items-center gap-6">
+          <div className="relative">
+            <Input
+              type="file"
+              accept=".csv"
+              className="hidden"
+              id="csv-upload"
+              onChange={handleFileUpload}
+              disabled={uploading}
+            />
+            <Button
+              variant="outline"
+              onClick={() => document.getElementById('csv-upload')?.click()}
+              disabled={uploading}
+              className="min-w-[140px]"
+            >
+              <Upload className="h-5 w-5 mr-2" />
+              Importar CSV
+            </Button>
           </div>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="min-w-[180px]">
+                <Plus className="h-5 w-5 mr-2" />
+                Adicionar Empresa
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Cadastrar Nova Empresa</DialogTitle>
+              </DialogHeader>
+              <CompanyForm onCompanyCreated={handleCompanyCreated} />
+            </DialogContent>
+          </Dialog>
         </div>
-        <CompaniesList key={refreshTrigger} />
       </div>
-    </DashboardLayout>
+      <CompaniesList key={refreshTrigger} />
+    </div>
   );
 }
 
