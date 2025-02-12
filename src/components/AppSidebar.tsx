@@ -18,7 +18,7 @@ const menuItems = [
   { title: "Inspeções", icon: ClipboardCheck, url: "/inspections" },
   { title: "Relatórios", icon: History, url: "/reports" },
   { title: "Configurações", icon: Settings, url: "/settings" },
-  { title: "Perfil", icon: User, url: "/profile" },
+  { title: "Perfil", icon: User, url: "/profile" }, // Movido para dentro do menu
 ];
 
 export function AppSidebar() {
@@ -58,6 +58,17 @@ export function AppSidebar() {
         <Menu className="h-5 w-5 text-foreground" />
       </button>
 
+      {/* Logotipo no topo da Sidebar */}
+      <div className="p-4 flex items-center justify-center border-b border-border">
+        {isOpen && (
+          <img
+            src="/logo-iasst.png" // Atualize com o caminho correto
+            alt="IA SST"
+            className="h-10 w-auto"
+          />
+        )}
+      </div>
+
       {/* Menu de navegação */}
       <nav className="p-4 space-y-2" role="navigation" aria-label="Menu principal">
         {menuItems.map((item) => {
@@ -77,7 +88,7 @@ export function AppSidebar() {
         })}
       </nav>
 
-      {/* Botão de Logout */}
+      {/* Botão de Logout na parte inferior */}
       <div className="absolute bottom-4 left-0 w-full p-4">
         <button
           onClick={handleLogout}
