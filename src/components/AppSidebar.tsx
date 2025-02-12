@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -12,7 +11,6 @@ import {
   Menu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Logo } from "./Logo";
 
 const menuItems = [
   { title: "Dashboard", icon: LayoutDashboard, url: "/" },
@@ -27,7 +25,7 @@ export function AppSidebar() {
   const [isOpen, setIsOpen] = useState(true);
   const navigate = useNavigate();
 
-  const handleKeyDown = useCallback((e) => {
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if ((e.ctrlKey && e.key === "b") || e.key === "m") {
       e.preventDefault();
       setIsOpen((prev) => !prev);
@@ -51,6 +49,7 @@ export function AppSidebar() {
         isOpen ? "w-64" : "w-20"
       )}
     >
+      {/* Botão de alternância da Sidebar */}
       <button
         aria-label={isOpen ? "Fechar menu lateral" : "Abrir menu lateral"}
         className="absolute top-4 right-4 p-2 bg-accent rounded-md transition-all duration-300 hover:scale-105 focus:outline-none"
@@ -59,10 +58,7 @@ export function AppSidebar() {
         <Menu className="h-5 w-5 text-foreground" />
       </button>
 
-      <div className="p-4 flex items-center justify-center border-b border-border">
-        <Logo className={isOpen ? "" : "scale-75"} size="small" />
-      </div>
-
+      {/* Menu de navegação */}
       <nav className="p-4 space-y-2" role="navigation" aria-label="Menu principal">
         {menuItems.map((item) => {
           const Icon = item.icon;
@@ -81,6 +77,7 @@ export function AppSidebar() {
         })}
       </nav>
 
+      {/* Botão de Logout */}
       <div className="absolute bottom-4 left-0 w-full p-4">
         <button
           onClick={handleLogout}
