@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Navbar } from "@/components/Navbar";
+import { ThemeProvider } from "@/components/ui/ThemeContext";
 import Auth from "./pages/Auth";
 import Home from "./pages/Home";
 import Companies from "./pages/Companies";
@@ -14,77 +16,65 @@ import Contact from "./pages/Contact";
 import Plans from "./pages/Plans";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <BrowserRouter>
-        <AuthProvider>
-          <Toaster />
-          <Sonner />
-          <Navbar />
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/plans" element={<Plans />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route
-              path="/"
-              element={
-                <main className="container mx-auto px-4 py-8">
-                  <Home />
-                </main>
-              }
-            />
-            <Route
-              path="/companies"
-              element={
-                <ProtectedRoute>
-                  <main className="container mx-auto px-4 py-8">
-                    <Companies />
-                  </main>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-  import { ThemeProvider } from "@/components/ui/ThemeContext";
-  import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-  import DashboardLayout from "@/components/DashboardLayout";
-  import HomePage from "@/pages/HomePage";
-  import CompaniesPage from "@/pages/CompaniesPage";
-  
-  function App() {
-    return (
-      <ThemeProvider>
-        <Router>
-          <DashboardLayout>
+    <ThemeProvider>
+      <TooltipProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <Toaster />
+            <Sonner />
+            <Navbar />
             <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/companies" element={<CompaniesPage />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/plans" element={<Plans />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route
+                path="/"
+                element={
+                  <main className="container mx-auto px-4 py-8">
+                    <Home />
+                  </main>
+                }
+              />
+              <Route
+                path="/companies"
+                element={
+                  <ProtectedRoute>
+                    <main className="container mx-auto px-4 py-8">
+                      <Companies />
+                    </main>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<NotFound />} />
             </Routes>
-          </DashboardLayout>
-        </Router>
-      </ThemeProvider>
-    );
-  }
-  
-  export default App;
-  
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
+  </QueryClientProvider>
 );
 
 export default App;
