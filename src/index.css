@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    /* Tema Claro */
+    /* 🎨 Tema Claro */
     --background: rgb(255, 255, 255);
     --foreground: rgb(0, 0, 0);
     --card: rgb(245, 245, 245);
@@ -27,22 +27,22 @@
   }
 
   .dark {
-    /* Tema Escuro */
+    /* 🌙 Tema Escuro */
     --background: rgb(18, 18, 18);
     --foreground: rgb(220, 220, 220);
     --card: rgb(30, 30, 30);
     --card-foreground: rgb(220, 220, 220);
     --popover: rgb(30, 30, 30);
     --popover-foreground: rgb(220, 220, 220);
-    --primary: rgb(33, 150, 243);
+    --primary: rgb(80, 140, 250);
     --primary-foreground: rgb(255, 255, 255);
-    --secondary: rgb(76, 175, 80);
+    --secondary: rgb(100, 200, 120);
     --secondary-foreground: rgb(255, 255, 255);
     --muted: rgb(40, 40, 40);
     --muted-foreground: rgb(150, 150, 150);
     --accent: rgb(60, 60, 60);
     --accent-foreground: rgb(180, 180, 180);
-    --destructive: rgb(211, 47, 47);
+    --destructive: rgb(200, 50, 60);
     --destructive-foreground: rgb(255, 255, 255);
     --border: rgb(50, 50, 50);
     --input: rgb(50, 50, 50);
@@ -74,16 +74,31 @@
   .button-primary {
     background-color: var(--primary);
     color: var(--primary-foreground);
+    transition: background-color 0.3s ease-in-out;
+  }
+
+  .button-primary:hover {
+    background-color: rgb(50, 130, 230);
   }
 
   .button-secondary {
     background-color: var(--secondary);
     color: var(--secondary-foreground);
+    transition: background-color 0.3s ease-in-out;
+  }
+
+  .button-secondary:hover {
+    background-color: rgb(90, 190, 90);
   }
 
   .button-destructive {
     background-color: var(--destructive);
     color: var(--destructive-foreground);
+    transition: background-color 0.3s ease-in-out;
+  }
+
+  .button-destructive:hover {
+    background-color: rgb(180, 40, 50);
   }
 
   .bordered {
