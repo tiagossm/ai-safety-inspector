@@ -13,9 +13,9 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-gray-900">
+      <div className="flex min-h-screen w-full bg-background">
         {user && (
-          <div className="fixed left-0 top-0 h-screen w-64 bg-gray-900 border-r border-gray-700">
+          <div className="fixed left-0 top-0 h-screen w-64 bg-card border-r border-border/40">
             <AppSidebar />
           </div>
         )}
