@@ -1,5 +1,6 @@
-
-import { LayoutDashboard, Building2, ClipboardCheck, History, User, Menu, ArrowRight, Settings } from "lucide-react";
+import { 
+  LayoutDashboard, Building2, ClipboardCheck, History, User, Menu, ArrowRight, Settings, Sun, Moon 
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   Sidebar,
@@ -29,12 +30,25 @@ const menuItems = [
 export function AppSidebar() {
   const [isOpen, setIsOpen] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
+  const [theme, setTheme] = useState(localStorage.getItem("theme") || "dark");
+
+  // Alternar tema e armazenar no localStorage
+  const toggleTheme = () => {
+    const newTheme = theme === "dark" ? "light" : "dark";
+    setTheme(newTheme);
+    document.documentElement.classList.toggle("dark", newTheme === "dark");
+    localStorage.setItem("theme", newTheme);
+  };
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }, [theme]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey && e.key === 'b') || e.key === 'm') {
         e.preventDefault();
-        setIsOpen(prev => !prev);
+        setIsOpen((prev) => !prev);
       }
     };
 
@@ -46,16 +60,17 @@ export function AppSidebar() {
     <>
       <Sidebar 
         className={cn(
-          "fixed left-0 top-0 h-screen bg-gray-900 border-r border-gray-800 z-50 transition-all duration-300",
+          "fixed left-0 top-0 h-screen bg-gray-900 dark:bg-gray-800 border-r border-gray-700 transition-all duration-300",
           isOpen ? 'w-64' : isHovered ? 'w-20' : 'w-16',
           "hover:shadow-xl"
         )}
         onMouseEnter={() => !isOpen && setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
+        {/* Botão para ocultar/exibir a sidebar */}
         <SidebarTrigger 
           className={cn(
-            "absolute top-4 right-4 z-50 p-2 bg-gray-800 hover:bg-gray-700 rounded-md transition-all duration-300",
+            "absolute top-4 right-4 p-2 bg-gray-800 hover:bg-gray-700 rounded-md transition-all duration-300",
             "hover:scale-105 active:scale-95"
           )}
           onClick={() => setIsOpen(!isOpen)}
@@ -63,10 +78,12 @@ export function AppSidebar() {
           <Menu className="h-5 w-5 text-white" />
         </SidebarTrigger>
 
+        {/* Header do Sidebar */}
         <SidebarHeader className="p-4 flex items-center justify-center border-b border-gray-800">
           {isOpen ? <Logo size="small" /> : null}
         </SidebarHeader>
 
+        {/* Conteúdo do Sidebar */}
         <SidebarContent className="p-4">
           <SidebarGroup>
             {isOpen && <SidebarGroupLabel className="text-gray-400">Menu</SidebarGroupLabel>}
@@ -90,12 +107,31 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
+
+                {/* Botão para alternar tema claro/escuro */}
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <button
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-800 transition-all duration-300",
+                        !isOpen ? 'justify-center' : '',
+                        "hover:scale-105 active:scale-95"
+                      )}
+                      title={!isOpen ? "Trocar Tema" : undefined}
+                      onClick={toggleTheme}
+                    >
+                      {theme === "dark" ? <Sun className="h-5 w-5 text-yellow-400" /> : <Moon className="h-5 w-5 text-blue-400" />}
+                      {isOpen && <span className="text-gray-300">Trocar Tema</span>}
+                    </button>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
       </Sidebar>
 
+      {/* Botão para reexibir a sidebar quando oculta */}
       {!isOpen && !isHovered && (
         <button
           onClick={() => setIsOpen(true)}
