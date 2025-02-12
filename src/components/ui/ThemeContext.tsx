@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 
 type ThemeContextType = {
@@ -11,7 +12,9 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "dark");
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
+    const root = window.document.documentElement;
+    root.classList.remove("dark", "light");
+    root.classList.add(theme);
     localStorage.setItem("theme", theme);
   }, [theme]);
 
