@@ -1,21 +1,16 @@
-import { 
-  LayoutDashboard, Building2, ClipboardCheck, History, User, Menu, ArrowRight, Settings 
-} from "lucide-react";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarTrigger,
-  SidebarHeader,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-} from "@/components/ui/sidebar";
-import { Logo } from "./Logo";
-import { useEffect, useState } from "react";
+  LayoutDashboard,
+  Building2,
+  ClipboardCheck,
+  History,
+  User,
+  Settings,
+  LogOut,
+  Menu,
+  ArrowRight
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const menuItems = [
@@ -27,77 +22,75 @@ const menuItems = [
   { title: "Perfil", icon: User, url: "/profile" },
 ];
 
-export function AppSidebar() {
+export function Sidebar() {
   const [isOpen, setIsOpen] = useState(true);
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey && e.key === 'b') || e.key === 'm') {
-        e.preventDefault();
-        setIsOpen((prev) => !prev);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+  // Memoriza a função de tratamento de eventos para evitar re-renderizações desnecessárias
+  const handleKeyDown = useCallback((e) => {
+    if ((e.ctrlKey && e.key === "b") || e.key === "m") {
+      e.preventDefault();
+      setIsOpen((prev) => !prev);
+    }
   }, []);
 
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("authToken"); // Ajuste conforme seu sistema de autenticação
+    navigate("/login");
+  };
+
   return (
-    <>
-      <Sidebar 
-        className={cn(
-          "fixed left-0 top-0 h-screen bg-gray-900 dark:bg-gray-800 border-r border-gray-700 transition-all duration-300",
-          isOpen ? "w-64" : "w-16"
-        )}
-      >
-        {/* Botão para ocultar/exibir a sidebar */}
-        <SidebarTrigger 
-          className="absolute top-4 right-4 p-2 bg-gray-800 hover:bg-gray-700 rounded-md transition-all duration-300"
-          onClick={() => setIsOpen(!isOpen)}
-        >
-          <Menu className="h-5 w-5 text-white" />
-        </SidebarTrigger>
-
-        {/* Header do Sidebar */}
-        <SidebarHeader className="p-4 flex items-center justify-center border-b border-gray-800">
-          {isOpen ? <Logo size="small" /> : null}
-        </SidebarHeader>
-
-        {/* Conteúdo do Sidebar */}
-        <SidebarContent className="p-4">
-          <SidebarGroup>
-            {isOpen && <SidebarGroupLabel className="text-gray-400">Menu</SidebarGroupLabel>}
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {menuItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <Link 
-                        to={item.url} 
-                        className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-800 transition-all duration-300"
-                      >
-                        <item.icon className="h-5 w-5 text-gray-400" />
-                        {isOpen && <span className="text-gray-300">{item.title}</span>}
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-      </Sidebar>
-
-      {/* ✅ Novo botão para reexibir a sidebar quando oculta */}
-      {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="fixed left-2 top-10 p-2 bg-gray-800 hover:bg-gray-700 rounded-md transition-all duration-300"
-          title="Expandir menu (Ctrl+B ou M)"
-        >
-          <ArrowRight className="h-4 w-4 text-white" />
-        </button>
+    <aside
+      className={cn(
+        "fixed left-0 top-0 h-screen bg-card border-r border-border transition-all duration-300 shadow-lg",
+        isOpen ? "w-64" : "w-20"
       )}
-    </>
+    >
+      <button
+        aria-label={isOpen ? "Fechar menu lateral" : "Abrir menu lateral"}
+        className="absolute top-4 right-4 p-2 bg-accent rounded-md transition-all duration-300 hover:scale-105 focus:outline-none"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <Menu className="h-5 w-5 text-foreground" />
+      </button>
+
+      <div className="p-4 flex items-center justify-center border-b border-border">
+        {isOpen && <span className="text-lg font-bold">IA SST</span>}
+      </div>
+
+      <nav className="p-4 space-y-2" role="navigation" aria-label="Menu principal">
+        {menuItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.title}
+              to={item.url}
+              className={cn(
+                "flex items-center gap-3 p-2 rounded-md transition-all duration-300 hover:bg-accent hover:text-accent-foreground"
+              )}
+            >
+              <Icon className="h-5 w-5 text-foreground" aria-hidden="true" />
+              {isOpen && <span className="text-foreground">{item.title}</span>}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="absolute bottom-4 left-0 w-full p-4">
+        <button
+          onClick={handleLogout}
+          aria-label="Sair"
+          className="flex items-center gap-3 p-2 w-full rounded-md transition-all duration-300 hover:bg-destructive hover:text-destructive-foreground focus:outline-none"
+        >
+          <LogOut className="h-5 w-5" aria-hidden="true" />
+          {isOpen && <span>Sair</span>}
+        </button>
+      </div>
+    </aside>
   );
 }
