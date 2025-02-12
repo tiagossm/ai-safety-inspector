@@ -10,9 +10,9 @@ import {
   Settings,
   LogOut,
   Menu,
-  ArrowRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Logo } from "./Logo";
 
 const menuItems = [
   { title: "Dashboard", icon: LayoutDashboard, url: "/" },
@@ -41,7 +41,7 @@ export function AppSidebar() {
 
   const handleLogout = () => {
     localStorage.removeItem("authToken");
-    navigate("/login");
+    navigate("/auth");
   };
 
   return (
@@ -60,7 +60,7 @@ export function AppSidebar() {
       </button>
 
       <div className="p-4 flex items-center justify-center border-b border-border">
-        {isOpen && <span className="text-lg font-bold">IA SST</span>}
+        <Logo className={isOpen ? "" : "scale-75"} size="small" />
       </div>
 
       <nav className="p-4 space-y-2" role="navigation" aria-label="Menu principal">
