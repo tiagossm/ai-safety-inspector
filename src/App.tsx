@@ -1,80 +1,24 @@
-
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/components/AuthProvider";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { Navbar } from "@/components/Navbar";
 import { ThemeProvider } from "@/components/ui/ThemeContext";
-import Auth from "./pages/Auth";
-import Home from "./pages/Home";
-import Companies from "./pages/Companies";
-import Blog from "./pages/Blog";
-import Contact from "./pages/Contact";
-import Plans from "./pages/Plans";
-import Profile from "./pages/Profile";
-import NotFound from "./pages/NotFound";
-import Settings from "./pages/Settings";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import DashboardLayout from "@/components/DashboardLayout";
+import Home from "@/pages/Home";
+import Companies from "@/pages/Companies";
+import Settings from "@/pages/Settings";
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <TooltipProvider>
-        <BrowserRouter>
-          <AuthProvider>
-            <Toaster />
-            <Sonner />
-            <Navbar />
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/plans" element={<Plans />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route
-                path="/"
-                element={
-                  <main className="container mx-auto px-4 py-8">
-                    <Home />
-                  </main>
-                }
-              />
-              <Route
-                path="/companies"
-                element={
-                  <ProtectedRoute>
-                    <main className="container mx-auto px-4 py-8">
-                      <Companies />
-                    </main>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <Profile />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <ProtectedRoute>
-                    <Settings />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
+function App() {
+  return (
+    <ThemeProvider> {/* O ThemeProvider DEVE envolver toda a aplicação */}
+      <Router>
+        <DashboardLayout>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/companies" element={<Companies />} />
+            <Route path="/settings" element={<Settings />} />
+          </Routes>
+        </DashboardLayout>
+      </Router>
     </ThemeProvider>
-  </QueryClientProvider>
-);
+  );
+}
 
 export default App;

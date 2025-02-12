@@ -1,10 +1,34 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
+    /* Tema Claro */
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 142 76% 36%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 217 33% 90%;
+    --muted-foreground: 217 33% 20%;
+    --accent: 217 33% 85%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 222.2 84% 4.9%;
+    --border: 217 33% 85%;
+    --input: 217 33% 80%;
+    --ring: 224 71.4% 50%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Tema Escuro */
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
@@ -24,7 +48,6 @@
     --border: 217 33% 17%;
     --input: 217 33% 17%;
     --ring: 224 71.4% 4.1%;
-    --radius: 0.5rem;
   }
 }
 
@@ -33,16 +56,18 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-300;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
+/* Oculta header e footer se necessário */
 .header-logo, 
 .footer-branding { 
   display: none !important; 
 }
 
+/* Ajuste para o background hero */
 .hero-background {
   position: relative;
 }
@@ -61,21 +86,4 @@
   border-radius: 50%;
   opacity: 0.1;
   z-index: 0;
-
-  :root {
-    --bg-color: #ffffff;
-    --text-color: #000000;
-  }
-  
-  .dark {
-    --bg-color: #121212;
-    --text-color: #ffffff;
-  }
-  
-  body {
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    transition: background-color 0.3s, color 0.3s;
-  }
-  
 }
