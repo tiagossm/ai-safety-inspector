@@ -1,8 +1,11 @@
 import { 
-  LayoutDashboard, Building2, ClipboardCheck, History, User, Menu, ArrowRight, Settings 
+  LayoutDashboard, Building2, ClipboardCheck, History, User, Menu, ArrowRight, Settings
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Sidebar, SidebarContent, SidebarTrigger, SidebarHeader, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
+import { 
+  Sidebar, SidebarContent, SidebarTrigger, SidebarHeader, SidebarGroup, SidebarGroupContent, 
+  SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton 
+} from "@/components/ui/sidebar";
 import { Logo } from "./Logo";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -24,7 +27,7 @@ export function AppSidebar() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey && e.key === 'b') || e.key === 'm') {
         e.preventDefault();
-        setIsOpen(prev => !prev);
+        setIsOpen((prev) => !prev);
       }
     };
 
@@ -43,17 +46,20 @@ export function AppSidebar() {
         onMouseEnter={() => !isOpen && setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
+        {/* Botão para ocultar/exibir a sidebar */}
         <SidebarTrigger 
-          className={cn("absolute top-4 right-4 p-2 bg-gray-800 hover:bg-gray-700 rounded-md transition-all duration-300")}
+          className="absolute top-4 right-4 p-2 bg-gray-800 hover:bg-gray-700 rounded-md transition-all duration-300"
           onClick={() => setIsOpen(!isOpen)}
         >
           <Menu className="h-5 w-5 text-white" />
         </SidebarTrigger>
 
+        {/* Header do Sidebar */}
         <SidebarHeader className="p-4 flex items-center justify-center border-b border-gray-800">
           {isOpen ? <Logo size="small" /> : null}
         </SidebarHeader>
 
+        {/* Conteúdo do Sidebar */}
         <SidebarContent className="p-4">
           <SidebarGroup>
             {isOpen && <SidebarGroupLabel className="text-gray-400">Menu</SidebarGroupLabel>}
@@ -64,7 +70,7 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild>
                       <Link 
                         to={item.url} 
-                        className={cn("flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-800 transition-all duration-300")}
+                        className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-800 transition-all duration-300"
                         title={!isOpen ? item.title : undefined}
                       >
                         <item.icon className="h-5 w-5 text-gray-400" />
@@ -78,6 +84,17 @@ export function AppSidebar() {
           </SidebarGroup>
         </SidebarContent>
       </Sidebar>
+
+      {/* Botão para reexibir a sidebar quando oculta */}
+      {!isOpen && !isHovered && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="fixed left-16 top-1/2 -translate-y-1/2 z-40 p-2 bg-gray-800 hover:bg-gray-700 rounded-r-md transition-all duration-300 opacity-30 hover:opacity-100 group"
+          title="Expandir menu (Ctrl+B ou M)"
+        >
+          <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-white" />
+        </button>
+      )}
     </>
   );
 }
