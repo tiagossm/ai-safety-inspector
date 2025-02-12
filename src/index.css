@@ -9,21 +9,13 @@
     --foreground: rgb(0, 0, 0);
     --card: rgb(245, 245, 245);
     --card-foreground: rgb(0, 0, 0);
-    --popover: rgb(245, 245, 245);
-    --popover-foreground: rgb(0, 0, 0);
-    --primary: rgb(33, 150, 243); /* Azul */
+    --accent: rgb(70, 130, 180); /* Cor clara p/ botões */
+    --accent-foreground: rgb(255, 255, 255);
+
+    /* Outras variáveis que você quiser usar */
+    --primary: rgb(60, 130, 246);
     --primary-foreground: rgb(255, 255, 255);
-    --secondary: rgb(76, 175, 80); /* Verde */
-    --secondary-foreground: rgb(255, 255, 255);
-    --muted: rgb(220, 220, 220);
-    --muted-foreground: rgb(50, 50, 50);
-    --accent: rgb(200, 200, 200);
-    --accent-foreground: rgb(50, 50, 50);
-    --destructive: rgb(244, 67, 54);
-    --destructive-foreground: rgb(255, 255, 255);
-    --border: rgb(180, 180, 180);
-    --input: rgb(240, 240, 240);
-    --ring: rgb(33, 150, 243);
+    --border: rgb(200, 200, 200);
   }
 
   .dark {
@@ -32,81 +24,28 @@
     --foreground: rgb(230, 230, 230);
     --card: rgb(30, 30, 30);
     --card-foreground: rgb(220, 220, 220);
-    --popover: rgb(30, 30, 30);
-    --popover-foreground: rgb(220, 220, 220);
+    --accent: rgb(90, 140, 180); /* Levemente mais claro p/ ficar visível no escuro */
+    --accent-foreground: rgb(255, 255, 255);
+
     --primary: rgb(80, 140, 250);
     --primary-foreground: rgb(255, 255, 255);
-    --secondary: rgb(100, 200, 120);
-    --secondary-foreground: rgb(255, 255, 255);
-    --muted: rgb(50, 50, 50);
-    --muted-foreground: rgb(180, 180, 180);
-    --accent: rgb(70, 70, 70);
-    --accent-foreground: rgb(200, 200, 200);
-    --destructive: rgb(200, 50, 60);
-    --destructive-foreground: rgb(255, 255, 255);
-    --border: rgb(100, 100, 100);
-    --input: rgb(60, 60, 60);
-    --ring: rgb(33, 150, 243);
+    --border: rgb(80, 80, 80);
   }
-}
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  
   body {
     background-color: var(--background);
     color: var(--foreground);
-    transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+    transition: background-color 0.3s, color 0.3s;
   }
 
-  .sidebar {
-    background-color: var(--card);
-    color: var(--card-foreground);
-  }
-
-  .card {
-    background-color: var(--card);
-    color: var(--card-foreground);
-  }
-
-  .popover {
-    background-color: var(--popover);
-    color: var(--popover-foreground);
-  }
-
+  /* Se estiver usando classes personalizadas (button-primary) */
   .button-primary {
-    background-color: var(--primary);
-    color: var(--primary-foreground);
-    transition: background-color 0.3s ease-in-out;
+    background-color: var(--accent);
+    color: var(--accent-foreground);
+    transition: background-color 0.3s;
   }
 
   .button-primary:hover {
-    background-color: rgb(50, 130, 230);
-  }
-
-  .button-secondary {
-    background-color: var(--secondary);
-    color: var(--secondary-foreground);
-    transition: background-color 0.3s ease-in-out;
-  }
-
-  .button-secondary:hover {
-    background-color: rgb(90, 190, 90);
-  }
-
-  .button-destructive {
-    background-color: var(--destructive);
-    color: var(--destructive-foreground);
-    transition: background-color 0.3s ease-in-out;
-  }
-
-  .button-destructive:hover {
-    background-color: rgb(180, 40, 50);
-  }
-
-  .bordered {
-    border-color: var(--border);
+    background-color: rgb(100, 160, 210); /* um pouco mais claro no hover */
   }
 }
