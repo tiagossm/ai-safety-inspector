@@ -11,8 +11,8 @@ import { generateCSV } from "@/utils/companyUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ClipboardList, Zap, Download, ChevronUp, ChevronDown, PencilIcon, Trash2 } from "@heroicons/react/24/outline";
-import { cn } from "@/utils/cn";
+import { ClipboardList, Zap, Download, ChevronUp, ChevronDown, Pencil, Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 
 interface CompanyCardProps {
@@ -192,7 +192,7 @@ export function CompanyCard({
             onClick={handleEdit}
             className="hover:bg-gray-100/10 transition-colors duration-300"
           >
-            <PencilIcon className="h-4 w-4" />
+            <Pencil className="h-4 w-4" />
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
