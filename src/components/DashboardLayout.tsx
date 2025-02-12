@@ -1,20 +1,21 @@
+
 import { ReactNode } from "react";
 import { AppSidebar } from "./AppSidebar";
 import { SidebarProvider } from "./ui/sidebar";
-import { useAuth } from "@/components/ui/AuthContext"; // Importando autenticação
+import { useAuth } from "@/components/AuthProvider";
 
 interface DashboardLayoutProps {
   children: ReactNode;
 }
 
 function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { isAuthenticated } = useAuth(); // Verificando se o usuário está autenticado
+  const { user } = useAuth();
 
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gray-900">
-        {isAuthenticated && <AppSidebar />} {/* Sidebar só aparece após o login */}
-        <main className={`flex-1 ${isAuthenticated ? 'ml-20 lg:ml-64' : ''} p-8 transition-all duration-300`}>
+        {user && <AppSidebar />}
+        <main className={`flex-1 ${user ? 'ml-20 lg:ml-64' : ''} p-8 transition-all duration-300`}>
           {children}
         </main>
       </div>
