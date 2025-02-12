@@ -1,4 +1,5 @@
-import { DashboardLayout } from "@/components/DashboardLayout";
+
+import DashboardLayout from "@/components/DashboardLayout";
 import { CompanyForm } from "@/components/CompanyForm";
 import { CompaniesList } from "@/components/CompaniesList";
 import { Button } from "@/components/ui/button";
