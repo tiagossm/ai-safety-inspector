@@ -62,6 +62,29 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
+  import { ThemeProvider } from "@/components/ui/ThemeContext";
+  import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+  import DashboardLayout from "@/components/DashboardLayout";
+  import HomePage from "@/pages/HomePage";
+  import CompaniesPage from "@/pages/CompaniesPage";
+  
+  function App() {
+    return (
+      <ThemeProvider>
+        <Router>
+          <DashboardLayout>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/companies" element={<CompaniesPage />} />
+            </Routes>
+          </DashboardLayout>
+        </Router>
+      </ThemeProvider>
+    );
+  }
+  
+  export default App;
+  
 );
 
 export default App;
