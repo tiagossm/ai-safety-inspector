@@ -38,18 +38,20 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <SidebarProvider>
-      <div className={`flex min-h-screen w-full transition-all duration-300 ${theme === "dark" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"}`}>
+      <div className={`flex min-h-screen transition-all duration-300 ${theme === "dark" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"}`}>
+        
         {/* Sidebar */}
         {user && (
-          <div className={`fixed left-0 top-0 h-screen ${sidebarOpen ? "w-64" : "w-0"} transition-all duration-300 bg-card border-r border-border/40 shadow-md overflow-hidden`}>
+          <div className={`fixed left-0 top-0 h-screen ${sidebarOpen ? "w-64" : "w-20"} transition-all duration-300 bg-card border-r border-border/40 shadow-md`}>
             <AppSidebar />
           </div>
         )}
 
         {/* Cabeçalho */}
         {user && (
-          <header className={`fixed top-0 right-0 ${sidebarOpen ? "left-64" : "left-0"} flex items-center justify-between px-8 py-4 shadow-md transition-all duration-300 ${theme === "light" ? "bg-white border-b border-gray-300 text-gray-900" : "bg-gray-800 text-white border-b border-gray-700"}`}>
-            {/* Botão para expandir/recolher Sidebar */}
+          <header className={`fixed top-0 right-0 flex items-center justify-between px-8 py-4 shadow-md transition-all duration-300 ${sidebarOpen ? "left-64" : "left-20"} ${theme === "light" ? "bg-white border-b border-gray-300 text-gray-900" : "bg-gray-800 text-white border-b border-gray-700"}`}>
+            
+            {/* Botão de Expandir/Recolher Sidebar */}
             <button 
               className="p-2 rounded-md transition-all duration-300 hover:bg-gray-300 dark:hover:bg-gray-700"
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -100,9 +102,10 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
           </header>
         )}
 
-        {/* Conteúdo principal ajustado automaticamente */}
-        <main className={`flex-1 p-10 transition-all duration-300 ${user ? (sidebarOpen ? "ml-64 mt-20" : "ml-0 mt-20") : "ml-0"}`}>
-          {/* Barra de pesquisa de empresas com estilo unificado */}
+        {/* Conteúdo principal agora se ajusta automaticamente */}
+        <main className={`flex-1 p-10 transition-all duration-300 ${sidebarOpen ? "ml-64 mt-20" : "ml-20 mt-20"}`}>
+          
+          {/* Barra de pesquisa de empresas com mesmo estilo da do cabeçalho */}
           <div className="relative w-1/2 max-w-xl mb-6">
             <input 
               type="text" 
