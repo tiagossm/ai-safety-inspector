@@ -1,5 +1,5 @@
 import { ReactNode, useState } from "react";
-import { AppSidebar } from "@/components/AppSidebar";
+import { AppSidebar } from "@/components/ui/AppSidebar"; // Confirme se o caminho está correto
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useAuth } from "@/components/AuthProvider";
 import { useTheme } from "@/components/ui/ThemeContext";
@@ -14,7 +14,7 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user } = useAuth();
   const { theme } = useTheme();
   const navigate = useNavigate();
-  const location = useLocation(); // Captura a URL atual
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const handleLogout = () => {
@@ -22,47 +22,36 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
     navigate("/auth");
   };
 
-  const NavLinks = () => (
-    <nav className="flex space-x-10 text-lg font-medium">
-      {[
-        { to: "/", label: "Página Inicial" },
-        { to: "/dashboard", label: "Dashboard" },
-        { to: "/reports", label: "Relatórios" },
-      ].map(({ to, label }) => (
-        <Link key={to} to={to} className="hover:underline transition-all duration-200">
-          {label}
-        </Link>
-      ))}
-    </nav>
-  );
-
   return (
     <SidebarProvider>
       <div className={`flex min-h-screen transition-all duration-300 ${theme === "dark" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"}`}>
         
-        {/* Sidebar que recolhe e ajusta a página automaticamente */}
+        {/* Sidebar que abre/fecha e ajusta a página automaticamente */}
         {user && (
-          <div className={`fixed left-0 top-0 h-screen ${sidebarOpen ? "w-64" : "w-0"} transition-all duration-300 bg-card border-r border-border/40 shadow-md`}>
-            {/* Botão para abrir/fechar a sidebar */}
+          <div className={`fixed left-0 top-0 h-screen ${sidebarOpen ? "w-64" : "w-0"} transition-all duration-300 overflow-hidden bg-card border-r border-border/40 shadow-md`}>
+            {/* Botão de abrir/fechar a sidebar */}
             <button 
               className="absolute top-4 left-4 p-2 rounded-md transition-all duration-300 hover:bg-gray-300 dark:hover:bg-gray-700"
               onClick={() => setSidebarOpen(!sidebarOpen)}
             >
               <Menu className="h-6 w-6" />
             </button>
-            <div className={`${sidebarOpen ? "block" : "hidden"}`}>
-              <AppSidebar />
-            </div>
+            {sidebarOpen && <AppSidebar />}
           </div>
         )}
 
-        {/* Cabeçalho agora ajusta automaticamente */}
+        {/* Cabeçalho agora se ajusta automaticamente */}
         {user && (
           <header className={`fixed top-0 right-0 flex items-center justify-between px-8 py-4 shadow-md transition-all duration-300 ${sidebarOpen ? "left-64" : "left-0"} ${theme === "light" ? "bg-white border-b border-gray-300 text-gray-900" : "bg-gray-800 text-white border-b border-gray-700"}`}>
             
-            <NavLinks />
+            {/* Barra de navegação */}
+            <nav className="flex space-x-10 text-lg font-medium">
+              <Link to="/" className="hover:underline transition-all duration-200">Página Inicial</Link>
+              <Link to="/dashboard" className="hover:underline transition-all duration-200">Dashboard</Link>
+              <Link to="/reports" className="hover:underline transition-all duration-200">Relatórios</Link>
+            </nav>
 
-            {/* Campo de pesquisa global */}
+            {/* Campo de pesquisa */}
             <div className="relative w-1/4 max-w-lg">
               <input 
                 type="text" 
