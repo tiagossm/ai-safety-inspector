@@ -41,7 +41,7 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
               />
             </div>
 
-            {/* Removido botão de logout/}
+            {/* Removido botão de log/}
             
           </header>
         )}
