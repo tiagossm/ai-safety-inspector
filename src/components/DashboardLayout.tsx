@@ -32,7 +32,7 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
                   : "/lovable-uploads/36e6d20d-9248-4e9f-967f-aeeea5a2bc30.png"  // Logo branca para tema escuro
                 }
                 alt="IA SST"
-                className="h-[100px] md:h-[200px] w-auto"
+                className="h-[75px] md:h-[150px] w-auto"
               />
             </div>
           </header>
