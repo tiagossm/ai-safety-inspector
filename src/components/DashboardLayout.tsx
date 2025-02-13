@@ -24,64 +24,62 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <SidebarProvider>
-      <div className={`min-h-screen ${theme === "dark" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"}`}>
+      <div className={`min-h-screen ${theme === "dark" ? "bg-gray-900" : "bg-gray-100"}`}>
         {/* Layout Container */}
         <div className="flex">
-          {/* Sidebar Integrada */}
+          {/* Sidebar Integrada ao Cabeçalho */}
           {user && (
-            <div className={`fixed top-0 left-0 h-screen z-50 transition-all duration-300 ${
+            <div className={`h-screen fixed left-0 top-0 z-50 transition-all duration-300 ${
               sidebarOpen ? "w-64" : "w-0 -translate-x-full"
             } ${theme === "dark" ? "bg-gray-800" : "bg-white"}`}>
-              <div className={`${sidebarOpen ? "block" : "hidden"} h-full overflow-y-auto`}>
-                <AppSidebar />
-              </div>
+              <AppSidebar />
             </div>
           )}
 
           {/* Conteúdo Principal */}
           <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-0"}`}>
-            {/* Cabeçalho */}
-            {user && (
-              <header className={`sticky top-0 flex items-center justify-between px-6 py-4 ${
-                theme === "dark" ? "bg-gray-900 border-b border-gray-700" : "bg-white border-b border-gray-200"
-              }`}>
-                <button
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <Menu className="h-6 w-6" />
+            {/* Cabeçalho Fixo */}
+            <header className={`sticky top-0 z-40 flex items-center justify-between px-6 py-4 ${
+              theme === "dark" 
+                ? "bg-gray-900 border-b border-gray-700" 
+                : "bg-white border-b border-gray-200"
+            }`}>
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <Menu className="h-6 w-6" />
+              </button>
+
+              <nav className="flex-1 flex justify-center space-x-8 mx-4">
+                <Link to="/" className="hover:text-primary transition-colors">Início</Link>
+                <Link to="/dashboard" className="hover:text-primary transition-colors">Dashboard</Link>
+                <Link to="/reports" className="hover:text-primary transition-colors">Relatórios</Link>
+              </nav>
+
+              <div className="flex items-center gap-4">
+                <div className="relative w-48">
+                  <input
+                    type="text"
+                    placeholder="Buscar..."
+                    className="w-full pl-4 pr-10 py-2 rounded-lg border focus:outline-none focus:ring-2 ${
+                      theme === "dark" 
+                        ? "bg-gray-800 border-gray-700 text-white" 
+                        : "bg-gray-50 border-gray-200 text-gray-900"
+                    }"
+                  />
+                  <Search className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+                </div>
+
+                <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
+                  <Bell className="h-6 w-6" />
                 </button>
 
-                <nav className="flex-1 flex justify-center space-x-8">
-                  <Link to="/dashboard" className="hover:text-primary transition-colors">Dashboard</Link>
-                  <Link to="/reports" className="hover:text-primary transition-colors">Relatórios</Link>
-                  <Link to="/settings" className="hover:text-primary transition-colors">Configurações</Link>
-                </nav>
-
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Buscar..."
-                      className="pl-4 pr-10 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-                      style={{
-                        background: theme === "dark" ? "#1F2937" : "#F3F4F6",
-                        borderColor: theme === "dark" ? "#374151" : "#E5E7EB"
-                      }}
-                    />
-                    <Search className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
-                  </div>
-
-                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
-                    <Bell className="h-6 w-6" />
-                  </button>
-
-                  <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
-                    <User className="h-6 w-6" />
-                  </button>
-                </div>
-              </header>
-            )}
+                <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full">
+                  <User className="h-6 w-6" />
+                </button>
+              </div>
+            </header>
 
             {/* Área de Conteúdo */}
             <main className="p-8">
@@ -91,11 +89,11 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
                     <input
                       type="text"
                       placeholder="Buscar empresas..."
-                      className="w-full pl-4 pr-10 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary transition-all"
-                      style={{
-                        background: theme === "dark" ? "#1F2937" : "#F3F4F6",
-                        borderColor: theme === "dark" ? "#374151" : "#E5E7EB"
-                      }}
+                      className="w-full pl-4 pr-10 py-2 rounded-lg border focus:outline-none focus:ring-2 ${
+                        theme === "dark" 
+                          ? "bg-gray-800 border-gray-700 text-white" 
+                          : "bg-gray-50 border-gray-200 text-gray-900"
+                      }"
                     />
                     <Search className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
                   </div>
