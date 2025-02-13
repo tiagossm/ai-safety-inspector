@@ -40,9 +40,16 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
     <SidebarProvider>
       <div className={`flex min-h-screen transition-all duration-300 ${theme === "dark" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"}`}>
         
-        {/* Sidebar ajustada para sumir completamente quando fechada */}
+        {/* Sidebar com hambúrguer ☰ funcionando corretamente */}
         {user && (
           <div className={`fixed left-0 top-0 h-screen ${sidebarOpen ? "w-64" : "w-0"} transition-all duration-300 overflow-hidden bg-card border-r border-border/40 shadow-md`}>
+            {/* Botão para abrir/fechar a sidebar */}
+            <button 
+              className="absolute top-4 left-4 p-2 rounded-md transition-all duration-300 hover:bg-gray-300 dark:hover:bg-gray-700"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+            >
+              <Menu className="h-6 w-6" />
+            </button>
             {sidebarOpen && <AppSidebar />}
           </div>
         )}
@@ -51,14 +58,6 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
         {user && (
           <header className={`fixed top-0 right-0 flex items-center justify-between px-8 py-4 shadow-md transition-all duration-300 ${sidebarOpen ? "left-64" : "left-0"} ${theme === "light" ? "bg-white border-b border-gray-300 text-gray-900" : "bg-gray-800 text-white border-b border-gray-700"}`}>
             
-            {/* Botão de Expandir/Recolher Sidebar (Agora sempre ☰) */}
-            <button 
-              className="p-2 rounded-md transition-all duration-300 hover:bg-gray-300 dark:hover:bg-gray-700"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-            >
-              <Menu className="h-6 w-6" />
-            </button>
-
             <NavLinks />
 
             {/* Campo de pesquisa global */}
@@ -90,7 +89,7 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
           </header>
         )}
 
-        {/* Conteúdo principal agora se ajusta automaticamente */}
+        {/* Conteúdo principal ajustado automaticamente */}
         <main className={`flex-1 p-10 transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-0"} mt-20`}>
           
           {/* Exibe a barra de pesquisa de empresas APENAS na tela de Empresas */}
