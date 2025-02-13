@@ -1,10 +1,11 @@
+
 import { ReactNode } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useAuth } from "@/components/AuthProvider";
 import { useTheme } from "@/components/ui/ThemeContext";
 import { Link } from "react-router-dom";
-import classNames from "classnames";
+import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -26,7 +27,7 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Cabeçalho fixo no topo */}
         {user && (
           <header
-            className={classNames(
+            className={cn(
               "fixed top-0 right-0 left-60 flex items-center justify-between px-8 py-4 shadow-md transition-all duration-300",
               {
                 "bg-white border-b border-gray-300 text-gray-900": theme === "light",
@@ -47,7 +48,7 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
               </Link>
             </nav>
 
-            {/* Logo no topo direito - Ajuste de tamanho e alinhamento */}
+            {/* Logo no topo direito */}
             <div className="flex justify-end w-full pr-10">
               <img
                 src={
