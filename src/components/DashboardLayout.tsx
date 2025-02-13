@@ -27,9 +27,9 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
       <div className={`min-h-screen ${theme === "dark" ? "bg-gray-900" : "bg-gray-100"}`}>
         {/* Layout Container */}
         <div className="flex">
-          {/* Sidebar Integrada ao Cabeçalho */}
+          {/* Sidebar Fixa */}
           {user && (
-            <div className={`h-screen fixed left-0 top-0 z-50 transition-all duration-300 ${
+            <div className={`fixed left-0 top-0 h-screen z-50 transition-all duration-300 ${
               sidebarOpen ? "w-64" : "w-0 -translate-x-full"
             } ${theme === "dark" ? "bg-gray-800" : "bg-white"}`}>
               <AppSidebar />
@@ -39,11 +39,12 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
           {/* Conteúdo Principal */}
           <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-0"}`}>
             {/* Cabeçalho Fixo */}
-            <header className={`sticky top-0 z-40 flex items-center justify-between px-6 py-4 ${
-              theme === "dark" 
+            <header className={`fixed top-0 right-0 left-0 z-40 flex items-center justify-between px-6 py-4 ${
+              theme === "dark 
                 ? "bg-gray-900 border-b border-gray-700" 
                 : "bg-white border-b border-gray-200"
-            }`}>
+            } ${sidebarOpen ? "left-64" : "left-0"}`}>
+              
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -62,11 +63,11 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
                   <input
                     type="text"
                     placeholder="Buscar..."
-                    className="w-full pl-4 pr-10 py-2 rounded-lg border focus:outline-none focus:ring-2 ${
+                    className={`w-full pl-4 pr-10 py-2 rounded-lg border focus:outline-none focus:ring-2 ${
                       theme === "dark" 
                         ? "bg-gray-800 border-gray-700 text-white" 
                         : "bg-gray-50 border-gray-200 text-gray-900"
-                    }"
+                    }`}
                   />
                   <Search className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
                 </div>
@@ -81,19 +82,19 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
               </div>
             </header>
 
-            {/* Área de Conteúdo */}
-            <main className="p-8">
+            {/* Área de Conteúdo com Margem Superior */}
+            <main className="p-8 mt-16">
               {location.pathname === "/empresas" && (
                 <div className="mb-6 max-w-2xl">
                   <div className="relative">
                     <input
                       type="text"
                       placeholder="Buscar empresas..."
-                      className="w-full pl-4 pr-10 py-2 rounded-lg border focus:outline-none focus:ring-2 ${
+                      className={`w-full pl-4 pr-10 py-2 rounded-lg border focus:outline-none focus:ring-2 ${
                         theme === "dark" 
                           ? "bg-gray-800 border-gray-700 text-white" 
                           : "bg-gray-50 border-gray-200 text-gray-900"
-                      }"
+                      }`}
                     />
                     <Search className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
                   </div>
