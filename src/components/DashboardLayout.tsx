@@ -24,7 +24,7 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Cabeçalho fixo no topo */}
         {user && (
           <header className="fixed top-0 right-0 left-64 flex items-center justify-between px-6 py-3 bg-gray-800 shadow-md">
-            {/* Logo no topo direito - Ajuste de tamanho dinâmico */}
+            {/* Logo no topo direito - Ajuste de tamanho e alinhamento */}
             <div className="flex justify-end w-full">
               <img
                 src={theme === 'light' 
@@ -32,7 +32,7 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
                   : "/lovable-uploads/36e6d20d-9248-4e9f-967f-aeeea5a2bc30.png"  // Logo branca para tema escuro
                 }
                 alt="IA SST"
-                className="h-[75px] md:h-[150px] w-auto"
+                className="h-[50px] md:h-[75px] w-auto" // Ajuste de tamanho reduzido
               />
             </div>
           </header>
