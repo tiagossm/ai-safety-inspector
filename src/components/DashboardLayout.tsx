@@ -1,11 +1,10 @@
-
 import { ReactNode } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useAuth } from "@/components/AuthProvider";
 import { useTheme } from "@/components/ui/ThemeContext";
 import { Link } from "react-router-dom";
-import { cn } from "@/lib/utils";
+import { Search, Bell, User } from "lucide-react";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -27,43 +26,46 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Cabeçalho fixo no topo */}
         {user && (
           <header
-            className={cn(
-              "fixed top-0 right-0 left-60 flex items-center justify-between px-8 py-4 shadow-md transition-all duration-300",
-              {
-                "bg-white border-b border-gray-300 text-gray-900": theme === "light",
-                "bg-gray-800 text-white": theme === "dark",
-              }
-            )}
+            className={`fixed top-0 right-0 left-60 flex items-center justify-between px-8 py-4 shadow-md transition-all duration-300 ${theme === "light" ? "bg-white border-b border-gray-300 text-gray-900" : "bg-gray-800 text-white"}`}
           >
             {/* Navegação superior */}
             <nav className="flex space-x-8">
-              <Link to="/" className="text-lg font-medium hover:underline transition-all duration-200">
-                Página Inicial
-              </Link>
-              <Link to="/dashboard" className="text-lg font-medium hover:underline transition-all duration-200">
-                Dashboard
-              </Link>
-              <Link to="/reports" className="text-lg font-medium hover:underline transition-all duration-200">
-                Relatórios
-              </Link>
+              <Link to="/" className="text-lg font-medium hover:underline transition-all duration-200">Página Inicial</Link>
+              <Link to="/dashboard" className="text-lg font-medium hover:underline transition-all duration-200">Dashboard</Link>
+              <Link to="/reports" className="text-lg font-medium hover:underline transition-all duration-200">Relatórios</Link>
             </nav>
 
-            {/* Logo no topo direito */}
-            <div className="flex justify-end w-full pr-10">
-              <img
-                src={
-                  theme === "light"
-                    ? "/lovable-uploads/728ca092-8e22-4a02-821f-6c88f2f7cc89.png" // Logo azul para tema claro
-                    : "/lovable-uploads/36e6d20d-9248-4e9f-967f-aeeea5a2bc30.png" // Logo branca para tema escuro
-                }
-                alt="IA SST"
-                className="h-[60px] md:h-[90px] w-auto transition-all duration-200"
+            {/* Campo de pesquisa */}
+            <div className="relative w-1/3 max-w-md">
+              <input 
+                type="text" 
+                placeholder="Buscar..." 
+                className="w-full px-4 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-primary text-gray-800 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600" 
+                aria-label="Buscar no sistema"
               />
+              <Search className="absolute right-3 top-2.5 text-gray-500" />
+            </div>
+
+            {/* Ícones de notificações e perfil */}
+            <div className="flex items-center space-x-6">
+              <button aria-label="Notificações">
+                <Bell className="h-6 w-6 text-gray-500 cursor-pointer hover:text-primary" />
+              </button>
+              <div className="relative group cursor-pointer">
+                <User className="h-8 w-8 text-gray-500" />
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 shadow-lg rounded-md p-2 hidden group-hover:block">
+                  <Link to="/profile" className="block px-4 py-2 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Perfil</Link>
+                  <Link to="/settings" className="block px-4 py-2 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Configurações</Link>
+                  <Link to="/logout" className="block px-4 py-2 text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600">Sair</Link>
+                </div>
+              </div>
             </div>
           </header>
         )}
 
-        <main className={`flex-1 p-10 transition-all duration-300 ${user ? "ml-60 mt-20" : "ml-0"}`}>
+        <main
+          className={`flex-1 p-10 transition-all duration-300 ${user ? "ml-60 mt-20" : "ml-0"}`}
+        >
           {children}
         </main>
       </div>
