@@ -1,5 +1,5 @@
 import { ReactNode, useState } from "react";
-import { AppSidebar } from "@/components/ui/AppSidebar"; // Confirme se o caminho está correto
+import { AppSidebar } from "@/components/AppSidebar"; // Confirme se o caminho está correto
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useAuth } from "@/components/AuthProvider";
 import { useTheme } from "@/components/ui/ThemeContext";
