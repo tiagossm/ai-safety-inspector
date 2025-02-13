@@ -1,5 +1,5 @@
 import { ReactNode, useState } from "react";
-import { AppSidebar } from "@/components/AppSidebar"; // Corrigido o caminho do import
+import { AppSidebar } from "@/components/AppSidebar"; // Caminho correto
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useAuth } from "@/components/AuthProvider";
 import { useTheme } from "@/components/ui/ThemeContext";
@@ -28,21 +28,24 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
         
         {/* Sidebar que abre/fecha e ajusta a página automaticamente */}
         {user && (
-          <div className={`fixed left-0 top-0 h-screen ${sidebarOpen ? "w-64" : "w-0"} transition-all duration-300 overflow-hidden bg-card border-r border-border/40 shadow-md`}>
+          <div className={`fixed left-0 top-0 h-screen ${sidebarOpen ? "w-64" : "w-20"} transition-all duration-300 bg-card border-r border-border/40 shadow-md flex flex-col`}>
             {/* Botão de abrir/fechar a sidebar */}
             <button 
-              className="absolute top-4 left-4 p-2 rounded-md transition-all duration-300 hover:bg-gray-300 dark:hover:bg-gray-700"
+              className="p-3 mt-4 ml-4 rounded-md transition-all duration-300 hover:bg-gray-300 dark:hover:bg-gray-700"
               onClick={() => setSidebarOpen(!sidebarOpen)}
             >
               <Menu className="h-6 w-6" />
             </button>
-            {sidebarOpen && <AppSidebar />}
+            {/* Exibir sidebar apenas se estiver aberta */}
+            <div className={`${sidebarOpen ? "block" : "hidden"} flex-1`}>
+              <AppSidebar />
+            </div>
           </div>
         )}
 
         {/* Cabeçalho agora se ajusta automaticamente */}
         {user && (
-          <header className={`fixed top-0 right-0 flex items-center justify-between px-8 py-4 shadow-md transition-all duration-300 ${sidebarOpen ? "left-64" : "left-0"} ${theme === "light" ? "bg-white border-b border-gray-300 text-gray-900" : "bg-gray-800 text-white border-b border-gray-700"}`}>
+          <header className={`fixed top-0 right-0 flex items-center justify-between px-8 py-4 shadow-md transition-all duration-300 ${sidebarOpen ? "left-64" : "left-20"} ${theme === "light" ? "bg-white border-b border-gray-300 text-gray-900" : "bg-gray-800 text-white border-b border-gray-700"}`}>
             
             {/* Barra de navegação */}
             <nav className="flex space-x-10 text-lg font-medium">
@@ -81,7 +84,7 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
         )}
 
         {/* Conteúdo principal agora ajusta automaticamente */}
-        <main className={`flex-1 p-10 transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-0"} mt-20`}>
+        <main className={`flex-1 p-10 transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-20"} mt-20`}>
           
           {/* Exibe a barra de pesquisa de empresas APENAS na tela de Empresas */}
           {location.pathname === "/empresas" && (
