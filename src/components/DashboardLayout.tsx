@@ -25,14 +25,14 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
         {user && (
           <header className="fixed top-0 right-0 left-64 flex items-center justify-between px-6 py-3 bg-gray-800 shadow-md">
             {/* Logo no topo direito - Ajuste de tamanho e alinhamento */}
-            <div className="flex justify-end w-full">
+            <div className="flex justify-end w-full pr-4">
               <img
                 src={theme === 'light' 
                   ? "/lovable-uploads/728ca092-8e22-4a02-821f-6c88f2f7cc89.png"  // Logo azul para tema claro
                   : "/lovable-uploads/36e6d20d-9248-4e9f-967f-aeeea5a2bc30.png"  // Logo branca para tema escuro
                 }
                 alt="IA SST"
-                className="h-[50px] md:h-[75px] w-auto" // Ajuste de tamanho reduzido
+                className="h-[35px] md:h-[52px] w-auto" // Ajuste de tamanho mais sutil
               />
             </div>
           </header>
