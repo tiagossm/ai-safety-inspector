@@ -1,4 +1,6 @@
+
 import { Link } from "react-router-dom";
+import { useTheme } from "@/components/ui/ThemeContext";
 
 interface LogoProps {
   className?: string;
@@ -6,12 +8,16 @@ interface LogoProps {
 }
 
 export function Logo({ className = "", size = "small" }: LogoProps) {
+  const { theme } = useTheme();
   const dimensions = size === "large" ? "h-64" : "h-32";
   
   return (
     <Link to="/" className={`block ${className}`}>
       <img 
-        src="/lovable-uploads/5f39a04e-2f8f-449b-ab7f-7b2d67216c79.png"
+        src={theme === 'light' 
+          ? "/lovable-uploads/728ca092-8e22-4a02-821f-6c88f2f7cc89.png"  // Blue logo for light theme
+          : "/lovable-uploads/36e6d20d-9248-4e9f-967f-aeeea5a2bc30.png"  // White logo for dark theme
+        }
         alt="IA SST Logo"
         className={`${dimensions} w-auto`}
       />

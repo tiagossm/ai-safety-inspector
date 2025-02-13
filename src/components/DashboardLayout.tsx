@@ -1,7 +1,9 @@
+
 import { ReactNode } from "react";
 import { AppSidebar } from "./AppSidebar";
 import { SidebarProvider } from "./ui/sidebar";
 import { useAuth } from "@/components/AuthProvider";
+import { useTheme } from "@/components/ui/ThemeContext";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -9,6 +11,7 @@ interface DashboardLayoutProps {
 
 function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user } = useAuth();
+  const { theme } = useTheme();
 
   return (
     <SidebarProvider>
@@ -21,11 +24,14 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
 
         {/* Cabeçalho fixo no topo */}
         {user && (
-          <header className="fixed top-0 right-0 left-64 flex items-center justify-between px-6 py-3 bg-gray-800 shadow-md">
-            {/* Logo no topo direito - 2,5x maior */}
+          <header className="fixed top-0 right-0 left-64 flex items-center justify-between px-6 py-3 bg-card shadow-md">
+            {/* Logo no topo direito */}
             <div className="flex justify-end w-full">
               <img
-                src="/lovable-uploads/5f39a04e-2f8f-449b-ab7f-7b2d67216c79.png" 
+                src={theme === 'light' 
+                  ? "/lovable-uploads/728ca092-8e22-4a02-821f-6c88f2f7cc89.png"  // Blue logo for light theme
+                  : "/lovable-uploads/36e6d20d-9248-4e9f-967f-aeeea5a2bc30.png"  // White logo for dark theme
+                }
                 alt="IA SST"
                 className="h-[25px] md:h-[50px] w-auto"
               />
