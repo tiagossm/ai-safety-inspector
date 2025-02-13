@@ -41,14 +41,8 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
               />
             </div>
 
-            {/* Botão de Logout */}
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 rounded-md bg-destructive text-white hover:bg-destructive/80 transition-all"
-            >
-              <LogOut className="h-6 w-6" />
-              <span>Sair</span>
-            </button>
+            {/* Removido botão de logout/}
+            
           </header>
         )}
 
