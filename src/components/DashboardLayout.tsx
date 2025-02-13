@@ -1,7 +1,6 @@
-
 import { ReactNode } from "react";
-import { AppSidebar } from "./AppSidebar";
-import { SidebarProvider } from "./ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { useAuth } from "@/components/AuthProvider";
 import { useTheme } from "@/components/ui/ThemeContext";
 
@@ -24,16 +23,16 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
 
         {/* Cabeçalho fixo no topo */}
         {user && (
-          <header className="fixed top-0 right-0 left-64 flex items-center justify-between px-6 py-3 bg-card shadow-md">
-            {/* Logo no topo direito */}
+          <header className="fixed top-0 right-0 left-64 flex items-center justify-between px-6 py-3 bg-gray-800 shadow-md">
+            {/* Logo no topo direito - Ajuste de tamanho dinâmico */}
             <div className="flex justify-end w-full">
               <img
                 src={theme === 'light' 
-                  ? "/lovable-uploads/728ca092-8e22-4a02-821f-6c88f2f7cc89.png"  // Blue logo for light theme
-                  : "/lovable-uploads/36e6d20d-9248-4e9f-967f-aeeea5a2bc30.png"  // White logo for dark theme
+                  ? "/lovable-uploads/728ca092-8e22-4a02-821f-6c88f2f7cc89.png"  // Logo azul para tema claro
+                  : "/lovable-uploads/36e6d20d-9248-4e9f-967f-aeeea5a2bc30.png"  // Logo branca para tema escuro
                 }
                 alt="IA SST"
-                className="h-[25px] md:h-[50px] w-auto"
+                className="h-[100px] md:h-[200px] w-auto"
               />
             </div>
           </header>
