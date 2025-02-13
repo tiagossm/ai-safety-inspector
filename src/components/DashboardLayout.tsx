@@ -3,7 +3,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useAuth } from "@/components/AuthProvider";
 import { useTheme } from "@/components/ui/ThemeContext";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Search, Bell, User } from "lucide-react";
 
 interface DashboardLayoutProps {
@@ -13,6 +13,12 @@ interface DashboardLayoutProps {
 function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user } = useAuth();
   const { theme } = useTheme();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    navigate("/auth");
+  };
 
   return (
     <SidebarProvider>
@@ -56,7 +62,12 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
                 <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 shadow-lg rounded-md p-2 hidden group-hover:block">
                   <Link to="/profile" className="block px-4 py-2 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Perfil</Link>
                   <Link to="/settings" className="block px-4 py-2 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Configurações</Link>
-                  <Link to="/logout" className="block px-4 py-2 text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600">Sair</Link>
+                  <button 
+                    onClick={handleLogout} 
+                    className="block px-4 py-2 text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600 w-full text-left"
+                  >
+                    Sair
+                  </button>
                 </div>
               </div>
             </div>
