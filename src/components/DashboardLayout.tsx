@@ -1,18 +1,14 @@
-
 import { ReactNode } from "react";
 import { AppSidebar } from "./AppSidebar";
 import { SidebarProvider } from "./ui/sidebar";
 import { useAuth } from "@/components/AuthProvider";
-import { useNavigate } from "react-router-dom";
-import { User } from "lucide-react";
 
 interface DashboardLayoutProps {
   children: ReactNode;
 }
 
 function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
 
   return (
     <SidebarProvider>
@@ -25,13 +21,13 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
 
         {/* Cabeçalho fixo no topo */}
         {user && (
-          <header className="fixed top-0 right-0 left-64 flex items-center justify-between px-6 py-3 bg-card shadow-md">
-            {/* Logo no topo direito */}
+          <header className="fixed top-0 right-0 left-64 flex items-center justify-between px-6 py-3 bg-gray-800 shadow-md">
+            {/* Logo no topo direito - 2,5x maior */}
             <div className="flex justify-end w-full">
               <img
-                src="/lovable-uploads/556ba9a4-9912-4d74-96a7-0f4630a0386f.png"
+                src="/lovable-uploads/5f39a04e-2f8f-449b-ab7f-7b2d67216c79.png" 
                 alt="IA SST"
-                className="h-10 w-auto"
+                className="h-[25px] md:h-[50px] w-auto"
               />
             </div>
           </header>
