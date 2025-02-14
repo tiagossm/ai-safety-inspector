@@ -3,8 +3,12 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useAuth } from "@/components/AuthProvider";
 import { useTheme } from "@/components/ui/ThemeContext";
-import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
-import { Search, Bell, User, Menu, Building, ClipboardList, Settings, LogOut } from "lucide-react";
+import { Link, useLocation, Outlet } from "react-router-dom";
+import { Search, Bell, User, Menu, Building, ClipboardList, Settings, LogOut, WifiOff } from "lucide-react";
+import { useMediaQuery } from "react-responsive";
+import { useSwipeable } from "react-swipeable";
+import { db } from "@/services/database";
+import { SyncManager } from "@/services/sync";
 
 interface DashboardLayoutProps {
   children?: ReactNode;
@@ -14,34 +18,38 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
   const { theme, toggleTheme } = useTheme();
   const { user } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeNav, setActiveNav] = useState("");
+  const isMobile = useMediaQuery({ maxWidth: 768 });
 
-  // Verifica qual página está ativa
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  const syncManager = new SyncManager();
+
+  // Atualiza status online/offline
   useEffect(() => {
-    const path = location.pathname.split("/")[1];
-    setActiveNav(path.charAt(0).toUpperCase() + path.slice(1));
-  }, [location]);
+    const updateOnlineStatus = () => {
+      setIsOnline(navigator.onLine);
+      if (navigator.onLine) syncManager.trySync();
+    };
+    window.addEventListener("online", updateOnlineStatus);
+    window.addEventListener("offline", updateOnlineStatus);
+    return () => {
+      window.removeEventListener("online", updateOnlineStatus);
+      window.removeEventListener("offline", updateOnlineStatus);
+    };
+  }, []);
 
-  // Adiciona um log para verificar qual página está sendo carregada
-  console.log("Página atual:", location.pathname);
-
-  const mainBgColor = theme === "dark" ? "bg-gray-900" : "bg-gray-100";
-  const textColor = theme === "dark" ? "text-gray-300" : "text-gray-700";
-
-  const sidebarItems = [
-    { icon: <Building />, name: "Empresas", path: "/empresas" },
-    { icon: <ClipboardList />, name: "Inspeções", path: "/inspecoes" },
-    { icon: <Settings />, name: "Configurações", path: "/configuracoes" }, // Verifique se a rota está correta
-    { icon: <LogOut />, name: "Sair", path: "/logout" },
-  ];
+  // Animação do Sidebar Mobile (Swipe)
+  const handlers = useSwipeable({
+    onSwipedLeft: () => setSidebarOpen(false),
+    onSwipedRight: () => setSidebarOpen(true),
+  });
 
   return (
     <SidebarProvider>
-      <div className={`min-h-screen flex ${mainBgColor}`}>
+      <div className={`min-h-screen flex ${theme === "dark" ? "bg-gray-900" : "bg-gray-100"}`} {...handlers}>
         
-        {/* Sidebar funcional */}
+        {/* Sidebar */}
         <aside className={`fixed left-0 top-0 h-screen z-50 transition-all duration-300
           ${theme === "dark" ? "bg-gray-800" : "bg-white"}
           ${sidebarOpen ? "w-64" : "w-20"} shadow-lg border-r border-gray-700`}
@@ -56,7 +64,12 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
 
             {/* Navegação da Sidebar */}
             <nav className="flex-1 space-y-4 w-full px-2">
-              {sidebarItems.map((item) => (
+              {[
+                { icon: <Building />, name: "Empresas", path: "/empresas" },
+                { icon: <ClipboardList />, name: "Inspeções", path: "/inspecoes" },
+                { icon: <Settings />, name: "Configurações", path: "/configuracoes" },
+                { icon: <LogOut />, name: "Sair", path: "/logout" },
+              ].map((item) => (
                 <Link
                   key={item.name}
                   to={item.path}
@@ -65,14 +78,7 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
                     ${location.pathname === item.path ? "bg-gray-700/20" : ""}`}
                 >
                   {item.icon}
-                  {sidebarOpen && <span className={`text-sm ${textColor}`}>{item.name}</span>}
-                  {!sidebarOpen && (
-                    <span className="absolute left-full ml-2 px-2 py-1 text-xs rounded-md
-                      bg-gray-800 text-white opacity-0 group-hover:opacity-100 transition-opacity
-                      shadow-lg border border-gray-700">
-                      {item.name}
-                    </span>
-                  )}
+                  {sidebarOpen && <span className="text-sm">{item.name}</span>}
                 </Link>
               ))}
             </nav>
@@ -82,40 +88,29 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Conteúdo principal */}
         <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-20"}`}>
           
-          {/* Navbar corrigida */}
+          {/* Navbar */}
           <header className={`fixed top-0 right-0 h-16 z-40 flex items-center justify-between px-8 
             ${theme === "dark" ? "bg-gray-900 border-b border-gray-700" : "bg-white border-b border-gray-200"}
             ${sidebarOpen ? "left-64" : "left-20"}`}
           >
             <nav className="flex space-x-8">
-              {["pagina-inicial", "dashboard", "relatorios"].map((path) => {
-                const name = path.split("-").map(word => word[0].toUpperCase() + word.slice(1)).join(" ");
-                return (
-                  <Link
-                    key={path}
-                    to={`/${path}`}
-                    className={`hover:text-emerald-400 transition-colors ${
-                      activeNav === name ? "text-emerald-400" : textColor
-                    }`}
-                  >
-                    {name}
-                  </Link>
-                );
-              })}
+              {["pagina-inicial", "dashboard", "relatorios"].map((path) => (
+                <Link key={path} to={`/${path}`} className="hover:text-emerald-400 transition-colors">
+                  {path.replace("-", " ")}
+                </Link>
+              ))}
             </nav>
 
-            {/* Ícones e botão de troca de tema */}
+            {/* Status de Conexão + Ícones */}
             <div className="flex items-center space-x-6">
+              {!isOnline && <WifiOff className="h-6 w-6 text-red-500" title="Offline" />}
               <button className="hover:text-emerald-400 transition-colors">
                 <Bell className="h-6 w-6" />
               </button>
               <button className="hover:text-emerald-400 transition-colors">
                 <User className="h-8 w-8" />
               </button>
-              <button
-                onClick={toggleTheme}
-                className="p-2 rounded-md bg-gray-700 text-white hover:bg-gray-600 transition-colors"
-              >
+              <button onClick={toggleTheme} className="p-2 rounded-md bg-gray-700 text-white hover:bg-gray-600 transition-colors">
                 {theme === "dark" ? "🌙" : "☀️"}
               </button>
             </div>
@@ -125,7 +120,7 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
           <main className="flex-1 pt-24 px-8">
             {location.pathname === "/empresas" && (
               <div className="mb-8">
-                <h1 className={`text-3xl font-bold mb-4 ${textColor}`}>Empresas Cadastradas</h1>
+                <h1 className="text-3xl font-bold mb-4">Empresas Cadastradas</h1>
                 <div className="relative w-1/2 max-w-xl">
                   <input
                     type="text"
@@ -141,7 +136,7 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
               </div>
             )}
 
-            {/* Renderiza as rotas internas corretamente */}
+            {/* Renderiza páginas internas */}
             <Outlet />
             {children}
           </main>
