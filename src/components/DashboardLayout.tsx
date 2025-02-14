@@ -1,15 +1,13 @@
 
 import { ReactNode, useState, useEffect } from "react";
-import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useAuth } from "@/components/AuthProvider";
 import { useTheme } from "@/components/ui/ThemeContext";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { Search, Bell, User, Menu, Building, ClipboardList, Settings, LogOut, WifiOff } from "lucide-react";
 import { useSwipeable } from "react-swipeable";
-import { db } from "@/services/database";
-import { SyncManager } from "@/services/sync";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
   children?: ReactNode;
@@ -24,13 +22,10 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
-  const syncManager = new SyncManager();
-
   // Atualiza status online/offline
   useEffect(() => {
     const updateOnlineStatus = () => {
       setIsOnline(navigator.onLine);
-      if (navigator.onLine) syncManager.trySync();
     };
     window.addEventListener("online", updateOnlineStatus);
     window.addEventListener("offline", updateOnlineStatus);
@@ -48,13 +43,15 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <SidebarProvider>
-      <div className={`min-h-screen flex ${theme === "dark" ? "bg-gray-900" : "bg-gray-100"}`} {...handlers}>
+      <div className={cn("min-h-screen flex", theme === "dark" ? "bg-gray-900" : "bg-gray-100")} {...handlers}>
         
         {/* Sidebar */}
-        <aside className={`fixed left-0 top-0 h-screen z-50 transition-all duration-300
-          ${theme === "dark" ? "bg-gray-800" : "bg-white"}
-          ${sidebarOpen ? "w-64" : "w-20"} shadow-lg border-r border-gray-700`}
-        >
+        <aside className={cn(
+          "fixed left-0 top-0 h-screen z-50 transition-all duration-300",
+          theme === "dark" ? "bg-gray-800" : "bg-white",
+          sidebarOpen ? "w-64" : "w-20",
+          "shadow-lg border-r border-gray-700"
+        )}>
           <div className="flex flex-col items-center py-4 h-full">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -74,9 +71,11 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
                 <Link
                   key={item.name}
                   to={item.path}
-                  className={`w-full p-3 flex items-center transition-colors rounded-lg hover:bg-gray-700/30 group relative 
-                    ${sidebarOpen ? "justify-start gap-3" : "justify-center"} 
-                    ${location.pathname === item.path ? "bg-gray-700/20" : ""}`}
+                  className={cn(
+                    "w-full p-3 flex items-center transition-colors rounded-lg hover:bg-gray-700/30 group relative",
+                    sidebarOpen ? "justify-start gap-3" : "justify-center",
+                    location.pathname === item.path ? "bg-gray-700/20" : ""
+                  )}
                 >
                   {item.icon}
                   {sidebarOpen && <span className="text-sm">{item.name}</span>}
@@ -87,13 +86,14 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
         </aside>
 
         {/* Conteúdo principal */}
-        <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-20"}`}>
+        <div className={cn("flex-1 flex flex-col transition-all duration-300", sidebarOpen ? "ml-64" : "ml-20")}>
           
           {/* Navbar */}
-          <header className={`fixed top-0 right-0 h-16 z-40 flex items-center justify-between px-8 
-            ${theme === "dark" ? "bg-gray-900 border-b border-gray-700" : "bg-white border-b border-gray-200"}
-            ${sidebarOpen ? "left-64" : "left-20"}`}
-          >
+          <header className={cn(
+            "fixed top-0 right-0 h-16 z-40 flex items-center justify-between px-8",
+            theme === "dark" ? "bg-gray-900 border-b border-gray-700" : "bg-white border-b border-gray-200",
+            sidebarOpen ? "left-64" : "left-20"
+          )}>
             <nav className="flex space-x-8">
               {["pagina-inicial", "dashboard", "relatorios"].map((path) => (
                 <Link key={path} to={`/${path}`} className="hover:text-emerald-400 transition-colors">
@@ -104,7 +104,7 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
 
             {/* Status de Conexão + Ícones */}
             <div className="flex items-center space-x-6">
-              {!isOnline && <WifiOff className="h-6 w-6 text-red-500" title="Offline" />}
+              {!isOnline && <WifiOff className="h-6 w-6 text-red-500" aria-label="Offline" />}
               <button className="hover:text-emerald-400 transition-colors">
                 <Bell className="h-6 w-6" />
               </button>
