@@ -1,3 +1,4 @@
+
 import { ReactNode, useState, useEffect } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
@@ -5,10 +6,10 @@ import { useAuth } from "@/components/AuthProvider";
 import { useTheme } from "@/components/ui/ThemeContext";
 import { Link, useLocation, Outlet } from "react-router-dom";
 import { Search, Bell, User, Menu, Building, ClipboardList, Settings, LogOut, WifiOff } from "lucide-react";
-import { useMediaQuery } from "react-responsive";
 import { useSwipeable } from "react-swipeable";
 import { db } from "@/services/database";
 import { SyncManager } from "@/services/sync";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface DashboardLayoutProps {
   children?: ReactNode;
@@ -18,7 +19,7 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
   const { theme, toggleTheme } = useTheme();
   const { user } = useAuth();
   const location = useLocation();
-  const isMobile = useMediaQuery({ maxWidth: 768 });
+  const isMobile = useIsMobile();
 
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
