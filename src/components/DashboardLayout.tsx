@@ -29,22 +29,27 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="flex">
           {/* Sidebar Fixa */}
           {user && (
-            <div className={`fixed left-0 top-0 h-screen z-50 transition-all duration-300 ${
-              sidebarOpen ? "w-64" : "w-0 -translate-x-full"
-            } ${theme === "dark" ? "bg-gray-800" : "bg-white"}`}>
-              <AppSidebar />
+            <div
+              className={`fixed top-0 left-0 h-screen z-50 transition-all duration-300 ${
+                sidebarOpen ? "w-64" : "w-0 -translate-x-full"
+              } ${theme === "dark" ? "bg-gray-800" : "bg-white"}`}
+            >
+              <div className={`h-full ${sidebarOpen ? "block" : "hidden"}`}>
+                <AppSidebar />
+              </div>
             </div>
           )}
 
           {/* Conteúdo Principal */}
           <div className={`flex-1 transition-all duration-300 ${sidebarOpen ? "ml-64" : "ml-0"}`}>
             {/* Cabeçalho Fixo */}
-            <header className={`fixed top-0 right-0 left-0 z-40 flex items-center justify-between px-6 py-4 ${
-              theme === "dark 
-                ? "bg-gray-900 border-b border-gray-700" 
-                : "bg-white border-b border-gray-200"
-            } ${sidebarOpen ? "left-64" : "left-0"}`}>
-              
+            <header
+              className={`fixed top-0 right-0 h-16 z-40 flex items-center justify-between px-6 py-4 transition-all duration-300 ${
+                theme === "dark"
+                  ? "bg-gray-900 border-b border-gray-700"
+                  : "bg-white border-b border-gray-200"
+              } ${sidebarOpen ? "left-64" : "left-0"}`}
+            >
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -53,9 +58,15 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
               </button>
 
               <nav className="flex-1 flex justify-center space-x-8 mx-4">
-                <Link to="/" className="hover:text-primary transition-colors">Início</Link>
-                <Link to="/dashboard" className="hover:text-primary transition-colors">Dashboard</Link>
-                <Link to="/reports" className="hover:text-primary transition-colors">Relatórios</Link>
+                <Link to="/" className="hover:text-primary transition-colors">
+                  Início
+                </Link>
+                <Link to="/dashboard" className="hover:text-primary transition-colors">
+                  Dashboard
+                </Link>
+                <Link to="/reports" className="hover:text-primary transition-colors">
+                  Relatórios
+                </Link>
               </nav>
 
               <div className="flex items-center gap-4">
@@ -64,8 +75,8 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
                     type="text"
                     placeholder="Buscar..."
                     className={`w-full pl-4 pr-10 py-2 rounded-lg border focus:outline-none focus:ring-2 ${
-                      theme === "dark" 
-                        ? "bg-gray-800 border-gray-700 text-white" 
+                      theme === "dark"
+                        ? "bg-gray-800 border-gray-700 text-white"
                         : "bg-gray-50 border-gray-200 text-gray-900"
                     }`}
                   />
@@ -82,7 +93,7 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
               </div>
             </header>
 
-            {/* Área de Conteúdo com Margem Superior */}
+            {/* Área de Conteúdo */}
             <main className="p-8 mt-16">
               {location.pathname === "/empresas" && (
                 <div className="mb-6 max-w-2xl">
@@ -91,8 +102,8 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
                       type="text"
                       placeholder="Buscar empresas..."
                       className={`w-full pl-4 pr-10 py-2 rounded-lg border focus:outline-none focus:ring-2 ${
-                        theme === "dark" 
-                          ? "bg-gray-800 border-gray-700 text-white" 
+                        theme === "dark"
+                          ? "bg-gray-800 border-gray-700 text-white"
                           : "bg-gray-50 border-gray-200 text-gray-900"
                       }`}
                     />
