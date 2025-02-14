@@ -1,8 +1,8 @@
 import { ReactNode, useState, useEffect } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { SidebarProvider } from "@/components/ui/sidebar";
-import { useAuth } from "@/components/AuthProvider"; // ⚠️ Verificar se está correto!
-import { useTheme } from "@/components/ui/ThemeContext"; // ⚠️ Verificar se está correto!
+import { useAuth } from "@/components/AuthProvider";
+import { useTheme } from "@/components/ui/ThemeContext";
 import { Link, useLocation, useNavigate, Outlet } from "react-router-dom";
 import { Search, Bell, User, Menu, Building, ClipboardList, Settings, LogOut } from "lucide-react";
 
@@ -11,17 +11,21 @@ interface DashboardLayoutProps {
 }
 
 function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { theme, toggleTheme } = useTheme(); // ⚠️ Certifique-se de que `toggleTheme` está acessível!
-  const { user } = useAuth(); // ⚠️ Se `user` estiver `null`, pode ser um problema de contexto.
+  const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeNav, setActiveNav] = useState("");
 
+  // Verifica qual página está ativa
   useEffect(() => {
     const path = location.pathname.split("/")[1];
     setActiveNav(path.charAt(0).toUpperCase() + path.slice(1));
   }, [location]);
+
+  // Adiciona um log para verificar qual página está sendo carregada
+  console.log("Página atual:", location.pathname);
 
   const mainBgColor = theme === "dark" ? "bg-gray-900" : "bg-gray-100";
   const textColor = theme === "dark" ? "text-gray-300" : "text-gray-700";
@@ -29,7 +33,7 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
   const sidebarItems = [
     { icon: <Building />, name: "Empresas", path: "/empresas" },
     { icon: <ClipboardList />, name: "Inspeções", path: "/inspecoes" },
-    { icon: <Settings />, name: "Configurações", path: "/configuracoes" },
+    { icon: <Settings />, name: "Configurações", path: "/configuracoes" }, // Verifique se a rota está correta
     { icon: <LogOut />, name: "Sair", path: "/logout" },
   ];
 
