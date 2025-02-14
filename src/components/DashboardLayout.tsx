@@ -1,4 +1,3 @@
-
 import { ReactNode, useState, useEffect } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useAuth } from "@/components/AuthProvider";
@@ -8,6 +7,8 @@ import { Search, Bell, User, Menu, Building, ClipboardList, Settings, LogOut, Wi
 import { useSwipeable } from "react-swipeable";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { db } from "@/services/database"; // ✅ Correção: Importando IndexedDB corretamente
+import { SyncManager } from "@/services/sync"; // ✅ Correção: Importando SyncManager corretamente
 
 interface DashboardLayoutProps {
   children?: ReactNode;
@@ -18,14 +19,17 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobile();
+  const syncManager = new SyncManager(); // ✅ Correção: Garantindo que SyncManager esteja inicializado
 
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [localEmpresas, setLocalEmpresas] = useState([]);
 
-  // Atualiza status online/offline
+  // Atualiza status online/offline e sincroniza dados quando necessário
   useEffect(() => {
-    const updateOnlineStatus = () => {
+    const updateOnlineStatus = async () => {
       setIsOnline(navigator.onLine);
+      if (navigator.onLine) await syncManager.trySync(); // ✅ Agora só chama se estiver online
     };
     window.addEventListener("online", updateOnlineStatus);
     window.addEventListener("offline", updateOnlineStatus);
@@ -34,6 +38,22 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
       window.removeEventListener("offline", updateOnlineStatus);
     };
   }, []);
+
+  // Carrega dados do IndexedDB no modo offline
+  useEffect(() => {
+    const loadOfflineData = async () => {
+      try {
+        const dbInstance = await db;
+        const tx = dbInstance.transaction("empresas", "readonly");
+        const storedData = await tx.store.getAll();
+        setLocalEmpresas(storedData);
+      } catch (error) {
+        console.error("Erro ao carregar dados locais:", error);
+      }
+    };
+
+    if (!isOnline) loadOfflineData();
+  }, [isOnline]);
 
   // Animação do Sidebar Mobile (Swipe)
   const handlers = useSwipeable({
@@ -119,25 +139,6 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {/* Área de Conteúdo */}
           <main className="flex-1 pt-24 px-8">
-            {location.pathname === "/empresas" && (
-              <div className="mb-8">
-                <h1 className="text-3xl font-bold mb-4">Empresas Cadastradas</h1>
-                <div className="relative w-1/2 max-w-xl">
-                  <input
-                    type="text"
-                    placeholder="Buscar empresas..."
-                    className="w-full pl-4 pr-12 py-2 rounded-md border focus:outline-none focus:ring-2 focus:ring-primary 
-                      text-gray-800 dark:text-white bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 shadow-sm"
-                    aria-label="Buscar empresas"
-                  />
-                  <button className="absolute right-3 top-2.5 text-gray-500 hover:text-primary transition-all">
-                    <Search />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Renderiza páginas internas */}
             <Outlet />
             {children}
           </main>
