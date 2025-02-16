@@ -1,5 +1,5 @@
 
-import { CompanyMetadata, CompanyUnit } from "@/types/company";
+import { CompanyUnit } from "@/types/company";
 
 interface CompanyUnitsProps {
   units: CompanyUnit[] | undefined;

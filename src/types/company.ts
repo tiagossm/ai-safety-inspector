@@ -7,10 +7,11 @@ export type CompanyUnit = {
   id: string;
   name: string;
   code: string;
+  address?: string | null;
 };
 
 export type CompanyMetadata = {
-  units: CompanyUnit[];
+  units?: CompanyUnit[];
   risk_grade?: string;
   [key: string]: any;
 };

@@ -22,7 +22,11 @@ export const generatePDF = (company: Company, units: CompanyUnit[] | undefined) 
   
   doc.text("Unidades:", 20, 100);
   units?.forEach((unit, index) => {
-    doc.text(`- ${unit.name || `Unidade ${index + 1}`}`, 30, 110 + (index * 10));
+    const unitText = `- ${unit.name || `Unidade ${index + 1}`}`;
+    doc.text(unitText, 30, 110 + (index * 10));
+    if (unit.address) {
+      doc.text(`  ${unit.address}`, 30, 110 + (index * 10) + 5);
+    }
   });
   
   doc.save(`relatorio_${company.cnpj}.pdf`);
@@ -32,9 +36,12 @@ export const generateCSV = (company: Company, units: CompanyUnit[] | undefined) 
   let csvContent = "Nome,CNPJ,CNAE,Tipo,Funcionários\n";
   csvContent += `${company.fantasy_name || ""},${company.cnpj},${company.cnae || ""},${isMatriz(company.cnpj) ? "Matriz" : "Filial"},${company.employee_count || ""}\n`;
   
-  units?.forEach(unit => {
-    csvContent += `${unit.name || ""},${unit.id || ""},${unit.address || ""},"Unidade",\n`;
-  });
+  if (units?.length) {
+    csvContent += "\nUnidades\nNome,Código,Endereço\n";
+    units.forEach(unit => {
+      csvContent += `${unit.name || ""},${unit.code || ""},${unit.address || ""}\n`;
+    });
+  }
 
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement("a");

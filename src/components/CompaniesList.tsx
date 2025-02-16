@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -50,7 +51,14 @@ export function CompaniesList() {
 
       if (error) throw error;
 
-      setCompanies(data as Company[]);
+      // Convert the raw data to Company type
+      const convertedData: Company[] = (data || []).map(item => ({
+        ...item,
+        metadata: item.metadata as CompanyMetadata | null,
+        status: item.status as CompanyStatus
+      }));
+
+      setCompanies(convertedData);
     } catch (error) {
       console.error('Error fetching companies:', error);
       toast({
