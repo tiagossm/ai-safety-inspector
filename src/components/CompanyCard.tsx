@@ -1,226 +1,134 @@
-import { useState } from "react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Company, CompanyStatus, CompanyUnit } from "@/types/company";
-import { Button } from "@/components/ui/button";
-import {
-  ClipboardList,
-  Pencil,
-  MoreVertical,
-  Trash2,
-  Printer,
-  BrainCircuit,
-  DownloadCloud,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
-import { formatCNPJ, formatPhone } from "@/utils/formatters";
+<div className="flex min-h-screen bg-background">
+  {/* Sidebar */}
+  <aside className="w-64 border-r border-border p-4">
+    <div className="space-y-6">
+      <h2 className="text-lg font-bold">Menu</h2>
+      <nav className="space-y-2">
+        <Button variant="ghost" className="w-full justify-start">
+          <Building className="h-4 w-4 mr-2" />
+          Empresas
+        </Button>
+        <Button variant="ghost" className="w-full justify-start">
+          <User className="h-4 w-4 mr-2" />
+          Usuários
+        </Button>
+        <Button variant="ghost" className="w-full justify-start">
+          <ClipboardList className="h-4 w-4 mr-2" />
+          Inspeções
+        </Button>
+        <Button variant="ghost" className="w-full justify-start">
+          <Settings className="h-4 w-4 mr-2" />
+          Configurações
+        </Button>
+      </nav>
+    </div>
+  </aside>
 
-interface CompanyCardProps {
-  company: Company;
-  onToggleStatus: (id: string, newStatus: CompanyStatus) => void;
-  onEdit: (company: Company) => void;
-  onStartInspection: (company: Company) => void;
-  onDimensionNRs: (company: Company) => void;
-}
+  {/* Conteúdo Principal */}
+  <main className="flex-1 p-8">
+    {/* Cabeçalho com Ações */}
+    <div className="flex justify-between items-center mb-8">
+      <div className="relative flex-1 max-w-xl">
+        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Buscar empresas..."
+          className="pl-10"
+        />
+      </div>
+      <div className="flex gap-2">
+        <Button variant="outline">
+          <Download className="h-4 w-4 mr-2" />
+          Importar CSV
+        </Button>
+        <Button>
+          <Plus className="h-4 w-4 mr-2" />
+          Adicionar Empresa
+        </Button>
+      </div>
+    </div>
 
-const InfoItem = ({ label, value }: { label: string; value: string | null }) => (
-  <div className="flex justify-between items-center py-1 border-b border-border">
-    <span className="text-muted-foreground">{label}</span>
-    <span className="font-medium">{value || "Não informado"}</span>
-  </div>
-);
-
-export function CompanyCard({
-  company,
-  onToggleStatus,
-  onEdit,
-  onStartInspection,
-  onDimensionNRs,
-}: CompanyCardProps) {
-  const [showDetails, setShowDetails] = useState(false);
-
-  const handleToggleStatus = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const newStatus = company.status === "active" ? "inactive" : "active";
-    onToggleStatus(company.id, newStatus);
-  };
-
-  const handlePrint = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    window.print();
-  };
-
-  return (
-    <Card
-      className={cn(
-        "relative rounded-lg transition-shadow w-full",
-        "bg-card text-card-foreground border border-border",
-        "hover:shadow-md"
-      )}
-      onClick={() => setShowDetails(!showDetails)}
-    >
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start gap-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h2 className="text-2xl font-bold">{company.fantasy_name}</h2>
-              <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
-                <span className="sr-only">Status</span>
-                <span className="text-sm">
-                  {company.status === "active" ? "Ativo" : "Inativo"}
-                </span>
-              </Button>
-            </div>
-            <div className="flex gap-2 mt-2 flex-wrap">
-              <Button variant="outline" size="sm">
-                CNPJ: {formatCNPJ(company.cnpj)}
-              </Button>
-              {company.cnae && (
-                <Button variant="outline" size="sm">
-                  CNAE: {company.cnae}
-                </Button>
-              )}
+    {/* Card da Empresa */}
+    <Card className="bg-background">
+      <CardHeader className="border-b border-border">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-bold">FAVELA HOLDING</h1>
+            <div className="mt-2 space-y-1">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">CNPJ: 48.594.326/0001-10</Badge>
+                <Badge variant="outline">CNAE: 6462-0</Badge>
+                <Badge className="bg-green-100 text-green-800 dark:bg-green-900/20">
+                  Ativo
+                </Badge>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handlePrint}
-            >
-              <Printer className="h-4 w-4" />
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
-                  <MoreVertical className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit(company);
-                  }}
-                >
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Editar Empresa
-                </DropdownMenuItem>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <DropdownMenuItem
-                      className="text-destructive"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      {company.status === "active" ? "Inativar" : "Reativar"}
-                    </DropdownMenuItem>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        Confirmar {company.status === "active" ? "Inativação" : "Reativação"}
-                      </AlertDialogTitle>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleToggleStatus}>
-                        Confirmar
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <DropdownMenu>
+            {/* Menu de opções */}
+          </DropdownMenu>
         </div>
       </CardHeader>
 
-      {showDetails && (
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <InfoItem
-                label="Grau de Risco (NR 4)"
-                value={company.metadata?.risk_grade || null}
-              />
-              <InfoItem
-                label="Funcionários"
-                value={company.employee_count?.toString() || null}
-              />
-            </div>
-            <div className="space-y-2">
-              <InfoItem label="Contato" value={company.contact_name} />
-              <InfoItem label="Email" value={company.contact_email} />
-              <InfoItem label="Telefone" value={formatPhone(company.contact_phone)} />
-            </div>
+      <CardContent className="p-6">
+        {/* Seção de Contato */}
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold mb-4">Contato Principal</h3>
+          <div className="space-y-1">
+            <p className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              <span>THALES PEREIRA ATHAYDE</span>
+            </p>
+            <p className="flex items-center gap-2">
+              <Mail className="h-4 w-4" />
+              <span>homecufe@gmail.com</span>
+            </p>
+            <p className="flex items-center gap-2">
+              <Phone className="h-4 w-4" />
+              <span>(21) 8437-5139</span>
+            </p>
           </div>
+        </div>
 
-          {company.metadata?.units && company.metadata.units.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="font-medium text-lg">Unidades Cadastradas</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {company.metadata.units.map((unit: CompanyUnit) => (
-                  <div key={unit.id} className="p-3 bg-muted rounded-lg">
-                    <p className="font-medium">{unit.name}</p>
-                    <p className="text-sm text-muted-foreground">{unit.code}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+        {/* Ações Rápidas */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <Button className="h-24 flex flex-col items-center justify-center">
+            <ClipboardList className="h-6 w-6 mb-2" />
+            Nova Inspeção
+          </Button>
+          <Button className="h-24 flex flex-col items-center justify-center">
+            <Zap className="h-6 w-6 mb-2" />
+            Dimensionar NRs
+          </Button>
+          <Button className="h-24 flex flex-col items-center justify-center">
+            <DownloadCloud className="h-6 w-6 mb-2" />
+            Exportar Relatório
+          </Button>
+          <Button className="h-24 flex flex-col items-center justify-center">
+            <PlusCircle className="h-6 w-6 mb-2" />
+            Adicionar Unidade
+          </Button>
+        </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Button
-              onClick={(e) => {
-                e.stopPropagation();
-                onStartInspection(company);
-              }}
-              className="flex-1"
-            >
-              <ClipboardList className="h-4 w-4 mr-2" />
-              Nova Inspeção
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDimensionNRs(company);
-              }}
-              className="flex-1"
-            >
-              <BrainCircuit className="h-4 w-4 mr-2" />
-              Dimensionar NRs
-            </Button>
+        {/* Unidades Cadastradas */}
+        <div>
+          <h3 className="text-lg font-semibold mb-4">Unidades Cadastradas</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <Building className="h-5 w-5" />
+                  <span className="font-medium">Matriz</span>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">
+                  Código: MAT-001
+                </p>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      )}
-
-      <CardContent className="flex flex-col sm:flex-row gap-3 border-t pt-4">
-        <Button className="flex-1">
-          <ClipboardList className="h-4 w-4 mr-2" />
-          Nova Inspeção
-        </Button>
-        <Button variant="secondary" className="flex-1">
-          <DownloadCloud className="h-4 w-4 mr-2" />
-          Exportar Relatório
-        </Button>
+        </div>
       </CardContent>
     </Card>
-  );
-}
+  </main>
+</div>
