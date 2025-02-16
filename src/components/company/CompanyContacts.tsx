@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Phone, Mail, UserCircle, Briefcase, Trash2, Edit, MapPin, Star, Search } from "lucide-react";
+import { Phone, Mail, UserCircle, Briefcase, Trash2, Edit, MapPin, Star, Search, Plus } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -24,6 +24,9 @@ interface CompanyContactsProps {
 export function CompanyContacts({ companyId, contacts, onContactsChange }: CompanyContactsProps) {
   const [isAddingContact, setIsAddingContact] = useState(false);
   const [filter, setFilter] = useState("");
+  const [customContactTypes, setCustomContactTypes] = useState<string[]>([]);
+  const [newContactType, setNewContactType] = useState("");
+
   const [newContact, setNewContact] = useState({
     name: "",
     role: "",
@@ -63,6 +66,14 @@ export function CompanyContacts({ companyId, contacts, onContactsChange }: Compa
         description: error.message,
         variant: "destructive",
       });
+    }
+  };
+
+  // Adicionar novo tipo de contato à lista personalizada
+  const handleAddContactType = () => {
+    if (newContactType.trim() && !customContactTypes.includes(newContactType)) {
+      setCustomContactTypes([...customContactTypes, newContactType]);
+      setNewContactType("");
     }
   };
 
@@ -111,11 +122,7 @@ export function CompanyContacts({ companyId, contacts, onContactsChange }: Compa
                     }}
                   />
                 ))}
-                <Button
-                  onClick={() => setNewContact({ ...newContact, emails: [...newContact.emails, ""] })}
-                  variant="outline"
-                  className="mt-2"
-                >
+                <Button onClick={() => setNewContact({ ...newContact, emails: [...newContact.emails, ""] })} variant="outline">
                   Adicionar Email
                 </Button>
               </div>
@@ -134,11 +141,7 @@ export function CompanyContacts({ companyId, contacts, onContactsChange }: Compa
                     }}
                   />
                 ))}
-                <Button
-                  onClick={() => setNewContact({ ...newContact, phones: [...newContact.phones, ""] })}
-                  variant="outline"
-                  className="mt-2"
-                >
+                <Button onClick={() => setNewContact({ ...newContact, phones: [...newContact.phones, ""] })} variant="outline">
                   Adicionar Telefone
                 </Button>
               </div>
@@ -149,17 +152,34 @@ export function CompanyContacts({ companyId, contacts, onContactsChange }: Compa
 
               {/* Tipo de Contato */}
               <Label>Tipo de Contato</Label>
-              <select
-                value={newContact.contactType}
-                onChange={(e) => setNewContact({ ...newContact, contactType: e.target.value })}
-                className="w-full border rounded-md p-2 bg-white text-gray-900 dark:bg-gray-700 dark:text-white"
-              >
-                <option value="Comercial">Comercial</option>
-                <option value="Técnico">Técnico</option>
-                <option value="Financeiro">Financeiro</option>
-                <option value="Jurídico">Jurídico</option>
-              </select>
+              <div className="flex gap-2">
+                <select
+                  value={newContact.contactType}
+                  onChange={(e) => setNewContact({ ...newContact, contactType: e.target.value })}
+                  className="w-full border rounded-md p-2 bg-white text-gray-900 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="Comercial">Comercial</option>
+                  <option value="Técnico">Técnico</option>
+                  <option value="Financeiro">Financeiro</option>
+                  <option value="Jurídico">Jurídico</option>
+                  {customContactTypes.map((type, index) => (
+                    <option key={index} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+                <Input
+                  placeholder="Novo Tipo"
+                  value={newContactType}
+                  onChange={(e) => setNewContactType(e.target.value)}
+                  className="w-40"
+                />
+                <Button onClick={handleAddContactType} size="icon">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
 
+              {/* Contato Focal */}
               <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
