@@ -156,6 +156,7 @@ export function CompanyContacts({ companyId, contacts, onContactsChange }: Compa
               <Button onClick={handleAddContact} className="w-full">Salvar Contato</Button>
             </div>
           </DialogContent>
+          className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 bg-gray-800 text-white rounded-md"
         </Dialog>
       </div>
 
