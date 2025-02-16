@@ -85,7 +85,7 @@ export function CompanyContacts({ companyId, contacts, onContactsChange }: Compa
           <DialogTrigger asChild>
             <Button variant="outline" size="sm">Adicionar Contato</Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 bg-gray-800 text-white rounded-md">
             <DialogHeader>
               <DialogTitle>Novo Contato</DialogTitle>
             </DialogHeader>
@@ -130,16 +130,15 @@ export function CompanyContacts({ companyId, contacts, onContactsChange }: Compa
 
               <Label>Tipo de Contato</Label>
               <select
-  value={newContact.contactType}
-  onChange={(e) => setNewContact({ ...newContact, contactType: e.target.value })}
-  className="w-full border rounded-md p-2 bg-white text-gray-900 dark:bg-gray-700 dark:text-white"
->
-  <option value="Comercial">Comercial</option>
-  <option value="Técnico">Técnico</option>
-  <option value="Financeiro">Financeiro</option>
-  <option value="Jurídico">Jurídico</option>
-</select>
-
+                value={newContact.contactType}
+                onChange={(e) => setNewContact({ ...newContact, contactType: e.target.value })}
+                className="w-full border rounded-md p-2 bg-white text-gray-900 dark:bg-gray-700 dark:text-white"
+              >
+                <option value="Comercial">Comercial</option>
+                <option value="Técnico">Técnico</option>
+                <option value="Financeiro">Financeiro</option>
+                <option value="Jurídico">Jurídico</option>
+              </select>
 
               <div className="flex items-center space-x-2">
                 <input
@@ -156,7 +155,6 @@ export function CompanyContacts({ companyId, contacts, onContactsChange }: Compa
               <Button onClick={handleAddContact} className="w-full">Salvar Contato</Button>
             </div>
           </DialogContent>
-          className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 bg-gray-800 text-white rounded-md"
         </Dialog>
       </div>
 
