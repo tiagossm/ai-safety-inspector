@@ -54,10 +54,11 @@ export class SyncManager {
         if (!error) {
           const database = await db;
           const tx = database.transaction('empresas', 'readwrite');
-          await tx.store.put({
-            ...empresa,
+          const updatedEmpresa: LocalCompany = {
+            ...(empresa as LocalCompany),
             sync_status: 'synced'
-          });
+          };
+          await tx.store.put(updatedEmpresa);
           await tx.done;
         }
       }
@@ -74,10 +75,11 @@ export class SyncManager {
         if (!error) {
           const database = await db;
           const tx = database.transaction('inspections', 'readwrite');
-          await tx.store.put({
-            ...inspection,
+          const updatedInspection: LocalInspection = {
+            ...(inspection as LocalInspection),
             sync_status: 'synced'
-          });
+          };
+          await tx.store.put(updatedInspection);
           await tx.done;
         }
       }

@@ -45,7 +45,6 @@ interface MyDB extends DBSchema {
 // Initialize the database
 const dbPromise = openDB<MyDB>('offline-app-db', 1, {
   upgrade(db) {
-    // Create stores
     const empresasStore = db.createObjectStore('empresas', {
       keyPath: 'id'
     });
