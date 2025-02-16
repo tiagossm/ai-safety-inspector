@@ -2,6 +2,7 @@
 import { Company } from "@/types/company";
 import { jsPDF } from "jspdf";
 import { formatCNPJ } from "./formatters";
+import { supabase } from "@/integrations/supabase/client";
 
 export const generateCompanyPDF = (company: Company) => {
   const doc = new jsPDF();
@@ -36,4 +37,57 @@ export const generateCompanyPDF = (company: Company) => {
   }
   
   doc.save(`empresa_${company.cnpj}.pdf`);
+};
+
+export const exportAllCompaniesReport = async () => {
+  // Fetch all active companies
+  const { data: companies, error } = await supabase
+    .from('companies')
+    .select('*')
+    .eq('status', 'active');
+
+  if (error || !companies) {
+    console.error("Erro ao buscar empresas:", error);
+    return;
+  }
+
+  const doc = new jsPDF();
+  let yPosition = 20;
+  const pageHeight = doc.internal.pageSize.height;
+
+  // Title
+  doc.setFontSize(16);
+  doc.text("Relatório Geral de Empresas", 20, yPosition);
+  yPosition += 20;
+
+  // Companies
+  doc.setFontSize(10);
+  companies.forEach((company, index) => {
+    // Check if we need a new page
+    if (yPosition > pageHeight - 40) {
+      doc.addPage();
+      yPosition = 20;
+    }
+
+    // Company header
+    doc.setFont(undefined, 'bold');
+    doc.text(`${index + 1}. ${company.fantasy_name}`, 20, yPosition);
+    yPosition += 10;
+
+    // Company details
+    doc.setFont(undefined, 'normal');
+    doc.text(`CNPJ: ${formatCNPJ(company.cnpj)}`, 25, yPosition);
+    yPosition += 5;
+    doc.text(`CNAE: ${company.cnae || "Não informado"}`, 25, yPosition);
+    yPosition += 5;
+    doc.text(`Funcionários: ${company.employee_count || "Não informado"}`, 25, yPosition);
+    yPosition += 5;
+    doc.text(`Contato: ${company.contact_name || "Não informado"}`, 25, yPosition);
+    yPosition += 5;
+    doc.text(`Email: ${company.contact_email || "Não informado"}`, 25, yPosition);
+    yPosition += 15; // Extra space between companies
+  });
+
+  // Save the PDF
+  doc.save('relatorio_empresas.pdf');
 };
