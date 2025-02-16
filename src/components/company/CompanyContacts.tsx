@@ -185,16 +185,40 @@ export function CompanyContacts({ companyId, contacts, onContactsChange }: Compa
                 <span className="font-medium">{contact.name}</span>
               </div>
               <div className="flex gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    setCurrentContact(contact);
-                    setIsEditing(true);
-                  }}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
+                <Dialog open={isEditing && currentContact?.id === contact.id} onOpenChange={setIsEditing}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setCurrentContact(contact);
+                        setIsEditing(true);
+                      }}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Editar Contato</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <Label>Nome</Label>
+                      <Input
+                        value={currentContact?.name}
+                        onChange={(e) => setCurrentContact({ ...currentContact, name: e.target.value })}
+                      />
+                      <Label>Cargo</Label>
+                      <Input
+                        value={currentContact?.role}
+                        onChange={(e) => setCurrentContact({ ...currentContact, role: e.target.value })}
+                      />
+                      <Button onClick={handleEditContact} className="w-full">
+                        Salvar Alterações
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -204,21 +228,6 @@ export function CompanyContacts({ companyId, contacts, onContactsChange }: Compa
                 </Button>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Briefcase className="h-4 w-4" />
-              <span>{contact.role}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Mail className="h-4 w-4" />
-              <span>{contact.email}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Phone className="h-4 w-4" />
-              <span>{contact.phone}</span>
-            </div>
-            {contact.notes && (
-              <p className="text-sm text-muted-foreground mt-2 border-t pt-2">{contact.notes}</p>
-            )}
           </div>
         ))}
       </div>
