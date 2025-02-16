@@ -74,7 +74,10 @@ export function CompaniesList() {
     try {
       const { error } = await supabase
         .from('companies')
-        .update({ status: 'inactive' })
+        .update({ 
+          status: 'archived',
+          deactivated_at: new Date().toISOString()
+        })
         .eq('id', id);
 
       if (error) throw error;
