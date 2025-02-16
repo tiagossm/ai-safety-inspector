@@ -40,17 +40,40 @@ export function UserList() {
   };
 
   const handleAddUser = async () => {
-    const { error } = await supabase
-      .from("users")
-      .insert(newUser);
+    try {
+      // 1. Criar usuário no Auth do Supabase
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: newUser.email,
+        email_confirm: true,
+        user_metadata: { name: newUser.name }
+      });
 
-    if (error) {
-      toast({ title: "Erro ao adicionar usuário", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Usuário adicionado", description: "O usuário foi cadastrado com sucesso." });
-      setIsAddingUser(false);
-      setNewUser({ name: "", email: "", role: "Usuário", status: "active" });
-      loadUsers();
+      if (authError) throw authError;
+
+      // 2. O trigger irá criar o usuário na tabela users automaticamente
+      // 3. Atualizar as informações adicionais
+      if (authData.user) {
+        const { error: updateError } = await supabase
+          .from("users")
+          .update({ 
+            role: newUser.role,
+            status: newUser.status 
+          })
+          .eq("id", authData.user.id);
+
+        if (updateError) throw updateError;
+
+        toast({ title: "Usuário adicionado", description: "O usuário foi cadastrado com sucesso." });
+        setIsAddingUser(false);
+        setNewUser({ name: "", email: "", role: "Usuário", status: "active" });
+        loadUsers();
+      }
+    } catch (error: any) {
+      toast({ 
+        title: "Erro ao adicionar usuário", 
+        description: error.message, 
+        variant: "destructive" 
+      });
     }
   };
 
@@ -70,13 +93,20 @@ export function UserList() {
   };
 
   const handleDeleteUser = async (id: string) => {
-    const { error } = await supabase.from("users").delete().eq("id", id);
+    try {
+      // 1. Primeiro deletamos o usuário do Auth
+      const { error: authError } = await supabase.auth.admin.deleteUser(id);
+      if (authError) throw authError;
 
-    if (error) {
-      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
-    } else {
+      // 2. O trigger ON DELETE CASCADE irá remover o usuário da tabela users
       toast({ title: "Usuário excluído", description: "O usuário foi removido." });
       loadUsers();
+    } catch (error: any) {
+      toast({ 
+        title: "Erro ao excluir", 
+        description: error.message, 
+        variant: "destructive" 
+      });
     }
   };
 
@@ -141,7 +171,7 @@ export function UserList() {
           <TableBody>
             {users
               .filter(user => (showInactive ? user.status === "inactive" : user.status === "active"))
-              .filter(user => user.name.toLowerCase().includes(search.toLowerCase()) || user.email.toLowerCase().includes(search.toLowerCase()))
+              .filter(user => user.name?.toLowerCase().includes(search.toLowerCase()) || user.email?.toLowerCase().includes(search.toLowerCase()))
               .map((user) => (
                 <TableRow key={user.id}>
                   <TableCell>{user.name}</TableCell>
