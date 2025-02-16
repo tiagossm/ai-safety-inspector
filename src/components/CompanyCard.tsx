@@ -1,154 +1,187 @@
-
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { useState } from "react";
-import { CompanyEditDialog } from "@/components/CompanyEditDialog";
-import { Company } from "@/types/company";
+import { useState, useEffect } from "react";
+import { Company, Contact } from "@/types/company";
+import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ClipboardList, Zap, Download, MoreVertical, Trash2, ChevronDown, ChevronUp, Pencil, Building, Settings, DoorOpen, Search } from "lucide-react";
+import { ClipboardList, Download, MoreVertical, ChevronDown, ChevronUp, Pencil, Trash2, User, Mail, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AlertDialog } from "@/components/ui/alert-dialog";
-import { DropdownMenu } from "@/components/ui/dropdown-menu";
-
-// Function to get status color based on company status
-const getStatusColor = (status: string) => {
-  switch (status.toLowerCase()) {
-    case 'active':
-      return 'bg-green-500';
-    case 'inactive':
-      return 'bg-gray-500';
-    case 'pending':
-      return 'bg-yellow-500';
-    case 'suspended':
-      return 'bg-red-500';
-    default:
-      return 'bg-gray-500';
-  }
-};
-
-// Novo componente para a tabela de unidades
-const UnitsTable = ({ units }: { units: Array<{ id: string; code: string; name: string; created_at: string }> }) => (
-  <div className="overflow-x-auto">
-    <table className="w-full">
-      <thead>
-        <tr className="text-left border-b border-gray-600">
-          <th className="pb-2">Código</th>
-          <th className="pb-2">Unidade</th>
-          <th className="pb-2">Data Cadastro</th>
-        </tr>
-      </thead>
-      <tbody>
-        {units.map((unit) => (
-          <tr key={unit.id} className="border-b border-gray-600">
-            <td className="py-3">{unit.code}</td>
-            <td className="py-3">{unit.name}</td>
-            <td className="py-3">{new Date(unit.created_at).toLocaleDateString()}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-);
+import { AlertDialog, DropdownMenu } from "@/components/ui";
 
 interface CompanyCardProps {
   company: Company;
-  onDelete: (id: string) => Promise<void>;
+  onToggleStatus: (id: string, newStatus: 'ativo' | 'inativo') => void;
   onEdit: (company: Company) => void;
   onStartInspection: (company: Company) => void;
-  onViewLegalNorms: (company: Company) => void;
+  onDimensionNRs: (company: Company) => void;
 }
 
-export function CompanyCard({ company, onDelete, onEdit, onStartInspection, onViewLegalNorms }: CompanyCardProps) {
-  // ... (mantenha os estados existentes)
+const StatusBadge = ({ status }: { status: string }) => (
+  <Badge 
+    className={cn(
+      "gap-2 px-3 py-1 text-sm",
+      status === 'ativo' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'
+    )}
+  >
+    <div className={cn("h-2 w-2 rounded-full", status === 'ativo' ? 'bg-green-500' : 'bg-red-500')} />
+    {status.toUpperCase()}
+  </Badge>
+);
 
-  // Função formatadora de CNPJ
+export function CompanyCard({ company, onToggleStatus, onEdit, onStartInspection, onDimensionNRs }: CompanyCardProps) {
+  const [showDetails, setShowDetails] = useState(false);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+
+  const loadContacts = async () => {
+    const { data } = await supabase
+      .from('contacts')
+      .select('*')
+      .eq('company_id', company.id);
+    if (data) setContacts(data);
+  };
+
+  const handleToggleStatus = () => {
+    const newStatus = company.status === 'ativo' ? 'inativo' : 'ativo';
+    onToggleStatus(company.id, newStatus);
+  };
+
   const formatCNPJ = (cnpj: string) => {
     return cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
   };
 
   return (
-    <Card className="hover:shadow-lg transition-shadow duration-300 bg-gray-800 text-white max-w-3xl mx-auto rounded-lg p-6">
-      {/* Menu Lateral Simulado */}
-      <div className="flex gap-4 mb-6 border-b border-gray-600 pb-4">
-        <Button variant="ghost" className="text-white">
-          <Building className="h-5 w-5 mr-2" /> Unidades
-        </Button>
-        <Button variant="ghost" className="text-white">
-          <ClipboardList className="h-5 w-5 mr-2" /> Inspeções
-        </Button>
-        <Button variant="ghost" className="text-white">
-          <Settings className="h-5 w-5 mr-2" /> Configurações
-        </Button>
-        <Button variant="ghost" className="text-white">
-          <DoorOpen className="h-5 w-5 mr-2" /> Sair
-        </Button>
-      </div>
-
-      {/* Barra de Ações */}
-      <div className="flex gap-4 mb-6">
-        <Button className="bg-green-600 hover:bg-green-700">
-          <Pencil className="h-4 w-4 mr-2" /> Adicionar Empresa
-        </Button>
-        <Button variant="outline" className="border-gray-600 text-white">
-          <Download className="h-4 w-4 mr-2" /> Importar CSV
-        </Button>
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Buscar empresa..."
-            className="w-full pl-10 pr-4 py-2 bg-gray-700 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-      </div>
-
-      {/* Seção de Detalhes */}
-      <CardHeader className="pb-4">
-        <div className="flex justify-between items-start">
+    <Card 
+      className="relative bg-gray-800 text-white rounded-lg hover:shadow-xl transition-shadow cursor-pointer"
+      onClick={() => setShowDetails(!showDetails)}
+    >
+      <CardHeader className="pb-2">
+        <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold mb-2">{company.fantasy_name || "Nome não informado"}</h2>
-            <div className="flex items-center gap-2">
-              <div className={`h-3 w-3 rounded-full ${getStatusColor(company.status || '')}`} />
-              <span className="text-sm font-medium">{company.status?.toUpperCase() || "STATUS INDEFINIDO"}</span>
+            <h2 className="text-xl font-bold">{company.name}</h2>
+            <div className="flex items-center gap-2 mt-2">
+              <StatusBadge status={company.status} />
+              <span className="text-sm text-gray-400">
+                CNPJ: {formatCNPJ(company.cnpj)}
+              </span>
             </div>
           </div>
-          {/* Menu de Opções (mantido original) */}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-white hover:bg-gray-700">
+                <MoreVertical className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-gray-700 text-white border-gray-600">
+              <DropdownMenuItem 
+                className="hover:bg-gray-600"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(company);
+                }}
+              >
+                <Pencil className="h-4 w-4 mr-2" />
+                Editar Empresa
+              </DropdownMenuItem>
+              
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <DropdownMenuItem 
+                    className="text-red-500 hover:bg-gray-600"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {company.status === 'ativo' ? 'Inativar' : 'Reativar'}
+                  </DropdownMenuItem>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="bg-gray-800 text-white">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Confirmar {company.status === 'ativo' ? 'Inativação' : 'Reativação'}
+                    </AlertDialogTitle>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction 
+                      className={company.status === 'ativo' ? 'bg-red-500' : 'bg-green-500'}
+                      onClick={handleToggleStatus}
+                    >
+                      Confirmar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-6">
-        {/* Detalhes Formatados */}
-        <div className="grid grid-cols-2 gap-4 bg-gray-700 p-4 rounded-lg">
-          <div>
-            <label className="text-sm text-gray-400">CNPJ</label>
-            <p className="font-mono">{formatCNPJ(company.cnpj)}</p>
+      {showDetails && (
+        <CardContent className="pt-4 border-t border-gray-600">
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="space-y-1">
+              <span className="text-sm text-gray-400">Data Cadastro:</span>
+              <p>{new Date(company.created_at).toLocaleDateString()}</p>
+            </div>
+            <div className="space-y-1">
+              <span className="text-sm text-gray-400">Email:</span>
+              <p>{company.email || 'Não informado'}</p>
+            </div>
           </div>
-          <div>
-            <label className="text-sm text-gray-400">Data de Cadastro</label>
-            <p>{new Date(company.created_at).toLocaleDateString()}</p>
-          </div>
-        </div>
 
-        {/* Ações */}
-        <div className="flex gap-2 justify-end">
-          <Button variant="outline" onClick={() => onEdit(company)}>
-            <Pencil className="h-4 w-4 mr-2" />
-            Editar
-          </Button>
-          <Button variant="destructive" onClick={() => onDelete(company.id)}>
-            <Trash2 className="h-4 w-4 mr-2" />
-            Excluir
-          </Button>
-          <Button onClick={() => onStartInspection(company)}>
-            <ClipboardList className="h-4 w-4 mr-2" />
-            Nova Inspeção
-          </Button>
-          <Button variant="outline" onClick={() => onViewLegalNorms(company)}>
-            <Zap className="h-4 w-4 mr-2" />
-            Normas
-          </Button>
-        </div>
-      </CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium">Contatos</h3>
+              <Button 
+                size="sm" 
+                variant="ghost"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  await loadContacts();
+                }}
+              >
+                Atualizar
+              </Button>
+            </div>
+            
+            {contacts.map((contact) => (
+              <div key={contact.id} className="flex items-center gap-4 p-3 bg-gray-700 rounded-lg">
+                <User className="h-5 w-5 text-blue-400" />
+                <div>
+                  <p className="font-medium">{contact.name}</p>
+                  <div className="flex gap-2 text-sm text-gray-400">
+                    {contact.phone && <span><Phone className="inline h-4 w-4 mr-1" />{contact.phone}</span>}
+                    {contact.email && <span><Mail className="inline h-4 w-4 mr-1" />{contact.email}</span>}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-4 mt-6">
+            <Button 
+              variant="default" 
+              onClick={(e) => {
+                e.stopPropagation();
+                onStartInspection(company);
+              }}
+              className="min-w-[160px] bg-green-600"
+            >
+              <ClipboardList className="h-4 w-4 mr-2" /> Iniciar Inspeção
+            </Button>
+            <Button 
+              variant="secondary" 
+              onClick={(e) => {
+                e.stopPropagation();
+                onDimensionNRs(company);
+              }}
+              className="min-w-[160px] bg-blue-600"
+            >
+              <Zap className="h-4 w-4 mr-2" /> Dimensionar NRs
+            </Button>
+          </div>
+        </CardContent>
+      )}
     </Card>
   );
 }
