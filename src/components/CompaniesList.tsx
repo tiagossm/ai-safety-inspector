@@ -21,23 +21,6 @@ export function CompaniesList() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const channel = supabase
-      .channel('companies_changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'companies' },
-        () => {
-          fetchCompanies();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
-  useEffect(() => {
     fetchCompanies();
   }, []);
 
@@ -51,7 +34,6 @@ export function CompaniesList() {
 
       if (error) throw error;
 
-      // Convert the raw data to Company type
       const convertedData: Company[] = (data || []).map(item => ({
         ...item,
         metadata: item.metadata as CompanyMetadata | null,
@@ -71,73 +53,6 @@ export function CompaniesList() {
     }
   };
 
-  const handleUpdateCompany = async (companyData: Company) => {
-    try {
-      const { error } = await supabase
-        .from('companies')
-        .update({
-          fantasy_name: companyData.fantasy_name,
-          cnae: companyData.cnae,
-          contact_email: companyData.contact_email,
-          contact_phone: companyData.contact_phone,
-          contact_name: companyData.contact_name,
-          status: companyData.status,
-        })
-        .eq('id', companyData.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Empresa atualizada",
-        description: "Os dados da empresa foram atualizados com sucesso.",
-      });
-
-      setEditingCompany(null);
-      fetchCompanies();
-    } catch (error) {
-      toast({
-        title: "Erro ao atualizar",
-        description: "Não foi possível atualizar os dados da empresa.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDeleteCompany = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .rpc('archive_company', { company_id: id });
-
-      if (error) throw error;
-
-      setCompanies(prevCompanies => prevCompanies.filter(company => company.id !== id));
-
-      toast({
-        title: "Empresa arquivada",
-        description: "A empresa foi arquivada com sucesso.",
-      });
-    } catch (error) {
-      console.error('Error archiving company:', error);
-      toast({
-        title: "Erro ao arquivar",
-        description: "Não foi possível arquivar a empresa.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleStartInspection = (company: Company) => {
-    navigate(`/inspections/new?company=${company.id}`);
-  };
-
-  const handleViewLegalNorms = (company: Company) => {
-    navigate(`/legal-norms?company=${company.id}`);
-  };
-
-  const handleEditCompany = (company: Company) => {
-    setEditingCompany(company);
-  };
-
   const handleToggleStatus = async (id: string, newStatus: CompanyStatus) => {
     try {
       const { error } = await supabase
@@ -147,15 +62,14 @@ export function CompaniesList() {
 
       if (error) throw error;
 
-      setCompanies(companies.map(company => 
-        company.id === id ? { ...company, status: newStatus } : company
-      ));
-
       toast({
         title: "Status atualizado",
-        description: `A empresa foi ${newStatus === 'active' ? 'ativada' : 'inativada'} com sucesso.`,
+        description: "O status da empresa foi atualizado com sucesso.",
       });
+
+      fetchCompanies();
     } catch (error) {
+      console.error('Error updating company status:', error);
       toast({
         title: "Erro ao atualizar status",
         description: "Não foi possível atualizar o status da empresa.",
@@ -164,65 +78,56 @@ export function CompaniesList() {
     }
   };
 
-  const handleDimensionNRs = (company: Company) => {
-    navigate(`/dimension-nrs/${company.id}`);
+  const handleEdit = (company: Company) => {
+    setEditingCompany(company);
+  };
+
+  const handleAddUnit = (companyId: string) => {
+    navigate(`/companies/${companyId}/units/new`);
   };
 
   const filteredCompanies = companies.filter(company => 
     company.fantasy_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    company.cnpj.includes(searchTerm) ||
-    company.cnae?.includes(searchTerm)
+    company.cnpj.includes(searchTerm)
   );
 
-  const displayedCompanies = showAll ? filteredCompanies : filteredCompanies.slice(0, 3);
-
   if (loading) {
-    return <div>Carregando empresas...</div>;
+    return <div>Carregando...</div>;
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto animate-fade-in">
+    <div className="space-y-4">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
         <Input
-          placeholder="Buscar empresas..."
+          placeholder="Buscar por nome ou CNPJ..."
+          className="pl-10"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
         />
       </div>
 
-      <div className="grid gap-6">
-        {displayedCompanies.map((company) => (
-          <Dialog key={company.id}>
-            {editingCompany && (
-              <CompanyEditDialog
-                company={editingCompany}
-                onUpdate={handleUpdateCompany}
-                onClose={() => setEditingCompany(null)}
-                open={Boolean(editingCompany)}
-              />
-            )}
-            <CompanyCard
-              company={company}
-              onToggleStatus={handleToggleStatus}
-              onEdit={handleEditCompany}
-              onStartInspection={handleStartInspection}
-              onDimensionNRs={handleDimensionNRs}
-            />
-          </Dialog>
+      <div className="grid gap-4">
+        {filteredCompanies.map(company => (
+          <CompanyCard
+            key={company.id}
+            company={company}
+            onEdit={() => handleEdit(company)}
+            onToggleStatus={() => handleToggleStatus(company.id, company.status === 'active' ? 'inactive' : 'active')}
+            onAddUnit={() => handleAddUnit(company.id)}
+          />
         ))}
       </div>
 
-      {filteredCompanies.length > 3 && !showAll && (
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={() => setShowAll(true)}
-        >
-          Ver todas as empresas ({filteredCompanies.length})
-        </Button>
-      )}
+      <Dialog open={!!editingCompany} onOpenChange={() => setEditingCompany(null)}>
+        {editingCompany && (
+          <CompanyEditDialog
+            company={editingCompany}
+            onClose={() => setEditingCompany(null)}
+            onSave={fetchCompanies}
+          />
+        )}
+      </Dialog>
     </div>
   );
 }
