@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { Dialog } from "@/components/ui/dialog";
 import { CompanyCard } from "./CompanyCard";
 import { CompanyEditDialog } from "./CompanyEditDialog";
-import { Company, CompanyStatus } from "@/types/company";
+import { Company, CompanyStatus, CompanyMetadata } from "@/types/company";
 
 export function CompaniesList() {
   const [companies, setCompanies] = useState<Company[]>([]);

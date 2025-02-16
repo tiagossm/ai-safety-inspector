@@ -1,7 +1,7 @@
 
 import { db, getPendingSyncs } from './database';
 import { supabase } from '@/integrations/supabase/client';
-import { Company } from '@/types/company';
+import { Company, CompanyMetadata } from '@/types/company';
 import { Json } from '@/integrations/supabase/types';
 import { User } from '@supabase/supabase-js';
 
@@ -14,7 +14,7 @@ interface LocalCompanyBase {
   contact_phone: string | null;
   contact_name: string | null;
   employee_count: number | null;
-  metadata: Json | null;
+  metadata: CompanyMetadata | null;
   status: string;
   sync_status: 'pending' | 'synced' | 'error';
   user_id: string;
@@ -60,6 +60,7 @@ export class SyncManager {
           .from('companies')
           .upsert({
             ...companyData,
+            metadata: companyData.metadata || {},
             user_id: this.user.id
           });
 
