@@ -156,6 +156,6 @@ export function CompanyCard({
           </Button>
         </div>
       </CardContent>
-    </Card
+    </Card>
   );
 }
