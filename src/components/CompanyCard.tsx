@@ -184,6 +184,6 @@ export const CompanyCard = ({
           <span className="text-sm">Inativar Empresa</span>
         </div>
       </CardContent>
-    </Card>
+    </Card>.
   );
 };
