@@ -1,7 +1,6 @@
 
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "./ui/use-toast";
@@ -9,14 +8,13 @@ import { useNavigate } from "react-router-dom";
 import { Dialog } from "@/components/ui/dialog";
 import { CompanyCard } from "./CompanyCard";
 import { CompanyEditDialog } from "./CompanyEditDialog";
-import { Company, CompanyStatus, CompanyMetadata } from "@/types/company";
+import { Company, CompanyStatus } from "@/types/company";
 
 export function CompaniesList() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
-  const [showAll, setShowAll] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -34,13 +32,7 @@ export function CompaniesList() {
 
       if (error) throw error;
 
-      const convertedData: Company[] = (data || []).map(item => ({
-        ...item,
-        metadata: item.metadata as CompanyMetadata | null,
-        status: item.status as CompanyStatus
-      }));
-
-      setCompanies(convertedData);
+      setCompanies(data as Company[]);
     } catch (error) {
       console.error('Error fetching companies:', error);
       toast({
@@ -125,6 +117,7 @@ export function CompaniesList() {
             company={editingCompany}
             onClose={() => setEditingCompany(null)}
             onSave={fetchCompanies}
+            open={!!editingCompany}
           />
         )}
       </Dialog>

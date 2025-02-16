@@ -8,48 +8,50 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Json } from "@/integrations/supabase/types";
 import { useToast } from "./ui/use-toast";
-
-type Company = {
-  id: string;
-  fantasy_name: string | null;
-  cnpj: string;
-  cnae: string | null;
-  contact_email: string | null;
-  contact_phone: string | null;
-  contact_name: string | null;
-  employee_count: number | null;
-  metadata: Json | null;
-  created_at: string;
-};
+import { Company } from "@/types/company";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CompanyEditDialogProps {
   company: Company;
-  onUpdate: (company: Company) => Promise<void>;
   onClose: () => void;
-  open: boolean; // Add this prop to control dialog visibility
+  onSave: () => Promise<void>;
+  open: boolean;
 }
 
 export function CompanyEditDialog({
   company,
-  onUpdate,
   onClose,
+  onSave,
   open,
 }: CompanyEditDialogProps) {
   const { toast } = useToast();
-
   const [editedCompany, setEditedCompany] = useState<Company>({ ...company });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await onUpdate(editedCompany);
+      const { error } = await supabase
+        .from('companies')
+        .update({
+          fantasy_name: editedCompany.fantasy_name,
+          cnpj: editedCompany.cnpj,
+          cnae: editedCompany.cnae,
+          contact_email: editedCompany.contact_email,
+          contact_phone: editedCompany.contact_phone,
+          contact_name: editedCompany.contact_name,
+          employee_count: editedCompany.employee_count,
+        })
+        .eq('id', company.id);
+
+      if (error) throw error;
 
       toast({
         title: "Empresa atualizada",
         description: "Os dados da empresa foram atualizados com sucesso.",
       });
+      
+      await onSave();
       onClose();
     } catch (error) {
       console.error(error);
