@@ -1,15 +1,30 @@
+
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { CompanyEditDialog } from "@/components/CompanyEditDialog";
-import { Company, CompanyMetadata, Contact } from "@/types/company";
-import { generateCSV } from "@/utils/companyUtils";
-import { supabase } from "@/integrations/supabase/client";
+import { Company } from "@/types/company";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ClipboardList, Zap, Download, MoreVertical, Trash2, ChevronDown, ChevronUp, Pencil, Building, Settings, DoorOpen, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AlertDialog } from "@/components/ui/alert-dialog";
 import { DropdownMenu } from "@/components/ui/dropdown-menu";
+
+// Function to get status color based on company status
+const getStatusColor = (status: string) => {
+  switch (status.toLowerCase()) {
+    case 'active':
+      return 'bg-green-500';
+    case 'inactive':
+      return 'bg-gray-500';
+    case 'pending':
+      return 'bg-yellow-500';
+    case 'suspended':
+      return 'bg-red-500';
+    default:
+      return 'bg-gray-500';
+  }
+};
 
 // Novo componente para a tabela de unidades
 const UnitsTable = ({ units }: { units: Array<{ id: string; code: string; name: string; created_at: string }> }) => (
@@ -34,6 +49,14 @@ const UnitsTable = ({ units }: { units: Array<{ id: string; code: string; name: 
     </table>
   </div>
 );
+
+interface CompanyCardProps {
+  company: Company;
+  onDelete: (id: string) => Promise<void>;
+  onEdit: (company: Company) => void;
+  onStartInspection: (company: Company) => void;
+  onViewLegalNorms: (company: Company) => void;
+}
 
 export function CompanyCard({ company, onDelete, onEdit, onStartInspection, onViewLegalNorms }: CompanyCardProps) {
   // ... (mantenha os estados existentes)
@@ -104,23 +127,27 @@ export function CompanyCard({ company, onDelete, onEdit, onStartInspection, onVi
             <label className="text-sm text-gray-400">Data de Cadastro</label>
             <p>{new Date(company.created_at).toLocaleDateString()}</p>
           </div>
-          {/* Adicione outros campos seguindo o mesmo padrão */}
         </div>
 
-        {/* Tabela de Unidades */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Unidades Vinculadas</h3>
-          <UnitsTable units={metadata?.units || []} />
-          <Button 
-            variant="outline" 
-            className="w-full text-white border-gray-600 hover:bg-gray-700"
-            onClick={() => console.log('Adicionar unidade')}
-          >
-            + Adicionar Nova Unidade
+        {/* Ações */}
+        <div className="flex gap-2 justify-end">
+          <Button variant="outline" onClick={() => onEdit(company)}>
+            <Pencil className="h-4 w-4 mr-2" />
+            Editar
+          </Button>
+          <Button variant="destructive" onClick={() => onDelete(company.id)}>
+            <Trash2 className="h-4 w-4 mr-2" />
+            Excluir
+          </Button>
+          <Button onClick={() => onStartInspection(company)}>
+            <ClipboardList className="h-4 w-4 mr-2" />
+            Nova Inspeção
+          </Button>
+          <Button variant="outline" onClick={() => onViewLegalNorms(company)}>
+            <Zap className="h-4 w-4 mr-2" />
+            Normas
           </Button>
         </div>
-
-        {/* Mantenha o restante do código original */}
       </CardContent>
     </Card>
   );
