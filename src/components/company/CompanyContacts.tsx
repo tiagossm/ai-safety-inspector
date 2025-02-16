@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Contact } from "@/types/company";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Phone, Mail, UserCircle, Briefcase } from "lucide-react";
+import { Phone, Mail, UserCircle, Briefcase, Trash2, Edit } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -23,7 +22,9 @@ interface CompanyContactsProps {
 }
 
 export function CompanyContacts({ companyId, contacts, onContactsChange }: CompanyContactsProps) {
+  const [isEditing, setIsEditing] = useState(false);
   const [isAddingContact, setIsAddingContact] = useState(false);
+  const [currentContact, setCurrentContact] = useState<Contact | null>(null);
   const [newContact, setNewContact] = useState({
     name: "",
     role: "",
@@ -33,13 +34,14 @@ export function CompanyContacts({ companyId, contacts, onContactsChange }: Compa
   });
   const { toast } = useToast();
 
+  // Adicionar contato
   const handleAddContact = async () => {
     try {
       const { error } = await supabase
-        .from('contacts')
+        .from("contacts")
         .insert({
           company_id: companyId,
-          ...newContact
+          ...newContact,
         });
 
       if (error) throw error;
@@ -61,6 +63,66 @@ export function CompanyContacts({ companyId, contacts, onContactsChange }: Compa
     }
   };
 
+  // Editar contato
+  const handleEditContact = async () => {
+    if (!currentContact) return;
+
+    try {
+      const { error } = await supabase
+        .from("contacts")
+        .update({
+          name: currentContact.name,
+          role: currentContact.role,
+          email: currentContact.email,
+          phone: currentContact.phone,
+          notes: currentContact.notes,
+        })
+        .eq("id", currentContact.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Contato atualizado",
+        description: "As informações do contato foram atualizadas.",
+      });
+
+      setIsEditing(false);
+      setCurrentContact(null);
+      onContactsChange();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao atualizar contato",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Remover contato
+  const handleDeleteContact = async (contactId: string) => {
+    try {
+      const { error } = await supabase
+        .from("contacts")
+        .delete()
+        .eq("id", contactId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Contato removido",
+        description: "O contato foi excluído com sucesso.",
+      });
+
+      onContactsChange();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao excluir contato",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -76,47 +138,37 @@ export function CompanyContacts({ companyId, contacts, onContactsChange }: Compa
               <DialogTitle>Novo Contato</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome</Label>
-                <Input
-                  id="name"
-                  value={newContact.name}
-                  onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="role">Cargo</Label>
-                <Input
-                  id="role"
-                  value={newContact.role}
-                  onChange={(e) => setNewContact({ ...newContact, role: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={newContact.email}
-                  onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Telefone</Label>
-                <Input
-                  id="phone"
-                  value={newContact.phone}
-                  onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="notes">Observações</Label>
-                <Textarea
-                  id="notes"
-                  value={newContact.notes}
-                  onChange={(e) => setNewContact({ ...newContact, notes: e.target.value })}
-                />
-              </div>
+              <Label htmlFor="name">Nome</Label>
+              <Input
+                id="name"
+                value={newContact.name}
+                onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
+              />
+              <Label htmlFor="role">Cargo</Label>
+              <Input
+                id="role"
+                value={newContact.role}
+                onChange={(e) => setNewContact({ ...newContact, role: e.target.value })}
+              />
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={newContact.email}
+                onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
+              />
+              <Label htmlFor="phone">Telefone</Label>
+              <Input
+                id="phone"
+                value={newContact.phone}
+                onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
+              />
+              <Label htmlFor="notes">Observações</Label>
+              <Textarea
+                id="notes"
+                value={newContact.notes}
+                onChange={(e) => setNewContact({ ...newContact, notes: e.target.value })}
+              />
               <Button onClick={handleAddContact} className="w-full">
                 Salvar Contato
               </Button>
@@ -126,13 +178,31 @@ export function CompanyContacts({ companyId, contacts, onContactsChange }: Compa
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         {contacts.map((contact) => (
-          <div
-            key={contact.id}
-            className="p-4 border rounded-lg space-y-2"
-          >
-            <div className="flex items-center gap-2">
-              <UserCircle className="h-5 w-5" />
-              <span className="font-medium">{contact.name}</span>
+          <div key={contact.id} className="p-4 border rounded-lg space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <UserCircle className="h-5 w-5" />
+                <span className="font-medium">{contact.name}</span>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    setCurrentContact(contact);
+                    setIsEditing(true);
+                  }}
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleDeleteContact(contact.id)}
+                >
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </Button>
+              </div>
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Briefcase className="h-4 w-4" />
@@ -147,9 +217,7 @@ export function CompanyContacts({ companyId, contacts, onContactsChange }: Compa
               <span>{contact.phone}</span>
             </div>
             {contact.notes && (
-              <p className="text-sm text-muted-foreground mt-2 border-t pt-2">
-                {contact.notes}
-              </p>
+              <p className="text-sm text-muted-foreground mt-2 border-t pt-2">{contact.notes}</p>
             )}
           </div>
         ))}
