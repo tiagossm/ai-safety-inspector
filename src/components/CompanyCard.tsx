@@ -1,17 +1,15 @@
-
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useState } from "react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Company, CompanyStatus, CompanyUnit } from "@/types/company";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  ClipboardList, 
-  MoreVertical, 
-  Pencil, 
-  Trash2, 
-  BrainCircuit,
+import {
+  ClipboardList,
+  Pencil,
+  MoreVertical,
+  Trash2,
   Printer,
-  DownloadCloud
+  BrainCircuit,
+  DownloadCloud,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -43,24 +41,32 @@ interface CompanyCardProps {
 const InfoItem = ({ label, value }: { label: string; value: string | null }) => (
   <div className="flex justify-between items-center py-1 border-b border-border">
     <span className="text-muted-foreground">{label}</span>
-    <span className="font-medium">{value || 'Não informado'}</span>
+    <span className="font-medium">{value || "Não informado"}</span>
   </div>
 );
 
-export function CompanyCard({ company, onToggleStatus, onEdit, onStartInspection, onDimensionNRs }: CompanyCardProps) {
+export function CompanyCard({
+  company,
+  onToggleStatus,
+  onEdit,
+  onStartInspection,
+  onDimensionNRs,
+}: CompanyCardProps) {
   const [showDetails, setShowDetails] = useState(false);
 
-  const handleToggleStatus = () => {
-    const newStatus = company.status === 'active' ? 'inactive' : 'active';
+  const handleToggleStatus = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newStatus = company.status === "active" ? "inactive" : "active";
     onToggleStatus(company.id, newStatus);
   };
 
-  const handlePrint = () => {
+  const handlePrint = (e: React.MouseEvent) => {
+    e.stopPropagation();
     window.print();
   };
 
   return (
-    <Card 
+    <Card
       className={cn(
         "relative rounded-lg transition-shadow w-full",
         "bg-card text-card-foreground border border-border",
@@ -73,61 +79,62 @@ export function CompanyCard({ company, onToggleStatus, onEdit, onStartInspection
           <div className="flex-1">
             <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-2xl font-bold">{company.fantasy_name}</h2>
-              <Badge variant="outline" className="font-normal">
-                {company.status === 'active' ? 'Ativo' : 'Inativo'}
-              </Badge>
+              <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
+                <span className="sr-only">Status</span>
+                <span className="text-sm">
+                  {company.status === "active" ? "Ativo" : "Inativo"}
+                </span>
+              </Button>
             </div>
             <div className="flex gap-2 mt-2 flex-wrap">
-              <Badge variant="outline">CNPJ: {formatCNPJ(company.cnpj)}</Badge>
-              {company.cnae && <Badge variant="outline">CNAE: {company.cnae}</Badge>}
+              <Button variant="outline" size="sm">
+                CNPJ: {formatCNPJ(company.cnpj)}
+              </Button>
+              {company.cnae && (
+                <Button variant="outline" size="sm">
+                  CNAE: {company.cnae}
+                </Button>
+              )}
             </div>
           </div>
-
           <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                handlePrint();
-              }}
+              onClick={handlePrint}
             >
               <Printer className="h-4 w-4" />
             </Button>
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={(e) => e.stopPropagation()}
-                >
+                <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
                   <MoreVertical className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit(company);
-                }}>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(company);
+                  }}
+                >
                   <Pencil className="h-4 w-4 mr-2" />
                   Editar Empresa
                 </DropdownMenuItem>
-                
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       className="text-destructive"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
-                      {company.status === 'active' ? 'Inativar' : 'Reativar'}
+                      {company.status === "active" ? "Inativar" : "Reativar"}
                     </DropdownMenuItem>
                   </AlertDialogTrigger>
                   <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                     <AlertDialogHeader>
                       <AlertDialogTitle>
-                        Confirmar {company.status === 'active' ? 'Inativação' : 'Reativação'}
+                        Confirmar {company.status === "active" ? "Inativação" : "Reativação"}
                       </AlertDialogTitle>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -148,12 +155,12 @@ export function CompanyCard({ company, onToggleStatus, onEdit, onStartInspection
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <InfoItem 
-                label="Grau de Risco (NR 4)" 
-                value={company.metadata?.risk_grade || null} 
+              <InfoItem
+                label="Grau de Risco (NR 4)"
+                value={company.metadata?.risk_grade || null}
               />
-              <InfoItem 
-                label="Funcionários" 
+              <InfoItem
+                label="Funcionários"
                 value={company.employee_count?.toString() || null}
               />
             </div>
@@ -179,18 +186,17 @@ export function CompanyCard({ company, onToggleStatus, onEdit, onStartInspection
           )}
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button 
+            <Button
               onClick={(e) => {
                 e.stopPropagation();
                 onStartInspection(company);
               }}
               className="flex-1"
             >
-              <ClipboardList className="h-4 w-4 mr-2" /> 
+              <ClipboardList className="h-4 w-4 mr-2" />
               Nova Inspeção
             </Button>
-            
-            <Button 
+            <Button
               variant="secondary"
               onClick={(e) => {
                 e.stopPropagation();
@@ -204,6 +210,17 @@ export function CompanyCard({ company, onToggleStatus, onEdit, onStartInspection
           </div>
         </CardContent>
       )}
+
+      <CardContent className="flex flex-col sm:flex-row gap-3 border-t pt-4">
+        <Button className="flex-1">
+          <ClipboardList className="h-4 w-4 mr-2" />
+          Nova Inspeção
+        </Button>
+        <Button variant="secondary" className="flex-1">
+          <DownloadCloud className="h-4 w-4 mr-2" />
+          Exportar Relatório
+        </Button>
+      </CardContent>
     </Card>
   );
 }
