@@ -96,38 +96,58 @@ export function CompanyContacts({ companyId, contacts, onContactsChange }: Compa
               <Label>Cargo</Label>
               <Input value={newContact.role} onChange={(e) => setNewContact({ ...newContact, role: e.target.value })} />
 
+              {/* Emails */}
               <Label>Emails</Label>
-              {newContact.emails.map((email, index) => (
-                <Input
-                  key={index}
-                  type="email"
-                  value={email}
-                  onChange={(e) => {
-                    const emails = [...newContact.emails];
-                    emails[index] = e.target.value;
-                    setNewContact({ ...newContact, emails });
-                  }}
-                />
-              ))}
-              <Button onClick={() => setNewContact({ ...newContact, emails: [...newContact.emails, ""] })} variant="outline">Adicionar Email</Button>
+              <div className="space-y-2">
+                {newContact.emails.map((email, index) => (
+                  <Input
+                    key={index}
+                    type="email"
+                    value={email}
+                    onChange={(e) => {
+                      const emails = [...newContact.emails];
+                      emails[index] = e.target.value;
+                      setNewContact({ ...newContact, emails });
+                    }}
+                  />
+                ))}
+                <Button
+                  onClick={() => setNewContact({ ...newContact, emails: [...newContact.emails, ""] })}
+                  variant="outline"
+                  className="mt-2"
+                >
+                  Adicionar Email
+                </Button>
+              </div>
 
+              {/* Telefones */}
               <Label>Telefones</Label>
-              {newContact.phones.map((phone, index) => (
-                <Input
-                  key={index}
-                  value={phone}
-                  onChange={(e) => {
-                    const phones = [...newContact.phones];
-                    phones[index] = e.target.value;
-                    setNewContact({ ...newContact, phones });
-                  }}
-                />
-              ))}
-              <Button onClick={() => setNewContact({ ...newContact, phones: [...newContact.phones, ""] })} variant="outline">Adicionar Telefone</Button>
+              <div className="space-y-2">
+                {newContact.phones.map((phone, index) => (
+                  <Input
+                    key={index}
+                    value={phone}
+                    onChange={(e) => {
+                      const phones = [...newContact.phones];
+                      phones[index] = e.target.value;
+                      setNewContact({ ...newContact, phones });
+                    }}
+                  />
+                ))}
+                <Button
+                  onClick={() => setNewContact({ ...newContact, phones: [...newContact.phones, ""] })}
+                  variant="outline"
+                  className="mt-2"
+                >
+                  Adicionar Telefone
+                </Button>
+              </div>
 
+              {/* Endereço */}
               <Label>Endereço</Label>
               <Input value={newContact.address} onChange={(e) => setNewContact({ ...newContact, address: e.target.value })} />
 
+              {/* Tipo de Contato */}
               <Label>Tipo de Contato</Label>
               <select
                 value={newContact.contactType}
@@ -156,35 +176,6 @@ export function CompanyContacts({ companyId, contacts, onContactsChange }: Compa
             </div>
           </DialogContent>
         </Dialog>
-      </div>
-
-      {/* Lista de contatos */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {contacts
-          .filter(contact => contact.name.toLowerCase().includes(filter.toLowerCase()))
-          .map((contact) => (
-            <div key={contact.id} className={`p-4 border rounded-lg space-y-2 ${contact.isFocal ? "border-yellow-500" : ""}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <UserCircle className="h-5 w-5" />
-                  <span className="font-medium">{contact.name}</span>
-                </div>
-                <div className="flex gap-2">
-                  {contact.isFocal && <Star className="h-5 w-5 text-yellow-500" title="Contato Focal" />}
-                  <Button variant="ghost" size="icon">
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon">
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </Button>
-                </div>
-              </div>
-              <p><Briefcase /> {contact.role} ({contact.contactType})</p>
-              {contact.emails.map((email, i) => <p key={i}><Mail /> {email}</p>)}
-              {contact.phones.map((phone, i) => <p key={i}><Phone /> {phone}</p>)}
-              <p><MapPin /> {contact.address}</p>
-            </div>
-          ))}
       </div>
     </div>
   );
