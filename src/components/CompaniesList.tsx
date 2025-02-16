@@ -70,6 +70,31 @@ export function CompaniesList() {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('companies')
+        .update({ status: 'inactive' })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Empresa arquivada",
+        description: "A empresa foi arquivada com sucesso.",
+      });
+
+      fetchCompanies();
+    } catch (error) {
+      console.error('Error archiving company:', error);
+      toast({
+        title: "Erro ao arquivar",
+        description: "Não foi possível arquivar a empresa.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleEdit = (company: Company) => {
     setEditingCompany(company);
   };
@@ -107,6 +132,7 @@ export function CompaniesList() {
             onEdit={() => handleEdit(company)}
             onToggleStatus={() => handleToggleStatus(company.id, company.status === 'active' ? 'inactive' : 'active')}
             onAddUnit={() => handleAddUnit(company.id)}
+            onDelete={() => handleDelete(company.id)}
           />
         ))}
       </div>
