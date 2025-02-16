@@ -170,6 +170,7 @@ export function CompaniesList() {
                 company={editingCompany}
                 onUpdate={handleUpdateCompany}
                 onClose={() => setEditingCompany(null)}
+                open={Boolean(editingCompany)}
               />
             )}
             <CompanyCard
