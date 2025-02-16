@@ -5,12 +5,13 @@ export type CompanyStatus = 'active' | 'inactive';
 
 export type CompanyUnit = {
   id: string;
-  name: string | null;
-  address: string | null;
+  name: string;
+  code: string;
 };
 
 export type CompanyMetadata = {
-  units?: CompanyUnit[];
+  units: CompanyUnit[];
+  risk_grade?: string;
   [key: string]: any;
 };
 

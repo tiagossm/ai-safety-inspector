@@ -44,18 +44,13 @@ export function CompaniesList() {
     try {
       const { data, error } = await supabase
         .from('companies')
-        .select('id, fantasy_name, cnpj, cnae, contact_email, contact_phone, contact_name, employee_count, metadata, created_at, status')
+        .select('*')
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      const typedData = (data || []).map(company => ({
-        ...company,
-        status: (company.status || 'active') as CompanyStatus
-      }));
-
-      setCompanies(typedData);
+      setCompanies(data as Company[]);
     } catch (error) {
       console.error('Error fetching companies:', error);
       toast({
@@ -185,11 +180,11 @@ export function CompaniesList() {
           placeholder="Buscar empresas..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 bg-gray-800/50 border-gray-700 focus:border-primary transition-colors duration-300"
+          className="pl-10"
         />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-1">
+      <div className="grid gap-6">
         {displayedCompanies.map((company) => (
           <Dialog key={company.id}>
             {editingCompany && (
@@ -214,7 +209,7 @@ export function CompaniesList() {
       {filteredCompanies.length > 3 && !showAll && (
         <Button
           variant="outline"
-          className="w-full hover:bg-gray-800 transition-colors duration-300"
+          className="w-full"
           onClick={() => setShowAll(true)}
         >
           Ver todas as empresas ({filteredCompanies.length})
