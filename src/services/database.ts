@@ -1,24 +1,14 @@
 
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import { Company } from '@/types/company';
-import { Json } from '@/integrations/supabase/types';
 
 interface MyDB extends DBSchema {
   empresas: {
     key: string;
     value: {
       id: string;
-      fantasy_name: string | null;
+      name: string;
       cnpj: string;
-      cnae: string | null;
-      contact_email: string | null;
-      contact_phone: string | null;
-      contact_name: string | null;
-      employee_count: number | null;
-      metadata: Json | null;
-      status: string;
       sync_status: 'pending' | 'synced' | 'error';
-      user_id: string;
       updated_at: string;
     };
     indexes: { 'by-sync-status': string };
@@ -27,15 +17,10 @@ interface MyDB extends DBSchema {
     key: string;
     value: {
       id: string;
-      cnae: string;
-      checklist: Json | null;
-      risks: Json | null;
-      photos: string[] | null;
-      audio_url: string | null;
-      report_url: string | null;
+      company_id: string;
       status: string;
       sync_status: 'pending' | 'synced' | 'error';
-      user_id: string;
+      data: any;
       updated_at: string;
     };
     indexes: { 'by-sync-status': string };
@@ -45,6 +30,7 @@ interface MyDB extends DBSchema {
 // Initialize the database
 const dbPromise = openDB<MyDB>('offline-app-db', 1, {
   upgrade(db) {
+    // Create stores
     const empresasStore = db.createObjectStore('empresas', {
       keyPath: 'id'
     });
