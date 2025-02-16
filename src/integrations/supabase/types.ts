@@ -9,6 +9,57 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      checklist_assignments: {
+        Row: {
+          checklist_id: string
+          company_id: string | null
+          created_at: string
+          employee_ids: string[] | null
+          id: string
+          status: string | null
+          sync_status: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          checklist_id: string
+          company_id?: string | null
+          created_at?: string
+          employee_ids?: string[] | null
+          id?: string
+          status?: string | null
+          sync_status?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          checklist_id?: string
+          company_id?: string | null
+          created_at?: string
+          employee_ids?: string[] | null
+          id?: string
+          status?: string | null
+          sync_status?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_assignments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "active_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_assignments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       companies: {
         Row: {
           cnae: string | null
@@ -25,6 +76,7 @@ export type Database = {
           import_status: string | null
           metadata: Json | null
           status: string
+          sync_status: string | null
           user_id: string
         }
         Insert: {
@@ -42,6 +94,7 @@ export type Database = {
           import_status?: string | null
           metadata?: Json | null
           status?: string
+          sync_status?: string | null
           user_id: string
         }
         Update: {
@@ -59,6 +112,7 @@ export type Database = {
           import_status?: string | null
           metadata?: Json | null
           status?: string
+          sync_status?: string | null
           user_id?: string
         }
         Relationships: []
@@ -220,6 +274,7 @@ export type Database = {
           report_url: string | null
           risks: Json | null
           status: string | null
+          sync_status: string | null
           user_id: string
         }
         Insert: {
@@ -232,6 +287,7 @@ export type Database = {
           report_url?: string | null
           risks?: Json | null
           status?: string | null
+          sync_status?: string | null
           user_id: string
         }
         Update: {
@@ -244,6 +300,7 @@ export type Database = {
           report_url?: string | null
           risks?: Json | null
           status?: string | null
+          sync_status?: string | null
           user_id?: string
         }
         Relationships: []
@@ -448,6 +505,51 @@ export type Database = {
             columns: ["parent_unit_id"]
             isOneToOne: false
             referencedRelation: "units"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_assignments: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          id: string
+          status: string | null
+          sync_status: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          status?: string | null
+          sync_status?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          status?: string | null
+          sync_status?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_assignments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "active_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_assignments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]

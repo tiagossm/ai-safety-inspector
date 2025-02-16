@@ -7,8 +7,8 @@ import { Search, Bell, User, Menu, Building, ClipboardList, Settings, LogOut, Wi
 import { useSwipeable } from "react-swipeable";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import { db } from "@/services/database"; // ✅ Correção: Importando IndexedDB corretamente
-import { SyncManager } from "@/services/sync"; // ✅ Correção: Importando SyncManager corretamente
+import { db } from "@/services/database";
+import { SyncManager } from "@/services/sync";
 
 interface DashboardLayoutProps {
   children?: ReactNode;
@@ -19,17 +19,16 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobile();
-  const syncManager = new SyncManager(); // ✅ Correção: Garantindo que SyncManager esteja inicializado
+  const syncManager = new SyncManager();
 
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [localEmpresas, setLocalEmpresas] = useState([]);
 
-  // Atualiza status online/offline e sincroniza dados quando necessário
   useEffect(() => {
     const updateOnlineStatus = async () => {
       setIsOnline(navigator.onLine);
-      if (navigator.onLine) await syncManager.trySync(); // ✅ Agora só chama se estiver online
+      if (navigator.onLine) await syncManager.trySync();
     };
     window.addEventListener("online", updateOnlineStatus);
     window.addEventListener("offline", updateOnlineStatus);
@@ -39,7 +38,6 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
     };
   }, []);
 
-  // Carrega dados do IndexedDB no modo offline
   useEffect(() => {
     const loadOfflineData = async () => {
       try {
@@ -55,7 +53,6 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
     if (!isOnline) loadOfflineData();
   }, [isOnline]);
 
-  // Animação do Sidebar Mobile (Swipe)
   const handlers = useSwipeable({
     onSwipedLeft: () => setSidebarOpen(false),
     onSwipedRight: () => setSidebarOpen(true),
@@ -65,7 +62,6 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
     <SidebarProvider>
       <div className={cn("min-h-screen flex", theme === "dark" ? "bg-gray-900" : "bg-gray-100")} {...handlers}>
         
-        {/* Sidebar */}
         <aside className={cn(
           "fixed left-0 top-0 h-screen z-50 transition-all duration-300",
           theme === "dark" ? "bg-gray-800" : "bg-white",
@@ -80,10 +76,10 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
               <Menu className="h-6 w-6 text-white" />
             </button>
 
-            {/* Navegação da Sidebar */}
             <nav className="flex-1 space-y-4 w-full px-2">
               {[
                 { icon: <Building />, name: "Empresas", path: "/empresas" },
+                { icon: <User />, name: "Usuários", path: "/users" },
                 { icon: <ClipboardList />, name: "Inspeções", path: "/inspecoes" },
                 { icon: <Settings />, name: "Configurações", path: "/configuracoes" },
                 { icon: <LogOut />, name: "Sair", path: "/logout" },
@@ -105,10 +101,7 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </aside>
 
-        {/* Conteúdo principal */}
         <div className={cn("flex-1 flex flex-col transition-all duration-300", sidebarOpen ? "ml-64" : "ml-20")}>
-          
-          {/* Navbar */}
           <header className={cn(
             "fixed top-0 right-0 h-16 z-40 flex items-center justify-between px-8",
             theme === "dark" ? "bg-gray-900 border-b border-gray-700" : "bg-white border-b border-gray-200",
@@ -122,7 +115,6 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
               ))}
             </nav>
 
-            {/* Status de Conexão + Ícones */}
             <div className="flex items-center space-x-6">
               {!isOnline && <WifiOff className="h-6 w-6 text-red-500" aria-label="Offline" />}
               <button className="hover:text-emerald-400 transition-colors">
@@ -137,7 +129,6 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </header>
 
-          {/* Área de Conteúdo */}
           <main className="flex-1 pt-24 px-8">
             <Outlet />
             {children}
