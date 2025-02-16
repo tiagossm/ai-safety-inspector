@@ -1,7 +1,5 @@
 
-import { Json } from "@/integrations/supabase/types";
-
-export type CompanyStatus = 'active' | 'inactive';
+export type CompanyStatus = 'active' | 'inactive' | 'archived';
 
 export type CompanyUnit = {
   id: string;
@@ -40,4 +38,5 @@ export type Company = {
   metadata: CompanyMetadata | null;
   created_at: string;
   status: CompanyStatus;
+  deactivated_at?: string | null;
 };
