@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Contact } from "@/types/company";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Phone, Mail, UserCircle, Briefcase } from "lucide-react";
+import { Phone, Mail, UserCircle, Briefcase, Trash2, Edit, MapPin, Star, Search } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -24,22 +23,28 @@ interface CompanyContactsProps {
 
 export function CompanyContacts({ companyId, contacts, onContactsChange }: CompanyContactsProps) {
   const [isAddingContact, setIsAddingContact] = useState(false);
+  const [filter, setFilter] = useState("");
   const [newContact, setNewContact] = useState({
     name: "",
     role: "",
-    email: "",
-    phone: "",
+    emails: [""],
+    phones: [""],
+    address: "",
+    isFocal: false,
+    contactType: "Comercial",
     notes: "",
   });
+
   const { toast } = useToast();
 
+  // Adicionar contato
   const handleAddContact = async () => {
     try {
       const { error } = await supabase
-        .from('contacts')
+        .from("contacts")
         .insert({
           company_id: companyId,
-          ...newContact
+          ...newContact,
         });
 
       if (error) throw error;
@@ -50,7 +55,7 @@ export function CompanyContacts({ companyId, contacts, onContactsChange }: Compa
       });
 
       setIsAddingContact(false);
-      setNewContact({ name: "", role: "", email: "", phone: "", notes: "" });
+      setNewContact({ name: "", role: "", emails: [""], phones: [""], address: "", isFocal: false, contactType: "Comercial", notes: "" });
       onContactsChange();
     } catch (error: any) {
       toast({
@@ -63,96 +68,114 @@ export function CompanyContacts({ companyId, contacts, onContactsChange }: Compa
 
   return (
     <div className="space-y-4">
+      {/* Barra de busca */}
+      <div className="flex items-center gap-2">
+        <Search className="h-5 w-5 text-gray-500" />
+        <Input
+          placeholder="Buscar contato..."
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+        />
+      </div>
+
+      {/* Botão de adicionar contato */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Contatos</h3>
         <Dialog open={isAddingContact} onOpenChange={setIsAddingContact}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm">
-              Adicionar Contato
-            </Button>
+            <Button variant="outline" size="sm">Adicionar Contato</Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 bg-gray-800 text-white rounded-md">
             <DialogHeader>
               <DialogTitle>Novo Contato</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
+              <Label>Nome</Label>
+              <Input value={newContact.name} onChange={(e) => setNewContact({ ...newContact, name: e.target.value })} />
+
+              <Label>Cargo</Label>
+              <Input value={newContact.role} onChange={(e) => setNewContact({ ...newContact, role: e.target.value })} />
+
+              {/* Emails */}
+              <Label>Emails</Label>
               <div className="space-y-2">
-                <Label htmlFor="name">Nome</Label>
-                <Input
-                  id="name"
-                  value={newContact.name}
-                  onChange={(e) => setNewContact({ ...newContact, name: e.target.value })}
-                />
+                {newContact.emails.map((email, index) => (
+                  <Input
+                    key={index}
+                    type="email"
+                    value={email}
+                    onChange={(e) => {
+                      const emails = [...newContact.emails];
+                      emails[index] = e.target.value;
+                      setNewContact({ ...newContact, emails });
+                    }}
+                  />
+                ))}
+                <Button
+                  onClick={() => setNewContact({ ...newContact, emails: [...newContact.emails, ""] })}
+                  variant="outline"
+                  className="mt-2"
+                >
+                  Adicionar Email
+                </Button>
               </div>
+
+              {/* Telefones */}
+              <Label>Telefones</Label>
               <div className="space-y-2">
-                <Label htmlFor="role">Cargo</Label>
-                <Input
-                  id="role"
-                  value={newContact.role}
-                  onChange={(e) => setNewContact({ ...newContact, role: e.target.value })}
-                />
+                {newContact.phones.map((phone, index) => (
+                  <Input
+                    key={index}
+                    value={phone}
+                    onChange={(e) => {
+                      const phones = [...newContact.phones];
+                      phones[index] = e.target.value;
+                      setNewContact({ ...newContact, phones });
+                    }}
+                  />
+                ))}
+                <Button
+                  onClick={() => setNewContact({ ...newContact, phones: [...newContact.phones, ""] })}
+                  variant="outline"
+                  className="mt-2"
+                >
+                  Adicionar Telefone
+                </Button>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={newContact.email}
-                  onChange={(e) => setNewContact({ ...newContact, email: e.target.value })}
+
+              {/* Endereço */}
+              <Label>Endereço</Label>
+              <Input value={newContact.address} onChange={(e) => setNewContact({ ...newContact, address: e.target.value })} />
+
+              {/* Tipo de Contato */}
+              <Label>Tipo de Contato</Label>
+              <select
+                value={newContact.contactType}
+                onChange={(e) => setNewContact({ ...newContact, contactType: e.target.value })}
+                className="w-full border rounded-md p-2 bg-white text-gray-900 dark:bg-gray-700 dark:text-white"
+              >
+                <option value="Comercial">Comercial</option>
+                <option value="Técnico">Técnico</option>
+                <option value="Financeiro">Financeiro</option>
+                <option value="Jurídico">Jurídico</option>
+              </select>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={newContact.isFocal}
+                  onChange={(e) => setNewContact({ ...newContact, isFocal: e.target.checked })}
                 />
+                <Label>Contato Focal</Label>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Telefone</Label>
-                <Input
-                  id="phone"
-                  value={newContact.phone}
-                  onChange={(e) => setNewContact({ ...newContact, phone: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="notes">Observações</Label>
-                <Textarea
-                  id="notes"
-                  value={newContact.notes}
-                  onChange={(e) => setNewContact({ ...newContact, notes: e.target.value })}
-                />
-              </div>
-              <Button onClick={handleAddContact} className="w-full">
-                Salvar Contato
-              </Button>
+
+              <Label>Observações</Label>
+              <Textarea value={newContact.notes} onChange={(e) => setNewContact({ ...newContact, notes: e.target.value })} />
+
+              <Button onClick={handleAddContact} className="w-full">Salvar Contato</Button>
             </div>
           </DialogContent>
         </Dialog>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        {contacts.map((contact) => (
-          <div
-            key={contact.id}
-            className="p-4 border rounded-lg space-y-2"
-          >
-            <div className="flex items-center gap-2">
-              <UserCircle className="h-5 w-5" />
-              <span className="font-medium">{contact.name}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Briefcase className="h-4 w-4" />
-              <span>{contact.role}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Mail className="h-4 w-4" />
-              <span>{contact.email}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Phone className="h-4 w-4" />
-              <span>{contact.phone}</span>
-            </div>
-            {contact.notes && (
-              <p className="text-sm text-muted-foreground mt-2 border-t pt-2">
-                {contact.notes}
-              </p>
-            )}
-          </div>
-        ))}
       </div>
     </div>
   );
