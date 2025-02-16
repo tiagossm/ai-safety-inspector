@@ -1,176 +1,175 @@
-
-import { useState } from "react";
-import { useToast } from "@/components/ui/use-toast";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { useQuery } from "@tanstack/react-query";
+import { Input } from "@/components/ui/input";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { UserPlus, MoreVertical, Edit, Trash2, Search, ShieldCheck, ShieldX } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import DashboardLayout from "@/components/DashboardLayout";
 
-interface UserAssignment {
+interface User {
   id: string;
-  user_id: string;
-  company_id: string;
+  name: string;
+  email: string;
+  role: string;
   status: string;
-  profiles: {
-    full_name: string | null;
-    email: string | null;
-  };
-  companies: {
-    fantasy_name: string | null;
-    cnpj: string;
-  };
 }
 
-export default function Users() {
+export function UserList() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [search, setSearch] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
+  const [isAddingUser, setIsAddingUser] = useState(false);
+  const [newUser, setNewUser] = useState({ name: "", email: "", role: "Usuário", status: "active" });
   const { toast } = useToast();
-  const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
-  const { data: users, isLoading: isLoadingUsers } = useQuery({
-    queryKey: ['users'],
-    queryFn: async () => {
-      const { data: profiles, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, email');
-      
-      if (error) throw error;
-      return profiles;
-    }
-  });
+  useEffect(() => {
+    loadUsers();
+  }, []);
 
-  const { data: assignments, isLoading: isLoadingAssignments } = useQuery({
-    queryKey: ['user_assignments'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('user_assignments')
-        .select(`
-          id,
-          user_id,
-          company_id,
-          status,
-          profiles:user_id (
-            full_name,
-            email
-          ),
-          companies:company_id (
-            fantasy_name,
-            cnpj
-          )
-        `);
-      
-      if (error) throw error;
-      return data as unknown as UserAssignment[];
-    }
-  });
+  const loadUsers = async () => {
+    const { data, error } = await supabase
+      .from("users")
+      .select("*")
+      .order("name", { ascending: true });
 
-  const handleAssignCompany = async (userId: string, companyId: string) => {
-    try {
-      const { error } = await supabase
-        .from('user_assignments')
-        .insert([
-          { user_id: userId, company_id: companyId }
-        ]);
+    if (!error && data) setUsers(data);
+  };
 
-      if (error) throw error;
+  const handleAddUser = async () => {
+    const { error } = await supabase
+      .from("users")
+      .insert(newUser);
 
-      toast({
-        title: "Sucesso",
-        description: "Empresa atribuída com sucesso",
-      });
-
-      setIsAssignmentDialogOpen(false);
-    } catch (error: any) {
-      toast({
-        title: "Erro",
-        description: error.message,
-        variant: "destructive",
-      });
+    if (error) {
+      toast({ title: "Erro ao adicionar usuário", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Usuário adicionado", description: "O usuário foi cadastrado com sucesso." });
+      setIsAddingUser(false);
+      setNewUser({ name: "", email: "", role: "Usuário", status: "active" });
+      loadUsers();
     }
   };
 
-  if (isLoadingUsers || isLoadingAssignments) {
-    return (
-      <DashboardLayout>
-        <div>Carregando...</div>
-      </DashboardLayout>
-    );
-  }
+  const handleToggleStatus = async (id: string, status: string) => {
+    const newStatus = status === "active" ? "inactive" : "active";
+    const { error } = await supabase
+      .from("users")
+      .update({ status: newStatus })
+      .eq("id", id);
+
+    if (error) {
+      toast({ title: "Erro ao alterar status", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Status atualizado", description: `Usuário agora está ${newStatus === "active" ? "Ativo" : "Inativo"}` });
+      loadUsers();
+    }
+  };
+
+  const handleDeleteUser = async (id: string) => {
+    const { error } = await supabase.from("users").delete().eq("id", id);
+
+    if (error) {
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Usuário excluído", description: "O usuário foi removido." });
+      loadUsers();
+    }
+  };
 
   return (
-    <DashboardLayout>
-      <div className="container mx-auto py-6 space-y-6">
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle>Usuários e Atribuições</CardTitle>
-              <Dialog open={isAssignmentDialogOpen} onOpenChange={setIsAssignmentDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>Atribuir Empresa</Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Atribuir Empresa ao Usuário</DialogTitle>
-                  </DialogHeader>
-                  {/* Form content will be added in the next iteration */}
-                </DialogContent>
-              </Dialog>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Usuário</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Empresas Atribuídas</TableHead>
-                  <TableHead>Ações</TableHead>
+    <Card>
+      <CardHeader className="flex flex-col md:flex-row justify-between items-center gap-4">
+        <h2 className="text-xl font-bold">Usuários</h2>
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+            <Input
+              placeholder="Buscar usuário..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setShowInactive(!showInactive)}>
+            {showInactive ? <ShieldX className="h-4 w-4 mr-2 text-red-500" /> : <ShieldCheck className="h-4 w-4 mr-2 text-green-500" />}
+            {showInactive ? "Mostrar Ativos" : "Mostrar Inativos"}
+          </Button>
+          <Dialog open={isAddingUser} onOpenChange={setIsAddingUser}>
+            <DialogTrigger asChild>
+              <Button variant="default">
+                <UserPlus className="h-4 w-4 mr-2" />
+                Adicionar Usuário
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Novo Usuário</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <Input placeholder="Nome" value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })} />
+                <Input placeholder="Email" type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} />
+                <select
+                  value={newUser.role}
+                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                  className="w-full border rounded-md p-2"
+                >
+                  <option value="Usuário">Usuário</option>
+                  <option value="Administrador">Administrador</option>
+                </select>
+                <Button onClick={handleAddUser} className="w-full">Salvar Usuário</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </CardHeader>
+
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Cargo</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {users
+              .filter(user => (showInactive ? user.status === "inactive" : user.status === "active"))
+              .filter(user => user.name.toLowerCase().includes(search.toLowerCase()) || user.email.toLowerCase().includes(search.toLowerCase()))
+              .map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell>{user.name}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>{user.role}</TableCell>
+                  <TableCell>
+                    <input type="checkbox" checked={user.status === "inactive"} onChange={() => handleToggleStatus(user.id, user.status)} />
+                    {user.status === "active" ? " Ativo" : " Inativo"}
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-5 w-5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleDeleteUser(user.id)}>
+                          <Trash2 className="h-4 w-4 mr-2 text-red-500" />
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users?.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell>{user.full_name || 'Sem nome'}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      {assignments
-                        ?.filter(a => a.user_id === user.id)
-                        .map(a => a.companies.fantasy_name)
-                        .join(', ') || 'Nenhuma empresa atribuída'}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedUserId(user.id);
-                          setIsAssignmentDialogOpen(true);
-                        }}
-                      >
-                        Gerenciar
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
-    </DashboardLayout>
+              ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }
