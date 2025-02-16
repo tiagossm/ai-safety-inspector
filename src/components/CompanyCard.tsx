@@ -9,7 +9,9 @@ import {
   User,
   Mail,
   Phone,
-  Copy
+  Copy,
+  Zap,
+  PlusCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -17,6 +19,8 @@ import { Company } from "@/types/company";
 import { generateCompanyPDF, exportAllCompaniesReport } from "@/utils/pdfGenerator";
 import { formatCNPJ, formatPhone } from "@/utils/formatters";
 import { useState } from "react";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 interface CompanyCardProps {
   company: Company;
@@ -35,6 +39,7 @@ export const CompanyCard = ({
 }: CompanyCardProps) => {
   const [isInactive, setIsInactive] = useState(company.status === "inactive");
   const [copied, setCopied] = useState(false);
+  const [employeeCount, setEmployeeCount] = useState(company.employee_count || "");
 
   const handleExportPDF = async () => {
     try {
@@ -76,6 +81,7 @@ export const CompanyCard = ({
               CNPJ: {formatCNPJ(company.cnpj)}
             </Badge>
             {company.cnae && <Badge variant="outline">CNAE: {company.cnae}</Badge>}
+            <Badge className="font-mono">Grau de Risco: {company.metadata?.risk_grade || 'Não classificado'}</Badge>
             <Badge 
               className={cn(
                 "text-sm",
@@ -139,9 +145,13 @@ export const CompanyCard = ({
                 <span>Não informado</span>
               )}
             </div>
-            <div className="flex items-center gap-2">
-              <Phone className="h-5 w-5 text-primary" />
-              <span>{company.contact_phone ? formatPhone(company.contact_phone) : 'Não informado'}</span>
+            <div className="flex flex-col">
+              {company.contact_phone?.split(",").map((phone, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Phone className="h-5 w-5 text-primary" />
+                  <span>{formatPhone(phone)}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -150,19 +160,13 @@ export const CompanyCard = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <h3 className="text-lg font-semibold">Funcionários</h3>
-            <div className="p-4 bg-muted rounded-lg">
-              <span className="text-2xl font-bold">
-                {company.employee_count || "Não informado"}
-              </span>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Grau de Risco (NR 4)</h3>
-            <div className="p-4 bg-muted rounded-lg">
-              <span className="text-2xl font-bold">
-                {company.metadata?.risk_grade || 'Não classificado'}
-              </span>
-            </div>
+            <Input 
+              type="number"
+              value={employeeCount}
+              onChange={(e) => setEmployeeCount(e.target.value)}
+              className="p-2 border rounded-md"
+              placeholder="Quantidade de funcionários"
+            />
           </div>
         </div>
 
@@ -172,16 +176,14 @@ export const CompanyCard = ({
             <ClipboardList className="h-4 w-4 mr-2" />
             Nova Inspeção
           </Button>
+          <Button variant="secondary" className="flex-1">
+            <Zap className="h-4 w-4 mr-2" />
+            Dimensionar NRs
+          </Button>
           <Button variant="outline" className="flex-1" onClick={handleExportAllCompanies}>
             <ClipboardList className="h-4 w-4 mr-2" />
             Exportar Relatório
           </Button>
-        </div>
-
-        {/* Caixa de seleção para inativar */}
-        <div className="flex items-center gap-2 pt-4">
-          <input type="checkbox" checked={isInactive} onChange={handleToggleInactive} />
-          <span className="text-sm">Inativar Empresa</span>
         </div>
       </CardContent>
     </Card>
