@@ -1,134 +1,197 @@
-<div className="flex min-h-screen bg-background">
-  {/* Sidebar */}
-  <aside className="w-64 border-r border-border p-4">
-    <div className="space-y-6">
-      <h2 className="text-lg font-bold">Menu</h2>
-      <nav className="space-y-2">
-        <Button variant="ghost" className="w-full justify-start">
-          <Building className="h-4 w-4 mr-2" />
-          Empresas
-        </Button>
-        <Button variant="ghost" className="w-full justify-start">
-          <User className="h-4 w-4 mr-2" />
-          Usuários
-        </Button>
-        <Button variant="ghost" className="w-full justify-start">
-          <ClipboardList className="h-4 w-4 mr-2" />
-          Inspeções
-        </Button>
-        <Button variant="ghost" className="w-full justify-start">
-          <Settings className="h-4 w-4 mr-2" />
-          Configurações
-        </Button>
-      </nav>
-    </div>
-  </aside>
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { 
+  MoreVertical,
+  ClipboardList,
+  Zap,
+  DownloadCloud,
+  PlusCircle,
+  User,
+  Mail,
+  Phone,
+  Building
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Company } from "@/types/company";
+import { generateCompanyPDF } from "@/utils/pdfGenerator";
+import { formatCNPJ, formatPhone } from "@/utils/formatters";
 
-  {/* Conteúdo Principal */}
-  <main className="flex-1 p-8">
-    {/* Cabeçalho com Ações */}
-    <div className="flex justify-between items-center mb-8">
-      <div className="relative flex-1 max-w-xl">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Buscar empresas..."
-          className="pl-10"
-        />
-      </div>
-      <div className="flex gap-2">
-        <Button variant="outline">
-          <Download className="h-4 w-4 mr-2" />
-          Importar CSV
-        </Button>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Adicionar Empresa
-        </Button>
-      </div>
-    </div>
+interface CompanyCardProps {
+  company: Company;
+  onEdit: () => void;
+  onToggleStatus: () => void;
+  onAddUnit: () => void;
+}
 
-    {/* Card da Empresa */}
-    <Card className="bg-background">
-      <CardHeader className="border-b border-border">
+export const CompanyCard = ({ 
+  company,
+  onEdit,
+  onToggleStatus,
+  onAddUnit
+}: CompanyCardProps) => {
+  const handleExportPDF = async () => {
+    try {
+      await generateCompanyPDF(company);
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+    }
+  };
+
+  return (
+    <Card className={cn(
+      "bg-background text-foreground rounded-lg",
+      "border border-border hover:shadow-md transition-shadow"
+    )}>
+      {/* Cabeçalho */}
+      <CardHeader className="border-b border-border pb-4">
         <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-2xl font-bold">FAVELA HOLDING</h1>
-            <div className="mt-2 space-y-1">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline">CNPJ: 48.594.326/0001-10</Badge>
-                <Badge variant="outline">CNAE: 6462-0</Badge>
-                <Badge className="bg-green-100 text-green-800 dark:bg-green-900/20">
-                  Ativo
-                </Badge>
-              </div>
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold">{company.fantasy_name}</h1>
+            
+            <div className="flex flex-wrap gap-2 items-center">
+              <Badge variant="outline" className="font-mono">
+                CNPJ: {formatCNPJ(company.cnpj)}
+              </Badge>
+              <Badge variant="outline">CNAE: {company.cnae}</Badge>
+              <Badge 
+                className={cn(
+                  "text-sm",
+                  company.status === 'active'
+                    ? 'bg-green-100 text-green-800 dark:bg-green-800/30 dark:text-green-400'
+                    : 'bg-red-100 text-red-800 dark:bg-red-800/30 dark:text-red-400'
+                )}
+              >
+                {company.status === 'active' ? 'Ativo' : 'Inativo'}
+              </Badge>
             </div>
           </div>
+
+          {/* Menu de Ações */}
           <DropdownMenu>
-            {/* Menu de opções */}
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreVertical className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onEdit}>
+                <span className="flex items-center">
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Editar Empresa
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onToggleStatus}>
+                <span className="flex items-center text-red-600 dark:text-red-400">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {company.status === 'active' ? 'Inativar' : 'Reativar'}
+                </span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </CardHeader>
 
-      <CardContent className="p-6">
+      {/* Conteúdo Principal */}
+      <CardContent className="p-6 space-y-8">
         {/* Seção de Contato */}
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold mb-4">Contato Principal</h3>
-          <div className="space-y-1">
-            <p className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              <span>THALES PEREIRA ATHAYDE</span>
-            </p>
-            <p className="flex items-center gap-2">
-              <Mail className="h-4 w-4" />
-              <span>homecufe@gmail.com</span>
-            </p>
-            <p className="flex items-center gap-2">
-              <Phone className="h-4 w-4" />
-              <span>(21) 8437-5139</span>
-            </p>
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Contato Principal</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex items-center gap-2">
+              <User className="h-5 w-5 text-primary" />
+              <span>{company.contact_name}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-primary" />
+              <a 
+                href={`mailto:${company.contact_email}`} 
+                className="hover:underline"
+              >
+                {company.contact_email}
+              </a>
+            </div>
+            <div className="flex items-center gap-2">
+              <Phone className="h-5 w-5 text-primary" />
+              <span>{formatPhone(company.contact_phone)}</span>
+            </div>
           </div>
         </div>
 
-        {/* Ações Rápidas */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Button className="h-24 flex flex-col items-center justify-center">
-            <ClipboardList className="h-6 w-6 mb-2" />
+        {/* Dados Operacionais */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold">Funcionários</h3>
+            <div className="p-4 bg-muted rounded-lg">
+              <span className="text-2xl font-bold">
+                {company.employee_count || 'Não informado'}
+              </span>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold">Grau de Risco (NR 4)</h3>
+            <div className="p-4 bg-muted rounded-lg">
+              <span className="text-2xl font-bold">
+                {company.risk_grade || 'Não classificado'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Unidades */}
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold">Unidades Cadastradas</h3>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={onAddUnit}
+            >
+              <PlusCircle className="h-4 w-4 mr-2" />
+              Adicionar Unidade
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {company.units.map((unit) => (
+              <Card key={unit.id}>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-2">
+                    <Building className="h-5 w-5" />
+                    <span className="font-medium">{unit.name}</span>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Código: {unit.code}
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Ações */}
+        <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-border">
+          <Button className="flex-1">
+            <ClipboardList className="h-4 w-4 mr-2" />
             Nova Inspeção
           </Button>
-          <Button className="h-24 flex flex-col items-center justify-center">
-            <Zap className="h-6 w-6 mb-2" />
+          <Button variant="secondary" className="flex-1">
+            <Zap className="h-4 w-4 mr-2" />
             Dimensionar NRs
           </Button>
-          <Button className="h-24 flex flex-col items-center justify-center">
-            <DownloadCloud className="h-6 w-6 mb-2" />
+          <Button 
+            variant="outline" 
+            className="flex-1"
+            onClick={handleExportPDF}
+          >
+            <DownloadCloud className="h-4 w-4 mr-2" />
             Exportar Relatório
           </Button>
-          <Button className="h-24 flex flex-col items-center justify-center">
-            <PlusCircle className="h-6 w-6 mb-2" />
-            Adicionar Unidade
-          </Button>
-        </div>
-
-        {/* Unidades Cadastradas */}
-        <div>
-          <h3 className="text-lg font-semibold mb-4">Unidades Cadastradas</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2">
-                  <Building className="h-5 w-5" />
-                  <span className="font-medium">Matriz</span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Código: MAT-001
-                </p>
-              </CardContent>
-            </Card>
-          </div>
         </div>
       </CardContent>
     </Card>
-  </main>
-</div>
+  );
+};
