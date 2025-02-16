@@ -1,189 +1,202 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { 
-  MoreVertical,
-  ClipboardList,
-  Pencil,
-  Trash2,
-  User,
-  Mail,
-  Phone,
-  Copy
-} from "lucide-react";
-import { cn } from "@/lib/utils";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Company } from "@/types/company";
-import { generateCompanyPDF, exportAllCompaniesReport } from "@/utils/pdfGenerator";
-import { formatCNPJ, formatPhone } from "@/utils/formatters";
 import { useState } from "react";
+import { Contact } from "@/types/company";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Phone, Mail, UserCircle, Briefcase, Trash2, Edit, MapPin, Star, Search, Plus } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
-interface CompanyCardProps {
-  company: Company;
-  onEdit: () => void;
-  onToggleStatus: () => void;
-  onDelete: () => void;
-  onAddUnit: () => void;
+interface CompanyContactsProps {
+  companyId: string;
+  contacts: Contact[];
+  onContactsChange: () => void;
 }
 
-export const CompanyCard = ({ 
-  company,
-  onEdit,
-  onToggleStatus,
-  onDelete,
-  onAddUnit
-}: CompanyCardProps) => {
-  const [isInactive, setIsInactive] = useState(company.status === "inactive");
-  const [copied, setCopied] = useState(false);
+export function CompanyContacts({ companyId, contacts, onContactsChange }: CompanyContactsProps) {
+  const [isAddingContact, setIsAddingContact] = useState(false);
+  const [filter, setFilter] = useState("");
+  const [customContactTypes, setCustomContactTypes] = useState<string[]>([]);
+  const [newContactType, setNewContactType] = useState("");
 
-  const handleExportPDF = async () => {
+  const [newContact, setNewContact] = useState({
+    name: "",
+    role: "",
+    emails: [""],
+    phones: [""],
+    address: "",
+    isFocal: false,
+    contactType: "Comercial",
+    notes: "",
+  });
+
+  const { toast } = useToast();
+
+  // Adicionar contato
+  const handleAddContact = async () => {
     try {
-      await generateCompanyPDF(company);
-    } catch (error) {
-      console.error("Erro ao gerar PDF:", error);
+      const { error } = await supabase
+        .from("contacts")
+        .insert({
+          company_id: companyId,
+          ...newContact,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Contato adicionado",
+        description: "O contato foi adicionado com sucesso.",
+      });
+
+      setIsAddingContact(false);
+      setNewContact({ name: "", role: "", emails: [""], phones: [""], address: "", isFocal: false, contactType: "Comercial", notes: "" });
+      onContactsChange();
+    } catch (error: any) {
+      toast({
+        title: "Erro ao adicionar contato",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
-  const handleExportAllCompanies = async () => {
-    try {
-      await exportAllCompaniesReport();
-    } catch (error) {
-      console.error("Erro ao exportar relatório:", error);
+  // Adicionar novo tipo de contato à lista personalizada
+  const handleAddContactType = () => {
+    if (newContactType.trim() && !customContactTypes.includes(newContactType)) {
+      setCustomContactTypes([...customContactTypes, newContactType]);
+      setNewContactType("");
     }
-  };
-
-  const handleCopyEmail = () => {
-    if (company.contact_email) {
-      navigator.clipboard.writeText(company.contact_email);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  const handleToggleInactive = () => {
-    setIsInactive(!isInactive);
-    onToggleStatus();
   };
 
   return (
-    <Card className="bg-background text-foreground rounded-lg border border-border hover:shadow-md transition-shadow">
-      {/* Cabeçalho */}
-      <CardHeader className="border-b border-border pb-4 flex flex-col md:flex-row justify-between items-start md:items-center">
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold">{company.fantasy_name}</h1>
-          <div className="flex flex-wrap gap-2 items-center">
-            <Badge variant="outline" className="font-mono">
-              CNPJ: {formatCNPJ(company.cnpj)}
-            </Badge>
-            {company.cnae && <Badge variant="outline">CNAE: {company.cnae}</Badge>}
-            <Badge 
-              className={cn(
-                "text-sm",
-                isInactive
-                  ? "bg-red-100 text-red-800 dark:bg-red-800/30 dark:text-red-400"
-                  : "bg-green-100 text-green-800 dark:bg-green-800/30 dark:text-green-400"
-              )}
-            >
-              {isInactive ? "Inativo" : "Ativo"}
-            </Badge>
-          </div>
-        </div>
+    <div className="space-y-4">
+      {/* Barra de busca */}
+      <div className="flex items-center gap-2">
+        <Search className="h-5 w-5 text-gray-500" />
+        <Input
+          placeholder="Buscar contato..."
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+        />
+      </div>
 
-        {/* Menu de Ações */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreVertical className="h-5 w-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onEdit}>
-              <span className="flex items-center">
-                <Pencil className="h-4 w-4 mr-2" />
-                Editar Empresa
-              </span>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onDelete}>
-              <span className="flex items-center text-red-600 dark:text-red-400">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Excluir Empresa
-              </span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </CardHeader>
+      {/* Botão de adicionar contato */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">Contatos</h3>
+        <Dialog open={isAddingContact} onOpenChange={setIsAddingContact}>
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm">Adicionar Contato</Button>
+          </DialogTrigger>
+          <DialogContent className="w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 bg-gray-800 text-white rounded-md">
+            <DialogHeader>
+              <DialogTitle>Novo Contato</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <Label>Nome</Label>
+              <Input value={newContact.name} onChange={(e) => setNewContact({ ...newContact, name: e.target.value })} />
 
-      {/* Conteúdo Principal */}
-      <CardContent className="p-6 space-y-8">
-        {/* Seção de Contato */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">Contato Principal</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-center gap-2">
-              <User className="h-5 w-5 text-primary" />
-              <span className="font-medium">{company.contact_name || 'Não informado'}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Mail className="h-5 w-5 text-primary" />
-              {company.contact_email ? (
-                <>
-                  <a href={`mailto:${company.contact_email}`} className="hover:underline">
-                    {company.contact_email}
-                  </a>
-                  <Button variant="ghost" size="icon" onClick={handleCopyEmail}>
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                  {copied && <span className="text-xs text-green-500">Copiado!</span>}
-                </>
-              ) : (
-                <span>Não informado</span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <Phone className="h-5 w-5 text-primary" />
-              <span>{company.contact_phone ? formatPhone(company.contact_phone) : 'Não informado'}</span>
-            </div>
-          </div>
-        </div>
+              <Label>Cargo</Label>
+              <Input value={newContact.role} onChange={(e) => setNewContact({ ...newContact, role: e.target.value })} />
 
-        {/* Dados Operacionais */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Funcionários</h3>
-            <div className="p-4 bg-muted rounded-lg">
-              <span className="text-2xl font-bold">
-                {company.employee_count || "Não informado"}
-              </span>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold">Grau de Risco (NR 4)</h3>
-            <div className="p-4 bg-muted rounded-lg">
-              <span className="text-2xl font-bold">
-                {company.metadata?.risk_grade || 'Não classificado'}
-              </span>
-            </div>
-          </div>
-        </div>
+              {/* Emails */}
+              <Label>Emails</Label>
+              <div className="space-y-2">
+                {newContact.emails.map((email, index) => (
+                  <Input
+                    key={index}
+                    type="email"
+                    value={email}
+                    onChange={(e) => {
+                      const emails = [...newContact.emails];
+                      emails[index] = e.target.value;
+                      setNewContact({ ...newContact, emails });
+                    }}
+                  />
+                ))}
+                <Button onClick={() => setNewContact({ ...newContact, emails: [...newContact.emails, ""] })} variant="outline">
+                  Adicionar Email
+                </Button>
+              </div>
 
-        {/* Ações */}
-        <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-border">
-          <Button className="flex-1">
-            <ClipboardList className="h-4 w-4 mr-2" />
-            Nova Inspeção
-          </Button>
-          <Button variant="outline" className="flex-1" onClick={handleExportAllCompanies}>
-            <ClipboardList className="h-4 w-4 mr-2" />
-            Exportar Relatório
-          </Button>
-        </div>
+              {/* Telefones */}
+              <Label>Telefones</Label>
+              <div className="space-y-2">
+                {newContact.phones.map((phone, index) => (
+                  <Input
+                    key={index}
+                    value={phone}
+                    onChange={(e) => {
+                      const phones = [...newContact.phones];
+                      phones[index] = e.target.value;
+                      setNewContact({ ...newContact, phones });
+                    }}
+                  />
+                ))}
+                <Button onClick={() => setNewContact({ ...newContact, phones: [...newContact.phones, ""] })} variant="outline">
+                  Adicionar Telefone
+                </Button>
+              </div>
 
-        {/* Caixa de seleção para inativar */}
-        <div className="flex items-center gap-2 pt-4">
-          <input type="checkbox" checked={isInactive} onChange={handleToggleInactive} />
-          <span className="text-sm">Inativar Empresa</span>
-        </div>
-      </CardContent>
-    </Card>
+              {/* Endereço */}
+              <Label>Endereço</Label>
+              <Input value={newContact.address} onChange={(e) => setNewContact({ ...newContact, address: e.target.value })} />
+
+              {/* Tipo de Contato */}
+              <Label>Tipo de Contato</Label>
+              <div className="flex gap-2">
+                <select
+                  value={newContact.contactType}
+                  onChange={(e) => setNewContact({ ...newContact, contactType: e.target.value })}
+                  className="w-full border rounded-md p-2 bg-white text-gray-900 dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="Comercial">Comercial</option>
+                  <option value="Técnico">Técnico</option>
+                  <option value="Financeiro">Financeiro</option>
+                  <option value="Jurídico">Jurídico</option>
+                  {customContactTypes.map((type, index) => (
+                    <option key={index} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+                <Input
+                  placeholder="Novo Tipo"
+                  value={newContactType}
+                  onChange={(e) => setNewContactType(e.target.value)}
+                  className="w-40"
+                />
+                <Button onClick={handleAddContactType} size="icon">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Contato Focal */}
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={newContact.isFocal}
+                  onChange={(e) => setNewContact({ ...newContact, isFocal: e.target.checked })}
+                />
+                <Label>Contato Focal</Label>
+              </div>
+
+              <Label>Observações</Label>
+              <Textarea value={newContact.notes} onChange={(e) => setNewContact({ ...newContact, notes: e.target.value })} />
+
+              <Button onClick={handleAddContact} className="w-full">Salvar Contato</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </div>
   );
-};
+}

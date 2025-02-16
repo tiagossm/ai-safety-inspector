@@ -78,15 +78,6 @@ export function CompaniesList() {
     navigate(`/companies/${companyId}/units/new`);
   };
 
-  const handleDialogClose = () => {
-    setEditingCompany(null);
-  };
-
-  const handleSave = async () => {
-    await fetchCompanies();
-    handleDialogClose();
-  };
-
   const filteredCompanies = companies.filter(company => 
     company.fantasy_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     company.cnpj.includes(searchTerm)
@@ -120,12 +111,12 @@ export function CompaniesList() {
         ))}
       </div>
 
-      <Dialog open={!!editingCompany} onOpenChange={handleDialogClose}>
+      <Dialog open={!!editingCompany} onOpenChange={() => setEditingCompany(null)}>
         {editingCompany && (
           <CompanyEditDialog
             company={editingCompany}
-            onClose={handleDialogClose}
-            onSave={handleSave}
+            onClose={() => setEditingCompany(null)}
+            onSave={fetchCompanies}
             open={!!editingCompany}
           />
         )}

@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,12 +10,13 @@ import {
   User,
   Mail,
   Phone,
+  Star,
   Copy
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Company } from "@/types/company";
-import { generateCompanyPDF, exportAllCompaniesReport } from "@/utils/pdfGenerator";
+import { generateCompanyPDF } from "@/utils/pdfGenerator";
 import { formatCNPJ, formatPhone } from "@/utils/formatters";
 import { useState } from "react";
 
@@ -22,7 +24,6 @@ interface CompanyCardProps {
   company: Company;
   onEdit: () => void;
   onToggleStatus: () => void;
-  onDelete: () => void;
   onAddUnit: () => void;
 }
 
@@ -30,10 +31,8 @@ export const CompanyCard = ({
   company,
   onEdit,
   onToggleStatus,
-  onDelete,
   onAddUnit
 }: CompanyCardProps) => {
-  const [isInactive, setIsInactive] = useState(company.status === "inactive");
   const [copied, setCopied] = useState(false);
 
   const handleExportPDF = async () => {
@@ -41,14 +40,6 @@ export const CompanyCard = ({
       await generateCompanyPDF(company);
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
-    }
-  };
-
-  const handleExportAllCompanies = async () => {
-    try {
-      await exportAllCompaniesReport();
-    } catch (error) {
-      console.error("Erro ao exportar relatório:", error);
     }
   };
 
@@ -60,13 +51,11 @@ export const CompanyCard = ({
     }
   };
 
-  const handleToggleInactive = () => {
-    setIsInactive(!isInactive);
-    onToggleStatus();
-  };
-
   return (
-    <Card className="bg-background text-foreground rounded-lg border border-border hover:shadow-md transition-shadow">
+    <Card className={cn(
+      "bg-background text-foreground rounded-lg",
+      "border border-border hover:shadow-md transition-shadow w-full"
+    )}>
       {/* Cabeçalho */}
       <CardHeader className="border-b border-border pb-4 flex flex-col md:flex-row justify-between items-start md:items-center">
         <div className="space-y-2">
@@ -79,12 +68,12 @@ export const CompanyCard = ({
             <Badge 
               className={cn(
                 "text-sm",
-                isInactive
-                  ? "bg-red-100 text-red-800 dark:bg-red-800/30 dark:text-red-400"
-                  : "bg-green-100 text-green-800 dark:bg-green-800/30 dark:text-green-400"
+                company.status === 'active'
+                  ? 'bg-green-100 text-green-800 dark:bg-green-800/30 dark:text-green-400'
+                  : 'bg-red-100 text-red-800 dark:bg-red-800/30 dark:text-red-400'
               )}
             >
-              {isInactive ? "Inativo" : "Ativo"}
+              {company.status === 'active' ? 'Ativo' : 'Inativo'}
             </Badge>
           </div>
         </div>
@@ -103,10 +92,10 @@ export const CompanyCard = ({
                 Editar Empresa
               </span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onDelete}>
+            <DropdownMenuItem onClick={onToggleStatus}>
               <span className="flex items-center text-red-600 dark:text-red-400">
                 <Trash2 className="h-4 w-4 mr-2" />
-                Excluir Empresa
+                {company.status === 'active' ? 'Inativar' : 'Reativar'}
               </span>
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -127,7 +116,10 @@ export const CompanyCard = ({
               <Mail className="h-5 w-5 text-primary" />
               {company.contact_email ? (
                 <>
-                  <a href={`mailto:${company.contact_email}`} className="hover:underline">
+                  <a 
+                    href={`mailto:${company.contact_email}`} 
+                    className="hover:underline"
+                  >
                     {company.contact_email}
                   </a>
                   <Button variant="ghost" size="icon" onClick={handleCopyEmail}>
@@ -152,7 +144,7 @@ export const CompanyCard = ({
             <h3 className="text-lg font-semibold">Funcionários</h3>
             <div className="p-4 bg-muted rounded-lg">
               <span className="text-2xl font-bold">
-                {company.employee_count || "Não informado"}
+                {company.employee_count || 'Não informado'}
               </span>
             </div>
           </div>
@@ -166,24 +158,26 @@ export const CompanyCard = ({
           </div>
         </div>
 
-        {/* Ações */}
-        <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-border">
-          <Button className="flex-1">
-            <ClipboardList className="h-4 w-4 mr-2" />
-            Nova Inspeção
-          </Button>
-          <Button variant="outline" className="flex-1" onClick={handleExportAllCompanies}>
-            <ClipboardList className="h-4 w-4 mr-2" />
-            Exportar Relatório
-          </Button>
-        </div>
-
-        {/* Caixa de seleção para inativar */}
-        <div className="flex items-center gap-2 pt-4">
-          <input type="checkbox" checked={isInactive} onChange={handleToggleInactive} />
-          <span className="text-sm">Inativar Empresa</span>
-        </div>
+        {/* Unidades */}
+        {company.metadata?.units && company.metadata.units.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Unidades Cadastradas</h3>
+              <Button variant="outline" size="sm" onClick={onAddUnit}>
+                Adicionar Unidade
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {company.metadata.units.map((unit) => (
+                <div key={unit.id} className="p-4 bg-muted rounded-lg">
+                  <p className="font-medium">{unit.name}</p>
+                  <p className="text-sm text-muted-foreground">Código: {unit.code}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </CardContent>
-    </Card>.
+    </Card>
   );
 };
