@@ -1,7 +1,7 @@
 
 import { Json } from "@/integrations/supabase/types";
 
-export type CompanyStatus = 'active' | 'inactive' | 'potential';
+export type CompanyStatus = 'active' | 'inactive';
 
 export type Contact = {
   id: string;
@@ -14,20 +14,6 @@ export type Contact = {
   created_at: string;
   updated_at: string;
 };
-
-export type CompanyMetadata = {
-  units?: Array<{
-    name?: string;
-    address?: string;
-    cnpj?: string;
-    cnae?: string;
-    fantasyName?: string;
-    riskLevel?: string;
-    contactEmail?: string;
-    contactPhone?: string;
-    contactName?: string;
-  }>;
-}
 
 export type Company = {
   id: string;

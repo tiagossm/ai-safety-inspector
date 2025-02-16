@@ -1,10 +1,8 @@
-
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Json } from "@/integrations/supabase/types";
 import { useToast } from "./ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Dialog } from "@/components/ui/dialog";
@@ -52,7 +50,6 @@ export function CompaniesList() {
 
       if (error) throw error;
 
-      // Cast the data to ensure status is of type CompanyStatus
       const typedData = (data || []).map(company => ({
         ...company,
         status: (company.status || 'active') as CompanyStatus
@@ -138,6 +135,36 @@ export function CompaniesList() {
     setEditingCompany(company);
   };
 
+  const handleToggleStatus = async (id: string, newStatus: CompanyStatus) => {
+    try {
+      const { error } = await supabase
+        .from('companies')
+        .update({ status: newStatus })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setCompanies(companies.map(company => 
+        company.id === id ? { ...company, status: newStatus } : company
+      ));
+
+      toast({
+        title: "Status atualizado",
+        description: `A empresa foi ${newStatus === 'active' ? 'ativada' : 'inativada'} com sucesso.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao atualizar status",
+        description: "Não foi possível atualizar o status da empresa.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDimensionNRs = (company: Company) => {
+    navigate(`/dimension-nrs/${company.id}`);
+  };
+
   const filteredCompanies = companies.filter(company => 
     company.fantasy_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     company.cnpj.includes(searchTerm) ||
@@ -175,10 +202,10 @@ export function CompaniesList() {
             )}
             <CompanyCard
               company={company}
-              onDelete={handleDeleteCompany}
+              onToggleStatus={handleToggleStatus}
               onEdit={handleEditCompany}
               onStartInspection={handleStartInspection}
-              onViewLegalNorms={handleViewLegalNorms}
+              onDimensionNRs={handleDimensionNRs}
             />
           </Dialog>
         ))}

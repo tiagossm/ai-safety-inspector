@@ -1,47 +1,52 @@
+
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { useState, useEffect } from "react";
-import { Company, Contact } from "@/types/company";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+import { Company, CompanyStatus } from "@/types/company";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ClipboardList, Download, MoreVertical, ChevronDown, ChevronUp, Pencil, Trash2, User, Mail, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AlertDialog, DropdownMenu } from "@/components/ui";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 interface CompanyCardProps {
   company: Company;
-  onToggleStatus: (id: string, newStatus: 'ativo' | 'inativo') => void;
+  onToggleStatus: (id: string, newStatus: CompanyStatus) => void;
   onEdit: (company: Company) => void;
   onStartInspection: (company: Company) => void;
   onDimensionNRs: (company: Company) => void;
 }
 
-const StatusBadge = ({ status }: { status: string }) => (
-  <Badge 
-    className={cn(
-      "gap-2 px-3 py-1 text-sm",
-      status === 'ativo' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'
-    )}
-  >
-    <div className={cn("h-2 w-2 rounded-full", status === 'ativo' ? 'bg-green-500' : 'bg-red-500')} />
-    {status.toUpperCase()}
-  </Badge>
-);
+const getStatusColor = (status: CompanyStatus) => {
+  switch (status) {
+    case 'active':
+      return 'bg-green-500';
+    case 'inactive':
+      return 'bg-red-500';
+    default:
+      return 'bg-gray-500';
+  }
+};
 
 export function CompanyCard({ company, onToggleStatus, onEdit, onStartInspection, onDimensionNRs }: CompanyCardProps) {
   const [showDetails, setShowDetails] = useState(false);
-  const [contacts, setContacts] = useState<Contact[]>([]);
-
-  const loadContacts = async () => {
-    const { data } = await supabase
-      .from('contacts')
-      .select('*')
-      .eq('company_id', company.id);
-    if (data) setContacts(data);
-  };
 
   const handleToggleStatus = () => {
-    const newStatus = company.status === 'ativo' ? 'inativo' : 'ativo';
+    const newStatus = company.status === 'active' ? 'inactive' : 'active';
     onToggleStatus(company.id, newStatus);
   };
 
@@ -50,16 +55,14 @@ export function CompanyCard({ company, onToggleStatus, onEdit, onStartInspection
   };
 
   return (
-    <Card 
-      className="relative bg-gray-800 text-white rounded-lg hover:shadow-xl transition-shadow cursor-pointer"
-      onClick={() => setShowDetails(!showDetails)}
-    >
+    <Card className="bg-gray-800 text-white rounded-lg hover:shadow-xl transition-shadow">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-xl font-bold">{company.name}</h2>
+            <h2 className="text-xl font-bold">{company.fantasy_name}</h2>
             <div className="flex items-center gap-2 mt-2">
-              <StatusBadge status={company.status} />
+              <div className={`h-2 w-2 rounded-full ${getStatusColor(company.status)}`} />
+              <span className="text-sm font-medium">{company.status.toUpperCase()}</span>
               <span className="text-sm text-gray-400">
                 CNPJ: {formatCNPJ(company.cnpj)}
               </span>
@@ -75,10 +78,7 @@ export function CompanyCard({ company, onToggleStatus, onEdit, onStartInspection
             <DropdownMenuContent className="bg-gray-700 text-white border-gray-600">
               <DropdownMenuItem 
                 className="hover:bg-gray-600"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit(company);
-                }}
+                onClick={() => onEdit(company)}
               >
                 <Pencil className="h-4 w-4 mr-2" />
                 Editar Empresa
@@ -86,24 +86,21 @@ export function CompanyCard({ company, onToggleStatus, onEdit, onStartInspection
               
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <DropdownMenuItem 
-                    className="text-red-500 hover:bg-gray-600"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                  <DropdownMenuItem className="text-red-500 hover:bg-gray-600">
                     <Trash2 className="h-4 w-4 mr-2" />
-                    {company.status === 'ativo' ? 'Inativar' : 'Reativar'}
+                    {company.status === 'active' ? 'Inativar' : 'Reativar'}
                   </DropdownMenuItem>
                 </AlertDialogTrigger>
                 <AlertDialogContent className="bg-gray-800 text-white">
                   <AlertDialogHeader>
                     <AlertDialogTitle>
-                      Confirmar {company.status === 'ativo' ? 'Inativação' : 'Reativação'}
+                      Confirmar {company.status === 'active' ? 'Inativação' : 'Reativação'}
                     </AlertDialogTitle>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
                     <AlertDialogAction 
-                      className={company.status === 'ativo' ? 'bg-red-500' : 'bg-green-500'}
+                      className={company.status === 'active' ? 'bg-red-500' : 'bg-green-500'}
                       onClick={handleToggleStatus}
                     >
                       Confirmar
@@ -116,72 +113,37 @@ export function CompanyCard({ company, onToggleStatus, onEdit, onStartInspection
         </div>
       </CardHeader>
 
-      {showDetails && (
-        <CardContent className="pt-4 border-t border-gray-600">
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="space-y-1">
-              <span className="text-sm text-gray-400">Data Cadastro:</span>
-              <p>{new Date(company.created_at).toLocaleDateString()}</p>
-            </div>
-            <div className="space-y-1">
-              <span className="text-sm text-gray-400">Email:</span>
-              <p>{company.email || 'Não informado'}</p>
-            </div>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <span className="text-sm text-gray-400">CNAE:</span>
+            <p>{company.cnae || 'Não informado'}</p>
           </div>
+          <div>
+            <span className="text-sm text-gray-400">Email:</span>
+            <p>{company.contact_email || 'Não informado'}</p>
+          </div>
+        </div>
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-medium">Contatos</h3>
-              <Button 
-                size="sm" 
-                variant="ghost"
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  await loadContacts();
-                }}
-              >
-                Atualizar
-              </Button>
-            </div>
-            
-            {contacts.map((contact) => (
-              <div key={contact.id} className="flex items-center gap-4 p-3 bg-gray-700 rounded-lg">
-                <User className="h-5 w-5 text-blue-400" />
-                <div>
-                  <p className="font-medium">{contact.name}</p>
-                  <div className="flex gap-2 text-sm text-gray-400">
-                    {contact.phone && <span><Phone className="inline h-4 w-4 mr-1" />{contact.phone}</span>}
-                    {contact.email && <span><Mail className="inline h-4 w-4 mr-1" />{contact.email}</span>}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex flex-wrap gap-4 mt-6">
-            <Button 
-              variant="default" 
-              onClick={(e) => {
-                e.stopPropagation();
-                onStartInspection(company);
-              }}
-              className="min-w-[160px] bg-green-600"
-            >
-              <ClipboardList className="h-4 w-4 mr-2" /> Iniciar Inspeção
-            </Button>
-            <Button 
-              variant="secondary" 
-              onClick={(e) => {
-                e.stopPropagation();
-                onDimensionNRs(company);
-              }}
-              className="min-w-[160px] bg-blue-600"
-            >
-              <Zap className="h-4 w-4 mr-2" /> Dimensionar NRs
-            </Button>
-          </div>
-        </CardContent>
-      )}
+        <div className="flex gap-4">
+          <Button 
+            variant="default" 
+            onClick={() => onStartInspection(company)}
+            className="bg-green-600"
+          >
+            <ClipboardList className="h-4 w-4 mr-2" /> 
+            Iniciar Inspeção
+          </Button>
+          <Button 
+            variant="secondary" 
+            onClick={() => onDimensionNRs(company)}
+            className="bg-blue-600"
+          >
+            <Download className="h-4 w-4 mr-2" /> 
+            Dimensionar NRs
+          </Button>
+        </div>
+      </CardContent>
     </Card>
   );
 }
