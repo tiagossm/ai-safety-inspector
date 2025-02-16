@@ -1,14 +1,23 @@
 
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
+import { CompanyMetadata } from '@/types/company';
 
 interface MyDB extends DBSchema {
   empresas: {
     key: string;
     value: {
       id: string;
-      name: string;
+      fantasy_name: string | null;
       cnpj: string;
+      cnae: string | null;
+      contact_email: string | null;
+      contact_phone: string | null;
+      contact_name: string | null;
+      employee_count: number | null;
+      metadata: CompanyMetadata | null;
+      status: string;
       sync_status: 'pending' | 'synced' | 'error';
+      user_id: string;
       updated_at: string;
     };
     indexes: { 'by-sync-status': string };
@@ -18,9 +27,15 @@ interface MyDB extends DBSchema {
     value: {
       id: string;
       company_id: string;
+      cnae: string;
+      checklist: any;
+      risks: any;
+      photos: string[] | null;
+      audio_url: string | null;
+      report_url: string | null;
       status: string;
       sync_status: 'pending' | 'synced' | 'error';
-      data: any;
+      user_id: string;
       updated_at: string;
     };
     indexes: { 'by-sync-status': string };

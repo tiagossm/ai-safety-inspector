@@ -5,7 +5,6 @@ import { Company } from '@/types/company';
 import { Json } from '@/integrations/supabase/types';
 import { User } from '@supabase/supabase-js';
 
-// Define interfaces that match both the local DB and Supabase schema
 interface LocalCompanyBase {
   id: string;
   fantasy_name: string | null;
@@ -37,8 +36,8 @@ interface LocalInspectionBase {
   updated_at: string;
 }
 
-interface DatabaseCompany extends LocalCompanyBase {}
-interface DatabaseInspection extends LocalInspectionBase {}
+type DatabaseCompany = LocalCompanyBase;
+type DatabaseInspection = LocalInspectionBase;
 
 export class SyncManager {
   private isSyncing = false;
@@ -53,17 +52,16 @@ export class SyncManager {
     this.isSyncing = true;
 
     try {
-      // Sync empresas
-      const pendingEmpresas = (await getPendingSyncs('empresas')) as DatabaseCompany[];
+      const pendingEmpresas = await getPendingSyncs('empresas') as DatabaseCompany[];
       for (const empresa of pendingEmpresas) {
-        const { sync_status, ...companyData } = {
-          ...empresa,
-          user_id: this.user.id
-        };
+        const { sync_status, ...companyData } = empresa;
         
         const { error } = await supabase
           .from('companies')
-          .upsert(companyData);
+          .upsert({
+            ...companyData,
+            user_id: this.user.id
+          });
 
         if (!error) {
           const database = await db;
@@ -71,22 +69,21 @@ export class SyncManager {
           await tx.store.put({
             ...empresa,
             sync_status: 'synced'
-          } as DatabaseCompany);
+          });
           await tx.done;
         }
       }
 
-      // Sync inspections
-      const pendingInspections = (await getPendingSyncs('inspections')) as DatabaseInspection[];
+      const pendingInspections = await getPendingSyncs('inspections') as DatabaseInspection[];
       for (const inspection of pendingInspections) {
-        const { sync_status, ...inspectionData } = {
-          ...inspection,
-          user_id: this.user.id
-        };
+        const { sync_status, ...inspectionData } = inspection;
         
         const { error } = await supabase
           .from('inspections')
-          .upsert(inspectionData);
+          .upsert({
+            ...inspectionData,
+            user_id: this.user.id
+          });
 
         if (!error) {
           const database = await db;
@@ -94,7 +91,7 @@ export class SyncManager {
           await tx.store.put({
             ...inspection,
             sync_status: 'synced'
-          } as DatabaseInspection);
+          });
           await tx.done;
         }
       }

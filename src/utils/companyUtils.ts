@@ -1,13 +1,13 @@
 
 import { jsPDF } from "jspdf";
-import { Company, CompanyMetadata } from "@/types/company";
+import { Company, CompanyUnit } from "@/types/company";
 
 export const isMatriz = (cnpj: string) => {
   const cleanCnpj = cnpj.replace(/\D/g, '');
   return cleanCnpj.substring(8, 12) === '0001';
 };
 
-export const generatePDF = (company: Company, units: CompanyMetadata['units']) => {
+export const generatePDF = (company: Company, units: CompanyUnit[] | undefined) => {
   const doc = new jsPDF();
   
   doc.setFontSize(16);
@@ -28,12 +28,12 @@ export const generatePDF = (company: Company, units: CompanyMetadata['units']) =
   doc.save(`relatorio_${company.cnpj}.pdf`);
 };
 
-export const generateCSV = (company: Company, units: CompanyMetadata['units']) => {
+export const generateCSV = (company: Company, units: CompanyUnit[] | undefined) => {
   let csvContent = "Nome,CNPJ,CNAE,Tipo,Funcionários\n";
   csvContent += `${company.fantasy_name || ""},${company.cnpj},${company.cnae || ""},${isMatriz(company.cnpj) ? "Matriz" : "Filial"},${company.employee_count || ""}\n`;
   
   units?.forEach(unit => {
-    csvContent += `${unit.name || ""},${unit.cnpj || ""},${unit.cnae || ""},"Unidade",\n`;
+    csvContent += `${unit.name || ""},${unit.id || ""},${unit.address || ""},"Unidade",\n`;
   });
 
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
