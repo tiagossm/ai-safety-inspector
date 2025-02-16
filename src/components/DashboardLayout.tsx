@@ -1,3 +1,4 @@
+
 import { ReactNode, useState, useEffect } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useAuth } from "@/components/AuthProvider";
@@ -7,8 +8,6 @@ import { Search, Bell, User, Menu, Building, ClipboardList, Settings, LogOut, Wi
 import { useSwipeable } from "react-swipeable";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import { db } from "@/services/database";
-import { SyncManager } from "@/services/sync";
 
 interface DashboardLayoutProps {
   children?: ReactNode;
@@ -19,16 +18,13 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobile();
-  const syncManager = new SyncManager();
 
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [localEmpresas, setLocalEmpresas] = useState([]);
 
   useEffect(() => {
     const updateOnlineStatus = async () => {
       setIsOnline(navigator.onLine);
-      if (navigator.onLine) await syncManager.trySync();
     };
     window.addEventListener("online", updateOnlineStatus);
     window.addEventListener("offline", updateOnlineStatus);
@@ -38,24 +34,9 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
     };
   }, []);
 
-  useEffect(() => {
-    const loadOfflineData = async () => {
-      try {
-        const dbInstance = await db;
-        const tx = dbInstance.transaction("empresas", "readonly");
-        const storedData = await tx.store.getAll();
-        setLocalEmpresas(storedData);
-      } catch (error) {
-        console.error("Erro ao carregar dados locais:", error);
-      }
-    };
-
-    if (!isOnline) loadOfflineData();
-  }, [isOnline]);
-
   const handlers = useSwipeable({
     onSwipedLeft: () => setSidebarOpen(false),
-    onSwipedRight: () => setSidebarOpen(true),
+    onSwipedRight: () => setSidebarOpen(true)
   });
 
   return (

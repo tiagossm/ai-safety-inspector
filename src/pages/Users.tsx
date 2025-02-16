@@ -1,9 +1,8 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -65,18 +64,18 @@ export default function Users() {
           user_id,
           company_id,
           status,
-          profiles (
+          profiles:user_id (
             full_name,
             email
           ),
-          companies (
+          companies:company_id (
             fantasy_name,
             cnpj
           )
         `);
       
       if (error) throw error;
-      return data as UserAssignment[];
+      return data as unknown as UserAssignment[];
     }
   });
 
