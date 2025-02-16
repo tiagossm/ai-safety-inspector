@@ -130,15 +130,16 @@ export function CompanyContacts({ companyId, contacts, onContactsChange }: Compa
 
               <Label>Tipo de Contato</Label>
               <select
-                value={newContact.contactType}
-                onChange={(e) => setNewContact({ ...newContact, contactType: e.target.value })}
-                className="w-full border rounded-md p-2"
-              >
-                <option>Comercial</option>
-                <option>Técnico</option>
-                <option>Financeiro</option>
-                <option>Jurídico</option>
-              </select>
+  value={newContact.contactType}
+  onChange={(e) => setNewContact({ ...newContact, contactType: e.target.value })}
+  className="w-full border rounded-md p-2 bg-white text-gray-900 dark:bg-gray-700 dark:text-white"
+>
+  <option value="Comercial">Comercial</option>
+  <option value="Técnico">Técnico</option>
+  <option value="Financeiro">Financeiro</option>
+  <option value="Jurídico">Jurídico</option>
+</select>
+
 
               <div className="flex items-center space-x-2">
                 <input
