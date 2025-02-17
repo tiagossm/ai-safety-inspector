@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
 import { Company } from "@/types/company";
 import { Button } from "@/components/ui/button";
 import { BuildingIcon, ChevronDown, ChevronUp, Mail, MapPin, Phone, User } from "lucide-react";

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
 import { Label } from "@/components/ui/label";
+import { UnitType } from "@/types/company";
 import {
   Select,
   SelectContent,
@@ -15,6 +16,18 @@ import {
 } from "@/components/ui/select";
 import { useCompanyAPI } from "@/hooks/useCompanyAPI";
 
+interface UnitFormData {
+  fantasy_name: string;
+  cnpj: string;
+  cnae: string;
+  address: string;
+  unit_type: UnitType | "";
+  technical_responsible: string;
+  contact_name: string;
+  contact_email: string;
+  contact_phone: string;
+}
+
 export function UnitForm() {
   const { companyId } = useParams();
   const navigate = useNavigate();
@@ -22,7 +35,7 @@ export function UnitForm() {
   const { fetchCNPJData } = useCompanyAPI();
 
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<UnitFormData>({
     fantasy_name: "",
     cnpj: "",
     cnae: "",
@@ -84,6 +97,11 @@ export function UnitForm() {
         throw new Error("CNPJ deve ter 14 dígitos");
       }
 
+      // Validate unit_type is set
+      if (!formData.unit_type) {
+        throw new Error("Selecione o tipo de unidade");
+      }
+
       // Validate matriz/filial
       if (formData.unit_type === 'filial' && !hasMatrix) {
         throw new Error("Não é possível cadastrar uma filial sem a empresa matriz");
@@ -94,6 +112,7 @@ export function UnitForm() {
         .insert({
           ...formData,
           company_id: companyId,
+          unit_type: formData.unit_type as UnitType, // Type assertion here is safe because we validated above
         });
 
       if (error) throw error;
