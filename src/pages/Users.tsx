@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,12 +35,19 @@ const roleBadgeVariants = {
   Técnico: "default"
 } as const;
 
+const validateRole = (role: string | null): "Administrador" | "Gerente" | "Técnico" => {
+  if (role === "Administrador" || role === "Gerente" || role === "Técnico") {
+    return role;
+  }
+  return "Técnico";
+};
+
 export function UserList() {
   const [users, setUsers] = useState<User[]>([]);
   const [search, setSearch] = useState("");
   const [showInactive, setShowInactive] = useState(false);
   const [isAddingUser, setIsAddingUser] = useState(false);
-  const [newUser, setNewUser] = useState({ name: "", email: "", role: "Técnico", status: "active" });
+  const [newUser, setNewUser] = useState({ name: "", email: "", role: "Técnico" as const, status: "active" });
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const { toast } = useToast();
 
@@ -56,13 +62,16 @@ export function UserList() {
       .order("name", { ascending: true });
 
     if (!error && data) {
-      // Simulando dados de empresas e checklists para exemplo
-      const enhancedData = data.map(user => ({
-        ...user,
+      const validatedUsers: User[] = data.map(user => ({
+        id: user.id,
+        name: user.name || "",
+        email: user.email || "",
+        role: validateRole(user.role),
+        status: user.status || "active",
         companies: ["Empresa A", "Empresa B"],
         checklists: Math.floor(Math.random() * 10)
       }));
-      setUsers(enhancedData);
+      setUsers(validatedUsers);
     }
   };
 
