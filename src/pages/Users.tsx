@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody } from "@/components/ui/table";
@@ -14,13 +13,8 @@ export function UserList() {
   const [users, setUsers] = useState<User[]>([]);
   const [search, setSearch] = useState("");
   const [showInactive, setShowInactive] = useState(false);
-  const [isAddingUser, setIsAddingUser] = useState(false);
-  const [newUser, setNewUser] = useState<Omit<User, 'id'>>({ 
-    name: "", 
-    email: "", 
-    role: "Técnico", 
-    status: "active" 
-  });
+  const [isEditingUser, setIsEditingUser] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
@@ -33,7 +27,6 @@ export function UserList() {
 
   const loadUsers = async () => {
     try {
-      // Carregar usuários com suas empresas e checklists
       const { data: usersData, error: usersError } = await supabase
         .from("users")
         .select("*")
@@ -43,13 +36,11 @@ export function UserList() {
 
       const usersWithDetails = await Promise.all(
         (usersData || []).map(async (user) => {
-          // Buscar empresas do usuário
           const { data: companiesData } = await supabase
             .from("user_companies")
             .select("companies(id, fantasy_name)")
             .eq("user_id", user.id);
 
-          // Buscar checklists do usuário
           const { data: checklistsData } = await supabase
             .from("user_checklists")
             .select("checklist_id")
@@ -74,74 +65,68 @@ export function UserList() {
     }
   };
 
-  const handleAddUser = async () => {
+  const handleSaveUser = async (user: Omit<User, 'id'>, isEditing: boolean) => {
     try {
-      // 1. Criar usuário no Auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: newUser.email,
-        email_confirm: true,
-        user_metadata: { name: newUser.name }
+      let userId = selectedUser?.id;
+
+      if (!isEditing) {
+        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+          email: user.email,
+          email_confirm: true,
+          user_metadata: { name: user.name }
+        });
+
+        if (authError) throw authError;
+        userId = authData.user?.id;
+
+        await supabase.from("users").insert({
+          id: userId,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          status: user.status
+        });
+      } else {
+        await supabase.from("users").update({
+          name: user.name,
+          role: user.role,
+          status: user.status
+        }).eq("id", userId);
+      }
+
+      if (selectedCompanies.length > 0) {
+        await supabase.from("user_companies").delete().eq("user_id", userId);
+        const companyAssignments = selectedCompanies.map(companyId => ({
+          user_id: userId,
+          company_id: companyId
+        }));
+        await supabase.from("user_companies").insert(companyAssignments);
+      }
+
+      if (selectedChecklists.length > 0) {
+        await supabase.from("user_checklists").delete().eq("user_id", userId);
+        const checklistAssignments = selectedChecklists.map(checklistId => ({
+          user_id: userId,
+          checklist_id: checklistId
+        }));
+        await supabase.from("user_checklists").insert(checklistAssignments);
+      }
+
+      toast({
+        title: isEditing ? "Usuário atualizado" : "Usuário adicionado",
+        description: isEditing ? "Dados do usuário foram atualizados." : "Novo usuário cadastrado."
       });
 
-      if (authError) throw authError;
-
-      if (authData.user) {
-        // 2. Atualizar informações do usuário
-        const { error: updateError } = await supabase
-          .from("users")
-          .update({ 
-            role: newUser.role,
-            status: newUser.status,
-            name: newUser.name
-          })
-          .eq("id", authData.user.id);
-
-        if (updateError) throw updateError;
-
-        // 3. Adicionar associações de empresas
-        if (selectedCompanies.length > 0) {
-          const companyAssignments = selectedCompanies.map(companyId => ({
-            user_id: authData.user.id,
-            company_id: companyId
-          }));
-
-          const { error: companiesError } = await supabase
-            .from("user_companies")
-            .insert(companyAssignments);
-
-          if (companiesError) throw companiesError;
-        }
-
-        // 4. Adicionar associações de checklists
-        if (selectedChecklists.length > 0) {
-          const checklistAssignments = selectedChecklists.map(checklistId => ({
-            user_id: authData.user.id,
-            checklist_id: checklistId
-          }));
-
-          const { error: checklistsError } = await supabase
-            .from("user_checklists")
-            .insert(checklistAssignments);
-
-          if (checklistsError) throw checklistsError;
-        }
-
-        toast({ 
-          title: "Usuário adicionado", 
-          description: "O usuário foi cadastrado com sucesso." 
-        });
-        
-        setIsAddingUser(false);
-        setNewUser({ name: "", email: "", role: "Técnico", status: "active" });
-        setSelectedCompanies([]);
-        setSelectedChecklists([]);
-        loadUsers();
-      }
+      setIsEditingUser(false);
+      setSelectedUser(null);
+      setSelectedCompanies([]);
+      setSelectedChecklists([]);
+      loadUsers();
     } catch (error: any) {
-      toast({ 
-        title: "Erro ao adicionar usuário", 
-        description: error.message, 
-        variant: "destructive" 
+      toast({
+        title: "Erro ao salvar usuário",
+        description: error.message,
+        variant: "destructive"
       });
     }
   };
@@ -159,43 +144,26 @@ export function UserList() {
     }
 
     try {
-      // Deletar o usuário (as tabelas relacionadas serão limpas automaticamente devido ao ON DELETE CASCADE)
-      const { error: authError } = await supabase.auth.admin.deleteUser(userToDelete.id);
-      if (authError) throw authError;
+      await supabase.auth.admin.deleteUser(userToDelete.id);
+      toast({ title: "Usuário excluído", description: "O usuário foi removido." });
 
-      toast({ 
-        title: "Usuário excluído", 
-        description: "O usuário foi removido com sucesso." 
-      });
-      
       loadUsers();
       setDeleteConfirmText("");
       setUserToDelete(null);
     } catch (error: any) {
-      toast({ 
-        title: "Erro ao excluir", 
-        description: error.message, 
-        variant: "destructive" 
-      });
+      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
     }
   };
-
-  const filteredUsers = users
-    .filter(user => (showInactive ? user.status === "inactive" : user.status === "active"))
-    .filter(user => 
-      user.name?.toLowerCase().includes(search.toLowerCase()) || 
-      user.email?.toLowerCase().includes(search.toLowerCase())
-    );
 
   return (
     <Card>
       <CardHeader>
-        <UserHeader 
+        <UserHeader
           showInactive={showInactive}
           setShowInactive={setShowInactive}
           search={search}
           setSearch={setSearch}
-          onAddUser={() => setIsAddingUser(true)}
+          onAddUser={() => setIsEditingUser(true)}
         />
       </CardHeader>
 
@@ -203,20 +171,25 @@ export function UserList() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[300px]">Usuário</TableHead>
+              <TableHead>Usuário</TableHead>
               <TableHead>Tipo de Perfil</TableHead>
               <TableHead>Empresas</TableHead>
               <TableHead>Checklists</TableHead>
-              <TableHead className="w-[100px]">Status</TableHead>
-              <TableHead className="w-[100px]">Ações</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredUsers.map((user) => (
-              <UserRow 
+            {users.map((user) => (
+              <UserRow
                 key={user.id}
                 user={user}
-                onEdit={() => {}} // Implementar edição
+                onEdit={() => {
+                  setSelectedUser(user);
+                  setIsEditingUser(true);
+                  setSelectedCompanies(user.companies || []);
+                  setSelectedChecklists(user.checklists || []);
+                }}
                 onDelete={() => setUserToDelete(user)}
               />
             ))}
@@ -225,11 +198,14 @@ export function UserList() {
       </CardContent>
 
       <AddUserSheet
-        open={isAddingUser}
-        onOpenChange={setIsAddingUser}
-        newUser={newUser}
-        onNewUserChange={setNewUser}
-        onSave={handleAddUser}
+        open={isEditingUser}
+        onOpenChange={setIsEditingUser}
+        user={selectedUser}
+        onSave={(user) => handleSaveUser(user, !!selectedUser)}
+        selectedCompanies={selectedCompanies}
+        setSelectedCompanies={setSelectedCompanies}
+        selectedChecklists={selectedChecklists}
+        setSelectedChecklists={setSelectedChecklists}
       />
 
       <DeleteUserDialog
