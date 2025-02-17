@@ -26,6 +26,7 @@ interface UnitFormData {
   contact_name: string;
   contact_email: string;
   contact_phone: string;
+  geolocation?: string;
 }
 
 export function UnitForm() {
@@ -45,6 +46,7 @@ export function UnitForm() {
     contact_name: "",
     contact_email: "",
     contact_phone: "",
+    geolocation: "",
   });
 
   const [hasMatrix, setHasMatrix] = useState(false);
@@ -185,6 +187,7 @@ export function UnitForm() {
             id="fantasy_name"
             value={formData.fantasy_name}
             onChange={(e) => setFormData(prev => ({ ...prev, fantasy_name: e.target.value }))}
+            required
           />
         </div>
 
@@ -194,6 +197,7 @@ export function UnitForm() {
             id="cnae"
             value={formData.cnae}
             onChange={(e) => setFormData(prev => ({ ...prev, cnae: e.target.value }))}
+            required
           />
         </div>
 
@@ -203,6 +207,17 @@ export function UnitForm() {
             id="address"
             value={formData.address}
             onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
+            required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="geolocation">Geolocalização</Label>
+          <Input
+            id="geolocation"
+            value={formData.geolocation}
+            onChange={(e) => setFormData(prev => ({ ...prev, geolocation: e.target.value }))}
+            placeholder="Latitude, Longitude"
           />
         </div>
 
@@ -212,6 +227,7 @@ export function UnitForm() {
             id="technical_responsible"
             value={formData.technical_responsible}
             onChange={(e) => setFormData(prev => ({ ...prev, technical_responsible: e.target.value }))}
+            required
           />
         </div>
 
@@ -221,6 +237,7 @@ export function UnitForm() {
             id="contact_name"
             value={formData.contact_name}
             onChange={(e) => setFormData(prev => ({ ...prev, contact_name: e.target.value }))}
+            required
           />
         </div>
 
@@ -231,6 +248,7 @@ export function UnitForm() {
             type="email"
             value={formData.contact_email}
             onChange={(e) => setFormData(prev => ({ ...prev, contact_email: e.target.value }))}
+            required
           />
         </div>
 
@@ -240,6 +258,7 @@ export function UnitForm() {
             id="contact_phone"
             value={formData.contact_phone}
             onChange={(e) => setFormData(prev => ({ ...prev, contact_phone: e.target.value }))}
+            required
           />
         </div>
       </div>

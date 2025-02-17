@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MoreVertical, ClipboardList, Pencil, Trash2, Zap, PlusCircle } from "lucide-react";
+import { MoreVertical, ClipboardList, Pencil, Trash2, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Company } from "@/types/company";
@@ -10,6 +10,17 @@ import { CompanyDetails, CompanyTitle } from "./company/CompanyDetails";
 import { CompanyContacts } from "./company/CompanyContacts";
 import { CompanyUnits } from "./company/CompanyUnits";
 import { useNavigate } from "react-router-dom";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useState } from "react";
 
 interface CompanyCardProps {
   company: Company;
@@ -28,10 +39,7 @@ export const CompanyCard = ({
 }: CompanyCardProps) => {
   const navigate = useNavigate();
   const isInactive = company.status === "inactive";
-
-  const handleAddUnit = () => {
-    navigate(`/companies/${company.id}/units/new`);
-  };
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   return (
     <Card className="w-full bg-background text-foreground rounded-lg border border-border hover:shadow-md transition-shadow">
@@ -70,7 +78,7 @@ export const CompanyCard = ({
               <Pencil className="h-4 w-4 mr-2" />
               Editar Empresa
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onDelete} className="text-red-600">
+            <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-red-600">
               <Trash2 className="h-4 w-4 mr-2" />
               Excluir Empresa
             </DropdownMenuItem>
@@ -99,6 +107,29 @@ export const CompanyCard = ({
           </Button>
         </div>
       </CardContent>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir esta empresa? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                onDelete();
+                setShowDeleteDialog(false);
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

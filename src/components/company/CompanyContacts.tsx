@@ -1,24 +1,24 @@
 
+import { useState } from "react";
 import { Contact, Company } from "@/types/company";
 import { Button } from "@/components/ui/button";
-import { Plus, Mail, Phone, Pencil, Trash2 } from "lucide-react";
+import { Plus, Mail, Phone, Pencil, Trash2, User } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useForm } from "react-hook-form";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { formatPhone } from "@/utils/formatters";
-import { useState } from "react";
 
 type ContactFormData = {
   name: string;
   role: string;
-  emails: string[];
-  phones: string[];
+  email: string;
+  phone: string;
   notes: string;
-  isPrimary: boolean;
 };
 
 interface CompanyContactsProps {
@@ -27,18 +27,41 @@ interface CompanyContactsProps {
 }
 
 export function CompanyContacts({ company, onEditContact }: CompanyContactsProps) {
-  const [isAddingContact, setIsAddingContact] = useState(false);
-  const [emailFields, setEmailFields] = useState<string[]>(['']);
-  const [phoneFields, setPhoneFields] = useState<string[]>(['']);
+  const [isOpen, setIsOpen] = useState(false);
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const [deletingContact, setDeletingContact] = useState<Contact | null>(null);
   const { toast } = useToast();
-  const { register, handleSubmit, reset } = useForm<ContactFormData>();
+  const { register, handleSubmit, reset, setValue } = useForm<ContactFormData>();
 
-  const handleAddEmailField = () => {
-    setEmailFields([...emailFields, '']);
-  };
+  const handleAddContact = async (data: ContactFormData) => {
+    try {
+      const { error } = await supabase
+        .from('contacts')
+        .insert({
+          company_id: company.id,
+          name: data.name,
+          role: data.role,
+          email: data.email,
+          phone: data.phone,
+          notes: data.notes,
+        });
 
-  const handleAddPhoneField = () => {
-    setPhoneFields([...phoneFields, '']);
+      if (error) throw error;
+
+      toast({
+        title: "Contato adicionado",
+        description: "O contato foi adicionado com sucesso."
+      });
+
+      setIsOpen(false);
+      reset();
+    } catch (error) {
+      toast({
+        title: "Erro ao adicionar contato",
+        description: "Não foi possível adicionar o contato.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleDeleteContact = async (contactId: string) => {
@@ -54,6 +77,8 @@ export function CompanyContacts({ company, onEditContact }: CompanyContactsProps
         title: "Contato excluído",
         description: "O contato foi excluído com sucesso."
       });
+
+      setDeletingContact(null);
     } catch (error) {
       toast({
         title: "Erro ao excluir contato",
@@ -63,117 +88,28 @@ export function CompanyContacts({ company, onEditContact }: CompanyContactsProps
     }
   };
 
-  const onSubmitContact = async (data: ContactFormData) => {
-    try {
-      const { error } = await supabase
-        .from('contacts')
-        .insert({
-          company_id: company.id,
-          name: data.name,
-          role: data.role,
-          emails: emailFields.filter(email => email.trim() !== ''),
-          phones: phoneFields.filter(phone => phone.trim() !== ''),
-          notes: data.notes,
-          is_primary: data.isPrimary
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Contato adicionado",
-        description: "O contato foi adicionado com sucesso."
-      });
-
-      setIsAddingContact(false);
-      reset();
-      setEmailFields(['']);
-      setPhoneFields(['']);
-    } catch (error) {
-      toast({
-        title: "Erro ao adicionar contato",
-        description: "Não foi possível adicionar o contato.",
-        variant: "destructive"
-      });
-    }
+  const openEditDialog = (contact: Contact) => {
+    setEditingContact(contact);
+    setValue('name', contact.name || '');
+    setValue('role', contact.role || '');
+    setValue('email', contact.email || '');
+    setValue('phone', contact.phone || '');
+    setValue('notes', contact.notes || '');
+    setIsOpen(true);
   };
 
   return (
     <div className="space-y-4 w-full">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Contatos</h3>
-        <Dialog open={isAddingContact} onOpenChange={setIsAddingContact}>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar Contato
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Novo Contato</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit(onSubmitContact)} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <Input placeholder="Nome" {...register('name', { required: true })} />
-                <Input placeholder="Cargo" {...register('role', { required: true })} />
-              </div>
-
-              {/* Email fields */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Emails</label>
-                {emailFields.map((_, index) => (
-                  <div key={`email_${index}`} className="flex gap-2">
-                    <Input
-                      type="email"
-                      placeholder={`Email ${index + 1}`}
-                      {...register(`emails.${index}`)}
-                    />
-                    {index === emailFields.length - 1 && (
-                      <Button type="button" variant="outline" onClick={handleAddEmailField}>
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Phone fields */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Telefones</label>
-                {phoneFields.map((_, index) => (
-                  <div key={`phone_${index}`} className="flex gap-2">
-                    <Input
-                      placeholder={`Telefone ${index + 1}`}
-                      {...register(`phones.${index}`)}
-                    />
-                    {index === phoneFields.length - 1 && (
-                      <Button type="button" variant="outline" onClick={handleAddPhoneField}>
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Notes field */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Observações</label>
-                <textarea
-                  className="w-full min-h-[100px] p-2 border rounded-md"
-                  placeholder="Observações sobre o contato..."
-                  {...register('notes')}
-                />
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <input type="checkbox" {...register('isPrimary')} />
-                <label>Contato Principal</label>
-              </div>
-
-              <Button type="submit" className="w-full">Salvar Contato</Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button variant="outline" size="sm" onClick={() => {
+          reset();
+          setEditingContact(null);
+          setIsOpen(true);
+        }}>
+          <Plus className="h-4 w-4 mr-2" />
+          Adicionar Contato
+        </Button>
       </div>
 
       {company.contact_name && (
@@ -186,24 +122,7 @@ export function CompanyContacts({ company, onEditContact }: CompanyContactsProps
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{company.contact_name}</span>
-                  <Badge variant="outline">Focal</Badge>
-                </div>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={onEditContact}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className="text-red-600 hover:text-red-700"
-                    onClick={() => handleDeleteContact(company.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <Badge variant="outline">Principal</Badge>
                 </div>
               </div>
               {company.contact_email && (
@@ -222,6 +141,71 @@ export function CompanyContacts({ company, onEditContact }: CompanyContactsProps
           </div>
         </div>
       )}
+
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingContact ? "Editar Contato" : "Novo Contato"}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit(handleAddContact)} className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Nome</label>
+              <Input {...register('name')} placeholder="Nome do contato" required />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Cargo</label>
+              <Input {...register('role')} placeholder="Cargo do contato" required />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Email</label>
+              <Input {...register('email')} type="email" placeholder="Email do contato" required />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Telefone</label>
+              <Input {...register('phone')} placeholder="Telefone do contato" required />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Observações</label>
+              <Input {...register('notes')} placeholder="Observações sobre o contato" />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit">
+                {editingContact ? "Salvar" : "Adicionar"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!deletingContact} onOpenChange={() => setDeletingContact(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este contato? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletingContact && handleDeleteContact(deletingContact.id)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
