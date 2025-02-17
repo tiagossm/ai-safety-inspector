@@ -108,6 +108,13 @@ export function CompaniesList() {
     navigate(`/companies/${companyId}/units/new`);
   };
 
+  const handleEditContact = () => {
+    toast({
+      title: "Editar contato",
+      description: "Funcionalidade em desenvolvimento."
+    });
+  };
+
   const filteredCompanies = companies.filter(company => 
     company.fantasy_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     company.cnpj.includes(searchTerm)
@@ -178,6 +185,7 @@ export function CompaniesList() {
             onToggleStatus={() => handleToggleStatus(company.id, company.status === 'active' ? 'inactive' : 'active')}
             onAddUnit={() => handleAddUnit(company.id)}
             onDelete={() => handleDelete(company.id)}
+            onEditContact={handleEditContact}
           />
         ))}
       </div>
