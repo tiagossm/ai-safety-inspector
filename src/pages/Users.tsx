@@ -65,11 +65,11 @@ export function UserList() {
     }
   };
 
-  const handleSaveUser = async (user: Omit<User, 'id'>, isEditing: boolean) => {
+  const handleSaveUser = async (user: Omit<User, 'id'>) => {
     try {
       let userId = selectedUser?.id;
 
-      if (!isEditing) {
+      if (!userId) {
         const { data: authData, error: authError } = await supabase.auth.admin.createUser({
           email: user.email,
           email_confirm: true,
@@ -113,8 +113,8 @@ export function UserList() {
       }
 
       toast({
-        title: isEditing ? "Usuário atualizado" : "Usuário adicionado",
-        description: isEditing ? "Dados do usuário foram atualizados." : "Novo usuário cadastrado."
+        title: userId === selectedUser?.id ? "Usuário atualizado" : "Usuário adicionado",
+        description: userId === selectedUser?.id ? "Dados do usuário foram atualizados." : "Novo usuário cadastrado."
       });
 
       setIsEditingUser(false);
@@ -201,7 +201,7 @@ export function UserList() {
         open={isEditingUser}
         onOpenChange={setIsEditingUser}
         user={selectedUser}
-        onSave={(user) => handleSaveUser(user, !!selectedUser)}
+        onSave={handleSaveUser}
         selectedCompanies={selectedCompanies}
         setSelectedCompanies={setSelectedCompanies}
         selectedChecklists={selectedChecklists}
