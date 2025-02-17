@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Search, Building2, Plus } from "lucide-react";
@@ -7,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CompanyCard } from "./CompanyCard";
 import { CompanyEditDialog } from "./CompanyEditDialog";
+import { CompanyForm } from "./CompanyForm";
 import { Company, CompanyStatus } from "@/types/company";
 import { Button } from "./ui/button";
 
