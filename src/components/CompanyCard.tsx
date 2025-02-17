@@ -200,8 +200,8 @@ export const CompanyCard = ({
             {company.metadata?.units && company.metadata.units.length > 0 ? (
               <div className="space-y-3">
                 {company.metadata.units.map((unit, index) => (
-                  <div key={index} className="p-4 bg-muted/50 rounded-lg">
-                    <h4 className="font-medium">{unit.fantasyName || `Unidade ${index + 1}`}</h4>
+                  <div key={unit.id || index} className="p-4 bg-muted/50 rounded-lg">
+                    <h4 className="font-medium">{unit.name || `Unidade ${index + 1}`}</h4>
                     {unit.address && <p className="text-sm text-muted-foreground">{unit.address}</p>}
                   </div>
                 ))}
