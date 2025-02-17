@@ -2,22 +2,20 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  MoreVertical, ClipboardList, Pencil, Trash2, Zap, PlusCircle
-} from "lucide-react";
+import { MoreVertical, ClipboardList, Pencil, Trash2, Zap, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Company } from "@/types/company";
 import { CompanyDetails, CompanyTitle } from "./company/CompanyDetails";
 import { CompanyContacts } from "./company/CompanyContacts";
 import { CompanyUnits } from "./company/CompanyUnits";
+import { useNavigate } from "react-router-dom";
 
 interface CompanyCardProps {
   company: Company;
   onEdit: () => void;
   onToggleStatus: () => void;
   onDelete: () => void;
-  onAddUnit: () => void;
   onEditContact: () => void;
 }
 
@@ -26,10 +24,14 @@ export const CompanyCard = ({
   onEdit,
   onToggleStatus,
   onDelete,
-  onAddUnit,
   onEditContact
 }: CompanyCardProps) => {
+  const navigate = useNavigate();
   const isInactive = company.status === "inactive";
+
+  const handleAddUnit = () => {
+    navigate(`/companies/${company.id}/units/new`);
+  };
 
   return (
     <Card className="w-full bg-background text-foreground rounded-lg border border-border hover:shadow-md transition-shadow">
@@ -83,7 +85,7 @@ export const CompanyCard = ({
             <CompanyContacts company={company} onEditContact={onEditContact} />
           </div>
           
-          <CompanyUnits company={company} onAddUnit={onAddUnit} />
+          <CompanyUnits company={company} />
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-border">

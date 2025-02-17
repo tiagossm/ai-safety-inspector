@@ -8,6 +8,7 @@ import Settings from "@/pages/Settings";
 import { AuthProvider } from "@/components/AuthProvider";
 import Auth from "@/pages/Auth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import AddUnit from "@/pages/AddUnit";
 
 function App() {
   return (
@@ -27,6 +28,13 @@ function App() {
               <ProtectedRoute>
                 <DashboardLayout>
                   <Companies />
+                </DashboardLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/companies/:companyId/units/new" element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <AddUnit />
                 </DashboardLayout>
               </ProtectedRoute>
             } />
