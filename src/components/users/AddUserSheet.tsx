@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,12 +13,9 @@ import { supabase } from "@/integrations/supabase/client";
 interface AddUserSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  user: User | null;
-  onSave: (user: Omit<User, 'id'>) => void;
-  selectedCompanies: string[];
-  setSelectedCompanies: (companies: string[]) => void;
-  selectedChecklists: string[];
-  setSelectedChecklists: (checklists: string[]) => void;
+  newUser: Omit<User, 'id'>;
+  onNewUserChange: (user: Omit<User, 'id'>) => void;
+  onSave: () => void;
 }
 
 const roleInfo = {
@@ -58,40 +54,15 @@ const roleInfo = {
 export function AddUserSheet({
   open,
   onOpenChange,
-  user,
-  onSave,
-  selectedCompanies,
-  setSelectedCompanies,
-  selectedChecklists,
-  setSelectedChecklists
+  newUser,
+  onNewUserChange,
+  onSave
 }: AddUserSheetProps) {
-  const [editedUser, setEditedUser] = useState<Omit<User, 'id'>>({
-    name: "",
-    email: "",
-    role: "Técnico",
-    status: "active"
-  });
+  const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
+  const [selectedChecklists, setSelectedChecklists] = useState<string[]>([]);
   const [showCompaniesDialog, setShowCompaniesDialog] = useState(false);
   const [showChecklistsDialog, setShowChecklistsDialog] = useState(false);
   const [companies, setCompanies] = useState<{ id: string, fantasy_name: string }[]>([]);
-
-  useEffect(() => {
-    if (user) {
-      setEditedUser({
-        name: user.name || "",
-        email: user.email || "",
-        role: user.role || "Técnico",
-        status: user.status || "active"
-      });
-    } else {
-      setEditedUser({
-        name: "",
-        email: "",
-        role: "Técnico",
-        status: "active"
-      });
-    }
-  }, [user]);
 
   useEffect(() => {
     if (selectedCompanies.length > 0) {
@@ -110,16 +81,11 @@ export function AddUserSheet({
     }
   };
 
-  const handleSave = () => {
-    onSave(editedUser);
-  };
-
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetTrigger asChild />
       <SheetContent className="w-full max-w-2xl">
         <SheetHeader>
-          <SheetTitle>{user ? "Editar Usuário" : "Novo Usuário"}</SheetTitle>
+          <SheetTitle>Novo Usuário</SheetTitle>
         </SheetHeader>
         <Tabs defaultValue="dados" className="mt-4">
           <TabsList className="grid grid-cols-3 gap-4">
@@ -131,14 +97,14 @@ export function AddUserSheet({
           <TabsContent value="dados" className="space-y-4 mt-4">
             <Input 
               placeholder="Nome" 
-              value={editedUser.name} 
-              onChange={(e) => setEditedUser({ ...editedUser, name: e.target.value })} 
+              value={newUser.name} 
+              onChange={(e) => onNewUserChange({ ...newUser, name: e.target.value })} 
             />
             <Input 
               placeholder="Email" 
               type="email" 
-              value={editedUser.email} 
-              onChange={(e) => setEditedUser({ ...editedUser, email: e.target.value })} 
+              value={newUser.email} 
+              onChange={(e) => onNewUserChange({ ...newUser, email: e.target.value })} 
             />
           </TabsContent>
           
@@ -204,11 +170,11 @@ export function AddUserSheet({
                 <div
                   key={role}
                   className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
-                    editedUser.role === role 
+                    newUser.role === role 
                       ? 'border-primary bg-accent' 
                       : 'border-transparent hover:border-muted-foreground'
                   }`}
-                  onClick={() => setEditedUser({ ...editedUser, role: role })}
+                  onClick={() => onNewUserChange({ ...newUser, role: role })}
                 >
                   <div className="flex items-center gap-2 mb-2">
                     {info.icon}
@@ -220,7 +186,7 @@ export function AddUserSheet({
                   <div className="space-y-2">
                     {info.permissions.map((permission, index) => (
                       <div key={index} className="flex items-center gap-2 text-sm">
-                        <Badge variant={editedUser.role === role ? "default" : "secondary"} className="h-1.5 w-1.5 rounded-full p-0" />
+                        <Badge variant={newUser.role === role ? "default" : "secondary"} className="h-1.5 w-1.5 rounded-full p-0" />
                         {permission}
                       </div>
                     ))}
@@ -232,15 +198,15 @@ export function AddUserSheet({
         </Tabs>
         
         <div className="mt-6">
-          <Button onClick={handleSave} className="w-full">
-            {user ? "Salvar Alterações" : "Criar Usuário"}
+          <Button onClick={onSave} className="w-full">
+            Criar Usuário
           </Button>
         </div>
 
         <AssignCompaniesDialog
           open={showCompaniesDialog}
           onOpenChange={setShowCompaniesDialog}
-          userId={user?.id || ""}
+          userId=""
           selectedCompanies={selectedCompanies}
           onCompaniesChange={setSelectedCompanies}
         />
@@ -248,7 +214,7 @@ export function AddUserSheet({
         <AssignChecklistsDialog
           open={showChecklistsDialog}
           onOpenChange={setShowChecklistsDialog}
-          userId={user?.id || ""}
+          userId=""
           selectedCompanies={selectedCompanies}
           selectedChecklists={selectedChecklists}
           onChecklistsChange={setSelectedChecklists}

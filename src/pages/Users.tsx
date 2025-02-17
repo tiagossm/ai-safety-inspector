@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseAdmin } from "@/integrations/supabase/adminClient";
 import { UserHeader } from "@/components/users/UserHeader";
 import { UserRow } from "@/components/users/UserRow";
 import { AddUserSheet } from "@/components/users/AddUserSheet";
@@ -70,7 +71,7 @@ export function UserList() {
       let userId = selectedUser?.id;
 
       if (!userId) {
-        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
           email: user.email,
           email_confirm: true,
           user_metadata: { name: user.name }
@@ -144,7 +145,7 @@ export function UserList() {
     }
 
     try {
-      await supabase.auth.admin.deleteUser(userToDelete.id);
+      await supabaseAdmin.auth.admin.deleteUser(userToDelete.id);
       toast({ title: "Usuário excluído", description: "O usuário foi removido." });
 
       loadUsers();
