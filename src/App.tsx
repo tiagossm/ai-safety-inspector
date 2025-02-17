@@ -5,13 +5,13 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Toaster } from "./components/ui/toaster";
 import Auth from "./pages/Auth";
 import DashboardLayout from "./components/DashboardLayout";
-import { Companies } from "./pages/Companies";
-import { Home } from "./pages/Home";
-import { Plans } from "./pages/Plans";
-import { Blog } from "./pages/Blog";
-import { Contact } from "./pages/Contact";
+import Companies from "./pages/Companies";
+import Home from "./pages/Home";
+import Plans from "./pages/Plans";
+import Blog from "./pages/Blog";
+import Contact from "./pages/Contact";
 import { UserList } from "./pages/Users";
-import { NotFound } from "./pages/NotFound";
+import NotFound from "./pages/NotFound";
 
 function App() {
   return (
