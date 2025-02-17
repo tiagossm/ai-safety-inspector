@@ -1,7 +1,10 @@
+
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MoreVertical, ClipboardList, Pencil, Trash2, Zap, PlusCircle } from "lucide-react";
+import { 
+  MoreVertical, ClipboardList, Pencil, Trash2, Zap, PlusCircle
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Company } from "@/types/company";

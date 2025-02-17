@@ -24,8 +24,8 @@ export type Contact = {
   company_id: string;
   name: string;
   role: string;
-  email: string;
-  phone: string;
+  emails: string[];
+  phones: string[];
   notes: string | null;
   created_at: string;
   updated_at: string;
