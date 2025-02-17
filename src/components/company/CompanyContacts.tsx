@@ -98,7 +98,7 @@ export function CompanyContacts({ company, onEditContact }: CompanyContactsProps
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Contatos</h3>
         <Dialog open={isAddingContact} onOpenChange={setIsAddingContact}>
@@ -118,7 +118,7 @@ export function CompanyContacts({ company, onEditContact }: CompanyContactsProps
                 <Input placeholder="Cargo" {...register('role', { required: true })} />
               </div>
 
-              {/* Campos de email dinâmicos */}
+              {/* Email fields */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Emails</label>
                 {emailFields.map((_, index) => (
@@ -137,7 +137,7 @@ export function CompanyContacts({ company, onEditContact }: CompanyContactsProps
                 ))}
               </div>
 
-              {/* Campos de telefone dinâmicos */}
+              {/* Phone fields */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Telefones</label>
                 {phoneFields.map((_, index) => (
@@ -155,6 +155,7 @@ export function CompanyContacts({ company, onEditContact }: CompanyContactsProps
                 ))}
               </div>
 
+              {/* Notes field */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Observações</label>
                 <textarea

@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +19,7 @@ interface CompanyCardProps {
   onToggleStatus: () => void;
   onDelete: () => void;
   onAddUnit: () => void;
-  onEditContact: () => void; // Adicionando função para editar contato
+  onEditContact: () => void;
 }
 
 export const CompanyCard = ({ 
@@ -29,12 +28,12 @@ export const CompanyCard = ({
   onToggleStatus,
   onDelete,
   onAddUnit,
-  onEditContact // Recebendo a função para editar contato
+  onEditContact
 }: CompanyCardProps) => {
   const isInactive = company.status === "inactive";
 
   return (
-    <Card className="bg-background text-foreground rounded-lg border border-border hover:shadow-md transition-shadow w-full max-w-7xl mx-auto">
+    <Card className="w-full bg-background text-foreground rounded-lg border border-border hover:shadow-md transition-shadow">
       <CardHeader className="border-b border-border pb-4 flex flex-col md:flex-row justify-between items-start md:items-center">
         <div className="space-y-2">
           <CompanyTitle company={company} />
@@ -80,9 +79,9 @@ export const CompanyCard = ({
 
       <CardContent className="p-6 space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="space-y-4">
+          <div className="space-y-4 w-full">
             <CompanyDetails company={company} />
-            <CompanyContacts company={company} onEditContact={onEditContact} /> {/* Adicionando botão de edição */}
+            <CompanyContacts company={company} onEditContact={onEditContact} />
           </div>
           
           <CompanyUnits company={company} onAddUnit={onAddUnit} />
@@ -104,14 +103,12 @@ export const CompanyCard = ({
         </div>
       </CardContent>
 
-      {/* Ícone flutuante de adicionar unidade */}
       <Button 
-        className="fixed bottom-6 right-6 bg-primary text-white rounded-full shadow-lg p-3 hover:bg-primary-dark transition" 
+        className="fixed bottom-6 right-6 bg-primary text-white rounded-full shadow-lg p-3 hover:bg-primary-dark transition-colors" 
         onClick={onAddUnit}
       >
         <PlusCircle className="h-6 w-6" />
       </Button>
-
     </Card>
   );
 };

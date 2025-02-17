@@ -161,10 +161,12 @@ export type Database = {
           company_id: string | null
           created_at: string
           email: string | null
+          emails: string[] | null
           id: string
           name: string | null
           notes: string | null
           phone: string | null
+          phones: string[] | null
           role: string | null
           updated_at: string
         }
@@ -172,10 +174,12 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           email?: string | null
+          emails?: string[] | null
           id?: string
           name?: string | null
           notes?: string | null
           phone?: string | null
+          phones?: string[] | null
           role?: string | null
           updated_at?: string
         }
@@ -183,10 +187,12 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           email?: string | null
+          emails?: string[] | null
           id?: string
           name?: string | null
           notes?: string | null
           phone?: string | null
+          phones?: string[] | null
           role?: string | null
           updated_at?: string
         }
