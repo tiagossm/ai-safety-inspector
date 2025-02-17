@@ -1,3 +1,6 @@
+
+import React from 'react';
+
 const Blog = () => (
   <section className="space-y-4">
     <h3 className="text-2xl font-bold">Blog</h3>
