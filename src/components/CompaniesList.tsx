@@ -105,10 +105,6 @@ export function CompaniesList() {
     setEditingCompany(company);
   };
 
-  const handleAddUnit = (companyId: string) => {
-    navigate(`/companies/${companyId}/units/new`);
-  };
-
   const handleEditContact = () => {
     toast({
       title: "Editar contato",
@@ -144,7 +140,6 @@ export function CompaniesList() {
         companies={filteredCompanies}
         onEdit={handleEdit}
         onToggleStatus={handleToggleStatus}
-        onAddUnit={handleAddUnit}
         onDelete={handleDelete}
         onEditContact={handleEditContact}
       />
