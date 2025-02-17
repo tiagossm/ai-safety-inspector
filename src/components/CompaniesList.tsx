@@ -1,16 +1,17 @@
 
 import { useEffect, useState } from "react";
-import { Input } from "@/components/ui/input";
-import { Search, Building2, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "./ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { CompanyCard } from "./CompanyCard";
 import { CompanyEditDialog } from "./CompanyEditDialog";
 import { CompanyForm } from "./CompanyForm";
 import { Company, CompanyStatus } from "@/types/company";
 import { Button } from "./ui/button";
+import { EmptyCompanyState } from "./company/EmptyCompanyState";
+import { CompanySearchFilter } from "./company/CompanySearchFilter";
+import { CompaniesGrid } from "./company/CompaniesGrid";
 
 export function CompaniesList() {
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -129,66 +130,24 @@ export function CompaniesList() {
   }
 
   if (companies.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-        <div className="text-6xl animate-bounce">👻</div>
-        <h3 className="text-xl font-semibold text-center">
-          Nenhuma empresa cadastrada
-        </h3>
-        <p className="text-muted-foreground text-center">
-          Comece adicionando sua primeira empresa!
-        </p>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button size="lg" className="mt-4">
-              <Building2 className="mr-2 h-5 w-5" />
-              Adicionar Empresa
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Cadastrar Nova Empresa</DialogTitle>
-            </DialogHeader>
-            <CompanyForm onCompanyCreated={fetchCompanies} />
-          </DialogContent>
-        </Dialog>
-        
-        <Button
-          size="lg"
-          className="fixed bottom-6 right-6 rounded-full w-16 h-16 shadow-lg"
-          onClick={() => document.querySelector<HTMLButtonElement>('[data-dialog-trigger="new-company"]')?.click()}
-        >
-          <Plus className="h-6 w-6" />
-        </Button>
-      </div>
-    );
+    return <EmptyCompanyState onCompanyCreated={fetchCompanies} />;
   }
 
   return (
     <div className="space-y-4">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-        <Input
-          placeholder="Buscar por nome ou CNPJ..."
-          className="pl-10"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
+      <CompanySearchFilter 
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+      />
 
-      <div className="grid gap-4">
-        {filteredCompanies.map(company => (
-          <CompanyCard
-            key={company.id}
-            company={company}
-            onEdit={() => handleEdit(company)}
-            onToggleStatus={() => handleToggleStatus(company.id, company.status === 'active' ? 'inactive' : 'active')}
-            onAddUnit={() => handleAddUnit(company.id)}
-            onDelete={() => handleDelete(company.id)}
-            onEditContact={handleEditContact}
-          />
-        ))}
-      </div>
+      <CompaniesGrid
+        companies={filteredCompanies}
+        onEdit={handleEdit}
+        onToggleStatus={handleToggleStatus}
+        onAddUnit={handleAddUnit}
+        onDelete={handleDelete}
+        onEditContact={handleEditContact}
+      />
 
       <Dialog open={!!editingCompany} onOpenChange={() => setEditingCompany(null)}>
         {editingCompany && (
