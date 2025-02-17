@@ -55,14 +55,18 @@ export function UnitForm() {
 
   const checkExistingMatrix = async () => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('units')
         .select('*')
         .eq('company_id', companyId)
-        .eq('unit_type', 'matriz')
-        .single();
+        .eq('unit_type', 'matriz');
 
-      setHasMatrix(!!data);
+      if (error) {
+        console.error('Error checking matrix:', error);
+        return;
+      }
+
+      setHasMatrix(data && data.length > 0);
     } catch (error) {
       console.error('Error checking matrix:', error);
     }
