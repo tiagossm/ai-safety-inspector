@@ -3,9 +3,14 @@ export type CompanyStatus = 'active' | 'inactive' | 'archived';
 
 export type CompanyUnit = {
   id: string;
-  name: string;
-  code: string;
+  fantasy_name: string | null;
+  code?: string;
   address?: string | null;
+  cnpj: string;
+  cnae?: string | null;
+  contact_email?: string | null;
+  contact_phone?: string | null;
+  contact_name?: string | null;
 };
 
 export type CompanyMetadata = {
