@@ -160,12 +160,10 @@ export type Database = {
         Row: {
           company_id: string | null
           created_at: string
-          email: string | null
           emails: string[] | null
           id: string
-          name: string | null
+          name: string
           notes: string | null
-          phone: string | null
           phones: string[] | null
           role: string | null
           updated_at: string
@@ -173,12 +171,10 @@ export type Database = {
         Insert: {
           company_id?: string | null
           created_at?: string
-          email?: string | null
           emails?: string[] | null
           id?: string
-          name?: string | null
+          name: string
           notes?: string | null
-          phone?: string | null
           phones?: string[] | null
           role?: string | null
           updated_at?: string
@@ -186,12 +182,10 @@ export type Database = {
         Update: {
           company_id?: string | null
           created_at?: string
-          email?: string | null
           emails?: string[] | null
           id?: string
-          name?: string | null
+          name?: string
           notes?: string | null
-          phone?: string | null
           phones?: string[] | null
           role?: string | null
           updated_at?: string

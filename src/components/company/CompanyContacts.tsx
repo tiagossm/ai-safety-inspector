@@ -4,9 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useContacts } from "@/hooks/useContacts";
 import { ContactForm } from "./contacts/ContactForm";
 import { PrimaryContact } from "./contacts/PrimaryContact";
-import { useContacts } from "@/hooks/useContacts";
+import { ContactList } from "./contacts/ContactList";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CompanyContactsProps {
   company: Company;
@@ -14,6 +17,7 @@ interface CompanyContactsProps {
 }
 
 export function CompanyContacts({ company, onEditContact }: CompanyContactsProps) {
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const {
     isOpen,
     setIsOpen,
@@ -25,11 +29,38 @@ export function CompanyContacts({ company, onEditContact }: CompanyContactsProps
     handleDeleteContact,
   } = useContacts();
 
+  useEffect(() => {
+    fetchContacts();
+  }, [company.id]);
+
+  const fetchContacts = async () => {
+    const { data, error } = await supabase
+      .from('contacts')
+      .select('*')
+      .eq('company_id', company.id)
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setContacts(data);
+    }
+  };
+
   const handleSubmit = async (data: any) => {
-    await handleAddContact({
+    const success = await handleAddContact({
       company_id: company.id,
       ...data,
     });
+    
+    if (success) {
+      fetchContacts();
+    }
+  };
+
+  const handleDelete = async (contactId: string) => {
+    const success = await handleDeleteContact(contactId);
+    if (success) {
+      fetchContacts();
+    }
   };
 
   return (
@@ -46,6 +77,15 @@ export function CompanyContacts({ company, onEditContact }: CompanyContactsProps
       </div>
 
       <PrimaryContact company={company} />
+      
+      <ContactList 
+        contacts={contacts}
+        onEdit={(contact) => {
+          setEditingContact(contact);
+          setIsOpen(true);
+        }}
+        onDelete={setDeletingContact}
+      />
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent>
@@ -73,7 +113,7 @@ export function CompanyContacts({ company, onEditContact }: CompanyContactsProps
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deletingContact && handleDeleteContact(deletingContact.id)}
+              onClick={() => deletingContact && handleDelete(deletingContact.id)}
               className="bg-red-600 hover:bg-red-700"
             >
               Excluir
