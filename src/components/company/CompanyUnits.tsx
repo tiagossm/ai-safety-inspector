@@ -59,11 +59,13 @@ export function CompanyUnits({ company, onAddUnit }: CompanyUnitsProps) {
 
   const handleAddUnit = () => {
     if (onAddUnit) {
+      console.log("Adicionar Unidade clicado!"); // Depuração
       onAddUnit();
     } else {
-      navigate(`/companies/${company.id}/units/new`);
+      console.warn("⚠️ Função onAddUnit não foi passada corretamente!");
     }
   };
+  
 
   return (
     <div className="space-y-4">
