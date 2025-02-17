@@ -2,8 +2,8 @@
 import { useState } from "react";
 import { Contact, Company } from "@/types/company";
 import { Button } from "@/components/ui/button";
-import { Plus, Mail, Phone, Pencil, Trash2, User } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Plus, Mail, Phone, Pencil, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -16,8 +16,8 @@ import { formatPhone } from "@/utils/formatters";
 type ContactFormData = {
   name: string;
   role: string;
-  email: string;
-  phone: string;
+  emails: string[];
+  phones: string[];
   notes: string;
 };
 
@@ -41,8 +41,8 @@ export function CompanyContacts({ company, onEditContact }: CompanyContactsProps
           company_id: company.id,
           name: data.name,
           role: data.role,
-          email: data.email,
-          phone: data.phone,
+          emails: [data.emails[0]], // Taking first email for now
+          phones: [data.phones[0]], // Taking first phone for now
           notes: data.notes,
         });
 
@@ -92,8 +92,8 @@ export function CompanyContacts({ company, onEditContact }: CompanyContactsProps
     setEditingContact(contact);
     setValue('name', contact.name || '');
     setValue('role', contact.role || '');
-    setValue('email', contact.email || '');
-    setValue('phone', contact.phone || '');
+    setValue('emails', contact.emails || []);
+    setValue('phones', contact.phones || []);
     setValue('notes', contact.notes || '');
     setIsOpen(true);
   };
@@ -162,12 +162,21 @@ export function CompanyContacts({ company, onEditContact }: CompanyContactsProps
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Email</label>
-              <Input {...register('email')} type="email" placeholder="Email do contato" required />
+              <Input 
+                {...register('emails.0')} 
+                type="email" 
+                placeholder="Email do contato" 
+                required 
+              />
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Telefone</label>
-              <Input {...register('phone')} placeholder="Telefone do contato" required />
+              <Input 
+                {...register('phones.0')} 
+                placeholder="Telefone do contato" 
+                required 
+              />
             </div>
 
             <div className="space-y-2">
