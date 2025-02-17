@@ -45,3 +45,23 @@ export type Company = {
   status: CompanyStatus;
   deactivated_at?: string | null;
 };
+
+export type UnitType = 'matriz' | 'filial';
+
+export type Unit = {
+  id: string;
+  company_id: string;
+  fantasy_name: string | null;
+  cnpj: string;
+  cnae: string | null;
+  address: string | null;
+  unit_type: UnitType;
+  geolocation: string | null;
+  technical_responsible: string | null;
+  contact_name: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  parent_unit_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
