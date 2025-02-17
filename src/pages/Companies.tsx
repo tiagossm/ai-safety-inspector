@@ -3,7 +3,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { CompanyForm } from "@/components/CompanyForm";
 import { CompaniesList } from "@/components/CompaniesList";
 import { Button } from "@/components/ui/button";
-import { Plus, Upload } from "lucide-react";
+import { Plus, Upload, Download } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -24,6 +24,41 @@ const Companies = () => {
 
   const handleCompanyCreated = () => {
     setRefreshTrigger(prev => prev + 1);
+  };
+
+  const handleExportCompanies = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('status', 'active');
+
+      if (error) throw error;
+
+      // Convert data to CSV format
+      const csvContent = "data:text/csv;charset=utf-8," + 
+        "CNPJ,Nome Fantasia,CNAE,Email,Telefone,Contato\n" +
+        data.map(company => `${company.cnpj},${company.fantasy_name || ''},${company.cnae || ''},${company.contact_email || ''},${company.contact_phone || ''},${company.contact_name || ''}`).join("\n");
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "empresas.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "Exportação concluída",
+        description: "O arquivo CSV foi gerado com sucesso.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro na exportação",
+        description: error.message || "Não foi possível exportar os dados.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,6 +136,10 @@ const Companies = () => {
               Importar CSV
             </Button>
           </div>
+          <Button variant="outline" onClick={handleExportCompanies}>
+            <Download className="h-5 w-5 mr-2" />
+            Exportar CSV
+          </Button>
           <Dialog>
             <DialogTrigger asChild>
               <Button className="min-w-[180px]">

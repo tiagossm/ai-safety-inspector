@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,8 +8,6 @@ import {
 import { cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Company } from "@/types/company";
-import { generateCompanyPDF } from "@/utils/pdfGenerator";
-import { formatCNPJ } from "@/utils/formatters";
 import { CompanyDetails, CompanyTitle } from "./company/CompanyDetails";
 import { CompanyContacts } from "./company/CompanyContacts";
 import { CompanyUnits } from "./company/CompanyUnits";
@@ -39,7 +38,7 @@ export const CompanyCard = ({
           <CompanyTitle company={company} />
           <div className="flex flex-wrap gap-2 items-center">
             <Badge variant="outline" className="font-mono">
-              CNPJ: {formatCNPJ(company.cnpj)}
+              CNPJ: {company.cnpj}
             </Badge>
             {company.cnae && <Badge variant="outline">CNAE: {company.cnae}</Badge>}
             <Badge variant="secondary" className="font-mono">
@@ -96,19 +95,8 @@ export const CompanyCard = ({
             <Zap className="h-4 w-4 mr-2" />
             Dimensionar NRs com IA
           </Button>
-          <Button variant="outline" className="flex-1" onClick={() => generateCompanyPDF(company)}>
-            <ClipboardList className="h-4 w-4 mr-2" />
-            Exportar Relatório
-          </Button>
         </div>
       </CardContent>
-
-      <Button 
-        className="fixed bottom-6 right-6 bg-primary text-white rounded-full shadow-lg p-3 hover:bg-primary-dark transition-colors" 
-        onClick={onAddUnit}
-      >
-        <PlusCircle className="h-6 w-6" />
-      </Button>
     </Card>
   );
 };
