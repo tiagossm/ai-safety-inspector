@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,11 +14,13 @@ import { UserPlus, Edit, Trash2, Search, Building2, ClipboardList, Crown, Users2
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+type UserRole = "Administrador" | "Gerente" | "Técnico";
+
 interface User {
   id: string;
   name: string;
   email: string;
-  role: "Administrador" | "Gerente" | "Técnico";
+  role: UserRole;
   status: string;
   companies?: string[];
   checklists?: number;
@@ -35,7 +38,7 @@ const roleBadgeVariants = {
   Técnico: "default"
 } as const;
 
-const validateRole = (role: string | null): "Administrador" | "Gerente" | "Técnico" => {
+const validateRole = (role: string | null): UserRole => {
   if (role === "Administrador" || role === "Gerente" || role === "Técnico") {
     return role;
   }
@@ -47,7 +50,12 @@ export function UserList() {
   const [search, setSearch] = useState("");
   const [showInactive, setShowInactive] = useState(false);
   const [isAddingUser, setIsAddingUser] = useState(false);
-  const [newUser, setNewUser] = useState({ name: "", email: "", role: "Técnico" as const, status: "active" });
+  const [newUser, setNewUser] = useState({ 
+    name: "", 
+    email: "", 
+    role: "Técnico" as UserRole, 
+    status: "active" 
+  });
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const { toast } = useToast();
 
@@ -181,7 +189,7 @@ export function UserList() {
                   <TabsContent value="permissoes">
                     <select
                       value={newUser.role}
-                      onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                      onChange={(e) => setNewUser({ ...newUser, role: validateRole(e.target.value) })}
                       className="w-full border rounded-md p-2"
                     >
                       <option value="Técnico">Técnico</option>
