@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody } from "@/components/ui/table";
@@ -22,6 +23,8 @@ export function UserList() {
   });
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
+  const [selectedChecklists, setSelectedChecklists] = useState<string[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -29,23 +32,51 @@ export function UserList() {
   }, []);
 
   const loadUsers = async () => {
-    const { data, error } = await supabase
-      .from("users")
-      .select("*")
-      .order("name", { ascending: true });
+    try {
+      // Carregar usuários com suas empresas e checklists
+      const { data: usersData, error: usersError } = await supabase
+        .from("users")
+        .select("*")
+        .order("name", { ascending: true });
 
-    if (!error && data) {
-      setUsers(data.map(user => ({
-        ...user,
-        role: user.role as UserRole,
-        companies: ["Empresa A", "Empresa B"],
-        checklists: Math.floor(Math.random() * 10)
-      })));
+      if (usersError) throw usersError;
+
+      const usersWithDetails = await Promise.all(
+        (usersData || []).map(async (user) => {
+          // Buscar empresas do usuário
+          const { data: companiesData } = await supabase
+            .from("user_companies")
+            .select("companies(id, fantasy_name)")
+            .eq("user_id", user.id);
+
+          // Buscar checklists do usuário
+          const { data: checklistsData } = await supabase
+            .from("user_checklists")
+            .select("checklist_id")
+            .eq("user_id", user.id);
+
+          return {
+            ...user,
+            role: user.role as UserRole,
+            companies: companiesData?.map(c => c.companies?.fantasy_name).filter(Boolean) || [],
+            checklists: checklistsData?.length || 0
+          };
+        })
+      );
+
+      setUsers(usersWithDetails);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao carregar usuários",
+        description: error.message,
+        variant: "destructive"
+      });
     }
   };
 
   const handleAddUser = async () => {
     try {
+      // 1. Criar usuário no Auth
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: newUser.email,
         email_confirm: true,
@@ -55,19 +86,55 @@ export function UserList() {
       if (authError) throw authError;
 
       if (authData.user) {
+        // 2. Atualizar informações do usuário
         const { error: updateError } = await supabase
           .from("users")
           .update({ 
             role: newUser.role,
-            status: newUser.status 
+            status: newUser.status,
+            name: newUser.name
           })
           .eq("id", authData.user.id);
 
         if (updateError) throw updateError;
 
-        toast({ title: "Usuário adicionado", description: "O usuário foi cadastrado com sucesso." });
+        // 3. Adicionar associações de empresas
+        if (selectedCompanies.length > 0) {
+          const companyAssignments = selectedCompanies.map(companyId => ({
+            user_id: authData.user.id,
+            company_id: companyId
+          }));
+
+          const { error: companiesError } = await supabase
+            .from("user_companies")
+            .insert(companyAssignments);
+
+          if (companiesError) throw companiesError;
+        }
+
+        // 4. Adicionar associações de checklists
+        if (selectedChecklists.length > 0) {
+          const checklistAssignments = selectedChecklists.map(checklistId => ({
+            user_id: authData.user.id,
+            checklist_id: checklistId
+          }));
+
+          const { error: checklistsError } = await supabase
+            .from("user_checklists")
+            .insert(checklistAssignments);
+
+          if (checklistsError) throw checklistsError;
+        }
+
+        toast({ 
+          title: "Usuário adicionado", 
+          description: "O usuário foi cadastrado com sucesso." 
+        });
+        
         setIsAddingUser(false);
         setNewUser({ name: "", email: "", role: "Técnico", status: "active" });
+        setSelectedCompanies([]);
+        setSelectedChecklists([]);
         loadUsers();
       }
     } catch (error: any) {
@@ -92,10 +159,15 @@ export function UserList() {
     }
 
     try {
+      // Deletar o usuário (as tabelas relacionadas serão limpas automaticamente devido ao ON DELETE CASCADE)
       const { error: authError } = await supabase.auth.admin.deleteUser(userToDelete.id);
       if (authError) throw authError;
 
-      toast({ title: "Usuário excluído", description: "O usuário foi removido com sucesso." });
+      toast({ 
+        title: "Usuário excluído", 
+        description: "O usuário foi removido com sucesso." 
+      });
+      
       loadUsers();
       setDeleteConfirmText("");
       setUserToDelete(null);
