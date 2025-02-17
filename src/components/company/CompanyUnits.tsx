@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface CompanyUnitsProps {
   company: Company;
+  onAddUnit?: () => void;
 }
 
 interface Unit {
@@ -24,7 +25,7 @@ interface Unit {
   contact_phone: string | null;
 }
 
-export function CompanyUnits({ company }: CompanyUnitsProps) {
+export function CompanyUnits({ company, onAddUnit }: CompanyUnitsProps) {
   const [expandedUnits, setExpandedUnits] = useState<string[]>([]);
   const [units, setUnits] = useState<Unit[]>([]);
   const navigate = useNavigate();
@@ -56,6 +57,14 @@ export function CompanyUnits({ company }: CompanyUnitsProps) {
     );
   };
 
+  const handleAddUnit = () => {
+    if (onAddUnit) {
+      onAddUnit();
+    } else {
+      navigate(`/companies/${company.id}/units/new`);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -63,7 +72,7 @@ export function CompanyUnits({ company }: CompanyUnitsProps) {
         <Button 
           variant="outline" 
           size="sm" 
-          onClick={() => navigate(`/companies/${company.id}/units/new`)}
+          onClick={handleAddUnit}
         >
           <BuildingIcon className="h-4 w-4 mr-2" />
           Adicionar Unidade

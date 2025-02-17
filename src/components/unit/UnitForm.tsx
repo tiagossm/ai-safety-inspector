@@ -84,6 +84,13 @@ export function UnitForm() {
     }
   };
 
+  const handleUnitTypeChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      unit_type: value as UnitType,
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -112,7 +119,7 @@ export function UnitForm() {
         .insert({
           ...formData,
           company_id: companyId,
-          unit_type: formData.unit_type as UnitType, // Type assertion here is safe because we validated above
+          unit_type: formData.unit_type as UnitType,
         });
 
       if (error) throw error;
@@ -153,7 +160,7 @@ export function UnitForm() {
         <div className="space-y-2">
           <Label htmlFor="unit_type">Tipo de Unidade</Label>
           <Select
-            onValueChange={(value) => setFormData(prev => ({ ...prev, unit_type: value }))}
+            onValueChange={handleUnitTypeChange}
             required
           >
             <SelectTrigger>
