@@ -1,14 +1,14 @@
-
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, Building2, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "./ui/use-toast";
 import { useNavigate } from "react-router-dom";
-import { Dialog } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { CompanyCard } from "./CompanyCard";
 import { CompanyEditDialog } from "./CompanyEditDialog";
 import { Company, CompanyStatus } from "@/types/company";
+import { Button } from "./ui/button";
 
 export function CompaniesList() {
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -112,7 +112,47 @@ export function CompaniesList() {
   );
 
   if (loading) {
-    return <div>Carregando...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-pulse">Carregando...</div>
+      </div>
+    );
+  }
+
+  if (companies.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <div className="text-6xl animate-bounce">👻</div>
+        <h3 className="text-xl font-semibold text-center">
+          Nenhuma empresa cadastrada
+        </h3>
+        <p className="text-muted-foreground text-center">
+          Comece adicionando sua primeira empresa!
+        </p>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button size="lg" className="mt-4">
+              <Building2 className="mr-2 h-5 w-5" />
+              Adicionar Empresa
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Cadastrar Nova Empresa</DialogTitle>
+            </DialogHeader>
+            <CompanyForm onCompanyCreated={fetchCompanies} />
+          </DialogContent>
+        </Dialog>
+        
+        <Button
+          size="lg"
+          className="fixed bottom-6 right-6 rounded-full w-16 h-16 shadow-lg"
+          onClick={() => document.querySelector<HTMLButtonElement>('[data-dialog-trigger="new-company"]')?.click()}
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+      </div>
+    );
   }
 
   return (
@@ -149,6 +189,24 @@ export function CompaniesList() {
             open={!!editingCompany}
           />
         )}
+      </Dialog>
+
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button
+            size="lg"
+            className="fixed bottom-6 right-6 rounded-full w-16 h-16 shadow-lg"
+            data-dialog-trigger="new-company"
+          >
+            <Plus className="h-6 w-6" />
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Cadastrar Nova Empresa</DialogTitle>
+          </DialogHeader>
+          <CompanyForm onCompanyCreated={fetchCompanies} />
+        </DialogContent>
       </Dialog>
     </div>
   );
