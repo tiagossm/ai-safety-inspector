@@ -22,7 +22,7 @@ export const generatePDF = (company: Company, units: CompanyUnit[] | undefined) 
   
   doc.text("Unidades:", 20, 100);
   units?.forEach((unit, index) => {
-    const unitText = `- ${unit.name || `Unidade ${index + 1}`}`;
+    const unitText = `- ${unit.fantasy_name || `Unidade ${index + 1}`}`;
     doc.text(unitText, 30, 110 + (index * 10));
     if (unit.address) {
       doc.text(`  ${unit.address}`, 30, 110 + (index * 10) + 5);
@@ -39,7 +39,7 @@ export const generateCSV = (company: Company, units: CompanyUnit[] | undefined) 
   if (units?.length) {
     csvContent += "\nUnidades\nNome,Código,Endereço\n";
     units.forEach(unit => {
-      csvContent += `${unit.name || ""},${unit.code || ""},${unit.address || ""}\n`;
+      csvContent += `${unit.fantasy_name || ""},${unit.code || ""},${unit.address || ""}\n`;
     });
   }
 

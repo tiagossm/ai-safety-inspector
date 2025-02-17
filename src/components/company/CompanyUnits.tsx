@@ -1,23 +1,35 @@
 
-import { CompanyUnit } from "@/types/company";
+import { Company, CompanyUnit } from "@/types/company";
+import { Button } from "@/components/ui/button";
+import { BuildingIcon } from "lucide-react";
 
 interface CompanyUnitsProps {
-  units: CompanyUnit[] | undefined;
-  expanded: boolean;
+  company: Company;
+  onAddUnit: () => void;
 }
 
-export function CompanyUnits({ units, expanded }: CompanyUnitsProps) {
-  if (!expanded || !units?.length) return null;
-
+export function CompanyUnits({ company, onAddUnit }: CompanyUnitsProps) {
   return (
-    <div className="mt-4 space-y-2">
-      <h4 className="font-medium">Unidades Vinculadas:</h4>
-      {units.map((unit, index) => (
-        <div key={unit.id || index} className="pl-4 border-l-2 border-muted">
-          <p className="font-medium">{unit.name || `Unidade ${index + 1}`}</p>
-          {unit.address && <p className="text-xs">{unit.address}</p>}
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">Unidades</h3>
+        <Button variant="outline" size="sm" onClick={onAddUnit}>
+          <BuildingIcon className="h-4 w-4 mr-2" />
+          Adicionar Unidade
+        </Button>
+      </div>
+      {company.metadata?.units && company.metadata.units.length > 0 ? (
+        <div className="space-y-3">
+          {company.metadata.units.map((unit, index) => (
+            <div key={unit.id || index} className="p-4 bg-muted/50 rounded-lg">
+              <h4 className="font-medium">{unit.fantasy_name || `Unidade ${index + 1}`}</h4>
+              {unit.address && <p className="text-sm text-muted-foreground">{unit.address}</p>}
+            </div>
+          ))}
         </div>
-      ))}
+      ) : (
+        <p className="text-sm text-muted-foreground">Nenhuma unidade cadastrada</p>
+      )}
     </div>
   );
 }
