@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,7 +63,7 @@ export const useCompanyForm = (onCompanyCreated?: () => void) => {
         employee_count: parseInt(employeeCount) || null,
         metadata: { 
           units,
-          risk_level: riskLevel 
+          risk_grade: riskLevel 
         } as Json,
         user_id: userData.user.id
       };
