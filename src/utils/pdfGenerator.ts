@@ -32,7 +32,7 @@ export const generateCompanyPDF = (company: Company) => {
   if (company.metadata?.units && company.metadata.units.length > 0) {
     doc.text("Unidades:", 20, 170);
     company.metadata.units.forEach((unit, index) => {
-      doc.text(`${unit.name} (${unit.code})`, 30, 180 + (index * 10));
+      doc.text(`${unit.fantasy_name || `Unidade ${index + 1}`} (${unit.code || 'N/A'})`, 30, 180 + (index * 10));
     });
   }
   
