@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseAdmin } from "@/integrations/supabase/adminClient";
 import { User, UserRole } from "@/types/user";
 
 export function useUsers() {
@@ -62,11 +63,11 @@ export function useUsers() {
       let userId = selectedUser?.id;
 
       if (!userId) {
-        // Criar novo usuário usando o client padrão para auth
-        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        // Criar novo usuário usando o client admin
+        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
           email: user.email,
-          email_confirm: true,
           password: "temporary123",
+          email_confirm: true,
           user_metadata: { name: user.name }
         });
 
@@ -75,8 +76,8 @@ export function useUsers() {
 
         if (!userId) throw new Error("Falha ao criar usuário");
 
-        // Inserir dados do usuário na tabela public.users
-        await supabase
+        // Inserir dados do usuário usando o client admin
+        await supabaseAdmin
           .from("users")
           .insert({
             id: userId,
@@ -86,8 +87,8 @@ export function useUsers() {
             status: user.status
           });
       } else {
-        // Atualizar usuário existente
-        await supabase
+        // Atualizar usuário existente usando o client admin
+        await supabaseAdmin
           .from("users")
           .update({
             name: user.name,
@@ -97,9 +98,9 @@ export function useUsers() {
           .eq("id", userId);
       }
 
-      // Gerenciar associações de empresas
+      // Gerenciar associações usando o client admin
       if (selectedCompanies.length > 0) {
-        await supabase
+        await supabaseAdmin
           .from("user_companies")
           .delete()
           .eq("user_id", userId);
@@ -109,14 +110,13 @@ export function useUsers() {
           company_id: companyId
         }));
 
-        await supabase
+        await supabaseAdmin
           .from("user_companies")
           .insert(companyAssignments);
       }
 
-      // Gerenciar associações de checklists
       if (selectedChecklists.length > 0) {
-        await supabase
+        await supabaseAdmin
           .from("user_checklists")
           .delete()
           .eq("user_id", userId);
@@ -126,14 +126,14 @@ export function useUsers() {
           checklist_id: checklistId
         }));
 
-        await supabase
+        await supabaseAdmin
           .from("user_checklists")
           .insert(checklistAssignments);
       }
 
       // Adicionar role de admin se necessário
       if (user.role === "Administrador") {
-        await supabase
+        await supabaseAdmin
           .from("user_roles")
           .upsert({
             user_id: userId,
@@ -172,8 +172,8 @@ export function useUsers() {
     }
 
     try {
-      await supabase.auth.admin.deleteUser(userId);
-      await supabase
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      await supabaseAdmin
         .from("users")
         .delete()
         .eq("id", userId);
