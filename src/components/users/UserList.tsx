@@ -21,7 +21,13 @@ export function UserList() {
   const { users, saveUser, deleteUser } = useUsers();
 
   const handleSaveUser = async (user: Omit<User, "id">) => {
-    const success = await saveUser(user, selectedUser);
+    const success = await saveUser(
+      user, 
+      selectedUser,
+      user.companies || [],
+      user.checklists || []
+    );
+    
     if (success) {
       setIsEditingUser(false);
       setSelectedUser(null);
