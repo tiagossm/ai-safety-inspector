@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { User, UserRole } from "@/types/user";
 import { supabase } from "@/integrations/supabase/client";
 import { roleIcons } from "./role-selector/RoleInfo";
-import { X } from "lucide-react"; // Ícone para fechar a janela
+import { X } from "lucide-react";
 
 interface AddUserSheetProps {
   open: boolean;
@@ -19,11 +19,7 @@ interface AddUserSheetProps {
 export function AddUserSheet({ open, onOpenChange, user, onSave }: AddUserSheetProps) {
   const [editedUser, setEditedUser] = useState<Omit<User, "id">>({
     name: "",
-    cpf: "",
-    email1: "",
-    email2: "",
-    phone1: "",
-    phone2: "",
+    email: "",
     role: "Técnico",
     status: "active",
     companies: [],
@@ -33,7 +29,7 @@ export function AddUserSheet({ open, onOpenChange, user, onSave }: AddUserSheetP
 
   const [loading, setLoading] = useState(false);
   const [companies, setCompanies] = useState<{ id: string; fantasy_name: string }[]>([]);
-  const [checklists, setChecklists] = useState<{ id: string; name: string }[]>([]);
+  const [checklists, setChecklists] = useState<{ id: string; title: string }[]>([]);
   const [permissions, setPermissions] = useState<string[]>([]);
 
   useEffect(() => {
@@ -43,11 +39,7 @@ export function AddUserSheet({ open, onOpenChange, user, onSave }: AddUserSheetP
       if (user) {
         setEditedUser({
           name: user.name,
-          cpf: user.cpf,
-          email1: user.email1,
-          email2: user.email2,
-          phone1: user.phone1,
-          phone2: user.phone2,
+          email: user.email,
           role: user.role,
           status: user.status,
           companies: user.companies || [],
@@ -74,7 +66,7 @@ export function AddUserSheet({ open, onOpenChange, user, onSave }: AddUserSheetP
   };
 
   const loadChecklists = async () => {
-    const { data } = await supabase.from("checklists").select("id, name");
+    const { data } = await supabase.from("checklists").select("id, title");
     if (data) setChecklists(data);
   };
 
@@ -83,16 +75,11 @@ export function AddUserSheet({ open, onOpenChange, user, onSave }: AddUserSheetP
     await onSave(editedUser);
     setLoading(false);
     if (!addAnother) {
-      onOpenChange(false); // Fecha a janela ao salvar
+      onOpenChange(false);
     } else {
-      // Reseta os campos para cadastrar um novo usuário
       setEditedUser({
         name: "",
-        cpf: "",
-        email1: "",
-        email2: "",
-        phone1: "",
-        phone2: "",
+        email: "",
         role: "Técnico",
         status: "active",
         companies: [],
@@ -108,7 +95,6 @@ export function AddUserSheet({ open, onOpenChange, user, onSave }: AddUserSheetP
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="w-full max-w-3xl bg-background p-6 rounded-lg shadow-lg animate-fade-in relative">
             
-            {/* Botão "X" para fechar */}
             <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-200" onClick={() => onOpenChange(false)}>
               <X size={24} />
             </button>
@@ -127,22 +113,15 @@ export function AddUserSheet({ open, onOpenChange, user, onSave }: AddUserSheetP
                 <TabsTrigger value="permissoes">Permissões</TabsTrigger>
               </TabsList>
 
-              {/* Seção de Dados */}
               <TabsContent value="dados" className="space-y-4 mt-4">
                 <Input placeholder="Nome Completo" value={editedUser.name} onChange={(e) => setEditedUser({ ...editedUser, name: e.target.value })} />
-                <Input placeholder="CPF (000.000.000-00)" value={editedUser.cpf} onChange={(e) => setEditedUser({ ...editedUser, cpf: e.target.value })} />
-                <Input placeholder="E-mail Principal" type="email" value={editedUser.email1} onChange={(e) => setEditedUser({ ...editedUser, email1: e.target.value })} />
-                <Input placeholder="E-mail Secundário (Opcional)" type="email" value={editedUser.email2} onChange={(e) => setEditedUser({ ...editedUser, email2: e.target.value })} />
-                <Input placeholder="Telefone Principal (00) 00000-0000" type="tel" value={editedUser.phone1} onChange={(e) => setEditedUser({ ...editedUser, phone1: e.target.value })} />
-                <Input placeholder="Telefone Secundário (Opcional)" type="tel" value={editedUser.phone2} onChange={(e) => setEditedUser({ ...editedUser, phone2: e.target.value })} />
-
+                <Input placeholder="E-mail" type="email" value={editedUser.email} onChange={(e) => setEditedUser({ ...editedUser, email: e.target.value })} />
                 <div className="flex items-center justify-between mt-4">
                   <span className="text-sm font-medium">{editedUser.status === "active" ? "Usuário Ativo" : "Usuário Inativo"}</span>
                   <Switch checked={editedUser.status === "active"} onCheckedChange={(checked) => setEditedUser({ ...editedUser, status: checked ? "active" : "inactive" })} />
                 </div>
               </TabsContent>
 
-              {/* Seção de Tipo de Perfil */}
               <TabsContent value="tipoPerfil" className="space-y-4 mt-4">
                 <h3 className="text-md font-semibold">Tipo de Perfil</h3>
                 <div className="flex items-center gap-2">
@@ -156,7 +135,6 @@ export function AddUserSheet({ open, onOpenChange, user, onSave }: AddUserSheetP
               </TabsContent>
             </Tabs>
 
-            {/* Botões de Ação */}
             <div className="mt-6 flex justify-center gap-4">
               <Button onClick={() => handleSave(false)} className="w-1/2" disabled={loading}>
                 {loading ? "Salvando..." : user ? "Salvar Alterações" : "Criar Usuário"}
