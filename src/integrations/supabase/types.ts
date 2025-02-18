@@ -743,6 +743,7 @@ export type Database = {
           name: string | null
           phone: string | null
           phone_secondary: string | null
+          position: string | null
           role: string | null
           roles: string[] | null
           status: string | null
@@ -758,6 +759,7 @@ export type Database = {
           name?: string | null
           phone?: string | null
           phone_secondary?: string | null
+          position?: string | null
           role?: string | null
           roles?: string[] | null
           status?: string | null
@@ -773,6 +775,7 @@ export type Database = {
           name?: string | null
           phone?: string | null
           phone_secondary?: string | null
+          position?: string | null
           role?: string | null
           roles?: string[] | null
           status?: string | null
