@@ -41,18 +41,21 @@ export const UsersService = {
   },
 
   async create(userData: Omit<User, "id" | "created_at">): Promise<User> {
+    // Convert the input data to match the expected database schema
+    const dbData = {
+      name: userData.name,
+      email: userData.email,
+      email_secondary: userData.email_secondary,
+      phone: userData.phone,
+      phone_secondary: userData.phone_secondary,
+      cpf: userData.cpf,
+      role: userData.role.toString(),
+      status: userData.status
+    };
+
     const { data, error } = await supabase
       .from('users')
-      .insert([{
-        name: userData.name,
-        email: userData.email,
-        email_secondary: userData.email_secondary,
-        phone: userData.phone,
-        phone_secondary: userData.phone_secondary,
-        cpf: userData.cpf,
-        role: userData.role,
-        status: userData.status
-      }])
+      .insert([dbData])
       .select()
       .single();
       
@@ -75,9 +78,21 @@ export const UsersService = {
   },
 
   async update(id: string, updates: Partial<Omit<User, "id" | "created_at">>): Promise<User> {
+    // Convert the update data to match the expected database schema
+    const dbData = {
+      ...(updates.name !== undefined && { name: updates.name }),
+      ...(updates.email !== undefined && { email: updates.email }),
+      ...(updates.email_secondary !== undefined && { email_secondary: updates.email_secondary }),
+      ...(updates.phone !== undefined && { phone: updates.phone }),
+      ...(updates.phone_secondary !== undefined && { phone_secondary: updates.phone_secondary }),
+      ...(updates.cpf !== undefined && { cpf: updates.cpf }),
+      ...(updates.role !== undefined && { role: updates.role.toString() }),
+      ...(updates.status !== undefined && { status: updates.status })
+    };
+
     const { data, error } = await supabase
       .from('users')
-      .update(updates)
+      .update(dbData)
       .eq('id', id)
       .select()
       .single();
