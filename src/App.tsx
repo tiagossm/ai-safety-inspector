@@ -11,7 +11,7 @@ import Home from "./pages/Home";
 import Plans from "./pages/Plans";
 import Blog from "./pages/Blog";
 import Contact from "./pages/Contact";
-import { UserList } from "./pages/Users";
+import { Users } from "./pages/Users";
 import NotFound from "./pages/NotFound";
 
 function App() {
@@ -28,7 +28,7 @@ function App() {
             
             <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
               <Route path="/companies" element={<Companies />} />
-              <Route path="/users" element={<UserList />} />
+              <Route path="/users" element={<Users />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
