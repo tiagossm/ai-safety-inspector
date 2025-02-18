@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Crown, Users2, Wrench } from "lucide-react";
@@ -13,9 +14,12 @@ import { supabase } from "@/integrations/supabase/client";
 interface AddUserSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  newUser: Omit<User, 'id'>;
-  onNewUserChange: (user: Omit<User, 'id'>) => void;
-  onSave: () => void;
+  user: User | null;
+  onSave: (user: Omit<User, "id">) => Promise<void>;
+  selectedCompanies: string[];
+  setSelectedCompanies: (companies: string[]) => void;
+  selectedChecklists: string[];
+  setSelectedChecklists: (checklists: string[]) => void;
 }
 
 const roleInfo = {
@@ -54,12 +58,22 @@ const roleInfo = {
 export function AddUserSheet({
   open,
   onOpenChange,
-  newUser,
-  onNewUserChange,
-  onSave
+  user,
+  onSave,
+  selectedCompanies,
+  setSelectedCompanies,
+  selectedChecklists,
+  setSelectedChecklists
 }: AddUserSheetProps) {
-  const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
-  const [selectedChecklists, setSelectedChecklists] = useState<string[]>([]);
+  const [editedUser, setEditedUser] = useState<Omit<User, "id">>({
+    name: user?.name || "",
+    email: user?.email || "",
+    role: user?.role || "Técnico",
+    status: user?.status || "active",
+    companies: user?.companies || [],
+    checklists: user?.checklists || []
+  });
+
   const [showCompaniesDialog, setShowCompaniesDialog] = useState(false);
   const [showChecklistsDialog, setShowChecklistsDialog] = useState(false);
   const [companies, setCompanies] = useState<{ id: string, fantasy_name: string }[]>([]);
@@ -69,6 +83,19 @@ export function AddUserSheet({
       loadCompanyDetails();
     }
   }, [selectedCompanies]);
+
+  useEffect(() => {
+    if (user) {
+      setEditedUser({
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        companies: user.companies,
+        checklists: user.checklists
+      });
+    }
+  }, [user]);
 
   const loadCompanyDetails = async () => {
     const { data } = await supabase
@@ -81,11 +108,15 @@ export function AddUserSheet({
     }
   };
 
+  const handleSave = async () => {
+    await onSave(editedUser);
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full max-w-2xl">
         <SheetHeader>
-          <SheetTitle>Novo Usuário</SheetTitle>
+          <SheetTitle>{user ? "Editar Usuário" : "Novo Usuário"}</SheetTitle>
         </SheetHeader>
         <Tabs defaultValue="dados" className="mt-4">
           <TabsList className="grid grid-cols-3 gap-4">
@@ -97,14 +128,14 @@ export function AddUserSheet({
           <TabsContent value="dados" className="space-y-4 mt-4">
             <Input 
               placeholder="Nome" 
-              value={newUser.name} 
-              onChange={(e) => onNewUserChange({ ...newUser, name: e.target.value })} 
+              value={editedUser.name} 
+              onChange={(e) => setEditedUser({ ...editedUser, name: e.target.value })} 
             />
             <Input 
               placeholder="Email" 
-              type="email" 
-              value={newUser.email} 
-              onChange={(e) => onNewUserChange({ ...newUser, email: e.target.value })} 
+              type="email"
+              value={editedUser.email} 
+              onChange={(e) => setEditedUser({ ...editedUser, email: e.target.value })} 
             />
           </TabsContent>
           
@@ -170,11 +201,11 @@ export function AddUserSheet({
                 <div
                   key={role}
                   className={`p-4 rounded-lg border-2 cursor-pointer transition-colors ${
-                    newUser.role === role 
+                    editedUser.role === role 
                       ? 'border-primary bg-accent' 
                       : 'border-transparent hover:border-muted-foreground'
                   }`}
-                  onClick={() => onNewUserChange({ ...newUser, role: role })}
+                  onClick={() => setEditedUser({ ...editedUser, role })}
                 >
                   <div className="flex items-center gap-2 mb-2">
                     {info.icon}
@@ -186,7 +217,7 @@ export function AddUserSheet({
                   <div className="space-y-2">
                     {info.permissions.map((permission, index) => (
                       <div key={index} className="flex items-center gap-2 text-sm">
-                        <Badge variant={newUser.role === role ? "default" : "secondary"} className="h-1.5 w-1.5 rounded-full p-0" />
+                        <Badge variant={editedUser.role === role ? "default" : "secondary"} className="h-1.5 w-1.5 rounded-full p-0" />
                         {permission}
                       </div>
                     ))}
@@ -198,15 +229,15 @@ export function AddUserSheet({
         </Tabs>
         
         <div className="mt-6">
-          <Button onClick={onSave} className="w-full">
-            Criar Usuário
+          <Button onClick={handleSave} className="w-full">
+            {user ? "Salvar Alterações" : "Criar Usuário"}
           </Button>
         </div>
 
         <AssignCompaniesDialog
           open={showCompaniesDialog}
           onOpenChange={setShowCompaniesDialog}
-          userId=""
+          userId={user?.id || ""}
           selectedCompanies={selectedCompanies}
           onCompaniesChange={setSelectedCompanies}
         />
@@ -214,7 +245,7 @@ export function AddUserSheet({
         <AssignChecklistsDialog
           open={showChecklistsDialog}
           onOpenChange={setShowChecklistsDialog}
-          userId=""
+          userId={user?.id || ""}
           selectedCompanies={selectedCompanies}
           selectedChecklists={selectedChecklists}
           onChecklistsChange={setSelectedChecklists}
