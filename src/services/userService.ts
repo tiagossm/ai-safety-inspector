@@ -56,48 +56,70 @@ export async function createOrUpdateUser(
   let userId = selectedUser?.id;
 
   if (!userId) {
-    // First, check if the user already exists
-    const { data: existingUser } = await supabaseAdmin
+    // First, check if the user already exists in our database
+    const { data: existingUser, error: existingUserError } = await supabaseAdmin
       .from("users")
       .select("id")
       .eq("email", user.email.trim())
-      .single();
+      .maybeSingle();
 
+    if (existingUserError) throw existingUserError;
     if (existingUser) {
       throw new Error("Um usuário com este email já está cadastrado");
     }
 
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: user.email.trim(),
-      password: "temporary123",
-      email_confirm: true,
-      user_metadata: { name: user.name }
-    });
-
-    if (authError) {
-      // Check if it's an email exists error
-      if (authError.message.includes("email_exists") || authError.message.includes("already been registered")) {
-        throw new Error("Um usuário com este email já está cadastrado");
-      }
-      throw authError;
-    }
-
-    userId = authData.user?.id;
-
-    if (!userId) throw new Error("Falha ao criar usuário");
-
-    const { error: insertError } = await supabaseAdmin
-      .from("users")
-      .insert({
-        id: userId,
-        name: user.name,
+    try {
+      // Create auth user
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email: user.email.trim(),
-        roles: user.roles,
-        status: user.status
+        password: "temporary123",
+        email_confirm: true,
+        user_metadata: { name: user.name }
       });
 
-    if (insertError) throw insertError;
+      if (authError) {
+        // Handle specific auth errors
+        if (authError.message.includes("email_exists") || authError.message.includes("already been registered")) {
+          throw new Error("Um usuário com este email já está cadastrado");
+        }
+        throw authError;
+      }
+
+      userId = authData.user?.id;
+      if (!userId) throw new Error("Falha ao criar usuário");
+
+      // Wait a moment to ensure the auth user is fully created
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Insert into users table
+      const { error: insertError } = await supabaseAdmin
+        .from("users")
+        .insert({
+          id: userId,
+          name: user.name,
+          email: user.email.trim(),
+          roles: user.roles,
+          status: user.status
+        });
+
+      if (insertError) {
+        // If insert fails, try to clean up the auth user
+        await supabaseAdmin.auth.admin.deleteUser(userId);
+        throw insertError;
+      }
+    } catch (error: any) {
+      // If anything fails after auth user creation, try to clean up
+      if (userId) {
+        try {
+          await supabaseAdmin.auth.admin.deleteUser(userId);
+        } catch (cleanupError) {
+          console.error("Failed to cleanup auth user after error:", cleanupError);
+        }
+      }
+      throw error;
+    }
   } else {
+    // Update existing user
     await supabaseAdmin
       .from("users")
       .update({
