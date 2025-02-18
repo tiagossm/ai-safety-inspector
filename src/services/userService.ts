@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { supabaseAdmin } from "@/integrations/supabase/adminClient";
 import { User, UserRole } from "@/types/user";
 
-export async function fetchUsers() {
+export async function fetchUsers(): Promise<User[]> {
   const { data: usersData, error: usersError } = await supabase
     .from("users")
     .select("id, name, email, roles, status")
@@ -32,7 +32,7 @@ export async function fetchUsers() {
         status: user.status || "active",
         companies: companiesData?.map(c => c.company?.fantasy_name).filter(Boolean) || [],
         checklists: checklistsData?.map(c => c.checklist_id).filter(Boolean) || []
-      };
+      } as User;
     })
   );
 
