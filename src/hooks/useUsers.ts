@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { supabaseAdmin } from "@/integrations/supabase/adminClient";
 import { User, UserRole } from "@/types/user";
 
@@ -12,7 +11,6 @@ export function useUsers() {
   const loadUsers = async () => {
     try {
       console.log("Loading users...");
-      // Use the admin client to avoid RLS recursion
       const { data: usersData, error: usersError } = await supabaseAdmin
         .from("users")
         .select("id, name, email, role, status")
@@ -26,19 +24,18 @@ export function useUsers() {
 
       const usersWithDetails = await Promise.all(
         usersData.map(async (user) => {
-          // Use admin client for related queries as well
           const { data: companiesData } = await supabaseAdmin
             .from("user_companies")
             .select("company:company_id(fantasy_name)")
-            .eq("user_id", user.id as string);
+            .eq("user_id", user.id);
 
           const { data: checklistsData } = await supabaseAdmin
             .from("user_checklists")
             .select("checklist_id")
-            .eq("user_id", user.id as string);
+            .eq("user_id", user.id);
 
           return {
-            id: user.id as string,
+            id: user.id,
             name: user.name || "",
             email: user.email || "",
             role: user.role as UserRole,
@@ -61,9 +58,9 @@ export function useUsers() {
   };
 
   const saveUser = async (
-    user: Omit<User, "id">, 
-    selectedUser: User | null, 
-    selectedCompanies: string[], 
+    user: Omit<User, "id">,
+    selectedUser: User | null,
+    selectedCompanies: string[],
     selectedChecklists: string[]
   ): Promise<boolean> => {
     try {
@@ -78,15 +75,17 @@ export function useUsers() {
       let userId = selectedUser?.id;
 
       if (!userId) {
-        // Check if email already exists before creating user
-        const { data: existingUser } = await supabaseAdmin
-          .from("users")
-          .select("id")
-          .eq("email", user.email.trim())
-          .single();
-
-        if (existingUser) {
-          throw new Error("Este email já está cadastrado");
+        // Check both auth and public users table for existing email
+        try {
+          const { data: authUser } = await supabaseAdmin.auth.admin.getUserByEmail(user.email.trim());
+          if (authUser) {
+            throw new Error("Este email já está cadastrado");
+          }
+        } catch (error: any) {
+          // If error is not "User not found", rethrow it
+          if (!error.message.includes("User not found")) {
+            throw error;
+          }
         }
 
         // Create new user using admin client
@@ -97,14 +96,9 @@ export function useUsers() {
           user_metadata: { name: user.name }
         });
 
-        if (authError) {
-          if (authError.message.includes("email_exists")) {
-            throw new Error("Este email já está cadastrado");
-          }
-          throw authError;
-        }
+        if (authError) throw authError;
+        
         userId = authData.user?.id;
-
         if (!userId) throw new Error("Falha ao criar usuário");
 
         // Insert user data using admin client
@@ -130,12 +124,12 @@ export function useUsers() {
       }
 
       // Manage associations using admin client
-      if (selectedCompanies.length > 0) {
-        await supabaseAdmin
-          .from("user_companies")
-          .delete()
-          .eq("user_id", userId);
+      await supabaseAdmin
+        .from("user_companies")
+        .delete()
+        .eq("user_id", userId);
 
+      if (selectedCompanies.length > 0) {
         const companyAssignments = selectedCompanies.map(companyId => ({
           user_id: userId as string,
           company_id: companyId
@@ -146,12 +140,12 @@ export function useUsers() {
           .insert(companyAssignments);
       }
 
-      if (selectedChecklists.length > 0) {
-        await supabaseAdmin
-          .from("user_checklists")
-          .delete()
-          .eq("user_id", userId);
+      await supabaseAdmin
+        .from("user_checklists")
+        .delete()
+        .eq("user_id", userId);
 
+      if (selectedChecklists.length > 0) {
         const checklistAssignments = selectedChecklists.map(checklistId => ({
           user_id: userId as string,
           checklist_id: checklistId
@@ -162,7 +156,7 @@ export function useUsers() {
           .insert(checklistAssignments);
       }
 
-      // Add role of admin if necessary using admin client
+      // Handle admin role
       if (user.role === "Administrador") {
         await supabaseAdmin
           .from("user_roles")
@@ -172,6 +166,12 @@ export function useUsers() {
           }, {
             onConflict: "user_id"
           });
+      } else {
+        // Remove admin role if exists
+        await supabaseAdmin
+          .from("user_roles")
+          .delete()
+          .eq("user_id", userId);
       }
 
       toast({
