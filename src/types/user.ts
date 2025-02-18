@@ -13,9 +13,8 @@ export interface User {
   status: string;
   companies?: string[];
   checklists?: string[];
-  company?: string;
-  role?: string;
-  lastActivity?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export const validateRole = (role: string | null): UserRole => {

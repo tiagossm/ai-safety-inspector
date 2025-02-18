@@ -8,17 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { roleIcons } from "./role-selector/RoleInfo";
 import { Search, Filter, PlusCircle, Pencil, Trash, Lock, RefreshCcw } from "lucide-react";
 import { AddUserSheet } from "./AddUserSheet";
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  company: string;
-  role: string;
-  status: "active" | "inactive";
-  lastActivity: string;
-}
+import { User } from "@/types/user";
 
 export function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -34,7 +24,22 @@ export function UsersPage() {
 
   const loadUsers = async () => {
     const { data } = await supabase.from("users").select("*");
-    if (data) setUsers(data);
+    if (data) {
+      const formattedUsers: User[] = data.map(user => ({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        cpf: user.cpf,
+        emailSecondary: user.email_secondary,
+        phone: user.phone,
+        phoneSecondary: user.phone_secondary,
+        roles: user.roles || [],
+        status: user.status,
+        created_at: user.created_at,
+        updated_at: user.updated_at
+      }));
+      setUsers(formattedUsers);
+    }
   };
 
   const handleOpenAddUser = (user: User | null = null) => {
@@ -46,7 +51,7 @@ export function UsersPage() {
     const matchesSearch = user.name.toLowerCase().includes(search.toLowerCase()) || 
                          user.email.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = selectedStatus === "all" || user.status === selectedStatus;
-    const matchesRole = selectedRole === "all" || user.role === selectedRole;
+    const matchesRole = selectedRole === "all" || user.roles.includes(selectedRole);
     return matchesSearch && matchesStatus && matchesRole;
   });
 
@@ -85,10 +90,9 @@ export function UsersPage() {
             <TableCell>Nome</TableCell>
             <TableCell>Email</TableCell>
             <TableCell>Telefone</TableCell>
-            <TableCell>Empresa</TableCell>
             <TableCell>Perfil</TableCell>
             <TableCell>Status</TableCell>
-            <TableCell>Última Atividade</TableCell>
+            <TableCell>Última Atualização</TableCell>
             <TableCell>Ações</TableCell>
           </TableRow>
         </TableHeader>
@@ -98,16 +102,15 @@ export function UsersPage() {
               <TableCell>{user.name}</TableCell>
               <TableCell>{user.email}</TableCell>
               <TableCell>{user.phone}</TableCell>
-              <TableCell>{user.company}</TableCell>
               <TableCell>
                 <span className="flex items-center gap-2">
-                  {roleIcons[user.role]} {user.role}
+                  {user.roles[0]} {/* Display first role */}
                 </span>
               </TableCell>
               <TableCell>
                 <Switch checked={user.status === "active"} />
               </TableCell>
-              <TableCell>{user.lastActivity}</TableCell>
+              <TableCell>{user.updated_at}</TableCell>
               <TableCell className="flex gap-2">
                 <Button size="sm" variant="outline" onClick={() => handleOpenAddUser(user)}>
                   <Pencil className="h-4 w-4 mr-2" />
@@ -131,7 +134,6 @@ export function UsersPage() {
         </TableBody>
       </Table>
 
-      {/* Popup de Adicionar/Edição de Usuário */}
       <AddUserSheet 
         open={openAddUser} 
         onOpenChange={setOpenAddUser} 
