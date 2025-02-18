@@ -97,3 +97,104 @@ export function AddUserSheet({ open, onOpenChange, user, onSave }: AddUserSheetP
 
   const handleSave = async (addAnother = false) => {
     setFieldErrors({
+      name: '',
+      cpf: '',
+      email: '',
+      phone: ''
+    });
+
+    let hasErrors = false;
+    const newErrors = {
+      name: '',
+      cpf: '',
+      email: '',
+      phone: ''
+    };
+
+    if (!editedUser.name) {
+      newErrors.name = 'Nome é obrigatório';
+      hasErrors = true;
+    }
+
+    if (editedUser.cpf && !validateCPF(editedUser.cpf)) {
+      newErrors.cpf = 'CPF inválido';
+      hasErrors = true;
+    }
+
+    if (!validateEmail(editedUser.email)) {
+      newErrors.email = 'Email inválido';
+      hasErrors = true;
+    }
+
+    if (editedUser.phone && !validatePhone(editedUser.phone)) {
+      newErrors.phone = 'Telefone inválido';
+      hasErrors = true;
+    }
+
+    if (hasErrors) {
+      setFieldErrors(newErrors);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await onSave(editedUser);
+      
+      if (!addAnother) {
+        onOpenChange(false);
+      } else {
+        setEditedUser({
+          name: "",
+          cpf: "",
+          email: "",
+          emailSecondary: "",
+          phone: "",
+          phoneSecondary: "",
+          roles: [],
+          permissions: [],
+          status: "active",
+          companies: [],
+          checklists: []
+        });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetHeader>
+        <SheetTitle>{user ? "Editar Usuário" : "Adicionar Usuário"}</SheetTitle>
+      </SheetHeader>
+      <div>
+        <Input
+          placeholder="Nome"
+          value={editedUser.name}
+          onChange={(e) => setEditedUser({ ...editedUser, name: e.target.value })}
+          error={fieldErrors.name}
+        />
+        <Input
+          placeholder="CPF"
+          value={editedUser.cpf}
+          onChange={(e) => setEditedUser({ ...editedUser, cpf: e.target.value })}
+          error={fieldErrors.cpf}
+        />
+        <Input
+          placeholder="Email"
+          value={editedUser.email}
+          onChange={(e) => setEditedUser({ ...editedUser, email: e.target.value })}
+          error={fieldErrors.email}
+        />
+        <Input
+          placeholder="Telefone"
+          value={editedUser.phone}
+          onChange={(e) => setEditedUser({ ...editedUser, phone: e.target.value })}
+          error={fieldErrors.phone}
+        />
+        <Button onClick={() => handleSave()}>Salvar</Button>
+        <Button onClick={() => handleSave(true)}>Salvar e Adicionar Outro</Button>
+      </div>
+    </Sheet>
+  );
+}
