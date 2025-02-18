@@ -84,13 +84,15 @@ export function AddUserSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full max-w-lg mx-auto p-6 bg-background rounded-lg shadow-lg">
+      <SheetContent className="w-full max-w-lg mx-auto p-6 bg-background rounded-lg shadow-lg animate-fade-in">
         <SheetHeader>
-          <SheetTitle>{user ? "Editar Usuário" : "Novo Usuário"}</SheetTitle>
+          <SheetTitle className="text-center">
+            {user ? "Editar Usuário" : "Novo Usuário"}
+          </SheetTitle>
         </SheetHeader>
 
         <Tabs defaultValue="dados" className="mt-4">
-          <TabsList className="grid grid-cols-3 gap-2">
+          <TabsList className="flex justify-center gap-4">
             <TabsTrigger value="dados">Dados</TabsTrigger>
             <TabsTrigger value="atribuicoes">Atribuições</TabsTrigger>
             <TabsTrigger value="permissoes">Permissões</TabsTrigger>
@@ -126,53 +128,49 @@ export function AddUserSheet({
 
           {/* Seção: Atribuições */}
           <TabsContent value="atribuicoes" className="space-y-6 mt-4">
-            <div>
-              <h3 className="text-md font-semibold">Empresas atribuídas</h3>
+            <h3 className="text-md font-semibold">Empresas atribuídas</h3>
+            <div className="space-y-2">
+              {companies.map((company) => (
+                <label key={company.id} className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                  <input
+                    type="checkbox"
+                    checked={selectedCompanies.includes(company.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedCompanies([...selectedCompanies, company.id]);
+                      } else {
+                        setSelectedCompanies(selectedCompanies.filter(id => id !== company.id));
+                      }
+                    }}
+                  />
+                  {company.fantasy_name}
+                </label>
+              ))}
+            </div>
+
+            <h3 className="text-md font-semibold">Checklists atribuídos</h3>
+            {selectedCompanies.length === 0 ? (
+              <p className="text-sm text-muted">Primeiro, atribua empresas ao usuário.</p>
+            ) : (
               <div className="space-y-2">
-                {companies.map((company) => (
-                  <label key={company.id} className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                {selectedChecklists.map((checklistId) => (
+                  <label key={checklistId} className="flex items-center gap-2 p-2 bg-muted rounded-md">
                     <input
                       type="checkbox"
-                      checked={selectedCompanies.includes(company.id)}
+                      checked={selectedChecklists.includes(checklistId)}
                       onChange={(e) => {
                         if (e.target.checked) {
-                          setSelectedCompanies([...selectedCompanies, company.id]);
+                          setSelectedChecklists([...selectedChecklists, checklistId]);
                         } else {
-                          setSelectedCompanies(selectedCompanies.filter(id => id !== company.id));
+                          setSelectedChecklists(selectedChecklists.filter(id => id !== checklistId));
                         }
                       }}
                     />
-                    {company.fantasy_name}
+                    Checklist {checklistId}
                   </label>
                 ))}
               </div>
-            </div>
-
-            <div>
-              <h3 className="text-md font-semibold">Checklists atribuídos</h3>
-              {selectedCompanies.length === 0 ? (
-                <p className="text-sm text-muted">Primeiro, atribua empresas ao usuário.</p>
-              ) : (
-                <div className="space-y-2">
-                  {selectedChecklists.map((checklistId) => (
-                    <label key={checklistId} className="flex items-center gap-2 p-2 bg-muted rounded-md">
-                      <input
-                        type="checkbox"
-                        checked={selectedChecklists.includes(checklistId)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedChecklists([...selectedChecklists, checklistId]);
-                          } else {
-                            setSelectedChecklists(selectedChecklists.filter(id => id !== checklistId));
-                          }
-                        }}
-                      />
-                      Checklist {checklistId}
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
+            )}
           </TabsContent>
 
           {/* Seção: Permissões */}
