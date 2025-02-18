@@ -1,9 +1,8 @@
 
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { supabaseAdmin } from "@/integrations/supabase/adminClient";
-import { User, UserRole } from "@/types/user";
+import { User } from "@/types/user";
+import { fetchUsers, createOrUpdateUser, deleteUserById } from "@/services/userService";
 
 export function useUsers() {
   const [users, setUsers] = useState<User[]>([]);
@@ -12,42 +11,8 @@ export function useUsers() {
   const loadUsers = async () => {
     try {
       console.log("Loading users...");
-      const { data: usersData, error: usersError } = await supabase
-        .from("users")
-        .select("id, name, email, role, status")
-        .order("name", { ascending: true });
-
-      console.log("Users data:", usersData);
-      console.log("Users error:", usersError);
-
-      if (usersError) throw usersError;
-      if (!usersData) return;
-
-      const usersWithDetails = await Promise.all(
-        usersData.map(async (user) => {
-          const { data: companiesData } = await supabase
-            .from("user_companies")
-            .select("company:company_id(fantasy_name)")
-            .eq("user_id", user.id as string);
-
-          const { data: checklistsData } = await supabase
-            .from("user_checklists")
-            .select("checklist_id")
-            .eq("user_id", user.id as string);
-
-          return {
-            id: user.id as string,
-            name: user.name || "",
-            email: user.email || "",
-            role: user.role as UserRole,
-            status: user.status || "active",
-            companies: companiesData?.map(c => c.company?.fantasy_name).filter(Boolean) || [],
-            checklists: checklistsData?.map(c => c.checklist_id).filter(Boolean) || []
-          };
-        })
-      );
-
-      setUsers(usersWithDetails);
+      const usersData = await fetchUsers();
+      setUsers(usersData);
     } catch (error: any) {
       console.error("Error loading users:", error);
       toast({
@@ -58,113 +23,18 @@ export function useUsers() {
     }
   };
 
-  const saveUser = async (user: Omit<User, "id">, selectedUser: User | null, selectedCompanies: string[], selectedChecklists: string[]) => {
+  const saveUser = async (
+    user: Omit<User, "id">,
+    selectedUser: User | null,
+    selectedCompanies: string[],
+    selectedChecklists: string[]
+  ) => {
     try {
-      if (!user.email || !user.email.trim()) {
-        throw new Error("O email é obrigatório");
-      }
-
-      if (!user.email.includes("@")) {
-        throw new Error("Email inválido");
-      }
-
-      let userId = selectedUser?.id;
-
-      if (!userId) {
-        // Criar novo usuário usando o client admin
-        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-          email: user.email.trim(),
-          password: "temporary123",
-          email_confirm: true,
-          user_metadata: { name: user.name }
-        });
-
-        if (authError) throw authError;
-        userId = authData.user?.id;
-
-        if (!userId) throw new Error("Falha ao criar usuário");
-
-        // Verificar se o usuário já existe na tabela public.users
-        const { data: existingUser } = await supabaseAdmin
-          .from("users")
-          .select("id")
-          .eq("id", userId)
-          .single();
-
-        // Inserir dados do usuário apenas se não existir
-        if (!existingUser) {
-          const { error: insertError } = await supabaseAdmin
-            .from("users")
-            .insert({
-              id: userId,
-              name: user.name,
-              email: user.email.trim(),
-              role: user.role,
-              status: user.status
-            });
-
-          if (insertError) throw insertError;
-        }
-      } else {
-        // Atualizar usuário existente usando o client admin
-        await supabaseAdmin
-          .from("users")
-          .update({
-            name: user.name,
-            role: user.role,
-            status: user.status
-          })
-          .eq("id", userId);
-      }
-
-      // Gerenciar associações usando o client admin
-      if (selectedCompanies.length > 0) {
-        await supabaseAdmin
-          .from("user_companies")
-          .delete()
-          .eq("user_id", userId);
-
-        const companyAssignments = selectedCompanies.map(companyId => ({
-          user_id: userId as string,
-          company_id: companyId
-        }));
-
-        await supabaseAdmin
-          .from("user_companies")
-          .insert(companyAssignments);
-      }
-
-      if (selectedChecklists.length > 0) {
-        await supabaseAdmin
-          .from("user_checklists")
-          .delete()
-          .eq("user_id", userId);
-
-        const checklistAssignments = selectedChecklists.map(checklistId => ({
-          user_id: userId as string,
-          checklist_id: checklistId
-        }));
-
-        await supabaseAdmin
-          .from("user_checklists")
-          .insert(checklistAssignments);
-      }
-
-      // Adicionar role de admin se necessário
-      if (user.role === "Administrador") {
-        await supabaseAdmin
-          .from("user_roles")
-          .upsert({
-            user_id: userId,
-            role: "admin"
-          }, {
-            onConflict: "user_id"
-          });
-      }
-
+      await createOrUpdateUser(user, selectedUser, selectedCompanies, selectedChecklists);
+      
       toast({
-        title: userId === selectedUser?.id ? "Usuário atualizado" : "Usuário adicionado",
-        description: userId === selectedUser?.id ? "Dados do usuário foram atualizados." : "Novo usuário cadastrado."
+        title: selectedUser ? "Usuário atualizado" : "Usuário adicionado",
+        description: selectedUser ? "Dados do usuário foram atualizados." : "Novo usuário cadastrado."
       });
 
       await loadUsers();
@@ -191,12 +61,8 @@ export function useUsers() {
     }
 
     try {
-      await supabaseAdmin.auth.admin.deleteUser(userId);
-      await supabaseAdmin
-        .from("users")
-        .delete()
-        .eq("id", userId);
-
+      await deleteUserById(userId);
+      
       toast({
         title: "Usuário excluído",
         description: "O usuário foi removido."
