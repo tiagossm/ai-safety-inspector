@@ -36,11 +36,11 @@ export function UserHeader({
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/process-user-csv`, {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-user-csv`, {
         method: 'POST',
         body: formData,
         headers: {
-          'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY}`
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
         }
       });
 
@@ -71,9 +71,9 @@ export function UserHeader({
 
   const handleExportCSV = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: users, error } = await supabase
         .from('users')
-        .select('name, email, role, phone, position')
+        .select('name, email, role, phone')
         .csv();
 
       if (error) throw error;
