@@ -701,29 +701,44 @@ export type Database = {
       }
       users: {
         Row: {
+          cpf: string | null
           created_at: string | null
           email: string | null
+          email_secondary: string | null
           id: string
           name: string | null
+          phone: string | null
+          phone_secondary: string | null
           role: string | null
+          roles: string[] | null
           status: string | null
           updated_at: string | null
         }
         Insert: {
+          cpf?: string | null
           created_at?: string | null
           email?: string | null
+          email_secondary?: string | null
           id: string
           name?: string | null
+          phone?: string | null
+          phone_secondary?: string | null
           role?: string | null
+          roles?: string[] | null
           status?: string | null
           updated_at?: string | null
         }
         Update: {
+          cpf?: string | null
           created_at?: string | null
           email?: string | null
+          email_secondary?: string | null
           id?: string
           name?: string | null
+          phone?: string | null
+          phone_secondary?: string | null
           role?: string | null
+          roles?: string[] | null
           status?: string | null
           updated_at?: string | null
         }

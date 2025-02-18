@@ -4,8 +4,12 @@ export type UserRole = "Administrador" | "Gerente" | "Técnico";
 export interface User {
   id: string;
   name: string;
+  cpf?: string;
   email: string;
-  role: UserRole;
+  emailSecondary?: string;
+  phone?: string;
+  phoneSecondary?: string;
+  roles: string[];
   status: string;
   companies?: string[];
   checklists?: string[];

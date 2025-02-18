@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,7 @@ import { User } from "@/types/user";
 import { supabase } from "@/integrations/supabase/client";
 import { roleIcons } from "./role-selector/RoleInfo";
 import { X } from "lucide-react";
-import { validateCPF, validateEmail, validatePhone } from "@/utils/validators"; // 🔹 Arquivo que criaremos para validar CPF, Email e Telefone
+import { validateCPF, validateEmail, validatePhone } from "@/utils/validators";
 
 interface AddUserSheetProps {
   open: boolean;
@@ -80,12 +81,12 @@ export function AddUserSheet({ open, onOpenChange, user, onSave }: AddUserSheetP
   const handleSave = async (addAnother = false) => {
     setError("");
 
-    // 🔹 Validação dos campos
+    // Validação dos campos
     if (!editedUser.name) {
       setError("O nome é obrigatório.");
       return;
     }
-    if (!validateCPF(editedUser.cpf)) {
+    if (!validateCPF(editedUser.cpf || "")) {
       setError("CPF inválido.");
       return;
     }
@@ -93,7 +94,7 @@ export function AddUserSheet({ open, onOpenChange, user, onSave }: AddUserSheetP
       setError("E-mail inválido.");
       return;
     }
-    if (!validatePhone(editedUser.phone) || (editedUser.phoneSecondary && !validatePhone(editedUser.phoneSecondary))) {
+    if (!validatePhone(editedUser.phone || "") || (editedUser.phoneSecondary && !validatePhone(editedUser.phoneSecondary))) {
       setError("Número de telefone inválido.");
       return;
     }
@@ -150,6 +151,70 @@ export function AddUserSheet({ open, onOpenChange, user, onSave }: AddUserSheetP
               <Input placeholder="E-mail Secundário (Opcional)" type="email" value={editedUser.emailSecondary} onChange={(e) => setEditedUser({ ...editedUser, emailSecondary: e.target.value })} />
               <Input placeholder="Telefone Principal" value={editedUser.phone} onChange={(e) => setEditedUser({ ...editedUser, phone: e.target.value })} />
               <Input placeholder="Telefone Secundário (Opcional)" value={editedUser.phoneSecondary} onChange={(e) => setEditedUser({ ...editedUser, phoneSecondary: e.target.value })} />
+            </TabsContent>
+
+            <TabsContent value="atribuicoes" className="space-y-4 mt-4">
+              <h3 className="text-md font-semibold">Empresas</h3>
+              <div className="space-y-2">
+                {companies.map((company) => (
+                  <label key={company.id} className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                    <input
+                      type="checkbox"
+                      checked={editedUser.companies?.includes(company.id)}
+                      onChange={(e) => {
+                        const newCompanies = e.target.checked
+                          ? [...(editedUser.companies || []), company.id]
+                          : editedUser.companies?.filter(id => id !== company.id) || [];
+                        setEditedUser({ ...editedUser, companies: newCompanies });
+                      }}
+                    />
+                    {company.fantasy_name}
+                  </label>
+                ))}
+              </div>
+
+              <h3 className="text-md font-semibold mt-6">Checklists</h3>
+              <div className="space-y-2">
+                {checklists.map((checklist) => (
+                  <label key={checklist.id} className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                    <input
+                      type="checkbox"
+                      checked={editedUser.checklists?.includes(checklist.id)}
+                      onChange={(e) => {
+                        const newChecklists = e.target.checked
+                          ? [...(editedUser.checklists || []), checklist.id]
+                          : editedUser.checklists?.filter(id => id !== checklist.id) || [];
+                        setEditedUser({ ...editedUser, checklists: newChecklists });
+                      }}
+                    />
+                    {checklist.title}
+                  </label>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="tipoPerfil" className="space-y-4 mt-4">
+              <h3 className="text-md font-semibold">Tipo de Perfil</h3>
+              <div className="space-y-2">
+                {["Administrador", "Gerente", "Técnico"].map((role) => (
+                  <label key={role} className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                    <input
+                      type="checkbox"
+                      checked={editedUser.roles.includes(role)}
+                      onChange={(e) => {
+                        const newRoles = e.target.checked
+                          ? [...editedUser.roles, role]
+                          : editedUser.roles.filter(r => r !== role);
+                        setEditedUser({ ...editedUser, roles: newRoles });
+                      }}
+                    />
+                    <span className="flex items-center gap-2">
+                      {roleIcons[role as keyof typeof roleIcons]}
+                      {role}
+                    </span>
+                  </label>
+                ))}
+              </div>
             </TabsContent>
           </Tabs>
 
