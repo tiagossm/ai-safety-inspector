@@ -3,8 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { User, UserRole, UserStatus } from "@/types/user";
 import { Database } from "@/integrations/supabase/types";
 
-type DbUserCreate = Omit<Database['public']['Tables']['users']['Insert'], 'id' | 'created_at' | 'updated_at'>;
-type DbUserUpdate = Partial<DbUserCreate>;
+type Tables = Database['public']['Tables'];
+type DbUser = Tables['users']['Row'];
+type DbUserInsert = Tables['users']['Insert'];
+type DbUserUpdate = Tables['users']['Update'];
 
 export const UsersService = {
   async getAll(): Promise<User[]> {
@@ -45,8 +47,7 @@ export const UsersService = {
   },
 
   async create(userData: Omit<User, "id" | "created_at">): Promise<User> {
-    // Convert the input data to match the expected database schema
-    const dbData: DbUserCreate = {
+    const dbData = {
       name: userData.name || null,
       email: userData.email || null,
       email_secondary: userData.email_secondary || null,
@@ -55,7 +56,7 @@ export const UsersService = {
       cpf: userData.cpf || null,
       role: userData.role.toString(),
       status: userData.status.toString()
-    };
+    } satisfies Omit<DbUserInsert, 'id'>;
 
     const { data, error } = await supabase
       .from('users')
@@ -68,8 +69,8 @@ export const UsersService = {
     
     return {
       id: data.id,
-      name: data.name,
-      email: data.email,
+      name: data.name || '',
+      email: data.email || '',
       email_secondary: data.email_secondary,
       phone: data.phone,
       phone_secondary: data.phone_secondary,
@@ -82,7 +83,6 @@ export const UsersService = {
   },
 
   async update(id: string, updates: Partial<Omit<User, "id" | "created_at">>): Promise<User> {
-    // Convert the update data to match the expected database schema
     const dbData: DbUserUpdate = {
       ...(updates.name !== undefined && { name: updates.name }),
       ...(updates.email !== undefined && { email: updates.email }),
@@ -106,8 +106,8 @@ export const UsersService = {
     
     return {
       id: data.id,
-      name: data.name,
-      email: data.email,
+      name: data.name || '',
+      email: data.email || '',
       email_secondary: data.email_secondary,
       phone: data.phone,
       phone_secondary: data.phone_secondary,
