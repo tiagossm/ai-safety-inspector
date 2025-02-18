@@ -719,7 +719,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           email_secondary?: string | null
-          id: string
+          id?: string
           name?: string | null
           phone?: string | null
           phone_secondary?: string | null
