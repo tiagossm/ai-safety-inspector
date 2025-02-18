@@ -1,14 +1,3 @@
-export type User = {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  company?: string;
-  role: UserRole;
-  status: UserStatus;
-  lastActivity?: string;
-  createdAt: string;
-};
 
 export enum UserRole {
   ADMIN = "Admin",
@@ -20,3 +9,15 @@ export enum UserStatus {
   ACTIVE = "active",
   INACTIVE = "inactive"
 }
+
+export type User = {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  role: UserRole;
+  status: UserStatus;
+  lastActivity?: string;
+  createdAt: string;
+};
