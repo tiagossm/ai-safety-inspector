@@ -1,23 +1,16 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Company } from "@/types/company";
+import { Company, CompanyMetadata } from "@/types/company";
 
 export function useCompanyAPI() {
   const [companies, setCompanies] = useState<Company[]>([]);
 
   const fetchRiskLevel = async (cnae: string) => {
-    // Simula a busca do nível de risco com base no CNAE
-    // Em um cenário real, você faria uma chamada a uma API ou banco de dados
-    // para obter essa informação.
-    // Aqui, retornamos um valor fixo para demonstração.
     return "2";
   };
 
   const fetchCNPJData = async (cnpj: string) => {
-    // Simula a busca de dados do CNPJ em uma API externa
-    // Em um cenário real, você faria uma chamada a uma API como a da Receita Federal
-    // para obter os dados da empresa.
-    // Aqui, retornamos dados fictícios para demonstração.
     return {
       fantasyName: "",
       cnae: "",
@@ -38,7 +31,6 @@ export function useCompanyAPI() {
     return Boolean(data);
   };
 
-  // Load companies on mount
   const loadCompanies = async () => {
     const { data } = await supabase
       .from("companies")
@@ -46,7 +38,23 @@ export function useCompanyAPI() {
       .order("fantasy_name");
     
     if (data) {
-      setCompanies(data);
+      // Transform the data to match the Company type
+      const transformedData: Company[] = data.map(item => ({
+        id: item.id,
+        fantasy_name: item.fantasy_name,
+        cnpj: item.cnpj,
+        cnae: item.cnae,
+        contact_email: item.contact_email,
+        contact_phone: item.contact_phone,
+        contact_name: item.contact_name,
+        employee_count: item.employee_count,
+        metadata: item.metadata as CompanyMetadata | null,
+        created_at: item.created_at,
+        status: item.status as Company['status'],
+        deactivated_at: item.deactivated_at
+      }));
+      
+      setCompanies(transformedData);
     }
   };
 
