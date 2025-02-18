@@ -8,7 +8,7 @@ export interface User {
   role: UserRole;
   status: string;
   companies?: string[];
-  checklists?: number;
+  checklists?: string[];
 }
 
 export const validateRole = (role: string | null): UserRole => {

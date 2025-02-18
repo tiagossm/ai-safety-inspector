@@ -49,11 +49,14 @@ export function UserList() {
             .eq("user_id", user.id);
 
           return {
-            ...user,
+            id: user.id,
+            name: user.name || "",
+            email: user.email || "",
             role: user.role as UserRole,
+            status: user.status || "active",
             companies: companiesData?.map(c => c.companies?.fantasy_name).filter(Boolean) || [],
             checklists: checklistsData?.map(c => c.checklist_id) || []
-          };
+          } as User;
         })
       );
 
