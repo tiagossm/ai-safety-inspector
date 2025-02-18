@@ -80,7 +80,7 @@ export function useUsers() {
           .from("users")
           .select("id")
           .eq("email", user.email.trim())
-          .single();
+          .maybeSingle();
 
         if (existingUser) {
           throw new Error("Este email já está cadastrado");
@@ -99,16 +99,19 @@ export function useUsers() {
         userId = authData.user?.id;
         if (!userId) throw new Error("Falha ao criar usuário");
 
-        // Insert user data using admin client
+        // Wait a short moment for the trigger to complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Update the user data instead of inserting
         await supabaseAdmin
           .from("users")
-          .insert({
-            id: userId,
+          .update({
             name: user.name,
             email: user.email.trim(),
             role: user.role,
             status: user.status
-          });
+          })
+          .eq("id", userId);
       } else {
         // Update existing user using admin client
         await supabaseAdmin
