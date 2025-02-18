@@ -84,7 +84,8 @@ export function AddUserSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full max-w-3xl">
+      <SheetContent className="w-full max-w-lg mx-auto p-6 bg-background rounded-lg shadow-lg">
+
         <SheetHeader>
           <SheetTitle>{user ? "Editar Usuário" : "Novo Usuário"}</SheetTitle>
         </SheetHeader>
