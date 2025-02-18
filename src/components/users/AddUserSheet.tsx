@@ -1,14 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch"; // 🔹 Adicionamos o toggle switch
+import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, UserRole } from "@/types/user";
-import { AssignCompaniesDialog } from "./AssignCompaniesDialog";
-import { AssignChecklistsDialog } from "./AssignChecklistsDialog";
-import { RoleSelector } from "./role-selector/RoleSelector";
-import { AssignmentSection } from "./assignments/AssignmentSection";
 import { supabase } from "@/integrations/supabase/client";
 
 interface AddUserSheetProps {
@@ -36,14 +32,12 @@ export function AddUserSheet({
     name: user?.name || "",
     email: user?.email || "",
     role: user?.role || "Técnico",
-    status: user?.status || "active", // 🔹 Definindo status do usuário
+    status: user?.status || "active",
     companies: user?.companies || [],
     checklists: user?.checklists || []
   });
 
   const [loading, setLoading] = useState(false);
-  const [showCompaniesDialog, setShowCompaniesDialog] = useState(false);
-  const [showChecklistsDialog, setShowChecklistsDialog] = useState(false);
   const [companies, setCompanies] = useState<{ id: string, fantasy_name: string }[]>([]);
 
   useEffect(() => {
@@ -58,7 +52,7 @@ export function AddUserSheet({
         name: user.name,
         email: user.email,
         role: user.role,
-        status: user.status, // 🔹 Certificando que o status do usuário é carregado
+        status: user.status,
         companies: user.companies,
         checklists: user.checklists
       });
@@ -82,10 +76,15 @@ export function AddUserSheet({
     setLoading(false);
   };
 
+  const roleIcons = {
+    "Administrador": "👑",
+    "Técnico": "🦺",
+    "Usuário": "👤"
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full max-w-lg mx-auto p-6 bg-background rounded-lg shadow-lg">
-
         <SheetHeader>
           <SheetTitle>{user ? "Editar Usuário" : "Novo Usuário"}</SheetTitle>
         </SheetHeader>
@@ -100,20 +99,18 @@ export function AddUserSheet({
           {/* Seção: Dados do usuário */}
           <TabsContent value="dados" className="space-y-4 mt-4">
             <Input
-              label="Nome"
               placeholder="Digite o nome do usuário"
               value={editedUser.name}
               onChange={(e) => setEditedUser({ ...editedUser, name: e.target.value })}
             />
             <Input
-              label="Email"
               placeholder="Digite o email"
               type="email"
               value={editedUser.email}
               onChange={(e) => setEditedUser({ ...editedUser, email: e.target.value })}
             />
 
-            {/* 🔹 Toggle de ativação/desativação */}
+            {/* Toggle de ativação/desativação */}
             <div className="flex items-center justify-between mt-4">
               <span className="text-sm font-medium">
                 {editedUser.status === "active" ? "Usuário Ativo" : "Usuário Inativo"}
@@ -129,54 +126,76 @@ export function AddUserSheet({
 
           {/* Seção: Atribuições */}
           <TabsContent value="atribuicoes" className="space-y-6 mt-4">
-            <AssignmentSection
-              title="Empresas atribuídas"
-              count={selectedCompanies.length}
-              onAdd={() => setShowCompaniesDialog(true)}
-            >
+            <div>
+              <h3 className="text-md font-semibold">Empresas atribuídas</h3>
               <div className="space-y-2">
                 {companies.map((company) => (
-                  <div key={company.id} className="flex items-center justify-between p-2 bg-muted rounded-md">
-                    <span>{company.fantasy_name}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedCompanies(selectedCompanies.filter(id => id !== company.id))}
-                    >
-                      Remover
-                    </Button>
-                  </div>
+                  <label key={company.id} className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                    <input
+                      type="checkbox"
+                      checked={selectedCompanies.includes(company.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedCompanies([...selectedCompanies, company.id]);
+                        } else {
+                          setSelectedCompanies(selectedCompanies.filter(id => id !== company.id));
+                        }
+                      }}
+                    />
+                    {company.fantasy_name}
+                  </label>
                 ))}
               </div>
-            </AssignmentSection>
+            </div>
 
-            <AssignmentSection
-              title="Checklists atribuídos"
-              count={selectedChecklists.length}
-              onAdd={() => setShowChecklistsDialog(true)}
-              disabled={selectedCompanies.length === 0}
-              disabledMessage="Primeiro, atribua empresas ao usuário para poder selecionar os checklists."
-            >
-              {selectedCompanies.length > 0 && (
-                <div className="bg-background p-4 rounded-md">
-                  {/* Aqui ficará a listagem dos checklists */}
+            <div>
+              <h3 className="text-md font-semibold">Checklists atribuídos</h3>
+              {selectedCompanies.length === 0 ? (
+                <p className="text-sm text-muted">Primeiro, atribua empresas ao usuário.</p>
+              ) : (
+                <div className="space-y-2">
+                  {selectedChecklists.map((checklistId) => (
+                    <label key={checklistId} className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                      <input
+                        type="checkbox"
+                        checked={selectedChecklists.includes(checklistId)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedChecklists([...selectedChecklists, checklistId]);
+                          } else {
+                            setSelectedChecklists(selectedChecklists.filter(id => id !== checklistId));
+                          }
+                        }}
+                      />
+                      Checklist {checklistId}
+                    </label>
+                  ))}
                 </div>
               )}
-            </AssignmentSection>
+            </div>
           </TabsContent>
 
           {/* Seção: Permissões */}
           <TabsContent value="permissoes" className="space-y-4 mt-4">
-            <RoleSelector
-              selectedRole={editedUser.role}
-              onRoleChange={(role) => setEditedUser({ ...editedUser, role })}
-            />
+            <h3 className="text-md font-semibold">Tipo de Perfil</h3>
+            <div className="flex items-center gap-2">
+              <span className="text-lg">{roleIcons[editedUser.role]}</span>
+              <select
+                className="p-2 border rounded-md"
+                value={editedUser.role}
+                onChange={(e) => setEditedUser({ ...editedUser, role: e.target.value as UserRole })}
+              >
+                <option value="Administrador">Administrador</option>
+                <option value="Técnico">Técnico</option>
+                <option value="Usuário">Usuário</option>
+              </select>
+            </div>
           </TabsContent>
         </Tabs>
 
         {/* Botão de salvar com loading */}
         <div className="mt-6">
-          <Button onClick={handleSave} className="w-full" disabled={loading}>
+          <Button onClick={handleSave} className="w-full" disabled={!editedUser.name || !editedUser.email || loading}>
             {loading ? "Salvando..." : user ? "Salvar Alterações" : "Criar Usuário"}
           </Button>
         </div>
