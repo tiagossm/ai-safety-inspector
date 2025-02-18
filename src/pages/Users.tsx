@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody } from "@/components/ui/table";
@@ -29,7 +28,7 @@ export function UserList() {
 
   const loadUsers = async () => {
     try {
-      const { data: usersData, error: usersError } = await supabase
+      const { data: usersData, error: usersError } = await supabaseAdmin
         .from("users")
         .select("*")
         .order("name", { ascending: true });
@@ -38,12 +37,12 @@ export function UserList() {
 
       const usersWithDetails = await Promise.all(
         (usersData || []).map(async (user) => {
-          const { data: companiesData } = await supabase
+          const { data: companiesData } = await supabaseAdmin
             .from("user_companies")
             .select("companies(id, fantasy_name)")
             .eq("user_id", user.id);
 
-          const { data: checklistsData } = await supabase
+          const { data: checklistsData } = await supabaseAdmin
             .from("user_checklists")
             .select("checklist_id")
             .eq("user_id", user.id);
@@ -62,6 +61,7 @@ export function UserList() {
 
       setUsers(usersWithDetails);
     } catch (error: any) {
+      console.error("Error loading users:", error);
       toast({
         title: "Erro ao carregar usuários",
         description: error.message,
@@ -70,7 +70,7 @@ export function UserList() {
     }
   };
 
-  const handleSaveUser = async (user: Omit<User, 'id'>) => {
+  const handleSaveUser = async (user: Omit<User, "id">) => {
     try {
       let userId = selectedUser?.id;
 
@@ -78,43 +78,65 @@ export function UserList() {
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
           email: user.email,
           email_confirm: true,
+          password: "temporary123",
           user_metadata: { name: user.name }
         });
 
         if (authError) throw authError;
         userId = authData.user?.id;
 
-        await supabase.from("users").insert({
-          id: userId,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          status: user.status
-        });
+        if (!userId) throw new Error("Failed to create user");
+
+        await supabaseAdmin
+          .from("users")
+          .insert({
+            id: userId,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            status: user.status
+          });
       } else {
-        await supabase.from("users").update({
-          name: user.name,
-          role: user.role,
-          status: user.status
-        }).eq("id", userId);
+        await supabaseAdmin
+          .from("users")
+          .update({
+            name: user.name,
+            role: user.role,
+            status: user.status
+          })
+          .eq("id", userId);
       }
 
       if (selectedCompanies.length > 0) {
-        await supabase.from("user_companies").delete().eq("user_id", userId);
+        await supabaseAdmin
+          .from("user_companies")
+          .delete()
+          .eq("user_id", userId);
+
         const companyAssignments = selectedCompanies.map(companyId => ({
           user_id: userId,
           company_id: companyId
         }));
-        await supabase.from("user_companies").insert(companyAssignments);
+
+        await supabaseAdmin
+          .from("user_companies")
+          .insert(companyAssignments);
       }
 
       if (selectedChecklists.length > 0) {
-        await supabase.from("user_checklists").delete().eq("user_id", userId);
+        await supabaseAdmin
+          .from("user_checklists")
+          .delete()
+          .eq("user_id", userId);
+
         const checklistAssignments = selectedChecklists.map(checklistId => ({
           user_id: userId,
           checklist_id: checklistId
         }));
-        await supabase.from("user_checklists").insert(checklistAssignments);
+
+        await supabaseAdmin
+          .from("user_checklists")
+          .insert(checklistAssignments);
       }
 
       toast({
@@ -128,6 +150,7 @@ export function UserList() {
       setSelectedChecklists([]);
       loadUsers();
     } catch (error: any) {
+      console.error("Error saving user:", error);
       toast({
         title: "Erro ao salvar usuário",
         description: error.message,
@@ -150,13 +173,26 @@ export function UserList() {
 
     try {
       await supabaseAdmin.auth.admin.deleteUser(userToDelete.id);
-      toast({ title: "Usuário excluído", description: "O usuário foi removido." });
+      await supabaseAdmin
+        .from("users")
+        .delete()
+        .eq("id", userToDelete.id);
+
+      toast({ 
+        title: "Usuário excluído", 
+        description: "O usuário foi removido." 
+      });
 
       loadUsers();
       setDeleteConfirmText("");
       setUserToDelete(null);
     } catch (error: any) {
-      toast({ title: "Erro ao excluir", description: error.message, variant: "destructive" });
+      console.error("Error deleting user:", error);
+      toast({ 
+        title: "Erro ao excluir", 
+        description: error.message, 
+        variant: "destructive" 
+      });
     }
   };
 
