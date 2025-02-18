@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -6,23 +7,13 @@ import { Table, TableHeader, TableRow, TableCell, TableBody } from "@/components
 import { supabase } from "@/integrations/supabase/client";
 import { roleIcons } from "./role-selector/RoleInfo";
 import { Search, Filter, PlusCircle, Pencil, Trash, Lock, RefreshCcw } from "lucide-react";
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  company: string;
-  role: string;
-  status: "active" | "inactive";
-  lastActivity: string;
-}
+import { User } from "@/types/user";
 
 interface AddUserSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: User | null;
-  onSave: () => void;
+  onSave: (user: Omit<User, "id">) => void;
 }
 
 export function AddUserSheet({ open, onOpenChange, user, onSave }: AddUserSheetProps) {

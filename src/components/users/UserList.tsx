@@ -20,12 +20,12 @@ export function UserList() {
 
   const { users, saveUser, deleteUser } = useUsers();
 
-  const handleSaveUser = async (user: Omit<User, "id">) => {
+  const handleSaveUser = async (userData: Omit<User, "id">) => {
     const success = await saveUser(
-      user, 
+      userData, 
       selectedUser,
-      user.companies || [],
-      user.checklists || []
+      userData.companies || [],
+      userData.checklists || []
     );
     
     if (success) {
