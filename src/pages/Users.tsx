@@ -1,8 +1,8 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { supabaseAdmin } from "@/integrations/supabase/adminClient";
 import { UserHeader } from "@/components/users/UserHeader";
 import { UserRow } from "@/components/users/UserRow";
@@ -28,10 +28,14 @@ export function UserList() {
 
   const loadUsers = async () => {
     try {
+      console.log("Loading users with admin client...");
       const { data: usersData, error: usersError } = await supabaseAdmin
         .from("users")
         .select("*")
         .order("name", { ascending: true });
+
+      console.log("Users data:", usersData);
+      console.log("Users error:", usersError);
 
       if (usersError) throw usersError;
 
