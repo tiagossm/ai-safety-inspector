@@ -2,8 +2,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { User, UserRole, UserStatus } from "@/types/user";
 
-type DbUser = {
-  id?: string;
+type DbUserCreate = {
   name?: string | null;
   email?: string | null;
   email_secondary?: string | null;
@@ -12,6 +11,9 @@ type DbUser = {
   cpf?: string | null;
   role?: string;
   status?: string;
+};
+
+type DbUserUpdate = DbUserCreate & {
   created_at?: string;
   updated_at?: string;
 };
@@ -56,7 +58,7 @@ export const UsersService = {
 
   async create(userData: Omit<User, "id" | "created_at">): Promise<User> {
     // Convert the input data to match the expected database schema
-    const dbData: DbUser = {
+    const dbData: DbUserCreate = {
       name: userData.name || null,
       email: userData.email || null,
       email_secondary: userData.email_secondary || null,
@@ -69,7 +71,7 @@ export const UsersService = {
 
     const { data, error } = await supabase
       .from('users')
-      .insert([dbData])
+      .insert(dbData)
       .select()
       .single();
       
@@ -93,7 +95,7 @@ export const UsersService = {
 
   async update(id: string, updates: Partial<Omit<User, "id" | "created_at">>): Promise<User> {
     // Convert the update data to match the expected database schema
-    const dbData: DbUser = {
+    const dbData: DbUserUpdate = {
       ...(updates.name !== undefined && { name: updates.name }),
       ...(updates.email !== undefined && { email: updates.email }),
       ...(updates.email_secondary !== undefined && { email_secondary: updates.email_secondary }),
