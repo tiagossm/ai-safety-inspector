@@ -71,7 +71,7 @@ export const UsersService = {
 
     const { data, error } = await supabase
       .from('users')
-      .insert(dbData)
+      .insert([dbData])  // Wrap dbData in an array
       .select()
       .single();
       
