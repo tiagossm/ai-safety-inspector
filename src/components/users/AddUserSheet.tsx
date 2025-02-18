@@ -1,19 +1,15 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Sheet, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { User, UserRole } from "@/types/user";
+import { User } from "@/types/user";
 import { supabase } from "@/integrations/supabase/client";
 import { roleIcons } from "./role-selector/RoleInfo";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, UserCircle } from "lucide-react";
 import { validateCPF, validateEmail, validatePhone } from "@/utils/validators";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
 
 interface AddUserSheetProps {
   open: boolean;
@@ -39,18 +35,13 @@ export function AddUserSheet({ open, onOpenChange, user, onSave }: AddUserSheetP
     phone: "",
     phoneSecondary: "",
     roles: [],
+    permissions: [],
     status: "active",
     companies: [],
     checklists: []
   });
 
   const [loading, setLoading] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState({
-    name: '',
-    cpf: '',
-    email: '',
-    phone: ''
-  });
   const [companies, setCompanies] = useState<{ id: string; fantasy_name: string }[]>([]);
   const [checklists, setChecklists] = useState<{ id: string; title: string }[]>([]);
 
@@ -67,6 +58,7 @@ export function AddUserSheet({ open, onOpenChange, user, onSave }: AddUserSheetP
           phone: user.phone || "",
           phoneSecondary: user.phoneSecondary || "",
           roles: user.roles || [],
+          permissions: user.permissions || [],
           status: user.status,
           companies: user.companies || [],
           checklists: user.checklists || []
@@ -96,139 +88,90 @@ export function AddUserSheet({ open, onOpenChange, user, onSave }: AddUserSheetP
   };
 
   const handleSave = async (addAnother = false) => {
-    setFieldErrors({
-      name: '',
-      cpf: '',
-      email: '',
-      phone: ''
-    });
-
-    let hasErrors = false;
-    const newErrors = {
-      name: '',
-      cpf: '',
-      email: '',
-      phone: ''
-    };
-
-    if (!editedUser.name) {
-      newErrors.name = 'Nome é obrigatório';
-      hasErrors = true;
-    }
-
-    if (editedUser.cpf && !validateCPF(editedUser.cpf)) {
-      newErrors.cpf = 'CPF inválido';
-      hasErrors = true;
-    }
-
-    if (!validateEmail(editedUser.email)) {
-      newErrors.email = 'Email inválido';
-      hasErrors = true;
-    }
-
-    if (editedUser.phone && !validatePhone(editedUser.phone)) {
-      newErrors.phone = 'Telefone inválido';
-      hasErrors = true;
-    }
-
-    if (hasErrors) {
-      setFieldErrors(newErrors);
-      return;
-    }
+    if (!editedUser.name) return alert("Nome é obrigatório.");
+    if (!validateCPF(editedUser.cpf)) return alert("CPF inválido.");
+    if (!validateEmail(editedUser.email)) return alert("E-mail inválido.");
+    if (!validatePhone(editedUser.phone)) return alert("Telefone inválido.");
 
     setLoading(true);
-    try {
-      await onSave(editedUser);
-      
-      if (!addAnother) {
-        onOpenChange(false);
-      } else {
-        setEditedUser({
-          name: "",
-          cpf: "",
-          email: "",
-          emailSecondary: "",
-          phone: "",
-          phoneSecondary: "",
-          roles: [],
-          status: "active",
-          companies: [],
-          checklists: []
-        });
-      }
-    } finally {
-      setLoading(false);
+    await onSave(editedUser);
+    setLoading(false);
+
+    if (!addAnother) {
+      onOpenChange(false);
+    } else {
+      setEditedUser({
+        name: "",
+        cpf: "",
+        email: "",
+        emailSecondary: "",
+        phone: "",
+        phoneSecondary: "",
+        roles: [],
+        permissions: [],
+        status: "active",
+        companies: [],
+        checklists: []
+      });
     }
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetHeader>
-        <SheetTitle>{user ? "Editar Usuário" : "Adicionar Usuário"}</SheetTitle>
-      </SheetHeader>
-      <div className="space-y-4 p-4">
-        <div className="space-y-2">
-          <Label htmlFor="name">Nome</Label>
-          <Input
-            id="name"
-            placeholder="Nome"
-            value={editedUser.name}
-            onChange={(e) => setEditedUser({ ...editedUser, name: e.target.value })}
-            className={cn(fieldErrors.name && "border-red-500")}
-            aria-invalid={!!fieldErrors.name}
-          />
-          {fieldErrors.name && <p className="text-sm text-red-500">{fieldErrors.name}</p>}
-        </div>
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 p-4">
+        <div className="w-full max-w-3xl bg-background p-6 rounded-lg shadow-lg relative">
+          <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-200" onClick={() => onOpenChange(false)}>
+            <X size={24} />
+          </button>
 
-        <div className="space-y-2">
-          <Label htmlFor="cpf">CPF</Label>
-          <Input
-            id="cpf"
-            placeholder="CPF"
-            value={editedUser.cpf}
-            onChange={(e) => setEditedUser({ ...editedUser, cpf: e.target.value })}
-            className={cn(fieldErrors.cpf && "border-red-500")}
-            aria-invalid={!!fieldErrors.cpf}
-          />
-          {fieldErrors.cpf && <p className="text-sm text-red-500">{fieldErrors.cpf}</p>}
-        </div>
+          <SheetHeader>
+            <SheetTitle className="text-center text-xl font-bold">
+              {user ? "Editar Usuário" : "Novo Usuário"}
+            </SheetTitle>
+          </SheetHeader>
 
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            placeholder="Email"
-            type="email"
-            value={editedUser.email}
-            onChange={(e) => setEditedUser({ ...editedUser, email: e.target.value })}
-            className={cn(fieldErrors.email && "border-red-500")}
-            aria-invalid={!!fieldErrors.email}
-          />
-          {fieldErrors.email && <p className="text-sm text-red-500">{fieldErrors.email}</p>}
-        </div>
+          <div className="flex flex-col items-center mb-4">
+            <UserCircle size={80} className="text-gray-400" />
+          </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="phone">Telefone</Label>
-          <Input
-            id="phone"
-            placeholder="Telefone"
-            value={editedUser.phone}
-            onChange={(e) => setEditedUser({ ...editedUser, phone: e.target.value })}
-            className={cn(fieldErrors.phone && "border-red-500")}
-            aria-invalid={!!fieldErrors.phone}
-          />
-          {fieldErrors.phone && <p className="text-sm text-red-500">{fieldErrors.phone}</p>}
-        </div>
+          <Tabs defaultValue="dados" className="mt-4">
+            <TabsList className="flex justify-center gap-4">
+              <TabsTrigger value="dados">Dados</TabsTrigger>
+              <TabsTrigger value="atribuicoes">Atribuições</TabsTrigger>
+              <TabsTrigger value="tipoPerfil">Tipo de Perfil</TabsTrigger>
+              <TabsTrigger value="permissoes">Permissões</TabsTrigger>
+            </TabsList>
 
-        <div className="flex gap-2">
-          <Button onClick={() => handleSave()} disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Salvar
-          </Button>
-          <Button onClick={() => handleSave(true)} disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Salvar e Adicionar Outro
-          </Button>
+            <TabsContent value="dados" className="space-y-4 mt-4">
+              <Input placeholder="Nome Completo" value={editedUser.name} onChange={(e) => setEditedUser({ ...editedUser, name: e.target.value })} />
+              <Input placeholder="CPF" value={editedUser.cpf} onChange={(e) => setEditedUser({ ...editedUser, cpf: e.target.value })} />
+            </TabsContent>
+
+            <TabsContent value="permissoes" className="space-y-4 mt-4">
+              <h3 className="text-md font-semibold">Definir Permissões</h3>
+              {PERMISSIONS_LIST.map(permission => (
+                <label key={permission} className="flex items-center gap-2">
+                  <Checkbox checked={editedUser.permissions.includes(permission)}
+                    onCheckedChange={(checked) => {
+                      const newPermissions = checked
+                        ? [...editedUser.permissions, permission]
+                        : editedUser.permissions.filter(p => p !== permission);
+                      setEditedUser({ ...editedUser, permissions: newPermissions });
+                    }} />
+                  {permissionLabels[permission]}
+                </label>
+              ))}
+            </TabsContent>
+          </Tabs>
+
+          <div className="mt-6 flex justify-center gap-4">
+            <Button onClick={() => handleSave(false)} className="w-1/2" disabled={loading}>
+              {loading ? <Loader2 className="animate-spin" /> : user ? "Salvar Alterações" : "Criar Usuário"}
+            </Button>
+            <Button onClick={() => handleSave(true)} className="w-1/2 bg-secondary" disabled={loading}>
+              {loading ? <Loader2 className="animate-spin" /> : "Criar e Adicionar Outro"}
+            </Button>
+          </div>
         </div>
       </div>
     </Sheet>
