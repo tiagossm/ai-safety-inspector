@@ -120,7 +120,7 @@ export function UsersPage() {
                 <Button size="sm" variant="destructive" icon={<Trash size={14} />} onClick={() => {}}>
                   Excluir
                 </Button>
-              </TableCell>
+              </TableCell>s
             </TableRow>
           ))}
         </TableBody>
