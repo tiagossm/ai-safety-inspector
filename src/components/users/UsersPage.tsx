@@ -1,67 +1,88 @@
 
 import { useState } from "react";
-import { useUsers } from "@/hooks/useUsers";
 import { UserList } from "@/components/users/UserList";
-import { AddUserSheet } from "./AddUserSheet";
 import { UserHeader } from "@/components/users/UserHeader";
-import { DeleteUserDialog } from "@/components/shared/DeleteUserDialog";
-import { User } from "@/types/user";
+import { useUsers } from "@/hooks/useUsers";
+import { User, UserStatus } from "@/types/user";
+import { AddUserSheet } from "@/components/users/AddUserSheet";
 
 export default function UsersPage() {
-  const { users, loading, refresh, createUser, updateUser, deleteUser } = useUsers();
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [showInactive, setShowInactive] = useState(false);
+  const {
+    users,
+    isLoading,
+    search,
+    setSearch,
+    showInactive,
+    setShowInactive,
+    createUser,
+    updateUser,
+    deleteUser,
+    isCreating,
+    isUpdating,
+    isDeleting,
+    refetch
+  } = useUsers();
 
-  const handleDelete = async () => {
-    if (selectedUser) {
-      await deleteUser(selectedUser.id);
-      refresh();
-      setDeleteOpen(false);
+  const [isAddUserOpen, setIsAddUserOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
+  const handleAddUser = () => {
+    setSelectedUser(null);
+    setIsAddUserOpen(true);
+  };
+
+  const handleEditUser = (user: User) => {
+    setSelectedUser(user);
+    setIsAddUserOpen(true);
+  };
+
+  const handleSubmitUser = async (data: Omit<User, "id" | "created_at">) => {
+    try {
+      if (selectedUser) {
+        await updateUser({ id: selectedUser.id, data });
+      } else {
+        await createUser(data);
+      }
+      setIsAddUserOpen(false);
+      setSelectedUser(null);
+    } catch (error) {
+      console.error("Error submitting user:", error);
     }
   };
 
+  const handleRefetch = async () => {
+    await refetch();
+  };
+
   return (
-    <div className="space-y-8">
+    <div className="max-w-7xl mx-auto px-4 py-6">
       <UserHeader
         search={search}
         setSearch={setSearch}
         showInactive={showInactive}
-        setShowInactive={setShowInactive} 
-        onRefresh={refresh}
-        onAddUser={() => setEditOpen(true)}
+        setShowInactive={setShowInactive}
+        onAddUser={handleAddUser}
+        onRefresh={handleRefetch}
       />
       
       <UserList
         users={users}
-        loading={loading}
-        onEdit={(user) => {
-          setSelectedUser(user);
-          setEditOpen(true);
+        loading={isLoading}
+        onEdit={handleEditUser}
+        onDelete={deleteUser}
+        onStatusToggle={async (id: string, status: UserStatus) => {
+          await updateUser({ id, data: { status } });
         }}
-        onDelete={(userId) => {
-          setSelectedUser(users.find(u => u.id === userId) || null);
-          setDeleteOpen(true);
-        }}
+        isDeleting={isDeleting}
+        isUpdating={isUpdating}
       />
 
       <AddUserSheet
-        open={editOpen}
-        user={selectedUser}
-        onClose={() => {
-          setEditOpen(false);
-          setSelectedUser(null);
-        }}
-        onSave={refresh}
-      />
-
-      <DeleteUserDialog
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
-        user={selectedUser}
-        onConfirm={handleDelete}
+        open={isAddUserOpen}
+        onOpenChange={setIsAddUserOpen}
+        onSubmit={handleSubmitUser}
+        initialData={selectedUser || undefined}
+        isLoading={isCreating || isUpdating}
       />
     </div>
   );
