@@ -31,8 +31,12 @@ export function AddUserSheet({
 }: AddUserSheetProps) {
   const [editedUser, setEditedUser] = useState<Omit<User, "id">>({
     name: user?.name || "",
-    email: user?.email || "",
-    role: user?.role || "Técnico",
+    cpf: user?.cpf || "",
+    email1: user?.email1 || "",
+    email2: user?.email2 || "",
+    phone1: user?.phone1 || "",
+    phone2: user?.phone2 || "",
+    role: user?.role || ["Técnico"],
     status: user?.status || "active",
     companies: user?.companies || [],
     checklists: user?.checklists || []
@@ -51,7 +55,11 @@ export function AddUserSheet({
     if (user) {
       setEditedUser({
         name: user.name,
-        email: user.email,
+        cpf: user.cpf,
+        email1: user.email1,
+        email2: user.email2,
+        phone1: user.phone1,
+        phone2: user.phone2,
         role: user.role,
         status: user.status,
         companies: user.companies,
@@ -77,100 +85,72 @@ export function AddUserSheet({
     setLoading(false);
   };
 
+  const handleRoleChange = (role: UserRole) => {
+    setEditedUser((prev) => ({
+      ...prev,
+      role: prev.role.includes(role)
+        ? prev.role.filter((r) => r !== role)
+        : [...prev.role, role]
+    }));
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 p-4">
-        <div className="w-full max-w-3xl bg-background p-6 rounded-lg shadow-lg animate-fade-in">
-          <SheetHeader>
-            <SheetTitle className="text-center text-xl font-bold">
-              {user ? "Editar Usuário" : "Novo Usuário"}
-            </SheetTitle>
-          </SheetHeader>
+      {open && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="w-full max-w-3xl bg-background p-6 rounded-lg shadow-lg animate-fade-in">
+            <SheetHeader>
+              <SheetTitle className="text-center text-xl font-bold">
+                {user ? "Editar Usuário" : "Novo Usuário"}
+              </SheetTitle>
+            </SheetHeader>
 
-          <Tabs defaultValue="dados" className="mt-4">
-            <TabsList className="flex justify-center gap-4">
-              <TabsTrigger value="dados">Dados</TabsTrigger>
-              <TabsTrigger value="atribuicoes">Atribuições</TabsTrigger>
-              <TabsTrigger value="permissoes">Permissões</TabsTrigger>
-            </TabsList>
+            <Tabs defaultValue="dados" className="mt-4">
+              <TabsList className="flex justify-center gap-4">
+                <TabsTrigger value="dados">Dados</TabsTrigger>
+                <TabsTrigger value="atribuicoes">Atribuições</TabsTrigger>
+                <TabsTrigger value="permissoes">Permissões</TabsTrigger>
+              </TabsList>
 
-            {/* Seção de Dados */}
-            <TabsContent value="dados" className="space-y-4 mt-4">
-              <Input
-                placeholder="Digite o nome do usuário"
-                value={editedUser.name}
-                onChange={(e) => setEditedUser({ ...editedUser, name: e.target.value })}
-              />
-              <Input
-                placeholder="Digite o email"
-                type="email"
-                value={editedUser.email}
-                onChange={(e) => setEditedUser({ ...editedUser, email: e.target.value })}
-              />
+              {/* Seção de Dados */}
+              <TabsContent value="dados" className="space-y-4 mt-4">
+                <Input placeholder="Nome Completo" value={editedUser.name} onChange={(e) => setEditedUser({ ...editedUser, name: e.target.value })} />
+                <Input placeholder="CPF" value={editedUser.cpf} onChange={(e) => setEditedUser({ ...editedUser, cpf: e.target.value })} />
+                <Input placeholder="E-mail Principal" type="email" value={editedUser.email1} onChange={(e) => setEditedUser({ ...editedUser, email1: e.target.value })} />
+                <Input placeholder="E-mail Secundário (Opcional)" type="email" value={editedUser.email2} onChange={(e) => setEditedUser({ ...editedUser, email2: e.target.value })} />
+                <Input placeholder="Telefone Principal" type="tel" value={editedUser.phone1} onChange={(e) => setEditedUser({ ...editedUser, phone1: e.target.value })} />
+                <Input placeholder="Telefone Secundário (Opcional)" type="tel" value={editedUser.phone2} onChange={(e) => setEditedUser({ ...editedUser, phone2: e.target.value })} />
 
-              {/* Toggle Ativo/Inativo */}
-              <div className="flex items-center justify-between mt-4">
-                <span className="text-sm font-medium">
-                  {editedUser.status === "active" ? "Usuário Ativo" : "Usuário Inativo"}
-                </span>
-                <Switch
-                  checked={editedUser.status === "active"}
-                  onCheckedChange={(checked) =>
-                    setEditedUser({ ...editedUser, status: checked ? "active" : "inactive" })
-                  }
-                />
-              </div>
-            </TabsContent>
+                <div className="flex items-center justify-between mt-4">
+                  <span className="text-sm font-medium">{editedUser.status === "active" ? "Usuário Ativo" : "Usuário Inativo"}</span>
+                  <Switch checked={editedUser.status === "active"} onCheckedChange={(checked) => setEditedUser({ ...editedUser, status: checked ? "active" : "inactive" })} />
+                </div>
+              </TabsContent>
 
-            {/* Seção de Atribuições */}
-            <TabsContent value="atribuicoes" className="space-y-6 mt-4">
-              <h3 className="text-md font-semibold">Empresas atribuídas</h3>
-              <div className="space-y-2">
-                {companies.map((company) => (
-                  <label key={company.id} className="flex items-center gap-2 p-2 bg-muted rounded-md">
-                    <input
-                      type="checkbox"
-                      checked={selectedCompanies.includes(company.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedCompanies([...selectedCompanies, company.id]);
-                        } else {
-                          setSelectedCompanies(selectedCompanies.filter(id => id !== company.id));
-                        }
-                      }}
-                    />
-                    {company.fantasy_name}
-                  </label>
-                ))}
-              </div>
-            </TabsContent>
+              {/* Seção de Permissões */}
+              <TabsContent value="permissoes" className="space-y-4 mt-4">
+                <h3 className="text-md font-semibold">Tipo de Perfil</h3>
+                <div className="grid grid-cols-3 gap-2">
+                  {["Administrador", "Técnico", "Usuário"].map((role) => (
+                    <label key={role} className="flex items-center gap-2 p-2 bg-muted rounded-md cursor-pointer">
+                      <input type="checkbox" checked={editedUser.role.includes(role as UserRole)} onChange={() => handleRoleChange(role as UserRole)} />
+                      <span className="text-lg">{roleIcons[role as UserRole]}</span>
+                      {role}
+                    </label>
+                  ))}
+                </div>
+              </TabsContent>
+            </Tabs>
 
-            {/* Seção de Permissões */}
-            <TabsContent value="permissoes" className="space-y-4 mt-4">
-              <h3 className="text-md font-semibold">Tipo de Perfil</h3>
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{roleIcons[editedUser.role]}</span>
-                <select
-                  className="p-2 border rounded-md text-black bg-white"
-                  value={editedUser.role}
-                  onChange={(e) => setEditedUser({ ...editedUser, role: e.target.value as UserRole })}
-                >
-                  <option value="Administrador">Administrador</option>
-                  <option value="Técnico">Técnico</option>
-                  <option value="Usuário">Usuário</option>
-                </select>
-              </div>
-            </TabsContent>
-          </Tabs>
-
-          {/* Botão de salvar */}
-          <div className="mt-6 flex justify-center">
-            <Button onClick={handleSave} className="w-3/4" disabled={!editedUser.name || !editedUser.email || loading}>
-              {loading ? "Salvando..." : user ? "Salvar Alterações" : "Criar Usuário"}
-            </Button>
+            {/* Botão de salvar */}
+            <div className="mt-6 flex justify-center">
+              <Button onClick={handleSave} className="w-3/4" disabled={!editedUser.name || !editedUser.email1 || loading}>
+                {loading ? "Salvando..." : user ? "Salvar Alterações" : "Criar Usuário"}
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </Sheet>
   );
 }
