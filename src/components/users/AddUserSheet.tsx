@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,7 @@ import { validateCPF, validateEmail, validatePhone } from "@/utils/validators";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 interface AddUserSheetProps {
   open: boolean;
@@ -37,7 +39,6 @@ export function AddUserSheet({ open, onOpenChange, user, onSave }: AddUserSheetP
     phone: "",
     phoneSecondary: "",
     roles: [],
-    permissions: [],
     status: "active",
     companies: [],
     checklists: []
@@ -66,7 +67,6 @@ export function AddUserSheet({ open, onOpenChange, user, onSave }: AddUserSheetP
           phone: user.phone || "",
           phoneSecondary: user.phoneSecondary || "",
           roles: user.roles || [],
-          permissions: user.permissions || [],
           status: user.status,
           companies: user.companies || [],
           checklists: user.checklists || []
@@ -151,7 +151,6 @@ export function AddUserSheet({ open, onOpenChange, user, onSave }: AddUserSheetP
           phone: "",
           phoneSecondary: "",
           roles: [],
-          permissions: [],
           status: "active",
           companies: [],
           checklists: []
@@ -167,33 +166,70 @@ export function AddUserSheet({ open, onOpenChange, user, onSave }: AddUserSheetP
       <SheetHeader>
         <SheetTitle>{user ? "Editar Usuário" : "Adicionar Usuário"}</SheetTitle>
       </SheetHeader>
-      <div>
-        <Input
-          placeholder="Nome"
-          value={editedUser.name}
-          onChange={(e) => setEditedUser({ ...editedUser, name: e.target.value })}
-          error={fieldErrors.name}
-        />
-        <Input
-          placeholder="CPF"
-          value={editedUser.cpf}
-          onChange={(e) => setEditedUser({ ...editedUser, cpf: e.target.value })}
-          error={fieldErrors.cpf}
-        />
-        <Input
-          placeholder="Email"
-          value={editedUser.email}
-          onChange={(e) => setEditedUser({ ...editedUser, email: e.target.value })}
-          error={fieldErrors.email}
-        />
-        <Input
-          placeholder="Telefone"
-          value={editedUser.phone}
-          onChange={(e) => setEditedUser({ ...editedUser, phone: e.target.value })}
-          error={fieldErrors.phone}
-        />
-        <Button onClick={() => handleSave()}>Salvar</Button>
-        <Button onClick={() => handleSave(true)}>Salvar e Adicionar Outro</Button>
+      <div className="space-y-4 p-4">
+        <div className="space-y-2">
+          <Label htmlFor="name">Nome</Label>
+          <Input
+            id="name"
+            placeholder="Nome"
+            value={editedUser.name}
+            onChange={(e) => setEditedUser({ ...editedUser, name: e.target.value })}
+            className={cn(fieldErrors.name && "border-red-500")}
+            aria-invalid={!!fieldErrors.name}
+          />
+          {fieldErrors.name && <p className="text-sm text-red-500">{fieldErrors.name}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="cpf">CPF</Label>
+          <Input
+            id="cpf"
+            placeholder="CPF"
+            value={editedUser.cpf}
+            onChange={(e) => setEditedUser({ ...editedUser, cpf: e.target.value })}
+            className={cn(fieldErrors.cpf && "border-red-500")}
+            aria-invalid={!!fieldErrors.cpf}
+          />
+          {fieldErrors.cpf && <p className="text-sm text-red-500">{fieldErrors.cpf}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            placeholder="Email"
+            type="email"
+            value={editedUser.email}
+            onChange={(e) => setEditedUser({ ...editedUser, email: e.target.value })}
+            className={cn(fieldErrors.email && "border-red-500")}
+            aria-invalid={!!fieldErrors.email}
+          />
+          {fieldErrors.email && <p className="text-sm text-red-500">{fieldErrors.email}</p>}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="phone">Telefone</Label>
+          <Input
+            id="phone"
+            placeholder="Telefone"
+            value={editedUser.phone}
+            onChange={(e) => setEditedUser({ ...editedUser, phone: e.target.value })}
+            className={cn(fieldErrors.phone && "border-red-500")}
+            aria-invalid={!!fieldErrors.phone}
+          />
+          {fieldErrors.phone && <p className="text-sm text-red-500">{fieldErrors.phone}</p>}
+        </div>
+
+        <div className="flex gap-2">
+          <Button onClick={() => handleSave()} disabled={loading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Salvar
+          </Button>
+          <Button onClick={() => handleSave(true)} disabled={loading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Salvar e Adicionar Outro
+          </Button>
+        </div>
       </div>
     </Sheet>
   );
