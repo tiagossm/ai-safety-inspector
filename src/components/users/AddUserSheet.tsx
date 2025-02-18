@@ -81,7 +81,7 @@
             </select>
           </div>
         </TabsContent>
-      </Tabs>
+      </Tabs>.
 
       {/* Botão de salvar */}
       <div className="mt-6">
