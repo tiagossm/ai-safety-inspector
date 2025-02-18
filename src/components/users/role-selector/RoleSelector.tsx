@@ -1,5 +1,6 @@
 
 import { Badge } from "@/components/ui/badge";
+import { Crown, Users2, Wrench } from "lucide-react";
 import { roleInfo } from "./RoleInfo";
 import { UserRole } from "@/types/user";
 
@@ -7,6 +8,18 @@ interface RoleSelectorProps {
   selectedRole: UserRole;
   onRoleChange: (role: UserRole) => void;
 }
+
+const getRoleIcon = (role: UserRole) => {
+  const color = roleInfo[role].iconColor;
+  switch (role) {
+    case "Administrador":
+      return <Crown className={`h-5 w-5 text-${color}-500`} />;
+    case "Gerente":
+      return <Users2 className={`h-5 w-5 text-${color}-500`} />;
+    case "Técnico":
+      return <Wrench className={`h-5 w-5 text-${color}-500`} />;
+  }
+};
 
 export function RoleSelector({ selectedRole, onRoleChange }: RoleSelectorProps) {
   return (
@@ -22,7 +35,7 @@ export function RoleSelector({ selectedRole, onRoleChange }: RoleSelectorProps) 
           onClick={() => onRoleChange(role)}
         >
           <div className="flex items-center gap-2 mb-2">
-            {info.icon()}
+            {getRoleIcon(role)}
             <h3 className="font-medium">{role}</h3>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
