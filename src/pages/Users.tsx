@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody } from "@/components/ui/table";
@@ -51,7 +52,7 @@ export function UserList() {
             ...user,
             role: user.role as UserRole,
             companies: companiesData?.map(c => c.companies?.fantasy_name).filter(Boolean) || [],
-            checklists: checklistsData?.length || 0
+            checklists: checklistsData?.map(c => c.checklist_id) || []
           };
         })
       );
