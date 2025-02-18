@@ -140,13 +140,15 @@ export function AddUserSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full max-w-3xl">
-        <SheetHeader>
-          <SheetTitle>{user ? "Editar Usuário" : "Novo Usuário"}</SheetTitle>
+      <SheetContent side="right" className="w-[95vw] sm:max-w-[800px] h-screen overflow-y-auto">
+        <SheetHeader className="space-y-2 mb-6">
+          <SheetTitle className="text-xl">
+            {user ? "Editar Usuário" : "Novo Usuário"}
+          </SheetTitle>
         </SheetHeader>
 
-        <Tabs defaultValue="dados" className="mt-4">
-          <TabsList className="grid grid-cols-4 gap-4">
+        <Tabs defaultValue="dados" className="h-[calc(100vh-8rem)]">
+          <TabsList className="grid grid-cols-4 gap-4 mb-6">
             <TabsTrigger value="dados" className="flex items-center gap-2">
               <UserCog className="h-4 w-4" />
               Dados
@@ -169,54 +171,62 @@ export function AddUserSheet({
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="dados" className="mt-4">
-            <UserDataTab
-              user={editedUser}
-              isNew={!user}
-              loading={loading}
-              onUserChange={handleFieldChange}
-              onResetPassword={handleResetPassword}
-              onSendWelcomeEmail={handleSendWelcomeEmail}
-            />
-          </TabsContent>
-          
-          <TabsContent value="atribuicoes" className="mt-4">
-            <UserAssignmentsTab
-              companies={selectedCompanies}
-              checklists={selectedChecklists}
-              onAddCompany={() => setShowCompaniesDialog(true)}
-              onRemoveCompany={(company) => 
-                setSelectedCompanies(selectedCompanies.filter(c => c !== company))
-              }
-              onAddChecklist={() => setShowChecklistsDialog(true)}
-              onRemoveChecklist={(checklist) =>
-                setSelectedChecklists(selectedChecklists.filter(c => c !== checklist))
-              }
-              disabled={loading}
-            />
-          </TabsContent>
-          
-          <TabsContent value="permissoes" className="mt-4">
-            <UserPermissionsTab
-              role={editedUser.role}
-              onRoleChange={(role) => handleFieldChange("role", role)}
-              permissions={editedUser.permissions || []}
-              onPermissionsChange={handlePermissionsChange}
-              disabled={loading}
-            />
-          </TabsContent>
+          <div className="h-[calc(100vh-16rem)] overflow-y-auto px-1">
+            <TabsContent value="dados">
+              <UserDataTab
+                user={editedUser}
+                isNew={!user}
+                loading={loading}
+                onUserChange={handleFieldChange}
+                onResetPassword={handleResetPassword}
+                onSendWelcomeEmail={handleSendWelcomeEmail}
+              />
+            </TabsContent>
+            
+            <TabsContent value="atribuicoes">
+              <UserAssignmentsTab
+                companies={selectedCompanies}
+                checklists={selectedChecklists}
+                onAddCompany={() => setShowCompaniesDialog(true)}
+                onRemoveCompany={(company) => 
+                  setSelectedCompanies(selectedCompanies.filter(c => c !== company))
+                }
+                onAddChecklist={() => setShowChecklistsDialog(true)}
+                onRemoveChecklist={(checklist) =>
+                  setSelectedChecklists(selectedChecklists.filter(c => c !== checklist))
+                }
+                disabled={loading}
+              />
+            </TabsContent>
+            
+            <TabsContent value="permissoes">
+              <UserPermissionsTab
+                role={editedUser.role}
+                onRoleChange={(role) => handleFieldChange("role", role)}
+                permissions={editedUser.permissions || []}
+                onPermissionsChange={handlePermissionsChange}
+                disabled={loading}
+              />
+            </TabsContent>
 
-          <TabsContent value="historico" className="mt-4">
-            <UserHistoryTab
-              activities={editedUser.activities || []}
-            />
-          </TabsContent>
+            <TabsContent value="historico">
+              <UserHistoryTab
+                activities={editedUser.activities || []}
+              />
+            </TabsContent>
+          </div>
         </Tabs>
         
-        <div className="mt-6">
+        <div className="flex justify-end gap-2 mt-6 border-t pt-4">
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)}
+            disabled={loading}
+          >
+            Cancelar
+          </Button>
           <Button 
             onClick={handleSave} 
-            className="w-full"
             disabled={loading}
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
