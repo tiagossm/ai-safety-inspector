@@ -60,12 +60,20 @@ export function useUsers() {
 
   const saveUser = async (user: Omit<User, "id">, selectedUser: User | null, selectedCompanies: string[], selectedChecklists: string[]) => {
     try {
+      if (!user.email || !user.email.trim()) {
+        throw new Error("O email é obrigatório");
+      }
+
+      if (!user.email.includes("@")) {
+        throw new Error("Email inválido");
+      }
+
       let userId = selectedUser?.id;
 
       if (!userId) {
         // Criar novo usuário usando o client admin
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-          email: user.email,
+          email: user.email.trim(),
           password: "temporary123",
           email_confirm: true,
           user_metadata: { name: user.name }
@@ -82,7 +90,7 @@ export function useUsers() {
           .insert({
             id: userId,
             name: user.name,
-            email: user.email,
+            email: user.email.trim(),
             role: user.role,
             status: user.status
           });
