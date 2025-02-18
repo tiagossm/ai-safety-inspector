@@ -1,7 +1,7 @@
 
 export type UserStatus = "active" | "inactive";
 
-export type UserRole = "Administrador" | "Técnico" | "Usuário";
+export type UserRole = "Administrador" | "Gerente" | "Técnico";
 
 export interface User {
   id: string;
@@ -12,3 +12,10 @@ export interface User {
   companies?: string[];
   checklists?: string[];
 }
+
+export const validateRole = (role: string | null): UserRole => {
+  if (role === "Administrador" || role === "Gerente" || role === "Técnico") {
+    return role;
+  }
+  return "Técnico";
+};

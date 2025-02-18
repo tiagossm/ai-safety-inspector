@@ -35,7 +35,7 @@ export function AddUserSheet({
   const [editedUser, setEditedUser] = useState<Omit<User, "id">>({
     name: "",
     email: "",
-    role: "Usuário",
+    role: "Técnico",
     status: "active",
     companies: [],
     checklists: []
@@ -55,7 +55,7 @@ export function AddUserSheet({
       setEditedUser({
         name: "",
         email: "",
-        role: "Usuário",
+        role: "Técnico",
         status: "active",
         companies: [],
         checklists: []
@@ -151,8 +151,8 @@ export function AddUserSheet({
                   onChange={(e) => setEditedUser({ ...editedUser, role: e.target.value as UserRole })}
                 >
                   <option value="Administrador">Administrador</option>
+                  <option value="Gerente">Gerente</option>
                   <option value="Técnico">Técnico</option>
-                  <option value="Usuário">Usuário</option>
                 </select>
               </div>
             </TabsContent>

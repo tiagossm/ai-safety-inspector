@@ -1,0 +1,35 @@
+
+export type CompanyStatus = 'active' | 'inactive' | 'archived';
+
+export type CompanyUnit = {
+  id: string;
+  fantasy_name: string | null;
+  code?: string;
+  address?: string | null;
+  cnpj: string;
+  cnae?: string | null;
+  contact_email?: string | null;
+  contact_phone?: string | null;
+  contact_name?: string | null;
+};
+
+export type CompanyMetadata = {
+  units?: CompanyUnit[];
+  risk_grade?: string;
+  [key: string]: any;
+};
+
+export interface Company {
+  id: string;
+  fantasy_name: string | null;
+  cnpj: string;
+  cnae: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  contact_name: string | null;
+  employee_count: number | null;
+  metadata: CompanyMetadata | null;
+  created_at: string;
+  status: CompanyStatus;
+  deactivated_at?: string | null;
+}
