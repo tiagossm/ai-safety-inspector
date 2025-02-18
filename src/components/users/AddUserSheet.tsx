@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,12 +10,13 @@ import { AssignChecklistsDialog } from "./AssignChecklistsDialog";
 import { RoleSelector } from "./role-selector/RoleSelector";
 import { AssignmentSection } from "./assignments/AssignmentSection";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface AddUserSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: User | null;
-  onSave: (user: Omit<User, "id">) => Promise<void>;
+  onSave: (user: Omit<User, "id">, selectedCompanies: string[], selectedChecklists: string[]) => Promise<boolean>;
   selectedCompanies: string[];
   setSelectedCompanies: (companies: string[]) => void;
   selectedChecklists: string[];
@@ -31,24 +33,20 @@ export function AddUserSheet({
   selectedChecklists,
   setSelectedChecklists
 }: AddUserSheetProps) {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
   const [editedUser, setEditedUser] = useState<Omit<User, "id">>({
-    name: user?.name || "",
-    email: user?.email || "",
-    role: user?.role || "Técnico",
-    status: user?.status || "active",
-    companies: user?.companies || [],
-    checklists: user?.checklists || []
+    name: "",
+    email: "",
+    role: "Técnico",
+    status: "active",
+    companies: [],
+    checklists: []
   });
-
+  const [companies, setCompanies] = useState<{ id: string, fantasy_name: string }[]>([]);
   const [showCompaniesDialog, setShowCompaniesDialog] = useState(false);
   const [showChecklistsDialog, setShowChecklistsDialog] = useState(false);
-  const [companies, setCompanies] = useState<{ id: string, fantasy_name: string }[]>([]);
-
-  useEffect(() => {
-    if (selectedCompanies.length > 0) {
-      loadCompanyDetails();
-    }
-  }, [selectedCompanies]);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     if (user) {
@@ -56,12 +54,32 @@ export function AddUserSheet({
         name: user.name,
         email: user.email,
         role: user.role,
-        status: user.status,
-        companies: user.companies,
-        checklists: user.checklists
+        status: user.status || "active",
+        companies: user.companies || [],
+        checklists: user.checklists || []
       });
+    } else {
+      // Reset form when creating new user
+      setEditedUser({
+        name: "",
+        email: "",
+        role: "Técnico",
+        status: "active",
+        companies: [],
+        checklists: []
+      });
+      setSelectedCompanies([]);
+      setSelectedChecklists([]);
     }
-  }, [user]);
+  }, [user, setSelectedCompanies, setSelectedChecklists]);
+
+  useEffect(() => {
+    if (selectedCompanies.length > 0) {
+      loadCompanyDetails();
+    } else {
+      setCompanies([]);
+    }
+  }, [selectedCompanies]);
 
   const loadCompanyDetails = async () => {
     const { data } = await supabase
@@ -74,8 +92,49 @@ export function AddUserSheet({
     }
   };
 
+  const validateForm = (): boolean => {
+    const newErrors: { [key: string]: string } = {};
+
+    if (!editedUser.name.trim()) {
+      newErrors.name = "Nome é obrigatório";
+    }
+
+    if (!editedUser.email.trim()) {
+      newErrors.email = "Email é obrigatório";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editedUser.email)) {
+      newErrors.email = "Email inválido";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSave = async () => {
-    await onSave(editedUser);
+    if (!validateForm()) {
+      toast({
+        title: "Erro de validação",
+        description: "Por favor, corrija os erros no formulário",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const success = await onSave(editedUser, selectedCompanies, selectedChecklists);
+      if (success) {
+        onOpenChange(false);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (field: keyof Omit<User, "id">, value: string) => {
+    setEditedUser(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: "" }));
+    }
   };
 
   return (
@@ -93,17 +152,26 @@ export function AddUserSheet({
           </TabsList>
           
           <TabsContent value="dados" className="space-y-4 mt-4">
-            <Input 
-              placeholder="Nome" 
-              value={editedUser.name} 
-              onChange={(e) => setEditedUser({ ...editedUser, name: e.target.value })} 
-            />
-            <Input 
-              placeholder="Email" 
-              type="email"
-              value={editedUser.email} 
-              onChange={(e) => setEditedUser({ ...editedUser, email: e.target.value })} 
-            />
+            <div className="space-y-1">
+              <Input 
+                placeholder="Nome" 
+                value={editedUser.name} 
+                onChange={(e) => handleInputChange("name", e.target.value)}
+                className={errors.name ? "border-red-500" : ""}
+              />
+              {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
+            </div>
+
+            <div className="space-y-1">
+              <Input 
+                placeholder="Email" 
+                type="email"
+                value={editedUser.email} 
+                onChange={(e) => handleInputChange("email", e.target.value)}
+                className={errors.email ? "border-red-500" : ""}
+              />
+              {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
+            </div>
           </TabsContent>
           
           <TabsContent value="atribuicoes" className="space-y-6 mt-4">
@@ -144,14 +212,18 @@ export function AddUserSheet({
           <TabsContent value="permissoes" className="space-y-4 mt-4">
             <RoleSelector
               selectedRole={editedUser.role}
-              onRoleChange={(role) => setEditedUser({ ...editedUser, role })}
+              onRoleChange={(role) => handleInputChange("role", role)}
             />
           </TabsContent>
         </Tabs>
         
         <div className="mt-6">
-          <Button onClick={handleSave} className="w-full">
-            {user ? "Salvar Alterações" : "Criar Usuário"}
+          <Button 
+            onClick={handleSave} 
+            className="w-full"
+            disabled={loading}
+          >
+            {loading ? "Salvando..." : (user ? "Salvar Alterações" : "Criar Usuário")}
           </Button>
         </div>
 
