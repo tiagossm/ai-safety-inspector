@@ -60,7 +60,12 @@ export function useUsers() {
     }
   };
 
-  const saveUser = async (user: Omit<User, "id">, selectedUser: User | null, selectedCompanies: string[], selectedChecklists: string[]) => {
+  const saveUser = async (
+    user: Omit<User, "id">, 
+    selectedUser: User | null, 
+    selectedCompanies: string[], 
+    selectedChecklists: string[]
+  ): Promise<boolean> => {
     try {
       if (!user.email || !user.email.trim()) {
         throw new Error("O email é obrigatório");
@@ -187,7 +192,7 @@ export function useUsers() {
     }
   };
 
-  const deleteUser = async (userId: string, confirmText: string) => {
+  const deleteUser = async (userId: string, confirmText: string): Promise<boolean> => {
     if (confirmText !== "CONFIRMAR") {
       toast({
         title: "Confirmação necessária",
