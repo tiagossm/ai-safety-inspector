@@ -7,98 +7,112 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { User, UserRole } from "@/types/user";
 import { supabase } from "@/integrations/supabase/client";
 import { roleIcons } from "./role-selector/RoleInfo";
+import { X } from "lucide-react"; // Ícone para fechar a janela
 
 interface AddUserSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: User | null;
   onSave: (user: Omit<User, "id">) => Promise<void>;
-  selectedCompanies: string[];
-  setSelectedCompanies: (companies: string[]) => void;
-  selectedChecklists: string[];
-  setSelectedChecklists: (checklists: string[]) => void;
 }
 
-export function AddUserSheet({
-  open,
-  onOpenChange,
-  user,
-  onSave,
-  selectedCompanies,
-  setSelectedCompanies,
-  selectedChecklists,
-  setSelectedChecklists
-}: AddUserSheetProps) {
+export function AddUserSheet({ open, onOpenChange, user, onSave }: AddUserSheetProps) {
   const [editedUser, setEditedUser] = useState<Omit<User, "id">>({
-    name: user?.name || "",
-    cpf: user?.cpf || "",
-    email1: user?.email1 || "",
-    email2: user?.email2 || "",
-    phone1: user?.phone1 || "",
-    phone2: user?.phone2 || "",
-    role: user?.role || ["Técnico"],
-    status: user?.status || "active",
-    companies: user?.companies || [],
-    checklists: user?.checklists || []
+    name: "",
+    cpf: "",
+    email1: "",
+    email2: "",
+    phone1: "",
+    phone2: "",
+    role: "Técnico",
+    status: "active",
+    companies: [],
+    checklists: [],
+    permissions: []
   });
 
   const [loading, setLoading] = useState(false);
-  const [companies, setCompanies] = useState<{ id: string, fantasy_name: string }[]>([]);
+  const [companies, setCompanies] = useState<{ id: string; fantasy_name: string }[]>([]);
+  const [checklists, setChecklists] = useState<{ id: string; name: string }[]>([]);
+  const [permissions, setPermissions] = useState<string[]>([]);
 
   useEffect(() => {
-    if (selectedCompanies.length > 0) {
-      loadCompanyDetails();
+    if (open) {
+      loadCompanies();
+      loadChecklists();
+      if (user) {
+        setEditedUser({
+          name: user.name,
+          cpf: user.cpf,
+          email1: user.email1,
+          email2: user.email2,
+          phone1: user.phone1,
+          phone2: user.phone2,
+          role: user.role,
+          status: user.status,
+          companies: user.companies || [],
+          checklists: user.checklists || [],
+          permissions: user.permissions || []
+        });
+      }
     }
-  }, [selectedCompanies]);
+  }, [open, user]);
 
   useEffect(() => {
-    if (user) {
-      setEditedUser({
-        name: user.name,
-        cpf: user.cpf,
-        email1: user.email1,
-        email2: user.email2,
-        phone1: user.phone1,
-        phone2: user.phone2,
-        role: user.role,
-        status: user.status,
-        companies: user.companies,
-        checklists: user.checklists
-      });
-    }
-  }, [user]);
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onOpenChange(false);
+      }
+    };
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, []);
 
-  const loadCompanyDetails = async () => {
-    const { data } = await supabase
-      .from("companies")
-      .select("id, fantasy_name")
-      .in("id", selectedCompanies);
-
-    if (data) {
-      setCompanies(data);
-    }
+  const loadCompanies = async () => {
+    const { data } = await supabase.from("companies").select("id, fantasy_name");
+    if (data) setCompanies(data);
   };
 
-  const handleSave = async () => {
+  const loadChecklists = async () => {
+    const { data } = await supabase.from("checklists").select("id, name");
+    if (data) setChecklists(data);
+  };
+
+  const handleSave = async (addAnother = false) => {
     setLoading(true);
     await onSave(editedUser);
     setLoading(false);
-  };
-
-  const handleRoleChange = (role: UserRole) => {
-    setEditedUser((prev) => ({
-      ...prev,
-      role: prev.role.includes(role)
-        ? prev.role.filter((r) => r !== role)
-        : [...prev.role, role]
-    }));
+    if (!addAnother) {
+      onOpenChange(false); // Fecha a janela ao salvar
+    } else {
+      // Reseta os campos para cadastrar um novo usuário
+      setEditedUser({
+        name: "",
+        cpf: "",
+        email1: "",
+        email2: "",
+        phone1: "",
+        phone2: "",
+        role: "Técnico",
+        status: "active",
+        companies: [],
+        checklists: [],
+        permissions: []
+      });
+    }
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       {open && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="w-full max-w-3xl bg-background p-6 rounded-lg shadow-lg animate-fade-in">
+          <div className="w-full max-w-3xl bg-background p-6 rounded-lg shadow-lg animate-fade-in relative">
+            
+            {/* Botão "X" para fechar */}
+            <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-200" onClick={() => onOpenChange(false)}>
+              <X size={24} />
+            </button>
+
             <SheetHeader>
               <SheetTitle className="text-center text-xl font-bold">
                 {user ? "Editar Usuário" : "Novo Usuário"}
@@ -109,16 +123,17 @@ export function AddUserSheet({
               <TabsList className="flex justify-center gap-4">
                 <TabsTrigger value="dados">Dados</TabsTrigger>
                 <TabsTrigger value="atribuicoes">Atribuições</TabsTrigger>
+                <TabsTrigger value="tipoPerfil">Tipo de Perfil</TabsTrigger>
                 <TabsTrigger value="permissoes">Permissões</TabsTrigger>
               </TabsList>
 
               {/* Seção de Dados */}
               <TabsContent value="dados" className="space-y-4 mt-4">
                 <Input placeholder="Nome Completo" value={editedUser.name} onChange={(e) => setEditedUser({ ...editedUser, name: e.target.value })} />
-                <Input placeholder="CPF" value={editedUser.cpf} onChange={(e) => setEditedUser({ ...editedUser, cpf: e.target.value })} />
+                <Input placeholder="CPF (000.000.000-00)" value={editedUser.cpf} onChange={(e) => setEditedUser({ ...editedUser, cpf: e.target.value })} />
                 <Input placeholder="E-mail Principal" type="email" value={editedUser.email1} onChange={(e) => setEditedUser({ ...editedUser, email1: e.target.value })} />
                 <Input placeholder="E-mail Secundário (Opcional)" type="email" value={editedUser.email2} onChange={(e) => setEditedUser({ ...editedUser, email2: e.target.value })} />
-                <Input placeholder="Telefone Principal" type="tel" value={editedUser.phone1} onChange={(e) => setEditedUser({ ...editedUser, phone1: e.target.value })} />
+                <Input placeholder="Telefone Principal (00) 00000-0000" type="tel" value={editedUser.phone1} onChange={(e) => setEditedUser({ ...editedUser, phone1: e.target.value })} />
                 <Input placeholder="Telefone Secundário (Opcional)" type="tel" value={editedUser.phone2} onChange={(e) => setEditedUser({ ...editedUser, phone2: e.target.value })} />
 
                 <div className="flex items-center justify-between mt-4">
@@ -127,25 +142,27 @@ export function AddUserSheet({
                 </div>
               </TabsContent>
 
-              {/* Seção de Permissões */}
-              <TabsContent value="permissoes" className="space-y-4 mt-4">
+              {/* Seção de Tipo de Perfil */}
+              <TabsContent value="tipoPerfil" className="space-y-4 mt-4">
                 <h3 className="text-md font-semibold">Tipo de Perfil</h3>
-                <div className="grid grid-cols-3 gap-2">
-                  {["Administrador", "Técnico", "Usuário"].map((role) => (
-                    <label key={role} className="flex items-center gap-2 p-2 bg-muted rounded-md cursor-pointer">
-                      <input type="checkbox" checked={editedUser.role.includes(role as UserRole)} onChange={() => handleRoleChange(role as UserRole)} />
-                      <span className="text-lg">{roleIcons[role as UserRole]}</span>
-                      {role}
-                    </label>
-                  ))}
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{roleIcons[editedUser.role]}</span>
+                  <select className="p-2 border rounded-md" value={editedUser.role} onChange={(e) => setEditedUser({ ...editedUser, role: e.target.value as UserRole })}>
+                    <option value="Administrador">Administrador</option>
+                    <option value="Técnico">Técnico</option>
+                    <option value="Usuário">Usuário</option>
+                  </select>
                 </div>
               </TabsContent>
             </Tabs>
 
-            {/* Botão de salvar */}
-            <div className="mt-6 flex justify-center">
-              <Button onClick={handleSave} className="w-3/4" disabled={!editedUser.name || !editedUser.email1 || loading}>
+            {/* Botões de Ação */}
+            <div className="mt-6 flex justify-center gap-4">
+              <Button onClick={() => handleSave(false)} className="w-1/2" disabled={loading}>
                 {loading ? "Salvando..." : user ? "Salvar Alterações" : "Criar Usuário"}
+              </Button>
+              <Button onClick={() => handleSave(true)} className="w-1/2 bg-secondary" disabled={loading}>
+                {loading ? "Salvando..." : "Criar e Adicionar Outro"}
               </Button>
             </div>
           </div>
