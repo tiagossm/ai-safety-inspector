@@ -47,7 +47,11 @@ export const UsersService = {
   },
 
   async create(userData: Omit<User, "id" | "created_at">): Promise<User> {
-    const dbData = {
+    // Generate a UUID for the new user
+    const newId = crypto.randomUUID();
+    
+    const dbData: DbUserInsert = {
+      id: newId,
       name: userData.name || null,
       email: userData.email || null,
       email_secondary: userData.email_secondary || null,
@@ -56,7 +60,7 @@ export const UsersService = {
       cpf: userData.cpf || null,
       role: userData.role.toString(),
       status: userData.status.toString()
-    } satisfies Omit<DbUserInsert, 'id'>;
+    };
 
     const { data, error } = await supabase
       .from('users')
