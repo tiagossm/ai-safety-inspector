@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody } from "@/components/ui/table";
@@ -29,7 +30,7 @@ export function UserList() {
     try {
       console.log("Loading users with admin client...");
       const { data: usersData, error: usersError } = await supabaseAdmin
-        .from("users")
+        .from("public.users")  // Updated to use full table name
         .select("*")
         .order("name", { ascending: true });
 
