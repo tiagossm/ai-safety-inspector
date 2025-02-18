@@ -22,7 +22,7 @@ export function RoleSelector({ selectedRole, onRoleChange }: RoleSelectorProps) 
           onClick={() => onRoleChange(role)}
         >
           <div className="flex items-center gap-2 mb-2">
-            {info.icon}
+            {info.icon()}
             <h3 className="font-medium">{role}</h3>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
