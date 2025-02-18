@@ -1,225 +1,214 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState } from "react";
+import { useUsers } from "@/hooks/useUsers";
+import { UserRole, UserStatus } from "@/types/user";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Table, TableHeader, TableRow, TableCell, TableBody } from "@/components/ui/table";
-import { supabase } from "@/integrations/supabase/client";
+import { Table } from "@/components/ui/table";
 import { roleIcons } from "./role-selector/RoleInfo";
-import { Search, PlusCircle, Pencil, Trash, Lock, RefreshCcw } from "lucide-react";
-import { User } from "@/types/user";
-
-interface AddUserSheetProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  user: User | null;
-  onSave: (user: Omit<User, "id">) => void;
-}
-
-export function AddUserSheet({ open, onOpenChange, user, onSave }: AddUserSheetProps) {
-  return (
-    <div className={`p-4 bg-white rounded shadow-md ${open ? "block" : "hidden"}`}>
-      <h2 className="text-lg font-semibold mb-4">
-        {user ? "Editar Usuário" : "Adicionar Usuário"}
-      </h2>
-      {/* Aqui entra o formulário de cadastro/edição – implemente os inputs e validações conforme a necessidade */}
-      <Button onClick={() => onOpenChange(false)}>Fechar</Button>
-    </div>
-  );
-}
+import { Search, PlusCircle, Pencil, Trash, Loader2 } from "lucide-react";
+import { AddUserSheet } from "./AddUserSheet";
+import { ConfirmationModal } from "./ConfirmationModal";
+import { UsersService } from "@/services/users";
+import { toast } from "sonner";
 
 export function UsersPage() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState<"all" | "active" | "inactive">("all");
-  const [selectedRole, setSelectedRole] = useState<"all" | "Admin" | "Técnico" | "Usuário">("all");
+  const {
+    users,
+    loading,
+    params,
+    setParams,
+    refresh
+  } = useUsers();
+
   const [openAddUser, setOpenAddUser] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<string | null>(null);
 
-  const loadUsers = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const handleDelete = async (userId: string) => {
     try {
-      const { data, error } = await supabase.from("users").select("*");
-      if (error) throw error;
-      if (data) setUsers(data);
-    } catch (err: any) {
-      setError("Erro ao carregar usuários. Tente novamente.");
+      await UsersService.deleteUser(userId);
+      toast.success("Usuário excluído com sucesso");
+      refresh();
+    } catch (error) {
+      toast.error("Erro ao excluir usuário");
     } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadUsers();
-  }, [loadUsers]);
-
-  const handleOpenAddUser = (user: User | null = null) => {
-    setSelectedUser(user);
-    setOpenAddUser(true);
-  };
-
-  const handleStatusToggle = async (user: User) => {
-    const newStatus = user.status === "active" ? "inactive" : "active";
-    try {
-      const { error } = await supabase
-        .from("users")
-        .update({ status: newStatus })
-        .eq("id", user.id);
-      if (error) throw error;
-      setUsers((prev) =>
-        prev.map((u) => (u.id === user.id ? { ...u, status: newStatus } : u))
-      );
-    } catch (err) {
-      alert("Falha ao atualizar o status. Por favor, tente novamente.");
+      setDeleteConfirmation(null);
     }
   };
-
-  const handleDeleteUser = async (userId: string) => {
-    if (!window.confirm("Tem certeza que deseja excluir este usuário?")) return;
-    try {
-      const { error } = await supabase.from("users").delete().eq("id", userId);
-      if (error) throw error;
-      setUsers((prev) => prev.filter((u) => u.id !== userId));
-    } catch (err) {
-      alert("Erro ao excluir usuário. Tente novamente.");
-    }
-  };
-
-  const filteredUsers = useMemo(() => {
-    return users.filter((user) => {
-      const lowerSearch = search.toLowerCase();
-      const matchesSearch =
-        user.name.toLowerCase().includes(lowerSearch) ||
-        user.email.toLowerCase().includes(lowerSearch);
-      const matchesStatus = selectedStatus === "all" || user.status === selectedStatus;
-      const matchesRole = selectedRole === "all" || user.role === selectedRole;
-      return matchesSearch && matchesStatus && matchesRole;
-    });
-  }, [users, search, selectedStatus, selectedRole]);
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Usuários</h1>
-
-      {/* Filtros & Pesquisa */}
-      <div className="flex flex-wrap gap-4 mb-6">
-        <Input 
-          placeholder="Buscar por nome ou email..." 
-          value={search} 
-          onChange={(e) => setSearch(e.target.value)} 
-          icon={<Search size={16} />}
-        />
-        <select 
-          value={selectedStatus} 
-          onChange={(e) => setSelectedStatus(e.target.value as any)} 
-          className="border p-2 rounded"
-        >
-          <option value="all">Todos</option>
-          <option value="active">Ativos</option>
-          <option value="inactive">Inativos</option>
-        </select>
-        <select 
-          value={selectedRole} 
-          onChange={(e) => setSelectedRole(e.target.value as any)} 
-          className="border p-2 rounded"
-        >
-          <option value="all">Todos os Perfis</option>
-          <option value="Admin">Administrador</option>
-          <option value="Técnico">Técnico</option>
-          <option value="Usuário">Usuário</option>
-        </select>
-        <Button onClick={() => handleOpenAddUser()} icon={<PlusCircle size={16} />}>
-          Adicionar Usuário
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Gerenciamento de Usuários</h1>
+        <Button onClick={() => setOpenAddUser(true)}>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Novo Usuário
         </Button>
       </div>
 
-      {/* Indicador de carregamento e mensagens */}
-      {loading && <p>Carregando usuários...</p>}
-      {error && <p className="text-red-500">{error}</p>}
+      <div className="flex flex-wrap gap-4 items-center">
+        <Input
+          placeholder="Buscar usuários..."
+          value={params.search || ""}
+          onChange={(e) => setParams(p => ({ ...p, search: e.target.value }))}
+          className="flex-1 min-w-[300px]"
+          leftIcon={<Search size={16} />}
+        />
+        
+        <select
+          value={params.status}
+          onChange={(e) => setParams(p => ({ ...p, status: e.target.value as UserStatus }))}
+          className="p-2 rounded bg-background border"
+          aria-label="Filtrar por status"
+        >
+          <option value="all">Todos status</option>
+          {Object.values(UserStatus).map((status) => (
+            <option key={status} value={status}>
+              {status.charAt(0).toUpperCase() + status.slice(1)}
+            </option>
+          ))}
+        </select>
 
-      {/* Tabela de Usuários */}
-      {!loading && (
+        <select
+          value={params.role}
+          onChange={(e) => setParams(p => ({ ...p, role: e.target.value as UserRole }))}
+          className="p-2 rounded bg-background border"
+          aria-label="Filtrar por perfil"
+        >
+          <option value="all">Todos perfis</option>
+          {Object.values(UserRole).map((role) => (
+            <option key={role} value={role}>{role}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="border rounded-lg overflow-hidden">
         <Table>
-          <TableHeader>
+          <TableHeader className="bg-muted/50">
             <TableRow>
               <TableCell>Nome</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>Telefone</TableCell>
+              <TableCell>Contato</TableCell>
               <TableCell>Empresa</TableCell>
               <TableCell>Perfil</TableCell>
               <TableCell>Status</TableCell>
-              <TableCell>Última Atividade</TableCell>
               <TableCell>Ações</TableCell>
             </TableRow>
           </TableHeader>
+          
           <TableBody>
-            {filteredUsers.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>{user.name}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>{user.phone}</TableCell>
-                <TableCell>{user.company}</TableCell>
-                <TableCell>
-                  <span className="flex items-center gap-2">
-                    {roleIcons[user.role]} {user.role}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <Switch 
-                    checked={user.status === "active"} 
-                    onCheckedChange={() => handleStatusToggle(user)} 
-                  />
-                </TableCell>
-                <TableCell>{user.lastActivity}</TableCell>
-                <TableCell className="flex gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    icon={<Pencil size={14} />} 
-                    onClick={() => handleOpenAddUser(user)}
-                  >
-                    Editar
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    icon={<RefreshCcw size={14} />} 
-                    onClick={loadUsers}
-                  >
-                    Atualizar
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    icon={<Lock size={14} />} 
-                    onClick={() => {/* Lógica para permissões */}}
-                  >
-                    Permissões
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="destructive" 
-                    icon={<Trash size={14} />} 
-                    onClick={() => handleDeleteUser(user.id)}
-                  >
-                    Excluir
-                  </Button>
-                </TableCell>
-              </TableRow>
+            {users.map((user) => (
+              <UserRow
+                key={user.id}
+                user={user}
+                onEdit={() => {
+                  setSelectedUser(user);
+                  setOpenAddUser(true);
+                }}
+                onDelete={() => setDeleteConfirmation(user.id)}
+              />
             ))}
           </TableBody>
         </Table>
-      )}
 
-      {/* Modal de cadastro/edição */}
-      <AddUserSheet 
-        open={openAddUser} 
-        onOpenChange={setOpenAddUser} 
-        user={selectedUser} 
-        onSave={loadUsers} 
+        {loading && (
+          <div className="p-6 text-center">
+            <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+          </div>
+        )}
+      </div>
+
+      <AddUserSheet
+        open={openAddUser}
+        user={selectedUser}
+        onClose={() => {
+          setOpenAddUser(false);
+          setSelectedUser(null);
+        }}
+        onSaved={refresh}
+      />
+
+      <ConfirmationModal
+        open={!!deleteConfirmation}
+        title="Confirmar exclusão"
+        message="Tem certeza que deseja excluir este usuário permanentemente?"
+        onConfirm={() => deleteConfirmation && handleDelete(deleteConfirmation)}
+        onCancel={() => setDeleteConfirmation(null)}
       />
     </div>
   );
 }
+
+const UserRow = ({ user, onEdit, onDelete }: { 
+  user: User;
+  onEdit: () => void;
+  onDelete: () => void;
+}) => {
+  const [updating, setUpdating] = useState(false);
+
+  const handleStatusToggle = async () => {
+    try {
+      setUpdating(true);
+      const newStatus = user.status === UserStatus.ACTIVE 
+        ? UserStatus.INACTIVE 
+        : UserStatus.ACTIVE;
+      
+      await UsersService.updateUser(user.id, { status: newStatus });
+      toast.success("Status atualizado com sucesso");
+    } catch (error) {
+      toast.error("Erro ao atualizar status");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  return (
+    <TableRow>
+      <TableCell className="font-medium">{user.name}</TableCell>
+      <TableCell>
+        <div className="flex flex-col">
+          <span>{user.email}</span>
+          {user.phone && <span className="text-muted-foreground">{user.phone}</span>}
+        </div>
+      </TableCell>
+      <TableCell>{user.company || "-"}</TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          {roleIcons[user.role]}
+          <span>{user.role}</span>
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <Switch
+            checked={user.status === UserStatus.ACTIVE}
+            onCheckedChange={handleStatusToggle}
+            disabled={updating}
+            aria-label="Alternar status do usuário"
+          />
+          <span className="capitalize">{user.status}</span>
+          {updating && <Loader2 className="h-4 w-4 animate-spin" />}
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onEdit}
+            aria-label="Editar usuário"
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={onDelete}
+            aria-label="Excluir usuário"
+          >
+            <Trash className="h-4 w-4" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+};
