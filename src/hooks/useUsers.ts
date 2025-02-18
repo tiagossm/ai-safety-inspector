@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
-import { supabaseAdmin } from "@/integrations/supabase/adminClient";
+import { supabase } from "@/integrations/supabase/client";
 import { User, UserRole } from "@/types/user";
 
 export function useUsers() {
@@ -9,8 +10,8 @@ export function useUsers() {
 
   const loadUsers = async () => {
     try {
-      console.log("Loading users with admin client...");
-      const { data: usersData, error: usersError } = await supabaseAdmin
+      console.log("Loading users...");
+      const { data: usersData, error: usersError } = await supabase
         .from("users")
         .select("id, name, email, role, status")
         .order("name", { ascending: true });
@@ -23,12 +24,12 @@ export function useUsers() {
 
       const usersWithDetails = await Promise.all(
         usersData.map(async (user) => {
-          const { data: companiesData } = await supabaseAdmin
+          const { data: companiesData } = await supabase
             .from("user_companies")
             .select("company:company_id(fantasy_name)")
             .eq("user_id", user.id as string);
 
-          const { data: checklistsData } = await supabaseAdmin
+          const { data: checklistsData } = await supabase
             .from("user_checklists")
             .select("checklist_id")
             .eq("user_id", user.id as string);
@@ -61,7 +62,7 @@ export function useUsers() {
       let userId = selectedUser?.id;
 
       if (!userId) {
-        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
           email: user.email,
           email_confirm: true,
           password: "temporary123",
@@ -73,7 +74,7 @@ export function useUsers() {
 
         if (!userId) throw new Error("Failed to create user");
 
-        await supabaseAdmin
+        await supabase
           .from("users")
           .insert({
             id: userId,
@@ -81,9 +82,9 @@ export function useUsers() {
             email: user.email,
             role: user.role,
             status: user.status
-          } as any); // Using any here because the types are overly strict
+          } as any);
       } else {
-        await supabaseAdmin
+        await supabase
           .from("users")
           .update({
             name: user.name,
@@ -94,7 +95,7 @@ export function useUsers() {
       }
 
       if (selectedCompanies.length > 0) {
-        await supabaseAdmin
+        await supabase
           .from("user_companies")
           .delete()
           .eq("user_id", userId);
@@ -104,13 +105,13 @@ export function useUsers() {
           company_id: companyId
         }));
 
-        await supabaseAdmin
+        await supabase
           .from("user_companies")
           .insert(companyAssignments as any);
       }
 
       if (selectedChecklists.length > 0) {
-        await supabaseAdmin
+        await supabase
           .from("user_checklists")
           .delete()
           .eq("user_id", userId);
@@ -120,14 +121,14 @@ export function useUsers() {
           checklist_id: checklistId
         }));
 
-        await supabaseAdmin
+        await supabase
           .from("user_checklists")
           .insert(checklistAssignments as any);
       }
 
       toast({
         title: userId === selectedUser?.id ? "Usuário atualizado" : "Usuário adicionado",
-        description: userId === selectedUser?.id ? "Dados do usuário foram atualizados." : "Novo usu��rio cadastrado."
+        description: userId === selectedUser?.id ? "Dados do usuário foram atualizados." : "Novo usuário cadastrado."
       });
 
       await loadUsers();
@@ -154,8 +155,8 @@ export function useUsers() {
     }
 
     try {
-      await supabaseAdmin.auth.admin.deleteUser(userId as string);
-      await supabaseAdmin
+      await supabase.auth.admin.deleteUser(userId as string);
+      await supabase
         .from("users")
         .delete()
         .eq("id", userId);
