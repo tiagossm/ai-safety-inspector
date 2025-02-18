@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch"; // 🔹 Adicionamos o toggle switch
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { User, UserRole } from "@/types/user";
@@ -35,11 +36,12 @@ export function AddUserSheet({
     name: user?.name || "",
     email: user?.email || "",
     role: user?.role || "Técnico",
-    status: user?.status || "active",
+    status: user?.status || "active", // 🔹 Definindo status do usuário
     companies: user?.companies || [],
     checklists: user?.checklists || []
   });
 
+  const [loading, setLoading] = useState(false);
   const [showCompaniesDialog, setShowCompaniesDialog] = useState(false);
   const [showChecklistsDialog, setShowChecklistsDialog] = useState(false);
   const [companies, setCompanies] = useState<{ id: string, fantasy_name: string }[]>([]);
@@ -56,7 +58,7 @@ export function AddUserSheet({
         name: user.name,
         email: user.email,
         role: user.role,
-        status: user.status,
+        status: user.status, // 🔹 Certificando que o status do usuário é carregado
         companies: user.companies,
         checklists: user.checklists
       });
@@ -75,37 +77,56 @@ export function AddUserSheet({
   };
 
   const handleSave = async () => {
+    setLoading(true);
     await onSave(editedUser);
+    setLoading(false);
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full max-w-2xl">
+      <SheetContent className="w-full max-w-3xl">
         <SheetHeader>
           <SheetTitle>{user ? "Editar Usuário" : "Novo Usuário"}</SheetTitle>
         </SheetHeader>
 
         <Tabs defaultValue="dados" className="mt-4">
-          <TabsList className="grid grid-cols-3 gap-4">
+          <TabsList className="grid grid-cols-3 gap-2">
             <TabsTrigger value="dados">Dados</TabsTrigger>
             <TabsTrigger value="atribuicoes">Atribuições</TabsTrigger>
             <TabsTrigger value="permissoes">Permissões</TabsTrigger>
           </TabsList>
-          
+
+          {/* Seção: Dados do usuário */}
           <TabsContent value="dados" className="space-y-4 mt-4">
-            <Input 
-              placeholder="Nome" 
-              value={editedUser.name} 
-              onChange={(e) => setEditedUser({ ...editedUser, name: e.target.value })} 
+            <Input
+              label="Nome"
+              placeholder="Digite o nome do usuário"
+              value={editedUser.name}
+              onChange={(e) => setEditedUser({ ...editedUser, name: e.target.value })}
             />
-            <Input 
-              placeholder="Email" 
+            <Input
+              label="Email"
+              placeholder="Digite o email"
               type="email"
-              value={editedUser.email} 
-              onChange={(e) => setEditedUser({ ...editedUser, email: e.target.value })} 
+              value={editedUser.email}
+              onChange={(e) => setEditedUser({ ...editedUser, email: e.target.value })}
             />
+
+            {/* 🔹 Toggle de ativação/desativação */}
+            <div className="flex items-center justify-between mt-4">
+              <span className="text-sm font-medium">
+                {editedUser.status === "active" ? "Usuário Ativo" : "Usuário Inativo"}
+              </span>
+              <Switch
+                checked={editedUser.status === "active"}
+                onCheckedChange={(checked) =>
+                  setEditedUser({ ...editedUser, status: checked ? "active" : "inactive" })
+                }
+              />
+            </div>
           </TabsContent>
-          
+
+          {/* Seção: Atribuições */}
           <TabsContent value="atribuicoes" className="space-y-6 mt-4">
             <AssignmentSection
               title="Empresas atribuídas"
@@ -114,7 +135,7 @@ export function AddUserSheet({
             >
               <div className="space-y-2">
                 {companies.map((company) => (
-                  <div key={company.id} className="flex items-center justify-between p-2 bg-accent rounded-md">
+                  <div key={company.id} className="flex items-center justify-between p-2 bg-muted rounded-md">
                     <span>{company.fantasy_name}</span>
                     <Button
                       variant="ghost"
@@ -135,12 +156,15 @@ export function AddUserSheet({
               disabled={selectedCompanies.length === 0}
               disabledMessage="Primeiro, atribua empresas ao usuário para poder selecionar os checklists."
             >
-              {selectedCompanies.length > 0 && <div>
-                {/* Checklist items will be rendered here */}
-              </div>}
+              {selectedCompanies.length > 0 && (
+                <div className="bg-background p-4 rounded-md">
+                  {/* Aqui ficará a listagem dos checklists */}
+                </div>
+              )}
             </AssignmentSection>
           </TabsContent>
-          
+
+          {/* Seção: Permissões */}
           <TabsContent value="permissoes" className="space-y-4 mt-4">
             <RoleSelector
               selectedRole={editedUser.role}
@@ -148,29 +172,13 @@ export function AddUserSheet({
             />
           </TabsContent>
         </Tabs>
-        
+
+        {/* Botão de salvar com loading */}
         <div className="mt-6">
-          <Button onClick={handleSave} className="w-full">
-            {user ? "Salvar Alterações" : "Criar Usuário"}
+          <Button onClick={handleSave} className="w-full" disabled={loading}>
+            {loading ? "Salvando..." : user ? "Salvar Alterações" : "Criar Usuário"}
           </Button>
         </div>
-
-        <AssignCompaniesDialog
-          open={showCompaniesDialog}
-          onOpenChange={setShowCompaniesDialog}
-          userId={user?.id || ""}
-          selectedCompanies={selectedCompanies}
-          onCompaniesChange={setSelectedCompanies}
-        />
-
-        <AssignChecklistsDialog
-          open={showChecklistsDialog}
-          onOpenChange={setShowChecklistsDialog}
-          userId={user?.id || ""}
-          selectedCompanies={selectedCompanies}
-          selectedChecklists={selectedChecklists}
-          onChecklistsChange={setSelectedChecklists}
-        />
       </SheetContent>
     </Sheet>
   );
