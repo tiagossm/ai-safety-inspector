@@ -75,17 +75,15 @@ export function useUsers() {
       let userId = selectedUser?.id;
 
       if (!userId) {
-        // Check both auth and public users table for existing email
-        try {
-          const { data: authUser } = await supabaseAdmin.auth.admin.getUserByEmail(user.email.trim());
-          if (authUser) {
-            throw new Error("Este email já está cadastrado");
-          }
-        } catch (error: any) {
-          // If error is not "User not found", rethrow it
-          if (!error.message.includes("User not found")) {
-            throw error;
-          }
+        // Check if email exists in users table first
+        const { data: existingUser } = await supabaseAdmin
+          .from("users")
+          .select("id")
+          .eq("email", user.email.trim())
+          .single();
+
+        if (existingUser) {
+          throw new Error("Este email já está cadastrado");
         }
 
         // Create new user using admin client
