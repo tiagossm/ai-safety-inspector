@@ -89,7 +89,11 @@ export function AddUserSheet({
     if (!editedUser.email) return;
     
     try {
-      const { error } = await supabaseAdmin.auth.admin.resetPasswordForEmail(editedUser.email);
+      const { error } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'recovery',
+        email: editedUser.email,
+      });
+      
       if (error) throw error;
       
       toast({
@@ -97,6 +101,7 @@ export function AddUserSheet({
         description: "Um email de redefinição de senha foi enviado."
       });
     } catch (error: any) {
+      console.error('Error resetting password:', error);
       toast({
         title: "Erro",
         description: "Não foi possível enviar o email de redefinição.",
