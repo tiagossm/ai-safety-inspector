@@ -1,13 +1,12 @@
-
-import { Sheet, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
+import { Sheet, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { User, UserRole } from "@/types/user";
-import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { roleIcons } from "./role-selector/RoleInfo";
-import { useCompanyAPI } from "@/hooks/useCompanyAPI";
 
 interface AddUserSheetProps {
   open: boolean;
@@ -30,16 +29,23 @@ export function AddUserSheet({
   selectedChecklists,
   setSelectedChecklists
 }: AddUserSheetProps) {
-  const [loading, setLoading] = useState(false);
-  const { companies } = useCompanyAPI();
   const [editedUser, setEditedUser] = useState<Omit<User, "id">>({
-    name: "",
-    email: "",
-    role: "Técnico",
-    status: "active",
-    companies: [],
-    checklists: []
+    name: user?.name || "",
+    email: user?.email || "",
+    role: user?.role || "Técnico",
+    status: user?.status || "active",
+    companies: user?.companies || [],
+    checklists: user?.checklists || []
   });
+
+  const [loading, setLoading] = useState(false);
+  const [companies, setCompanies] = useState<{ id: string, fantasy_name: string }[]>([]);
+
+  useEffect(() => {
+    if (selectedCompanies.length > 0) {
+      loadCompanyDetails();
+    }
+  }, [selectedCompanies]);
 
   useEffect(() => {
     if (user) {
@@ -48,36 +54,35 @@ export function AddUserSheet({
         email: user.email,
         role: user.role,
         status: user.status,
-        companies: user.companies || [],
-        checklists: user.checklists || []
-      });
-    } else {
-      setEditedUser({
-        name: "",
-        email: "",
-        role: "Técnico",
-        status: "active",
-        companies: [],
-        checklists: []
+        companies: user.companies,
+        checklists: user.checklists
       });
     }
   }, [user]);
 
+  const loadCompanyDetails = async () => {
+    const { data } = await supabase
+      .from("companies")
+      .select("id, fantasy_name")
+      .in("id", selectedCompanies);
+
+    if (data) {
+      setCompanies(data);
+    }
+  };
+
   const handleSave = async () => {
     setLoading(true);
-    try {
-      await onSave(editedUser);
-    } finally {
-      setLoading(false);
-    }
+    await onSave(editedUser);
+    setLoading(false);
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-        <div className="w-full max-w-2xl bg-background p-6 rounded-lg shadow-lg animate-fade-in">
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 p-4">
+        <div className="w-full max-w-3xl bg-background p-6 rounded-lg shadow-lg animate-fade-in">
           <SheetHeader>
-            <SheetTitle className="text-center">
+            <SheetTitle className="text-center text-xl font-bold">
               {user ? "Editar Usuário" : "Novo Usuário"}
             </SheetTitle>
           </SheetHeader>
@@ -146,21 +151,21 @@ export function AddUserSheet({
               <div className="flex items-center gap-2">
                 <span className="text-lg">{roleIcons[editedUser.role]}</span>
                 <select
-                  className="p-2 border rounded-md"
+                  className="p-2 border rounded-md text-black bg-white"
                   value={editedUser.role}
                   onChange={(e) => setEditedUser({ ...editedUser, role: e.target.value as UserRole })}
                 >
                   <option value="Administrador">Administrador</option>
-                  <option value="Gerente">Gerente</option>
                   <option value="Técnico">Técnico</option>
+                  <option value="Usuário">Usuário</option>
                 </select>
               </div>
             </TabsContent>
           </Tabs>
 
           {/* Botão de salvar */}
-          <div className="mt-6">
-            <Button onClick={handleSave} className="w-full" disabled={!editedUser.name || !editedUser.email || loading}>
+          <div className="mt-6 flex justify-center">
+            <Button onClick={handleSave} className="w-3/4" disabled={!editedUser.name || !editedUser.email || loading}>
               {loading ? "Salvando..." : user ? "Salvar Alterações" : "Criar Usuário"}
             </Button>
           </div>
