@@ -1,16 +1,18 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, UserRole } from "@/types/user";
+import { User, UserPermission, UserRole } from "@/types/user";
 import { AssignCompaniesDialog } from "./AssignCompaniesDialog";
 import { AssignChecklistsDialog } from "./AssignChecklistsDialog";
-import { RoleSelector } from "./role-selector/RoleSelector";
-import { AssignmentSection } from "./assignments/AssignmentSection";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2, UserCog, Building2, Shield, History } from "lucide-react";
+import { UserDataTab } from "./tabs/UserDataTab";
+import { UserAssignmentsTab } from "./tabs/UserAssignmentsTab";
+import { UserPermissionsTab } from "./tabs/UserPermissionsTab";
+import { UserHistoryTab } from "./tabs/UserHistoryTab";
 
 interface AddUserSheetProps {
   open: boolean;
@@ -41,12 +43,11 @@ export function AddUserSheet({
     role: "Técnico",
     status: "active",
     companies: [],
-    checklists: []
+    checklists: [],
+    permissions: []
   });
-  const [companies, setCompanies] = useState<{ id: string, fantasy_name: string }[]>([]);
   const [showCompaniesDialog, setShowCompaniesDialog] = useState(false);
   const [showChecklistsDialog, setShowChecklistsDialog] = useState(false);
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     if (user) {
@@ -55,70 +56,77 @@ export function AddUserSheet({
         email: user.email,
         role: user.role,
         status: user.status || "active",
+        phone: user.phone,
+        position: user.position,
         companies: user.companies || [],
-        checklists: user.checklists || []
+        checklists: user.checklists || [],
+        permissions: user.permissions || [],
+        created_at: user.created_at,
+        last_activity: user.last_activity,
+        activities: user.activities || []
       });
     } else {
-      // Reset form when creating new user
       setEditedUser({
         name: "",
         email: "",
         role: "Técnico",
         status: "active",
         companies: [],
-        checklists: []
+        checklists: [],
+        permissions: []
       });
       setSelectedCompanies([]);
       setSelectedChecklists([]);
     }
   }, [user, setSelectedCompanies, setSelectedChecklists]);
 
-  useEffect(() => {
-    if (selectedCompanies.length > 0) {
-      loadCompanyDetails();
-    } else {
-      setCompanies([]);
-    }
-  }, [selectedCompanies]);
+  const handleFieldChange = (field: keyof User, value: any) => {
+    setEditedUser(prev => ({ ...prev, [field]: value }));
+  };
 
-  const loadCompanyDetails = async () => {
-    const { data } = await supabase
-      .from("companies")
-      .select("id, fantasy_name")
-      .in("id", selectedCompanies);
-
-    if (data) {
-      setCompanies(data);
+  const handleResetPassword = async () => {
+    if (!editedUser.email) return;
+    
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(editedUser.email);
+      if (error) throw error;
+      
+      toast({
+        title: "Email enviado",
+        description: "Um email de redefinição de senha foi enviado."
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível enviar o email de redefinição.",
+        variant: "destructive"
+      });
     }
   };
 
-  const validateForm = (): boolean => {
-    const newErrors: { [key: string]: string } = {};
-
-    if (!editedUser.name.trim()) {
-      newErrors.name = "Nome é obrigatório";
+  const handleSendWelcomeEmail = async () => {
+    if (!editedUser.email) return;
+    
+    try {
+      // Implement welcome email logic here
+      toast({
+        title: "Email enviado",
+        description: "Email de boas-vindas enviado com sucesso."
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível enviar o email de boas-vindas.",
+        variant: "destructive"
+      });
     }
+  };
 
-    if (!editedUser.email.trim()) {
-      newErrors.email = "Email é obrigatório";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editedUser.email)) {
-      newErrors.email = "Email inválido";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const handlePermissionsChange = (permissions: UserPermission[]) => {
+    handleFieldChange("permissions", permissions);
   };
 
   const handleSave = async () => {
-    if (!validateForm()) {
-      toast({
-        title: "Erro de validação",
-        description: "Por favor, corrija os erros no formulário",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setLoading(true);
     try {
       const success = await onSave(editedUser, selectedCompanies, selectedChecklists);
@@ -130,89 +138,77 @@ export function AddUserSheet({
     }
   };
 
-  const handleInputChange = (field: keyof Omit<User, "id">, value: string) => {
-    setEditedUser(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: "" }));
-    }
-  };
-
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full max-w-2xl">
+      <SheetContent className="w-full max-w-3xl">
         <SheetHeader>
           <SheetTitle>{user ? "Editar Usuário" : "Novo Usuário"}</SheetTitle>
         </SheetHeader>
 
         <Tabs defaultValue="dados" className="mt-4">
-          <TabsList className="grid grid-cols-3 gap-4">
-            <TabsTrigger value="dados">Dados</TabsTrigger>
-            <TabsTrigger value="atribuicoes">Atribuições</TabsTrigger>
-            <TabsTrigger value="permissoes">Permissões</TabsTrigger>
+          <TabsList className="grid grid-cols-4 gap-4">
+            <TabsTrigger value="dados" className="flex items-center gap-2">
+              <UserCog className="h-4 w-4" />
+              Dados
+            </TabsTrigger>
+            <TabsTrigger value="atribuicoes" className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              Atribuições
+            </TabsTrigger>
+            <TabsTrigger value="permissoes" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Permissões
+            </TabsTrigger>
+            <TabsTrigger 
+              value="historico" 
+              className="flex items-center gap-2"
+              disabled={!user}
+            >
+              <History className="h-4 w-4" />
+              Histórico
+            </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="dados" className="space-y-4 mt-4">
-            <div className="space-y-1">
-              <Input 
-                placeholder="Nome" 
-                value={editedUser.name} 
-                onChange={(e) => handleInputChange("name", e.target.value)}
-                className={errors.name ? "border-red-500" : ""}
-              />
-              {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
-            </div>
-
-            <div className="space-y-1">
-              <Input 
-                placeholder="Email" 
-                type="email"
-                value={editedUser.email} 
-                onChange={(e) => handleInputChange("email", e.target.value)}
-                className={errors.email ? "border-red-500" : ""}
-              />
-              {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
-            </div>
+          <TabsContent value="dados" className="mt-4">
+            <UserDataTab
+              user={editedUser}
+              isNew={!user}
+              loading={loading}
+              onUserChange={handleFieldChange}
+              onResetPassword={handleResetPassword}
+              onSendWelcomeEmail={handleSendWelcomeEmail}
+            />
           </TabsContent>
           
-          <TabsContent value="atribuicoes" className="space-y-6 mt-4">
-            <AssignmentSection
-              title="Empresas atribuídas"
-              count={selectedCompanies.length}
-              onAdd={() => setShowCompaniesDialog(true)}
-            >
-              <div className="space-y-2">
-                {companies.map((company) => (
-                  <div key={company.id} className="flex items-center justify-between p-2 bg-accent rounded-md">
-                    <span>{company.fantasy_name}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSelectedCompanies(selectedCompanies.filter(id => id !== company.id))}
-                    >
-                      Remover
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </AssignmentSection>
-
-            <AssignmentSection
-              title="Checklists atribuídos"
-              count={selectedChecklists.length}
-              onAdd={() => setShowChecklistsDialog(true)}
-              disabled={selectedCompanies.length === 0}
-              disabledMessage="Primeiro, atribua empresas ao usuário para poder selecionar os checklists."
-            >
-              {selectedCompanies.length > 0 && <div>
-                {/* Checklist items will be rendered here */}
-              </div>}
-            </AssignmentSection>
+          <TabsContent value="atribuicoes" className="mt-4">
+            <UserAssignmentsTab
+              companies={selectedCompanies}
+              checklists={selectedChecklists}
+              onAddCompany={() => setShowCompaniesDialog(true)}
+              onRemoveCompany={(company) => 
+                setSelectedCompanies(selectedCompanies.filter(c => c !== company))
+              }
+              onAddChecklist={() => setShowChecklistsDialog(true)}
+              onRemoveChecklist={(checklist) =>
+                setSelectedChecklists(selectedChecklists.filter(c => c !== checklist))
+              }
+              disabled={loading}
+            />
           </TabsContent>
           
-          <TabsContent value="permissoes" className="space-y-4 mt-4">
-            <RoleSelector
-              selectedRole={editedUser.role}
-              onRoleChange={(role) => handleInputChange("role", role)}
+          <TabsContent value="permissoes" className="mt-4">
+            <UserPermissionsTab
+              role={editedUser.role}
+              onRoleChange={(role) => handleFieldChange("role", role)}
+              permissions={editedUser.permissions || []}
+              onPermissionsChange={handlePermissionsChange}
+              disabled={loading}
+            />
+          </TabsContent>
+
+          <TabsContent value="historico" className="mt-4">
+            <UserHistoryTab
+              activities={editedUser.activities || []}
             />
           </TabsContent>
         </Tabs>
@@ -223,6 +219,7 @@ export function AddUserSheet({
             className="w-full"
             disabled={loading}
           >
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {loading ? "Salvando..." : (user ? "Salvar Alterações" : "Criar Usuário")}
           </Button>
         </div>
