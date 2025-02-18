@@ -36,29 +36,22 @@ export function UserHeader({
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-user-csv`, {
-        method: 'POST',
+      const { data: result, error } = await supabase.functions.invoke('process-user-csv', {
         body: formData,
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
-        }
       });
 
-      const result = await response.json();
-
-      if (result.error) {
-        throw new Error(result.error);
-      }
+      if (error) throw error;
 
       toast({
         title: "Importação concluída",
-        description: `${result.processed} usuários importados.${result.errors.length ? ` ${result.errors.length} erros encontrados.` : ''}`
+        description: `${result.processed} usuários importados.${result.errors?.length ? ` ${result.errors.length} erros encontrados.` : ''}`
       });
 
     } catch (error: any) {
+      console.error('Import error:', error);
       toast({
         title: "Erro na importação",
-        description: error.message,
+        description: error.message || "Erro ao processar arquivo",
         variant: "destructive"
       });
     } finally {
@@ -90,9 +83,10 @@ export function UserHeader({
       document.body.removeChild(a);
 
     } catch (error: any) {
+      console.error('Export error:', error);
       toast({
         title: "Erro na exportação",
-        description: error.message,
+        description: error.message || "Erro ao exportar usuários",
         variant: "destructive"
       });
     }
