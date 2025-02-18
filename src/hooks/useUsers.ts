@@ -62,6 +62,7 @@ export function useUsers() {
       let userId = selectedUser?.id;
 
       if (!userId) {
+        // Criar novo usuário usando o client padrão para auth
         const { data: authData, error: authError } = await supabase.auth.admin.createUser({
           email: user.email,
           email_confirm: true,
@@ -72,8 +73,9 @@ export function useUsers() {
         if (authError) throw authError;
         userId = authData.user?.id;
 
-        if (!userId) throw new Error("Failed to create user");
+        if (!userId) throw new Error("Falha ao criar usuário");
 
+        // Inserir dados do usuário na tabela public.users
         await supabase
           .from("users")
           .insert({
@@ -82,18 +84,20 @@ export function useUsers() {
             email: user.email,
             role: user.role,
             status: user.status
-          } as any);
+          });
       } else {
+        // Atualizar usuário existente
         await supabase
           .from("users")
           .update({
             name: user.name,
             role: user.role,
             status: user.status
-          } as any)
+          })
           .eq("id", userId);
       }
 
+      // Gerenciar associações de empresas
       if (selectedCompanies.length > 0) {
         await supabase
           .from("user_companies")
@@ -107,9 +111,10 @@ export function useUsers() {
 
         await supabase
           .from("user_companies")
-          .insert(companyAssignments as any);
+          .insert(companyAssignments);
       }
 
+      // Gerenciar associações de checklists
       if (selectedChecklists.length > 0) {
         await supabase
           .from("user_checklists")
@@ -123,7 +128,19 @@ export function useUsers() {
 
         await supabase
           .from("user_checklists")
-          .insert(checklistAssignments as any);
+          .insert(checklistAssignments);
+      }
+
+      // Adicionar role de admin se necessário
+      if (user.role === "Administrador") {
+        await supabase
+          .from("user_roles")
+          .upsert({
+            user_id: userId,
+            role: "admin"
+          }, {
+            onConflict: "user_id"
+          });
       }
 
       toast({
@@ -155,25 +172,25 @@ export function useUsers() {
     }
 
     try {
-      await supabase.auth.admin.deleteUser(userId as string);
+      await supabase.auth.admin.deleteUser(userId);
       await supabase
         .from("users")
         .delete()
         .eq("id", userId);
 
-      toast({ 
-        title: "Usuário excluído", 
-        description: "O usuário foi removido." 
+      toast({
+        title: "Usuário excluído",
+        description: "O usuário foi removido."
       });
 
       await loadUsers();
       return true;
     } catch (error: any) {
       console.error("Error deleting user:", error);
-      toast({ 
-        title: "Erro ao excluir", 
-        description: error.message, 
-        variant: "destructive" 
+      toast({
+        title: "Erro ao excluir",
+        description: error.message,
+        variant: "destructive"
       });
       return false;
     }
