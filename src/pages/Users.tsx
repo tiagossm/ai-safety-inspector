@@ -3,7 +3,7 @@ import { useState } from "react";
 import { UserList } from "@/components/users/UserList";
 import { UserHeader } from "@/components/users/UserHeader";
 import { useUsers } from "@/hooks/useUsers";
-import { User } from "@/types/user";
+import { User, UserStatus } from "@/types/user";
 import { AddUserSheet } from "@/components/users/AddUserSheet";
 
 export function Users() {
@@ -50,6 +50,10 @@ export function Users() {
     }
   };
 
+  const handleRefetch = async () => {
+    await refetch();
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
       <UserHeader
@@ -58,7 +62,7 @@ export function Users() {
         showInactive={showInactive}
         setShowInactive={setShowInactive}
         onAddUser={handleAddUser}
-        onRefresh={refetch}
+        onRefresh={handleRefetch}
       />
       
       <UserList
@@ -66,7 +70,7 @@ export function Users() {
         loading={isLoading}
         onEdit={handleEditUser}
         onDelete={deleteUser}
-        onStatusToggle={async (id, status) => {
+        onStatusToggle={async (id: string, status: UserStatus) => {
           await updateUser({ id, data: { status } });
         }}
         isDeleting={isDeleting}

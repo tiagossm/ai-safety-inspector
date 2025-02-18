@@ -38,7 +38,7 @@ export function AddUserSheet({
   initialData,
   isLoading
 }: AddUserSheetProps) {
-  const { register, handleSubmit, formState: { errors }, control } = useForm<UserFormData>({
+  const { register, handleSubmit, formState: { errors }, watch } = useForm<UserFormData>({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
       role: UserRole.USER,
@@ -46,6 +46,8 @@ export function AddUserSheet({
       ...initialData
     }
   });
+
+  const selectedRole = watch('role');
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -61,8 +63,7 @@ export function AddUserSheet({
               <Input
                 id="name"
                 {...register("name")}
-                className="mt-1"
-                error={errors.name?.message}
+                className={`mt-1 ${errors.name ? 'border-destructive' : ''}`}
                 disabled={isLoading}
               />
               {errors.name && (
@@ -76,8 +77,7 @@ export function AddUserSheet({
                 id="email"
                 type="email"
                 {...register("email")}
-                className="mt-1"
-                error={errors.email?.message}
+                className={`mt-1 ${errors.email ? 'border-destructive' : ''}`}
                 disabled={isLoading}
               />
               {errors.email && (
@@ -91,10 +91,12 @@ export function AddUserSheet({
                 id="email_secondary"
                 type="email"
                 {...register("email_secondary")}
-                className="mt-1"
-                error={errors.email_secondary?.message}
+                className={`mt-1 ${errors.email_secondary ? 'border-destructive' : ''}`}
                 disabled={isLoading}
               />
+              {errors.email_secondary && (
+                <span className="text-sm text-destructive">{errors.email_secondary.message}</span>
+              )}
             </div>
 
             <div>
@@ -130,9 +132,13 @@ export function AddUserSheet({
             <div>
               <Label>Função</Label>
               <RoleSelector
-                control={control}
-                name="role"
-                disabled={isLoading}
+                selectedRole={selectedRole}
+                onSelect={(role) => {
+                  const event = {
+                    target: { value: role }
+                  };
+                  register("role").onChange(event);
+                }}
               />
             </div>
           </div>
