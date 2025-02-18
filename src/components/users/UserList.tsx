@@ -21,7 +21,7 @@ export function UserList() {
 
   const { users, saveUser, deleteUser } = useUsers();
 
-  const handleSaveUser = async (user: Omit<User, "id">) => {
+  const handleSaveUser = async (user: Omit<User, "id">, selectedCompanies: string[], selectedChecklists: string[]) => {
     const success = await saveUser(user, selectedUser, selectedCompanies, selectedChecklists);
     if (success) {
       setIsEditingUser(false);
@@ -29,6 +29,7 @@ export function UserList() {
       setSelectedCompanies([]);
       setSelectedChecklists([]);
     }
+    return success;
   };
 
   const handleDeleteUser = async () => {
