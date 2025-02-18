@@ -17,18 +17,14 @@ export function UserList() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
-  const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
-  const [selectedChecklists, setSelectedChecklists] = useState<string[]>([]);
 
   const { users, saveUser, deleteUser } = useUsers();
 
   const handleSaveUser = async (user: Omit<User, "id">) => {
-    const success = await saveUser(user, selectedUser, selectedCompanies, selectedChecklists);
+    const success = await saveUser(user, selectedUser);
     if (success) {
       setIsEditingUser(false);
       setSelectedUser(null);
-      setSelectedCompanies([]);
-      setSelectedChecklists([]);
     }
   };
 
@@ -85,8 +81,6 @@ export function UserList() {
                   onEdit={() => {
                     setSelectedUser(user);
                     setIsEditingUser(true);
-                    setSelectedCompanies(user.companies || []);
-                    setSelectedChecklists(user.checklists || []);
                   }}
                   onDelete={() => setUserToDelete(user)}
                 />
@@ -101,10 +95,6 @@ export function UserList() {
         onOpenChange={setIsEditingUser}
         user={selectedUser}
         onSave={handleSaveUser}
-        selectedCompanies={selectedCompanies}
-        setSelectedCompanies={setSelectedCompanies}
-        selectedChecklists={selectedChecklists}
-        setSelectedChecklists={setSelectedChecklists}
       />
 
       <DeleteUserDialog
