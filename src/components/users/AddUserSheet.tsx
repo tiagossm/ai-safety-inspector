@@ -1,214 +1,206 @@
-import { useState } from "react";
-import { useUsers } from "@/hooks/useUsers";
-import { UserRole, UserStatus } from "@/types/user";
-import { Input } from "@/components/ui/input";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Table } from "@/components/ui/table";
-import { roleIcons } from "./role-selector/RoleInfo";
-import { Search, PlusCircle, Pencil, Trash, Loader2 } from "lucide-react";
-import { AddUserSheet } from "./AddUserSheet";
-import { ConfirmationModal } from "./ConfirmationModal";
-import { UsersService } from "@/services/users";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { User, UserRole, UserStatus } from "@/types/user";
+import { UsersService } from "@/lib/services/users";
+import { Loader2, X } from "lucide-react";
 import { toast } from "sonner";
+import { RoleSelector } from "./role-selector/RoleSelector";
 
-export function UsersPage() {
-  const {
-    users,
-    loading,
-    params,
-    setParams,
-    refresh
-  } = useUsers();
-
-  const [openAddUser, setOpenAddUser] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [deleteConfirmation, setDeleteConfirmation] = useState<string | null>(null);
-
-  const handleDelete = async (userId: string) => {
-    try {
-      await UsersService.deleteUser(userId);
-      toast.success("Usuário excluído com sucesso");
-      refresh();
-    } catch (error) {
-      toast.error("Erro ao excluir usuário");
-    } finally {
-      setDeleteConfirmation(null);
-    }
-  };
-
-  return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Gerenciamento de Usuários</h1>
-        <Button onClick={() => setOpenAddUser(true)}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Novo Usuário
-        </Button>
-      </div>
-
-      <div className="flex flex-wrap gap-4 items-center">
-        <Input
-          placeholder="Buscar usuários..."
-          value={params.search || ""}
-          onChange={(e) => setParams(p => ({ ...p, search: e.target.value }))}
-          className="flex-1 min-w-[300px]"
-          leftIcon={<Search size={16} />}
-        />
-        
-        <select
-          value={params.status}
-          onChange={(e) => setParams(p => ({ ...p, status: e.target.value as UserStatus }))}
-          className="p-2 rounded bg-background border"
-          aria-label="Filtrar por status"
-        >
-          <option value="all">Todos status</option>
-          {Object.values(UserStatus).map((status) => (
-            <option key={status} value={status}>
-              {status.charAt(0).toUpperCase() + status.slice(1)}
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={params.role}
-          onChange={(e) => setParams(p => ({ ...p, role: e.target.value as UserRole }))}
-          className="p-2 rounded bg-background border"
-          aria-label="Filtrar por perfil"
-        >
-          <option value="all">Todos perfis</option>
-          {Object.values(UserRole).map((role) => (
-            <option key={role} value={role}>{role}</option>
-          ))}
-        </select>
-      </div>
-
-      <div className="border rounded-lg overflow-hidden">
-        <Table>
-          <TableHeader className="bg-muted/50">
-            <TableRow>
-              <TableCell>Nome</TableCell>
-              <TableCell>Contato</TableCell>
-              <TableCell>Empresa</TableCell>
-              <TableCell>Perfil</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Ações</TableCell>
-            </TableRow>
-          </TableHeader>
-          
-          <TableBody>
-            {users.map((user) => (
-              <UserRow
-                key={user.id}
-                user={user}
-                onEdit={() => {
-                  setSelectedUser(user);
-                  setOpenAddUser(true);
-                }}
-                onDelete={() => setDeleteConfirmation(user.id)}
-              />
-            ))}
-          </TableBody>
-        </Table>
-
-        {loading && (
-          <div className="p-6 text-center">
-            <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-          </div>
-        )}
-      </div>
-
-      <AddUserSheet
-        open={openAddUser}
-        user={selectedUser}
-        onClose={() => {
-          setOpenAddUser(false);
-          setSelectedUser(null);
-        }}
-        onSaved={refresh}
-      />
-
-      <ConfirmationModal
-        open={!!deleteConfirmation}
-        title="Confirmar exclusão"
-        message="Tem certeza que deseja excluir este usuário permanentemente?"
-        onConfirm={() => deleteConfirmation && handleDelete(deleteConfirmation)}
-        onCancel={() => setDeleteConfirmation(null)}
-      />
-    </div>
-  );
-}
-
-const UserRow = ({ user, onEdit, onDelete }: { 
-  user: User;
-  onEdit: () => void;
-  onDelete: () => void;
+export const AddUserSheet = ({
+  open,
+  user,
+  onClose,
+  onSave,
+}: {
+  open: boolean;
+  user: User | null;
+  onClose: () => void;
+  onSave: () => void;
 }) => {
-  const [updating, setUpdating] = useState(false);
+  const [formData, setFormData] = useState<Omit<User, "id" | "createdAt">>({
+    name: "",
+    email: "",
+    phone: "",
+    company: "",
+    role: UserRole.USER,
+    status: UserStatus.ACTIVE,
+    lastActivity: new Date().toISOString(),
+  });
 
-  const handleStatusToggle = async () => {
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (user) {
+      setFormData(user);
+    } else {
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        company: "",
+        role: UserRole.USER,
+        status: UserStatus.ACTIVE,
+        lastActivity: new Date().toISOString(),
+      });
+    }
+    setErrors({});
+  }, [user, open]);
+
+  const validateForm = async () => {
+    const newErrors: Record<string, string> = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Nome é obrigatório";
+    }
+
+    if (!formData.email) {
+      newErrors.email = "E-mail é obrigatório";
+    } else if (!emailRegex.test(formData.email)) {
+      newErrors.email = "E-mail inválido";
+    } else {
+      const isUnique = await UsersService.checkEmailUnique(
+        formData.email,
+        user?.id
+      );
+      if (!isUnique) newErrors.email = "E-mail já está em uso";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handlePhoneInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+      .replace(/\D/g, "")
+      .replace(/(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{5})(\d{4})/, "$1-$2")
+      .slice(0, 15);
+    
+    setFormData({ ...formData, phone: value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!(await validateForm())) return;
+
+    setLoading(true);
     try {
-      setUpdating(true);
-      const newStatus = user.status === UserStatus.ACTIVE 
-        ? UserStatus.INACTIVE 
-        : UserStatus.ACTIVE;
-      
-      await UsersService.updateUser(user.id, { status: newStatus });
-      toast.success("Status atualizado com sucesso");
+      if (user) {
+        await UsersService.update(user.id, formData);
+        toast.success("Usuário atualizado com sucesso");
+      } else {
+        await UsersService.create(formData);
+        toast.success("Usuário criado com sucesso");
+      }
+      onSave();
+      onClose();
     } catch (error) {
-      toast.error("Erro ao atualizar status");
+      toast.error("Erro ao salvar usuário");
     } finally {
-      setUpdating(false);
+      setLoading(false);
     }
   };
 
+  if (!open) return null;
+
   return (
-    <TableRow>
-      <TableCell className="font-medium">{user.name}</TableCell>
-      <TableCell>
-        <div className="flex flex-col">
-          <span>{user.email}</span>
-          {user.phone && <span className="text-muted-foreground">{user.phone}</span>}
-        </div>
-      </TableCell>
-      <TableCell>{user.company || "-"}</TableCell>
-      <TableCell>
-        <div className="flex items-center gap-2">
-          {roleIcons[user.role]}
-          <span>{user.role}</span>
-        </div>
-      </TableCell>
-      <TableCell>
-        <div className="flex items-center gap-2">
-          <Switch
-            checked={user.status === UserStatus.ACTIVE}
-            onCheckedChange={handleStatusToggle}
-            disabled={updating}
-            aria-label="Alternar status do usuário"
-          />
-          <span className="capitalize">{user.status}</span>
-          {updating && <Loader2 className="h-4 w-4 animate-spin" />}
-        </div>
-      </TableCell>
-      <TableCell>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onEdit}
-            aria-label="Editar usuário"
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={onDelete}
-            aria-label="Excluir usuário"
-          >
-            <Trash className="h-4 w-4" />
-          </Button>
-        </div>
-      </TableCell>
-    </TableRow>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4">
+      <div className="bg-background rounded-lg p-6 w-full max-w-md relative">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-1 rounded-full hover:bg-muted"
+          aria-label="Fechar"
+        >
+          <X className="h-5 w-5" />
+        </button>
+
+        <h2 className="text-xl font-bold mb-6">
+          {user ? "Editar Usuário" : "Novo Usuário"}
+        </h2>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Nome *</label>
+            <Input
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              hasError={!!errors.name}
+            />
+            {errors.name && <span className="text-red-500 text-sm">{errors.name}</span>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">E-mail *</label>
+            <Input
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              hasError={!!errors.email}
+            />
+            {errors.email && <span className="text-red-500 text-sm">{errors.email}</span>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Telefone</label>
+            <Input
+              value={formData.phone}
+              onChange={handlePhoneInput}
+              placeholder="(00) 00000-0000"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Empresa</label>
+            <Input
+              value={formData.company}
+              onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Perfil *</label>
+            <RoleSelector
+              selectedRole={formData.role}
+              onSelect={(role) => setFormData({ ...formData, role })}
+            />
+          </div>
+
+          <div className="flex items-center gap-3 pt-4">
+            <Switch
+              checked={formData.status === UserStatus.ACTIVE}
+              onCheckedChange={(checked) =>
+                setFormData({
+                  ...formData,
+                  status: checked ? UserStatus.ACTIVE : UserStatus.INACTIVE,
+                })
+              }
+              id="user-status"
+            />
+            <label htmlFor="user-status" className="text-sm">
+              {formData.status === UserStatus.ACTIVE ? "Ativo" : "Inativo"}
+            </label>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {user ? "Salvar Alterações" : "Criar Usuário"}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 };
