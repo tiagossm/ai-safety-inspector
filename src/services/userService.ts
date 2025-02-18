@@ -6,7 +6,7 @@ import { User, UserRole } from "@/types/user";
 export async function fetchUsers() {
   const { data: usersData, error: usersError } = await supabase
     .from("users")
-    .select("id, name, email, role, status")
+    .select("id, name, email, roles, status")
     .order("name", { ascending: true });
 
   if (usersError) throw usersError;
@@ -28,7 +28,7 @@ export async function fetchUsers() {
         id: user.id as string,
         name: user.name || "",
         email: user.email || "",
-        role: user.role as UserRole,
+        roles: user.roles || [],
         status: user.status || "active",
         companies: companiesData?.map(c => c.company?.fantasy_name).filter(Boolean) || [],
         checklists: checklistsData?.map(c => c.checklist_id).filter(Boolean) || []
@@ -81,7 +81,7 @@ export async function createOrUpdateUser(
           id: userId,
           name: user.name,
           email: user.email.trim(),
-          role: user.role,
+          roles: user.roles,
           status: user.status
         });
 
@@ -92,14 +92,14 @@ export async function createOrUpdateUser(
       .from("users")
       .update({
         name: user.name,
-        role: user.role,
+        roles: user.roles,
         status: user.status
       })
       .eq("id", userId);
   }
 
   await updateUserAssociations(userId, selectedCompanies, selectedChecklists);
-  await updateUserRole(userId, user.role);
+  await updateUserRole(userId, user.roles[0] as UserRole);
 
   return userId;
 }

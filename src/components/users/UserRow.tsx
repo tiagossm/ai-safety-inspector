@@ -25,11 +25,14 @@ interface UserRowProps {
 }
 
 export function UserRow({ user, onEdit, onDelete }: UserRowProps) {
+  // Get the first role from the roles array, defaulting to "Técnico"
+  const primaryRole = user.roles[0] || "Técnico";
+
   return (
     <TableRow>
       <TableCell>
         <div className="flex items-start gap-2">
-          {roleIcons[user.role]}
+          {roleIcons[primaryRole as keyof typeof roleIcons]}
           <div className="flex flex-col">
             <span className="font-medium">{user.name}</span>
             <span className="text-sm text-muted-foreground">{user.email}</span>
@@ -37,8 +40,8 @@ export function UserRow({ user, onEdit, onDelete }: UserRowProps) {
         </div>
       </TableCell>
       <TableCell>
-        <Badge variant={roleBadgeVariants[user.role]}>
-          {user.role}
+        <Badge variant={roleBadgeVariants[primaryRole as keyof typeof roleBadgeVariants]}>
+          {primaryRole}
         </Badge>
       </TableCell>
       <TableCell>
@@ -63,7 +66,7 @@ export function UserRow({ user, onEdit, onDelete }: UserRowProps) {
       <TableCell>
         <div className="flex items-center gap-1">
           <ClipboardList className="h-4 w-4" />
-          <span>{user.checklists || 0}</span>
+          <span>{user.checklists?.length || 0}</span>
         </div>
       </TableCell>
       <TableCell>
