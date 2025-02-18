@@ -1,6 +1,7 @@
+
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { FormInput } from "@/components/ui/form-input";
 import { Switch } from "@/components/ui/switch";
 import { User, UserRole, UserStatus } from "@/types/user";
 import { UsersService } from "@/lib/services/users";
@@ -19,14 +20,15 @@ export const AddUserSheet = ({
   onClose: () => void;
   onSave: () => void;
 }) => {
-  const [formData, setFormData] = useState<Omit<User, "id" | "createdAt">>({
+  const [formData, setFormData] = useState<Omit<User, "id" | "created_at">>({
     name: "",
     email: "",
+    email_secondary: "",
     phone: "",
-    company: "",
+    phone_secondary: "",
+    cpf: "",
     role: UserRole.USER,
-    status: UserStatus.ACTIVE,
-    lastActivity: new Date().toISOString(),
+    status: UserStatus.ACTIVE
   });
 
   const [loading, setLoading] = useState(false);
@@ -34,16 +36,26 @@ export const AddUserSheet = ({
 
   useEffect(() => {
     if (user) {
-      setFormData(user);
+      setFormData({
+        name: user.name,
+        email: user.email,
+        email_secondary: user.email_secondary || "",
+        phone: user.phone || "",
+        phone_secondary: user.phone_secondary || "",
+        cpf: user.cpf || "",
+        role: user.role,
+        status: user.status
+      });
     } else {
       setFormData({
         name: "",
         email: "",
+        email_secondary: "",
         phone: "",
-        company: "",
+        phone_secondary: "",
+        cpf: "",
         role: UserRole.USER,
-        status: UserStatus.ACTIVE,
-        lastActivity: new Date().toISOString(),
+        status: UserStatus.ACTIVE
       });
     }
     setErrors({});
@@ -125,7 +137,7 @@ export const AddUserSheet = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">Nome *</label>
-            <Input
+            <FormInput
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               hasError={!!errors.name}
@@ -135,7 +147,7 @@ export const AddUserSheet = ({
 
           <div>
             <label className="block text-sm font-medium mb-1">E-mail *</label>
-            <Input
+            <FormInput
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
@@ -145,8 +157,17 @@ export const AddUserSheet = ({
           </div>
 
           <div>
+            <label className="block text-sm font-medium mb-1">E-mail Secundário</label>
+            <FormInput
+              type="email"
+              value={formData.email_secondary}
+              onChange={(e) => setFormData({ ...formData, email_secondary: e.target.value })}
+            />
+          </div>
+
+          <div>
             <label className="block text-sm font-medium mb-1">Telefone</label>
-            <Input
+            <FormInput
               value={formData.phone}
               onChange={handlePhoneInput}
               placeholder="(00) 00000-0000"
@@ -154,10 +175,19 @@ export const AddUserSheet = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">Empresa</label>
-            <Input
-              value={formData.company}
-              onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+            <label className="block text-sm font-medium mb-1">Telefone Secundário</label>
+            <FormInput
+              value={formData.phone_secondary}
+              onChange={(e) => setFormData({ ...formData, phone_secondary: e.target.value })}
+              placeholder="(00) 00000-0000"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">CPF</label>
+            <FormInput
+              value={formData.cpf}
+              onChange={(e) => setFormData({ ...formData, cpf: e.target.value })}
             />
           </div>
 
