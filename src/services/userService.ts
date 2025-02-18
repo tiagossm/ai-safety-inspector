@@ -56,6 +56,17 @@ export async function createOrUpdateUser(
   let userId = selectedUser?.id;
 
   if (!userId) {
+    // First, check if the user already exists
+    const { data: existingUser } = await supabaseAdmin
+      .from("users")
+      .select("id")
+      .eq("email", user.email.trim())
+      .single();
+
+    if (existingUser) {
+      throw new Error("Um usuário com este email já está cadastrado");
+    }
+
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: user.email.trim(),
       password: "temporary123",
@@ -63,30 +74,29 @@ export async function createOrUpdateUser(
       user_metadata: { name: user.name }
     });
 
-    if (authError) throw authError;
+    if (authError) {
+      // Check if it's an email exists error
+      if (authError.message.includes("email_exists") || authError.message.includes("already been registered")) {
+        throw new Error("Um usuário com este email já está cadastrado");
+      }
+      throw authError;
+    }
+
     userId = authData.user?.id;
 
     if (!userId) throw new Error("Falha ao criar usuário");
 
-    const { data: existingUser } = await supabaseAdmin
+    const { error: insertError } = await supabaseAdmin
       .from("users")
-      .select("id")
-      .eq("id", userId)
-      .single();
+      .insert({
+        id: userId,
+        name: user.name,
+        email: user.email.trim(),
+        roles: user.roles,
+        status: user.status
+      });
 
-    if (!existingUser) {
-      const { error: insertError } = await supabaseAdmin
-        .from("users")
-        .insert({
-          id: userId,
-          name: user.name,
-          email: user.email.trim(),
-          roles: user.roles,
-          status: user.status
-        });
-
-      if (insertError) throw insertError;
-    }
+    if (insertError) throw insertError;
   } else {
     await supabaseAdmin
       .from("users")
