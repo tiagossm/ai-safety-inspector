@@ -36,10 +36,12 @@ export function AssignCompaniesDialog({
   const [companies, setCompanies] = useState<Company[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [companyNames, setCompanyNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (open) {
       loadCompanies();
+      loadCompanyNames();
     }
   }, [open]);
 
@@ -53,8 +55,30 @@ export function AssignCompaniesDialog({
 
     if (!error && data) {
       setCompanies(data);
+      const names = data.reduce((acc, company) => ({
+        ...acc,
+        [company.id]: company.fantasy_name
+      }), {});
+      setCompanyNames(names);
     }
     setLoading(false);
+  };
+
+  const loadCompanyNames = async () => {
+    if (selectedCompanies.length === 0) return;
+    
+    const { data, error } = await supabase
+      .from("companies")
+      .select("id, fantasy_name")
+      .in("id", selectedCompanies);
+
+    if (!error && data) {
+      const names = data.reduce((acc, company) => ({
+        ...acc,
+        [company.id]: company.fantasy_name
+      }), {});
+      setCompanyNames(names);
+    }
   };
 
   const filteredCompanies = companies.filter(company =>

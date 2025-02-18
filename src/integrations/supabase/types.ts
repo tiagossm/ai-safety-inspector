@@ -678,6 +678,39 @@ export type Database = {
           },
         ]
       }
+      user_imports: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          error_log: Json | null
+          filename: string
+          id: string
+          processed_rows: number | null
+          status: string | null
+          total_rows: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          error_log?: Json | null
+          filename: string
+          id?: string
+          processed_rows?: number | null
+          status?: string | null
+          total_rows?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          error_log?: Json | null
+          filename?: string
+          id?: string
+          processed_rows?: number | null
+          status?: string | null
+          total_rows?: number | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -701,6 +734,7 @@ export type Database = {
       }
       users: {
         Row: {
+          avatar_url: string | null
           cpf: string | null
           created_at: string | null
           email: string | null
@@ -715,6 +749,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          avatar_url?: string | null
           cpf?: string | null
           created_at?: string | null
           email?: string | null
@@ -729,6 +764,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          avatar_url?: string | null
           cpf?: string | null
           created_at?: string | null
           email?: string | null
