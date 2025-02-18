@@ -12,7 +12,8 @@ export function useUsers() {
   const loadUsers = async () => {
     try {
       console.log("Loading users...");
-      const { data: usersData, error: usersError } = await supabase
+      // Use the admin client to avoid RLS recursion
+      const { data: usersData, error: usersError } = await supabaseAdmin
         .from("users")
         .select("id, name, email, role, status")
         .order("name", { ascending: true });
@@ -25,12 +26,13 @@ export function useUsers() {
 
       const usersWithDetails = await Promise.all(
         usersData.map(async (user) => {
-          const { data: companiesData } = await supabase
+          // Use admin client for related queries as well
+          const { data: companiesData } = await supabaseAdmin
             .from("user_companies")
             .select("company:company_id(fantasy_name)")
             .eq("user_id", user.id as string);
 
-          const { data: checklistsData } = await supabase
+          const { data: checklistsData } = await supabaseAdmin
             .from("user_checklists")
             .select("checklist_id")
             .eq("user_id", user.id as string);
@@ -71,7 +73,18 @@ export function useUsers() {
       let userId = selectedUser?.id;
 
       if (!userId) {
-        // Criar novo usuário usando o client admin
+        // Check if email already exists before creating user
+        const { data: existingUser } = await supabaseAdmin
+          .from("users")
+          .select("id")
+          .eq("email", user.email.trim())
+          .single();
+
+        if (existingUser) {
+          throw new Error("Este email já está cadastrado");
+        }
+
+        // Create new user using admin client
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
           email: user.email.trim(),
           password: "temporary123",
@@ -79,12 +92,17 @@ export function useUsers() {
           user_metadata: { name: user.name }
         });
 
-        if (authError) throw authError;
+        if (authError) {
+          if (authError.message.includes("email_exists")) {
+            throw new Error("Este email já está cadastrado");
+          }
+          throw authError;
+        }
         userId = authData.user?.id;
 
         if (!userId) throw new Error("Falha ao criar usuário");
 
-        // Inserir dados do usuário usando o client admin
+        // Insert user data using admin client
         await supabaseAdmin
           .from("users")
           .insert({
@@ -95,7 +113,7 @@ export function useUsers() {
             status: user.status
           });
       } else {
-        // Atualizar usuário existente usando o client admin
+        // Update existing user using admin client
         await supabaseAdmin
           .from("users")
           .update({
@@ -106,7 +124,7 @@ export function useUsers() {
           .eq("id", userId);
       }
 
-      // Gerenciar associações usando o client admin
+      // Manage associations using admin client
       if (selectedCompanies.length > 0) {
         await supabaseAdmin
           .from("user_companies")
@@ -139,7 +157,7 @@ export function useUsers() {
           .insert(checklistAssignments);
       }
 
-      // Adicionar role de admin se necessário
+      // Add role of admin if necessary using admin client
       if (user.role === "Administrador") {
         await supabaseAdmin
           .from("user_roles")
