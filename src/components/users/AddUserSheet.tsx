@@ -8,6 +8,7 @@ import { AssignCompaniesDialog } from "./AssignCompaniesDialog";
 import { AssignChecklistsDialog } from "./AssignChecklistsDialog";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseAdmin } from "@/integrations/supabase/adminClient";
 import { Loader2, UserCog, Building2, Shield, History } from "lucide-react";
 import { UserDataTab } from "./tabs/UserDataTab";
 import { UserAssignmentsTab } from "./tabs/UserAssignmentsTab";
@@ -88,7 +89,7 @@ export function AddUserSheet({
     if (!editedUser.email) return;
     
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(editedUser.email);
+      const { error } = await supabaseAdmin.auth.admin.resetPasswordForEmail(editedUser.email);
       if (error) throw error;
       
       toast({
@@ -108,7 +109,7 @@ export function AddUserSheet({
     if (!editedUser.email) return;
     
     try {
-      // Implement welcome email logic here
+      // Implement welcome email logic here using supabaseAdmin
       toast({
         title: "Email enviado",
         description: "Email de boas-vindas enviado com sucesso."
@@ -131,8 +132,26 @@ export function AddUserSheet({
     try {
       const success = await onSave(editedUser, selectedCompanies, selectedChecklists);
       if (success) {
+        // Update user role using supabaseAdmin
+        if (user?.id) {
+          await supabaseAdmin
+            .from('user_roles')
+            .upsert({
+              user_id: user.id,
+              role: editedUser.role === 'Administrador' ? 'admin' : 'user'
+            }, {
+              onConflict: 'user_id'
+            });
+        }
         onOpenChange(false);
       }
+    } catch (error: any) {
+      console.error('Error saving user:', error);
+      toast({
+        title: "Erro ao salvar",
+        description: error.message,
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
