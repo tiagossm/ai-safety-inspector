@@ -1,68 +1,116 @@
 
-import { User, UserStatus } from "@/types/user";
-import { UserRow } from "./UserRow";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useState } from "react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Table, TableHeader, TableRow, TableHead, TableBody } from "@/components/ui/table";
+import { UserHeader } from "@/components/users/UserHeader";
+import { UserRow } from "@/components/users/UserRow";
+import { AddUserSheet } from "@/components/users/AddUserSheet";
+import { DeleteUserDialog } from "@/components/users/DeleteUserDialog";
+import { useUsers } from "@/hooks/useUsers";
+import { User } from "@/types/user";
 
-interface UserListProps {
-  users?: User[];
-  loading?: boolean;
-  onEdit?: (user: User) => void;
-  onDelete?: (userId: string) => Promise<void>;
-  onStatusToggle?: (id: string, status: UserStatus) => Promise<void>;
-  isDeleting?: boolean;
-  isUpdating?: boolean;
-}
+export function UserList() {
+  const [search, setSearch] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
+  const [isEditingUser, setIsEditingUser] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
+  const [selectedChecklists, setSelectedChecklists] = useState<string[]>([]);
 
-export function UserList({
-  users = [],
-  loading = false,
-  onEdit = () => {},
-  onDelete = async () => {},
-  onStatusToggle = async () => {},
-  isDeleting = false,
-  isUpdating = false
-}: UserListProps) {
-  if (loading) {
-    return (
-      <div className="space-y-4">
-        {[...Array(5)].map((_, i) => (
-          <Skeleton key={i} className="h-[62px] w-full rounded" />
-        ))}
-      </div>
-    );
-  }
+  const { users, saveUser, deleteUser } = useUsers();
+
+  const handleSaveUser = async (user: Omit<User, "id">) => {
+    const success = await saveUser(user, selectedUser, selectedCompanies, selectedChecklists);
+    if (success) {
+      setIsEditingUser(false);
+      setSelectedUser(null);
+      setSelectedCompanies([]);
+      setSelectedChecklists([]);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return;
+    
+    const success = await deleteUser(userToDelete.id, deleteConfirmText);
+    if (success) {
+      setDeleteConfirmText("");
+      setUserToDelete(null);
+    }
+  };
+
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = search.length === 0 || 
+      user.name.toLowerCase().includes(search.toLowerCase()) ||
+      user.email.toLowerCase().includes(search.toLowerCase());
+    
+    const matchesStatus = showInactive || user.status === "active";
+    
+    return matchesSearch && matchesStatus;
+  });
 
   return (
-    <div className="relative overflow-x-auto">
-      <table className="w-full text-sm text-left">
-        <thead className="text-xs uppercase bg-muted/50">
-          <tr>
-            <th className="p-4">Nome</th>
-            <th className="p-4">Email</th>
-            <th className="p-4">Função</th>
-            <th className="p-4">Status</th>
-            <th className="p-4">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((user) => (
-            <UserRow
-              key={user.id}
-              user={user}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onStatusToggle={onStatusToggle}
-              isDeleting={isDeleting}
-              isUpdating={isUpdating}
-            />
-          ))}
-        </tbody>
-      </table>
-      {users.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground">
-          Nenhum usuário encontrado
-        </div>
-      )}
-    </div>
+    <Card>
+      <CardHeader>
+        <UserHeader
+          showInactive={showInactive}
+          setShowInactive={setShowInactive}
+          search={search}
+          setSearch={setSearch}
+          onAddUser={() => setIsEditingUser(true)}
+        />
+      </CardHeader>
+
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Usuário</TableHead>
+              <TableHead>Tipo de Perfil</TableHead>
+              <TableHead>Empresas</TableHead>
+              <TableHead>Checklists</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredUsers.map((user) => (
+              <UserRow
+                key={user.id}
+                user={user}
+                onEdit={() => {
+                  setSelectedUser(user);
+                  setIsEditingUser(true);
+                  setSelectedCompanies(user.companies || []);
+                  setSelectedChecklists(user.checklists || []);
+                }}
+                onDelete={() => setUserToDelete(user)}
+              />
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+
+      <AddUserSheet
+        open={isEditingUser}
+        onOpenChange={setIsEditingUser}
+        user={selectedUser}
+        onSave={handleSaveUser}
+        selectedCompanies={selectedCompanies}
+        setSelectedCompanies={setSelectedCompanies}
+        selectedChecklists={selectedChecklists}
+        setSelectedChecklists={setSelectedChecklists}
+      />
+
+      <DeleteUserDialog
+        open={Boolean(userToDelete)}
+        onOpenChange={(open) => !open && setUserToDelete(null)}
+        confirmText={deleteConfirmText}
+        onConfirmTextChange={setDeleteConfirmText}
+        onConfirm={handleDeleteUser}
+      />
+    </Card>
   );
 }

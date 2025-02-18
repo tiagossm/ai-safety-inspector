@@ -1,107 +1,217 @@
 
-import { useState, useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { UsersService } from "@/lib/services/users";
-import { User, UserRole, UserStatus } from "@/types/user";
-import { toast } from "@/hooks/use-toast";
+import { useState, useEffect } from "react";
+import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { supabaseAdmin } from "@/integrations/supabase/adminClient";
+import { User, UserRole } from "@/types/user";
 
-export const useUsers = () => {
-  const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
-  const [showInactive, setShowInactive] = useState(false);
+export function useUsers() {
+  const [users, setUsers] = useState<User[]>([]);
+  const { toast } = useToast();
 
-  const {
-    data: users = [],
-    isLoading,
-    error,
-    refetch
-  } = useQuery({
-    queryKey: ["users", { search, showInactive }],
-    queryFn: UsersService.getAll
-  });
+  const loadUsers = async () => {
+    try {
+      console.log("Loading users...");
+      const { data: usersData, error: usersError } = await supabase
+        .from("users")
+        .select("id, name, email, role, status")
+        .order("name", { ascending: true });
 
-  const createMutation = useMutation({
-    mutationFn: UsersService.create,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
+      console.log("Users data:", usersData);
+      console.log("Users error:", usersError);
+
+      if (usersError) throw usersError;
+      if (!usersData) return;
+
+      const usersWithDetails = await Promise.all(
+        usersData.map(async (user) => {
+          const { data: companiesData } = await supabase
+            .from("user_companies")
+            .select("company:company_id(fantasy_name)")
+            .eq("user_id", user.id as string);
+
+          const { data: checklistsData } = await supabase
+            .from("user_checklists")
+            .select("checklist_id")
+            .eq("user_id", user.id as string);
+
+          return {
+            id: user.id as string,
+            name: user.name || "",
+            email: user.email || "",
+            role: user.role as UserRole,
+            status: user.status || "active",
+            companies: companiesData?.map(c => c.company?.fantasy_name).filter(Boolean) || [],
+            checklists: checklistsData?.map(c => c.checklist_id).filter(Boolean) || []
+          };
+        })
+      );
+
+      setUsers(usersWithDetails);
+    } catch (error: any) {
+      console.error("Error loading users:", error);
       toast({
-        title: "Usuário criado",
-        description: "O usuário foi criado com sucesso.",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Erro ao criar usuário",
+        title: "Erro ao carregar usuários",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
-    },
-  });
+    }
+  };
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<User> }) =>
-      UsersService.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
+  const saveUser = async (user: Omit<User, "id">, selectedUser: User | null, selectedCompanies: string[], selectedChecklists: string[]) => {
+    try {
+      if (!user.email || !user.email.trim()) {
+        throw new Error("O email é obrigatório");
+      }
+
+      if (!user.email.includes("@")) {
+        throw new Error("Email inválido");
+      }
+
+      let userId = selectedUser?.id;
+
+      if (!userId) {
+        // Criar novo usuário usando o client admin
+        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+          email: user.email.trim(),
+          password: "temporary123",
+          email_confirm: true,
+          user_metadata: { name: user.name }
+        });
+
+        if (authError) throw authError;
+        userId = authData.user?.id;
+
+        if (!userId) throw new Error("Falha ao criar usuário");
+
+        // Inserir dados do usuário usando o client admin
+        await supabaseAdmin
+          .from("users")
+          .insert({
+            id: userId,
+            name: user.name,
+            email: user.email.trim(),
+            role: user.role,
+            status: user.status
+          });
+      } else {
+        // Atualizar usuário existente usando o client admin
+        await supabaseAdmin
+          .from("users")
+          .update({
+            name: user.name,
+            role: user.role,
+            status: user.status
+          })
+          .eq("id", userId);
+      }
+
+      // Gerenciar associações usando o client admin
+      if (selectedCompanies.length > 0) {
+        await supabaseAdmin
+          .from("user_companies")
+          .delete()
+          .eq("user_id", userId);
+
+        const companyAssignments = selectedCompanies.map(companyId => ({
+          user_id: userId as string,
+          company_id: companyId
+        }));
+
+        await supabaseAdmin
+          .from("user_companies")
+          .insert(companyAssignments);
+      }
+
+      if (selectedChecklists.length > 0) {
+        await supabaseAdmin
+          .from("user_checklists")
+          .delete()
+          .eq("user_id", userId);
+
+        const checklistAssignments = selectedChecklists.map(checklistId => ({
+          user_id: userId as string,
+          checklist_id: checklistId
+        }));
+
+        await supabaseAdmin
+          .from("user_checklists")
+          .insert(checklistAssignments);
+      }
+
+      // Adicionar role de admin se necessário
+      if (user.role === "Administrador") {
+        await supabaseAdmin
+          .from("user_roles")
+          .upsert({
+            user_id: userId,
+            role: "admin"
+          }, {
+            onConflict: "user_id"
+          });
+      }
+
       toast({
-        title: "Usuário atualizado",
-        description: "As alterações foram salvas com sucesso.",
+        title: userId === selectedUser?.id ? "Usuário atualizado" : "Usuário adicionado",
+        description: userId === selectedUser?.id ? "Dados do usuário foram atualizados." : "Novo usuário cadastrado."
       });
-    },
-    onError: (error) => {
+
+      await loadUsers();
+      return true;
+    } catch (error: any) {
+      console.error("Error saving user:", error);
       toast({
-        title: "Erro ao atualizar usuário",
+        title: "Erro ao salvar usuário",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
-    },
-  });
+      return false;
+    }
+  };
 
-  const deleteMutation = useMutation({
-    mutationFn: UsersService.delete,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
+  const deleteUser = async (userId: string, confirmText: string) => {
+    if (confirmText !== "CONFIRMAR") {
       toast({
-        title: "Usuário removido",
-        description: "O usuário foi removido com sucesso.",
+        title: "Confirmação necessária",
+        description: "Digite 'CONFIRMAR' para excluir o usuário",
+        variant: "destructive"
       });
-    },
-    onError: (error) => {
+      return false;
+    }
+
+    try {
+      await supabaseAdmin.auth.admin.deleteUser(userId);
+      await supabaseAdmin
+        .from("users")
+        .delete()
+        .eq("id", userId);
+
       toast({
-        title: "Erro ao remover usuário",
+        title: "Usuário excluído",
+        description: "O usuário foi removido."
+      });
+
+      await loadUsers();
+      return true;
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
+      toast({
+        title: "Erro ao excluir",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
-    },
-  });
+      return false;
+    }
+  };
 
-  const filteredUsers = useCallback(() => {
-    return users.filter((user) => {
-      const matchesSearch =
-        !search ||
-        user.name.toLowerCase().includes(search.toLowerCase()) ||
-        user.email.toLowerCase().includes(search.toLowerCase());
-      
-      const matchesStatus = showInactive ? true : user.status === UserStatus.ACTIVE;
-      
-      return matchesSearch && matchesStatus;
-    });
-  }, [users, search, showInactive]);
+  useEffect(() => {
+    loadUsers();
+  }, []);
 
   return {
-    users: filteredUsers(),
-    isLoading,
-    error,
-    search,
-    setSearch,
-    showInactive,
-    setShowInactive,
-    refetch,
-    createUser: createMutation.mutateAsync,
-    updateUser: updateMutation.mutateAsync,
-    deleteUser: deleteMutation.mutateAsync,
-    isCreating: createMutation.isPending,
-    isUpdating: updateMutation.isPending,
-    isDeleting: deleteMutation.isPending,
+    users,
+    saveUser,
+    deleteUser,
+    loadUsers
   };
-};
+}

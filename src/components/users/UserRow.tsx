@@ -1,99 +1,86 @@
 
-import { User, UserRole, UserStatus } from "@/types/user";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Edit2, Trash2 } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { TableCell, TableRow } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Building2, ClipboardList, Crown, Edit, Trash2, Users2, Wrench } from "lucide-react";
+import { User } from "@/types/user";
+
+const roleIcons = {
+  Administrador: <Crown className="h-4 w-4 text-green-500" />,
+  Gerente: <Users2 className="h-4 w-4 text-yellow-500" />,
+  Técnico: <Wrench className="h-4 w-4 text-blue-500" />
+};
+
+const roleBadgeVariants = {
+  Administrador: "success",
+  Gerente: "warning",
+  Técnico: "default"
+} as const;
 
 interface UserRowProps {
   user: User;
   onEdit: (user: User) => void;
-  onDelete: (id: string) => Promise<void>;
-  onStatusToggle: (id: string, status: UserStatus) => Promise<void>;
-  isDeleting?: boolean;
-  isUpdating?: boolean;
+  onDelete: (user: User) => void;
 }
 
-export function UserRow({
-  user,
-  onEdit,
-  onDelete,
-  onStatusToggle,
-  isDeleting,
-  isUpdating
-}: UserRowProps) {
+export function UserRow({ user, onEdit, onDelete }: UserRowProps) {
   return (
-    <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-      <td className="p-4">{user.name}</td>
-      <td className="p-4">{user.email}</td>
-      <td className="p-4">{user.role}</td>
-      <td className="p-4">
-        <Switch
-          checked={user.status === UserStatus.ACTIVE}
-          onCheckedChange={() => 
-            onStatusToggle(
-              user.id, 
-              user.status === UserStatus.ACTIVE ? UserStatus.INACTIVE : UserStatus.ACTIVE
-            )
-          }
-          disabled={isUpdating}
-          aria-label="Toggle user status"
-        />
-      </td>
-      <td className="p-4">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onEdit(user)}
-            disabled={isUpdating}
-            aria-label="Edit user"
-          >
-            <Edit2 className="h-4 w-4" />
-          </Button>
-          
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-destructive"
-                disabled={isDeleting}
-                aria-label="Delete user"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Remover usuário</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Tem certeza que deseja remover este usuário? Esta ação não pode ser desfeita.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={() => onDelete(user.id)}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  Remover
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+    <TableRow>
+      <TableCell>
+        <div className="flex items-start gap-2">
+          {roleIcons[user.role]}
+          <div className="flex flex-col">
+            <span className="font-medium">{user.name}</span>
+            <span className="text-sm text-muted-foreground">{user.email}</span>
+          </div>
         </div>
-      </td>
-    </tr>
+      </TableCell>
+      <TableCell>
+        <Badge variant={roleBadgeVariants[user.role]}>
+          {user.role}
+        </Badge>
+      </TableCell>
+      <TableCell>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <div className="flex items-center gap-1">
+                <Building2 className="h-4 w-4" />
+                <span>{user.companies?.length || 0}</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <ul className="list-disc list-inside">
+                {user.companies?.map((company, index) => (
+                  <li key={index}>{company}</li>
+                ))}
+              </ul>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-1">
+          <ClipboardList className="h-4 w-4" />
+          <span>{user.checklists || 0}</span>
+        </div>
+      </TableCell>
+      <TableCell>
+        <Badge variant={user.status === "active" ? "success" : "secondary"}>
+          {user.status === "active" ? "Ativo" : "Inativo"}
+        </Badge>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={() => onEdit(user)}>
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => onDelete(user)}>
+            <Trash2 className="h-4 w-4 text-red-500" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
   );
 }

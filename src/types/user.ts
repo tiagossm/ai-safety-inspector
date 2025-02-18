@@ -1,25 +1,19 @@
 
-export enum UserRole {
-  ADMIN = "Admin",
-  TECHNICIAN = "Técnico",
-  USER = "Usuário"
-}
+export type UserRole = "Administrador" | "Gerente" | "Técnico";
 
-export enum UserStatus {
-  ACTIVE = "active",
-  INACTIVE = "inactive"
-}
-
-export type User = {
+export interface User {
   id: string;
   name: string;
   email: string;
-  email_secondary?: string;
-  phone?: string;
-  phone_secondary?: string;
-  cpf?: string;
   role: UserRole;
-  status: UserStatus;
-  created_at: string;
-  updated_at?: string;
+  status: string;
+  companies?: string[];
+  checklists?: string[];
+}
+
+export const validateRole = (role: string | null): UserRole => {
+  if (role === "Administrador" || role === "Gerente" || role === "Técnico") {
+    return role;
+  }
+  return "Técnico";
 };

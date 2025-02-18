@@ -1,18 +1,13 @@
 
-import { Crown, Users2, Wrench } from "lucide-react";
 import { UserRole } from "@/types/user";
 
-const createIcon = (Icon: typeof Crown | typeof Users2 | typeof Wrench, color: string) => {
-  return () => <Icon className={`h-5 w-5 text-${color}-500`} />;
-};
-
 export const roleInfo: Record<UserRole, {
-  icon: () => JSX.Element;
+  iconColor: string;
   description: string;
   permissions: string[];
 }> = {
   Administrador: {
-    icon: createIcon(Crown, "green"),
+    iconColor: "green",
     description: "Acesso total ao sistema, gerencia usuários e suas permissões",
     permissions: [
       "Acessa tudo no sistema",
@@ -22,7 +17,7 @@ export const roleInfo: Record<UserRole, {
     ]
   },
   Gerente: {
-    icon: createIcon(Users2, "yellow"),
+    iconColor: "yellow",
     description: "Gerencia empresas e checklists, atribui tarefas aos técnicos",
     permissions: [
       "Gerencia empresas e checklists",
@@ -32,7 +27,7 @@ export const roleInfo: Record<UserRole, {
     ]
   },
   Técnico: {
-    icon: createIcon(Wrench, "blue"),
+    iconColor: "blue",
     description: "Preenche checklists e faz upload de evidências",
     permissions: [
       "Preenche checklists atribuídos",
