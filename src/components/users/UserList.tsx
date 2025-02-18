@@ -1,18 +1,21 @@
+
 import { User } from "@/types/user";
 import { UserRow } from "./UserRow";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export const UserList = ({ 
-  users,
-  loading,
-  onEdit,
-  onDelete
-}: {
-  users: User[];
-  loading: boolean;
-  onEdit: (user: User) => void;
-  onDelete: (userId: string) => void;
-}) => {
+interface UserListProps {
+  users?: User[];
+  loading?: boolean;
+  onEdit?: (user: User) => void;
+  onDelete?: (userId: string) => void;
+}
+
+export function UserList({ 
+  users = [], // Provide default empty array
+  loading = false,
+  onEdit = () => {}, // Provide default noop function
+  onDelete = () => {} // Provide default noop function
+}: UserListProps) {
   if (loading) {
     return (
       <div className="space-y-4">
@@ -23,9 +26,12 @@ export const UserList = ({
     );
   }
 
+  // Ensure users is always an array
+  const safeUsers = Array.isArray(users) ? users : [];
+
   return (
     <div className="space-y-4">
-      {users.map((user) => (
+      {safeUsers.map((user) => (
         <UserRow
           key={user.id}
           user={user}
@@ -33,6 +39,11 @@ export const UserList = ({
           onDelete={() => onDelete(user.id)}
         />
       ))}
+      {safeUsers.length === 0 && (
+        <div className="text-center py-8 text-muted-foreground">
+          Nenhum usuário encontrado
+        </div>
+      )}
     </div>
   );
-};
+}

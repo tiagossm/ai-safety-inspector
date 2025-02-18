@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { UsersService } from "@/lib/services/users";
 import { User } from "@/types/user";
@@ -11,9 +12,10 @@ export const useUsers = () => {
     try {
       setLoading(true);
       const data = await UsersService.getAll();
-      setUsers(data);
+      setUsers(data || []); // Ensure we set an empty array if data is undefined
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao carregar usuários');
+      setUsers([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
