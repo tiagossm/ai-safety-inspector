@@ -30,8 +30,8 @@ export function UserList() {
     try {
       console.log("Loading users with admin client...");
       const { data: usersData, error: usersError } = await supabaseAdmin
-        .from("public.users")  // Updated to use full table name
-        .select("*")
+        .from("users")
+        .select("id, name, email, role, status")
         .order("name", { ascending: true });
 
       console.log("Users data:", usersData);
