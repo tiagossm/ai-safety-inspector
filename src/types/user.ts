@@ -14,10 +14,12 @@ export type User = {
   id: string;
   name: string;
   email: string;
+  email_secondary?: string;
   phone?: string;
-  company?: string;
+  phone_secondary?: string;
+  cpf?: string;
   role: UserRole;
   status: UserStatus;
-  lastActivity?: string;
-  createdAt: string;
+  created_at: string;
+  updated_at?: string;
 };
