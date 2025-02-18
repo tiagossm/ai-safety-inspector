@@ -84,16 +84,27 @@ export function useUsers() {
 
         if (!userId) throw new Error("Falha ao criar usuário");
 
-        // Inserir dados do usuário usando o client admin
-        await supabaseAdmin
+        // Verificar se o usuário já existe na tabela public.users
+        const { data: existingUser } = await supabaseAdmin
           .from("users")
-          .insert({
-            id: userId,
-            name: user.name,
-            email: user.email.trim(),
-            role: user.role,
-            status: user.status
-          });
+          .select("id")
+          .eq("id", userId)
+          .single();
+
+        // Inserir dados do usuário apenas se não existir
+        if (!existingUser) {
+          const { error: insertError } = await supabaseAdmin
+            .from("users")
+            .insert({
+              id: userId,
+              name: user.name,
+              email: user.email.trim(),
+              role: user.role,
+              status: user.status
+            });
+
+          if (insertError) throw insertError;
+        }
       } else {
         // Atualizar usuário existente usando o client admin
         await supabaseAdmin
