@@ -1,22 +1,10 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { User, UserRole, UserStatus } from "@/types/user";
+import { Database } from "@/integrations/supabase/types";
 
-type DbUserCreate = {
-  name?: string | null;
-  email?: string | null;
-  email_secondary?: string | null;
-  phone?: string | null;
-  phone_secondary?: string | null;
-  cpf?: string | null;
-  role?: string;
-  status?: string;
-};
-
-type DbUserUpdate = DbUserCreate & {
-  created_at?: string;
-  updated_at?: string;
-};
+type DbUserCreate = Omit<Database['public']['Tables']['users']['Insert'], 'id' | 'created_at' | 'updated_at'>;
+type DbUserUpdate = Partial<DbUserCreate>;
 
 export const UsersService = {
   async getAll(): Promise<User[]> {
@@ -71,7 +59,7 @@ export const UsersService = {
 
     const { data, error } = await supabase
       .from('users')
-      .insert([dbData])  // Wrap dbData in an array
+      .insert([dbData])
       .select()
       .single();
       
