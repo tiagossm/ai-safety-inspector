@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabaseAdmin } from "@/integrations/supabase/adminClient";
@@ -13,7 +12,8 @@ export function useUsers() {
       console.log("Loading users with admin client...");
       const { data: usersData, error: usersError } = await supabaseAdmin
         .from("users")
-        .select("id, name, email, role, status");
+        .select("id, name, email, role, status")
+        .order("name", { ascending: true });
 
       console.log("Users data:", usersData);
       console.log("Users error:", usersError);
@@ -127,7 +127,7 @@ export function useUsers() {
 
       toast({
         title: userId === selectedUser?.id ? "Usuário atualizado" : "Usuário adicionado",
-        description: userId === selectedUser?.id ? "Dados do usuário foram atualizados." : "Novo usuário cadastrado."
+        description: userId === selectedUser?.id ? "Dados do usuário foram atualizados." : "Novo usu��rio cadastrado."
       });
 
       await loadUsers();
