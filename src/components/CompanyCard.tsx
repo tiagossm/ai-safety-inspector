@@ -42,62 +42,63 @@ export const CompanyCard = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   return (
-    <Card className="w-full bg-background text-foreground rounded-lg border border-border hover:shadow-md transition-shadow">
-      <CardHeader className="border-b border-border pb-4 flex flex-col md:flex-row justify-between items-start md:items-center">
-        <div className="space-y-2">
-          <CompanyTitle company={company} />
-          <div className="flex flex-wrap gap-2 items-center">
-            <Badge variant="outline" className="font-mono">
-              CNPJ: {company.cnpj}
-            </Badge>
-            {company.cnae && <Badge variant="outline">CNAE: {company.cnae}</Badge>}
-            <Badge variant="secondary" className="font-mono">
-              Grau de Risco: {company.metadata?.risk_grade || 'Não classificado'}
-            </Badge>
-            <Badge 
-              className={cn(
-                "text-sm",
-                isInactive
-                  ? "bg-red-100 text-red-800 dark:bg-red-800/30 dark:text-red-400"
-                  : "bg-green-100 text-green-800 dark:bg-green-800/30 dark:text-green-400"
-              )}
-            >
-              {isInactive ? "Inativo" : "Ativo"}
-            </Badge>
+    <Card className="w-full bg-background shadow-md hover:shadow-lg transition-all duration-200 border border-border/50">
+      <CardHeader className="border-b border-border/50 pb-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="space-y-2 flex-1">
+            <CompanyTitle company={company} />
+            <div className="flex flex-wrap gap-2 items-center">
+              <Badge variant="outline" className="font-mono">
+                CNPJ: {company.cnpj}
+              </Badge>
+              {company.cnae && <Badge variant="outline">CNAE: {company.cnae}</Badge>}
+              <Badge variant="secondary" className="font-mono">
+                Grau de Risco: {company.metadata?.risk_grade || 'Não classificado'}
+              </Badge>
+              <Badge 
+                className={cn(
+                  "text-sm",
+                  isInactive
+                    ? "bg-red-100 text-red-800 dark:bg-red-800/30 dark:text-red-400"
+                    : "bg-green-100 text-green-800 dark:bg-green-800/30 dark:text-green-400"
+                )}
+              >
+                {isInactive ? "Inativo" : "Ativo"}
+              </Badge>
+            </div>
           </div>
-        </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreVertical className="h-5 w-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onEdit}>
-              <Pencil className="h-4 w-4 mr-2" />
-              Editar Empresa
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-red-600">
-              <Trash2 className="h-4 w-4 mr-2" />
-              Excluir Empresa
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreVertical className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={onEdit}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Editar Empresa
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-red-600">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Excluir Empresa
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </CardHeader>
 
       <CardContent className="p-6 space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="space-y-4 w-full">
+          <div className="space-y-4">
             <CompanyDetails company={company} />
             <CompanyContacts company={company} onEditContact={onEditContact} />
           </div>
-          
           <CompanyUnits company={company} />
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-border">
-          <Button className="flex-1">
+        <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-border/50">
+          <Button className="flex-1 bg-primary/90 hover:bg-primary">
             <ClipboardList className="h-4 w-4 mr-2" />
             Nova Inspeção
           </Button>
