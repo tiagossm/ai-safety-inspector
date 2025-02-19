@@ -11,7 +11,7 @@
     --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
+    --primary: 174 75% 35%;
     --primary-foreground: 0 0% 98%;
     --secondary: 240 4.8% 95.9%;
     --secondary-foreground: 240 5.9% 10%;
@@ -57,6 +57,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-size: clamp(0.875rem, 2vw, 1rem);
   }
   
   /* Override cursor for interactive elements */
@@ -66,5 +67,90 @@
   
   input, textarea {
     cursor: text;
+  }
+}
+
+@layer components {
+  .layout-container {
+    @apply container mx-auto px-4 sm:px-6 lg:px-8 max-w-[1400px];
+  }
+
+  .modal-container {
+    @apply fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6;
+  }
+
+  .modal-content {
+    @apply w-full max-w-[90vw] sm:max-w-[500px] lg:max-w-[600px] bg-background rounded-lg shadow-lg;
+  }
+
+  .card-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6;
+  }
+
+  .search-bar {
+    @apply w-full md:w-auto flex-1 max-w-xl;
+  }
+
+  .table-container {
+    @apply w-full overflow-x-auto rounded-lg border border-border;
+  }
+}
+
+/* Responsive Table Styles */
+.table-container {
+  @apply relative w-full overflow-auto;
+}
+
+.table-container table {
+  @apply w-full caption-bottom text-sm;
+}
+
+@media (max-width: 768px) {
+  .table-container th,
+  .table-container td {
+    @apply whitespace-nowrap p-2 text-sm;
+  }
+  
+  .search-bar input {
+    @apply text-base;
+  }
+  
+  .modal-content {
+    @apply p-4;
+  }
+}
+
+/* Header & Navigation */
+.header-container {
+  @apply sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60;
+}
+
+.header-content {
+  @apply flex h-14 items-center px-4 gap-4;
+}
+
+/* Sidebar */
+.sidebar {
+  @apply fixed left-0 top-0 z-40 h-screen w-64 border-r bg-background transition-transform lg:translate-x-0;
+}
+
+@media (max-width: 1024px) {
+  .sidebar {
+    @apply -translate-x-full;
+  }
+  
+  .sidebar.open {
+    @apply translate-x-0;
+  }
+}
+
+/* Sheet / Dialog */
+.sheet-content {
+  @apply fixed z-50 gap-4 bg-background p-6 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500;
+}
+
+@media (max-width: 640px) {
+  .sheet-content {
+    @apply p-4;
   }
 }

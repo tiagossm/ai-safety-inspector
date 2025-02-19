@@ -140,9 +140,9 @@ export function CompaniesList() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-4 border-b">
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-2 sm:py-4 border-b">
+        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between px-4">
           <CompanySearchFilter 
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
@@ -150,7 +150,7 @@ export function CompaniesList() {
             searching={searching}
           />
           <Dialog>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="w-[90vw] max-w-3xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
               <DialogHeader>
                 <DialogTitle>Nova Empresa</DialogTitle>
               </DialogHeader>
@@ -160,30 +160,32 @@ export function CompaniesList() {
         </div>
       </div>
 
-      {filteredCompanies.length === 0 ? (
-        searchTerm ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>Nenhum resultado encontrado para "{searchTerm}"</p>
-            <Button 
-              variant="link" 
-              onClick={() => setSearchTerm("")}
-              className="mt-2"
-            >
-              Limpar busca
-            </Button>
-          </div>
+      <div className="px-4">
+        {filteredCompanies.length === 0 ? (
+          searchTerm ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>Nenhum resultado encontrado para "{searchTerm}"</p>
+              <Button 
+                variant="link" 
+                onClick={() => setSearchTerm("")}
+                className="mt-2"
+              >
+                Limpar busca
+              </Button>
+            </div>
+          ) : (
+            <EmptyCompanyState onCompanyCreated={fetchCompanies} />
+          )
         ) : (
-          <EmptyCompanyState onCompanyCreated={fetchCompanies} />
-        )
-      ) : (
-        <CompaniesGrid
-          companies={filteredCompanies}
-          onEdit={setEditingCompany}
-          onToggleStatus={handleToggleStatus}
-          onDelete={handleDelete}
-          onAddUnit={handleAddUnit}
-        />
-      )}
+          <CompaniesGrid
+            companies={filteredCompanies}
+            onEdit={setEditingCompany}
+            onToggleStatus={handleToggleStatus}
+            onDelete={handleDelete}
+            onAddUnit={handleAddUnit}
+          />
+        )}
+      </div>
 
       {editingCompany && (
         <CompanyEditDialog
