@@ -35,7 +35,6 @@ const Companies = () => {
 
       if (error) throw error;
 
-      // Convert data to CSV format
       const csvContent = "data:text/csv;charset=utf-8," + 
         "CNPJ,Nome Fantasia,CNAE,Email,Telefone,Contato\n" +
         data.map(company => `${company.cnpj},${company.fantasy_name || ''},${company.cnae || ''},${company.contact_email || ''},${company.contact_phone || ''},${company.contact_name || ''}`).join("\n");
@@ -113,36 +112,32 @@ const Companies = () => {
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between">
+    <div className="max-w-[2000px] mx-auto px-4 sm:px-6 space-y-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h2 className="text-2xl font-semibold">Empresas Cadastradas</h2>
-        <div className="flex items-center gap-6">
-          <div className="relative">
-            <Input
-              type="file"
-              accept=".csv"
-              className="hidden"
-              id="csv-upload"
-              onChange={handleFileUpload}
-              disabled={uploading}
-            />
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               onClick={() => document.getElementById('csv-upload')?.click()}
               disabled={uploading}
-              className="min-w-[140px]"
+              className="whitespace-nowrap"
             >
               <Upload className="h-5 w-5 mr-2" />
               Importar CSV
             </Button>
+            <Button 
+              variant="outline" 
+              onClick={handleExportCompanies}
+              className="whitespace-nowrap"
+            >
+              <Download className="h-5 w-5 mr-2" />
+              Exportar CSV
+            </Button>
           </div>
-          <Button variant="outline" onClick={handleExportCompanies}>
-            <Download className="h-5 w-5 mr-2" />
-            Exportar CSV
-          </Button>
           <Dialog>
             <DialogTrigger asChild>
-              <Button className="min-w-[180px]">
+              <Button className="whitespace-nowrap">
                 <Plus className="h-5 w-5 mr-2" />
                 Adicionar Empresa
               </Button>
@@ -154,6 +149,14 @@ const Companies = () => {
               <CompanyForm onCompanyCreated={handleCompanyCreated} />
             </DialogContent>
           </Dialog>
+          <Input
+            type="file"
+            accept=".csv"
+            className="hidden"
+            id="csv-upload"
+            onChange={handleFileUpload}
+            disabled={uploading}
+          />
         </div>
       </div>
       <CompaniesList key={refreshTrigger} />
