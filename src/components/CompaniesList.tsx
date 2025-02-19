@@ -44,8 +44,9 @@ export function CompaniesList() {
 
       const companiesWithMetadata = (data || []).map(company => ({
         ...company,
-        metadata: company.metadata as Company['metadata']
-      }));
+        status: company.status as CompanyStatus,
+        metadata: company.metadata ? company.metadata as Company['metadata'] : null
+      })) satisfies Company[];
 
       setCompanies(companiesWithMetadata);
       setFilteredCompanies(companiesWithMetadata);
@@ -180,6 +181,7 @@ export function CompaniesList() {
           onEdit={setEditingCompany}
           onToggleStatus={handleToggleStatus}
           onDelete={handleDelete}
+          onAddUnit={handleAddUnit}
         />
       )}
 
