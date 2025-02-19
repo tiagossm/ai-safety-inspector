@@ -85,6 +85,10 @@ export function CompanyContacts({ company, onEditContact }: CompanyContactsProps
           setIsOpen(true);
         }}
         onDelete={setDeletingContact}
+        onAdd={() => {
+          setEditingContact(null);
+          setIsOpen(true);
+        }}
       />
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
