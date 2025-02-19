@@ -7,7 +7,6 @@ interface CompaniesGridProps {
   onEdit: (company: Company) => void;
   onToggleStatus: (id: string, status: CompanyStatus) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
-  onEditContact: () => void;
 }
 
 export function CompaniesGrid({ 
@@ -15,7 +14,6 @@ export function CompaniesGrid({
   onEdit,
   onToggleStatus,
   onDelete,
-  onEditContact
 }: CompaniesGridProps) {
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
@@ -26,7 +24,7 @@ export function CompaniesGrid({
           onEdit={() => onEdit(company)}
           onToggleStatus={() => onToggleStatus(company.id, company.status === 'active' ? 'inactive' : 'active')}
           onDelete={() => onDelete(company.id)}
-          onEditContact={onEditContact}
+          onAddUnit={() => {}}
         />
       ))}
     </div>

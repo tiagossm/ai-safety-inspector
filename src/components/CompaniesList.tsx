@@ -42,8 +42,13 @@ export function CompaniesList() {
 
       if (error) throw error;
 
-      setCompanies(data || []);
-      setFilteredCompanies(data || []);
+      const companiesWithMetadata = (data || []).map(company => ({
+        ...company,
+        metadata: company.metadata as Company['metadata']
+      }));
+
+      setCompanies(companiesWithMetadata);
+      setFilteredCompanies(companiesWithMetadata);
     } catch (error: any) {
       console.error('Error fetching companies:', error);
       toast({
@@ -175,7 +180,6 @@ export function CompaniesList() {
           onEdit={setEditingCompany}
           onToggleStatus={handleToggleStatus}
           onDelete={handleDelete}
-          onAddUnit={handleAddUnit}
         />
       )}
 
