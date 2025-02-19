@@ -1,10 +1,10 @@
 
-import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Search, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "./ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CompanyEditDialog } from "./CompanyEditDialog";
 import { CompanyForm } from "./CompanyForm";
 import { Company, CompanyStatus } from "@/types/company";
@@ -15,7 +15,9 @@ import { CompaniesGrid } from "./company/CompaniesGrid";
 
 export function CompaniesList() {
   const [companies, setCompanies] = useState<Company[]>([]);
+  const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const { toast } = useToast();
@@ -25,8 +27,13 @@ export function CompaniesList() {
     fetchCompanies();
   }, []);
 
+  useEffect(() => {
+    filterCompanies();
+  }, [searchTerm, companies]);
+
   const fetchCompanies = async () => {
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('companies')
         .select('*')
@@ -35,8 +42,9 @@ export function CompaniesList() {
 
       if (error) throw error;
 
-      setCompanies(data as Company[]);
-    } catch (error) {
+      setCompanies(data || []);
+      setFilteredCompanies(data || []);
+    } catch (error: any) {
       console.error('Error fetching companies:', error);
       toast({
         title: "Erro ao carregar empresas",
@@ -46,6 +54,20 @@ export function CompaniesList() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const filterCompanies = () => {
+    setSearching(true);
+    const filtered = companies.filter(company => 
+      company.fantasy_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      company.cnpj.includes(searchTerm)
+    );
+    setFilteredCompanies(filtered);
+    setSearching(false);
+  };
+
+  const handleSearch = () => {
+    filterCompanies();
   };
 
   const handleToggleStatus = async (id: string, newStatus: CompanyStatus) => {
@@ -63,8 +85,7 @@ export function CompaniesList() {
       });
 
       fetchCompanies();
-    } catch (error) {
-      console.error('Error updating company status:', error);
+    } catch (error: any) {
       toast({
         title: "Erro ao atualizar status",
         description: "Não foi possível atualizar o status da empresa.",
@@ -91,8 +112,7 @@ export function CompaniesList() {
       });
 
       fetchCompanies();
-    } catch (error) {
-      console.error('Error archiving company:', error);
+    } catch (error: any) {
       toast({
         title: "Erro ao arquivar",
         description: "Não foi possível arquivar a empresa.",
@@ -101,77 +121,72 @@ export function CompaniesList() {
     }
   };
 
-  const handleEdit = (company: Company) => {
-    setEditingCompany(company);
+  const handleAddUnit = (companyId: string) => {
+    navigate(`/companies/${companyId}/units/new`);
   };
-
-  const handleEditContact = () => {
-    toast({
-      title: "Editar contato",
-      description: "Funcionalidade em desenvolvimento."
-    });
-  };
-
-  const filteredCompanies = companies.filter(company => 
-    company.fantasy_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    company.cnpj.includes(searchTerm)
-  );
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-pulse">Carregando...</div>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  if (companies.length === 0) {
-    return <EmptyCompanyState onCompanyCreated={fetchCompanies} />;
-  }
-
   return (
-    <div className="space-y-4">
-      <CompanySearchFilter 
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-      />
-
-      <CompaniesGrid
-        companies={filteredCompanies}
-        onEdit={handleEdit}
-        onToggleStatus={handleToggleStatus}
-        onDelete={handleDelete}
-        onEditContact={handleEditContact}
-      />
-
-      <Dialog open={!!editingCompany} onOpenChange={() => setEditingCompany(null)}>
-        {editingCompany && (
-          <CompanyEditDialog
-            company={editingCompany}
-            onClose={() => setEditingCompany(null)}
-            onSave={fetchCompanies}
-            open={!!editingCompany}
+    <div className="space-y-6">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-4 border-b">
+        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+          <CompanySearchFilter 
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            onSearch={handleSearch}
+            searching={searching}
           />
-        )}
-      </Dialog>
+          <Dialog>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Nova Empresa</DialogTitle>
+              </DialogHeader>
+              <CompanyForm onCompanyCreated={fetchCompanies} />
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
 
-      <Dialog>
-        <DialogTrigger asChild>
-          <Button
-            size="lg"
-            className="fixed bottom-6 right-6 rounded-full w-16 h-16 shadow-lg"
-            data-dialog-trigger="new-company"
-          >
-            <Plus className="h-6 w-6" />
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Cadastrar Nova Empresa</DialogTitle>
-          </DialogHeader>
-          <CompanyForm onCompanyCreated={fetchCompanies} />
-        </DialogContent>
-      </Dialog>
+      {filteredCompanies.length === 0 ? (
+        searchTerm ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>Nenhum resultado encontrado para "{searchTerm}"</p>
+            <Button 
+              variant="link" 
+              onClick={() => setSearchTerm("")}
+              className="mt-2"
+            >
+              Limpar busca
+            </Button>
+          </div>
+        ) : (
+          <EmptyCompanyState onCompanyCreated={fetchCompanies} />
+        )
+      ) : (
+        <CompaniesGrid
+          companies={filteredCompanies}
+          onEdit={setEditingCompany}
+          onToggleStatus={handleToggleStatus}
+          onDelete={handleDelete}
+          onAddUnit={handleAddUnit}
+        />
+      )}
+
+      {editingCompany && (
+        <CompanyEditDialog
+          company={editingCompany}
+          onClose={() => setEditingCompany(null)}
+          onSave={fetchCompanies}
+          open={!!editingCompany}
+        />
+      )}
     </div>
   );
 }
