@@ -8,6 +8,7 @@ import { Search, Bell, User, Menu, Building, ClipboardList, Settings, LogOut, Wi
 import { useSwipeable } from "react-swipeable";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { Button } from "./ui/button";
 
 interface DashboardLayoutProps {
   children?: ReactNode;
@@ -18,105 +19,140 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobile();
-
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
-    const updateOnlineStatus = async () => {
+    const updateOnlineStatus = () => {
       setIsOnline(navigator.onLine);
     };
     window.addEventListener("online", updateOnlineStatus);
     window.addEventListener("offline", updateOnlineStatus);
+
+    // Fechar sidebar quando em mobile
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+
     return () => {
       window.removeEventListener("online", updateOnlineStatus);
       window.removeEventListener("offline", updateOnlineStatus);
     };
-  }, []);
+  }, [isMobile]);
 
   const handlers = useSwipeable({
     onSwipedLeft: () => setSidebarOpen(false),
-    onSwipedRight: () => setSidebarOpen(true)
+    onSwipedRight: () => setSidebarOpen(true),
   });
 
   return (
-    <SidebarProvider>
-      <div className={cn("min-h-screen flex", theme === "dark" ? "bg-gray-900" : "bg-gray-100")} {...handlers}>
-        
-        <aside className={cn(
-          "fixed left-0 top-0 h-screen z-50 transition-all duration-300",
-          theme === "dark" ? "bg-gray-800" : "bg-white",
-          sidebarOpen ? "w-64" : "w-20",
-          "shadow-lg border-r border-gray-700"
-        )}>
-          <div className="flex flex-col items-center py-4 h-full">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-3 mb-4 rounded-full bg-emerald-700 hover:bg-emerald-600 transition-colors"
+    <div className="min-h-screen flex bg-background" {...handlers}>
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 w-64 bg-card border-r transition-transform duration-200 ease-in-out",
+          "lg:translate-x-0 lg:relative",
+          !sidebarOpen && "-translate-x-full"
+        )}
+      >
+        <div className="flex flex-col h-full">
+          <div className="p-4 border-b">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden mb-2"
+              onClick={() => setSidebarOpen(false)}
             >
-              <Menu className="h-6 w-6 text-white" />
-            </button>
-
-            <nav className="flex-1 space-y-4 w-full px-2">
-              {[
-                { icon: <Building />, name: "Empresas", path: "/empresas" },
-                { icon: <User />, name: "Usuários", path: "/users" },
-                { icon: <ClipboardList />, name: "Inspeções", path: "/inspecoes" },
-                { icon: <Settings />, name: "Configurações", path: "/configuracoes" },
-                { icon: <LogOut />, name: "Sair", path: "/logout" },
-              ].map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.path}
-                  className={cn(
-                    "w-full p-3 flex items-center transition-colors rounded-lg hover:bg-gray-700/30 group relative",
-                    sidebarOpen ? "justify-start gap-3" : "justify-center",
-                    location.pathname === item.path ? "bg-gray-700/20" : ""
-                  )}
-                >
-                  {item.icon}
-                  {sidebarOpen && <span className="text-sm">{item.name}</span>}
-                </Link>
-              ))}
-            </nav>
+              <Menu className="h-6 w-6" />
+            </Button>
+            <h2 className="text-lg font-semibold">Dashboard</h2>
           </div>
-        </aside>
 
-        <div className={cn("flex-1 flex flex-col transition-all duration-300", sidebarOpen ? "ml-64" : "ml-20")}>
-          <header className={cn(
-            "fixed top-0 right-0 h-16 z-40 flex items-center justify-between px-8",
-            theme === "dark" ? "bg-gray-900 border-b border-gray-700" : "bg-white border-b border-gray-200",
-            sidebarOpen ? "left-64" : "left-20"
-          )}>
-            <nav className="flex space-x-8">
-              {["pagina-inicial", "dashboard", "relatorios"].map((path) => (
-                <Link key={path} to={`/${path}`} className="hover:text-emerald-400 transition-colors">
-                  {path.replace("-", " ")}
-                </Link>
-              ))}
-            </nav>
-
-            <div className="flex items-center space-x-6">
-              {!isOnline && <WifiOff className="h-6 w-6 text-red-500" aria-label="Offline" />}
-              <button className="hover:text-emerald-400 transition-colors">
-                <Bell className="h-6 w-6" />
-              </button>
-              <button className="hover:text-emerald-400 transition-colors">
-                <User className="h-8 w-8" />
-              </button>
-              <button onClick={toggleTheme} className="p-2 rounded-md bg-gray-700 text-white hover:bg-gray-600 transition-colors">
-                {theme === "dark" ? "🌙" : "☀️"}
-              </button>
-            </div>
-          </header>
-
-          <main className="flex-1 pt-24 px-8">
-            <Outlet />
-            {children}
-          </main>
+          <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+            {[
+              { icon: Building, name: "Empresas", path: "/empresas" },
+              { icon: User, name: "Usuários", path: "/users" },
+              { icon: ClipboardList, name: "Inspeções", path: "/inspecoes" },
+              { icon: Settings, name: "Configurações", path: "/configuracoes" },
+              { icon: LogOut, name: "Sair", path: "/logout" },
+            ].map((item) => (
+              <Link
+                key={item.name}
+                to={item.path}
+                className={cn(
+                  "flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors",
+                  "hover:bg-muted",
+                  location.pathname === item.path && "bg-primary/10 text-primary"
+                )}
+              >
+                <item.icon className="h-5 w-5" />
+                <span>{item.name}</span>
+              </Link>
+            ))}
+          </nav>
         </div>
-      </div>
-    </SidebarProvider>
+      </aside>
+
+      {/* Main Content */}
+      <main className={cn(
+        "flex-1 flex flex-col min-h-screen transition-all duration-200",
+        "lg:ml-64",
+        sidebarOpen && "lg:ml-64"
+      )}>
+        {/* Header */}
+        <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+          <div className="container mx-auto px-4 h-16">
+            <div className="flex items-center justify-between h-full">
+              <div className="flex items-center space-x-4">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="lg:hidden"
+                  onClick={() => setSidebarOpen(true)}
+                >
+                  <Menu className="h-6 w-6" />
+                </Button>
+                <div className="hidden md:flex md:w-72 lg:w-80">
+                  <Search className="h-5 w-5 text-muted-foreground" />
+                  <input
+                    type="search"
+                    placeholder="Buscar..."
+                    className="w-full px-3 py-1 bg-transparent border-none focus:outline-none text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-4">
+                {!isOnline && <WifiOff className="h-5 w-5 text-destructive" />}
+                <Button variant="ghost" size="icon">
+                  <Bell className="h-5 w-5" />
+                </Button>
+                <Button variant="ghost" size="icon">
+                  <User className="h-5 w-5" />
+                </Button>
+                <Button variant="ghost" size="icon" onClick={toggleTheme}>
+                  {theme === "dark" ? "🌙" : "☀️"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Page Content */}
+        <div className="flex-1 container mx-auto px-4 py-6">
+          <Outlet />
+          {children}
+        </div>
+      </main>
+
+      {/* Mobile Overlay */}
+      {sidebarOpen && isMobile && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+    </div>
   );
 }
 
