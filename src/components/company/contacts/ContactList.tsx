@@ -1,7 +1,7 @@
 
 import { Contact } from "@/types/company";
 import { Button } from "@/components/ui/button";
-import { Mail, Phone, UserPlus, Pencil, Trash2 } from "lucide-react";
+import { Mail, Phone, Pencil, Trash2 } from "lucide-react";
 import { formatPhone } from "@/utils/formatters";
 import { Card } from "@/components/ui/card";
 
@@ -9,20 +9,11 @@ interface ContactListProps {
   contacts: Contact[];
   onEdit: (contact: Contact) => void;
   onDelete: (contact: Contact) => void;
-  onAdd: () => void;
 }
 
-export function ContactList({ contacts, onEdit, onDelete, onAdd }: ContactListProps) {
+export function ContactList({ contacts, onEdit, onDelete }: ContactListProps) {
   return (
     <Card className="p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Contatos</h3>
-        <Button onClick={onAdd} size="sm" className="gap-2">
-          <UserPlus className="h-4 w-4" />
-          Adicionar Contato
-        </Button>
-      </div>
-
       <div className="space-y-3">
         {contacts?.length ? (
           contacts.map((contact) => (
