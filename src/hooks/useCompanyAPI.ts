@@ -6,6 +6,7 @@ interface CNPJResponse {
   fantasyName: string;
   cnae: string;
   riskLevel: string;
+  address: string;
   contactEmail: string;
   contactPhone: string;
   contactName: string;
@@ -85,6 +86,7 @@ export const useCompanyAPI = () => {
         fantasyName: response.fantasyName || '',
         cnae: formattedCnae,
         riskLevel,
+        address: response.address || '',
         contactEmail: response.contactEmail || '',
         contactPhone: response.contactPhone || '',
         contactName: response.contactName || '',
