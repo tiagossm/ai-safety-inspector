@@ -31,10 +31,42 @@ serve(async (req) => {
       throw new Error(data.message || 'CNPJ não encontrado')
     }
 
+    // Formata o CNAE
+    const formatCNAE = (cnae: string) => {
+      const numbers = cnae.replace(/[^\d]/g, '');
+      return numbers.length >= 5 
+        ? `${numbers.slice(0, 4)}-${numbers.slice(4, 5)}`
+        : `${numbers.padEnd(4, '0')}-0`;
+    };
+
+    // Consulta o grau de risco no banco de dados
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    const cnae = data.atividade_principal?.[0]?.code;
+    const formattedCnae = cnae ? formatCNAE(cnae) : '';
+
+    let riskLevel = '';
+    if (formattedCnae) {
+      const { data: riskData } = await supabase
+        .from('nr4_riscos')
+        .select('grau_risco')
+        .eq('cnae', formattedCnae)
+        .maybeSingle();
+
+      if (riskData) {
+        riskLevel = riskData.grau_risco.toString();
+      }
+    }
+
     // Formata os dados retornados
     const companyData = {
+      cnpj: cleanCNPJ,
       fantasy_name: data.fantasia || data.nome,
-      cnae: data.atividade_principal?.[0]?.code,
+      cnae: formattedCnae,
+      risk_level: riskLevel,
       email: data.email,
       phone: data.telefone,
       legal_representative: data.qsa?.[0]?.nome,

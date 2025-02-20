@@ -59,12 +59,12 @@ export function BasicInfo({
       if (data && onDataFetched) {
         console.log('Dados recebidos:', data);
         onDataFetched({
-          fantasyName: data.fantasyName,
+          fantasyName: data.fantasy_name,
           cnae: data.cnae,
-          riskLevel: data.riskLevel,
-          contactEmail: data.contactEmail,
-          contactPhone: data.contactPhone,
-          contactName: data.contactName,
+          riskLevel: data.risk_level,
+          contactEmail: data.email,
+          contactPhone: data.phone,
+          contactName: data.legal_representative,
         });
       }
     }
