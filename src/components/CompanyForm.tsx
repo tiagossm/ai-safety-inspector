@@ -87,7 +87,7 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
           id="fantasyName"
           value={fantasyName}
           readOnly
-          className="bg-gray-50"
+          className="bg-muted text-foreground"
         />
       </div>
 
@@ -98,7 +98,7 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
             id="cnae"
             value={cnae}
             readOnly
-            className="bg-gray-50"
+            className="bg-muted text-foreground"
           />
         </div>
 
@@ -109,7 +109,7 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
               id="riskLevel"
               value={riskLevel}
               readOnly
-              className="bg-gray-50 flex-1"
+              className="bg-muted text-foreground flex-1"
             />
             {riskLevel && (
               <Badge variant={getRiskLevelVariant(riskLevel)}>
@@ -126,7 +126,7 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
           id="address"
           value={address}
           readOnly
-          className="bg-gray-50"
+          className="bg-muted text-foreground"
         />
       </div>
 
@@ -137,7 +137,7 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
             id="contactName"
             value={contactName}
             readOnly
-            className="bg-gray-50"
+            className="bg-muted text-foreground"
           />
         </div>
 
@@ -147,7 +147,7 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
             id="contactPhone"
             value={contactPhone}
             readOnly
-            className="bg-gray-50"
+            className="bg-muted text-foreground"
           />
         </div>
       </div>
@@ -158,7 +158,7 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
           id="contactEmail"
           value={contactEmail}
           readOnly
-          className="bg-gray-50"
+          className="bg-muted text-foreground"
         />
       </div>
 

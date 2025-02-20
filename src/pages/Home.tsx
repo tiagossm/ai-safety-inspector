@@ -47,16 +47,16 @@ const DashboardView = () => (
         link="/companies"
       />
       <QuickAccessCard
-        icon={<ClipboardCheck className="h-8 w-8 text-secondary" />}
+        icon={<ClipboardCheck className="h-8 w-8 text-primary" />}
         title="Nova Inspeção"
         description="Inicie uma nova inspeção de segurança"
-        link="/inspections"
+        link="/inspecoes/nova"
       />
       <QuickAccessCard
         icon={<FileText className="h-8 w-8 text-primary" />}
         title="Histórico de Relatórios"
         description="Visualize relatórios anteriores"
-        link="/reports"
+        link="/inspecoes"
       />
     </div>
   </div>
