@@ -2,6 +2,7 @@
 import { Search, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { formatCNPJ } from "@/utils/formatters";
 import { 
   Select,
   SelectContent,
