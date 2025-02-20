@@ -21,7 +21,7 @@ export function EmptyCompanyState({ onCompanyCreated }: EmptyCompanyStateProps) 
       <Dialog>
         <DialogTrigger asChild>
           <Button size="lg" className="mt-4">
-            <Building2 className="mr-2 h-5 w-5" />
+            <Plus className="mr-2 h-5 w-5" />
             Adicionar Empresa
           </Button>
         </DialogTrigger>
