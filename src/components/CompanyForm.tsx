@@ -28,6 +28,17 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
   const { toast } = useToast();
   const { user } = useAuth();
 
+  const resetForm = () => {
+    setCnpj("");
+    setFantasyName("");
+    setCnae("");
+    setRiskLevel("");
+    setAddress("");
+    setContactEmail("");
+    setContactPhone("");
+    setContactName("");
+  };
+
   const handleCNPJChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formattedCNPJ = formatCNPJ(e.target.value);
     setCnpj(formattedCNPJ);
@@ -96,6 +107,7 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
         description: "A empresa foi adicionada ao sistema.",
       });
 
+      resetForm();
       onCompanyCreated?.();
     } catch (error: any) {
       console.error('Erro ao cadastrar empresa:', error);

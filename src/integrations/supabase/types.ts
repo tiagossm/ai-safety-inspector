@@ -107,6 +107,7 @@ export type Database = {
       }
       companies: {
         Row: {
+          address: string | null
           cnae: string | null
           cnpj: string
           contact_email: string | null
@@ -125,6 +126,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          address?: string | null
           cnae?: string | null
           cnpj: string
           contact_email?: string | null
@@ -143,6 +145,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          address?: string | null
           cnae?: string | null
           cnpj?: string
           contact_email?: string | null
