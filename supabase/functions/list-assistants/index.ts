@@ -38,8 +38,9 @@ serve(async (req) => {
       throw new Error(data.error?.message || 'Failed to fetch assistants');
     }
 
+    // Simplificando a estrutura da resposta
     return new Response(JSON.stringify({
-      data: { data: Array.isArray(data.data) ? data.data : [] }
+      data: data.data || []
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -49,7 +50,7 @@ serve(async (req) => {
     
     return new Response(JSON.stringify({ 
       error: error.message || 'Unknown error occurred',
-      data: { data: [] }
+      data: [] // Resposta simplificada em caso de erro
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -23,9 +23,15 @@ export const useOpenAIAssistants = () => {
         throw new Error(response.error.message || 'Failed to load assistants');
       }
 
-      // Garantir que temos os dados na estrutura correta
-      const assistantsList = response.data?.data?.data || [];
+      // Simplificando o acesso aos dados
+      const assistantsList = response.data?.data || [];
       console.log('Assistants list:', assistantsList);
+
+      if (!Array.isArray(assistantsList)) {
+        console.log('Response is not an array:', assistantsList);
+        setAssistants([]);
+        return;
+      }
 
       const formattedAssistants = assistantsList
         .filter(assistant => assistant && typeof assistant === 'object')
