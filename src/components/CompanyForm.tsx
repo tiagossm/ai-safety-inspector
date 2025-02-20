@@ -1,72 +1,120 @@
 
 import { Button } from "@/components/ui/button";
-import { BasicInfo } from "./company/BasicInfo";
-import { ContactInfo } from "./company/ContactInfo";
-import { UnitsList } from "./company/UnitsList";
-import { useCompanyForm } from "@/hooks/useCompanyForm";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { useCompanyAPI } from "@/hooks/useCompanyAPI";
 import { formatCNPJ } from "@/utils/formatters";
+import { useState } from "react";
+import { useToast } from "./ui/use-toast";
 
 interface CompanyFormProps {
   onCompanyCreated?: () => void;
 }
 
 export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
-  const { formState, formHandlers } = useCompanyForm(onCompanyCreated);
-  
+  const [cnpj, setCnpj] = useState("");
+  const [fantasyName, setFantasyName] = useState("");
+  const [cnae, setCnae] = useState("");
+  const [riskLevel, setRiskLevel] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { fetchCNPJData } = useCompanyAPI();
+  const { toast } = useToast();
+
   const handleCNPJChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formattedCNPJ = formatCNPJ(e.target.value);
-    formHandlers.handleCNPJChange({
-      ...e,
-      target: { ...e.target, value: formattedCNPJ },
-    });
+    setCnpj(formattedCNPJ);
   };
 
-  const handleDataFetched = (data: any) => {
-    console.log("Dados recebidos no CompanyForm:", data);
-    formHandlers.setFantasyName(data.fantasyName || '');
-    formHandlers.handleCNAEChange({ 
-      target: { value: data.cnae || '' }
-    } as React.ChangeEvent<HTMLInputElement>);
-    if (data.contactName) formHandlers.setContactName(data.contactName);
-    if (data.contactEmail) formHandlers.setContactEmail(data.contactEmail);
-    if (data.contactPhone) formHandlers.setContactPhone(data.contactPhone);
+  const handleCNPJBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value.replace(/\D/g, '').length === 14) {
+      setLoading(true);
+      try {
+        const response = await fetchCNPJData(value);
+        if (response) {
+          setFantasyName(response.fantasyName);
+          setCnae(response.cnae);
+          setRiskLevel(response.riskLevel);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar dados do CNPJ:', error);
+        toast({
+          title: "Erro ao buscar dados",
+          description: "Não foi possível consultar os dados do CNPJ",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const getRiskLevelVariant = (level: string) => {
+    const riskNumber = parseInt(level);
+    if (riskNumber <= 2) return "success";
+    if (riskNumber === 3) return "warning";
+    return "destructive";
   };
 
   return (
-    <form onSubmit={formHandlers.handleSubmit} className="space-y-8">
-      <BasicInfo
-        cnpj={formState.cnpj}
-        fantasyName={formState.fantasyName}
-        cnae={formState.cnae}
-        riskLevel={formState.riskLevel}
-        employeeCount={formState.employeeCount}
-        onCNPJChange={handleCNPJChange}
-        onFantasyNameChange={(e) => formHandlers.setFantasyName(e.target.value)}
-        onCNAEChange={formHandlers.handleCNAEChange}
-        onEmployeeCountChange={(e) => formHandlers.setEmployeeCount(e.target.value)}
-        onDataFetched={handleDataFetched}
-      />
+    <div className="space-y-6 p-6 max-w-2xl mx-auto">
+      <div className="space-y-2">
+        <Label htmlFor="cnpj">CNPJ da Empresa</Label>
+        <Input
+          id="cnpj"
+          placeholder="00.000.000/0000-00"
+          value={cnpj}
+          onChange={handleCNPJChange}
+          onBlur={handleCNPJBlur}
+          maxLength={18}
+          disabled={loading}
+          required
+        />
+      </div>
 
-      <ContactInfo
-        contactName={formState.contactName}
-        contactEmail={formState.contactEmail}
-        contactPhone={formState.contactPhone}
-        onContactNameChange={(e) => formHandlers.setContactName(e.target.value)}
-        onContactEmailChange={(e) => formHandlers.setContactEmail(e.target.value)}
-        onContactPhoneChange={(e) => formHandlers.setContactPhone(e.target.value)}
-      />
+      <div className="space-y-2">
+        <Label htmlFor="fantasyName">Nome Fantasia</Label>
+        <Input
+          id="fantasyName"
+          value={fantasyName}
+          readOnly
+          className="bg-gray-50"
+        />
+      </div>
 
-      <UnitsList
-        units={formState.units}
-        onAddUnit={formHandlers.addUnit}
-        onUpdateUnit={formHandlers.updateUnit}
-      />
+      <div className="space-y-2">
+        <Label htmlFor="cnae">CNAE</Label>
+        <Input
+          id="cnae"
+          value={cnae}
+          readOnly
+          className="bg-gray-50"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="riskLevel">Grau de Risco (NR 4)</Label>
+        <div className="flex items-center space-x-2">
+          <Input
+            id="riskLevel"
+            value={riskLevel}
+            readOnly
+            className="bg-gray-50 flex-1"
+          />
+          {riskLevel && (
+            <Badge variant={getRiskLevelVariant(riskLevel)}>
+              Risco {riskLevel}
+            </Badge>
+          )}
+        </div>
+      </div>
 
       <div className="pt-4 flex justify-end">
-        <Button type="submit" disabled={formState.loading}>
-          {formState.loading ? "Cadastrando..." : "Cadastrar Empresa"}
+        <Button type="submit" disabled={!cnpj || !fantasyName || loading}>
+          {loading ? "Carregando..." : "Cadastrar Empresa"}
         </Button>
       </div>
-    </form>
+    </div>
   );
 }
