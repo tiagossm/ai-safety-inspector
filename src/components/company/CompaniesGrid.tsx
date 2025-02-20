@@ -30,5 +30,5 @@ export function CompaniesGrid({
         </div>
       ))}
     </div>
-  );v
+  );
 }
