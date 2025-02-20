@@ -13,6 +13,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface CompanyCardProps {
   company: Company;
@@ -32,6 +34,10 @@ export const CompanyCard = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [dimensioningNRs, setDimensioningNRs] = useState(false);
+  const [showAssistantDialog, setShowAssistantDialog] = useState(false);
+  const [selectedAssistant, setSelectedAssistant] = useState("");
+  const [assistants, setAssistants] = useState<Array<{ id: string, name: string }>>([]);
+  const [loadingAssistants, setLoadingAssistants] = useState(false);
   const navigate = useNavigate();
   const isInactive = company.status === "inactive";
   const { toast } = useToast();
@@ -45,7 +51,13 @@ export const CompanyCard = ({
   };
 
   const handleDimensionNRs = async () => {
+    setShowAssistantDialog(true);
+    await loadAssistants();
+  };
+
+  const handleAnalyzeWithAssistant = async () => {
     setDimensioningNRs(true);
+    setShowAssistantDialog(false);
     try {
       const { data, error } = await supabase.functions.invoke('dimension-nrs', {
         body: { 
@@ -54,7 +66,8 @@ export const CompanyCard = ({
             fantasyName: company.fantasy_name,
             employeeCount: company.employee_count,
             riskGrade: company.metadata?.risk_grade
-          }
+          },
+          assistantId: selectedAssistant || undefined
         }
       });
 
@@ -73,6 +86,32 @@ export const CompanyCard = ({
       });
     } finally {
       setDimensioningNRs(false);
+    }
+  };
+
+  const loadAssistants = async () => {
+    setLoadingAssistants(true);
+    try {
+      const response = await fetch('https://api.openai.com/v1/assistants', {
+        headers: {
+          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+          'OpenAI-Beta': 'assistants=v1'
+        }
+      });
+      const data = await response.json();
+      setAssistants(data.data.map((assistant: any) => ({
+        id: assistant.id,
+        name: assistant.name
+      })));
+    } catch (error) {
+      console.error('Error loading assistants:', error);
+      toast({
+        title: "Erro ao carregar assistentes",
+        description: "Não foi possível carregar a lista de assistentes da OpenAI",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingAssistants(false);
     }
   };
 
@@ -210,6 +249,41 @@ export const CompanyCard = ({
             <CompanyDetails company={company} />
             <CompanyContacts company={company} />
             <CompanyUnits company={company} />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showAssistantDialog} onOpenChange={setShowAssistantDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Selecionar Assistente para Análise</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Select
+              disabled={loadingAssistants}
+              value={selectedAssistant}
+              onValueChange={setSelectedAssistant}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um assistente..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Usar modelo padrão</SelectItem>
+                {assistants.map((assistant) => (
+                  <SelectItem key={assistant.id} value={assistant.id}>
+                    {assistant.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowAssistantDialog(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleAnalyzeWithAssistant} disabled={dimensioningNRs}>
+                Analisar NRs
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
