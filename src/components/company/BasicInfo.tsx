@@ -43,7 +43,7 @@ export function BasicInfo({
     const fetchData = async () => {
       if (cnae && !riskLevel) {
         const newRiskLevel = await fetchRiskLevel(cnae);
-        if (onDataFetched) {
+        if (onDataFetched && newRiskLevel) {
           onDataFetched({ riskLevel: newRiskLevel });
         }
       }
@@ -54,9 +54,18 @@ export function BasicInfo({
   const handleCNPJBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
     const value = e.target.value;
     if (value.replace(/\D/g, '').length === 14) {
+      console.log('Consultando CNPJ:', value);
       const data = await fetchCNPJData(value);
       if (data && onDataFetched) {
-        onDataFetched(data);
+        console.log('Dados recebidos:', data);
+        onDataFetched({
+          fantasyName: data.fantasyName,
+          cnae: data.cnae,
+          riskLevel: data.riskLevel,
+          contactEmail: data.contactEmail,
+          contactPhone: data.contactPhone,
+          contactName: data.contactName,
+        });
       }
     }
   };
