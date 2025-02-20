@@ -1,95 +1,110 @@
 
 import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
+import { useCompanyAPI } from "@/hooks/useCompanyAPI";
+import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Json } from "@/integrations/supabase/types";
-import { useCompanyAPI } from "./useCompanyAPI";
+import { formatCNPJ } from "@/utils/formatters";
 
-interface Unit {
-  address: string;
-  geolocation: string;
-  technicalResponsible: string;
-  cnpj?: string;
-  fantasyName?: string;
-  cnae?: string;
-  riskLevel?: string;
-  contactEmail?: string;
-  contactPhone?: string;
-  contactName?: string;
-  [key: string]: string | undefined;
-}
-
-export const useCompanyForm = (onCompanyCreated?: () => void) => {
+export function useCompanyForm(onCompanyCreated?: () => void) {
   const [cnpj, setCnpj] = useState("");
   const [fantasyName, setFantasyName] = useState("");
-  const [employeeCount, setEmployeeCount] = useState<string>("");
-  const [units, setUnits] = useState<Unit[]>([]);
-  const [loading, setLoading] = useState(false);
   const [cnae, setCnae] = useState("");
   const [riskLevel, setRiskLevel] = useState("");
+  const [address, setAddress] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [contactName, setContactName] = useState("");
+  const [loading, setLoading] = useState(false);
   
+  const { fetchCNPJData } = useCompanyAPI();
   const { toast } = useToast();
-  const { fetchRiskLevel, fetchCNPJData, checkExistingCNPJ } = useCompanyAPI();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const resetForm = () => {
+    setCnpj("");
+    setFantasyName("");
+    setCnae("");
+    setRiskLevel("");
+    setAddress("");
+    setContactEmail("");
+    setContactPhone("");
+    setContactName("");
+  };
 
-    try {
-      const exists = await checkExistingCNPJ(cnpj);
-      if (exists) {
+  const handleCNPJChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedCNPJ = formatCNPJ(e.target.value);
+    setCnpj(formattedCNPJ);
+  };
+
+  const handleCNPJBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value.replace(/\D/g, '').length === 14) {
+      setLoading(true);
+      try {
+        const response = await fetchCNPJData(value);
+        if (response) {
+          setFantasyName(response.fantasyName);
+          setCnae(response.cnae);
+          setRiskLevel(response.riskLevel);
+          setAddress(response.address || '');
+          setContactEmail(response.contactEmail || '');
+          setContactPhone(response.contactPhone || '');
+          setContactName(response.contactName || '');
+        }
+      } catch (error) {
+        console.error('Erro ao buscar dados do CNPJ:', error);
         toast({
-          title: "CNPJ já cadastrado",
-          description: "Uma empresa com este CNPJ já existe no sistema.",
+          title: "Erro ao buscar dados",
+          description: "Não foi possível consultar os dados do CNPJ",
           variant: "destructive",
         });
+      } finally {
         setLoading(false);
-        return;
       }
+    }
+  };
 
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError) throw userError;
+  const getRiskLevelVariant = (level: string) => {
+    const riskNumber = parseInt(level);
+    if (riskNumber <= 2) return "success";
+    if (riskNumber === 3) return "warning";
+    return "destructive";
+  };
 
-      const companyData = {
+  const handleSubmit = async (e: React.FormEvent, userId: string) => {
+    e.preventDefault();
+    if (!cnpj || !fantasyName) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.from('companies').insert({
         cnpj: cnpj.replace(/\D/g, ''),
         fantasy_name: fantasyName,
         cnae,
+        address,
         contact_email: contactEmail,
         contact_phone: contactPhone,
         contact_name: contactName,
-        employee_count: parseInt(employeeCount) || null,
-        metadata: { 
-          units,
-          risk_grade: riskLevel 
-        } as Json,
-        user_id: userData.user.id,
-        status: 'active'
-      };
+        status: 'active',
+        user_id: userId,
+        metadata: {
+          risk_grade: riskLevel
+        }
+      });
 
-      const { error: insertError } = await supabase
-        .from('companies')
-        .insert(companyData);
+      if (error) throw error;
 
-      if (insertError) throw insertError;
-      
       toast({
         title: "Empresa cadastrada com sucesso!",
-        description: "Os dados foram validados e salvos no sistema.",
+        description: "A empresa foi adicionada ao sistema.",
       });
 
       resetForm();
-      
-      if (onCompanyCreated) {
-        onCompanyCreated();
-      }
+      onCompanyCreated?.();
     } catch (error: any) {
-      console.error('Error:', error);
+      console.error('Erro ao cadastrar empresa:', error);
       toast({
         title: "Erro ao cadastrar empresa",
-        description: error.message || "Verifique os dados e tente novamente.",
+        description: error.message || "Tente novamente mais tarde",
         variant: "destructive",
       });
     } finally {
@@ -97,77 +112,23 @@ export const useCompanyForm = (onCompanyCreated?: () => void) => {
     }
   };
 
-  const resetForm = () => {
-    setCnpj("");
-    setFantasyName("");
-    setEmployeeCount("");
-    setUnits([]);
-    setCnae("");
-    setRiskLevel("");
-    setContactEmail("");
-    setContactPhone("");
-    setContactName("");
-  };
-
-  const handleCNPJChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setCnpj(value);
-  };
-
-  const handleCNAEChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newCnae = e.target.value;
-    setCnae(newCnae);
-    if (newCnae.length >= 7) {
-      const riskLevel = await fetchRiskLevel(newCnae);
-      setRiskLevel(riskLevel);
-    }
-  };
-
-  const addUnit = () => {
-    setUnits([...units, {
-      address: "",
-      geolocation: "",
-      technicalResponsible: "",
-      cnpj: "",
-      fantasyName: "",
-      cnae: "",
-      riskLevel: "",
-      contactEmail: "",
-      contactPhone: "",
-      contactName: "",
-    }]);
-  };
-
-  const updateUnit = (index: number, field: keyof Unit, value: string) => {
-    const newUnits = [...units];
-    newUnits[index][field] = value;
-    setUnits(newUnits);
-  };
-
   return {
     formState: {
       cnpj,
       fantasyName,
-      employeeCount,
-      units,
-      loading,
       cnae,
       riskLevel,
+      address,
       contactEmail,
       contactPhone,
       contactName,
+      loading
     },
-    formHandlers: {
-      handleSubmit,
+    handlers: {
       handleCNPJChange,
-      handleCNAEChange,
-      setFantasyName,
-      setEmployeeCount,
-      addUnit,
-      updateUnit,
-      setContactName,
-      setContactEmail,
-      setContactPhone,
+      handleCNPJBlur,
+      handleSubmit
     },
+    getRiskLevelVariant
   };
-};
+}
