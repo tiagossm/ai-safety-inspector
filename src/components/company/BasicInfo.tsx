@@ -18,6 +18,15 @@ interface BasicInfoProps {
   onDataFetched?: (data: any) => void;
 }
 
+interface CNPJData {
+  fantasy_name: string;
+  cnae: string;
+  risk_level: string;
+  email: string;
+  phone: string;
+  legal_representative: string;
+}
+
 export function BasicInfo({
   cnpj,
   fantasyName,
@@ -55,7 +64,7 @@ export function BasicInfo({
     const value = e.target.value;
     if (value.replace(/\D/g, '').length === 14) {
       console.log('Consultando CNPJ:', value);
-      const data = await fetchCNPJData(value);
+      const data = await fetchCNPJData(value) as CNPJData;
       if (data && onDataFetched) {
         console.log('Dados recebidos:', data);
         onDataFetched({
