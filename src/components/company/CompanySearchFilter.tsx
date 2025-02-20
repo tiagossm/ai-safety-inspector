@@ -31,7 +31,7 @@ export function CompanySearchFilter({
   return (
     <div className="flex w-full max-w-2xl gap-2 flex-col sm:flex-row">
       <div className="flex-1 flex gap-2">
-        <Select defaultValue="name" value={searchType} onValueChange={onSearchTypeChange}>
+        <Select value={searchType} onValueChange={onSearchTypeChange}>
           <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="Buscar por" />
           </SelectTrigger>
