@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +36,7 @@ export const CompanyCard = ({
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [dimensioningNRs, setDimensioningNRs] = useState(false);
   const [showAssistantDialog, setShowAssistantDialog] = useState(false);
-  const [selectedAssistant, setSelectedAssistant] = useState("");
+  const [selectedAssistant, setSelectedAssistant] = useState("default");
   const [assistants, setAssistants] = useState<Array<{ id: string, name: string }>>([]);
   const [loadingAssistants, setLoadingAssistants] = useState(false);
   const navigate = useNavigate();
@@ -67,7 +68,7 @@ export const CompanyCard = ({
             employeeCount: company.employee_count,
             riskGrade: company.metadata?.risk_grade
           },
-          assistantId: selectedAssistant || undefined
+          assistantId: selectedAssistant === "default" ? undefined : selectedAssistant
         }
       });
 
@@ -268,7 +269,7 @@ export const CompanyCard = ({
                 <SelectValue placeholder="Selecione um assistente..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Usar modelo padrão</SelectItem>
+                <SelectItem value="default">Usar modelo padrão</SelectItem>
                 {assistants.map((assistant) => (
                   <SelectItem key={assistant.id} value={assistant.id}>
                     {assistant.name}
