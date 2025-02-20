@@ -28,7 +28,9 @@ function App() {
             
             <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
               <Route path="/companies" element={<Companies />} />
+              <Route path="/inspecoes" element={<Companies />} /> {/* Temporário até criarmos a página de inspeções */}
               <Route path="/users" element={<Users />} />
+              <Route path="/configuracoes" element={<Companies />} /> {/* Temporário até criarmos a página de configurações */}
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
