@@ -1,4 +1,3 @@
-
 import { ReactNode, useState, useEffect } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { useAuth } from "@/components/AuthProvider";
@@ -53,13 +52,13 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 w-64 bg-card border-r transition-all duration-300 ease-in-out",
-          "lg:translate-x-0 lg:relative lg:w-64",
+          "lg:translate-x-0 lg:relative",
           !sidebarOpen && "-translate-x-full"
         )}
       >
         <div className="flex flex-col h-full">
           <div className="p-4 border-b flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Dashboard</h2>
+            <h2 className="text-lg font-semibold">Sigma</h2>
             <Button
               variant="ghost"
               size="icon"
@@ -99,8 +98,8 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
       <main className="flex-1 flex flex-col min-h-screen">
         {/* Header */}
         <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
-          <div className="container mx-auto px-4">
-            <div className="flex h-16 items-center justify-between gap-4">
+          <div className="container mx-auto">
+            <div className="flex h-14 items-center justify-between gap-4">
               <div className="flex items-center gap-4 flex-1">
                 <Button
                   variant="ghost"
@@ -108,7 +107,7 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
                   className="lg:hidden"
                   onClick={() => setSidebarOpen(true)}
                 >
-                  <Menu className="h-6 w-6" />
+                  <Menu className="h-5 w-5" />
                 </Button>
                 <div className="hidden md:flex md:flex-1 max-w-xl">
                   <div className="relative flex-1">
@@ -118,7 +117,7 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
                       placeholder="Buscar..."
                       value={searchValue}
                       onChange={(e) => setSearchValue(e.target.value)}
-                      className="w-full pl-9 pr-4 py-2"
+                      className="w-full pl-9"
                     />
                   </div>
                 </div>
@@ -139,7 +138,7 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
             
             {/* Mobile Search */}
-            <div className="lg:hidden -mt-2 pb-3">
+            <div className="lg:hidden -mt-2 pb-3 px-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -147,7 +146,7 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
                   placeholder="Buscar..."
                   value={searchValue}
                   onChange={(e) => setSearchValue(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2"
+                  className="w-full pl-9"
                 />
               </div>
             </div>
@@ -155,7 +154,7 @@ function DashboardLayout({ children }: DashboardLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <div className="flex-1 container mx-auto px-4 py-6">
+        <div className="flex-1 container mx-auto py-6">
           <Outlet />
           {children}
         </div>

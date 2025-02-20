@@ -31,27 +31,28 @@ export const CompanyCard = ({
   const isInactive = company.status === "inactive";
 
   return (
-    <Card className="w-full bg-card hover:shadow-lg transition-shadow duration-200">
-      <CardHeader className="border-b border-border pb-4">
-        <div className="flex justify-between items-start gap-4">
-          <div className="space-y-2 flex-1">
+    <Card className="w-full bg-card hover:shadow-md transition-shadow duration-200">
+      <CardHeader className="border-b border-border pb-3">
+        <div className="flex justify-between items-start gap-2">
+          <div className="space-y-1.5 flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-primary" />
-              <h3 className="text-xl font-semibold leading-none">
+              <Building2 className="h-4 w-4 text-primary shrink-0" />
+              <h3 className="text-lg font-semibold leading-none truncate">
                 {company.fantasy_name}
               </h3>
             </div>
-            <div className="flex flex-wrap gap-2 items-center">
-              <Badge variant="outline" className="font-mono">
-                CNPJ: {company.cnpj}
+            <div className="flex flex-wrap gap-1.5 items-center">
+              <Badge variant="outline" className="font-mono text-xs">
+                {company.cnpj}
               </Badge>
               {company.cnae && (
-                <Badge variant="outline">
-                  CNAE: {company.cnae}
+                <Badge variant="outline" className="text-xs">
+                  {company.cnae}
                 </Badge>
               )}
               <Badge 
                 className={cn(
+                  "text-xs",
                   isInactive
                     ? "bg-red-100 text-red-800 dark:bg-red-800/30 dark:text-red-400"
                     : "bg-green-100 text-green-800 dark:bg-green-800/30 dark:text-green-400"
@@ -60,24 +61,10 @@ export const CompanyCard = ({
                 {isInactive ? "Inativo" : "Ativo"}
               </Badge>
             </div>
-            {company.contact_email && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Mail className="h-4 w-4" />
-                <a href={`mailto:${company.contact_email}`} className="hover:text-primary">
-                  {company.contact_email}
-                </a>
-              </div>
-            )}
-            {company.contact_phone && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Phone className="h-4 w-4" />
-                <span>{company.contact_phone}</span>
-              </div>
-            )}
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon">
+              <Button variant="ghost" size="icon" className="shrink-0">
                 <Pencil className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -93,27 +80,42 @@ export const CompanyCard = ({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+
+        <div className="mt-2 space-y-1">
+          {company.contact_email && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Mail className="h-4 w-4 shrink-0" />
+              <a href={`mailto:${company.contact_email}`} className="hover:text-primary truncate">
+                {company.contact_email}
+              </a>
+            </div>
+          )}
+          {company.contact_phone && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Phone className="h-4 w-4 shrink-0" />
+              <span>{company.contact_phone}</span>
+            </div>
+          )}
+        </div>
       </CardHeader>
 
-      <CardContent className="p-6 space-y-6">
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="space-y-6">
-            <CompanyDetails company={company} />
-            <CompanyContacts company={company} />
-          </div>
-          <div className="space-y-6">
-            <CompanyUnits company={company} />
-            <div className="flex gap-2">
-              <Button onClick={onAddUnit} className="flex-1">
-                <Plus className="h-4 w-4 mr-2" />
-                Nova Unidade
-              </Button>
-              <Button variant="secondary" className="flex-1">
-                <MapPin className="h-4 w-4 mr-2" />
-                Ver no Mapa
-              </Button>
-            </div>
-          </div>
+      <CardContent className="p-4 space-y-4">
+        <div className="grid md:grid-cols-2 gap-4">
+          <CompanyDetails company={company} />
+          <CompanyContacts company={company} />
+        </div>
+        
+        <CompanyUnits company={company} />
+        
+        <div className="flex gap-2 mt-4">
+          <Button onClick={onAddUnit} className="flex-1 h-9">
+            <Plus className="h-4 w-4 mr-2" />
+            Nova Unidade
+          </Button>
+          <Button variant="secondary" className="flex-1 h-9">
+            <MapPin className="h-4 w-4 mr-2" />
+            Ver no Mapa
+          </Button>
         </div>
       </CardContent>
 
