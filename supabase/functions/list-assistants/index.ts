@@ -35,15 +35,23 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log('Assistants loaded:', data);
+    console.log('Raw OpenAI response:', data);
 
-    return new Response(JSON.stringify(data), {
+    // Ensure we're sending back the expected format
+    const formattedResponse = {
+      data: Array.isArray(data.data) ? data.data : []
+    };
+
+    return new Response(JSON.stringify(formattedResponse), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.error('Error in list-assistants function:', error);
     return new Response(
-      JSON.stringify({ error: error.message }), {
+      JSON.stringify({ 
+        error: error.message,
+        data: [] // Ensure we always return an array even on error
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
