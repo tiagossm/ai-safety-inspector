@@ -1,131 +1,29 @@
 
-import { useState, useEffect } from "react";
-import { Plus, Search, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { CompanyEditDialog } from "./CompanyEditDialog";
-import { CompanyForm } from "./CompanyForm";
-import { Company, CompanyStatus } from "@/types/company";
-import { Button } from "./ui/button";
+import { Company } from "@/types/company";
 import { EmptyCompanyState } from "./company/EmptyCompanyState";
 import { CompanySearchFilter } from "./company/CompanySearchFilter";
 import { CompaniesGrid } from "./company/CompaniesGrid";
+import { EmptyState } from "./company/EmptyState";
+import { useCompanies } from "@/hooks/useCompanies";
+import { useCompanyActions } from "@/hooks/useCompanyActions";
+import { useState } from "react";
 
 export function CompaniesList() {
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searching, setSearching] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  const { 
+    companies, 
+    loading, 
+    searching, 
+    searchTerm, 
+    setSearchTerm,
+    refresh 
+  } = useCompanies();
+  
+  const { toggleStatus, deleteCompany } = useCompanyActions();
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
-  const { toast } = useToast();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchCompanies();
-  }, []);
-
-  useEffect(() => {
-    filterCompanies();
-  }, [searchTerm, companies]);
-
-  const fetchCompanies = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('companies')
-        .select('*')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      const companiesWithMetadata = (data || []).map(company => ({
-        ...company,
-        status: company.status as CompanyStatus,
-        metadata: company.metadata ? company.metadata as Company['metadata'] : null
-      })) satisfies Company[];
-
-      setCompanies(companiesWithMetadata);
-      setFilteredCompanies(companiesWithMetadata);
-    } catch (error: any) {
-      console.error('Error fetching companies:', error);
-      toast({
-        title: "Erro ao carregar empresas",
-        description: "Não foi possível carregar a lista de empresas.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filterCompanies = () => {
-    setSearching(true);
-    const filtered = companies.filter(company => 
-      company.fantasy_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      company.cnpj.includes(searchTerm)
-    );
-    setFilteredCompanies(filtered);
-    setSearching(false);
-  };
-
-  const handleSearch = () => {
-    filterCompanies();
-  };
-
-  const handleToggleStatus = async (id: string, newStatus: CompanyStatus) => {
-    try {
-      const { error } = await supabase
-        .from('companies')
-        .update({ status: newStatus })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Status atualizado",
-        description: "O status da empresa foi atualizado com sucesso.",
-      });
-
-      fetchCompanies();
-    } catch (error: any) {
-      toast({
-        title: "Erro ao atualizar status",
-        description: "Não foi possível atualizar o status da empresa.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('companies')
-        .update({ 
-          status: 'archived',
-          deactivated_at: new Date().toISOString()
-        })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Empresa arquivada",
-        description: "A empresa foi arquivada com sucesso.",
-      });
-
-      fetchCompanies();
-    } catch (error: any) {
-      toast({
-        title: "Erro ao arquivar",
-        description: "Não foi possível arquivar a empresa.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleAddUnit = (companyId: string) => {
     navigate(`/companies/${companyId}/units/new`);
@@ -146,42 +44,28 @@ export function CompaniesList() {
           <CompanySearchFilter 
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
-            onSearch={handleSearch}
+            onSearch={() => {}} // A busca agora é automática pelo useEffect
             searching={searching}
           />
-          <Dialog>
-            <DialogContent className="w-[90vw] max-w-3xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
-              <DialogHeader>
-                <DialogTitle>Nova Empresa</DialogTitle>
-              </DialogHeader>
-              <CompanyForm onCompanyCreated={fetchCompanies} />
-            </DialogContent>
-          </Dialog>
         </div>
       </div>
 
       <div className="px-4">
-        {filteredCompanies.length === 0 ? (
+        {companies.length === 0 ? (
           searchTerm ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>Nenhum resultado encontrado para "{searchTerm}"</p>
-              <Button 
-                variant="link" 
-                onClick={() => setSearchTerm("")}
-                className="mt-2"
-              >
-                Limpar busca
-              </Button>
-            </div>
+            <EmptyState
+              searchTerm={searchTerm}
+              onClearSearch={() => setSearchTerm("")}
+            />
           ) : (
-            <EmptyCompanyState onCompanyCreated={fetchCompanies} />
+            <EmptyCompanyState onCompanyCreated={refresh} />
           )
         ) : (
           <CompaniesGrid
-            companies={filteredCompanies}
+            companies={companies}
             onEdit={setEditingCompany}
-            onToggleStatus={handleToggleStatus}
-            onDelete={handleDelete}
+            onToggleStatus={toggleStatus}
+            onDelete={deleteCompany}
             onAddUnit={handleAddUnit}
           />
         )}
@@ -191,7 +75,7 @@ export function CompaniesList() {
         <CompanyEditDialog
           company={editingCompany}
           onClose={() => setEditingCompany(null)}
-          onSave={fetchCompanies}
+          onSave={refresh}
           open={!!editingCompany}
         />
       )}
