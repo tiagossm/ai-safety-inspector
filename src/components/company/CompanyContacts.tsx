@@ -67,10 +67,14 @@ export function CompanyContacts({ company, onEditContact }: CompanyContactsProps
     <div className="space-y-4 w-full">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Contatos</h3>
-        <Button variant="outline" size="sm" onClick={() => {
-          setEditingContact(null);
-          setIsOpen(true);
-        }}>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => {
+            setEditingContact(null);
+            setIsOpen(true);
+          }}
+        >
           <Plus className="h-4 w-4 mr-2" />
           Adicionar Contato
         </Button>
@@ -85,10 +89,6 @@ export function CompanyContacts({ company, onEditContact }: CompanyContactsProps
           setIsOpen(true);
         }}
         onDelete={setDeletingContact}
-        onAdd={() => {
-          setEditingContact(null);
-          setIsOpen(true);
-        }}
       />
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>

@@ -1,279 +1,175 @@
 
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/use-toast";
 import { Label } from "@/components/ui/label";
-import { UnitType } from "@/types/company";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useCompanyAPI } from "@/hooks/useCompanyAPI";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
-interface UnitFormData {
-  fantasy_name: string;
-  cnpj: string;
-  cnae: string;
+interface Unit {
   address: string;
-  unit_type: UnitType | "";
+  geolocation: string;
   technical_responsible: string;
-  contact_name: string;
+  cnpj: string;
+  fantasy_name: string;
+  cnae: string;
+  risk_grade: string;
   contact_email: string;
   contact_phone: string;
-  geolocation?: string;
+  contact_name: string;
+  unit_type: 'matriz' | 'filial';
 }
 
-export function UnitForm() {
-  const { companyId } = useParams();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const { fetchCNPJData } = useCompanyAPI();
+interface UnitFormProps {
+  onSubmit: (unit: Unit) => void;
+  initialData?: Partial<Unit>;
+}
 
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<UnitFormData>({
-    fantasy_name: "",
-    cnpj: "",
-    cnae: "",
-    address: "",
-    unit_type: "",
-    technical_responsible: "",
-    contact_name: "",
-    contact_email: "",
-    contact_phone: "",
-    geolocation: "",
+export function UnitForm({ onSubmit, initialData }: UnitFormProps) {
+  const [unit, setUnit] = useState<Unit>({
+    address: initialData?.address || '',
+    geolocation: initialData?.geolocation || '',
+    technical_responsible: initialData?.technical_responsible || '',
+    cnpj: initialData?.cnpj || '',
+    fantasy_name: initialData?.fantasy_name || '',
+    cnae: initialData?.cnae || '',
+    risk_grade: initialData?.risk_grade || '',
+    contact_email: initialData?.contact_email || '',
+    contact_phone: initialData?.contact_phone || '',
+    contact_name: initialData?.contact_name || '',
+    unit_type: initialData?.unit_type || 'filial',
   });
 
-  const [hasMatrix, setHasMatrix] = useState(false);
+  const { fetchCNPJData, fetchRiskLevel } = useCompanyAPI();
+  const { toast } = useToast();
 
-  useEffect(() => {
-    checkExistingMatrix();
-  }, []);
-
-  const checkExistingMatrix = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('units')
-        .select('*')
-        .eq('company_id', companyId)
-        .eq('unit_type', 'matriz');
-
-      if (error) {
-        console.error('Error checking matrix:', error);
-        return;
-      }
-
-      setHasMatrix(data && data.length > 0);
-    } catch (error) {
-      console.error('Error checking matrix:', error);
-    }
+  const handleChange = (field: keyof Unit, value: string) => {
+    setUnit(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleCNPJBlur = async () => {
-    if (formData.cnpj.length >= 14) {
-      const data = await fetchCNPJData(formData.cnpj);
+  const handleCNPJChange = async (value: string) => {
+    handleChange('cnpj', value);
+    
+    if (value.replace(/\D/g, '').length === 14) {
+      const data = await fetchCNPJData(value);
       if (data) {
-        setFormData(prev => ({
-          ...prev,
-          fantasy_name: data.fantasyName || prev.fantasy_name,
-          cnae: data.cnae || prev.cnae,
-          contact_email: data.contactEmail || prev.contact_email,
-          contact_phone: data.contactPhone || prev.contact_phone,
-          contact_name: data.contactName || prev.contact_name,
-        }));
+        handleChange('fantasy_name', data.fantasyName);
+        handleChange('cnae', data.cnae);
+        if (data.cnae) {
+          const riskLevel = await fetchRiskLevel(data.cnae);
+          handleChange('risk_grade', riskLevel);
+        }
+        handleChange('contact_email', data.contactEmail);
+        handleChange('contact_phone', data.contactPhone);
+        handleChange('contact_name', data.contactName);
       }
     }
   };
 
-  const handleUnitTypeChange = (value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      unit_type: value as UnitType,
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
-    try {
-      if (!companyId) throw new Error("ID da empresa não encontrado");
-
-      // Validate CNPJ format
-      const cnpjNumbers = formData.cnpj.replace(/\D/g, '');
-      if (cnpjNumbers.length !== 14) {
-        throw new Error("CNPJ deve ter 14 dígitos");
-      }
-
-      // Validate unit_type is set
-      if (!formData.unit_type) {
-        throw new Error("Selecione o tipo de unidade");
-      }
-
-      // Validate matriz/filial
-      if (formData.unit_type === 'filial' && !hasMatrix) {
-        throw new Error("Não é possível cadastrar uma filial sem a empresa matriz");
-      }
-
-      const { error } = await supabase
-        .from('units')
-        .insert({
-          ...formData,
-          company_id: companyId,
-          unit_type: formData.unit_type as UnitType,
-        });
-
-      if (error) throw error;
-
+    if (!unit.cnpj || !unit.fantasy_name) {
       toast({
-        title: "Unidade cadastrada com sucesso!",
-        description: "Os dados foram salvos no sistema.",
-      });
-
-      navigate(`/companies/${companyId}`);
-    } catch (error: any) {
-      console.error('Error:', error);
-      toast({
-        title: "Erro ao cadastrar unidade",
-        description: error.message || "Verifique os dados e tente novamente.",
+        title: "Erro no formulário",
+        description: "CNPJ e Nome Fantasia são obrigatórios",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
+      return;
     }
+    onSubmit(unit);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="cnpj">CNPJ</Label>
+          <Label>CNPJ</Label>
           <Input
-            id="cnpj"
-            value={formData.cnpj}
-            onChange={(e) => setFormData(prev => ({ ...prev, cnpj: e.target.value }))}
-            onBlur={handleCNPJBlur}
+            value={unit.cnpj}
+            onChange={(e) => handleCNPJChange(e.target.value)}
             placeholder="00.000.000/0000-00"
             required
           />
         </div>
-
         <div className="space-y-2">
-          <Label htmlFor="unit_type">Tipo de Unidade</Label>
-          <Select
-            onValueChange={handleUnitTypeChange}
-            required
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione o tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              {!hasMatrix && (
-                <SelectItem value="matriz">Matriz</SelectItem>
-              )}
-              <SelectItem value="filial">Filial</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="fantasy_name">Nome Fantasia</Label>
+          <Label>Nome Fantasia</Label>
           <Input
-            id="fantasy_name"
-            value={formData.fantasy_name}
-            onChange={(e) => setFormData(prev => ({ ...prev, fantasy_name: e.target.value }))}
+            value={unit.fantasy_name}
+            onChange={(e) => handleChange('fantasy_name', e.target.value)}
+            placeholder="Nome Fantasia"
             required
           />
         </div>
-
         <div className="space-y-2">
-          <Label htmlFor="cnae">CNAE</Label>
+          <Label>CNAE</Label>
           <Input
-            id="cnae"
-            value={formData.cnae}
-            onChange={(e) => setFormData(prev => ({ ...prev, cnae: e.target.value }))}
+            value={unit.cnae}
+            onChange={(e) => handleChange('cnae', e.target.value)}
+            placeholder="0000-0"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Grau de Risco</Label>
+          <Input
+            value={unit.risk_grade}
+            readOnly
+            placeholder="Grau de Risco"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Endereço</Label>
+          <Input
+            value={unit.address}
+            onChange={(e) => handleChange('address', e.target.value)}
+            placeholder="Endereço completo"
             required
           />
         </div>
-
         <div className="space-y-2">
-          <Label htmlFor="address">Endereço</Label>
+          <Label>Geolocalização</Label>
           <Input
-            id="address"
-            value={formData.address}
-            onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="geolocation">Geolocalização</Label>
-          <Input
-            id="geolocation"
-            value={formData.geolocation}
-            onChange={(e) => setFormData(prev => ({ ...prev, geolocation: e.target.value }))}
+            value={unit.geolocation}
+            onChange={(e) => handleChange('geolocation', e.target.value)}
             placeholder="Latitude, Longitude"
           />
         </div>
-
         <div className="space-y-2">
-          <Label htmlFor="technical_responsible">Responsável Técnico</Label>
+          <Label>Nome do Contato</Label>
           <Input
-            id="technical_responsible"
-            value={formData.technical_responsible}
-            onChange={(e) => setFormData(prev => ({ ...prev, technical_responsible: e.target.value }))}
-            required
+            value={unit.contact_name}
+            onChange={(e) => handleChange('contact_name', e.target.value)}
+            placeholder="Nome do contato"
           />
         </div>
-
         <div className="space-y-2">
-          <Label htmlFor="contact_name">Nome do Contato</Label>
+          <Label>Email do Contato</Label>
           <Input
-            id="contact_name"
-            value={formData.contact_name}
-            onChange={(e) => setFormData(prev => ({ ...prev, contact_name: e.target.value }))}
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="contact_email">Email do Contato</Label>
-          <Input
-            id="contact_email"
+            value={unit.contact_email}
+            onChange={(e) => handleChange('contact_email', e.target.value)}
+            placeholder="email@exemplo.com"
             type="email"
-            value={formData.contact_email}
-            onChange={(e) => setFormData(prev => ({ ...prev, contact_email: e.target.value }))}
-            required
           />
         </div>
-
         <div className="space-y-2">
-          <Label htmlFor="contact_phone">Telefone do Contato</Label>
+          <Label>Telefone do Contato</Label>
           <Input
-            id="contact_phone"
-            value={formData.contact_phone}
-            onChange={(e) => setFormData(prev => ({ ...prev, contact_phone: e.target.value }))}
-            required
+            value={unit.contact_phone}
+            onChange={(e) => handleChange('contact_phone', e.target.value)}
+            placeholder="(00) 0000-0000"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Responsável Técnico</Label>
+          <Input
+            value={unit.technical_responsible}
+            onChange={(e) => handleChange('technical_responsible', e.target.value)}
+            placeholder="Nome do responsável"
           />
         </div>
       </div>
 
       <div className="flex justify-end gap-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => navigate(`/companies/${companyId}`)}
-        >
-          Cancelar
-        </Button>
-        <Button type="submit" disabled={loading}>
-          {loading ? "Cadastrando..." : "Cadastrar Unidade"}
-        </Button>
+        <Button type="submit">Salvar Unidade</Button>
       </div>
     </form>
   );
