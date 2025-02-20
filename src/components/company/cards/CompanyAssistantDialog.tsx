@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect } from "react";
+import { toast } from "@/components/ui/use-toast";
 
 interface CompanyAssistantDialogProps {
   open: boolean;
@@ -22,14 +23,20 @@ export const CompanyAssistantDialog = ({
   selectedAssistant,
   onAssistantChange,
   onAnalyze,
-  assistants,
+  assistants = [],
   loading,
   analyzing,
   onLoad
 }: CompanyAssistantDialogProps) => {
   useEffect(() => {
     if (open) {
-      onLoad();
+      onLoad().catch(() => {
+        toast({
+          title: "Erro ao carregar assistentes",
+          description: "Verifique se a chave da API da OpenAI está configurada corretamente.",
+          variant: "destructive"
+        });
+      });
     }
   }, [open, onLoad]);
 
@@ -40,9 +47,9 @@ export const CompanyAssistantDialog = ({
           <DialogTitle>Selecionar Assistente para Análise</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <Select
-            disabled={loading}
-            value={selectedAssistant}
+          <Select 
+            disabled={loading} 
+            value={selectedAssistant || "default"}
             onValueChange={onAssistantChange}
           >
             <SelectTrigger>
@@ -61,7 +68,10 @@ export const CompanyAssistantDialog = ({
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button onClick={onAnalyze} disabled={analyzing}>
+            <Button 
+              onClick={onAnalyze} 
+              disabled={analyzing || loading}
+            >
               Analisar NRs
             </Button>
           </div>
@@ -69,4 +79,4 @@ export const CompanyAssistantDialog = ({
       </DialogContent>
     </Dialog>
   );
-};
+}
