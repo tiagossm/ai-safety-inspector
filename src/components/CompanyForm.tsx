@@ -6,7 +6,7 @@ import { useCompanyAPI } from "@/hooks/useCompanyAPI";
 import { formatCNPJ } from "@/utils/formatters";
 import { useState } from "react";
 import { useToast } from "./ui/use-toast";
-import { supabase } from "@/supabaseClient";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CompanyFormProps {
   onCompanyCreated?: () => void;
