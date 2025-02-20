@@ -27,6 +27,15 @@ interface CNPJData {
   legal_representative: string;
 }
 
+interface FormattedData {
+  fantasyName: string;
+  cnae: string;
+  riskLevel: string;
+  contactEmail: string;
+  contactPhone: string;
+  contactName: string;
+}
+
 export function BasicInfo({
   cnpj,
   fantasyName,
@@ -67,14 +76,15 @@ export function BasicInfo({
       const data = await fetchCNPJData(value) as CNPJData;
       if (data && onDataFetched) {
         console.log('Dados recebidos:', data);
-        onDataFetched({
+        const formattedData: FormattedData = {
           fantasyName: data.fantasy_name,
           cnae: data.cnae,
           riskLevel: data.risk_level,
           contactEmail: data.email,
           contactPhone: data.phone,
           contactName: data.legal_representative,
-        });
+        };
+        onDataFetched(formattedData);
       }
     }
   };
