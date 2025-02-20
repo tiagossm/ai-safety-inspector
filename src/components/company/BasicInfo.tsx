@@ -18,24 +18,6 @@ interface BasicInfoProps {
   onDataFetched?: (data: any) => void;
 }
 
-interface CNPJResponse {
-  fantasyName: string;
-  cnae: string;
-  riskLevel: string;
-  contactEmail: string;
-  contactPhone: string;
-  contactName: string;
-}
-
-interface FormattedData {
-  fantasyName: string;
-  cnae: string;
-  riskLevel: string;
-  contactEmail: string;
-  contactPhone: string;
-  contactName: string;
-}
-
 export function BasicInfo({
   cnpj,
   fantasyName,
@@ -67,24 +49,24 @@ export function BasicInfo({
       }
     };
     fetchData();
-  }, [cnae]);
+  }, [cnae, riskLevel, onDataFetched, fetchRiskLevel]);
 
   const handleCNPJBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
     const value = e.target.value;
     if (value.replace(/\D/g, '').length === 14) {
       console.log('Consultando CNPJ:', value);
-      const response = await fetchCNPJData(value) as CNPJResponse | null;
+      const response = await fetchCNPJData(value);
+      
       if (response && onDataFetched) {
-        console.log('Dados recebidos:', response);
-        const formattedData: FormattedData = {
-          fantasyName: response.fantasyName || '',
-          cnae: response.cnae || '',
-          riskLevel: response.riskLevel || '',
-          contactEmail: response.contactEmail || '',
-          contactPhone: response.contactPhone || '',
-          contactName: response.contactName || '',
-        };
-        onDataFetched(formattedData);
+        console.log('Dados recebidos do CNPJ:', response);
+        onDataFetched({
+          fantasyName: response.fantasyName,
+          cnae: response.cnae,
+          riskLevel: response.riskLevel,
+          contactEmail: response.contactEmail,
+          contactPhone: response.contactPhone,
+          contactName: response.contactName,
+        });
       }
     }
   };

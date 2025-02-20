@@ -65,7 +65,8 @@ export const useCompanyForm = (onCompanyCreated?: () => void) => {
           units,
           risk_grade: riskLevel 
         } as Json,
-        user_id: userData.user.id
+        user_id: userData.user.id,
+        status: 'active'
       };
 
       const { error: insertError } = await supabase
@@ -111,21 +112,6 @@ export const useCompanyForm = (onCompanyCreated?: () => void) => {
   const handleCNPJChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setCnpj(value);
-    
-    if (value.replace(/\D/g, '').length === 14) {
-      const data = await fetchCNPJData(value);
-      if (data) {
-        setFantasyName(data.fantasyName);
-        setCnae(data.cnae);
-        if (data.cnae) {
-          const riskLevel = await fetchRiskLevel(data.cnae);
-          setRiskLevel(riskLevel);
-        }
-        setContactEmail(data.contactEmail);
-        setContactPhone(data.contactPhone);
-        setContactName(data.contactName);
-      }
-    }
   };
 
   const handleCNAEChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
