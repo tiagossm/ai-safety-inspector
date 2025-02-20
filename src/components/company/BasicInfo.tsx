@@ -18,13 +18,13 @@ interface BasicInfoProps {
   onDataFetched?: (data: any) => void;
 }
 
-interface CNPJData {
-  fantasy_name: string;
+interface CNPJResponse {
+  fantasyName: string;
   cnae: string;
-  risk_level: string;
-  email: string;
-  phone: string;
-  legal_representative: string;
+  riskLevel: string;
+  contactEmail: string;
+  contactPhone: string;
+  contactName: string;
 }
 
 interface FormattedData {
@@ -73,7 +73,7 @@ export function BasicInfo({
     const value = e.target.value;
     if (value.replace(/\D/g, '').length === 14) {
       console.log('Consultando CNPJ:', value);
-      const response = await fetchCNPJData(value);
+      const response = await fetchCNPJData(value) as CNPJResponse | null;
       if (response && onDataFetched) {
         console.log('Dados recebidos:', response);
         const formattedData: FormattedData = {
