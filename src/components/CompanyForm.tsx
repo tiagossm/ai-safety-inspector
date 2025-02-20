@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +8,7 @@ import { formatCNPJ } from "@/utils/formatters";
 import { useState } from "react";
 import { useToast } from "./ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
 
 interface CompanyFormProps {
   onCompanyCreated?: () => void;
@@ -24,6 +26,7 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
   const [loading, setLoading] = useState(false);
   const { fetchCNPJData } = useCompanyAPI();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleCNPJChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formattedCNPJ = formatCNPJ(e.target.value);
@@ -67,7 +70,7 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!cnpj || !fantasyName) return;
+    if (!cnpj || !fantasyName || !user) return;
 
     setLoading(true);
     try {
@@ -75,12 +78,15 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
         cnpj: cnpj.replace(/\D/g, ''),
         fantasy_name: fantasyName,
         cnae,
-        risk_level: riskLevel,
         address,
         contact_email: contactEmail,
         contact_phone: contactPhone,
         contact_name: contactName,
-        status: 'active'
+        status: 'active',
+        user_id: user.id,
+        metadata: {
+          risk_grade: riskLevel
+        }
       });
 
       if (error) throw error;
