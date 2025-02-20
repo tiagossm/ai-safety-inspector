@@ -17,9 +17,11 @@ serve(async (req) => {
     const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     
     if (!OPENAI_API_KEY) {
+      console.error('OpenAI API key not found');
       throw new Error('OpenAI API key not configured');
     }
 
+    console.log('Fetching assistants from OpenAI...');
     const response = await fetch('https://api.openai.com/v1/assistants', {
       headers: {
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
@@ -30,27 +32,34 @@ serve(async (req) => {
 
     if (!response.ok) {
       const error = await response.json();
-      console.error('OpenAI API error:', error);
-      throw new Error('Failed to fetch assistants');
+      console.error('OpenAI API error response:', error);
+      throw new Error(error.error?.message || 'Failed to fetch assistants');
     }
 
     const data = await response.json();
-    console.log('Raw OpenAI response:', data);
+    console.log('OpenAI API raw response:', data);
 
-    // Ensure we're sending back the expected format
-    const formattedResponse = {
+    // Garantir que temos uma estrutura válida
+    const responseData = {
       data: Array.isArray(data.data) ? data.data : []
     };
 
-    return new Response(JSON.stringify(formattedResponse), {
+    console.log('Formatted response data:', responseData);
+
+    return new Response(JSON.stringify(responseData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+
   } catch (error) {
     console.error('Error in list-assistants function:', error);
+    
+    // Sempre retornar um array vazio em caso de erro
     return new Response(
       JSON.stringify({ 
-        error: error.message,
-        data: [] // Ensure we always return an array even on error
+        error: error.message || 'Unknown error occurred',
+        data: {
+          data: [] // Mantém a estrutura esperada mesmo em caso de erro
+        }
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

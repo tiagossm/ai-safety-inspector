@@ -17,26 +17,40 @@ export const useOpenAIAssistants = () => {
     setLoading(true);
     try {
       console.log('Fetching assistants...');
-      const { data, error } = await supabase.functions.invoke('list-assistants');
+      const response = await supabase.functions.invoke('list-assistants');
       
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw error;
+      console.log('Raw response from list-assistants:', response);
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to load assistants');
       }
 
-      console.log('Response from list-assistants:', data);
+      // Verifica se data existe e tem a propriedade data
+      if (!response.data || !response.data.data) {
+        console.log('No data received from API:', response);
+        setAssistants([]);
+        return;
+      }
 
-      // Ensure we have an array to work with
-      const assistantsList = Array.isArray(data?.data) ? data.data : [];
-      
-      // Transform the response to match our interface
-      const formattedAssistants = assistantsList.map((assistant: any) => ({
-        id: assistant.id || '',
-        name: assistant.name || 'Untitled Assistant'
-      })).filter(assistant => assistant.id); // Only keep assistants with valid IDs
+      const assistantsList = response.data.data;
+      console.log('Assistants list:', assistantsList);
 
+      if (!Array.isArray(assistantsList)) {
+        console.log('Response is not an array:', assistantsList);
+        setAssistants([]);
+        return;
+      }
+
+      const formattedAssistants = assistantsList
+        .filter(assistant => assistant && typeof assistant === 'object')
+        .map(assistant => ({
+          id: assistant.id || '',
+          name: assistant.name || 'Untitled Assistant'
+        }))
+        .filter(assistant => assistant.id);
+
+      console.log('Formatted assistants:', formattedAssistants);
       setAssistants(formattedAssistants);
-      console.log('Assistants loaded successfully:', formattedAssistants);
 
     } catch (error: any) {
       console.error('Error loading assistants:', error);
