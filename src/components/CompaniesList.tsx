@@ -11,6 +11,7 @@ import { useCompanies } from "@/hooks/useCompanies";
 import { useCompanyActions } from "@/hooks/useCompanyActions";
 import { useState } from "react";
 import { Button } from "./ui/button";
+import { Card } from "./ui/card";
 
 export function CompaniesList() {
   const { 
@@ -33,7 +34,7 @@ export function CompaniesList() {
   };
 
   const handleAddCompany = () => {
-    // Implementar lógica para adicionar empresa
+    setEditingCompany({} as Company);
   };
 
   if (loading) {
@@ -45,7 +46,7 @@ export function CompaniesList() {
   }
 
   return (
-    <div className="space-y-4">
+    <Card>
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-4 border-b">
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
           <div className="w-full flex justify-between items-center gap-4 px-4">
@@ -69,7 +70,7 @@ export function CompaniesList() {
         </div>
       </div>
 
-      <div className="px-4">
+      <div className="p-4">
         {companies.length === 0 ? (
           searchTerm ? (
             <EmptyState
@@ -107,6 +108,6 @@ export function CompaniesList() {
           open={!!editingCompany}
         />
       )}
-    </div>
+    </Card>
   );
 }
