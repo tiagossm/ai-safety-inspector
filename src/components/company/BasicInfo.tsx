@@ -2,6 +2,8 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { useEffect } from "react";
+import { useCompanyAPI } from "@/hooks/useCompanyAPI";
 
 interface BasicInfoProps {
   cnpj: string;
@@ -13,6 +15,7 @@ interface BasicInfoProps {
   onFantasyNameChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onCNAEChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onEmployeeCountChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onDataFetched?: (data: any) => void;
 }
 
 export function BasicInfo({
@@ -25,12 +28,37 @@ export function BasicInfo({
   onFantasyNameChange,
   onCNAEChange,
   onEmployeeCountChange,
+  onDataFetched
 }: BasicInfoProps) {
+  const { fetchCNPJData, fetchRiskLevel } = useCompanyAPI();
+
   const getRiskLevelVariant = (level: string) => {
     const riskNumber = parseInt(level);
     if (riskNumber <= 2) return "success";
     if (riskNumber === 3) return "warning";
-    return "danger";
+    return "destructive";
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (cnae && !riskLevel) {
+        const newRiskLevel = await fetchRiskLevel(cnae);
+        if (onDataFetched) {
+          onDataFetched({ riskLevel: newRiskLevel });
+        }
+      }
+    };
+    fetchData();
+  }, [cnae]);
+
+  const handleCNPJBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value.replace(/\D/g, '').length === 14) {
+      const data = await fetchCNPJData(value);
+      if (data && onDataFetched) {
+        onDataFetched(data);
+      }
+    }
   };
 
   return (
@@ -42,6 +70,7 @@ export function BasicInfo({
           placeholder="00.000.000/0000-00"
           value={cnpj}
           onChange={onCNPJChange}
+          onBlur={handleCNPJBlur}
           maxLength={18}
           required
         />
@@ -62,7 +91,7 @@ export function BasicInfo({
         <Label htmlFor="cnae">CNAE</Label>
         <Input
           id="cnae"
-          placeholder="00.00-0-00"
+          placeholder="0000-0"
           value={cnae}
           onChange={onCNAEChange}
           required
@@ -100,4 +129,3 @@ export function BasicInfo({
     </div>
   );
 }
-

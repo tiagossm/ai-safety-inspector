@@ -63,11 +63,14 @@ export const useCompanyAPI = () => {
 
   const fetchCNPJData = async (cnpj: string) => {
     try {
+      console.log('Buscando dados do CNPJ:', cnpj);
       const { data, error } = await supabase.functions.invoke('validate-cnpj', {
         body: { cnpj: cnpj.replace(/\D/g, '') }
       });
 
       if (error) throw error;
+
+      console.log('Dados retornados:', data);
 
       // Formata o CNAE antes de buscar o grau de risco
       let riskLevel = "";
