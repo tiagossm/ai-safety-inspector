@@ -1,8 +1,7 @@
-
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Mail, Phone, Pencil, Trash2, MapPin, ChevronRight, Info } from "lucide-react";
+import { Building2, Mail, Phone, Pencil, Trash2, MapPin, ChevronRight, Info, ClipboardCheck, Brain } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Company } from "@/types/company";
@@ -13,6 +12,7 @@ import { useState } from "react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import { useToast } from "@/components/ui/use-toast";
 
 interface CompanyCardProps {
   company: Company;
@@ -31,11 +31,49 @@ export const CompanyCard = ({
 }: CompanyCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [dimensioningNRs, setDimensioningNRs] = useState(false);
   const navigate = useNavigate();
   const isInactive = company.status === "inactive";
+  const { toast } = useToast();
 
   const handleViewDetails = () => {
     setShowDetailsDialog(true);
+  };
+
+  const handleStartInspection = () => {
+    navigate(`/companies/${company.id}/inspections/new`);
+  };
+
+  const handleDimensionNRs = async () => {
+    setDimensioningNRs(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('dimension-nrs', {
+        body: { 
+          cnae: company.cnae,
+          companyInfo: {
+            fantasyName: company.fantasy_name,
+            employeeCount: company.employee_count,
+            riskGrade: company.metadata?.risk_grade
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Análise de NRs Aplicáveis",
+        description: data.analysis,
+        duration: 10000,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao analisar NRs",
+        description: "Não foi possível realizar a análise no momento",
+        variant: "destructive"
+      });
+    } finally {
+      setDimensioningNRs(false);
+    }
   };
 
   return (
@@ -73,23 +111,42 @@ export const CompanyCard = ({
                 )}
               </div>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="shrink-0">
-                  <Pencil className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={onEdit}>
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Editar Empresa
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-red-600">
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Excluir Empresa
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="shrink-0">
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={onEdit}>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Editar Empresa
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-red-600">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Excluir Empresa
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handleStartInspection}
+                title="Iniciar Nova Inspeção"
+              >
+                <ClipboardCheck className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleDimensionNRs}
+                disabled={dimensioningNRs}
+                title="Analisar NRs Aplicáveis"
+              >
+                <Brain className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           <div className="space-y-2">
