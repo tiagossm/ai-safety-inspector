@@ -17,6 +17,10 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
   const [fantasyName, setFantasyName] = useState("");
   const [cnae, setCnae] = useState("");
   const [riskLevel, setRiskLevel] = useState("");
+  const [address, setAddress] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [contactName, setContactName] = useState("");
   const [loading, setLoading] = useState(false);
   const { fetchCNPJData } = useCompanyAPI();
   const { toast } = useToast();
@@ -36,6 +40,10 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
           setFantasyName(response.fantasyName);
           setCnae(response.cnae);
           setRiskLevel(response.riskLevel);
+          setAddress(response.address || '');
+          setContactEmail(response.contactEmail || '');
+          setContactPhone(response.contactPhone || '');
+          setContactName(response.contactName || '');
         }
       } catch (error) {
         console.error('Erro ao buscar dados do CNPJ:', error);
@@ -83,31 +91,75 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
         />
       </div>
 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="cnae">CNAE</Label>
+          <Input
+            id="cnae"
+            value={cnae}
+            readOnly
+            className="bg-gray-50"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="riskLevel">Grau de Risco (NR 4)</Label>
+          <div className="flex items-center space-x-2">
+            <Input
+              id="riskLevel"
+              value={riskLevel}
+              readOnly
+              className="bg-gray-50 flex-1"
+            />
+            {riskLevel && (
+              <Badge variant={getRiskLevelVariant(riskLevel)}>
+                Risco {riskLevel}
+              </Badge>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="space-y-2">
-        <Label htmlFor="cnae">CNAE</Label>
+        <Label htmlFor="address">Endereço</Label>
         <Input
-          id="cnae"
-          value={cnae}
+          id="address"
+          value={address}
           readOnly
           className="bg-gray-50"
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="riskLevel">Grau de Risco (NR 4)</Label>
-        <div className="flex items-center space-x-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="contactName">Nome do Contato</Label>
           <Input
-            id="riskLevel"
-            value={riskLevel}
+            id="contactName"
+            value={contactName}
             readOnly
-            className="bg-gray-50 flex-1"
+            className="bg-gray-50"
           />
-          {riskLevel && (
-            <Badge variant={getRiskLevelVariant(riskLevel)}>
-              Risco {riskLevel}
-            </Badge>
-          )}
         </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="contactPhone">Telefone</Label>
+          <Input
+            id="contactPhone"
+            value={contactPhone}
+            readOnly
+            className="bg-gray-50"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="contactEmail">E-mail</Label>
+        <Input
+          id="contactEmail"
+          value={contactEmail}
+          readOnly
+          className="bg-gray-50"
+        />
       </div>
 
       <div className="pt-4 flex justify-end">
