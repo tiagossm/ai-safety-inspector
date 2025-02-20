@@ -18,7 +18,7 @@ export function CompaniesGrid({
   onAddUnit
 }: CompaniesGridProps) {
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
       {companies.map(company => (
         <CompanyCard
           key={company.id}

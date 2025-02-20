@@ -32,16 +32,16 @@ export const CompanyCard = ({
 
   return (
     <Card className="w-full bg-card hover:shadow-md transition-shadow duration-200">
-      <CardHeader className="border-b border-border pb-3">
+      <CardHeader className="border-b border-border space-y-4">
         <div className="flex justify-between items-start gap-2">
-          <div className="space-y-1.5 flex-1 min-w-0">
+          <div className="space-y-2.5 flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4 text-primary shrink-0" />
               <h3 className="text-lg font-semibold leading-none truncate">
                 {company.fantasy_name}
               </h3>
             </div>
-            <div className="flex flex-wrap gap-1.5 items-center">
+            <div className="flex flex-wrap gap-2">
               <Badge variant="outline" className="font-mono text-xs">
                 {company.cnpj}
               </Badge>
@@ -81,7 +81,7 @@ export const CompanyCard = ({
           </DropdownMenu>
         </div>
 
-        <div className="mt-2 space-y-1">
+        <div className="space-y-2">
           {company.contact_email && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Mail className="h-4 w-4 shrink-0" />
@@ -99,15 +99,15 @@ export const CompanyCard = ({
         </div>
       </CardHeader>
 
-      <CardContent className="p-4 space-y-4">
-        <div className="grid md:grid-cols-2 gap-4">
+      <CardContent className="p-4 space-y-6">
+        <div className="grid gap-6">
           <CompanyDetails company={company} />
           <CompanyContacts company={company} />
         </div>
         
         <CompanyUnits company={company} />
         
-        <div className="flex gap-2 mt-4">
+        <div className="flex gap-2">
           <Button onClick={onAddUnit} className="flex-1 h-9">
             <Plus className="h-4 w-4 mr-2" />
             Nova Unidade

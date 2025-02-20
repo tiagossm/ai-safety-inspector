@@ -3,7 +3,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { CompanyForm } from "@/components/CompanyForm";
 import { CompaniesList } from "@/components/CompaniesList";
 import { Button } from "@/components/ui/button";
-import { Plus, Upload, Download } from "lucide-react";
+import { Upload, Download } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -11,7 +11,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -112,7 +111,7 @@ const Companies = () => {
   };
 
   return (
-    <div className="max-w-[2000px] mx-auto px-4 sm:px-6 space-y-8">
+    <div className="max-w-[2000px] mx-auto space-y-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h2 className="text-2xl font-semibold">Empresas Cadastradas</h2>
         <div className="flex flex-wrap items-center gap-3">
@@ -135,20 +134,6 @@ const Companies = () => {
               Exportar CSV
             </Button>
           </div>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button className="whitespace-nowrap">
-                <Plus className="h-5 w-5 mr-2" />
-                Adicionar Empresa
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Cadastrar Nova Empresa</DialogTitle>
-              </DialogHeader>
-              <CompanyForm onCompanyCreated={handleCompanyCreated} />
-            </DialogContent>
-          </Dialog>
           <Input
             type="file"
             accept=".csv"
