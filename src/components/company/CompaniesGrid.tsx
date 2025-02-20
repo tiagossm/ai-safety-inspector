@@ -1,3 +1,4 @@
+
 import { Company, CompanyStatus } from "@/types/company";
 import { CompanyCard } from "@/components/CompanyCard";
 
@@ -17,17 +18,16 @@ export function CompaniesGrid({
   onAddUnit
 }: CompaniesGridProps) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 p-4">
+    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6 p-4">
       {companies.map(company => (
-        <div key={company.id} className="max-w-md mx-auto w-full">
-          <CompanyCard
-            company={company}
-            onEdit={() => onEdit(company)}
-            onToggleStatus={() => onToggleStatus(company.id, company.status === 'active' ? 'inactive' : 'active')}
-            onDelete={() => onDelete(company.id)}
-            onAddUnit={() => onAddUnit(company.id)}
-          />
-        </div>
+        <CompanyCard
+          key={company.id}
+          company={company}
+          onEdit={() => onEdit(company)}
+          onToggleStatus={() => onToggleStatus(company.id, company.status === 'active' ? 'inactive' : 'active')}
+          onDelete={() => onDelete(company.id)}
+          onAddUnit={() => onAddUnit(company.id)}
+        />
       ))}
     </div>
   );

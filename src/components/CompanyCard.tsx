@@ -2,15 +2,33 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Mail, Phone, ClipboardList, Pencil, Trash2, Plus, MapPin } from "lucide-react";
+import { 
+  Building2, Mail, Phone, Pencil, Trash2, 
+  Plus, MapPin, ChevronRight 
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
 import { Company } from "@/types/company";
 import { CompanyDetails } from "./company/CompanyDetails";
 import { CompanyContacts } from "./company/CompanyContacts";
 import { CompanyUnits } from "./company/CompanyUnits";
 import { useState } from "react";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle 
+} from "./ui/alert-dialog";
+import { useNavigate } from "react-router-dom";
 
 interface CompanyCardProps {
   company: Company;
@@ -28,10 +46,15 @@ export const CompanyCard = ({
   onAddUnit
 }: CompanyCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const navigate = useNavigate();
   const isInactive = company.status === "inactive";
 
+  const handleViewDetails = () => {
+    navigate(`/companies/${company.id}`);
+  };
+
   return (
-    <Card className="w-full bg-card hover:shadow-md transition-shadow duration-200">
+    <Card className="flex flex-col h-full bg-card hover:shadow-md transition-shadow duration-200">
       <CardHeader className="border-b border-border space-y-4">
         <div className="flex justify-between items-start gap-2">
           <div className="space-y-2.5 flex-1 min-w-0">
@@ -99,14 +122,16 @@ export const CompanyCard = ({
         </div>
       </CardHeader>
 
-      <CardContent className="p-4 space-y-6">
+      <CardContent className="p-4 space-y-6 flex-1">
         <div className="grid gap-6">
           <CompanyDetails company={company} />
           <CompanyContacts company={company} />
         </div>
         
         <CompanyUnits company={company} />
-        
+      </CardContent>
+
+      <div className="p-4 pt-0 mt-auto space-y-2">
         <div className="flex gap-2">
           <Button onClick={onAddUnit} className="flex-1 h-9">
             <Plus className="h-4 w-4 mr-2" />
@@ -117,7 +142,15 @@ export const CompanyCard = ({
             Ver no Mapa
           </Button>
         </div>
-      </CardContent>
+        <Button 
+          variant="outline" 
+          className="w-full"
+          onClick={handleViewDetails}
+        >
+          Ver Detalhes
+          <ChevronRight className="h-4 w-4 ml-2" />
+        </Button>
+      </div>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
