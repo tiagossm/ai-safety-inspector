@@ -16,30 +16,16 @@ export const useOpenAIAssistants = () => {
   const loadAssistants = async () => {
     setLoading(true);
     try {
-      console.log('Fetching assistants...');
       const response = await supabase.functions.invoke('list-assistants');
-      
       console.log('Raw response from list-assistants:', response);
 
       if (response.error) {
         throw new Error(response.error.message || 'Failed to load assistants');
       }
 
-      // Verifica se data existe e tem a propriedade data
-      if (!response.data || !response.data.data) {
-        console.log('No data received from API:', response);
-        setAssistants([]);
-        return;
-      }
-
-      const assistantsList = response.data.data;
+      // Garantir que temos os dados na estrutura correta
+      const assistantsList = response.data?.data?.data || [];
       console.log('Assistants list:', assistantsList);
-
-      if (!Array.isArray(assistantsList)) {
-        console.log('Response is not an array:', assistantsList);
-        setAssistants([]);
-        return;
-      }
 
       const formattedAssistants = assistantsList
         .filter(assistant => assistant && typeof assistant === 'object')

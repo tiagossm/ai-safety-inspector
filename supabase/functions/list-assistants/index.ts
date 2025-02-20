@@ -30,40 +30,29 @@ serve(async (req) => {
       },
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      console.error('OpenAI API error response:', error);
-      throw new Error(error.error?.message || 'Failed to fetch assistants');
-    }
-
     const data = await response.json();
     console.log('OpenAI API raw response:', data);
 
-    // Garantir que temos uma estrutura válida
-    const responseData = {
-      data: Array.isArray(data.data) ? data.data : []
-    };
+    if (!response.ok) {
+      console.error('OpenAI API error response:', data);
+      throw new Error(data.error?.message || 'Failed to fetch assistants');
+    }
 
-    console.log('Formatted response data:', responseData);
-
-    return new Response(JSON.stringify(responseData), {
+    return new Response(JSON.stringify({
+      data: { data: Array.isArray(data.data) ? data.data : [] }
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('Error in list-assistants function:', error);
     
-    // Sempre retornar um array vazio em caso de erro
-    return new Response(
-      JSON.stringify({ 
-        error: error.message || 'Unknown error occurred',
-        data: {
-          data: [] // Mantém a estrutura esperada mesmo em caso de erro
-        }
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    return new Response(JSON.stringify({ 
+      error: error.message || 'Unknown error occurred',
+      data: { data: [] }
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });
