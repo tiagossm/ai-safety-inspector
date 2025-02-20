@@ -1,4 +1,8 @@
 
 project_id = "jkgmgjjtslkozhehwmng"
+
 [functions.validate-cnpj]
+verify_jwt = false
+
+[functions.list-assistants]
 verify_jwt = false
