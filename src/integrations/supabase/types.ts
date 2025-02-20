@@ -1041,6 +1041,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      inspection_status: "pending" | "in_progress" | "completed" | "archived"
       unit_type: "matriz" | "filial"
     }
     CompositeTypes: {
