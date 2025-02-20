@@ -21,6 +21,17 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
     });
   };
 
+  const handleDataFetched = (data: any) => {
+    console.log("Dados recebidos no CompanyForm:", data);
+    formHandlers.setFantasyName(data.fantasyName || '');
+    formHandlers.handleCNAEChange({ 
+      target: { value: data.cnae || '' }
+    } as React.ChangeEvent<HTMLInputElement>);
+    if (data.contactName) formHandlers.setContactName(data.contactName);
+    if (data.contactEmail) formHandlers.setContactEmail(data.contactEmail);
+    if (data.contactPhone) formHandlers.setContactPhone(data.contactPhone);
+  };
+
   return (
     <form onSubmit={formHandlers.handleSubmit} className="space-y-8">
       <BasicInfo
@@ -33,6 +44,7 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
         onFantasyNameChange={(e) => formHandlers.setFantasyName(e.target.value)}
         onCNAEChange={formHandlers.handleCNAEChange}
         onEmployeeCountChange={(e) => formHandlers.setEmployeeCount(e.target.value)}
+        onDataFetched={handleDataFetched}
       />
 
       <ContactInfo

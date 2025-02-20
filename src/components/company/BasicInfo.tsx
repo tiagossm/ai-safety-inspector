@@ -30,7 +30,7 @@ export function BasicInfo({
   onEmployeeCountChange,
   onDataFetched
 }: BasicInfoProps) {
-  const { fetchCNPJData, fetchRiskLevel } = useCompanyAPI();
+  const { fetchCNPJData } = useCompanyAPI();
 
   const getRiskLevelVariant = (level: string) => {
     const riskNumber = parseInt(level);
@@ -38,18 +38,6 @@ export function BasicInfo({
     if (riskNumber === 3) return "warning";
     return "destructive";
   };
-
-  useEffect(() => {
-    const fetchData = async () => {
-      if (cnae && !riskLevel) {
-        const newRiskLevel = await fetchRiskLevel(cnae);
-        if (onDataFetched && newRiskLevel) {
-          onDataFetched({ riskLevel: newRiskLevel });
-        }
-      }
-    };
-    fetchData();
-  }, [cnae, riskLevel, onDataFetched, fetchRiskLevel]);
 
   const handleCNPJBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -59,14 +47,7 @@ export function BasicInfo({
       
       if (response && onDataFetched) {
         console.log('Dados recebidos do CNPJ:', response);
-        onDataFetched({
-          fantasyName: response.fantasyName,
-          cnae: response.cnae,
-          riskLevel: response.riskLevel,
-          contactEmail: response.contactEmail,
-          contactPhone: response.contactPhone,
-          contactName: response.contactName,
-        });
+        onDataFetched(response);
       }
     }
   };
