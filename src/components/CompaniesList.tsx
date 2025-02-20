@@ -45,10 +45,10 @@ export function CompaniesList() {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-2 sm:py-4 border-b">
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between px-4">
-          <div className="w-full flex justify-between items-center gap-4">
+    <div className="space-y-4">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-4 border-b">
+        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+          <div className="w-full flex justify-between items-center gap-4 px-4">
             <CompanySearchFilter 
               searchTerm={searchTerm}
               searchType={searchType}
