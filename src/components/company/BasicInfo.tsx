@@ -73,16 +73,16 @@ export function BasicInfo({
     const value = e.target.value;
     if (value.replace(/\D/g, '').length === 14) {
       console.log('Consultando CNPJ:', value);
-      const data = await fetchCNPJData(value) as CNPJData;
-      if (data && onDataFetched) {
-        console.log('Dados recebidos:', data);
+      const response = await fetchCNPJData(value);
+      if (response && onDataFetched) {
+        console.log('Dados recebidos:', response);
         const formattedData: FormattedData = {
-          fantasyName: data.fantasy_name,
-          cnae: data.cnae,
-          riskLevel: data.risk_level,
-          contactEmail: data.email,
-          contactPhone: data.phone,
-          contactName: data.legal_representative,
+          fantasyName: response.fantasyName || '',
+          cnae: response.cnae || '',
+          riskLevel: response.riskLevel || '',
+          contactEmail: response.contactEmail || '',
+          contactPhone: response.contactPhone || '',
+          contactName: response.contactName || '',
         };
         onDataFetched(formattedData);
       }
