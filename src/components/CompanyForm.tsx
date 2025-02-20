@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,6 +6,7 @@ import { useCompanyAPI } from "@/hooks/useCompanyAPI";
 import { formatCNPJ } from "@/utils/formatters";
 import { useState } from "react";
 import { useToast } from "./ui/use-toast";
+import { supabase } from "@/supabaseClient";
 
 interface CompanyFormProps {
   onCompanyCreated?: () => void;
@@ -65,8 +65,46 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
     return "destructive";
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cnpj || !fantasyName) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.from('companies').insert({
+        cnpj: cnpj.replace(/\D/g, ''),
+        fantasy_name: fantasyName,
+        cnae,
+        risk_level: riskLevel,
+        address,
+        contact_email: contactEmail,
+        contact_phone: contactPhone,
+        contact_name: contactName,
+        status: 'active'
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Empresa cadastrada com sucesso!",
+        description: "A empresa foi adicionada ao sistema.",
+      });
+
+      onCompanyCreated?.();
+    } catch (error: any) {
+      console.error('Erro ao cadastrar empresa:', error);
+      toast({
+        title: "Erro ao cadastrar empresa",
+        description: error.message || "Tente novamente mais tarde",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="space-y-6 p-6 max-w-2xl mx-auto">
+    <form onSubmit={handleSubmit} className="space-y-6 p-6 max-w-2xl mx-auto">
       <div className="space-y-2">
         <Label htmlFor="cnpj">CNPJ da Empresa</Label>
         <Input
@@ -167,6 +205,6 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
           {loading ? "Carregando..." : "Cadastrar Empresa"}
         </Button>
       </div>
-    </div>
+    </form>
   );
 }

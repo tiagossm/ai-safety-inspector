@@ -1,4 +1,5 @@
-import { Brain, ClipboardCheck, FileText, Building2, AlertTriangle, Calendar } from "lucide-react";
+
+import { Brain, ClipboardCheck, FileText, Building2, AlertTriangle, Calendar, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
@@ -17,7 +18,15 @@ const Home = () => {
 
 const DashboardView = () => (
   <div className="container mx-auto px-4 py-8">
-    <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
+    <div className="flex justify-between items-center mb-8">
+      <h1 className="text-3xl font-bold">Dashboard</h1>
+      <Button asChild>
+        <Link to="/inspecoes/nova" className="flex items-center gap-2">
+          <Plus className="h-5 w-5" />
+          Nova Inspeção
+        </Link>
+      </Button>
+    </div>
     
     {/* Metrics Cards */}
     <div className="grid md:grid-cols-3 gap-6 mb-8">
@@ -39,25 +48,54 @@ const DashboardView = () => (
     </div>
 
     {/* Quick Access Cards */}
-    <div className="grid md:grid-cols-3 gap-6">
-      <QuickAccessCard
-        icon={<Building2 className="h-8 w-8 text-primary" />}
-        title="Cadastrar Empresa"
-        description="Adicione uma nova empresa ao sistema"
-        link="/companies"
-      />
-      <QuickAccessCard
-        icon={<ClipboardCheck className="h-8 w-8 text-primary" />}
-        title="Nova Inspeção"
-        description="Inicie uma nova inspeção de segurança"
-        link="/inspecoes/nova"
-      />
-      <QuickAccessCard
-        icon={<FileText className="h-8 w-8 text-primary" />}
-        title="Histórico de Relatórios"
-        description="Visualize relatórios anteriores"
-        link="/inspecoes"
-      />
+    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <Card className="col-span-full md:col-span-1 hover:shadow-lg transition-shadow">
+        <Link to="/companies">
+          <CardHeader>
+            <div className="flex items-center gap-4">
+              <Building2 className="h-8 w-8 text-primary" />
+              <CardTitle className="font-montserrat">Cadastrar Empresa</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground font-opensans">
+              Adicione uma nova empresa ao sistema
+            </p>
+          </CardContent>
+        </Link>
+      </Card>
+      
+      <Card className="col-span-full md:col-span-1 hover:shadow-lg transition-shadow">
+        <Link to="/inspecoes/nova">
+          <CardHeader>
+            <div className="flex items-center gap-4">
+              <ClipboardCheck className="h-8 w-8 text-primary" />
+              <CardTitle className="font-montserrat">Nova Inspeção</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground font-opensans">
+              Inicie uma nova inspeção de segurança
+            </p>
+          </CardContent>
+        </Link>
+      </Card>
+      
+      <Card className="col-span-full md:col-span-1 hover:shadow-lg transition-shadow">
+        <Link to="/inspecoes">
+          <CardHeader>
+            <div className="flex items-center gap-4">
+              <FileText className="h-8 w-8 text-primary" />
+              <CardTitle className="font-montserrat">Histórico de Relatórios</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground font-opensans">
+              Visualize relatórios anteriores
+            </p>
+          </CardContent>
+        </Link>
+      </Card>
     </div>
   </div>
 );
