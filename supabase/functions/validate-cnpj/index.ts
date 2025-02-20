@@ -8,6 +8,7 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -30,45 +31,37 @@ serve(async (req) => {
       throw new Error(data.message || 'CNPJ não encontrado')
     }
 
-    // Calcula o grau de risco baseado no CNAE
-    const cnae = data.atividade_principal[0].code
-    let riskLevel = '1'
-
-    // Consulta o grau de risco no banco de dados
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    const { data: riskData, error: riskError } = await supabase
-      .from('risk_levels')
-      .select('risk_level')
-      .eq('cnae', cnae)
-      .single()
-
-    if (!riskError && riskData) {
-      riskLevel = riskData.risk_level
-    }
-
+    // Formata os dados retornados
     const companyData = {
-      cnpj: cleanCNPJ,
       fantasy_name: data.fantasia || data.nome,
-      cnae: data.atividade_principal[0].code,
-      risk_level: riskLevel,
-      contact_email: data.email,
-      contact_phone: data.telefone,
-      contact_name: data.qsa?.[0]?.nome,
+      cnae: data.atividade_principal?.[0]?.code,
+      email: data.email,
+      phone: data.telefone,
+      legal_representative: data.qsa?.[0]?.nome,
     }
+
+    console.log('Dados formatados:', companyData);
 
     return new Response(
       JSON.stringify(companyData),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json'
+        } 
+      }
     )
   } catch (error) {
+    console.error('Erro na consulta do CNPJ:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json'
+        },
+        status: 400 
+      }
     )
   }
 })
-
