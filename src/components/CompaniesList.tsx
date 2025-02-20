@@ -12,6 +12,8 @@ import { useCompanyActions } from "@/hooks/useCompanyActions";
 import { useState } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
+import { CompanyForm } from "./CompanyForm";
 
 export function CompaniesList() {
   const { 
@@ -31,10 +33,6 @@ export function CompaniesList() {
 
   const handleAddUnit = (companyId: string) => {
     navigate(`/companies/${companyId}/units/new`);
-  };
-
-  const handleAddCompany = () => {
-    setEditingCompany({} as Company);
   };
 
   if (loading) {
@@ -58,14 +56,23 @@ export function CompaniesList() {
               onSearch={() => {}} // A busca agora é automática
               searching={searching}
             />
-            <Button 
-              onClick={handleAddCompany}
-              size="lg"
-              className="hidden sm:flex whitespace-nowrap"
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              Nova Empresa
-            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button 
+                  size="lg"
+                  className="hidden sm:flex whitespace-nowrap"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  Nova Empresa
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Cadastrar Nova Empresa</DialogTitle>
+                </DialogHeader>
+                <CompanyForm onCompanyCreated={refresh} />
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </div>
@@ -91,14 +98,22 @@ export function CompaniesList() {
         )}
       </div>
 
-      <Button 
-        onClick={handleAddCompany}
-        size="lg"
-        className="fixed bottom-4 right-4 sm:hidden shadow-lg"
-      >
-        <Plus className="h-5 w-5 mr-2" />
-        Nova Empresa
-      </Button>
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button 
+            size="lg"
+            className="fixed bottom-4 right-4 sm:hidden shadow-lg rounded-full w-16 h-16"
+          >
+            <Plus className="h-6 w-6" />
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Cadastrar Nova Empresa</DialogTitle>
+          </DialogHeader>
+          <CompanyForm onCompanyCreated={refresh} />
+        </DialogContent>
+      </Dialog>
 
       {editingCompany && (
         <CompanyEditDialog
