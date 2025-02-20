@@ -1,1 +1,4 @@
+
 project_id = "jkgmgjjtslkozhehwmng"
+[functions.validate-cnpj]
+verify_jwt = false

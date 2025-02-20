@@ -3,6 +3,15 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+interface CNPJResponse {
+  fantasyName: string;
+  cnae: string;
+  riskLevel: string;
+  contactEmail: string;
+  contactPhone: string;
+  contactName: string;
+}
+
 export const useCompanyAPI = () => {
   const { toast } = useToast();
 
@@ -51,7 +60,7 @@ export const useCompanyAPI = () => {
     }
   };
 
-  const fetchCNPJData = async (cnpj: string) => {
+  const fetchCNPJData = async (cnpj: string): Promise<CNPJResponse | null> => {
     try {
       const cleanCNPJ = cnpj.replace(/\D/g, '');
       if (cleanCNPJ.length !== 14) {
@@ -73,13 +82,13 @@ export const useCompanyAPI = () => {
       const formattedCnae = response.cnae ? formatCNAE(response.cnae) : '';
       const riskLevel = formattedCnae ? await fetchRiskLevel(formattedCnae) : '';
 
-      const result = {
-        fantasyName: response.fantasy_name || '',
+      const result: CNPJResponse = {
+        fantasyName: response.fantasyName || '',
         cnae: formattedCnae,
         riskLevel,
-        contactEmail: response.email || '',
-        contactPhone: response.phone || '',
-        contactName: response.legal_representative || '',
+        contactEmail: response.contactEmail || '',
+        contactPhone: response.contactPhone || '',
+        contactName: response.contactName || '',
       };
 
       console.log('Dados formatados:', result);

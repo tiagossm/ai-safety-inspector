@@ -1,6 +1,5 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.21.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -23,6 +22,8 @@ serve(async (req) => {
     // Remove caracteres não numéricos
     const cleanCNPJ = cnpj.replace(/\D/g, '')
     
+    console.log('Consultando CNPJ:', cleanCNPJ)
+
     // Chama a API ReceitaWS
     const response = await fetch(`https://www.receitaws.com.br/v1/cnpj/${cleanCNPJ}`)
     const data = await response.json()
@@ -31,51 +32,22 @@ serve(async (req) => {
       throw new Error(data.message || 'CNPJ não encontrado')
     }
 
-    // Formata o CNAE
-    const formatCNAE = (cnae: string) => {
-      const numbers = cnae.replace(/[^\d]/g, '');
-      return numbers.length >= 5 
-        ? `${numbers.slice(0, 4)}-${numbers.slice(4, 5)}`
-        : `${numbers.padEnd(4, '0')}-0`;
-    };
+    console.log('Dados recebidos da ReceitaWS:', data)
 
-    // Consulta o grau de risco no banco de dados
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
-
-    const cnae = data.atividade_principal?.[0]?.code;
-    const formattedCnae = cnae ? formatCNAE(cnae) : '';
-
-    let riskLevel = '';
-    if (formattedCnae) {
-      const { data: riskData } = await supabase
-        .from('nr4_riscos')
-        .select('grau_risco')
-        .eq('cnae', formattedCnae)
-        .maybeSingle();
-
-      if (riskData) {
-        riskLevel = riskData.grau_risco.toString();
-      }
+    // Formata os dados para retornar
+    const formattedData = {
+      fantasyName: data.fantasia || data.nome,
+      cnae: data.atividade_principal?.[0]?.code || '',
+      riskLevel: '',  // Será preenchido pelo frontend
+      contactEmail: data.email || '',
+      contactPhone: data.telefone || '',
+      contactName: data.qsa?.[0]?.nome || ''
     }
 
-    // Formata os dados retornados
-    const companyData = {
-      cnpj: cleanCNPJ,
-      fantasy_name: data.fantasia || data.nome,
-      cnae: formattedCnae,
-      risk_level: riskLevel,
-      email: data.email,
-      phone: data.telefone,
-      legal_representative: data.qsa?.[0]?.nome,
-    }
-
-    console.log('Dados formatados:', companyData);
+    console.log('Dados formatados:', formattedData)
 
     return new Response(
-      JSON.stringify(companyData),
+      JSON.stringify(formattedData),
       { 
         headers: { 
           ...corsHeaders, 
@@ -84,7 +56,7 @@ serve(async (req) => {
       }
     )
   } catch (error) {
-    console.error('Erro na consulta do CNPJ:', error);
+    console.error('Erro na consulta do CNPJ:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
