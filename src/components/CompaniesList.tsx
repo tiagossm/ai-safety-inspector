@@ -1,5 +1,5 @@
 
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { CompanyEditDialog } from "./CompanyEditDialog";
 import { Company } from "@/types/company";
@@ -10,14 +10,17 @@ import { EmptyState } from "./company/EmptyState";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useCompanyActions } from "@/hooks/useCompanyActions";
 import { useState } from "react";
+import { Button } from "./ui/button";
 
 export function CompaniesList() {
   const { 
     companies, 
     loading, 
     searching, 
-    searchTerm, 
+    searchTerm,
+    searchType, 
     setSearchTerm,
+    setSearchType,
     refresh 
   } = useCompanies();
   
@@ -27,6 +30,10 @@ export function CompaniesList() {
 
   const handleAddUnit = (companyId: string) => {
     navigate(`/companies/${companyId}/units/new`);
+  };
+
+  const handleAddCompany = () => {
+    // Implementar lógica para adicionar empresa
   };
 
   if (loading) {
@@ -41,12 +48,24 @@ export function CompaniesList() {
     <div className="space-y-4 sm:space-y-6">
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 py-2 sm:py-4 border-b">
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-between px-4">
-          <CompanySearchFilter 
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            onSearch={() => {}} // A busca agora é automática pelo useEffect
-            searching={searching}
-          />
+          <div className="w-full flex justify-between items-center gap-4">
+            <CompanySearchFilter 
+              searchTerm={searchTerm}
+              searchType={searchType}
+              onSearchChange={setSearchTerm}
+              onSearchTypeChange={setSearchType}
+              onSearch={() => {}} // A busca agora é automática
+              searching={searching}
+            />
+            <Button 
+              onClick={handleAddCompany}
+              size="lg"
+              className="hidden sm:flex whitespace-nowrap"
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              Nova Empresa
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -70,6 +89,15 @@ export function CompaniesList() {
           />
         )}
       </div>
+
+      <Button 
+        onClick={handleAddCompany}
+        size="lg"
+        className="fixed bottom-4 right-4 sm:hidden shadow-lg"
+      >
+        <Plus className="h-5 w-5 mr-2" />
+        Nova Empresa
+      </Button>
 
       {editingCompany && (
         <CompanyEditDialog

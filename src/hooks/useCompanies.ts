@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Company, CompanyStatus } from "@/types/company";
+import { isValidCNPJ, isValidPhone, isValidDate } from "@/utils/formatters";
 
 export function useCompanies() {
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -10,6 +11,7 @@ export function useCompanies() {
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchType, setSearchType] = useState<'name' | 'cnpj'>('name');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -18,7 +20,25 @@ export function useCompanies() {
 
   useEffect(() => {
     filterCompanies();
-  }, [searchTerm, companies]);
+  }, [searchTerm, searchType, companies]);
+
+  const validateCompanyData = (company: Partial<Company>) => {
+    const errors: string[] = [];
+
+    if (company.cnpj && !isValidCNPJ(company.cnpj)) {
+      errors.push("CNPJ inválido");
+    }
+
+    if (company.contact_phone && !isValidPhone(company.contact_phone)) {
+      errors.push("Telefone inválido");
+    }
+
+    if (company.created_at && !isValidDate(company.created_at)) {
+      errors.push("Data de cadastro inválida");
+    }
+
+    return errors;
+  };
 
   const fetchCompanies = async () => {
     try {
@@ -35,7 +55,15 @@ export function useCompanies() {
         ...company,
         status: company.status as CompanyStatus,
         metadata: company.metadata ? company.metadata as Company['metadata'] : null
-      })) satisfies Company[];
+      }));
+
+      // Validar dados antes de atualizar o estado
+      companiesWithMetadata.forEach(company => {
+        const errors = validateCompanyData(company);
+        if (errors.length > 0) {
+          console.warn(`Problemas encontrados na empresa ${company.fantasy_name}:`, errors);
+        }
+      });
 
       setCompanies(companiesWithMetadata);
       setFilteredCompanies(companiesWithMetadata);
@@ -52,11 +80,20 @@ export function useCompanies() {
   };
 
   const filterCompanies = () => {
+    if (!searchTerm) {
+      setFilteredCompanies(companies);
+      return;
+    }
+
     setSearching(true);
-    const filtered = companies.filter(company => 
-      company.fantasy_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      company.cnpj.includes(searchTerm)
-    );
+    const filtered = companies.filter(company => {
+      if (searchType === 'name') {
+        return company.fantasy_name?.toLowerCase().includes(searchTerm.toLowerCase());
+      } else {
+        return company.cnpj.includes(searchTerm.replace(/\D/g, ''));
+      }
+    });
+    
     setFilteredCompanies(filtered);
     setSearching(false);
   };
@@ -66,7 +103,9 @@ export function useCompanies() {
     loading,
     searching,
     searchTerm,
+    searchType,
     setSearchTerm,
+    setSearchType,
     refresh: fetchCompanies
   };
 }
