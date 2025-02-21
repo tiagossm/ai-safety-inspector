@@ -1,4 +1,3 @@
-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -25,6 +24,7 @@ import { useState } from "react";
 import { formatCNPJ } from "@/utils/formatters";
 import { Badge } from "@/components/ui/badge";
 import { CIPADimensioning } from "./CIPADimensioning";
+import { supabase } from "@/integrations/supabase/client";
 
 const unitFormSchema = z.object({
   fantasy_name: z.string().optional().nullable(),
@@ -114,7 +114,6 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
             const risk = await fetchRiskLevel(response.cnae);
             setRiskLevel(risk);
 
-            // Calcular dimensionamento inicial se houver número de funcionários
             const employeeCount = form.getValues('employee_count');
             if (employeeCount !== null && !isNaN(employeeCount)) {
               const riskGrade = parseInt(risk);
