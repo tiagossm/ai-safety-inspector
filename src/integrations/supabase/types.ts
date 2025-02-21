@@ -353,6 +353,48 @@ export type Database = {
         }
         Relationships: []
       }
+      nr22_dimensionamento: {
+        Row: {
+          numero_empregados: string
+          representantes_suplentes_empregador: number
+          representantes_suplentes_empregados: number
+          representantes_titulares_empregador: number
+          representantes_titulares_empregados: number
+        }
+        Insert: {
+          numero_empregados: string
+          representantes_suplentes_empregador: number
+          representantes_suplentes_empregados: number
+          representantes_titulares_empregador: number
+          representantes_titulares_empregados: number
+        }
+        Update: {
+          numero_empregados?: string
+          representantes_suplentes_empregador?: number
+          representantes_suplentes_empregados?: number
+          representantes_titulares_empregador?: number
+          representantes_titulares_empregados?: number
+        }
+        Relationships: []
+      }
+      nr31_dimensionamento: {
+        Row: {
+          numero_trabalhadores: string
+          representantes_empregador: number
+          representantes_trabalhadores: number
+        }
+        Insert: {
+          numero_trabalhadores: string
+          representantes_empregador: number
+          representantes_trabalhadores: number
+        }
+        Update: {
+          numero_trabalhadores?: string
+          representantes_empregador?: number
+          representantes_trabalhadores?: number
+        }
+        Relationships: []
+      }
       nr4_riscos: {
         Row: {
           cnae: string
@@ -371,6 +413,63 @@ export type Database = {
           created_at?: string
           grau_risco?: number
           id?: string
+        }
+        Relationships: []
+      }
+      nr5_dimensionamento: {
+        Row: {
+          acima_10000_por_2500: number | null
+          empregados_0_19: number | null
+          empregados_1001_2500: number | null
+          empregados_101_120: number | null
+          empregados_121_140: number | null
+          empregados_141_300: number | null
+          empregados_20_29: number | null
+          empregados_2501_5000: number | null
+          empregados_30_50: number | null
+          empregados_301_500: number | null
+          empregados_5001_10000: number | null
+          empregados_501_1000: number | null
+          empregados_51_80: number | null
+          empregados_81_100: number | null
+          grau_de_risco: number
+          numero_integrantes: string
+        }
+        Insert: {
+          acima_10000_por_2500?: number | null
+          empregados_0_19?: number | null
+          empregados_1001_2500?: number | null
+          empregados_101_120?: number | null
+          empregados_121_140?: number | null
+          empregados_141_300?: number | null
+          empregados_20_29?: number | null
+          empregados_2501_5000?: number | null
+          empregados_30_50?: number | null
+          empregados_301_500?: number | null
+          empregados_5001_10000?: number | null
+          empregados_501_1000?: number | null
+          empregados_51_80?: number | null
+          empregados_81_100?: number | null
+          grau_de_risco: number
+          numero_integrantes: string
+        }
+        Update: {
+          acima_10000_por_2500?: number | null
+          empregados_0_19?: number | null
+          empregados_1001_2500?: number | null
+          empregados_101_120?: number | null
+          empregados_121_140?: number | null
+          empregados_141_300?: number | null
+          empregados_20_29?: number | null
+          empregados_2501_5000?: number | null
+          empregados_30_50?: number | null
+          empregados_301_500?: number | null
+          empregados_5001_10000?: number | null
+          empregados_501_1000?: number | null
+          empregados_51_80?: number | null
+          empregados_81_100?: number | null
+          grau_de_risco?: number
+          numero_integrantes?: string
         }
         Relationships: []
       }
