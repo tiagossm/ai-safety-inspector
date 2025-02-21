@@ -19,6 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useCompanyAPI } from "@/hooks/useCompanyAPI";
+import { useToast } from "@/components/ui/use-toast";
+import { useState } from "react";
+import { formatCNPJ } from "@/utils/formatters";
+import { Badge } from "@/components/ui/badge";
 
 const unitFormSchema = z.object({
   fantasy_name: z.string().optional().nullable(),
@@ -39,6 +44,11 @@ interface UnitFormProps {
 }
 
 export function UnitForm({ onSubmit }: UnitFormProps) {
+  const { fetchCNPJData, fetchRiskLevel } = useCompanyAPI();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [riskLevel, setRiskLevel] = useState("");
+
   const form = useForm<UnitFormValues>({
     resolver: zodResolver(unitFormSchema),
     defaultValues: {
@@ -54,23 +64,53 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
     },
   });
 
+  const getRiskLevelVariant = (level: string) => {
+    const riskNumber = parseInt(level);
+    if (riskNumber <= 2) return "success";
+    if (riskNumber === 3) return "warning";
+    return "destructive";
+  };
+
+  const handleCNPJBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value.replace(/\D/g, '').length === 14) {
+      setLoading(true);
+      try {
+        const response = await fetchCNPJData(value);
+        if (response) {
+          form.setValue('fantasy_name', response.fantasyName);
+          form.setValue('cnae', response.cnae);
+          form.setValue('address', response.address || '');
+          form.setValue('contact_email', response.contactEmail || '');
+          form.setValue('contact_phone', response.contactPhone || '');
+          form.setValue('contact_name', response.contactName || '');
+          
+          if (response.cnae) {
+            const risk = await fetchRiskLevel(response.cnae);
+            setRiskLevel(risk);
+          }
+        }
+      } catch (error) {
+        console.error('Erro ao buscar dados do CNPJ:', error);
+        toast({
+          title: "Erro ao buscar dados",
+          description: "Não foi possível consultar os dados do CNPJ",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleCNPJChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formattedCNPJ = formatCNPJ(e.target.value);
+    form.setValue('cnpj', formattedCNPJ);
+  };
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="fantasy_name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nome Fantasia</FormLabel>
-              <FormControl>
-                <Input placeholder="Nome Fantasia" {...field} value={field.value || ''} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
         <FormField
           control={form.control}
           name="cnpj"
@@ -78,7 +118,13 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
             <FormItem>
               <FormLabel>CNPJ</FormLabel>
               <FormControl>
-                <Input placeholder="00.000.000/0000-00" {...field} />
+                <Input 
+                  placeholder="00.000.000/0000-00" 
+                  {...field} 
+                  onChange={handleCNPJChange}
+                  onBlur={handleCNPJBlur}
+                  disabled={loading}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -87,17 +133,61 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
 
         <FormField
           control={form.control}
-          name="cnae"
+          name="fantasy_name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>CNAE</FormLabel>
+              <FormLabel>Nome Fantasia</FormLabel>
               <FormControl>
-                <Input placeholder="CNAE" {...field} value={field.value || ''} />
+                <Input 
+                  placeholder="Nome Fantasia" 
+                  {...field} 
+                  value={field.value || ''} 
+                  readOnly
+                  className="bg-muted"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="cnae"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>CNAE</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="CNAE" 
+                    {...field} 
+                    value={field.value || ''} 
+                    readOnly
+                    className="bg-muted"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormItem>
+            <FormLabel>Grau de Risco (NR 4)</FormLabel>
+            <div className="flex items-center space-x-2">
+              <Input
+                value={riskLevel}
+                readOnly
+                className="bg-muted flex-1"
+              />
+              {riskLevel && (
+                <Badge variant={getRiskLevelVariant(riskLevel)}>
+                  Risco {riskLevel}
+                </Badge>
+              )}
+            </div>
+          </FormItem>
+        </div>
 
         <FormField
           control={form.control}
@@ -128,7 +218,13 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
             <FormItem>
               <FormLabel>Endereço</FormLabel>
               <FormControl>
-                <Input placeholder="Endereço completo" {...field} value={field.value || ''} />
+                <Input 
+                  placeholder="Endereço completo" 
+                  {...field} 
+                  value={field.value || ''} 
+                  readOnly
+                  className="bg-muted"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -142,40 +238,61 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
             <FormItem>
               <FormLabel>Nome do Contato</FormLabel>
               <FormControl>
-                <Input placeholder="Nome do contato" {...field} value={field.value || ''} />
+                <Input 
+                  placeholder="Nome do contato" 
+                  {...field} 
+                  value={field.value || ''} 
+                  readOnly
+                  className="bg-muted"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="contact_email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email do Contato</FormLabel>
-              <FormControl>
-                <Input type="email" placeholder="email@exemplo.com" {...field} value={field.value || ''} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="contact_email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email do Contato</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="email" 
+                    placeholder="email@exemplo.com" 
+                    {...field} 
+                    value={field.value || ''} 
+                    readOnly
+                    className="bg-muted"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="contact_phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Telefone do Contato</FormLabel>
-              <FormControl>
-                <Input placeholder="(00) 00000-0000" {...field} value={field.value || ''} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="contact_phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Telefone do Contato</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="(00) 00000-0000" 
+                    {...field} 
+                    value={field.value || ''} 
+                    readOnly
+                    className="bg-muted"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <FormField
           control={form.control}
@@ -192,7 +309,7 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
         />
 
         <div className="flex justify-end">
-          <Button type="submit">Salvar</Button>
+          <Button type="submit" disabled={loading}>Salvar</Button>
         </div>
       </form>
     </Form>
