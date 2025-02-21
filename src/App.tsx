@@ -13,6 +13,7 @@ import Blog from "./pages/Blog";
 import Contact from "./pages/Contact";
 import { Users } from "./pages/Users";
 import NotFound from "./pages/NotFound";
+import AddUnit from "./pages/AddUnit";
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
             
             <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
               <Route path="/companies" element={<Companies />} />
+              <Route path="/companies/:companyId/units/new" element={<AddUnit />} />
               <Route path="/inspecoes" element={<Companies />} /> {/* Temporário até criarmos a página de inspeções */}
               <Route path="/users" element={<Users />} />
               <Route path="/configuracoes" element={<Companies />} /> {/* Temporário até criarmos a página de configurações */}
