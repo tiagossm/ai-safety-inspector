@@ -5,7 +5,7 @@ import { CompaniesList } from "@/components/CompaniesList";
 import { Button } from "@/components/ui/button";
 import { Upload, Download } from "lucide-react";
 import { useState } from "react";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
