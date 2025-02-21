@@ -1,30 +1,19 @@
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Form } from "@/components/ui/form";
 import { useCompanyAPI } from "@/hooks/useCompanyAPI";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { formatCNPJ } from "@/utils/formatters";
-import { Badge } from "@/components/ui/badge";
-import { CIPADimensioning } from "./CIPADimensioning";
 import { supabase } from "@/integrations/supabase/client";
+import { CNPJSection } from "./form/CNPJSection";
+import { CompanyInfoSection } from "./form/CompanyInfoSection";
+import { EmployeeCountSection } from "./form/EmployeeCountSection";
+import { UnitTypeSection } from "./form/UnitTypeSection";
+import { ContactSection } from "./form/ContactSection";
 
 const unitFormSchema = z.object({
   fantasy_name: z.string().optional().nullable(),
@@ -39,7 +28,7 @@ const unitFormSchema = z.object({
   employee_count: z.number().min(0, 'Número de funcionários deve ser maior ou igual a 0').optional().nullable(),
 });
 
-type UnitFormValues = z.infer<typeof unitFormSchema>;
+export type UnitFormValues = z.infer<typeof unitFormSchema>;
 
 interface UnitFormProps {
   onSubmit: (data: UnitFormValues) => Promise<void>;
@@ -149,223 +138,28 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="cnpj"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>CNPJ</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="00.000.000/0000-00" 
-                  {...field} 
-                  onChange={handleCNPJChange}
-                  onBlur={handleCNPJBlur}
-                  disabled={loading}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+        <CNPJSection 
+          form={form}
+          loading={loading}
+          handleCNPJChange={handleCNPJChange}
+          handleCNPJBlur={handleCNPJBlur}
         />
 
-        <FormField
-          control={form.control}
-          name="fantasy_name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nome Fantasia</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="Nome Fantasia" 
-                  {...field} 
-                  value={field.value || ''} 
-                  readOnly
-                  className="bg-muted"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+        <CompanyInfoSection 
+          form={form}
+          riskLevel={riskLevel}
+          getRiskLevelVariant={getRiskLevelVariant}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="cnae"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>CNAE</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="CNAE" 
-                    {...field} 
-                    value={field.value || ''} 
-                    readOnly
-                    className="bg-muted"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormItem>
-            <FormLabel>Grau de Risco (NR 4)</FormLabel>
-            <div className="flex items-center space-x-2">
-              <Input
-                value={riskLevel}
-                readOnly
-                className="bg-muted flex-1"
-              />
-              {riskLevel && (
-                <Badge variant={getRiskLevelVariant(riskLevel)}>
-                  Risco {riskLevel}
-                </Badge>
-              )}
-            </div>
-          </FormItem>
-        </div>
-
-        <FormField
-          control={form.control}
-          name="employee_count"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Número de Funcionários</FormLabel>
-              <FormControl>
-                <Input 
-                  type="number"
-                  placeholder="Digite o número de funcionários" 
-                  onChange={handleEmployeeCountChange}
-                  value={field.value || ''}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+        <EmployeeCountSection 
+          form={form}
+          handleEmployeeCountChange={handleEmployeeCountChange}
+          cipaDimensioning={cipaDimensioning}
         />
 
-        {cipaDimensioning && <CIPADimensioning dimensioning={cipaDimensioning} />}
+        <UnitTypeSection form={form} />
 
-        <FormField
-          control={form.control}
-          name="unit_type"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tipo de Unidade</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="matriz">Matriz</SelectItem>
-                  <SelectItem value="filial">Filial</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="address"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Endereço</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="Endereço completo" 
-                  {...field} 
-                  value={field.value || ''} 
-                  readOnly
-                  className="bg-muted"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="contact_name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nome do Contato</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="Nome do contato" 
-                  {...field} 
-                  value={field.value || ''} 
-                  readOnly
-                  className="bg-muted"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="contact_email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email do Contato</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="email" 
-                    placeholder="email@exemplo.com" 
-                    {...field} 
-                    value={field.value || ''} 
-                    readOnly
-                    className="bg-muted"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="contact_phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Telefone do Contato</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="(00) 00000-0000" 
-                    {...field} 
-                    value={field.value || ''} 
-                    readOnly
-                    className="bg-muted"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="technical_responsible"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Responsável Técnico</FormLabel>
-              <FormControl>
-                <Input placeholder="Nome do responsável técnico" {...field} value={field.value || ''} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <ContactSection form={form} />
 
         <div className="flex justify-end">
           <Button type="submit" disabled={loading}>Salvar</Button>
