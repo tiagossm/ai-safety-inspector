@@ -108,6 +108,7 @@ export type Database = {
       companies: {
         Row: {
           address: string | null
+          cipa_dimensioning: Json | null
           cnae: string | null
           cnpj: string
           contact_email: string | null
@@ -127,6 +128,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          cipa_dimensioning?: Json | null
           cnae?: string | null
           cnpj: string
           contact_email?: string | null
@@ -146,6 +148,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          cipa_dimensioning?: Json | null
           cnae?: string | null
           cnpj?: string
           contact_email?: string | null
@@ -583,6 +586,7 @@ export type Database = {
       units: {
         Row: {
           address: string | null
+          cipa_dimensioning: Json | null
           cnae: string | null
           cnpj: string
           company_id: string
@@ -590,6 +594,7 @@ export type Database = {
           contact_name: string | null
           contact_phone: string | null
           created_at: string
+          employee_count: number | null
           fantasy_name: string | null
           geolocation: string | null
           id: string
@@ -600,6 +605,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          cipa_dimensioning?: Json | null
           cnae?: string | null
           cnpj: string
           company_id: string
@@ -607,6 +613,7 @@ export type Database = {
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string
+          employee_count?: number | null
           fantasy_name?: string | null
           geolocation?: string | null
           id?: string
@@ -617,6 +624,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          cipa_dimensioning?: Json | null
           cnae?: string | null
           cnpj?: string
           company_id?: string
@@ -624,6 +632,7 @@ export type Database = {
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string
+          employee_count?: number | null
           fantasy_name?: string | null
           geolocation?: string | null
           id?: string
@@ -956,6 +965,14 @@ export type Database = {
             }
             Returns: unknown
           }
+      get_cipa_dimensioning: {
+        Args: {
+          p_employee_count: number
+          p_cnae: string
+          p_risk_level: number
+        }
+        Returns: Json
+      }
       halfvec_avg: {
         Args: {
           "": number[]

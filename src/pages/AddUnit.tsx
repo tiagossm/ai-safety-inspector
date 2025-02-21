@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UnitForm } from "@/components/unit/UnitForm";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, useParams } from "react-router-dom";
 import { X } from "lucide-react";
@@ -18,11 +18,23 @@ export default function AddUnit() {
 
   const handleSubmit = async (unitData: any) => {
     try {
+      // Calcular o dimensionamento da CIPA se houver número de funcionários e CNAE
+      let cipaDimensioning = null;
+      if (unitData.employee_count !== null && unitData.cnae) {
+        const { data: dimensioning } = await supabase.rpc('get_cipa_dimensioning', {
+          p_employee_count: unitData.employee_count,
+          p_cnae: unitData.cnae,
+          p_risk_level: parseInt(unitData.metadata?.risk_grade || '1')
+        });
+        cipaDimensioning = dimensioning;
+      }
+
       const { error } = await supabase
         .from('units')
         .insert([{
           ...unitData,
-          company_id: companyId
+          company_id: companyId,
+          cipa_dimensioning: cipaDimensioning
         }]);
 
       if (error) throw error;
