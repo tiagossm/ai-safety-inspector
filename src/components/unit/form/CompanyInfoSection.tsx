@@ -7,8 +7,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { UseFormReturn } from "react-hook-form";
+import { Badge } from "@/components/ui/badge";
 import { UnitFormValues } from "../UnitForm";
 
 interface CompanyInfoSectionProps {
@@ -17,9 +17,13 @@ interface CompanyInfoSectionProps {
   getRiskLevelVariant: (level: string) => "success" | "warning" | "destructive";
 }
 
-export function CompanyInfoSection({ form, riskLevel, getRiskLevelVariant }: CompanyInfoSectionProps) {
+export function CompanyInfoSection({
+  form,
+  riskLevel,
+  getRiskLevelVariant,
+}: CompanyInfoSectionProps) {
   return (
-    <>
+    <div className="space-y-4">
       <FormField
         control={form.control}
         name="fantasy_name"
@@ -27,13 +31,7 @@ export function CompanyInfoSection({ form, riskLevel, getRiskLevelVariant }: Com
           <FormItem>
             <FormLabel>Nome Fantasia</FormLabel>
             <FormControl>
-              <Input 
-                placeholder="Nome Fantasia" 
-                {...field} 
-                value={field.value || ''} 
-                readOnly
-                className="bg-muted"
-              />
+              <Input {...field} value={field.value || ''} readOnly />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -48,35 +46,48 @@ export function CompanyInfoSection({ form, riskLevel, getRiskLevelVariant }: Com
             <FormItem>
               <FormLabel>CNAE</FormLabel>
               <FormControl>
-                <Input 
-                  placeholder="CNAE" 
-                  {...field} 
-                  value={field.value || ''} 
-                  readOnly
-                  className="bg-muted"
-                />
+                <Input {...field} value={field.value || ''} readOnly />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <FormItem>
-          <FormLabel>Grau de Risco (NR 4)</FormLabel>
-          <div className="flex items-center space-x-2">
-            <Input
-              value={riskLevel}
-              readOnly
-              className="bg-muted flex-1"
-            />
-            {riskLevel && (
-              <Badge variant={getRiskLevelVariant(riskLevel)}>
-                Risco {riskLevel}
-              </Badge>
-            )}
-          </div>
-        </FormItem>
+        <FormField
+          control={form.control}
+          name="metadata.risk_grade"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Grau de Risco</FormLabel>
+              <div className="flex items-center gap-2">
+                <FormControl>
+                  <Input {...field} value={field.value || ''} readOnly />
+                </FormControl>
+                {riskLevel && (
+                  <Badge variant={getRiskLevelVariant(riskLevel)}>
+                    Risco {riskLevel}
+                  </Badge>
+                )}
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
       </div>
-    </>
+
+      <FormField
+        control={form.control}
+        name="address"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Endereço</FormLabel>
+            <FormControl>
+              <Input {...field} value={field.value || ''} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </div>
   );
 }
