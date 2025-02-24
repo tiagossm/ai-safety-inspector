@@ -56,7 +56,7 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
       contact_email: '',
       contact_phone: '',
       technical_responsible: '',
-      employee_count: null,
+      employee_count: 0,
       metadata: {
         risk_grade: ''
       }
@@ -70,29 +70,38 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
     return "destructive";
   };
 
+  const calculateCIPADimensioning = async (count: number, cnae: string | null, risk: string) => {
+    if (!cnae || !risk) return;
+    
+    try {
+      console.log('Calculando dimensionamento:', { count, cnae, risk });
+      const { data: dimensioning } = await supabase.rpc('get_cipa_dimensioning', {
+        p_employee_count: count,
+        p_cnae: cnae,
+        p_risk_level: parseInt(risk)
+      });
+      console.log('Dimensionamento calculado:', dimensioning);
+      setCipaDimensioning(dimensioning);
+    } catch (error) {
+      console.error('Erro ao calcular dimensionamento:', error);
+      toast({
+        title: "Erro ao calcular dimensionamento",
+        description: "Não foi possível calcular o dimensionamento da CIPA",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleEmployeeCountChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const count = parseInt(e.target.value);
-    form.setValue('employee_count', count);
+    if (isNaN(count)) return;
     
-    if (!isNaN(count) && count >= 0 && form.getValues('cnae')) {
-      const riskGrade = parseInt(riskLevel);
-      if (!isNaN(riskGrade)) {
-        try {
-          const { data: dimensioning } = await supabase.rpc('get_cipa_dimensioning', {
-            p_employee_count: count,
-            p_cnae: form.getValues('cnae'),
-            p_risk_level: riskGrade
-          });
-          setCipaDimensioning(dimensioning);
-        } catch (error) {
-          console.error('Erro ao calcular dimensionamento:', error);
-          toast({
-            title: "Erro ao calcular dimensionamento",
-            description: "Não foi possível calcular o dimensionamento da CIPA",
-            variant: "destructive",
-          });
-        }
-      }
+    form.setValue('employee_count', count);
+    console.log('Número de funcionários alterado:', count);
+    
+    const cnae = form.getValues('cnae');
+    if (count >= 0 && cnae && riskLevel) {
+      await calculateCIPADimensioning(count, cnae, riskLevel);
     }
   };
 
@@ -101,8 +110,10 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
     if (value.replace(/\D/g, '').length === 14) {
       setLoading(true);
       try {
+        console.log('Buscando dados do CNPJ:', value);
         const response = await fetchCNPJData(value);
         if (response) {
+          console.log('Dados do CNPJ encontrados:', response);
           form.setValue('fantasy_name', response.fantasyName);
           form.setValue('cnae', response.cnae);
           form.setValue('address', response.address || '');
@@ -112,20 +123,13 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
           
           if (response.cnae) {
             const risk = await fetchRiskLevel(response.cnae);
+            console.log('Grau de risco calculado:', risk);
             setRiskLevel(risk);
             form.setValue('metadata.risk_grade', risk);
 
             const employeeCount = form.getValues('employee_count');
             if (employeeCount !== null && !isNaN(employeeCount)) {
-              const riskGrade = parseInt(risk);
-              if (!isNaN(riskGrade)) {
-                const { data: dimensioning } = await supabase.rpc('get_cipa_dimensioning', {
-                  p_employee_count: employeeCount,
-                  p_cnae: response.cnae,
-                  p_risk_level: riskGrade
-                });
-                setCipaDimensioning(dimensioning);
-              }
+              await calculateCIPADimensioning(employeeCount, response.cnae, risk);
             }
           }
         }
