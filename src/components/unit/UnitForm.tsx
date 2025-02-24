@@ -26,6 +26,9 @@ const unitFormSchema = z.object({
   contact_phone: z.string().optional().nullable(),
   technical_responsible: z.string().optional().nullable(),
   employee_count: z.number().min(0, 'Número de funcionários deve ser maior ou igual a 0').optional().nullable(),
+  metadata: z.object({
+    risk_grade: z.string().optional()
+  }).optional().nullable(),
 });
 
 export type UnitFormValues = z.infer<typeof unitFormSchema>;
@@ -54,6 +57,9 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
       contact_phone: '',
       technical_responsible: '',
       employee_count: null,
+      metadata: {
+        risk_grade: ''
+      }
     },
   });
 
@@ -80,6 +86,11 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
           setCipaDimensioning(dimensioning);
         } catch (error) {
           console.error('Erro ao calcular dimensionamento:', error);
+          toast({
+            title: "Erro ao calcular dimensionamento",
+            description: "Não foi possível calcular o dimensionamento da CIPA",
+            variant: "destructive",
+          });
         }
       }
     }
@@ -102,6 +113,7 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
           if (response.cnae) {
             const risk = await fetchRiskLevel(response.cnae);
             setRiskLevel(risk);
+            form.setValue('metadata.risk_grade', risk);
 
             const employeeCount = form.getValues('employee_count');
             if (employeeCount !== null && !isNaN(employeeCount)) {
