@@ -401,21 +401,21 @@ export type Database = {
       nr4_riscos: {
         Row: {
           cnae: string
-          created_at: string
+          created_at: string | null
           grau_risco: number
-          id: string
+          id: number
         }
         Insert: {
           cnae: string
-          created_at?: string
+          created_at?: string | null
           grau_risco: number
-          id?: string
+          id?: number
         }
         Update: {
           cnae?: string
-          created_at?: string
+          created_at?: string | null
           grau_risco?: number
-          id?: string
+          id?: number
         }
         Relationships: []
       }

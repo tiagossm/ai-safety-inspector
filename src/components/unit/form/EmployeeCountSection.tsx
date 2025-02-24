@@ -50,16 +50,21 @@ export function EmployeeCountSection({
           <CardContent className="pt-6">
             <h4 className="text-sm font-semibold mb-2">Dimensionamento CIPA:</h4>
             <div className="space-y-2">
-              {cipaDimensioning.efetivos && (
+              {cipaDimensioning.efetivos !== undefined && (
                 <div className="flex items-center gap-2">
                   <span className="text-sm">Membros Efetivos:</span>
                   <Badge variant="secondary">{cipaDimensioning.efetivos}</Badge>
                 </div>
               )}
-              {cipaDimensioning.suplentes && (
+              {cipaDimensioning.suplentes !== undefined && (
                 <div className="flex items-center gap-2">
                   <span className="text-sm">Membros Suplentes:</span>
                   <Badge variant="secondary">{cipaDimensioning.suplentes}</Badge>
+                </div>
+              )}
+              {cipaDimensioning.observacao && (
+                <div className="text-sm text-muted-foreground">
+                  {cipaDimensioning.observacao}
                 </div>
               )}
             </div>

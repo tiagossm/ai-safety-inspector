@@ -42,7 +42,7 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [riskLevel, setRiskLevel] = useState("");
-  const [cipaDimensioning, setCipaDimensioning] = useState(null);
+  const [cipaDimensioning, setCipaDimensioning] = useState<any>(null);
 
   const form = useForm<UnitFormValues>({
     resolver: zodResolver(unitFormSchema),
@@ -75,11 +75,14 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
     
     try {
       console.log('Calculando dimensionamento:', { count, cnae, risk });
-      const { data: dimensioning } = await supabase.rpc('get_cipa_dimensioning', {
+      const { data: dimensioning, error } = await supabase.rpc('get_cipa_dimensioning', {
         p_employee_count: count,
         p_cnae: cnae,
         p_risk_level: parseInt(risk)
       });
+
+      if (error) throw error;
+      
       console.log('Dimensionamento calculado:', dimensioning);
       setCipaDimensioning(dimensioning);
     } catch (error) {
