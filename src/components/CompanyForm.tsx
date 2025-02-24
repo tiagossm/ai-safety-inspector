@@ -5,6 +5,11 @@ import { CNPJInput } from "@/components/company/form/CNPJInput";
 import { CompanyBasicFields } from "@/components/company/form/CompanyBasicFields";
 import { CompanyContactFields } from "@/components/company/form/CompanyContactFields";
 import { useAuth } from "@/components/AuthProvider";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { CIPADimensioning } from "@/components/unit/CIPADimensioning";
 
 interface CompanyFormProps {
   onCompanyCreated?: () => void;
@@ -13,10 +18,30 @@ interface CompanyFormProps {
 export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
   const { formState, handlers, getRiskLevelVariant } = useCompanyForm(onCompanyCreated);
   const { user } = useAuth();
+  const [employeeCount, setEmployeeCount] = useState<number | null>(null);
+  const [cipaDimensioning, setCipaDimensioning] = useState(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     if (!user) return;
     handlers.handleSubmit(e, user.id);
+  };
+
+  const handleEmployeeCountChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const count = parseInt(e.target.value);
+    setEmployeeCount(count);
+    
+    if (!isNaN(count) && count >= 0 && formState.cnae && formState.riskLevel) {
+      try {
+        const { data: dimensioning } = await supabase.rpc('get_cipa_dimensioning', {
+          p_employee_count: count,
+          p_cnae: formState.cnae,
+          p_risk_level: parseInt(formState.riskLevel)
+        });
+        setCipaDimensioning(dimensioning);
+      } catch (error) {
+        console.error('Erro ao calcular dimensionamento:', error);
+      }
+    }
   };
 
   return (
@@ -35,6 +60,20 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
         address={formState.address}
         getRiskLevelVariant={getRiskLevelVariant}
       />
+
+      <div className="space-y-2">
+        <Label htmlFor="employeeCount">Quantidade de Funcionários</Label>
+        <Input
+          id="employeeCount"
+          type="number"
+          min="0"
+          value={employeeCount || ''}
+          onChange={handleEmployeeCountChange}
+          placeholder="Digite o número de funcionários"
+        />
+      </div>
+
+      {cipaDimensioning && <CIPADimensioning dimensioning={cipaDimensioning} />}
 
       <CompanyContactFields
         contactName={formState.contactName}
