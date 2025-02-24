@@ -16,10 +16,17 @@ export const useCompanyAPI = () => {
   const { toast } = useToast();
 
   const formatCNAE = (cnae: string): string => {
+    // Remove todos os caracteres não numéricos
     const numbers = cnae.replace(/[^\d]/g, '');
-    return numbers.length >= 5 
-      ? `${numbers.slice(0, 4)}-${numbers.slice(4, 5)}`
-      : `${numbers.padEnd(4, '0')}-0`;
+    
+    // Garante que temos pelo menos 5 dígitos
+    if (numbers.length >= 5) {
+      return `${numbers.slice(0, 4)}-${numbers.slice(4, 5)}`;
+    }
+    
+    // Se não tivermos dígitos suficientes, completa com zeros
+    const paddedNumbers = numbers.padEnd(4, '0');
+    return `${paddedNumbers}-0`;
   };
 
   const fetchRiskLevel = async (cnae: string) => {
@@ -78,7 +85,7 @@ export const useCompanyAPI = () => {
 
       console.log('Dados retornados do CNPJ:', response);
 
-      // Formata o CNAE e busca o grau de risco
+      // Formata o CNAE no formato correto XXXX-X
       const formattedCnae = response.cnae ? formatCNAE(response.cnae) : '';
       const riskLevel = formattedCnae ? await fetchRiskLevel(formattedCnae) : '';
 

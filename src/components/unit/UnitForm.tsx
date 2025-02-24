@@ -1,4 +1,3 @@
-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -71,7 +70,10 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
   };
 
   const calculateCIPADimensioning = async (count: number, cnae: string | null, risk: string) => {
-    if (!cnae || !risk) return;
+    if (!cnae || !risk) {
+      console.log('CNAE ou risco não fornecidos para cálculo do dimensionamento');
+      return;
+    }
     
     try {
       console.log('Calculando dimensionamento:', { count, cnae, risk });
@@ -81,7 +83,10 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
         p_risk_level: parseInt(risk)
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro na função RPC:', error);
+        throw error;
+      }
       
       console.log('Dimensionamento calculado:', dimensioning);
       setCipaDimensioning(dimensioning);
@@ -103,8 +108,13 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
     console.log('Número de funcionários alterado:', count);
     
     const cnae = form.getValues('cnae');
-    if (count >= 0 && cnae && riskLevel) {
-      await calculateCIPADimensioning(count, cnae, riskLevel);
+    const currentRiskLevel = form.getValues('metadata.risk_grade');
+    
+    if (count >= 0 && cnae && currentRiskLevel) {
+      console.log('Chamando calculateCIPADimensioning com:', { count, cnae, currentRiskLevel });
+      await calculateCIPADimensioning(count, cnae, currentRiskLevel);
+    } else {
+      console.log('Dados insuficientes para cálculo:', { count, cnae, currentRiskLevel });
     }
   };
 
