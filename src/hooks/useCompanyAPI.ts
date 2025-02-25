@@ -80,7 +80,7 @@ export const useCompanyAPI = () => {
       const formattedCnae = response.cnae ? formatCNAE(response.cnae) : '';
       const riskLevel = formattedCnae ? await fetchRiskLevel(formattedCnae) : '';
 
-      // Construção do endereço completo
+      // Construção do endereço completo usando os campos corretos da API
       let fullAddress = '';
       if (response.logradouro) {
         fullAddress = response.logradouro;
@@ -93,7 +93,7 @@ export const useCompanyAPI = () => {
       }
 
       const result: CNPJResponse = {
-        fantasyName: response.nome_fantasia || response.razao_social || '',
+        fantasyName: response.razao_social || '',
         cnae: formattedCnae,
         riskLevel,
         address: fullAddress,
