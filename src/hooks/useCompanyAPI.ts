@@ -93,13 +93,13 @@ export const useCompanyAPI = () => {
       }
 
       const result: CNPJResponse = {
-        fantasyName: response.razao_social || '',
+        fantasyName: response.fantasyName || '', // Usando o campo que vem da API
         cnae: formattedCnae,
         riskLevel,
         address: fullAddress,
-        contactEmail: response.email || '',
-        contactPhone: response.telefone || '',
-        contactName: response.nome_responsavel || ''
+        contactEmail: response.contactEmail || '', // Usando os campos que vêm da API
+        contactPhone: response.contactPhone || '',
+        contactName: response.contactName || ''
       };
 
       console.log('Dados formatados para retorno:', result);
