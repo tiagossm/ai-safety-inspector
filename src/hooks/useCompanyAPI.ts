@@ -18,7 +18,7 @@ export const useCompanyAPI = () => {
   const formatCNAE = (cnae: string): string => {
     const numbers = cnae.replace(/[^\d]/g, '');
     return numbers.length >= 5 
-      ? `${numbers.slice(0, 4)}-${numbers.slice(4, 5)}`
+      ? `${numbers.slice(0, 4)}-${numbers.slice(4, 5)}` 
       : `${numbers.padEnd(4, '0')}-0`;
   };
 
@@ -34,8 +34,6 @@ export const useCompanyAPI = () => {
         .select('grau_risco')
         .eq('cnae', formattedCnae)
         .maybeSingle();
-
-      console.log('Resultado da busca de risco:', { data, error });
 
       if (error) throw error;
       
@@ -76,7 +74,7 @@ export const useCompanyAPI = () => {
       if (error) throw error;
       if (!response) throw new Error('Sem resposta da API');
 
-      console.log('Dados retornados do CNPJ:', response);
+      console.log('Dados retornados da API:', response);
 
       // Formata o CNAE e busca o grau de risco
       const formattedCnae = response.cnae ? formatCNAE(response.cnae) : '';
@@ -86,13 +84,13 @@ export const useCompanyAPI = () => {
         fantasyName: response.fantasyName || '',
         cnae: formattedCnae,
         riskLevel,
-        address: response.address || '',
-        contactEmail: response.contactEmail || '',
-        contactPhone: response.contactPhone || '',
-        contactName: response.contactName || '',
+        address: response.logradouro ? `${response.logradouro}, ${response.numero} - ${response.bairro}, ${response.municipio} - ${response.uf}, ${response.cep}` : '',
+        contactEmail: response.email || '',
+        contactPhone: response.telefone || '',
+        contactName: response.nome || ''
       };
 
-      console.log('Dados formatados:', result);
+      console.log('Dados formatados para retorno:', result);
 
       toast({
         title: "Dados do CNPJ carregados",

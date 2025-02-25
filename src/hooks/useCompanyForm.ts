@@ -49,6 +49,9 @@ export function useCompanyForm(onCompanyCreated?: () => void) {
           setContactEmail(response.contactEmail || '');
           setContactPhone(response.contactPhone || '');
           setContactName(response.contactName || '');
+          
+          // Log para debug do endereço
+          console.log('Endereço recebido:', response.address);
         }
       } catch (error) {
         console.error('Erro ao buscar dados do CNPJ:', error);
@@ -80,7 +83,7 @@ export function useCompanyForm(onCompanyCreated?: () => void) {
         cnpj: cnpj.replace(/\D/g, ''),
         fantasy_name: fantasyName,
         cnae,
-        address,
+        address, // Garantindo que o endereço seja incluído
         contact_email: contactEmail,
         contact_phone: contactPhone,
         contact_name: contactName,
