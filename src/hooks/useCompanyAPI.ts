@@ -80,14 +80,26 @@ export const useCompanyAPI = () => {
       const formattedCnae = response.cnae ? formatCNAE(response.cnae) : '';
       const riskLevel = formattedCnae ? await fetchRiskLevel(formattedCnae) : '';
 
+      // Construção do endereço completo
+      let fullAddress = '';
+      if (response.logradouro) {
+        fullAddress = response.logradouro;
+        if (response.numero) fullAddress += `, ${response.numero}`;
+        if (response.complemento) fullAddress += ` ${response.complemento}`;
+        if (response.bairro) fullAddress += ` - ${response.bairro}`;
+        if (response.municipio) fullAddress += ` - ${response.municipio}`;
+        if (response.uf) fullAddress += `/${response.uf}`;
+        if (response.cep) fullAddress += ` - CEP: ${response.cep}`;
+      }
+
       const result: CNPJResponse = {
-        fantasyName: response.fantasyName || '',
+        fantasyName: response.nome_fantasia || response.razao_social || '',
         cnae: formattedCnae,
         riskLevel,
-        address: response.logradouro ? `${response.logradouro}, ${response.numero} - ${response.bairro}, ${response.municipio} - ${response.uf}, ${response.cep}` : '',
+        address: fullAddress,
         contactEmail: response.email || '',
         contactPhone: response.telefone || '',
-        contactName: response.nome || ''
+        contactName: response.nome_responsavel || ''
       };
 
       console.log('Dados formatados para retorno:', result);

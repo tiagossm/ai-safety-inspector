@@ -32,11 +32,24 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
     
     if (!isNaN(count) && count >= 0 && formState.cnae && formState.riskLevel) {
       try {
-        const { data: dimensioning } = await supabase.rpc('get_cipa_dimensioning', {
+        console.log('Calculando dimensionamento com:', {
+          count,
+          cnae: formState.cnae,
+          riskLevel: formState.riskLevel
+        });
+
+        const { data: dimensioning, error } = await supabase.rpc('get_cipa_dimensioning', {
           p_employee_count: count,
           p_cnae: formState.cnae,
           p_risk_level: parseInt(formState.riskLevel)
         });
+
+        if (error) {
+          console.error('Erro ao calcular dimensionamento:', error);
+          return;
+        }
+
+        console.log('Dimensionamento calculado:', dimensioning);
         setCipaDimensioning(dimensioning);
       } catch (error) {
         console.error('Erro ao calcular dimensionamento:', error);
