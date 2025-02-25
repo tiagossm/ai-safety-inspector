@@ -80,26 +80,33 @@ export const useCompanyAPI = () => {
       const formattedCnae = response.cnae ? formatCNAE(response.cnae) : '';
       const riskLevel = formattedCnae ? await fetchRiskLevel(formattedCnae) : '';
 
-      // Construção do endereço completo usando os campos corretos da API
-      let fullAddress = '';
-      if (response.logradouro) {
-        fullAddress = response.logradouro;
-        if (response.numero) fullAddress += `, ${response.numero}`;
-        if (response.complemento) fullAddress += ` ${response.complemento}`;
-        if (response.bairro) fullAddress += ` - ${response.bairro}`;
-        if (response.municipio) fullAddress += ` - ${response.municipio}`;
-        if (response.uf) fullAddress += `/${response.uf}`;
-        if (response.cep) fullAddress += ` - CEP: ${response.cep}`;
-      }
+      // Construção do endereço completo usando os campos da API recebidos corretamente
+      const addressParts = [];
+      if (response.tipo_logradouro) addressParts.push(response.tipo_logradouro);
+      if (response.logradouro) addressParts.push(response.logradouro);
+      if (response.numero) addressParts.push(response.numero);
+      const mainAddress = addressParts.join(' ').trim();
+
+      // Adiciona as informações complementares
+      const complementParts = [];
+      if (response.complemento) complementParts.push(response.complemento);
+      if (response.bairro) complementParts.push(response.bairro);
+      if (response.municipio) complementParts.push(response.municipio);
+      if (response.uf) complementParts.push(response.uf);
+      if (response.cep) complementParts.push(`CEP: ${response.cep}`);
+      const complement = complementParts.join(' - ').trim();
+
+      // Monta o endereço final
+      const fullAddress = mainAddress + (complement ? ` - ${complement}` : '');
 
       const result: CNPJResponse = {
-        fantasyName: response.fantasyName || '', // Usando o campo que vem da API
+        fantasyName: response.nome_fantasia || response.razao_social || '',
         cnae: formattedCnae,
         riskLevel,
         address: fullAddress,
-        contactEmail: response.contactEmail || '', // Usando os campos que vêm da API
-        contactPhone: response.contactPhone || '',
-        contactName: response.contactName || ''
+        contactEmail: response.email || '',
+        contactPhone: response.telefone || '',
+        contactName: response.nome_contato || ''
       };
 
       console.log('Dados formatados para retorno:', result);

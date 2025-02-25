@@ -41,9 +41,12 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
           riskLevel: parseInt(formState.riskLevel)
         });
 
+        // Garante que o CNAE tenha pelo menos 4 dígitos
+        const paddedCnae = cleanCnae.padEnd(4, '0');
+
         const { data: dimensioning, error } = await supabase.rpc('get_cipa_dimensioning', {
           p_employee_count: count,
-          p_cnae: cleanCnae,
+          p_cnae: paddedCnae,
           p_risk_level: parseInt(formState.riskLevel)
         });
 
