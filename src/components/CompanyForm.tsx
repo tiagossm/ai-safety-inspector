@@ -26,26 +26,32 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
     handlers.handleSubmit(e, user.id);
   };
 
+  const determineSector = (cnae: string) => {
+    const cnaeGroup = cnae.replace(/[^\d]/g, '').slice(0, 2);
+    if (['01', '02', '03'].includes(cnaeGroup)) return 'rural';
+    if (['05', '06', '07', '08', '09'].includes(cnaeGroup)) return 'mining';
+    return 'general';
+  };
+
   const handleEmployeeCountChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const count = parseInt(e.target.value);
     setEmployeeCount(count);
     
     if (!isNaN(count) && count >= 0 && formState.cnae && formState.riskLevel) {
       try {
-        // Remove formatação do CNAE e pega os primeiros 2 dígitos para verificar o grupo
         const cleanCnae = formState.cnae.replace(/[^\d]/g, '');
-        const cnaeGroup = cleanCnae.slice(0, 2);
+        const sector = determineSector(cleanCnae);
         
         console.log('Calculando dimensionamento com:', {
           count,
           cnae: cleanCnae,
           riskLevel: parseInt(formState.riskLevel),
-          cnaeGroup
+          sector
         });
 
         const { data: dimensioning, error } = await supabase.rpc('get_cipa_dimensioning', {
           p_employee_count: count,
-          p_cnae: cleanCnae.slice(0, 4), // Usa apenas os 4 primeiros dígitos
+          p_cnae: cleanCnae.slice(0, 4),
           p_risk_level: parseInt(formState.riskLevel)
         });
 
@@ -59,6 +65,8 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
       } catch (error) {
         console.error('Erro ao calcular dimensionamento:', error);
       }
+    } else {
+      setCipaDimensioning(null);
     }
   };
 
