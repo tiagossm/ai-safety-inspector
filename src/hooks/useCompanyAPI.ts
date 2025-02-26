@@ -80,33 +80,15 @@ export const useCompanyAPI = () => {
       const formattedCnae = response.cnae ? formatCNAE(response.cnae) : '';
       const riskLevel = formattedCnae ? await fetchRiskLevel(formattedCnae) : '';
 
-      // Construção do endereço completo usando os campos da API recebidos corretamente
-      const addressParts = [];
-      if (response.tipo_logradouro) addressParts.push(response.tipo_logradouro);
-      if (response.logradouro) addressParts.push(response.logradouro);
-      if (response.numero) addressParts.push(response.numero);
-      const mainAddress = addressParts.join(' ').trim();
-
-      // Adiciona as informações complementares
-      const complementParts = [];
-      if (response.complemento) complementParts.push(response.complemento);
-      if (response.bairro) complementParts.push(response.bairro);
-      if (response.municipio) complementParts.push(response.municipio);
-      if (response.uf) complementParts.push(response.uf);
-      if (response.cep) complementParts.push(`CEP: ${response.cep}`);
-      const complement = complementParts.join(' - ').trim();
-
-      // Monta o endereço final
-      const fullAddress = mainAddress + (complement ? ` - ${complement}` : '');
-
+      // Retorna exatamente os dados que recebemos da API
       const result: CNPJResponse = {
-        fantasyName: response.nome_fantasia || response.razao_social || '',
+        fantasyName: response.fantasyName,
         cnae: formattedCnae,
         riskLevel,
-        address: fullAddress,
-        contactEmail: response.email || '',
-        contactPhone: response.telefone || '',
-        contactName: response.nome_contato || ''
+        address: response.address || '',
+        contactEmail: response.contactEmail,
+        contactPhone: response.contactPhone,
+        contactName: response.contactName
       };
 
       console.log('Dados formatados para retorno:', result);

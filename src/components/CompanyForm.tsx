@@ -32,21 +32,20 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
     
     if (!isNaN(count) && count >= 0 && formState.cnae && formState.riskLevel) {
       try {
-        // Remove formatação do CNAE para passar apenas os números
+        // Remove formatação do CNAE e pega os primeiros 2 dígitos para verificar o grupo
         const cleanCnae = formState.cnae.replace(/[^\d]/g, '');
+        const cnaeGroup = cleanCnae.slice(0, 2);
         
         console.log('Calculando dimensionamento com:', {
           count,
           cnae: cleanCnae,
-          riskLevel: parseInt(formState.riskLevel)
+          riskLevel: parseInt(formState.riskLevel),
+          cnaeGroup
         });
-
-        // Garante que o CNAE tenha pelo menos 4 dígitos
-        const paddedCnae = cleanCnae.padEnd(4, '0');
 
         const { data: dimensioning, error } = await supabase.rpc('get_cipa_dimensioning', {
           p_employee_count: count,
-          p_cnae: paddedCnae,
+          p_cnae: cleanCnae.slice(0, 4), // Usa apenas os 4 primeiros dígitos
           p_risk_level: parseInt(formState.riskLevel)
         });
 
