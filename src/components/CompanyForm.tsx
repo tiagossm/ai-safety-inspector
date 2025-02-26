@@ -51,7 +51,7 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
 
         const { data: dimensioning, error } = await supabase.rpc('get_cipa_dimensioning', {
           p_employee_count: count,
-          p_cnae: cleanCnae.slice(0, 4),
+          p_cnae: cleanCnae,
           p_risk_level: parseInt(formState.riskLevel)
         });
 
