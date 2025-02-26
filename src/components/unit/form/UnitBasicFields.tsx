@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { UseFormReturn } from "react-hook-form";
 import { z } from "zod";
-import { formatCNPJ } from "@/utils/formatters";
 
 const unitFormSchema = z.object({
   fantasy_name: z.string().optional().nullable(),
@@ -21,7 +20,7 @@ interface UnitBasicFieldsProps {
   riskLevel: string;
   handleCNPJBlur: (e: React.FocusEvent<HTMLInputElement>) => Promise<void>;
   handleCNPJChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  getRiskLevelVariant: (level: string) => string;
+  getRiskLevelVariant: (level: string) => "success" | "warning" | "danger";
 }
 
 export function UnitBasicFields({ 

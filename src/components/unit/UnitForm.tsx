@@ -1,4 +1,3 @@
-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -60,7 +59,7 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
     const riskNumber = parseInt(level);
     if (riskNumber <= 2) return "success";
     if (riskNumber === 3) return "warning";
-    return "destructive";
+    return "danger";
   };
 
   const handleEmployeeCountChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
