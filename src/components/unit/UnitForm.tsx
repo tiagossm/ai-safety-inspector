@@ -1,30 +1,18 @@
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Form } from "@/components/ui/form";
 import { useCompanyAPI } from "@/hooks/useCompanyAPI";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { formatCNPJ } from "@/utils/formatters";
-import { Badge } from "@/components/ui/badge";
-import { CIPADimensioning } from "./CIPADimensioning";
 import { supabase } from "@/integrations/supabase/client";
+import { UnitBasicFields } from "./form/UnitBasicFields";
+import { UnitTypeField } from "./form/UnitTypeField";
+import { UnitContactFields } from "./form/UnitContactFields";
+import { UnitEmployeeFields } from "./form/UnitEmployeeFields";
 
 const unitFormSchema = z.object({
   fantasy_name: z.string().optional().nullable(),
@@ -149,223 +137,24 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="cnpj"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>CNPJ</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="00.000.000/0000-00" 
-                  {...field} 
-                  onChange={handleCNPJChange}
-                  onBlur={handleCNPJBlur}
-                  disabled={loading}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+        <UnitBasicFields
+          form={form}
+          loading={loading}
+          riskLevel={riskLevel}
+          handleCNPJBlur={handleCNPJBlur}
+          handleCNPJChange={handleCNPJChange}
+          getRiskLevelVariant={getRiskLevelVariant}
         />
 
-        <FormField
-          control={form.control}
-          name="fantasy_name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nome Fantasia</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="Nome Fantasia" 
-                  {...field} 
-                  value={field.value || ''} 
-                  readOnly
-                  className="bg-muted"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+        <UnitEmployeeFields
+          form={form}
+          handleEmployeeCountChange={handleEmployeeCountChange}
+          cipaDimensioning={cipaDimensioning}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="cnae"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>CNAE</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="CNAE" 
-                    {...field} 
-                    value={field.value || ''} 
-                    readOnly
-                    className="bg-muted"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <UnitTypeField form={form} />
 
-          <FormItem>
-            <FormLabel>Grau de Risco (NR 4)</FormLabel>
-            <div className="flex items-center space-x-2">
-              <Input
-                value={riskLevel}
-                readOnly
-                className="bg-muted flex-1"
-              />
-              {riskLevel && (
-                <Badge variant={getRiskLevelVariant(riskLevel)}>
-                  Risco {riskLevel}
-                </Badge>
-              )}
-            </div>
-          </FormItem>
-        </div>
-
-        <FormField
-          control={form.control}
-          name="employee_count"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Número de Funcionários</FormLabel>
-              <FormControl>
-                <Input 
-                  type="number"
-                  placeholder="Digite o número de funcionários" 
-                  onChange={handleEmployeeCountChange}
-                  value={field.value || ''}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {cipaDimensioning && <CIPADimensioning dimensioning={cipaDimensioning} />}
-
-        <FormField
-          control={form.control}
-          name="unit_type"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tipo de Unidade</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="matriz">Matriz</SelectItem>
-                  <SelectItem value="filial">Filial</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="address"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Endereço</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="Endereço completo" 
-                  {...field} 
-                  value={field.value || ''} 
-                  readOnly
-                  className="bg-muted"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="contact_name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nome do Contato</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="Nome do contato" 
-                  {...field} 
-                  value={field.value || ''} 
-                  readOnly
-                  className="bg-muted"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="contact_email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email do Contato</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="email" 
-                    placeholder="email@exemplo.com" 
-                    {...field} 
-                    value={field.value || ''} 
-                    readOnly
-                    className="bg-muted"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="contact_phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Telefone do Contato</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="(00) 00000-0000" 
-                    {...field} 
-                    value={field.value || ''} 
-                    readOnly
-                    className="bg-muted"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="technical_responsible"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Responsável Técnico</FormLabel>
-              <FormControl>
-                <Input placeholder="Nome do responsável técnico" {...field} value={field.value || ''} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <UnitContactFields form={form} />
 
         <div className="flex justify-end">
           <Button type="submit" disabled={loading}>Salvar</Button>
