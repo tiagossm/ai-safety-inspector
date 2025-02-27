@@ -30,11 +30,49 @@ export const CompanyCard = ({
 }: CompanyCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleViewDetails = () => {
     setShowDetailsDialog(true);
+  };
+
+  const handleStartInspection = () => {
+    navigate(`/companies/${company.id}/inspections/new`);
+  };
+
+  const handleAnalyze = async () => {
+    setAnalyzing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('dimension-nrs', {
+        body: { 
+          cnae: company.cnae,
+          companyInfo: {
+            fantasyName: company.fantasy_name,
+            employeeCount: company.employee_count,
+            riskGrade: company.metadata?.risk_grade
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Análise de NRs Aplicáveis",
+        description: data?.analysis || "Análise concluída com sucesso",
+        duration: 5000,
+      });
+    } catch (error) {
+      console.error("Erro na análise:", error);
+      toast({
+        title: "Erro ao analisar NRs",
+        description: "Não foi possível realizar a análise no momento",
+        variant: "destructive"
+      });
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   return (
@@ -48,6 +86,9 @@ export const CompanyCard = ({
             <CompanyActions
               onEdit={onEdit}
               onDelete={() => setShowDeleteDialog(true)}
+              onStartInspection={handleStartInspection}
+              onAnalyze={handleAnalyze}
+              analyzing={analyzing}
             />
           </div>
         </CardHeader>
