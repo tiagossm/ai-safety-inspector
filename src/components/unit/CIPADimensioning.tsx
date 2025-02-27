@@ -11,6 +11,7 @@ interface CIPADimensioningProps {
     efetivos_empregados?: number;
     suplentes_empregados?: number;
     observacao?: string;
+    message?: string;
     norma: string;
   };
 }
@@ -31,7 +32,16 @@ export function CIPADimensioning({ dimensioning }: CIPADimensioningProps) {
         </div>
       </CardHeader>
       <CardContent>
-        {dimensioning.observacao ? (
+        {dimensioning.message ? (
+          <div className="text-center p-2">
+            <Badge variant="outline" className="font-medium text-md">
+              {dimensioning.message}
+            </Badge>
+            <p className="text-sm text-muted-foreground mt-2">
+              Empresas com menos de 20 funcionários e grau de risco 4 devem designar 1 representante da CIPA.
+            </p>
+          </div>
+        ) : dimensioning.observacao ? (
           <p className="text-sm text-muted-foreground">{dimensioning.observacao}</p>
         ) : dimensioning.norma === 'NR-5' ? (
           <div className="grid grid-cols-2 gap-4">

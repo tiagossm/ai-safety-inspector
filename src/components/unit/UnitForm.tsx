@@ -1,3 +1,4 @@
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -5,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { useCompanyAPI } from "@/hooks/useCompanyAPI";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { formatCNPJ } from "@/utils/formatters";
 import { supabase } from "@/integrations/supabase/client";
 import { UnitBasicFields } from "./form/UnitBasicFields";
@@ -38,6 +39,7 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
   const [loading, setLoading] = useState(false);
   const [riskLevel, setRiskLevel] = useState("");
   const [cipaDimensioning, setCipaDimensioning] = useState(null);
+  const [showDesignateMessage, setShowDesignateMessage] = useState(false);
 
   const form = useForm<UnitFormValues>({
     resolver: zodResolver(unitFormSchema),
@@ -62,6 +64,13 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
     return "danger";
   };
 
+  const determineSector = (cnae: string) => {
+    const cnaeGroup = cnae.replace(/[^\d]/g, '').slice(0, 2);
+    if (['01', '02', '03'].includes(cnaeGroup)) return 'rural';
+    if (['05', '06', '07', '08', '09'].includes(cnaeGroup)) return 'mining';
+    return 'general';
+  };
+
   const handleEmployeeCountChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const count = parseInt(e.target.value);
     form.setValue('employee_count', count);
@@ -70,16 +79,64 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
       const riskGrade = parseInt(riskLevel);
       if (!isNaN(riskGrade)) {
         try {
-          const { data: dimensioning } = await supabase.rpc('get_cipa_dimensioning', {
+          // Verifica se é menos de 20 funcionários com grau de risco 4
+          if (count < 20 && riskGrade === 4) {
+            setCipaDimensioning(null);
+            setShowDesignateMessage(true);
+            return;
+          } else {
+            setShowDesignateMessage(false);
+          }
+
+          const cnae = form.getValues('cnae');
+          const cleanCnae = cnae.replace(/[^\d]/g, '');
+          const sector = determineSector(cleanCnae);
+
+          console.log('Calculando dimensionamento com:', {
+            count,
+            cnae: cleanCnae,
+            riskLevel: riskGrade,
+            sector
+          });
+
+          const { data: dimensioning, error } = await supabase.rpc('get_cipa_dimensioning', {
             p_employee_count: count,
-            p_cnae: form.getValues('cnae'),
+            p_cnae: cleanCnae,
             p_risk_level: riskGrade
           });
-          setCipaDimensioning(dimensioning);
+
+          if (error) {
+            console.error('Erro ao calcular dimensionamento:', error);
+            return;
+          }
+
+          console.log('Dimensionamento calculado:', dimensioning);
+          
+          // Verifica se o dimensionamento retornou valores vazios
+          if (!dimensioning || (dimensioning.efetivos === 0 && dimensioning.suplentes === 0)) {
+            if (count < 20 && riskGrade === 4) {
+              setCipaDimensioning(null);
+              setShowDesignateMessage(true);
+            } else {
+              setCipaDimensioning({
+                efetivos: 0,
+                suplentes: 0,
+                observacao: 'Não foi possível calcular o dimensionamento',
+                norma: sector === 'mining' ? 'NR-22' : sector === 'rural' ? 'NR-31' : 'NR-5'
+              });
+              setShowDesignateMessage(false);
+            }
+          } else {
+            setCipaDimensioning(dimensioning);
+            setShowDesignateMessage(false);
+          }
         } catch (error) {
           console.error('Erro ao calcular dimensionamento:', error);
         }
       }
+    } else {
+      setCipaDimensioning(null);
+      setShowDesignateMessage(false);
     }
   };
 
@@ -105,12 +162,19 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
             if (employeeCount !== null && !isNaN(employeeCount)) {
               const riskGrade = parseInt(risk);
               if (!isNaN(riskGrade)) {
-                const { data: dimensioning } = await supabase.rpc('get_cipa_dimensioning', {
-                  p_employee_count: employeeCount,
-                  p_cnae: response.cnae,
-                  p_risk_level: riskGrade
-                });
-                setCipaDimensioning(dimensioning);
+                // Verifica se é menos de 20 funcionários com grau de risco 4
+                if (employeeCount < 20 && riskGrade === 4) {
+                  setCipaDimensioning(null);
+                  setShowDesignateMessage(true);
+                } else {
+                  const { data: dimensioning } = await supabase.rpc('get_cipa_dimensioning', {
+                    p_employee_count: employeeCount,
+                    p_cnae: response.cnae,
+                    p_risk_level: riskGrade
+                  });
+                  setCipaDimensioning(dimensioning);
+                  setShowDesignateMessage(false);
+                }
               }
             }
           }
@@ -133,6 +197,23 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
     form.setValue('cnpj', formattedCNPJ);
   };
 
+  // Se o cnae mudar, tenta obter o grau de risco novamente
+  useEffect(() => {
+    const cnae = form.getValues('cnae');
+    if (cnae) {
+      fetchRiskLevel(cnae).then(risk => {
+        setRiskLevel(risk);
+        
+        // Recalcula o dimensionamento se necessário
+        const employeeCount = form.getValues('employee_count');
+        if (employeeCount) {
+          const input = { target: { value: employeeCount.toString() } } as React.ChangeEvent<HTMLInputElement>;
+          handleEmployeeCountChange(input);
+        }
+      });
+    }
+  }, [form.watch('cnae')]);
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -149,6 +230,7 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
           form={form}
           handleEmployeeCountChange={handleEmployeeCountChange}
           cipaDimensioning={cipaDimensioning}
+          showDesignateMessage={showDesignateMessage}
         />
 
         <UnitTypeField form={form} />

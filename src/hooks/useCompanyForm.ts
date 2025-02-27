@@ -4,6 +4,7 @@ import { useCompanyAPI } from "@/hooks/useCompanyAPI";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCNPJ } from "@/utils/formatters";
+import { CompanyMetadata } from "@/types/company";
 
 export function useCompanyForm(onCompanyCreated?: () => void) {
   const [cnpj, setCnpj] = useState("");
@@ -83,7 +84,7 @@ export function useCompanyForm(onCompanyCreated?: () => void) {
         cnpj: cnpj.replace(/\D/g, ''),
         fantasy_name: fantasyName,
         cnae,
-        address, // Garantindo que o endereço seja incluído
+        address,
         contact_email: contactEmail,
         contact_phone: contactPhone,
         contact_name: contactName,
@@ -92,6 +93,53 @@ export function useCompanyForm(onCompanyCreated?: () => void) {
         metadata: {
           risk_grade: riskLevel
         }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Empresa cadastrada com sucesso!",
+        description: "A empresa foi adicionada ao sistema.",
+      });
+
+      resetForm();
+      onCompanyCreated?.();
+    } catch (error: any) {
+      console.error('Erro ao cadastrar empresa:', error);
+      toast({
+        title: "Erro ao cadastrar empresa",
+        description: error.message || "Tente novamente mais tarde",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmitWithMetadata = async (e: React.FormEvent, userId: string, additionalMetadata: any) => {
+    e.preventDefault();
+    if (!cnpj || !fantasyName) return;
+
+    setLoading(true);
+    try {
+      const metadata = {
+        risk_grade: riskLevel,
+        ...additionalMetadata
+      };
+
+      console.log('Salvando empresa com metadata:', metadata);
+
+      const { error } = await supabase.from('companies').insert({
+        cnpj: cnpj.replace(/\D/g, ''),
+        fantasy_name: fantasyName,
+        cnae,
+        address,
+        contact_email: contactEmail,
+        contact_phone: contactPhone,
+        contact_name: contactName,
+        status: 'active',
+        user_id: userId,
+        metadata
       });
 
       if (error) throw error;
@@ -130,7 +178,8 @@ export function useCompanyForm(onCompanyCreated?: () => void) {
     handlers: {
       handleCNPJChange,
       handleCNPJBlur,
-      handleSubmit
+      handleSubmit,
+      handleSubmitWithMetadata
     },
     getRiskLevelVariant
   };
