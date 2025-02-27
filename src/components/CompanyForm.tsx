@@ -38,7 +38,7 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
       const metadata = {
         risk_grade: formState.riskLevel,
         cipa_dimensioning: showDesignateMessage ? 
-          { message: 'Designar 1 representante da CIPA' } : 
+          { message: 'Designar 1 representante da CIPA', norma: 'NR-5' } : 
           cipaDimensioning
       };
       handlers.handleSubmitWithMetadata(e, user.id, metadata);
@@ -88,36 +88,52 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
         
         if (data) {
           // Validando se o retorno tem as propriedades necessárias
-          if (typeof data === 'object' && 'norma' in data) {
-            const dimensioning = data as CIPADimensioning;
+          if (typeof data === 'object' && data !== null) {
+            // Verificar se o objeto tem a propriedade 'norma'
+            const dimensioningData = data as Record<string, any>;
             
-            // Verifica se o dimensionamento retornou valores vazios
-            if (!dimensioning || (dimensioning.efetivos === 0 && dimensioning.suplentes === 0)) {
-              if (count < 20 && riskLevel === 4) {
-                setCipaDimensioning(null);
-                setShowDesignateMessage(true);
+            if ('norma' in dimensioningData) {
+              // Criar um objeto CIPADimensioning com as propriedades seguras
+              const dimensioning: CIPADimensioning = {
+                norma: String(dimensioningData.norma),
+                efetivos: typeof dimensioningData.efetivos === 'number' ? dimensioningData.efetivos : undefined,
+                suplentes: typeof dimensioningData.suplentes === 'number' ? dimensioningData.suplentes : undefined,
+                efetivos_empregador: typeof dimensioningData.efetivos_empregador === 'number' ? dimensioningData.efetivos_empregador : undefined,
+                suplentes_empregador: typeof dimensioningData.suplentes_empregador === 'number' ? dimensioningData.suplentes_empregador : undefined,
+                efetivos_empregados: typeof dimensioningData.efetivos_empregados === 'number' ? dimensioningData.efetivos_empregados : undefined,
+                suplentes_empregados: typeof dimensioningData.suplentes_empregados === 'number' ? dimensioningData.suplentes_empregados : undefined,
+                observacao: typeof dimensioningData.observacao === 'string' ? dimensioningData.observacao : undefined,
+                message: typeof dimensioningData.message === 'string' ? dimensioningData.message : undefined,
+              };
+              
+              // Verifica se o dimensionamento retornou valores vazios
+              if (!dimensioning || (dimensioning.efetivos === 0 && dimensioning.suplentes === 0 && !dimensioning.efetivos_empregador && !dimensioning.efetivos_empregados)) {
+                if (count < 20 && riskLevel === 4) {
+                  setCipaDimensioning(null);
+                  setShowDesignateMessage(true);
+                } else {
+                  setCipaDimensioning({
+                    efetivos: 0,
+                    suplentes: 0,
+                    observacao: 'Não foi possível calcular o dimensionamento',
+                    norma: sector === 'mining' ? 'NR-22' : sector === 'rural' ? 'NR-31' : 'NR-5'
+                  });
+                  setShowDesignateMessage(false);
+                }
               } else {
-                setCipaDimensioning({
-                  efetivos: 0,
-                  suplentes: 0,
-                  observacao: 'Não foi possível calcular o dimensionamento',
-                  norma: sector === 'mining' ? 'NR-22' : sector === 'rural' ? 'NR-31' : 'NR-5'
-                });
+                setCipaDimensioning(dimensioning);
                 setShowDesignateMessage(false);
               }
             } else {
-              setCipaDimensioning(dimensioning);
+              // Se não tem a propriedade 'norma', criamos um objeto com valores padrão
+              setCipaDimensioning({
+                efetivos: 0,
+                suplentes: 0,
+                observacao: 'Dados de dimensionamento incompletos',
+                norma: sector === 'mining' ? 'NR-22' : sector === 'rural' ? 'NR-31' : 'NR-5'
+              });
               setShowDesignateMessage(false);
             }
-          } else {
-            // Se não tem a propriedade 'norma', criamos um objeto com valores padrão
-            setCipaDimensioning({
-              efetivos: 0,
-              suplentes: 0,
-              observacao: 'Dados de dimensionamento incompletos',
-              norma: sector === 'mining' ? 'NR-22' : sector === 'rural' ? 'NR-31' : 'NR-5'
-            });
-            setShowDesignateMessage(false);
           }
         }
       } catch (error) {
