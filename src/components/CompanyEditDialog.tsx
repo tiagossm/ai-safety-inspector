@@ -27,9 +27,11 @@ export function CompanyEditDialog({
 }: CompanyEditDialogProps) {
   const { toast } = useToast();
   const [editedCompany, setEditedCompany] = useState<Company>({ ...company });
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     try {
       const { error } = await supabase
         .from('companies')
@@ -41,6 +43,7 @@ export function CompanyEditDialog({
           contact_phone: editedCompany.contact_phone,
           contact_name: editedCompany.contact_name,
           employee_count: editedCompany.employee_count,
+          address: editedCompany.address
         })
         .eq('id', company.id);
 
@@ -60,6 +63,8 @@ export function CompanyEditDialog({
         description: "Não foi possível atualizar os dados da empresa.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -82,6 +87,7 @@ export function CompanyEditDialog({
               onChange={(e) =>
                 setEditedCompany({ ...editedCompany, fantasy_name: e.target.value })
               }
+              disabled={loading}
             />
           </div>
 
@@ -96,6 +102,7 @@ export function CompanyEditDialog({
               onChange={(e) =>
                 setEditedCompany({ ...editedCompany, cnpj: e.target.value })
               }
+              disabled={loading}
             />
           </div>
 
@@ -110,6 +117,41 @@ export function CompanyEditDialog({
               onChange={(e) =>
                 setEditedCompany({ ...editedCompany, cnae: e.target.value })
               }
+              disabled={loading}
+            />
+          </div>
+
+          {/* Endereço */}
+          <div>
+            <label className="text-sm font-medium" htmlFor="address">
+              Endereço
+            </label>
+            <Input
+              id="address"
+              value={editedCompany.address || ""}
+              onChange={(e) =>
+                setEditedCompany({ ...editedCompany, address: e.target.value })
+              }
+              disabled={loading}
+            />
+          </div>
+
+          {/* Quantidade de funcionários */}
+          <div>
+            <label className="text-sm font-medium" htmlFor="employee_count">
+              Quantidade de Funcionários
+            </label>
+            <Input
+              id="employee_count"
+              type="number"
+              value={editedCompany.employee_count || ""}
+              onChange={(e) =>
+                setEditedCompany({
+                  ...editedCompany,
+                  employee_count: parseInt(e.target.value) || null,
+                })
+              }
+              disabled={loading}
             />
           </div>
 
@@ -129,6 +171,7 @@ export function CompanyEditDialog({
                   contact_email: e.target.value,
                 })
               }
+              disabled={loading}
             />
           </div>
 
@@ -148,6 +191,7 @@ export function CompanyEditDialog({
                   contact_phone: e.target.value,
                 })
               }
+              disabled={loading}
             />
           </div>
 
@@ -165,16 +209,17 @@ export function CompanyEditDialog({
                   contact_name: e.target.value,
                 })
               }
+              disabled={loading}
             />
           </div>
 
           {/* Submit Button */}
           <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
               Cancelar
             </Button>
-            <Button type="submit">
-              Salvar
+            <Button type="submit" disabled={loading}>
+              {loading ? "Salvando..." : "Salvar"}
             </Button>
           </div>
         </form>
