@@ -130,7 +130,7 @@ export function CompanyEditDialog({
               id="address"
               value={editedCompany.address || ""}
               onChange={(e) =>
-                setEditedCompany({ ...editedCompany, address: e.target.value })
+                setEditedCompany({ ...editedCompany, address: e.target.value as any })
               }
               disabled={loading}
             />

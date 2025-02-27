@@ -44,6 +44,7 @@ export type Company = {
   created_at: string;
   status: CompanyStatus;
   deactivated_at?: string | null;
+  address?: string | null; // Adicionando o campo address
 };
 
 export type UnitType = 'matriz' | 'filial';

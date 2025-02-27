@@ -8,7 +8,7 @@ export function useCompanyActions() {
   const [loading, setLoading] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
 
-  const toggleStatus = async (id: string, status: CompanyStatus) => {
+  const toggleStatus = async (id: string, status: CompanyStatus): Promise<void> => {
     setLoading(prev => ({ ...prev, [id]: true }));
     try {
       const { error } = await supabase
@@ -25,8 +25,6 @@ export function useCompanyActions() {
         title: status === 'active' ? 'Empresa ativada' : 'Empresa desativada',
         description: 'O status da empresa foi atualizado com sucesso.',
       });
-      
-      return true;
     } catch (error: any) {
       console.error('Erro ao atualizar status da empresa:', error);
       toast({
@@ -34,13 +32,12 @@ export function useCompanyActions() {
         description: error.message || 'Tente novamente mais tarde.',
         variant: 'destructive',
       });
-      return false;
     } finally {
       setLoading(prev => ({ ...prev, [id]: false }));
     }
   };
 
-  const deleteCompany = async (id: string) => {
+  const deleteCompany = async (id: string): Promise<void> => {
     setLoading(prev => ({ ...prev, [id]: true }));
     try {
       // Método 1: Deletar permanentemente (cuidado!)
@@ -61,8 +58,6 @@ export function useCompanyActions() {
         title: 'Empresa excluída',
         description: 'A empresa foi removida com sucesso.',
       });
-      
-      return true;
     } catch (error: any) {
       console.error('Erro ao excluir empresa:', error);
       toast({
@@ -70,7 +65,6 @@ export function useCompanyActions() {
         description: error.message || 'Não foi possível remover a empresa. Tente novamente mais tarde.',
         variant: 'destructive',
       });
-      return false;
     } finally {
       setLoading(prev => ({ ...prev, [id]: false }));
     }

@@ -135,7 +135,7 @@ export const CompanyDetailDialog = ({ open, onOpenChange, company }: CompanyDeta
           <Input 
             id="address" 
             value={editedCompany.address || ''}
-            onChange={(e) => handleChange('address', e.target.value)}
+            onChange={(e) => handleChange('address' as keyof Company, e.target.value)}
             disabled={loading}
           />
         </div>
