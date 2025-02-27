@@ -114,24 +114,36 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
           console.log('Dimensionamento calculado:', data);
           
           if (data) {
-            const dimensioning = data as CIPADimensioning;
-            
-            // Verifica se o dimensionamento retornou valores vazios
-            if (!dimensioning || (dimensioning.efetivos === 0 && dimensioning.suplentes === 0)) {
-              if (count < 20 && riskGrade === 4) {
-                setCipaDimensioning(null);
-                setShowDesignateMessage(true);
+            // Validando se o retorno tem as propriedades necessárias
+            if (typeof data === 'object' && 'norma' in data) {
+              const dimensioning = data as CIPADimensioning;
+              
+              // Verifica se o dimensionamento retornou valores vazios
+              if (!dimensioning || (dimensioning.efetivos === 0 && dimensioning.suplentes === 0)) {
+                if (count < 20 && riskGrade === 4) {
+                  setCipaDimensioning(null);
+                  setShowDesignateMessage(true);
+                } else {
+                  setCipaDimensioning({
+                    efetivos: 0,
+                    suplentes: 0,
+                    observacao: 'Não foi possível calcular o dimensionamento',
+                    norma: sector === 'mining' ? 'NR-22' : sector === 'rural' ? 'NR-31' : 'NR-5'
+                  });
+                  setShowDesignateMessage(false);
+                }
               } else {
-                setCipaDimensioning({
-                  efetivos: 0,
-                  suplentes: 0,
-                  observacao: 'Não foi possível calcular o dimensionamento',
-                  norma: sector === 'mining' ? 'NR-22' : sector === 'rural' ? 'NR-31' : 'NR-5'
-                });
+                setCipaDimensioning(dimensioning);
                 setShowDesignateMessage(false);
               }
             } else {
-              setCipaDimensioning(dimensioning);
+              // Se não tem a propriedade 'norma', criamos um objeto com valores padrão
+              setCipaDimensioning({
+                efetivos: 0,
+                suplentes: 0,
+                observacao: 'Dados de dimensionamento incompletos',
+                norma: sector === 'mining' ? 'NR-22' : sector === 'rural' ? 'NR-31' : 'NR-5'
+              });
               setShowDesignateMessage(false);
             }
           }
@@ -179,7 +191,19 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
                   });
                   
                   if (data) {
-                    setCipaDimensioning(data as CIPADimensioning);
+                    // Verificar se os dados têm o formato esperado
+                    if (typeof data === 'object' && 'norma' in data) {
+                      setCipaDimensioning(data as CIPADimensioning);
+                    } else {
+                      // Criar um objeto com os valores padrão para o setor
+                      const sector = determineSector(response.cnae);
+                      setCipaDimensioning({
+                        efetivos: 0,
+                        suplentes: 0,
+                        observacao: 'Dados de dimensionamento incompletos',
+                        norma: sector === 'mining' ? 'NR-22' : sector === 'rural' ? 'NR-31' : 'NR-5'
+                      });
+                    }
                     setShowDesignateMessage(false);
                   }
                 }

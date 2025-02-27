@@ -26,7 +26,13 @@ export default function AddUnit() {
           p_cnae: unitData.cnae,
           p_risk_level: parseInt(unitData.metadata?.risk_grade || '1')
         });
-        cipaDimensioning = dimensioning;
+        
+        // Verificar se os dados retornados são válidos
+        if (dimensioning && typeof dimensioning === 'object' && 'norma' in dimensioning) {
+          cipaDimensioning = dimensioning;
+        } else if (unitData.employee_count < 20 && parseInt(unitData.metadata?.risk_grade || '1') === 4) {
+          cipaDimensioning = { message: 'Designar 1 representante da CIPA', norma: 'NR-5' };
+        }
       }
 
       const { error } = await supabase
