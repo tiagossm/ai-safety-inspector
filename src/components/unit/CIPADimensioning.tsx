@@ -1,19 +1,10 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CIPADimensioning as CIPADimensioningType } from "@/types/cipa";
 
 interface CIPADimensioningProps {
-  dimensioning: {
-    efetivos?: number;
-    suplentes?: number;
-    efetivos_empregador?: number;
-    suplentes_empregador?: number;
-    efetivos_empregados?: number;
-    suplentes_empregados?: number;
-    observacao?: string;
-    message?: string;
-    norma: string;
-  };
+  dimensioning: CIPADimensioningType;
 }
 
 export function CIPADimensioning({ dimensioning }: CIPADimensioningProps) {

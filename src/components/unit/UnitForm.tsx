@@ -13,6 +13,7 @@ import { UnitBasicFields } from "./form/UnitBasicFields";
 import { UnitTypeField } from "./form/UnitTypeField";
 import { UnitContactFields } from "./form/UnitContactFields";
 import { UnitEmployeeFields } from "./form/UnitEmployeeFields";
+import { CIPADimensioning } from "@/types/cipa";
 
 const unitFormSchema = z.object({
   fantasy_name: z.string().optional().nullable(),
@@ -38,7 +39,7 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [riskLevel, setRiskLevel] = useState("");
-  const [cipaDimensioning, setCipaDimensioning] = useState(null);
+  const [cipaDimensioning, setCipaDimensioning] = useState<CIPADimensioning | null>(null);
   const [showDesignateMessage, setShowDesignateMessage] = useState(false);
 
   const form = useForm<UnitFormValues>({
@@ -99,7 +100,7 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
             sector
           });
 
-          const { data: dimensioning, error } = await supabase.rpc('get_cipa_dimensioning', {
+          const { data, error } = await supabase.rpc('get_cipa_dimensioning', {
             p_employee_count: count,
             p_cnae: cleanCnae,
             p_risk_level: riskGrade
@@ -110,25 +111,29 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
             return;
           }
 
-          console.log('Dimensionamento calculado:', dimensioning);
+          console.log('Dimensionamento calculado:', data);
           
-          // Verifica se o dimensionamento retornou valores vazios
-          if (!dimensioning || (dimensioning.efetivos === 0 && dimensioning.suplentes === 0)) {
-            if (count < 20 && riskGrade === 4) {
-              setCipaDimensioning(null);
-              setShowDesignateMessage(true);
+          if (data) {
+            const dimensioning = data as CIPADimensioning;
+            
+            // Verifica se o dimensionamento retornou valores vazios
+            if (!dimensioning || (dimensioning.efetivos === 0 && dimensioning.suplentes === 0)) {
+              if (count < 20 && riskGrade === 4) {
+                setCipaDimensioning(null);
+                setShowDesignateMessage(true);
+              } else {
+                setCipaDimensioning({
+                  efetivos: 0,
+                  suplentes: 0,
+                  observacao: 'Não foi possível calcular o dimensionamento',
+                  norma: sector === 'mining' ? 'NR-22' : sector === 'rural' ? 'NR-31' : 'NR-5'
+                });
+                setShowDesignateMessage(false);
+              }
             } else {
-              setCipaDimensioning({
-                efetivos: 0,
-                suplentes: 0,
-                observacao: 'Não foi possível calcular o dimensionamento',
-                norma: sector === 'mining' ? 'NR-22' : sector === 'rural' ? 'NR-31' : 'NR-5'
-              });
+              setCipaDimensioning(dimensioning);
               setShowDesignateMessage(false);
             }
-          } else {
-            setCipaDimensioning(dimensioning);
-            setShowDesignateMessage(false);
           }
         } catch (error) {
           console.error('Erro ao calcular dimensionamento:', error);
@@ -167,13 +172,16 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
                   setCipaDimensioning(null);
                   setShowDesignateMessage(true);
                 } else {
-                  const { data: dimensioning } = await supabase.rpc('get_cipa_dimensioning', {
+                  const { data } = await supabase.rpc('get_cipa_dimensioning', {
                     p_employee_count: employeeCount,
                     p_cnae: response.cnae,
                     p_risk_level: riskGrade
                   });
-                  setCipaDimensioning(dimensioning);
-                  setShowDesignateMessage(false);
+                  
+                  if (data) {
+                    setCipaDimensioning(data as CIPADimensioning);
+                    setShowDesignateMessage(false);
+                  }
                 }
               }
             }

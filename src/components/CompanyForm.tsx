@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { CIPADimensioning } from "@/components/unit/CIPADimensioning";
+import { CIPADimensioning as CIPADimensioningComponent } from "@/components/unit/CIPADimensioning";
 import { Badge } from "@/components/ui/badge";
+import { CIPADimensioning } from "@/types/cipa";
 
 interface CompanyFormProps {
   onCompanyCreated?: () => void;
@@ -20,7 +21,7 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
   const { formState, handlers, getRiskLevelVariant } = useCompanyForm(onCompanyCreated);
   const { user } = useAuth();
   const [employeeCount, setEmployeeCount] = useState<number | null>(null);
-  const [cipaDimensioning, setCipaDimensioning] = useState(null);
+  const [cipaDimensioning, setCipaDimensioning] = useState<CIPADimensioning | null>(null);
   const [showDesignateMessage, setShowDesignateMessage] = useState(false);
 
   const determineSector = (cnae: string) => {
@@ -72,7 +73,7 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
           sector
         });
 
-        const { data: dimensioning, error } = await supabase.rpc('get_cipa_dimensioning', {
+        const { data, error } = await supabase.rpc('get_cipa_dimensioning', {
           p_employee_count: count,
           p_cnae: cleanCnae,
           p_risk_level: parseInt(formState.riskLevel)
@@ -83,25 +84,29 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
           return;
         }
 
-        console.log('Dimensionamento calculado:', dimensioning);
+        console.log('Dimensionamento calculado:', data);
         
-        // Verifica se o dimensionamento retornou valores vazios
-        if (!dimensioning || (dimensioning.efetivos === 0 && dimensioning.suplentes === 0)) {
-          if (count < 20 && riskLevel === 4) {
-            setCipaDimensioning(null);
-            setShowDesignateMessage(true);
+        if (data) {
+          const dimensioning = data as CIPADimensioning;
+          
+          // Verifica se o dimensionamento retornou valores vazios
+          if (!dimensioning || (dimensioning.efetivos === 0 && dimensioning.suplentes === 0)) {
+            if (count < 20 && riskLevel === 4) {
+              setCipaDimensioning(null);
+              setShowDesignateMessage(true);
+            } else {
+              setCipaDimensioning({
+                efetivos: 0,
+                suplentes: 0,
+                observacao: 'Não foi possível calcular o dimensionamento',
+                norma: sector === 'mining' ? 'NR-22' : sector === 'rural' ? 'NR-31' : 'NR-5'
+              });
+              setShowDesignateMessage(false);
+            }
           } else {
-            setCipaDimensioning({
-              efetivos: 0,
-              suplentes: 0,
-              observacao: 'Não foi possível calcular o dimensionamento',
-              norma: sector === 'mining' ? 'NR-22' : sector === 'rural' ? 'NR-31' : 'NR-5'
-            });
+            setCipaDimensioning(dimensioning);
             setShowDesignateMessage(false);
           }
-        } else {
-          setCipaDimensioning(dimensioning);
-          setShowDesignateMessage(false);
         }
       } catch (error) {
         console.error('Erro ao calcular dimensionamento:', error);
@@ -151,7 +156,7 @@ export function CompanyForm({ onCompanyCreated }: CompanyFormProps) {
         />
       </div>
 
-      {cipaDimensioning && <CIPADimensioning dimensioning={cipaDimensioning} />}
+      {cipaDimensioning && <CIPADimensioningComponent dimensioning={cipaDimensioning} />}
       
       {showDesignateMessage && (
         <div className="mt-4 p-4 border rounded-md">

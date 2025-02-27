@@ -4,11 +4,12 @@ import { Input } from "@/components/ui/input";
 import { UseFormReturn } from "react-hook-form";
 import { CIPADimensioning } from "@/components/unit/CIPADimensioning";
 import { Badge } from "@/components/ui/badge";
+import { CIPADimensioning as CIPADimensioningType } from "@/types/cipa";
 
 interface UnitEmployeeFieldsProps {
   form: UseFormReturn<any>;
   handleEmployeeCountChange: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
-  cipaDimensioning: any;
+  cipaDimensioning: CIPADimensioningType | null;
   showDesignateMessage?: boolean;
 }
 
