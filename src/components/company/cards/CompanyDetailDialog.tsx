@@ -89,7 +89,9 @@ export const CompanyDetailDialog = ({ open, onOpenChange, company }: CompanyDeta
             <p><strong>E-mail:</strong> {company.contact_email || "Não informado"}</p>
             {company.metadata?.cipa_dimensioning && (
               <p><strong>Dimensionamento:</strong> {
-                `${company.metadata.cipa_dimensioning.efetivos} membros, ${company.metadata.cipa_dimensioning.suplentes} suplentes (${company.metadata.cipa_dimensioning.norma})`
+                company.metadata.cipa_dimensioning.efetivos !== undefined 
+                  ? `${company.metadata.cipa_dimensioning.efetivos} membros, ${company.metadata.cipa_dimensioning.suplentes} suplentes (${company.metadata.cipa_dimensioning.norma})`
+                  : company.metadata.cipa_dimensioning.message || 'Não informado'
               }</p>
             )}
             {company.employee_count && company.employee_count < 20 && company.metadata?.risk_grade === "4" && (
@@ -135,7 +137,7 @@ export const CompanyDetailDialog = ({ open, onOpenChange, company }: CompanyDeta
           <Input 
             id="address" 
             value={editedCompany.address || ''}
-            onChange={(e) => handleChange('address' as keyof Company, e.target.value)}
+            onChange={(e) => handleChange('address', e.target.value)}
             disabled={loading}
           />
         </div>

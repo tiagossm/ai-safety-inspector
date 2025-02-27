@@ -12,6 +12,7 @@ export function CompanyDetails({ company }: CompanyDetailsProps) {
     <div className="text-sm text-muted-foreground space-y-1">
       <p>CNPJ: {company.cnpj}</p>
       <p>CNAE: {company.cnae || "Não informado"}</p>
+      {company.address && <p>Endereço: {company.address}</p>}
       {company.employee_count && (
         <p>Funcionários: {company.employee_count}</p>
       )}

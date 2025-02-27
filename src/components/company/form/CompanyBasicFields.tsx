@@ -1,7 +1,6 @@
 
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 
 interface CompanyBasicFieldsProps {
   fantasyName: string;
@@ -11,44 +10,45 @@ interface CompanyBasicFieldsProps {
   getRiskLevelVariant: (level: string) => "success" | "warning" | "destructive";
 }
 
-export function CompanyBasicFields({ 
-  fantasyName, 
-  cnae, 
-  riskLevel, 
+export function CompanyBasicFields({
+  fantasyName,
+  cnae,
+  riskLevel,
   address,
-  getRiskLevelVariant 
+  getRiskLevelVariant,
 }: CompanyBasicFieldsProps) {
   return (
-    <>
+    <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="fantasyName">Nome Fantasia</Label>
+        <label className="text-sm font-medium" htmlFor="fantasyName">
+          Nome Fantasia
+        </label>
         <Input
           id="fantasyName"
-          value={fantasyName}
+          value={fantasyName || ""}
+          className="bg-muted"
           readOnly
-          className="bg-muted text-foreground"
         />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="cnae">CNAE</Label>
-          <Input
-            id="cnae"
-            value={cnae}
-            readOnly
-            className="bg-muted text-foreground"
-          />
+          <label className="text-sm font-medium" htmlFor="cnae">
+            CNAE
+          </label>
+          <Input id="cnae" value={cnae || ""} className="bg-muted" readOnly />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="riskLevel">Grau de Risco (NR 4)</Label>
+          <label className="text-sm font-medium" htmlFor="riskLevel">
+            Grau de Risco (NR-4)
+          </label>
           <div className="flex items-center space-x-2">
             <Input
               id="riskLevel"
-              value={riskLevel}
+              value={riskLevel || ""}
+              className="bg-muted flex-1"
               readOnly
-              className="bg-muted text-foreground flex-1"
             />
             {riskLevel && (
               <Badge variant={getRiskLevelVariant(riskLevel)}>
@@ -60,14 +60,16 @@ export function CompanyBasicFields({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="address">Endereço</Label>
+        <label className="text-sm font-medium" htmlFor="address">
+          Endereço
+        </label>
         <Input
           id="address"
-          value={address}
+          value={address || ""}
+          className="bg-muted"
           readOnly
-          className="bg-muted text-foreground"
         />
       </div>
-    </>
+    </div>
   );
 }
