@@ -9,6 +9,45 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      automated_incidents: {
+        Row: {
+          created_at: string | null
+          id: string
+          inspection_id: string | null
+          response_id: string | null
+          trigger_condition: Json
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          inspection_id?: string | null
+          response_id?: string | null
+          trigger_condition: Json
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          inspection_id?: string | null
+          response_id?: string | null
+          trigger_condition?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automated_incidents_inspection_id_fkey"
+            columns: ["inspection_id"]
+            isOneToOne: false
+            referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automated_incidents_response_id_fkey"
+            columns: ["response_id"]
+            isOneToOne: false
+            referencedRelation: "inspection_responses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_assignments: {
         Row: {
           checklist_id: string
@@ -56,6 +95,32 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_permissions: {
+        Row: {
+          checklist_id: string
+          role: string | null
+          user_id: string
+        }
+        Insert: {
+          checklist_id: string
+          role?: string | null
+          user_id: string
+        }
+        Update: {
+          checklist_id?: string
+          role?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_permissions_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "checklists"
             referencedColumns: ["id"]
           },
         ]
@@ -279,6 +344,35 @@ export type Database = {
         }
         Relationships: []
       }
+      inspection_ai_analysis: {
+        Row: {
+          inspection_id: string
+          maintenance_recommendations: string[] | null
+          predicted_issues: Json | null
+          risk_score: number | null
+        }
+        Insert: {
+          inspection_id: string
+          maintenance_recommendations?: string[] | null
+          predicted_issues?: Json | null
+          risk_score?: number | null
+        }
+        Update: {
+          inspection_id?: string
+          maintenance_recommendations?: string[] | null
+          predicted_issues?: Json | null
+          risk_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_ai_analysis_inspection_id_fkey"
+            columns: ["inspection_id"]
+            isOneToOne: true
+            referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inspection_files: {
         Row: {
           created_at: string
@@ -314,8 +408,81 @@ export type Database = {
           },
         ]
       }
+      inspection_responses: {
+        Row: {
+          answer: string
+          created_at: string | null
+          id: string
+          inspection_id: string | null
+          media_urls: string[] | null
+          notes: string | null
+          question_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          answer: string
+          created_at?: string | null
+          id?: string
+          inspection_id?: string | null
+          media_urls?: string[] | null
+          notes?: string | null
+          question_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          answer?: string
+          created_at?: string | null
+          id?: string
+          inspection_id?: string | null
+          media_urls?: string[] | null
+          notes?: string | null
+          question_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_responses_inspection_id_fkey"
+            columns: ["inspection_id"]
+            isOneToOne: false
+            referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inspection_signatures: {
+        Row: {
+          inspection_id: string
+          signature_data: string
+          signed_at: string | null
+          signer_id: string
+        }
+        Insert: {
+          inspection_id: string
+          signature_data: string
+          signed_at?: string | null
+          signer_id: string
+        }
+        Update: {
+          inspection_id?: string
+          signature_data?: string
+          signed_at?: string | null
+          signer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_signatures_inspection_id_fkey"
+            columns: ["inspection_id"]
+            isOneToOne: true
+            referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inspections: {
         Row: {
+          approval_notes: string | null
+          approval_status: Database["public"]["Enums"]["approval_status"] | null
+          approved_by: string | null
           audio_url: string | null
           checklist: Json | null
           cnae: string
@@ -329,6 +496,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          approval_notes?: string | null
+          approval_status?:
+            | Database["public"]["Enums"]["approval_status"]
+            | null
+          approved_by?: string | null
           audio_url?: string | null
           checklist?: Json | null
           cnae: string
@@ -342,6 +514,11 @@ export type Database = {
           user_id: string
         }
         Update: {
+          approval_notes?: string | null
+          approval_status?:
+            | Database["public"]["Enums"]["approval_status"]
+            | null
+          approved_by?: string | null
           audio_url?: string | null
           checklist?: Json | null
           cnae?: string
@@ -1160,6 +1337,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      approval_status: "pending" | "awaiting_approval" | "approved" | "rejected"
       inspection_status: "pending" | "in_progress" | "completed" | "archived"
       unit_type: "matriz" | "filial"
     }
