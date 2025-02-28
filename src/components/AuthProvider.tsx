@@ -100,10 +100,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             userTier = userData.tier as "super_admin" | "company_admin" | "consultant" | "technician" || "technician";
           }
           
+          // Ensure role is always either "admin" or "user"
+          const userRole: "admin" | "user" = (userData?.role === "admin") ? "admin" : "user";
+          
           // Merge the user data with session user
           const enhancedUser: AuthUser = {
             ...session.user,
-            role: userData?.role as "admin" | "user" || "user",
+            role: userRole,
             tier: userTier
           };
           
@@ -170,10 +173,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
           }
           
+          // Ensure role is always either "admin" or "user"
+          const userRole: "admin" | "user" = (userData?.role === "admin") ? "admin" : "user";
+          
           // Merge the user data
           const enhancedUser: AuthUser = {
             ...session.user,
-            role: userData?.role as "admin" | "user" || "user",
+            role: userRole,
             tier: userTier
           };
           
@@ -199,14 +205,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
         } else if (event === 'TOKEN_REFRESHED') {
           if (session?.user) {
-            const enhancedUser: AuthUser = {...session.user};
+            // Ensure role is either "admin" or "user"
+            const enhancedUser: AuthUser = {
+              ...session.user,
+              role: "user" // Default to user role on token refresh
+            };
             setUser(enhancedUser);
           } else {
             setUser(null);
           }
         } else if (event === 'USER_UPDATED') {
           if (session?.user) {
-            const enhancedUser: AuthUser = {...session.user};
+            // Ensure role is either "admin" or "user"
+            const enhancedUser: AuthUser = {
+              ...session.user,
+              role: "user" // Default to user role on user update
+            };
             setUser(enhancedUser);
           } else {
             setUser(null);
@@ -233,10 +247,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               userTier = userData.tier as "super_admin" | "company_admin" | "consultant" | "technician" || "technician";
             }
             
+            // Ensure role is always either "admin" or "user"
+            const userRole: "admin" | "user" = (userData?.role === "admin") ? "admin" : "user";
+            
             // Merge the user data
             const enhancedUser: AuthUser = {
               ...session.user,
-              role: userData?.role as "admin" | "user" || "user",
+              role: userRole,
               tier: userTier
             };
             
