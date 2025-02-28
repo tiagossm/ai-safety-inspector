@@ -5,8 +5,13 @@ import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { useToast } from "./ui/use-toast";
 
+interface AuthUser extends User {
+  role?: "admin" | "user";
+  tier?: "super_admin" | "company_admin" | "consultant" | "technician";
+}
+
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   loading: boolean;
   logout: () => Promise<void>;
 }
@@ -20,7 +25,7 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -75,14 +80,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        if (mounted) {
-          setUser(session?.user ?? null);
+        if (session?.user && mounted) {
+          // Fetch additional user data from the users table
+          const { data: userData, error: userError } = await supabase
+            .from("users")
+            .select("role, tier")
+            .eq("id", session.user.id)
+            .single();
+          
+          if (userError && userError.code !== "PGRST116") {
+            console.error("Error fetching user data:", userError);
+          }
+          
+          // Merge the user data
+          const enhancedUser: AuthUser = {
+            ...session.user,
+            role: userData?.role as "admin" | "user" || "user",
+            tier: userData?.tier as "super_admin" | "company_admin" | "consultant" | "technician" || "technician"
+          };
+          
+          setUser(enhancedUser);
           setLoading(false);
           
-          // If we have a session but we're on the auth page, redirect to companies
-          if (session?.user && window.location.pathname === "/auth") {
-            navigate("/companies");
+          // Redirect based on user tier
+          if (window.location.pathname === "/auth") {
+            if (enhancedUser.tier === "super_admin") {
+              navigate("/admin/dashboard");
+            } else {
+              navigate("/dashboard");
+            }
           }
+        } else if (mounted) {
+          setUser(null);
+          setLoading(false);
         }
       } catch (error) {
         if (mounted) {
@@ -98,9 +128,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("Auth state changed:", event);
       
       if (mounted) {
-        if (event === 'SIGNED_IN') {
-          setUser(session?.user ?? null);
-          navigate("/companies");
+        if (event === 'SIGNED_IN' && session?.user) {
+          // Fetch additional user data from the users table
+          const { data: userData, error: userError } = await supabase
+            .from("users")
+            .select("role, tier")
+            .eq("id", session.user.id)
+            .single();
+          
+          if (userError && userError.code !== "PGRST116") {
+            console.error("Error fetching user data:", userError);
+          }
+          
+          // Merge the user data
+          const enhancedUser: AuthUser = {
+            ...session.user,
+            role: userData?.role as "admin" | "user" || "user",
+            tier: userData?.tier as "super_admin" | "company_admin" | "consultant" | "technician" || "technician"
+          };
+          
+          setUser(enhancedUser);
+          
+          // Redirect based on user tier
+          if (enhancedUser.tier === "super_admin") {
+            navigate("/admin/dashboard");
+          } else {
+            navigate("/dashboard");
+          }
+          
           toast({
             title: "Login realizado com sucesso",
             description: "Bem-vindo de volta!",
@@ -118,7 +173,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(session?.user ?? null);
         } else if (event === 'INITIAL_SESSION') {
           // Handle initial session load
-          setUser(session?.user ?? null);
+          if (session?.user) {
+            // Fetch additional user data from the users table
+            const { data: userData, error: userError } = await supabase
+              .from("users")
+              .select("role, tier")
+              .eq("id", session.user.id)
+              .single();
+            
+            if (userError && userError.code !== "PGRST116") {
+              console.error("Error fetching user data:", userError);
+            }
+            
+            // Merge the user data
+            const enhancedUser: AuthUser = {
+              ...session.user,
+              role: userData?.role as "admin" | "user" || "user",
+              tier: userData?.tier as "super_admin" | "company_admin" | "consultant" | "technician" || "technician"
+            };
+            
+            setUser(enhancedUser);
+          } else {
+            setUser(null);
+          }
           setLoading(false);
         }
         

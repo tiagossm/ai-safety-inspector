@@ -21,6 +21,7 @@ import Dashboard from "./pages/Dashboard";
 import BillingPage from "./pages/BillingPage";
 import Reports from "./pages/Reports";
 import Incidents from "./pages/Incidents";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function App() {
   return (
@@ -34,6 +35,12 @@ function App() {
             <Route path="/blog" element={<Blog />} />
             <Route path="/contact" element={<Contact />} />
             
+            {/* Admin Routes */}
+            <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            </Route>
+            
+            {/* Company Routes */}
             <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/companies" element={<Companies />} />
