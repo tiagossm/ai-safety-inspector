@@ -24,6 +24,10 @@ const DEMO_ALERTS = [
   }
 ];
 
+interface StatusVariants {
+  [key: string]: string;
+}
+
 export function PlatformHealthMonitor() {
   const [systemStatus, setSystemStatus] = useState({
     overall: 'healthy', // healthy, degraded, critical
@@ -49,15 +53,15 @@ export function PlatformHealthMonitor() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'healthy': 
-        return <Badge variant="success" className="flex items-center gap-1">
+        return <Badge className="bg-green-500 hover:bg-green-600 flex items-center gap-1">
           <CheckCircle2 className="h-3 w-3" /> Saudável
         </Badge>;
       case 'degraded': 
-        return <Badge variant="warning" className="flex items-center gap-1">
+        return <Badge className="bg-yellow-500 hover:bg-yellow-600 flex items-center gap-1">
           <AlertTriangle className="h-3 w-3" /> Degradado
         </Badge>;
       case 'critical': 
-        return <Badge variant="destructive" className="flex items-center gap-1">
+        return <Badge className="bg-red-500 hover:bg-red-600 flex items-center gap-1">
           <AlertCircle className="h-3 w-3" /> Crítico
         </Badge>;
       default: 
@@ -68,7 +72,7 @@ export function PlatformHealthMonitor() {
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
       case 'info': return <Badge variant="secondary">Informação</Badge>;
-      case 'warning': return <Badge variant="warning">Alerta</Badge>;
+      case 'warning': return <Badge className="bg-yellow-500 hover:bg-yellow-600">Alerta</Badge>;
       case 'critical': return <Badge variant="destructive">Crítico</Badge>;
       default: return <Badge>Desconhecido</Badge>;
     }
@@ -145,7 +149,8 @@ export function PlatformHealthMonitor() {
             <div className="space-y-3">
               {systemStatus.alerts.length > 0 ? (
                 systemStatus.alerts.map(alert => (
-                  <Alert key={alert.id} variant={alert.severity === 'critical' ? 'destructive' : 'warning'}>
+                  <Alert key={alert.id} 
+                    className={alert.severity === 'critical' ? 'border-red-500 text-red-500' : 'border-yellow-500 text-yellow-500'}>
                     <div className="flex justify-between items-start">
                       <div>
                         <AlertTitle className="flex items-center gap-2">

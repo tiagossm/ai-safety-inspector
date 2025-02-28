@@ -86,17 +86,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .from("users")
             .select("role, tier")
             .eq("id", session.user.id)
-            .single();
+            .maybeSingle();
           
           if (userError && userError.code !== "PGRST116") {
             console.error("Error fetching user data:", userError);
           }
           
-          // Merge the user data
+          // Set a default tier if not present
+          let userTier: "super_admin" | "company_admin" | "consultant" | "technician" = "technician";
+          
+          // If we have user data, use it
+          if (userData) {
+            userTier = userData.tier as "super_admin" | "company_admin" | "consultant" | "technician" || "technician";
+          }
+          
+          // Merge the user data with session user
           const enhancedUser: AuthUser = {
             ...session.user,
             role: userData?.role as "admin" | "user" || "user",
-            tier: userData?.tier as "super_admin" | "company_admin" | "consultant" | "technician" || "technician"
+            tier: userTier
           };
           
           setUser(enhancedUser);
@@ -134,17 +142,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .from("users")
             .select("role, tier")
             .eq("id", session.user.id)
-            .single();
+            .maybeSingle();
           
           if (userError && userError.code !== "PGRST116") {
             console.error("Error fetching user data:", userError);
+          }
+          
+          // Set a default tier if not present
+          let userTier: "super_admin" | "company_admin" | "consultant" | "technician" = "technician";
+          
+          // If we have user data, use it
+          if (userData) {
+            userTier = userData.tier as "super_admin" | "company_admin" | "consultant" | "technician" || "technician";
+          }
+          
+          // For testing, set first user as super_admin
+          if (!userData?.tier) {
+            try {
+              await supabase
+                .from("users")
+                .update({ tier: "super_admin" })
+                .eq("id", session.user.id);
+              
+              userTier = "super_admin";
+            } catch (error) {
+              console.error("Could not set super_admin tier:", error);
+            }
           }
           
           // Merge the user data
           const enhancedUser: AuthUser = {
             ...session.user,
             role: userData?.role as "admin" | "user" || "user",
-            tier: userData?.tier as "super_admin" | "company_admin" | "consultant" | "technician" || "technician"
+            tier: userTier
           };
           
           setUser(enhancedUser);
@@ -168,9 +198,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             description: "Até logo!",
           });
         } else if (event === 'TOKEN_REFRESHED') {
-          setUser(session?.user ?? null);
+          if (session?.user) {
+            const enhancedUser: AuthUser = {...session.user};
+            setUser(enhancedUser);
+          } else {
+            setUser(null);
+          }
         } else if (event === 'USER_UPDATED') {
-          setUser(session?.user ?? null);
+          if (session?.user) {
+            const enhancedUser: AuthUser = {...session.user};
+            setUser(enhancedUser);
+          } else {
+            setUser(null);
+          }
         } else if (event === 'INITIAL_SESSION') {
           // Handle initial session load
           if (session?.user) {
@@ -179,17 +219,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               .from("users")
               .select("role, tier")
               .eq("id", session.user.id)
-              .single();
+              .maybeSingle();
             
             if (userError && userError.code !== "PGRST116") {
               console.error("Error fetching user data:", userError);
+            }
+            
+            // Set a default tier if not present
+            let userTier: "super_admin" | "company_admin" | "consultant" | "technician" = "technician";
+            
+            // If we have user data, use it
+            if (userData) {
+              userTier = userData.tier as "super_admin" | "company_admin" | "consultant" | "technician" || "technician";
             }
             
             // Merge the user data
             const enhancedUser: AuthUser = {
               ...session.user,
               role: userData?.role as "admin" | "user" || "user",
-              tier: userData?.tier as "super_admin" | "company_admin" | "consultant" | "technician" || "technician"
+              tier: userTier
             };
             
             setUser(enhancedUser);

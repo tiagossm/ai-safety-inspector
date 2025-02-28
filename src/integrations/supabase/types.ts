@@ -671,6 +671,112 @@ export type Database = {
         }
         Relationships: []
       }
+      platform: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          owner_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          owner_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+        }
+        Relationships: []
+      }
+      platform_alerts: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string
+          resolved: boolean | null
+          type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message: string
+          resolved?: boolean | null
+          type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string
+          resolved?: boolean | null
+          type?: string | null
+        }
+        Relationships: []
+      }
+      platform_companies: {
+        Row: {
+          company_id: string
+          platform_id: string
+        }
+        Insert: {
+          company_id: string
+          platform_id: string
+        }
+        Update: {
+          company_id?: string
+          platform_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_companies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "active_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_companies_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_companies_platform_id_fkey"
+            columns: ["platform_id"]
+            isOneToOne: false
+            referencedRelation: "platform"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_metrics: {
+        Row: {
+          active_companies: number
+          created_at: string | null
+          id: string
+          mrr: number
+          total_inspections: number
+        }
+        Insert: {
+          active_companies: number
+          created_at?: string | null
+          id?: string
+          mrr: number
+          total_inspections: number
+        }
+        Update: {
+          active_companies?: number
+          created_at?: string | null
+          id?: string
+          mrr?: number
+          total_inspections?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1035,6 +1141,7 @@ export type Database = {
           role: string | null
           roles: string[] | null
           status: string | null
+          tier: Database["public"]["Enums"]["user_tier"] | null
           updated_at: string | null
         }
         Insert: {
@@ -1051,6 +1158,7 @@ export type Database = {
           role?: string | null
           roles?: string[] | null
           status?: string | null
+          tier?: Database["public"]["Enums"]["user_tier"] | null
           updated_at?: string | null
         }
         Update: {
@@ -1067,6 +1175,7 @@ export type Database = {
           role?: string | null
           roles?: string[] | null
           status?: string | null
+          tier?: Database["public"]["Enums"]["user_tier"] | null
           updated_at?: string | null
         }
         Relationships: []
@@ -1340,6 +1449,7 @@ export type Database = {
       approval_status: "pending" | "awaiting_approval" | "approved" | "rejected"
       inspection_status: "pending" | "in_progress" | "completed" | "archived"
       unit_type: "matriz" | "filial"
+      user_tier: "super_admin" | "company_admin" | "consultant" | "technician"
     }
     CompositeTypes: {
       [_ in never]: never

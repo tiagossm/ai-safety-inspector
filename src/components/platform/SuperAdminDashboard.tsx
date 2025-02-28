@@ -59,7 +59,11 @@ function MetricCard({
         )}
         {trend && (
           <div className="flex items-center mt-2">
-            <Badge variant={trend === "up" ? "success" : trend === "down" ? "destructive" : "secondary"}>
+            <Badge className={`${
+              trend === "up" ? "bg-green-500 hover:bg-green-600" : 
+              trend === "down" ? "bg-red-500 hover:bg-red-600" : 
+              "bg-gray-500 hover:bg-gray-600"
+            }`}>
               {trend === "up" ? "▲" : trend === "down" ? "▼" : "●"} {trendValue}
             </Badge>
           </div>
@@ -81,7 +85,11 @@ export function SuperAdminDashboard() {
       key: 'plan_type',
       header: 'Plano',
       cell: (plan: string) => (
-        <Badge variant={plan === 'free' ? 'secondary' : plan === 'pro' ? 'default' : 'success'}>
+        <Badge className={`${
+          plan === 'free' ? 'bg-gray-500 hover:bg-gray-600' : 
+          plan === 'pro' ? 'bg-blue-500 hover:bg-blue-600' : 
+          'bg-green-500 hover:bg-green-600'
+        }`}>
           {plan.toUpperCase()}
         </Badge>
       )
@@ -94,7 +102,7 @@ export function SuperAdminDashboard() {
       key: 'subscription_active',
       header: 'Status',
       cell: (active: boolean) => (
-        <Badge variant={active ? 'success' : 'destructive'}>
+        <Badge className={`${active ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'}`}>
           {active ? 'Ativo' : 'Inativo'}
         </Badge>
       )
@@ -181,13 +189,17 @@ export function SuperAdminDashboard() {
                     <div key={company.id} className="grid grid-cols-6 p-3 items-center">
                       <div className="col-span-2 font-medium">{company.name}</div>
                       <div>
-                        <Badge variant={company.plan_type === 'free' ? 'secondary' : company.plan_type === 'pro' ? 'default' : 'success'}>
+                        <Badge className={`${
+                          company.plan_type === 'free' ? 'bg-gray-500 hover:bg-gray-600' : 
+                          company.plan_type === 'pro' ? 'bg-blue-500 hover:bg-blue-600' : 
+                          'bg-green-500 hover:bg-green-600'
+                        }`}>
                           {company.plan_type.toUpperCase()}
                         </Badge>
                       </div>
                       <div>{company.users_count || 0}</div>
                       <div>
-                        <Badge variant={company.subscription_active ? 'success' : 'destructive'}>
+                        <Badge className={`${company.subscription_active ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'}`}>
                           {company.subscription_active ? 'Ativo' : 'Inativo'}
                         </Badge>
                       </div>

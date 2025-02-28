@@ -1,4 +1,3 @@
-
 export const formatCNPJ = (value: string) => {
   const numbers = value.replace(/\D/g, "");
   return numbers
@@ -71,3 +70,10 @@ export const isValidPhone = (phone: string) => {
   const numbers = phone.replace(/\D/g, "");
   return numbers.length >= 10 && numbers.length <= 11;
 };
+
+export function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(value);
+}
