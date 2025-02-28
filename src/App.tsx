@@ -14,6 +14,10 @@ import Contact from "./pages/Contact";
 import { Users } from "./pages/Users";
 import NotFound from "./pages/NotFound";
 import AddUnit from "./pages/AddUnit";
+import Inspections from "./pages/Inspections";
+import Checklists from "./pages/Checklists";
+import Settings from "./pages/Settings";
+import Dashboard from "./pages/Dashboard";
 
 function App() {
   return (
@@ -28,11 +32,13 @@ function App() {
             <Route path="/contact" element={<Contact />} />
             
             <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/companies" element={<Companies />} />
               <Route path="/companies/:companyId/units/new" element={<AddUnit />} />
-              <Route path="/inspecoes" element={<Companies />} /> {/* Temporário até criarmos a página de inspeções */}
+              <Route path="/inspections" element={<Inspections />} />
+              <Route path="/checklists" element={<Checklists />} />
               <Route path="/users" element={<Users />} />
-              <Route path="/configuracoes" element={<Companies />} /> {/* Temporário até criarmos a página de configurações */}
+              <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>

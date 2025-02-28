@@ -4,7 +4,11 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { useAuth } from "@/components/AuthProvider";
 import { useTheme } from "@/components/ui/ThemeContext";
 import { Link, useLocation, Outlet } from "react-router-dom";
-import { Search, Bell, User, Menu, Building, ClipboardList, Settings, LogOut, WifiOff, X } from "lucide-react";
+import { 
+  Search, Bell, User, Menu, Building, ClipboardList, 
+  Settings, LogOut, WifiOff, X, 
+  Layers, BarChart, CheckSquare
+} from "lucide-react";
 import { useSwipeable } from "react-swipeable";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
@@ -54,6 +58,11 @@ function DashboardLayout({
 
   const navigation = [
     {
+      icon: BarChart,
+      name: "Dashboard",
+      path: "/dashboard"
+    },
+    {
       icon: Building,
       name: "Empresas",
       path: "/companies"
@@ -61,7 +70,12 @@ function DashboardLayout({
     {
       icon: ClipboardList,
       name: "Inspeções",
-      path: "/inspecoes"
+      path: "/inspections"
+    },
+    {
+      icon: CheckSquare,
+      name: "Checklists",
+      path: "/checklists"
     },
     {
       icon: User,
@@ -71,7 +85,7 @@ function DashboardLayout({
     {
       icon: Settings,
       name: "Configurações",
-      path: "/configuracoes"
+      path: "/settings"
     },
     {
       icon: LogOut,
