@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -21,24 +22,32 @@ const Auth = () => {
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
         });
+        
         if (error) throw error;
+        
         toast({
           title: "Cadastro realizado com sucesso!",
           description: "Verifique seu email para confirmar o cadastro.",
         });
+        
+        console.log("Signup successful:", data);
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
+        
         if (error) throw error;
-        navigate("/companies");
+        
+        console.log("Login successful:", data);
+        navigate("/dashboard");
       }
     } catch (error: any) {
+      console.error("Auth error:", error);
       toast({
         title: "Erro",
         description: error.message,

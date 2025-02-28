@@ -81,6 +81,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         if (session?.user && mounted) {
+          console.log("Session found:", session);
+          
           // Fetch additional user data from the users table
           const { data: userData, error: userError } = await supabase
             .from("users")
@@ -124,8 +126,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else if (mounted) {
           setUser(null);
           setLoading(false);
+          
+          // If not authenticated and not on auth page, redirect to auth
+          if (window.location.pathname !== "/auth" && 
+              window.location.pathname !== "/" && 
+              window.location.pathname !== "/plans" && 
+              window.location.pathname !== "/blog" && 
+              window.location.pathname !== "/contact") {
+            navigate("/auth");
+          }
         }
       } catch (error) {
+        console.error("Session check error:", error);
         if (mounted) {
           await handleAuthError(error);
         }
@@ -140,6 +152,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       if (mounted) {
         if (event === 'SIGNED_IN' && session?.user) {
+          console.log("User signed in:", session.user);
+          
           // Fetch additional user data from the users table
           const { data: userData, error: userError } = await supabase
             .from("users")
@@ -204,6 +218,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             description: "Até logo!",
           });
         } else if (event === 'TOKEN_REFRESHED') {
+          console.log("Token refreshed");
           if (session?.user) {
             // Ensure role is either "admin" or "user"
             const enhancedUser: AuthUser = {
@@ -215,6 +230,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(null);
           }
         } else if (event === 'USER_UPDATED') {
+          console.log("User updated");
           if (session?.user) {
             // Ensure role is either "admin" or "user"
             const enhancedUser: AuthUser = {
@@ -226,6 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(null);
           }
         } else if (event === 'INITIAL_SESSION') {
+          console.log("Initial session check");
           // Handle initial session load
           if (session?.user) {
             // Fetch additional user data from the users table

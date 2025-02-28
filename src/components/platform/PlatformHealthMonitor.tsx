@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -26,6 +27,7 @@ export function PlatformHealthMonitor() {
     const checkHealth = async () => {
       try {
         setLoading(true);
+        console.log("Checking platform health...");
         
         // Check database health
         const { data: dbCheck, error: dbError } = await supabase
@@ -33,8 +35,12 @@ export function PlatformHealthMonitor() {
           .select('id')
           .limit(1);
         
+        console.log("DB check:", { data: dbCheck, error: dbError });
+        
         // Check auth health
         const { data: authCheck, error: authError } = await supabase.auth.getSession();
+        
+        console.log("Auth check:", { data: authCheck, error: authError });
         
         // Simple API check
         let apiStatus: "healthy" | "degraded" | "down" = "down";
@@ -46,7 +52,9 @@ export function PlatformHealthMonitor() {
             }
           });
           apiStatus = response.ok ? "healthy" : "degraded";
+          console.log("API check:", { status: response.status, ok: response.ok });
         } catch (error) {
+          console.error("API check error:", error);
           apiStatus = "down";
         }
         
@@ -70,6 +78,13 @@ export function PlatformHealthMonitor() {
         setHealth({
           database: dbStatus,
           storage: "healthy", // Mock value
+          auth: authStatus,
+          api: apiStatus,
+          overall: overallStatus
+        });
+        
+        console.log("Health status set:", {
+          database: dbStatus,
           auth: authStatus,
           api: apiStatus,
           overall: overallStatus
