@@ -1,22 +1,34 @@
 
 import { ReactNode, useState, useEffect } from "react";
-import { SidebarProvider } from "@/components/ui/sidebar";
 import { useAuth } from "@/components/AuthProvider";
 import { useTheme } from "@/components/ui/ThemeContext";
-import { Link, useLocation, Outlet } from "react-router-dom";
+import { Link, useLocation, Outlet, useNavigate } from "react-router-dom";
 import { 
   Search, Bell, User, Menu, Building, ClipboardList, 
-  Settings, LogOut, WifiOff, X, 
-  Layers, BarChart, CheckSquare
+  Settings, LogOut, WifiOff, X, Home, BarChart, 
+  CheckSquare, FileText, AlertTriangle, Users, Key, CreditCard
 } from "lucide-react";
 import { useSwipeable } from "react-swipeable";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { Logo } from "./Logo";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 interface DashboardLayoutProps {
   children?: ReactNode;
+}
+
+interface MenuItem {
+  icon: React.ElementType;
+  name: string;
+  path: string;
+  submenu?: MenuItem[];
 }
 
 function DashboardLayout({
@@ -27,12 +39,17 @@ function DashboardLayout({
     toggleTheme
   } = useTheme();
   const {
-    user
+    user,
+    logout
   } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
+    companies: true
+  });
 
   useEffect(() => {
     const updateOnlineStatus = () => {
@@ -56,43 +73,158 @@ function DashboardLayout({
     onSwipedRight: () => isMobile && setSidebarOpen(true)
   });
 
-  const navigation = [
+  const toggleMenu = (key: string) => {
+    setOpenMenus(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/auth');
+  };
+
+  // Nova estrutura de menu com submenus
+  const navigation: MenuItem[] = [
     {
-      icon: BarChart,
+      icon: Home,
       name: "Dashboard",
       path: "/dashboard"
     },
     {
       icon: Building,
       name: "Empresas",
-      path: "/companies"
+      path: "/companies",
+      submenu: [
+        {
+          icon: CheckSquare,
+          name: "Checklists",
+          path: "/checklists"
+        },
+        {
+          icon: ClipboardList,
+          name: "Inspeções",
+          path: "/inspections"
+        },
+        {
+          icon: AlertTriangle,
+          name: "Ocorrências",
+          path: "/incidents"
+        }
+      ]
     },
     {
-      icon: ClipboardList,
-      name: "Inspeções",
-      path: "/inspections"
-    },
-    {
-      icon: CheckSquare,
-      name: "Checklists",
-      path: "/checklists"
-    },
-    {
-      icon: User,
-      name: "Usuários",
-      path: "/users"
+      icon: FileText,
+      name: "Relatórios",
+      path: "/reports"
     },
     {
       icon: Settings,
       name: "Configurações",
-      path: "/settings"
-    },
-    {
-      icon: LogOut,
-      name: "Sair",
-      path: "/logout"
+      path: "/settings",
+      submenu: [
+        {
+          icon: Users,
+          name: "Usuários",
+          path: "/users"
+        },
+        {
+          icon: Key,
+          name: "Permissões",
+          path: "/permissions"
+        },
+        {
+          icon: CreditCard,
+          name: "Assinaturas",
+          path: "/billing"
+        }
+      ]
     }
   ];
+
+  // Verifica se um item de menu está ativo (rota atual)
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
+
+  // Verifica se uma seção de submenu está ativa (qualquer subrota)
+  const isSubmenuActive = (menu: MenuItem) => {
+    if (isActive(menu.path)) return true;
+    
+    if (menu.submenu) {
+      return menu.submenu.some(subItem => isActive(subItem.path));
+    }
+    
+    return false;
+  };
+
+  const renderMenuItem = (item: MenuItem) => {
+    const hasSubmenu = !!item.submenu?.length;
+    const isMenuActive = isSubmenuActive(item);
+
+    if (!hasSubmenu) {
+      return (
+        <Link
+          key={item.name}
+          to={item.path}
+          className={cn(
+            "flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors",
+            "hover:bg-muted",
+            isActive(item.path) && "bg-primary/10 text-primary"
+          )}
+        >
+          <item.icon className="h-5 w-5" />
+          <span>{item.name}</span>
+        </Link>
+      );
+    }
+
+    return (
+      <Collapsible
+        key={item.name}
+        open={openMenus[item.name.toLowerCase()] || isMenuActive}
+        onOpenChange={() => toggleMenu(item.name.toLowerCase())}
+        className="w-full"
+      >
+        <CollapsibleTrigger asChild>
+          <div 
+            className={cn(
+              "flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer",
+              "hover:bg-muted",
+              isMenuActive && "bg-primary/10 text-primary"
+            )}
+          >
+            <div className="flex items-center space-x-3">
+              <item.icon className="h-5 w-5" />
+              <span>{item.name}</span>
+            </div>
+            {openMenus[item.name.toLowerCase()] ? (
+              <ChevronDown className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
+          </div>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pl-8 space-y-1 mt-1">
+          {item.submenu?.map(subItem => (
+            <Link
+              key={subItem.name}
+              to={subItem.path}
+              className={cn(
+                "flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors",
+                "hover:bg-muted",
+                isActive(subItem.path) && "bg-primary/10 text-primary"
+              )}
+            >
+              <subItem.icon className="h-4 w-4" />
+              <span>{subItem.name}</span>
+            </Link>
+          ))}
+        </CollapsibleContent>
+      </Collapsible>
+    );
+  };
 
   return (
     <div className="min-h-screen flex bg-background" {...handlers}>
@@ -111,20 +243,16 @@ function DashboardLayout({
           </div>
 
           <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-            {navigation.map(item => (
-              <Link
-                key={item.name}
-                to={item.path}
-                className={cn(
-                  "flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors",
-                  "hover:bg-muted",
-                  location.pathname === item.path && "bg-primary/10 text-primary"
-                )}
-              >
-                <item.icon className="h-5 w-5" />
-                <span>{item.name}</span>
-              </Link>
-            ))}
+            {navigation.map(renderMenuItem)}
+            
+            <Button
+              variant="ghost"
+              className="flex items-center justify-start space-x-3 px-3 py-2 w-full hover:bg-muted"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-5 w-5" />
+              <span>Sair</span>
+            </Button>
           </nav>
         </div>
       </aside>

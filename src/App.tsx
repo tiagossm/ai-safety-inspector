@@ -18,6 +18,9 @@ import Inspections from "./pages/Inspections";
 import Checklists from "./pages/Checklists";
 import Settings from "./pages/Settings";
 import Dashboard from "./pages/Dashboard";
+import BillingPage from "./pages/BillingPage";
+import Reports from "./pages/Reports";
+import Incidents from "./pages/Incidents";
 
 function App() {
   return (
@@ -37,7 +40,11 @@ function App() {
               <Route path="/companies/:companyId/units/new" element={<AddUnit />} />
               <Route path="/inspections" element={<Inspections />} />
               <Route path="/checklists" element={<Checklists />} />
+              <Route path="/incidents" element={<Incidents />} />
+              <Route path="/reports" element={<Reports />} />
               <Route path="/users" element={<Users />} />
+              <Route path="/permissions" element={<Settings />} />
+              <Route path="/billing" element={<BillingPage />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<NotFound />} />
             </Route>
