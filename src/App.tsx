@@ -22,6 +22,8 @@ import BillingPage from "./pages/BillingPage";
 import Reports from "./pages/Reports";
 import Incidents from "./pages/Incidents";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminCompanies from "./pages/AdminCompanies";
+import AdminAnalytics from "./pages/AdminAnalytics";
 
 function App() {
   return (
@@ -36,12 +38,14 @@ function App() {
             <Route path="/contact" element={<Contact />} />
             
             {/* Admin Routes */}
-            <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+            <Route element={<ProtectedRoute requiredTier={["super_admin"]}><DashboardLayout /></ProtectedRoute>}>
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/companies" element={<AdminCompanies />} />
+              <Route path="/admin/analytics" element={<AdminAnalytics />} />
             </Route>
             
             {/* Company Routes */}
-            <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+            <Route element={<ProtectedRoute requiredTier={["company_admin", "consultant", "technician"]}><DashboardLayout /></ProtectedRoute>}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/companies" element={<Companies />} />
               <Route path="/companies/:companyId/units/new" element={<AddUnit />} />

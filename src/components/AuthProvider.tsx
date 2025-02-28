@@ -6,7 +6,7 @@ import type { User } from "@supabase/supabase-js";
 import { useToast } from "./ui/use-toast";
 
 interface AuthUser extends User {
-  role?: "admin" | "user";
+  role: "admin" | "user";
   tier?: "super_admin" | "company_admin" | "consultant" | "technician";
 }
 

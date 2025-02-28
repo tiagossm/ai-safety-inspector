@@ -18,6 +18,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { CompanySwitcher } from "./company/CompanySwitcher";
+import { MainNavigation } from "./navigation/MainNavigation";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 interface DashboardLayoutProps {
@@ -85,64 +87,6 @@ function DashboardLayout({
     navigate('/auth');
   };
 
-  // Nova estrutura de menu com submenus
-  const navigation: MenuItem[] = [
-    {
-      icon: Home,
-      name: "Dashboard",
-      path: "/dashboard"
-    },
-    {
-      icon: Building,
-      name: "Empresas",
-      path: "/companies",
-      submenu: [
-        {
-          icon: CheckSquare,
-          name: "Checklists",
-          path: "/checklists"
-        },
-        {
-          icon: ClipboardList,
-          name: "Inspeções",
-          path: "/inspections"
-        },
-        {
-          icon: AlertTriangle,
-          name: "Ocorrências",
-          path: "/incidents"
-        }
-      ]
-    },
-    {
-      icon: FileText,
-      name: "Relatórios",
-      path: "/reports"
-    },
-    {
-      icon: Settings,
-      name: "Configurações",
-      path: "/settings",
-      submenu: [
-        {
-          icon: Users,
-          name: "Usuários",
-          path: "/users"
-        },
-        {
-          icon: Key,
-          name: "Permissões",
-          path: "/permissions"
-        },
-        {
-          icon: CreditCard,
-          name: "Assinaturas",
-          path: "/billing"
-        }
-      ]
-    }
-  ];
-
   // Verifica se um item de menu está ativo (rota atual)
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -157,73 +101,6 @@ function DashboardLayout({
     }
     
     return false;
-  };
-
-  const renderMenuItem = (item: MenuItem) => {
-    const hasSubmenu = !!item.submenu?.length;
-    const isMenuActive = isSubmenuActive(item);
-
-    if (!hasSubmenu) {
-      return (
-        <Link
-          key={item.name}
-          to={item.path}
-          className={cn(
-            "flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors",
-            "hover:bg-muted",
-            isActive(item.path) && "bg-primary/10 text-primary"
-          )}
-        >
-          <item.icon className="h-5 w-5" />
-          <span>{item.name}</span>
-        </Link>
-      );
-    }
-
-    return (
-      <Collapsible
-        key={item.name}
-        open={openMenus[item.name.toLowerCase()] || isMenuActive}
-        onOpenChange={() => toggleMenu(item.name.toLowerCase())}
-        className="w-full"
-      >
-        <CollapsibleTrigger asChild>
-          <div 
-            className={cn(
-              "flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer",
-              "hover:bg-muted",
-              isMenuActive && "bg-primary/10 text-primary"
-            )}
-          >
-            <div className="flex items-center space-x-3">
-              <item.icon className="h-5 w-5" />
-              <span>{item.name}</span>
-            </div>
-            {openMenus[item.name.toLowerCase()] ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
-          </div>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="pl-8 space-y-1 mt-1">
-          {item.submenu?.map(subItem => (
-            <Link
-              key={subItem.name}
-              to={subItem.path}
-              className={cn(
-                "flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors",
-                "hover:bg-muted",
-                isActive(subItem.path) && "bg-primary/10 text-primary"
-              )}
-            >
-              <subItem.icon className="h-4 w-4" />
-              <span>{subItem.name}</span>
-            </Link>
-          ))}
-        </CollapsibleContent>
-      </Collapsible>
-    );
   };
 
   return (
@@ -242,18 +119,31 @@ function DashboardLayout({
             </Button>
           </div>
 
-          <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-            {navigation.map(renderMenuItem)}
-            
-            <Button
-              variant="ghost"
-              className="flex items-center justify-start space-x-3 px-3 py-2 w-full hover:bg-muted"
-              onClick={handleLogout}
-            >
-              <LogOut className="h-5 w-5" />
-              <span>Sair</span>
-            </Button>
-          </nav>
+          <div className="p-4 border-b">
+            {user?.tier === "super_admin" && (
+              <div className="mb-2 font-semibold text-sm text-primary">
+                Modo Super Admin
+              </div>
+            )}
+            {user?.tier !== "super_admin" && (
+              <CompanySwitcher />
+            )}
+          </div>
+
+          <div className="flex-1 overflow-y-auto py-4">
+            <MainNavigation />
+
+            <div className="px-2 mt-6">
+              <Button
+                variant="ghost"
+                className="flex items-center justify-start space-x-3 px-3 py-2 w-full hover:bg-muted"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-5 w-5" />
+                <span>Sair</span>
+              </Button>
+            </div>
+          </div>
         </div>
       </aside>
 

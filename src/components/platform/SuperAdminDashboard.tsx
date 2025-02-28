@@ -17,102 +17,10 @@ import { Button } from "@/components/ui/button";
 import { usePlatformData } from "@/hooks/usePlatformData";
 import { PlatformHealthMonitor } from "./PlatformHealthMonitor";
 import { formatCurrency } from "@/utils/formatters";
-
-interface MetricCardProps {
-  title: string;
-  value: number | string;
-  description?: string;
-  format?: "number" | "currency" | "percentage";
-  trend?: "up" | "down" | "neutral";
-  trendValue?: string;
-}
-
-function MetricCard({ 
-  title, 
-  value, 
-  description, 
-  format = "number",
-  trend,
-  trendValue
-}: MetricCardProps) {
-  let formattedValue = value;
-  
-  if (typeof value === "number") {
-    if (format === "currency") {
-      formattedValue = formatCurrency(value);
-    } else if (format === "percentage") {
-      formattedValue = `${value}%`;
-    }
-  }
-  
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{formattedValue}</div>
-        {description && (
-          <p className="text-xs text-muted-foreground mt-1">{description}</p>
-        )}
-        {trend && (
-          <div className="flex items-center mt-2">
-            <Badge className={`${
-              trend === "up" ? "bg-green-500 hover:bg-green-600" : 
-              trend === "down" ? "bg-red-500 hover:bg-red-600" : 
-              "bg-gray-500 hover:bg-gray-600"
-            }`}>
-              {trend === "up" ? "▲" : trend === "down" ? "▼" : "●"} {trendValue}
-            </Badge>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
+import { MetricCard } from "../metrics/MetricCard";
 
 export function SuperAdminDashboard() {
   const { companies, users, metrics, loading } = usePlatformData();
-  
-  const companyColumns = [
-    {
-      key: 'name',
-      header: 'Empresa',
-    },
-    {
-      key: 'plan_type',
-      header: 'Plano',
-      cell: (plan: string) => (
-        <Badge className={`${
-          plan === 'free' ? 'bg-gray-500 hover:bg-gray-600' : 
-          plan === 'pro' ? 'bg-blue-500 hover:bg-blue-600' : 
-          'bg-green-500 hover:bg-green-600'
-        }`}>
-          {plan.toUpperCase()}
-        </Badge>
-      )
-    },
-    {
-      key: 'users_count',
-      header: 'Usuários',
-    },
-    {
-      key: 'subscription_active',
-      header: 'Status',
-      cell: (active: boolean) => (
-        <Badge className={`${active ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'}`}>
-          {active ? 'Ativo' : 'Inativo'}
-        </Badge>
-      )
-    },
-    {
-      key: 'created_at',
-      header: 'Criação',
-      cell: (date: string) => new Date(date).toLocaleDateString()
-    },
-  ];
   
   const editCompany = (company: any) => {
     console.log("Edit company:", company);
@@ -199,7 +107,7 @@ export function SuperAdminDashboard() {
                       </div>
                       <div>{company.users_count || 0}</div>
                       <div>
-                        <Badge className={`${company.subscription_active ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'}`}>
+                        <Badge variant={company.subscription_active ? "success" : "destructive"}>
                           {company.subscription_active ? 'Ativo' : 'Inativo'}
                         </Badge>
                       </div>
@@ -242,11 +150,11 @@ export function SuperAdminDashboard() {
           <Card>
             <CardHeader>
               <CardTitle>Central de Suporte</CardTitle>
-              <CardDescription>Gerenciamento de atendimento</CardDescription>
+              <CardDescription>Gerenciamento de tickets e atendimento ao cliente</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-80 grid place-items-center">
-                <p className="text-muted-foreground">Sistema de gerenciamento de suporte estará disponível em breve</p>
+                <p className="text-muted-foreground">Central de suporte estará disponível em breve</p>
               </div>
             </CardContent>
           </Card>
