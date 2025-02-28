@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -57,11 +56,16 @@ export function PlatformHealthMonitor() {
         
         // Determine overall health
         let overallStatus: "healthy" | "degraded" | "down" = "healthy";
-        if (dbStatus === "down" || authStatus === "down" || apiStatus === "down") {
+        
+        // Fixed comparison - check for "down" status
+        if ([dbStatus, authStatus, apiStatus].some(status => status === "down")) {
           overallStatus = "down";
-        } else if (dbStatus === "degraded" || authStatus === "degraded" || apiStatus === "degraded") {
+        } 
+        // Then check for "degraded" status
+        else if ([dbStatus, authStatus, apiStatus].some(status => status === "degraded")) {
           overallStatus = "degraded";
         }
+        // Otherwise, it stays "healthy"
         
         setHealth({
           database: dbStatus,
