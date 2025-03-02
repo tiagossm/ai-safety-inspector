@@ -4,7 +4,7 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { enhanceUserWithRoleAndTier, handleInitialSetup } from "./authUtils";
 import { AuthUser } from "@/contexts/AuthContext";
-import type { toast as ToastFunction } from "@/hooks/use-toast";
+import { toast as ToastFunction } from "@/hooks/use-toast";
 
 // Define a toast interface that matches what we're passing
 interface ToastInterface {
