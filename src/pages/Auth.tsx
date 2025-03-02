@@ -59,8 +59,9 @@ const Auth = () => {
   const handleUserRedirect = async (userId: string) => {
     try {
       console.log("Checking user company association for:", userId);
+      // Fix: Changed from "company_users" to "user_companies" table
       const { data: companyUser, error } = await supabase
-        .from("company_users")
+        .from("user_companies")
         .select("company_id")
         .eq("user_id", userId)
         .single();
