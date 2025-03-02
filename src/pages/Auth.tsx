@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,9 +19,23 @@ const Auth = () => {
   // 🟢 Verifica se já há uma sessão ativa e redireciona
   useEffect(() => {
     const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        await handleUserRedirect(data.session.user.id);
+      try {
+        console.log("Checking for existing session...");
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Session check error:", error);
+          return;
+        }
+        
+        if (data.session) {
+          console.log("Active session found:", data.session.user.id);
+          await handleUserRedirect(data.session.user.id);
+        } else {
+          console.log("No active session found");
+        }
+      } catch (err) {
+        console.error("Error in checkSession:", err);
       }
     };
     checkSession();
@@ -42,16 +57,35 @@ const Auth = () => {
 
   // 🟢 Função para verificar se o usuário pertence a uma empresa e redirecioná-lo
   const handleUserRedirect = async (userId: string) => {
-    const { data: companyUser } = await supabase
-      .from("company_users")
-      .select("company_id")
-      .eq("user_id", userId)
-      .single();
+    try {
+      console.log("Checking user company association for:", userId);
+      const { data: companyUser, error } = await supabase
+        .from("company_users")
+        .select("company_id")
+        .eq("user_id", userId)
+        .single();
 
-    if (!companyUser) {
-      navigate("/cadastro-empresa"); // Usuário sem empresa é direcionado para cadastro
-    } else {
-      navigate("/dashboard"); // Usuário com empresa vai para o dashboard
+      if (error) {
+        if (error.code === 'PGRST116') {
+          console.log("No company association found for user");
+          navigate("/cadastro-empresa"); // Usuário sem empresa é direcionado para cadastro
+          return;
+        }
+        console.error("Error fetching company_users:", error);
+        throw error;
+      }
+
+      if (!companyUser) {
+        console.log("No company user record found, redirecting to company registration");
+        navigate("/cadastro-empresa"); // Usuário sem empresa é direcionado para cadastro
+      } else {
+        console.log("Company association found, redirecting to dashboard");
+        navigate("/dashboard"); // Usuário com empresa vai para o dashboard
+      }
+    } catch (err) {
+      console.error("Error in handleUserRedirect:", err);
+      // Default redirect to dashboard if we can't determine user status
+      navigate("/dashboard");
     }
   };
 
@@ -62,6 +96,8 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      console.log(`Attempting to ${isSignUp ? 'sign up' : 'sign in'} user:`, email);
+      
       if (isSignUp) {
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -77,6 +113,7 @@ const Auth = () => {
           throw new Error("Usuário já cadastrado");
         }
 
+        console.log("Sign-up successful, redirecting to email confirmation page");
         navigate("/confirm-email"); // Redireciona para confirmação
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -86,6 +123,8 @@ const Auth = () => {
 
         if (error) throw error;
 
+        console.log("Sign-in successful, storing token and redirecting");
+        
         // 🟢 Armazena o token no localStorage
         localStorage.setItem("user_token", data.session.access_token);
 
@@ -94,6 +133,8 @@ const Auth = () => {
       }
     } catch (error: any) {
       let message = "Erro desconhecido";
+
+      console.error("Authentication error:", error);
 
       switch (error.message) {
         case "Email rate limit exceeded":

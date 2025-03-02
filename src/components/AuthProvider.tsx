@@ -48,8 +48,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
+      console.log("Attempting to log out user");
       await supabase.auth.signOut();
       setUser(null);
+      localStorage.removeItem("user_token"); // Clear stored token
       navigate("/auth");
       toast({
         title: "Logout realizado",
@@ -71,10 +73,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check active sessions and sets the user
     const checkSession = async () => {
       try {
+        console.log("Checking for active session");
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
           if (mounted) {
+            console.error("Session check error:", error);
             await handleAuthError(error);
           }
           return;
@@ -93,6 +97,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (userError && userError.code !== "PGRST116") {
             console.error("Error fetching user data:", userError);
           }
+          
+          console.log("User data:", userData);
           
           // Set a default tier if not present
           let userTier: "super_admin" | "company_admin" | "consultant" | "technician" = "technician";
@@ -118,12 +124,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // Redirect based on user tier
           if (window.location.pathname === "/auth") {
             if (enhancedUser.tier === "super_admin") {
+              console.log("Redirecting super_admin to admin dashboard");
               navigate("/admin/dashboard");
             } else {
+              console.log("Redirecting regular user to dashboard");
               navigate("/dashboard");
             }
           }
         } else if (mounted) {
+          console.log("No active session found");
           setUser(null);
           setLoading(false);
           
@@ -133,6 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               window.location.pathname !== "/plans" && 
               window.location.pathname !== "/blog" && 
               window.location.pathname !== "/contact") {
+            console.log("Redirecting to auth page");
             navigate("/auth");
           }
         }
@@ -176,6 +186,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // For testing, set first user as super_admin
           if (!userData?.tier) {
             try {
+              console.log("Attempting to set user as super_admin");
               await supabase
                 .from("users")
                 .update({ tier: "super_admin" })
@@ -201,8 +212,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
           // Redirect based on user tier
           if (enhancedUser.tier === "super_admin") {
+            console.log("Redirecting super_admin to admin dashboard");
             navigate("/admin/dashboard");
           } else {
+            console.log("Redirecting regular user to dashboard");
             navigate("/dashboard");
           }
           
@@ -211,6 +224,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             description: "Bem-vindo de volta!",
           });
         } else if (event === 'SIGNED_OUT') {
+          console.log("User signed out");
           setUser(null);
           navigate("/auth");
           toast({
