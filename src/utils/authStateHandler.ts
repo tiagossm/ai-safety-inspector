@@ -37,6 +37,9 @@ export const handleAuthStateChange: AuthStateChangeHandler = async (
         const enhancedUser = await enhanceUserWithRoleAndTier(session.user);
         console.log("Enhanced user:", enhancedUser);
         
+        // Update user state first to ensure UI updates
+        setUser(enhancedUser);
+        
         // For new users without a tier, set them up
         if (!enhancedUser.tier) {
           console.log("User has no tier, setting up initial configuration");
@@ -44,14 +47,13 @@ export const handleAuthStateChange: AuthStateChangeHandler = async (
           enhancedUser.tier = "super_admin";
         }
         
-        setUser(enhancedUser);
-        
         // Get current path
         const currentPath = window.location.pathname;
         console.log("Current path:", currentPath);
         
         // Only redirect if on auth page
         if (currentPath === "/auth") {
+          console.log("On auth page, redirecting based on user tier");
           // Redirect based on user tier
           if (enhancedUser.tier === "super_admin") {
             console.log("Redirecting super_admin to admin dashboard");
@@ -76,19 +78,27 @@ export const handleAuthStateChange: AuthStateChangeHandler = async (
               navigate("/cadastro-empresa");
             }
           }
+          
+          toast({
+            title: "Login realizado com sucesso",
+            description: "Bem-vindo de volta!",
+          });
         }
-        
-        toast({
-          title: "Login realizado com sucesso",
-          description: "Bem-vindo de volta!",
-        });
       } catch (error) {
         console.error("Error processing sign-in:", error);
+        // Still set user with basic info to avoid getting stuck
+        setUser(session.user as AuthUser);
+        
         toast({
           title: "Erro no processamento do login",
           description: "Tente novamente mais tarde.",
           variant: "destructive",
         });
+        
+        // Redirect to dashboard as fallback
+        if (window.location.pathname === "/auth") {
+          navigate("/dashboard");
+        }
       }
     } else if (event === 'SIGNED_OUT') {
       console.log("User signed out");
@@ -101,16 +111,26 @@ export const handleAuthStateChange: AuthStateChangeHandler = async (
     } else if (event === 'TOKEN_REFRESHED') {
       console.log("Token refreshed");
       if (session?.user) {
-        const enhancedUser = await enhanceUserWithRoleAndTier(session.user);
-        setUser(enhancedUser);
+        try {
+          const enhancedUser = await enhanceUserWithRoleAndTier(session.user);
+          setUser(enhancedUser);
+        } catch (error) {
+          console.error("Error enhancing user on token refresh:", error);
+          setUser(session.user as AuthUser);
+        }
       } else {
         setUser(null);
       }
     } else if (event === 'USER_UPDATED') {
       console.log("User updated");
       if (session?.user) {
-        const enhancedUser = await enhanceUserWithRoleAndTier(session.user);
-        setUser(enhancedUser);
+        try {
+          const enhancedUser = await enhanceUserWithRoleAndTier(session.user);
+          setUser(enhancedUser);
+        } catch (error) {
+          console.error("Error enhancing user on user update:", error);
+          setUser(session.user as AuthUser);
+        }
       } else {
         setUser(null);
       }
@@ -118,18 +138,35 @@ export const handleAuthStateChange: AuthStateChangeHandler = async (
       console.log("Initial session check");
       // Handle initial session load
       if (session?.user) {
-        const enhancedUser = await enhanceUserWithRoleAndTier(session.user);
-        setUser(enhancedUser);
+        try {
+          const enhancedUser = await enhanceUserWithRoleAndTier(session.user);
+          setUser(enhancedUser);
+        } catch (error) {
+          console.error("Error enhancing user on initial session:", error);
+          setUser(session.user as AuthUser);
+        }
       } else {
         setUser(null);
       }
     }
   } catch (error) {
     console.error("Error in handleAuthStateChange:", error);
+    // Reset user state and don't block the auth flow
+    if (event === 'SIGNED_IN' && session?.user) {
+      setUser(session.user as AuthUser);
+    } else {
+      setUser(null);
+    }
+    
     toast({
       title: "Erro no processamento de autenticação",
       description: "Ocorreu um erro inesperado. Tente novamente.",
       variant: "destructive",
     });
+    
+    // Redirect to dashboard as fallback if signed in
+    if (event === 'SIGNED_IN' && window.location.pathname === "/auth") {
+      navigate("/dashboard");
+    }
   }
 };

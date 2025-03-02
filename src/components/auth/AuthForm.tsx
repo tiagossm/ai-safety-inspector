@@ -30,7 +30,7 @@ export const AuthForm = ({
   
   // Monitor de carregamento prolongado
   useEffect(() => {
-    let interval: number;
+    let interval: number | undefined;
     
     if (loading) {
       interval = window.setInterval(() => {
@@ -38,6 +38,7 @@ export const AuthForm = ({
       }, 1000);
     } else {
       setHasBeenLoadingFor(0);
+      if (interval) clearInterval(interval);
     }
     
     return () => {
@@ -64,6 +65,7 @@ export const AuthForm = ({
             className="bg-gray-800 border-gray-700 text-white"
             placeholder="seu@email.com"
             disabled={loading}
+            autoComplete="email"
           />
         </div>
         <div>
@@ -84,12 +86,17 @@ export const AuthForm = ({
       </div>
 
       <div>
-        <Button type="submit" className="w-full" disabled={loading}>
+        <Button 
+          type="submit" 
+          className="w-full" 
+          disabled={loading}
+          aria-busy={loading}
+        >
           {loading ? "Carregando..." : isSignUp ? "Cadastrar" : "Entrar"}
         </Button>
         
-        {/* Botão de cancelamento que aparece após 10 segundos de carregamento */}
-        {hasBeenLoadingFor > 10 && (
+        {/* Botão de cancelamento que aparece após 5 segundos de carregamento */}
+        {hasBeenLoadingFor > 5 && (
           <div className="mt-4">
             <Button 
               type="button" 

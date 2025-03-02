@@ -40,11 +40,6 @@ export const useAuthForm = () => {
       
       if (userError) {
         console.error("Error fetching user tier:", userError);
-        toast({ 
-          title: "Erro ao verificar perfil do usuário", 
-          description: userError.message,
-          variant: "destructive" 
-        });
         navigate("/dashboard");
         return;
       }
@@ -65,11 +60,6 @@ export const useAuthForm = () => {
 
       if (companyError) {
         console.error("Error fetching user_companies:", companyError);
-        toast({ 
-          title: "Erro ao verificar empresas do usuário", 
-          description: companyError.message,
-          variant: "destructive" 
-        });
         navigate("/dashboard");
         return;
       }
@@ -84,11 +74,7 @@ export const useAuthForm = () => {
       }
     } catch (err: any) {
       console.error("Error in handleUserRedirect:", err);
-      toast({ 
-        title: "Erro no redirecionamento", 
-        description: err.message,
-        variant: "destructive" 
-      });
+      // Fallback to dashboard on any error
       navigate("/dashboard");
     }
   };
@@ -149,13 +135,9 @@ export const useAuthForm = () => {
             description: "Bem-vindo de volta!"
           });
           
-          // Handle user redirection
-          if (data.user) {
-            await handleUserRedirect(data.user.id);
-          } else {
-            console.error("Usuário não retornado após login");
-            navigate("/dashboard");
-          }
+          // Let the auth state change handler handle the redirection
+          // Just note that login was successful so we don't stay on this page
+          console.log("Login successful, auth state change handler will redirect");
         } else {
           console.error("Sessão não retornada após login");
           throw new Error("Falha na autenticação: Sessão não retornada");
@@ -183,8 +165,10 @@ export const useAuthForm = () => {
       });
     } finally {
       // Garantir que o estado de carregamento seja sempre resetado
-      setLoading(false);
-      console.log("Estado de carregamento resetado");
+      setTimeout(() => {
+        setLoading(false);
+        console.log("Estado de carregamento resetado");
+      }, 500);
     }
   };
 
