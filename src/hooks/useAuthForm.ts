@@ -51,6 +51,8 @@ export const useAuthForm = () => {
       }
     } catch (err) {
       console.error("Error in handleUserRedirect:", err);
+      // Reset loading state in case of error
+      setLoading(false);
       // Default redirect to dashboard if we can't determine user status
       navigate("/dashboard");
     }
@@ -59,7 +61,10 @@ export const useAuthForm = () => {
   // Authentication function
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -82,7 +87,9 @@ export const useAuthForm = () => {
 
         console.log("Sign-up successful, redirecting to email confirmation page");
         navigate("/confirm-email"); // Redireciona para confirmação
+        setLoading(false);
       } else {
+        console.log("Attempting login with:", email);
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -90,28 +97,45 @@ export const useAuthForm = () => {
 
         if (error) throw error;
 
-        console.log("Sign-in successful, storing token and redirecting");
+        console.log("Sign-in successful, storing token");
         
         // Armazena o token no localStorage
         if (data.session) {
           localStorage.setItem("user_token", data.session.access_token);
+          console.log("Token stored, checking user tier");
+        } else {
+          console.error("No session returned after login");
+          throw new Error("Falha na autenticação: Sessão não retornada");
         }
 
         // Obtém dados adicionais do usuário e verifica seu tier
         if (data.user) {
+          console.log("Fetching user tier information");
           const { data: userData, error: userError } = await supabase
             .from("users")
             .select("tier")
             .eq("id", data.user.id)
             .maybeSingle();
           
-          if (!userError && userData?.tier === "super_admin") {
+          if (userError) {
+            console.error("Error fetching user tier:", userError);
+          }
+          
+          if (userData?.tier === "super_admin") {
+            console.log("User is super_admin, redirecting to admin dashboard");
             navigate("/admin/dashboard");
           } else {
+            console.log("User is not super_admin, checking company association");
             // Redireciona o usuário com base na empresa vinculada
             await handleUserRedirect(data.user.id);
           }
+        } else {
+          console.error("No user returned after login");
+          throw new Error("Falha na autenticação: Usuário não retornado");
         }
+        
+        // Ensure loading is set to false after all operations
+        setLoading(false);
       }
     } catch (error: any) {
       let message = "Erro desconhecido";
@@ -130,7 +154,7 @@ export const useAuthForm = () => {
       }
 
       toast({ title: "Erro", description: message, variant: "destructive" });
-    } finally {
+      // Make sure loading state is reset on error
       setLoading(false);
     }
   };

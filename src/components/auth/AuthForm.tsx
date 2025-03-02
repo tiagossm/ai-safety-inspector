@@ -37,6 +37,7 @@ export const AuthForm = ({
             onChange={(e) => setEmail(e.target.value)}
             className="bg-gray-800 border-gray-700 text-white"
             placeholder="seu@email.com"
+            disabled={loading}
           />
         </div>
         <div>
@@ -51,6 +52,7 @@ export const AuthForm = ({
             placeholder="••••••••"
             minLength={isSignUp ? 8 : undefined}
             autoComplete={isSignUp ? "new-password" : "current-password"}
+            disabled={loading}
           />
         </div>
       </div>
@@ -66,6 +68,7 @@ export const AuthForm = ({
           type="button"
           onClick={() => setIsSignUp(!isSignUp)}
           className="text-primary hover:text-primary/80"
+          disabled={loading}
         >
           {isSignUp
             ? "Já tem uma conta? Entre aqui"

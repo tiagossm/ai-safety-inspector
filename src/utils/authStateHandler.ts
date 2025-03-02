@@ -32,10 +32,13 @@ export const handleAuthStateChange: AuthStateChangeHandler = async (
     console.log("User signed in:", session.user);
     
     try {
+      console.log("Enhancing user with role and tier");
       const enhancedUser = await enhanceUserWithRoleAndTier(session.user);
+      console.log("Enhanced user:", enhancedUser);
       
       // For new users without a tier, set them up
       if (!enhancedUser.tier) {
+        console.log("User has no tier, setting up initial configuration");
         await handleInitialSetup(session.user);
         enhancedUser.tier = "super_admin";
       }
