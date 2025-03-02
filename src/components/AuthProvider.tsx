@@ -11,7 +11,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const toast = useToast();
+  const { toast } = useToast(); // Destructure toast from useToast
 
   const handleAuthError = async (error: any) => {
     console.error("Auth error:", error);
