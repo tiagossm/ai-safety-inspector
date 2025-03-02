@@ -27,7 +27,6 @@ export function PlatformHealthMonitor() {
     const checkHealth = async () => {
       try {
         setLoading(true);
-        console.log("Checking platform health...");
         
         // Check database health
         const { data: dbCheck, error: dbError } = await supabase
@@ -35,12 +34,8 @@ export function PlatformHealthMonitor() {
           .select('id')
           .limit(1);
         
-        console.log("DB check:", { data: dbCheck, error: dbError });
-        
         // Check auth health
         const { data: authCheck, error: authError } = await supabase.auth.getSession();
-        
-        console.log("Auth check:", { data: authCheck, error: authError });
         
         // Simple API check
         let apiStatus: "healthy" | "degraded" | "down" = "down";
@@ -52,9 +47,7 @@ export function PlatformHealthMonitor() {
             }
           });
           apiStatus = response.ok ? "healthy" : "degraded";
-          console.log("API check:", { status: response.status, ok: response.ok });
         } catch (error) {
-          console.error("API check error:", error);
           apiStatus = "down";
         }
         
@@ -64,27 +57,15 @@ export function PlatformHealthMonitor() {
         
         // Determine overall health
         let overallStatus: "healthy" | "degraded" | "down" = "healthy";
-        
-        // Fixed comparison - check for "down" status
-        if ([dbStatus, authStatus, apiStatus].some(status => status === "down")) {
+        if (dbStatus === "down" || authStatus === "down" || apiStatus === "down") {
           overallStatus = "down";
-        } 
-        // Then check for "degraded" status
-        else if ([dbStatus, authStatus, apiStatus].some(status => status === "degraded")) {
+        } else if (dbStatus === "degraded" || authStatus === "degraded" || apiStatus === "degraded") {
           overallStatus = "degraded";
         }
-        // Otherwise, it stays "healthy"
         
         setHealth({
           database: dbStatus,
           storage: "healthy", // Mock value
-          auth: authStatus,
-          api: apiStatus,
-          overall: overallStatus
-        });
-        
-        console.log("Health status set:", {
-          database: dbStatus,
           auth: authStatus,
           api: apiStatus,
           overall: overallStatus
