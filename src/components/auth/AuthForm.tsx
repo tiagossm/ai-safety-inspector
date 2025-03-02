@@ -1,19 +1,18 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useEffect, useState } from "react";
 
-interface AuthFormProps {
+type AuthFormProps = {
   email: string;
-  setEmail: (email: string) => void;
+  setEmail: (value: string) => void;
   password: string;
-  setPassword: (password: string) => void;
+  setPassword: (value: string) => void;
   loading: boolean;
   isSignUp: boolean;
-  setIsSignUp: (isSignUp: boolean) => void;
+  setIsSignUp: (value: boolean) => void;
   handleAuth: (e: React.FormEvent) => Promise<void>;
-}
+};
 
 export const AuthForm = ({
   email,
@@ -38,11 +37,12 @@ export const AuthForm = ({
       }, 1000);
     } else {
       setHasBeenLoadingFor(0);
-      if (interval) clearInterval(interval);
     }
     
     return () => {
-      if (interval) clearInterval(interval);
+      if (interval !== undefined) {
+        clearInterval(interval);
+      }
     };
   }, [loading]);
   
@@ -78,8 +78,7 @@ export const AuthForm = ({
             onChange={(e) => setPassword(e.target.value)}
             className="bg-gray-800 border-gray-700 text-white"
             placeholder="••••••••"
-            minLength={isSignUp ? 8 : undefined}
-            autoComplete={isSignUp ? "new-password" : "current-password"}
+            minLength={8}
             disabled={loading}
           />
         </div>

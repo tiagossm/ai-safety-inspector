@@ -1,38 +1,41 @@
-
 import { useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
 
-interface SessionCheckerProps {
-  handleUserRedirect: (userId: string) => Promise<void>;
-}
-
-export const SessionChecker = ({ handleUserRedirect }: SessionCheckerProps) => {
+export const SessionChecker = () => {
   const navigate = useNavigate();
+
+  const handleUserRedirect = async (user: any) => {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("company_id, role")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile?.company_id) {
+      navigate("/setup-company");
+    } else {
+      profile.role === "super_admin" 
+        ? navigate("/admin/dashboard") 
+        : navigate("/dashboard");
+    }
+  };
 
   useEffect(() => {
     const checkSession = async () => {
-      try {
-        console.log("Checking for existing session...");
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error("Session check error:", error);
-          return;
-        }
-        
-        if (data.session) {
-          console.log("Active session found:", data.session.user.id);
-          await handleUserRedirect(data.session.user.id);
-        } else {
-          console.log("No active session found");
-        }
-      } catch (err) {
-        console.error("Error in checkSession:", err);
-      }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) await handleUserRedirect(session.user);
     };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) await handleUserRedirect(session.user);
+      }
+    );
+
     checkSession();
-  }, [navigate, handleUserRedirect]);
+    return () => subscription?.unsubscribe();
+  }, [handleUserRedirect]);
 
   return null;
 };
