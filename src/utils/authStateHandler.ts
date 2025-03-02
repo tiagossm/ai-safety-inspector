@@ -4,11 +4,11 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { enhanceUserWithRoleAndTier, handleInitialSetup } from "./authUtils";
 import { AuthUser } from "@/contexts/AuthContext";
-import type { Toast } from "@/hooks/use-toast";
+import type { toast as ToastFunction } from "@/hooks/use-toast";
 
 // Define a toast interface that matches what we're passing
 interface ToastInterface {
-  toast: (props: any) => void;
+  toast: typeof ToastFunction;
 }
 
 export type AuthStateChangeHandler = (
