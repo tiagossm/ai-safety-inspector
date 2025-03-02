@@ -4,14 +4,19 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { enhanceUserWithRoleAndTier, handleInitialSetup } from "./authUtils";
 import { AuthUser } from "@/contexts/AuthContext";
-import { useToast } from "@/components/ui/use-toast";
+import type { Toast } from "@/hooks/use-toast";
+
+// Define a toast interface that matches what we're passing
+interface ToastInterface {
+  toast: (props: any) => void;
+}
 
 export type AuthStateChangeHandler = (
   event: string, 
   session: Session | null,
   setUser: React.Dispatch<React.SetStateAction<AuthUser | null>>,
   navigate: NavigateFunction,
-  toast: ReturnType<typeof useToast>
+  toastInterface: ToastInterface
 ) => Promise<void>;
 
 export const handleAuthStateChange: AuthStateChangeHandler = async (
@@ -19,7 +24,7 @@ export const handleAuthStateChange: AuthStateChangeHandler = async (
   session,
   setUser,
   navigate,
-  toast
+  { toast }
 ) => {
   console.log("Auth state changed:", event);
   
@@ -45,7 +50,7 @@ export const handleAuthStateChange: AuthStateChangeHandler = async (
       navigate("/dashboard");
     }
     
-    toast.toast({
+    toast({
       title: "Login realizado com sucesso",
       description: "Bem-vindo de volta!",
     });
@@ -53,7 +58,7 @@ export const handleAuthStateChange: AuthStateChangeHandler = async (
     console.log("User signed out");
     setUser(null);
     navigate("/auth");
-    toast.toast({
+    toast({
       title: "Logout realizado",
       description: "Até logo!",
     });
