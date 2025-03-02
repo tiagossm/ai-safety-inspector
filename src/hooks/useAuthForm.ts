@@ -29,31 +29,66 @@ export const useAuthForm = () => {
   // User redirect logic
   const handleUserRedirect = async (userId: string) => {
     try {
-      console.log("Checking user company association for:", userId);
-      // Using the correct table name: user_companies
-      const { data: companyUser, error } = await supabase
+      console.log("Checking user tier and company association for:", userId);
+      
+      // Get user tier from the users table
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("tier")
+        .eq("id", userId)
+        .maybeSingle();
+      
+      if (userError) {
+        console.error("Error fetching user tier:", userError);
+        toast({ 
+          title: "Erro ao verificar perfil do usuário", 
+          description: userError.message,
+          variant: "destructive" 
+        });
+        navigate("/dashboard");
+        return;
+      }
+      
+      // Redirect super_admin to admin dashboard
+      if (userData?.tier === "super_admin") {
+        console.log("User is super_admin, redirecting to admin dashboard");
+        navigate("/admin/dashboard");
+        return;
+      }
+      
+      // Check user's company association
+      const { data: companyUser, error: companyError } = await supabase
         .from("user_companies")
         .select("company_id")
         .eq("user_id", userId)
         .maybeSingle();
 
-      if (error) {
-        console.error("Error fetching company_users:", error);
-        throw error;
+      if (companyError) {
+        console.error("Error fetching user_companies:", companyError);
+        toast({ 
+          title: "Erro ao verificar empresas do usuário", 
+          description: companyError.message,
+          variant: "destructive" 
+        });
+        navigate("/dashboard");
+        return;
       }
 
+      // Redirect based on company association
       if (!companyUser) {
         console.log("No company user record found, redirecting to company registration");
-        navigate("/cadastro-empresa"); // Usuário sem empresa é direcionado para cadastro
+        navigate("/cadastro-empresa");
       } else {
         console.log("Company association found, redirecting to dashboard");
-        navigate("/dashboard"); // Usuário com empresa vai para o dashboard
+        navigate("/dashboard");
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error in handleUserRedirect:", err);
-      // Reset loading state in case of error
-      setLoading(false);
-      // Default redirect to dashboard if we can't determine user status
+      toast({ 
+        title: "Erro no redirecionamento", 
+        description: err.message,
+        variant: "destructive" 
+      });
       navigate("/dashboard");
     }
   };
@@ -66,11 +101,11 @@ export const useAuthForm = () => {
     }
     
     setLoading(true);
+    console.log(`Tentando ${isSignUp ? 'cadastrar' : 'logar'} com o email: ${email}`);
 
     try {
-      console.log(`Attempting to ${isSignUp ? 'sign up' : 'sign in'} user:`, email);
-      
       if (isSignUp) {
+        // Sign Up Flow
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -85,11 +120,16 @@ export const useAuthForm = () => {
           throw new Error("Usuário já cadastrado");
         }
 
+        toast({
+          title: "Cadastro realizado com sucesso!",
+          description: "Verifique seu email para confirmar sua conta."
+        });
+        
         console.log("Sign-up successful, redirecting to email confirmation page");
-        navigate("/confirm-email"); // Redireciona para confirmação
-        setLoading(false);
+        navigate("/confirm-email");
       } else {
-        console.log("Attempting login with:", email);
+        // Sign In Flow
+        console.log("Tentando login com:", email);
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -97,51 +137,34 @@ export const useAuthForm = () => {
 
         if (error) throw error;
 
-        console.log("Sign-in successful, storing token");
+        console.log("Login bem-sucedido:", data);
         
-        // Armazena o token no localStorage
+        // Store token
         if (data.session) {
           localStorage.setItem("user_token", data.session.access_token);
-          console.log("Token stored, checking user tier");
+          console.log("Token armazenado no localStorage");
+          
+          toast({
+            title: "Login realizado com sucesso",
+            description: "Bem-vindo de volta!"
+          });
+          
+          // Handle user redirection
+          if (data.user) {
+            await handleUserRedirect(data.user.id);
+          } else {
+            console.error("Usuário não retornado após login");
+            navigate("/dashboard");
+          }
         } else {
-          console.error("No session returned after login");
+          console.error("Sessão não retornada após login");
           throw new Error("Falha na autenticação: Sessão não retornada");
         }
-
-        // Obtém dados adicionais do usuário e verifica seu tier
-        if (data.user) {
-          console.log("Fetching user tier information");
-          const { data: userData, error: userError } = await supabase
-            .from("users")
-            .select("tier")
-            .eq("id", data.user.id)
-            .maybeSingle();
-          
-          if (userError) {
-            console.error("Error fetching user tier:", userError);
-          }
-          
-          if (userData?.tier === "super_admin") {
-            console.log("User is super_admin, redirecting to admin dashboard");
-            navigate("/admin/dashboard");
-          } else {
-            console.log("User is not super_admin, checking company association");
-            // Redireciona o usuário com base na empresa vinculada
-            await handleUserRedirect(data.user.id);
-          }
-        } else {
-          console.error("No user returned after login");
-          throw new Error("Falha na autenticação: Usuário não retornado");
-        }
-        
-        // Ensure loading is set to false after all operations
-        setLoading(false);
       }
     } catch (error: any) {
+      console.error("Erro de autenticação:", error);
+      
       let message = "Erro desconhecido";
-
-      console.error("Authentication error:", error);
-
       switch (error.message) {
         case "Email rate limit exceeded":
           message = "Muitas tentativas. Tente novamente mais tarde";
@@ -153,9 +176,15 @@ export const useAuthForm = () => {
           message = error.message;
       }
 
-      toast({ title: "Erro", description: message, variant: "destructive" });
-      // Make sure loading state is reset on error
+      toast({ 
+        title: "Erro de autenticação", 
+        description: message, 
+        variant: "destructive" 
+      });
+    } finally {
+      // Garantir que o estado de carregamento seja sempre resetado
       setLoading(false);
+      console.log("Estado de carregamento resetado");
     }
   };
 

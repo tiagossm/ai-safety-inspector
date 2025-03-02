@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useEffect, useState } from "react";
 
 interface AuthFormProps {
   email: string;
@@ -24,6 +25,31 @@ export const AuthForm = ({
   setIsSignUp,
   handleAuth
 }: AuthFormProps) => {
+  // Estado para rastrear tentativas de envio e exibir o botão de cancelamento após um período
+  const [hasBeenLoadingFor, setHasBeenLoadingFor] = useState(0);
+  
+  // Monitor de carregamento prolongado
+  useEffect(() => {
+    let interval: number;
+    
+    if (loading) {
+      interval = window.setInterval(() => {
+        setHasBeenLoadingFor(prev => prev + 1);
+      }, 1000);
+    } else {
+      setHasBeenLoadingFor(0);
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [loading]);
+  
+  // Função para redefinir o formulário se ficar preso
+  const resetForm = () => {
+    window.location.reload();
+  };
+
   return (
     <form className="mt-8 space-y-6" onSubmit={handleAuth}>
       <div className="rounded-md shadow-sm space-y-4">
@@ -61,6 +87,23 @@ export const AuthForm = ({
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Carregando..." : isSignUp ? "Cadastrar" : "Entrar"}
         </Button>
+        
+        {/* Botão de cancelamento que aparece após 10 segundos de carregamento */}
+        {hasBeenLoadingFor > 10 && (
+          <div className="mt-4">
+            <Button 
+              type="button" 
+              variant="destructive"
+              className="w-full" 
+              onClick={resetForm}
+            >
+              Cancelar tentativa
+            </Button>
+            <p className="text-xs text-red-400 mt-2 text-center">
+              O login está demorando muito. Clique em cancelar para tentar novamente.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="text-center">
