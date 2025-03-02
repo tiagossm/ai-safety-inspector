@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,8 +15,35 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Verifica sessão existente ao carregar
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) navigate("/dashboard");
+    };
+    checkSession();
+  }, [navigate]);
+
+  // Validação de formulário
+  const validateForm = () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({ title: "Email inválido", variant: "destructive" });
+      return false;
+    }
+    
+    if (isSignUp && password.length < 8) {
+      toast({ title: "Senha deve ter 8+ caracteres", variant: "destructive" });
+      return false;
+    }
+    
+    return true;
+  };
+
+  // Função de autenticação
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateForm()) return;
     setLoading(true);
 
     try {
@@ -25,16 +51,18 @@ const Auth = () => {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/dashboard`
+          }
         });
-        
+
         if (error) throw error;
         
-        toast({
-          title: "Cadastro realizado com sucesso!",
-          description: "Verifique seu email para confirmar o cadastro.",
-        });
-        
-        console.log("Signup successful:", data);
+        if (data.user?.identities?.length === 0) {
+          throw new Error("Usuário já cadastrado");
+        }
+
+        navigate("/confirm-email"); // Redireciona para confirmação
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
@@ -43,16 +71,23 @@ const Auth = () => {
         
         if (error) throw error;
         
-        console.log("Login successful:", data);
         navigate("/dashboard");
       }
     } catch (error: any) {
-      console.error("Auth error:", error);
-      toast({
-        title: "Erro",
-        description: error.message,
-        variant: "destructive",
-      });
+      let message = "Erro desconhecido";
+      
+      switch (error.message) {
+        case "Email rate limit exceeded":
+          message = "Muitas tentativas. Tente novamente mais tarde";
+          break;
+        case "Invalid login credentials":
+          message = "Credenciais inválidas";
+          break;
+        default:
+          message = error.message;
+      }
+
+      toast({ title: "Erro", description: message, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -91,6 +126,8 @@ const Auth = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 className="bg-gray-800 border-gray-700 text-white"
                 placeholder="••••••••"
+                minLength={isSignUp ? 8 : undefined}
+                autoComplete={isSignUp ? "new-password" : "current-password"}
               />
             </div>
           </div>
