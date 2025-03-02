@@ -1,6 +1,7 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 export const useAuthForm = () => {
@@ -34,14 +35,9 @@ export const useAuthForm = () => {
         .from("user_companies")
         .select("company_id")
         .eq("user_id", userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          console.log("No company association found for user");
-          navigate("/cadastro-empresa"); // Usuário sem empresa é direcionado para cadastro
-          return;
-        }
         console.error("Error fetching company_users:", error);
         throw error;
       }
@@ -97,10 +93,25 @@ export const useAuthForm = () => {
         console.log("Sign-in successful, storing token and redirecting");
         
         // Armazena o token no localStorage
-        localStorage.setItem("user_token", data.session.access_token);
+        if (data.session) {
+          localStorage.setItem("user_token", data.session.access_token);
+        }
 
-        // Redireciona o usuário com base na empresa vinculada
-        await handleUserRedirect(data.user.id);
+        // Obtém dados adicionais do usuário e verifica seu tier
+        if (data.user) {
+          const { data: userData, error: userError } = await supabase
+            .from("users")
+            .select("tier")
+            .eq("id", data.user.id)
+            .maybeSingle();
+          
+          if (!userError && userData?.tier === "super_admin") {
+            navigate("/admin/dashboard");
+          } else {
+            // Redireciona o usuário com base na empresa vinculada
+            await handleUserRedirect(data.user.id);
+          }
+        }
       }
     } catch (error: any) {
       let message = "Erro desconhecido";

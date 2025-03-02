@@ -31,29 +31,38 @@ export const handleAuthStateChange: AuthStateChangeHandler = async (
   if (event === 'SIGNED_IN' && session?.user) {
     console.log("User signed in:", session.user);
     
-    const enhancedUser = await enhanceUserWithRoleAndTier(session.user);
-    
-    // For new users without a tier, set them up
-    if (!enhancedUser.tier) {
-      await handleInitialSetup(session.user);
-      enhancedUser.tier = "super_admin";
+    try {
+      const enhancedUser = await enhanceUserWithRoleAndTier(session.user);
+      
+      // For new users without a tier, set them up
+      if (!enhancedUser.tier) {
+        await handleInitialSetup(session.user);
+        enhancedUser.tier = "super_admin";
+      }
+      
+      setUser(enhancedUser);
+      
+      // Redirect based on user tier
+      if (enhancedUser.tier === "super_admin") {
+        console.log("Redirecting super_admin to admin dashboard");
+        navigate("/admin/dashboard");
+      } else {
+        console.log("Redirecting regular user to dashboard");
+        navigate("/dashboard");
+      }
+      
+      toast({
+        title: "Login realizado com sucesso",
+        description: "Bem-vindo de volta!",
+      });
+    } catch (error) {
+      console.error("Error processing sign-in:", error);
+      toast({
+        title: "Erro no processamento do login",
+        description: "Tente novamente mais tarde.",
+        variant: "destructive",
+      });
     }
-    
-    setUser(enhancedUser);
-    
-    // Redirect based on user tier
-    if (enhancedUser.tier === "super_admin") {
-      console.log("Redirecting super_admin to admin dashboard");
-      navigate("/admin/dashboard");
-    } else {
-      console.log("Redirecting regular user to dashboard");
-      navigate("/dashboard");
-    }
-    
-    toast({
-      title: "Login realizado com sucesso",
-      description: "Bem-vindo de volta!",
-    });
   } else if (event === 'SIGNED_OUT') {
     console.log("User signed out");
     setUser(null);
