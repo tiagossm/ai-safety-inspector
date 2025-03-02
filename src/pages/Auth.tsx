@@ -15,32 +15,47 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Verifica sessão existente ao carregar
+  // 🟢 Verifica se já há uma sessão ativa e redireciona
   useEffect(() => {
     const checkSession = async () => {
       const { data } = await supabase.auth.getSession();
-      if (data.session) navigate("/dashboard");
+      if (data.session) {
+        await handleUserRedirect(data.session.user.id);
+      }
     };
     checkSession();
   }, [navigate]);
 
-  // Validação de formulário
+  // 🟢 Validação de formulário
   const validateForm = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       toast({ title: "Email inválido", variant: "destructive" });
       return false;
     }
-    
     if (isSignUp && password.length < 8) {
       toast({ title: "Senha deve ter 8+ caracteres", variant: "destructive" });
       return false;
     }
-    
     return true;
   };
 
-  // Função de autenticação
+  // 🟢 Função para verificar se o usuário pertence a uma empresa e redirecioná-lo
+  const handleUserRedirect = async (userId: string) => {
+    const { data: companyUser } = await supabase
+      .from("company_users")
+      .select("company_id")
+      .eq("user_id", userId)
+      .single();
+
+    if (!companyUser) {
+      navigate("/cadastro-empresa"); // Usuário sem empresa é direcionado para cadastro
+    } else {
+      navigate("/dashboard"); // Usuário com empresa vai para o dashboard
+    }
+  };
+
+  // 🟢 Função de autenticação
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -52,12 +67,12 @@ const Auth = () => {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/dashboard`
-          }
+            emailRedirectTo: `${window.location.origin}/dashboard`,
+          },
         });
 
         if (error) throw error;
-        
+
         if (data.user?.identities?.length === 0) {
           throw new Error("Usuário já cadastrado");
         }
@@ -68,14 +83,18 @@ const Auth = () => {
           email,
           password,
         });
-        
+
         if (error) throw error;
-        
-        navigate("/dashboard");
+
+        // 🟢 Armazena o token no localStorage
+        localStorage.setItem("user_token", data.session.access_token);
+
+        // 🟢 Redireciona o usuário com base na empresa vinculada
+        await handleUserRedirect(data.user.id);
       }
     } catch (error: any) {
       let message = "Erro desconhecido";
-      
+
       switch (error.message) {
         case "Email rate limit exceeded":
           message = "Muitas tentativas. Tente novamente mais tarde";
@@ -133,11 +152,7 @@ const Auth = () => {
           </div>
 
           <div>
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={loading}
-            >
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Carregando..." : isSignUp ? "Cadastrar" : "Entrar"}
             </Button>
           </div>
