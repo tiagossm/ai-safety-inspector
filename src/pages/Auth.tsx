@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,8 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      console.log("🔍 Tentando autenticar com:", { email, isSignUp });
+      
       if (isSignUp) {
         const { error } = await supabase.auth.signUp({
           email,
@@ -31,14 +34,22 @@ const Auth = () => {
           description: "Verifique seu email para confirmar o cadastro.",
         });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        console.log("🔑 Iniciando login...");
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
+        
         if (error) throw error;
+        
+        console.log("✅ Login bem-sucedido:", data);
+        // Não precisamos salvar manualmente a sessão, o Supabase faz isso automaticamente
+        // com as configurações que adicionamos na inicialização do cliente
+        
         navigate("/companies");
       }
     } catch (error: any) {
+      console.error("❌ Erro na autenticação:", error);
       toast({
         title: "Erro",
         description: error.message,
