@@ -1,10 +1,11 @@
+
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
 } from "react-router-dom";
-import { Index } from "./pages/Index";
+import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Companies from "./pages/Companies";
