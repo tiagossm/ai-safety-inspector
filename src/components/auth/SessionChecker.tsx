@@ -6,6 +6,23 @@ export const SessionChecker = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const checkExistingSession = async () => {
+      console.log("🔍 Verificando sessão armazenada...");
+      const { data, error } = await supabase.auth.getSession();
+
+      if (error) {
+        console.error("❌ Erro ao recuperar sessão:", error);
+        return;
+      }
+
+      if (data?.session?.user) {
+        console.log("✅ Sessão válida encontrada, redirecionando...");
+        await handleUserRedirect(data.session.user);
+      } else {
+        console.log("⚠️ Nenhuma sessão encontrada.");
+      }
+    };
+
     const handleUserRedirect = async (user: any) => {
       try {
         console.log("🔍 Buscando perfil do usuário:", user.id);
@@ -69,6 +86,9 @@ export const SessionChecker = () => {
         }
       }
     );
+
+    // 🚀 Chama a função para verificar se a sessão já existe antes de tudo
+    checkExistingSession();
 
     checkSession();
 
