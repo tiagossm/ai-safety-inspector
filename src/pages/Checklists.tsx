@@ -140,9 +140,16 @@ export default function Checklists() {
                         <CardTitle className="text-lg font-medium">
                           {checklist.title}
                         </CardTitle>
-                        {checklist.is_template && (
-                          <Badge variant="secondary" className="mt-1">Template</Badge>
-                        )}
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {checklist.is_template && (
+                            <Badge variant="secondary">Template</Badge>
+                          )}
+                          {checklist.category && (
+                            <Badge variant="outline">
+                              {checklist.category.charAt(0).toUpperCase() + checklist.category.slice(1)}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -177,16 +184,22 @@ export default function Checklists() {
                         <Check className="mr-1 h-4 w-4" />
                         <span>{checklist.items} itens</span>
                       </div>
+                      {checklist.responsible_name && (
+                        <div className="mt-2 flex items-center text-sm text-muted-foreground">
+                          <User className="mr-1 h-4 w-4" />
+                          <span>{checklist.responsible_name}</span>
+                        </div>
+                      )}
                       <div className="mt-4">
                         <p className="text-sm font-medium mb-1">Colaboradores:</p>
                         <div className="flex -space-x-2">
-                          {checklist.collaborators.map((user) => (
+                          {checklist.collaborators?.map((user) => (
                             <Avatar key={user.id} className="h-7 w-7 border-2 border-background">
                               <AvatarImage src={user.avatar} alt={user.name} />
                               <AvatarFallback>{user.initials}</AvatarFallback>
                             </Avatar>
                           ))}
-                          {checklist.collaborators.length > 0 && (
+                          {checklist.collaborators && checklist.collaborators.length > 0 && (
                             <Button variant="outline" size="icon" className="h-7 w-7 rounded-full">
                               <Users className="h-3 w-3" />
                             </Button>
@@ -224,7 +237,7 @@ export default function Checklists() {
           <div className="rounded-md border">
             <div className="grid grid-cols-5 gap-4 p-4 font-medium border-b">
               <div className="col-span-2">Nome</div>
-              <div className="hidden md:block">Criado por</div>
+              <div className="hidden md:block">Responsável</div>
               <div className="hidden md:block">Data</div>
               <div className="text-right">Ações</div>
             </div>
@@ -255,13 +268,20 @@ export default function Checklists() {
                       <div className="font-medium">{checklist.title}</div>
                       <div className="text-sm text-muted-foreground mt-1">
                         {checklist.items} itens
-                        {checklist.is_template && (
-                          <Badge variant="secondary" className="ml-2">Template</Badge>
-                        )}
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {checklist.is_template && (
+                            <Badge variant="secondary">Template</Badge>
+                          )}
+                          {checklist.category && (
+                            <Badge variant="outline">
+                              {checklist.category.charAt(0).toUpperCase() + checklist.category.slice(1)}
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="hidden md:block text-sm">
-                      {checklist.collaborators[0]?.name || "N/A"}
+                      {checklist.responsible_name || "Não atribuído"}
                     </div>
                     <div className="hidden md:block text-sm">
                       {new Date(checklist.created_at).toLocaleDateString()}

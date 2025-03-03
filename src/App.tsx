@@ -24,6 +24,7 @@ import BillingPage from "./pages/BillingPage";
 import Reports from "./pages/Reports";
 import Incidents from "./pages/Incidents";
 import AdminDashboard from "./pages/AdminDashboard";
+import ChecklistDetails from "./pages/ChecklistDetails";
 
 // Criando uma instância do QueryClient
 const queryClient = new QueryClient();
@@ -54,6 +55,7 @@ function App() {
                   <Route path="/companies/:companyId/units/new" element={<AddUnit />} />
                   <Route path="/inspections" element={<Inspections />} />
                   <Route path="/checklists" element={<Checklists />} />
+                  <Route path="/checklists/:checklistId" element={<ChecklistDetails />} />
                   <Route path="/incidents" element={<Incidents />} />
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/users" element={<Users />} />

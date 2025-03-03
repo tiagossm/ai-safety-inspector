@@ -9,7 +9,9 @@ export function useFetchChecklists() {
     queryKey: ["checklists"],
     queryFn: async () => {
       console.log("Buscando checklists...");
-      const { data, error } = await supabase
+      
+      // First fetch the checklists
+      const { data: checklists, error } = await supabase
         .from("checklists")
         .select("*")
         .order("created_at", { ascending: false });
@@ -19,21 +21,71 @@ export function useFetchChecklists() {
         throw error;
       }
 
-      console.log("Dados recebidos do Supabase:", data);
+      console.log("Checklists recebidos do Supabase:", checklists);
+      
+      // Fetch responsible users information where available
+      const responsibleIds = checklists
+        .filter(c => c.responsible_id)
+        .map(c => c.responsible_id);
+      
+      let usersMap = {};
+      
+      if (responsibleIds.length > 0) {
+        try {
+          const { data: users } = await supabase
+            .from('users')
+            .select('id, name')
+            .in('id', responsibleIds);
+            
+          if (users) {
+            usersMap = users.reduce((acc, user) => {
+              acc[user.id] = user.name;
+              return acc;
+            }, {});
+          }
+        } catch (err) {
+          console.error("Erro ao buscar responsáveis:", err);
+        }
+      }
+      
+      // For each checklist, get the number of items
+      const checklistsWithItems = await Promise.all(
+        checklists.map(async (checklist) => {
+          try {
+            const { count, error: itemsError } = await supabase
+              .from("checklist_itens")
+              .select("*", { count: "exact", head: true })
+              .eq("checklist_id", checklist.id);
+              
+            if (itemsError) throw itemsError;
+            
+            return {
+              ...checklist,
+              items: count || 0,
+              // Get the responsible name from the users map
+              responsible_name: checklist.responsible_id ? usersMap[checklist.responsible_id] || 'Usuário não encontrado' : null,
+              // Ensure status_checklist is always "ativo" or "inativo"
+              status_checklist: checklist.status_checklist === "inativo" ? "inativo" : "ativo",
+              // Ensure is_template is boolean
+              is_template: Boolean(checklist.is_template),
+              // Add mock data for UI
+              collaborators: generateMockCollaborators(2),
+              permissions: ["editor"]
+            };
+          } catch (err) {
+            console.error(`Erro ao buscar itens para checklist ${checklist.id}:`, err);
+            return {
+              ...checklist,
+              // Mock data for UI
+              items: 0,
+              collaborators: generateMockCollaborators(1),
+              permissions: ["viewer"]
+            };
+          }
+        })
+      );
 
-      // Transformando os dados para adicionar informações de colaboradores (mockados por enquanto)
-      // e garantir que todos os campos necessários estejam presentes
-      return data.map((checklist: any) => ({
-        ...checklist,
-        // Garantir que status_checklist seja sempre "ativo" ou "inativo"
-        status_checklist: checklist.status_checklist === "inativo" ? "inativo" : "ativo",
-        // Garantir que is_template seja boolean
-        is_template: Boolean(checklist.is_template),
-        // Adicionar campos mockados para UI
-        collaborators: generateMockCollaborators(2),
-        items: Math.floor(Math.random() * 20) + 5, // Número aleatório entre 5 e 25
-        permissions: ["editor"]
-      })) as Checklist[];
+      return checklistsWithItems as Checklist[];
     }
   });
 }

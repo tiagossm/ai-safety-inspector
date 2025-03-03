@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,9 +14,27 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { PlusCircle } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { PlusCircle, FileText, User } from "lucide-react";
 import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
 import { NewChecklist } from "@/types/checklist";
+import { supabase } from "@/integrations/supabase/client";
+
+// Checklist category options
+const CATEGORIES = [
+  { value: "safety", label: "Segurança" },
+  { value: "quality", label: "Qualidade" },
+  { value: "maintenance", label: "Manutenção" },
+  { value: "environment", label: "Meio Ambiente" },
+  { value: "operational", label: "Operacional" },
+  { value: "general", label: "Geral" }
+];
 
 export function CreateChecklistDialog() {
   const createChecklist = useCreateChecklist();
@@ -25,8 +43,36 @@ export function CreateChecklistDialog() {
     title: "",
     description: "",
     is_template: false,
+    category: "general",
+    responsible_id: "",
   });
+  const [users, setUsers] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  // Fetch users for the responsible field
+  useEffect(() => {
+    if (open) {
+      const fetchUsers = async () => {
+        setLoadingUsers(true);
+        try {
+          const { data, error } = await supabase
+            .from('users')
+            .select('id, name, email')
+            .order('name');
+          
+          if (error) throw error;
+          setUsers(data || []);
+        } catch (error) {
+          console.error('Error fetching users:', error);
+        } finally {
+          setLoadingUsers(false);
+        }
+      };
+      
+      fetchUsers();
+    }
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +100,8 @@ export function CreateChecklistDialog() {
       title: "",
       description: "",
       is_template: false,
+      category: "general",
+      responsible_id: "",
     });
   };
 
@@ -87,6 +135,49 @@ export function CreateChecklistDialog() {
                 required
               />
             </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="category">Categoria</Label>
+              <Select 
+                value={form.category} 
+                onValueChange={(value) => setForm({ ...form, category: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map((category) => (
+                    <SelectItem key={category.value} value={category.value}>
+                      {category.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="responsible">Responsável</Label>
+              <Select 
+                value={form.responsible_id || ""} 
+                onValueChange={(value) => setForm({ ...form, responsible_id: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um responsável" />
+                </SelectTrigger>
+                <SelectContent>
+                  {loadingUsers ? (
+                    <SelectItem value="loading" disabled>Carregando...</SelectItem>
+                  ) : (
+                    users.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="grid gap-2">
               <Label htmlFor="description">Descrição</Label>
               <Textarea

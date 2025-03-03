@@ -19,6 +19,8 @@ export function useCreateChecklist() {
           description: newChecklist.description,
           is_template: newChecklist.is_template || false,
           status_checklist: "ativo",
+          category: newChecklist.category || "General",
+          responsible_id: newChecklist.responsible_id
         })
         .select();
 
