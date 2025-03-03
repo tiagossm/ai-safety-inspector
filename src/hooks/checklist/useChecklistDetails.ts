@@ -29,7 +29,8 @@ export function useChecklistDetails(id: string) {
       // Fetch responsible user name if there's an ID
       let responsibleName = null;
       // We need to check if responsibleId exists on the data returned from the API
-      const responsibleId = checklistData?.responsible_id || null;
+      // Use optional chaining to safely access the property if it exists
+      const responsibleId = checklistData.responsible_id ?? null;
       
       if (responsibleId) {
         const { data: userData } = await supabase
@@ -45,11 +46,19 @@ export function useChecklistDetails(id: string) {
 
       // Ensure we return a correctly typed Checklist object
       return {
-        ...checklistData,
-        responsible_id: responsibleId,
-        responsible_name: responsibleName,
+        id: checklistData.id,
+        title: checklistData.title,
+        description: checklistData.description,
+        created_at: checklistData.created_at,
+        updated_at: checklistData.updated_at,
         status_checklist: checklistData.status_checklist as "ativo" | "inativo",
-        is_template: Boolean(checklistData.is_template)
+        is_template: Boolean(checklistData.is_template),
+        user_id: checklistData.user_id,
+        company_id: checklistData.company_id,
+        status: checklistData.status,
+        category: checklistData.category,
+        responsible_id: responsibleId,
+        responsible_name: responsibleName
       } as Checklist;
     },
     enabled: !!id,
