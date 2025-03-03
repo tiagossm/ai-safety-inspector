@@ -45,6 +45,8 @@ export function useAuthSession() {
   // Função para buscar dados adicionais do usuário após autenticação
   const fetchUserData = async (userId: string): Promise<Partial<AuthUser>> => {
     try {
+      console.log("Fetching user data for userId:", userId);
+      
       // Corrigindo a query para apenas selecionar colunas que existem na tabela users
       const { data: userData, error: userError } = await supabase
         .from("users")
@@ -56,6 +58,8 @@ export function useAuthSession() {
         console.error("Error fetching user data:", userError);
         return {};
       }
+      
+      console.log("Retrieved user data:", userData);
       
       // Se temos dados do usuário, usamos eles
       if (userData) {

@@ -19,21 +19,11 @@ import { useAuth } from "@/components/AuthProvider";
 import { ManualCreateForm } from "./create-forms/ManualCreateForm";
 import { ImportCreateForm } from "./create-forms/ImportCreateForm";
 import { AICreateForm } from "./create-forms/AICreateForm";
-
-// Criando uma interface estendida do User para incluir company_id
-interface ExtendedUser {
-  id: string;
-  email: string;
-  role?: string;
-  tier?: string;
-  company_id?: string;
-  [key: string]: any;
-}
+import { toast } from "sonner";
 
 export function CreateChecklistDialog() {
   const createChecklist = useCreateChecklist();
   const { user } = useAuth();
-  const extendedUser = user as ExtendedUser | null;
   
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("manual");
@@ -43,7 +33,7 @@ export function CreateChecklistDialog() {
     is_template: false,
     category: "general",
     responsible_id: "",
-    company_id: extendedUser?.company_id
+    company_id: undefined // We'll handle this in the createChecklist mutation
   });
   const [users, setUsers] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -89,18 +79,63 @@ export function CreateChecklistDialog() {
     setAiLoading(true);
     
     try {
-      // Esta é uma simulação - na implementação real, você faria uma chamada à API
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      console.log("Generating checklist with AI using prompt:", aiPrompt);
       
-      setForm({
-        ...form,
-        title: `Checklist AI: ${aiPrompt.substring(0, 30)}...`,
-        description: `Checklist gerado automaticamente baseado em: ${aiPrompt}`
+      // Call the edge function to generate the checklist
+      const { data, error } = await supabase.functions.invoke("generate-checklist", {
+        body: { 
+          prompt: aiPrompt,
+          num_questions: numQuestions,
+          category: form.category
+        }
       });
       
-      setActiveTab("manual");
+      if (error) throw error;
+      
+      if (data?.success && data?.data) {
+        console.log("AI generated checklist data:", data.data);
+        
+        // Update the form with generated data
+        setForm({
+          ...form,
+          title: data.data.title || `Checklist AI: ${aiPrompt.substring(0, 30)}...`,
+          description: data.data.description || `Checklist gerado automaticamente baseado em: ${aiPrompt}`
+        });
+        
+        // Create the checklist
+        const newChecklist = await createChecklist.mutateAsync({
+          ...form,
+          title: data.data.title || `Checklist AI: ${aiPrompt.substring(0, 30)}...`,
+          description: data.data.description || `Checklist gerado automaticamente baseado em: ${aiPrompt}`
+        });
+        
+        // If questions were generated, add them to the checklist
+        if (data.data.questions && data.data.questions.length > 0 && newChecklist?.id) {
+          console.log("Adding AI generated questions to checklist:", newChecklist.id);
+          
+          for (const question of data.data.questions) {
+            await supabase
+              .from("checklist_itens")
+              .insert({
+                checklist_id: newChecklist.id,
+                pergunta: question.pergunta,
+                tipo_resposta: question.tipo_resposta || "sim/não",
+                obrigatorio: question.obrigatorio !== undefined ? question.obrigatorio : true,
+                ordem: question.ordem || 0
+              });
+          }
+          
+          toast.success(`Checklist criado com ${data.data.questions.length} perguntas`);
+        }
+        
+        setOpen(false);
+        resetForm();
+      } else {
+        toast.error("Erro ao gerar checklist com IA");
+      }
     } catch (error) {
       console.error("Error generating AI checklist:", error);
+      toast.error("Erro ao gerar checklist com IA");
     } finally {
       setAiLoading(false);
     }
@@ -110,6 +145,7 @@ export function CreateChecklistDialog() {
     e.preventDefault();
     
     if (!form.title.trim()) {
+      toast.error("O título é obrigatório");
       return;
     }
     
@@ -119,20 +155,45 @@ export function CreateChecklistDialog() {
       if (activeTab === "manual") {
         console.log("Submitting manual form:", form);
         await createChecklist.mutateAsync(form);
+        setOpen(false);
+        resetForm();
       } else if (activeTab === "import" && file) {
-        // Implementação da importação de arquivo estará em outro componente
         console.log("Importing from file:", file.name);
-        // TODO: Implementar a importação de checklist via arquivo
+        
+        // Create a FormData instance
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        // Add form data as JSON string
+        formData.append('form', JSON.stringify(form));
+        
+        // Call the edge function to process the file
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-checklist-csv`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            },
+            body: formData
+          }
+        );
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          toast.success("Checklist importado com sucesso!");
+          setOpen(false);
+          resetForm();
+        } else {
+          throw new Error(result.error || "Erro ao importar checklist");
+        }
       } else if (activeTab === "ai") {
-        // Implementação da criação por IA estará em outro componente
-        console.log("Creating checklist with AI:", aiPrompt);
-        // TODO: Implementar a criação de checklist via IA
+        await generateAIChecklist();
       }
-      
-      setOpen(false);
-      resetForm();
     } catch (error) {
       console.error("Error in form submission:", error);
+      toast.error("Erro ao criar checklist. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
@@ -145,7 +206,7 @@ export function CreateChecklistDialog() {
       is_template: false,
       category: "general",
       responsible_id: "",
-      company_id: extendedUser?.company_id
+      company_id: undefined
     });
     setFile(null);
     setAiPrompt("");
@@ -239,7 +300,7 @@ export function CreateChecklistDialog() {
               disabled={isSubmitting || 
                 (activeTab === "manual" && !form.title.trim()) ||
                 (activeTab === "import" && !file) ||
-                (activeTab === "ai" && (!form.title || aiLoading))
+                (activeTab === "ai" && (!aiPrompt.trim() || aiLoading))
               }
             >
               {isSubmitting ? "Criando..." : "Criar Checklist"}

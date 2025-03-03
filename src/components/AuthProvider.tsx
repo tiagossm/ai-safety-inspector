@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuthState, AuthUser } from "@/hooks/auth/useAuthState";
 import { useAuthSession } from "@/hooks/auth/useAuthSession";
 import { useAuthEvents } from "@/hooks/auth/useAuthEvents";
+import { toast } from "sonner";
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -30,13 +31,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log("🔄 AuthProvider montado - Verificando sessão do usuário");
 
     const initializeAuth = async () => {
-      const redirectTo = await checkSession(
-        (user) => { if (mounted) setUser(user); },
-        (loading) => { if (mounted) setLoading(loading); }
-      );
-      
-      if (mounted && redirectTo) {
-        navigate(redirectTo);
+      try {
+        const redirectTo = await checkSession(
+          (user) => { if (mounted) setUser(user); },
+          (loading) => { if (mounted) setLoading(loading); }
+        );
+        
+        if (mounted && redirectTo) {
+          console.log("🔄 Redirecionando para:", redirectTo);
+          navigate(redirectTo);
+        }
+      } catch (error) {
+        console.error("❌ Erro ao inicializar autenticação:", error);
+        if (mounted) {
+          setLoading(false);
+          toast.error("Erro ao verificar sua sessão. Por favor, faça login novamente.");
+        }
       }
     };
 

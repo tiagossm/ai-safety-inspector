@@ -33,7 +33,9 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
           });
           
           setIsLoading(false);
-          if (location.pathname !== "/auth") {
+          if (location.pathname !== "/auth" && 
+              !isPublicPath(location.pathname)) {
+            console.log("🔄 Redirecionando para tela de login devido a erro");
             navigate("/auth");
           }
           setInitialized(true);
@@ -43,16 +45,13 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
         const session = data.session;
         console.log("ℹ️ Status da sessão:", session ? "Autenticado" : "Não autenticado");
         
-        // Se não houver sessão, redirecione para /auth
+        // Se não houver sessão, redirecione para /auth exceto para rotas públicas
         if (!session) {
           console.log("ℹ️ Usuário não autenticado");
           setIsLoading(false);
           
           if (location.pathname !== "/auth" && 
-              location.pathname !== "/" && 
-              location.pathname !== "/plans" && 
-              location.pathname !== "/blog" && 
-              location.pathname !== "/contact") {
+              !isPublicPath(location.pathname)) {
             console.log("🔄 Redirecionando para tela de login");
             navigate("/auth");
           }
@@ -111,11 +110,21 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
         });
         
         setIsLoading(false);
-        if (location.pathname !== "/auth") {
+        if (location.pathname !== "/auth" && 
+            !isPublicPath(location.pathname)) {
           navigate("/auth");
         }
         setInitialized(true);
       }
+    };
+    
+    // Função para verificar se um caminho é público
+    const isPublicPath = (path: string): boolean => {
+      return path === "/" || 
+             path === "/plans" || 
+             path === "/blog" || 
+             path === "/contact" ||
+             path.startsWith("/public/");
     };
     
     // Função para lidar com redirecionamentos

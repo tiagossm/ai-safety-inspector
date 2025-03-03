@@ -11,9 +11,15 @@ export function useChecklistDetails(id: string) {
   const [users, setUsers] = useState<any[]>([]);
 
   // Fetch the checklist data by ID with proper caching and retry logic
-  const { data: checklistData, isLoading } = useQuery({
+  const { data: checklistData, isLoading, error } = useQuery({
     queryKey: ["checklist", id],
     queryFn: async () => {
+      console.log("Fetching checklist data for ID:", id);
+      
+      if (!id) {
+        throw new Error("Checklist ID is required");
+      }
+      
       const { data: checklistData, error } = await supabase
         .from("checklists")
         .select("*")
@@ -22,7 +28,6 @@ export function useChecklistDetails(id: string) {
 
       if (error) {
         console.error("Erro ao buscar checklist:", error);
-        toast.error("Erro ao carregar checklist");
         throw error;
       }
 
@@ -83,6 +88,8 @@ export function useChecklistDetails(id: string) {
   const { data: itemsData } = useQuery({
     queryKey: ["checklist-items", id],
     queryFn: async () => {
+      console.log("Fetching checklist items for checklist ID:", id);
+      
       const { data, error } = await supabase
         .from("checklist_itens")
         .select("*")
@@ -91,9 +98,10 @@ export function useChecklistDetails(id: string) {
 
       if (error) {
         console.error("Erro ao buscar itens do checklist:", error);
-        toast.error("Erro ao carregar itens do checklist");
         throw error;
       }
+
+      console.log(`Retrieved ${data.length} checklist items`);
 
       return data.map(item => {
         // Convert opcoes from Json to string[] if it exists
@@ -127,7 +135,7 @@ export function useChecklistDetails(id: string) {
         } as ChecklistItem;
       });
     },
-    enabled: !!id,
+    enabled: !!id && !error, // Only fetch items if checklist exists
     // Add caching and retry configuration
     staleTime: 5 * 60 * 1000, // 5 minutes cache
     gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
@@ -149,6 +157,7 @@ export function useChecklistDetails(id: string) {
         // Don't refetch if we already have users
         if (users.length > 0) return;
         
+        console.log("Fetching users for responsible selection");
         const { data, error } = await supabase
           .from('users')
           .select('id, name')
@@ -168,11 +177,12 @@ export function useChecklistDetails(id: string) {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [users.length]);
 
   // Update checklist when data is loaded - with check to prevent unnecessary updates
   useEffect(() => {
     if (checklistData && (!checklist || checklist.id !== checklistData.id)) {
+      console.log("Setting checklist data:", checklistData);
       setChecklist(checklistData as Checklist);
     }
   }, [checklistData, checklist]);
@@ -180,9 +190,10 @@ export function useChecklistDetails(id: string) {
   // Update items when data is loaded - with check to prevent unnecessary updates
   useEffect(() => {
     if (itemsData && JSON.stringify(items) !== JSON.stringify(itemsData)) {
+      console.log("Setting items data:", itemsData.length, "items");
       setItems(itemsData as ChecklistItem[]);
     }
-  }, [itemsData]);
+  }, [itemsData, items]);
 
   return {
     checklist,
@@ -191,5 +202,6 @@ export function useChecklistDetails(id: string) {
     setItems,
     users,
     isLoading,
+    error
   };
 }

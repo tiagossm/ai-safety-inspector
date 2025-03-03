@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { ChecklistItem } from "@/types/checklist";
 import { useChecklistDetails } from "@/hooks/checklist/useChecklistDetails";
 import { useUpdateChecklistItem } from "@/hooks/checklist/useUpdateChecklistItem";
@@ -11,6 +11,8 @@ import ChecklistHeader from "@/components/checklists/ChecklistHeader";
 import ChecklistForm from "@/components/checklists/ChecklistForm";
 import ChecklistItemsList from "@/components/checklists/ChecklistItemsList";
 import AddChecklistItemForm from "@/components/checklists/AddChecklistItemForm";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 // Define question types configuration
 const questionTypes = [
@@ -24,7 +26,9 @@ const questionTypes = [
 
 export default function ChecklistDetailsContainer() {
   const { id = "" } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
+  const [notFound, setNotFound] = useState(false);
   
   const {
     checklist,
@@ -32,7 +36,8 @@ export default function ChecklistDetailsContainer() {
     items,
     setItems,
     users,
-    isLoading
+    isLoading,
+    error
   } = useChecklistDetails(id);
 
   const updateItemMutation = useUpdateChecklistItem();
@@ -40,23 +45,52 @@ export default function ChecklistDetailsContainer() {
   const addItemMutation = useAddChecklistItem(id);
   const saveChecklistMutation = useSaveChecklist(id);
 
+  // Check if checklist exists
+  useEffect(() => {
+    if (error) {
+      console.error("Error loading checklist:", error);
+      setNotFound(true);
+    }
+  }, [error]);
+
+  // Redirect if not found
+  useEffect(() => {
+    if (notFound) {
+      toast.error("Checklist não encontrado ou você não tem permissão para acessá-lo");
+      navigate("/checklists");
+    }
+  }, [notFound, navigate]);
+
   // Handle item change
   const handleItemChange = (updatedItem: ChecklistItem) => {
     const newItems = items.map(item => 
       item.id === updatedItem.id ? updatedItem : item
     );
     setItems(newItems);
-    updateItemMutation.mutate(updatedItem);
+    updateItemMutation.mutate(updatedItem, {
+      onError: (error) => {
+        console.error("Error updating item:", error);
+        toast.error("Erro ao atualizar item");
+      }
+    });
   };
 
   // Handle item deletion
   const handleDeleteItem = (itemId: string) => {
-    deleteItemMutation.mutate(itemId);
-    setItems(items.filter(item => item.id !== itemId));
+    deleteItemMutation.mutate(itemId, {
+      onSuccess: () => {
+        setItems(items.filter(item => item.id !== itemId));
+      },
+      onError: (error) => {
+        console.error("Error deleting item:", error);
+        toast.error("Erro ao excluir item");
+      }
+    });
   };
 
   // Handle adding a new item
   const handleAddItem = (newItem: Partial<ChecklistItem>) => {
+    console.log("Adding new item:", newItem);
     addItemMutation.mutate(newItem, {
       onSuccess: (data) => {
         // Convert opcoes to proper format for UI
@@ -81,6 +115,11 @@ export default function ChecklistDetailsContainer() {
         };
         
         setItems([...items, addedItem]);
+        toast.success("Item adicionado com sucesso");
+      },
+      onError: (error) => {
+        console.error("Error adding item:", error);
+        toast.error("Erro ao adicionar item");
       }
     });
   };
@@ -91,6 +130,15 @@ export default function ChecklistDetailsContainer() {
     
     setSaving(true);
     try {
+      console.log("Saving checklist:", {
+        title: checklist.title,
+        description: checklist.description,
+        is_template: checklist.is_template,
+        status_checklist: checklist.status_checklist,
+        category: checklist.category,
+        responsible_id: checklist.responsible_id
+      });
+      
       await saveChecklistMutation.mutateAsync({
         title: checklist.title,
         description: checklist.description,
@@ -100,14 +148,34 @@ export default function ChecklistDetailsContainer() {
         responsible_id: checklist.responsible_id
       });
       
+      toast.success("Checklist salvo com sucesso");
       setSaving(false);
     } catch (error) {
+      console.error("Error saving checklist:", error);
+      toast.error("Erro ao salvar checklist");
       setSaving(false);
     }
   };
 
   if (isLoading) {
     return <div className="py-20 text-center">Carregando...</div>;
+  }
+
+  if (!checklist && !isLoading) {
+    return (
+      <div className="py-20 text-center">
+        <h2 className="text-2xl font-bold mb-4">Checklist não encontrado</h2>
+        <p className="text-muted-foreground mb-6">
+          O checklist solicitado não existe ou você não tem permissão para acessá-lo.
+        </p>
+        <button 
+          className="bg-primary text-white px-4 py-2 rounded"
+          onClick={() => navigate("/checklists")}
+        >
+          Voltar para Checklists
+        </button>
+      </div>
+    );
   }
 
   return (
