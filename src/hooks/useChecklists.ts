@@ -13,6 +13,11 @@ export type Checklist = {
   status_checklist: "ativo" | "inativo";
   is_template: boolean;
   user_id: string;
+  // Adding these properties used in the UI
+  collaborators?: CollaboratorType[];
+  items?: number;
+  permissions?: string[];
+  isTemplate?: boolean; // This is derived from is_template
 };
 
 export type ChecklistItem = {
@@ -69,7 +74,7 @@ export function useChecklists() {
         collaborators: generateMockCollaborators(2),
         items: Math.floor(Math.random() * 20) + 5, // Número aleatório entre 5 e 25
         permissions: ["editor"],
-        isTemplate: checklist.is_template
+        isTemplate: checklist.is_template // Create the UI property from the database field
       }));
     }
   });
