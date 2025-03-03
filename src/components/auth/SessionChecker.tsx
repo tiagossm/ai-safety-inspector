@@ -6,20 +6,14 @@ export const SessionChecker = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const checkExistingSession = async () => {
-      console.log("🔍 Verificando sessão armazenada...");
-      const { data, error } = await supabase.auth.getSession();
+    const refreshSession = async () => {
+      console.log("🔄 Tentando atualizar sessão...");
+      const { error } = await supabase.auth.refreshSession();
 
       if (error) {
-        console.error("❌ Erro ao recuperar sessão:", error);
-        return;
-      }
-
-      if (data?.session?.user) {
-        console.log("✅ Sessão válida encontrada, redirecionando...");
-        await handleUserRedirect(data.session.user);
+        console.error("❌ Erro ao atualizar sessão:", error);
       } else {
-        console.log("⚠️ Nenhuma sessão encontrada.");
+        console.log("✅ Sessão atualizada com sucesso!");
       }
     };
 
@@ -77,6 +71,11 @@ export const SessionChecker = () => {
       }
     };
 
+    const startSessionCheck = async () => {
+      await refreshSession(); // 🚀 Atualiza a sessão antes de verificar
+      await checkSession();
+    };
+
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log(`🔄 Auth state changed: ${event}`);
@@ -87,16 +86,13 @@ export const SessionChecker = () => {
       }
     );
 
-    // 🚀 Chama a função para verificar se a sessão já existe antes de tudo
-    checkExistingSession();
-
-    checkSession();
+    startSessionCheck();
 
     return () => {
       console.log("🔄 Removendo listener de autenticação...");
       authListener?.subscription?.unsubscribe?.();
     };
-  }, []); // 🔹 Mantemos um array vazio para evitar loops desnecessários
+  }, []);
 
   return null;
 };
