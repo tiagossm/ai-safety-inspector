@@ -1,26 +1,20 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { 
-  ArrowLeft, Save, Plus, Trash2, AlertTriangle,
-  FileText, ClipboardCheck, User 
-} from "lucide-react";
+import { AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Checklist, ChecklistItem } from "@/types/checklist";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
+import { ArrowLeft, ClipboardCheck } from "lucide-react";
+
+// Import our new components
+import ChecklistHeader from "@/components/checklists/ChecklistHeader";
+import ChecklistForm from "@/components/checklists/ChecklistForm";
+import ChecklistItemsList from "@/components/checklists/ChecklistItemsList";
+import AddChecklistItemForm from "@/components/checklists/AddChecklistItemForm";
 
 export default function ChecklistDetails() {
   const { checklistId } = useParams<{ checklistId: string }>();
@@ -30,12 +24,6 @@ export default function ChecklistDetails() {
   const [checklist, setChecklist] = useState<Checklist | null>(null);
   const [items, setItems] = useState<ChecklistItem[]>([]);
   const [users, setUsers] = useState<any[]>([]);
-  const [newItem, setNewItem] = useState<Partial<ChecklistItem>>({
-    pergunta: "",
-    tipo_resposta: "sim/não",
-    obrigatorio: true,
-    ordem: 0
-  });
 
   const questionTypes = [
     { value: "sim/não", label: "Sim/Não" },
@@ -87,18 +75,16 @@ export default function ChecklistDetails() {
 
         setChecklist(typedChecklist);
         
-        const typedItems = itemsData?.map(item => ({
+        // Convert the items to the correct type
+        const typedItems: ChecklistItem[] = itemsData?.map(item => ({
           ...item,
-          tipo_resposta: item.tipo_resposta as "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla"
+          tipo_resposta: item.tipo_resposta as "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla",
+          opcoes: Array.isArray(item.opcoes) ? item.opcoes : null
         })) || [];
         
         setItems(typedItems);
         setUsers(usersData || []);
         
-        if (itemsData && itemsData.length > 0) {
-          const maxOrder = Math.max(...itemsData.map(item => item.ordem));
-          setNewItem(prev => ({ ...prev, ordem: maxOrder + 1 }));
-        }
       } catch (error) {
         console.error("Error fetching checklist data:", error);
         toast.error("Erro ao carregar dados do checklist");
@@ -140,7 +126,7 @@ export default function ChecklistDetails() {
     }
   };
 
-  const handleAddItem = async () => {
+  const handleAddItem = async (newItem: Partial<ChecklistItem>) => {
     if (!newItem.pergunta || !checklistId) return;
     
     try {
@@ -158,18 +144,13 @@ export default function ChecklistDetails() {
 
       if (error) throw error;
       
-      const typedNewItem = {
+      const typedNewItem: ChecklistItem = {
         ...data[0],
-        tipo_resposta: data[0].tipo_resposta as "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla"
+        tipo_resposta: data[0].tipo_resposta as "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla",
+        opcoes: null
       };
       
       setItems([...items, typedNewItem]);
-      setNewItem({
-        pergunta: "",
-        tipo_resposta: "sim/não",
-        obrigatorio: true,
-        ordem: (newItem.ordem || 0) + 1
-      });
       
       toast.success("Item adicionado com sucesso!");
     } catch (error) {
@@ -260,120 +241,24 @@ export default function ChecklistDetails() {
     );
   }
 
+  const getLastOrder = () => {
+    if (items.length === 0) return 0;
+    return Math.max(...items.map(item => item.ordem)) + 1;
+  };
+
   return (
     <div className="container py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => navigate("/checklists")}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
-          </Button>
-          <h1 className="text-2xl font-bold">{checklist.title}</h1>
-        </div>
-        <Button 
-          onClick={handleSaveChecklist} 
-          disabled={saving}
-        >
-          <Save className="h-4 w-4 mr-2" />
-          {saving ? "Salvando..." : "Salvar Alterações"}
-        </Button>
-      </div>
+      <ChecklistHeader 
+        checklist={checklist}
+        saving={saving}
+        onSave={handleSaveChecklist}
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Detalhes do Checklist</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-2">
-            <Label htmlFor="title">Título</Label>
-            <Input
-              id="title"
-              value={checklist.title}
-              onChange={(e) => setChecklist({...checklist, title: e.target.value})}
-            />
-          </div>
-          
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="category">Categoria</Label>
-              <Select 
-                value={checklist.category || "general"} 
-                onValueChange={(value) => setChecklist({...checklist, category: value})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione uma categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="safety">Segurança</SelectItem>
-                  <SelectItem value="quality">Qualidade</SelectItem>
-                  <SelectItem value="maintenance">Manutenção</SelectItem>
-                  <SelectItem value="environment">Meio Ambiente</SelectItem>
-                  <SelectItem value="operational">Operacional</SelectItem>
-                  <SelectItem value="general">Geral</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="responsible">Responsável</Label>
-              <Select 
-                value={checklist.responsible_id || ""} 
-                onValueChange={(value) => setChecklist({...checklist, responsible_id: value})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um responsável" />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="grid gap-2">
-            <Label htmlFor="description">Descrição</Label>
-            <Textarea
-              id="description"
-              value={checklist.description || ""}
-              onChange={(e) => setChecklist({...checklist, description: e.target.value})}
-              rows={3}
-            />
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="template"
-              checked={checklist.is_template}
-              onCheckedChange={(checked) => setChecklist({...checklist, is_template: checked})}
-            />
-            <Label htmlFor="template">Template</Label>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="status"
-              checked={checklist.status_checklist === "ativo"}
-              onCheckedChange={(checked) => 
-                setChecklist({
-                  ...checklist, 
-                  status_checklist: checked ? "ativo" : "inativo"
-                })
-              }
-            />
-            <Label htmlFor="status">
-              {checklist.status_checklist === "ativo" ? "Ativo" : "Inativo"}
-            </Label>
-          </div>
-        </CardContent>
-      </Card>
+      <ChecklistForm 
+        checklist={checklist}
+        users={users}
+        setChecklist={setChecklist}
+      />
 
       <Card>
         <CardHeader>
@@ -383,138 +268,19 @@ export default function ChecklistDetails() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {items.length === 0 ? (
-            <div className="text-center py-8">
-              <FileText className="h-12 w-12 mx-auto text-muted-foreground" />
-              <h3 className="mt-4 text-lg font-medium">Nenhum item adicionado</h3>
-              <p className="text-muted-foreground mt-1">
-                Adicione perguntas a este checklist usando o formulário abaixo.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {items.map((item) => (
-                <div 
-                  key={item.id} 
-                  className="border rounded-md p-4 flex flex-col md:flex-row gap-4"
-                >
-                  <div className="flex-grow space-y-4">
-                    <div className="grid gap-2">
-                      <Label>Pergunta</Label>
-                      <Input
-                        value={item.pergunta}
-                        onChange={(e) => handleItemChange({
-                          ...item,
-                          pergunta: e.target.value
-                        })}
-                      />
-                    </div>
-                    
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="grid gap-2">
-                        <Label>Tipo de Resposta</Label>
-                        <Select 
-                          value={item.tipo_resposta} 
-                          onValueChange={(value: any) => handleItemChange({
-                            ...item,
-                            tipo_resposta: value
-                          })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {questionTypes.map(type => (
-                              <SelectItem key={type.value} value={type.value}>
-                                {type.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2 md:justify-end md:h-10">
-                        <Switch
-                          id={`required-${item.id}`}
-                          checked={item.obrigatorio}
-                          onCheckedChange={(checked) => handleItemChange({
-                            ...item,
-                            obrigatorio: checked
-                          })}
-                        />
-                        <Label htmlFor={`required-${item.id}`}>Obrigatório</Label>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex md:flex-col justify-end gap-2">
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => handleDeleteItem(item.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <ChecklistItemsList 
+            items={items}
+            onItemChange={handleItemChange}
+            onDeleteItem={handleDeleteItem}
+            questionTypes={questionTypes}
+          />
 
-          <div className="border rounded-md p-4 space-y-4 mt-6">
-            <h3 className="text-lg font-medium">Adicionar Novo Item</h3>
-            
-            <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="new-question">Pergunta</Label>
-                <Input
-                  id="new-question"
-                  value={newItem.pergunta}
-                  onChange={(e) => setNewItem({...newItem, pergunta: e.target.value})}
-                  placeholder="Digite a pergunta..."
-                />
-              </div>
-              
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="new-type">Tipo de Resposta</Label>
-                  <Select 
-                    value={newItem.tipo_resposta} 
-                    onValueChange={(value: any) => setNewItem({...newItem, tipo_resposta: value})}
-                  >
-                    <SelectTrigger id="new-type">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {questionTypes.map(type => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex items-center space-x-2 md:justify-end md:h-10">
-                  <Switch
-                    id="new-required"
-                    checked={newItem.obrigatorio}
-                    onCheckedChange={(checked) => setNewItem({...newItem, obrigatorio: checked})}
-                  />
-                  <Label htmlFor="new-required">Obrigatório</Label>
-                </div>
-              </div>
-            </div>
-            
-            <Button 
-              onClick={handleAddItem}
-              disabled={!newItem.pergunta}
-              className="w-full md:w-auto"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar Item
-            </Button>
-          </div>
+          <AddChecklistItemForm 
+            checklistId={checklistId!}
+            onAddItem={handleAddItem}
+            lastOrder={getLastOrder()}
+            questionTypes={questionTypes}
+          />
         </CardContent>
       </Card>
     </div>

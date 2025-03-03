@@ -25,7 +25,7 @@ export function useFetchChecklists() {
       
       // Fetch responsible users information where available
       const responsibleIds = checklists
-        .filter(c => c.responsible_id)
+        .filter(c => c.responsible_id !== undefined && c.responsible_id !== null)
         .map(c => c.responsible_id as string);
       
       let usersMap: Record<string, string> = {};
@@ -59,7 +59,7 @@ export function useFetchChecklists() {
               
             if (itemsError) throw itemsError;
             
-            return {
+            const enrichedChecklist: Checklist = {
               ...checklist,
               items: count || 0,
               // Get the responsible name from the users map
@@ -71,16 +71,21 @@ export function useFetchChecklists() {
               // Add mock data for UI
               collaborators: generateMockCollaborators(2),
               permissions: ["editor"]
-            } as Checklist;
+            };
+            
+            return enrichedChecklist;
           } catch (err) {
             console.error(`Erro ao buscar itens para checklist ${checklist.id}:`, err);
-            return {
+            const fallbackChecklist: Checklist = {
               ...checklist,
               // Mock data for UI
               items: 0,
               collaborators: generateMockCollaborators(1),
-              permissions: ["viewer"]
-            } as Checklist;
+              permissions: ["viewer"],
+              status_checklist: checklist.status_checklist === "inativo" ? "inativo" : "ativo",
+              is_template: Boolean(checklist.is_template)
+            };
+            return fallbackChecklist;
           }
         })
       );
