@@ -60,9 +60,11 @@ backend = "postgres"
 [experimental]
 # Config options for experimental features
 
-[functions]
 [functions.check-permissions]
 verify_jwt = true
 
 [functions.generate-checklist]
+verify_jwt = true
+
+[functions.process-checklist-csv]
 verify_jwt = true
