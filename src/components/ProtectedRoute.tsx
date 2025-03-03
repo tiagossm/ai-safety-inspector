@@ -42,5 +42,6 @@ export function ProtectedRoute({
     }
   }
 
+  console.log("Acesso permitido à rota protegida:", location.pathname);
   return <>{children}</>;
 }

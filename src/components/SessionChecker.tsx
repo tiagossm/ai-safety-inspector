@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "./ui/use-toast";
 
@@ -8,6 +8,7 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [sessionChecked, setSessionChecked] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -35,9 +36,11 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
         if (!session) {
           console.log("Usuário não autenticado, redirecionando para login");
           // Only redirect if not already on auth page
-          if (window.location.pathname !== "/auth") {
+          if (location.pathname !== "/auth") {
             navigate("/auth");
           }
+          setIsLoading(false);
+          setSessionChecked(true);
           return;
         }
 
@@ -59,13 +62,19 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
           const userTier = userData?.tier || "technician";
           console.log("Perfil do usuário:", userTier);
           
-          // Handle redirection based on tier
-          if (userTier === "super_admin") {
-            console.log("Redirecionando para dashboard de administrador");
-            navigate("/admin/dashboard");
+          // Handle redirection based on tier only if we're on the root or auth page
+          // This prevents redirection loops for other routes
+          if (location.pathname === "/" || location.pathname === "/auth") {
+            console.log("Redirecionando com base no perfil do usuário");
+            if (userTier === "super_admin") {
+              console.log("Redirecionando para dashboard de administrador");
+              navigate("/admin/dashboard");
+            } else {
+              console.log("Redirecionando para dashboard padrão");
+              navigate("/dashboard");
+            }
           } else {
-            console.log("Redirecionando para dashboard padrão");
-            navigate("/dashboard");
+            console.log("Usuário já está em uma rota protegida:", location.pathname);
           }
         }
       } catch (err) {
@@ -83,12 +92,9 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
       }
     };
 
-    // Check session only if not already on auth page and session hasn't been checked
-    if (!sessionChecked && window.location.pathname !== "/auth") {
+    // Check session only if session hasn't been checked yet
+    if (!sessionChecked) {
       checkSession();
-    } else if (window.location.pathname === "/auth") {
-      setIsLoading(false);
-      setSessionChecked(true);
     }
     
     // Set up authentication state change listener
@@ -97,7 +103,13 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
       
       if (event === 'SIGNED_IN') {
         console.log("Usuário autenticado com sucesso, verificando perfil");
-        checkSession();
+        // Only run full check if not already on a protected route
+        if (location.pathname === "/" || location.pathname === "/auth") {
+          checkSession();
+        } else {
+          setIsLoading(false);
+          setSessionChecked(true);
+        }
       } else if (event === 'SIGNED_OUT') {
         console.log("Usuário desconectado");
         navigate("/auth");
@@ -107,7 +119,7 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, toast, sessionChecked]);
+  }, [navigate, toast, sessionChecked, location.pathname]);
 
   // Render loading state or children
   if (isLoading && !sessionChecked) {
