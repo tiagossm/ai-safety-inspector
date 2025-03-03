@@ -5,7 +5,7 @@ import type { AuthUser } from "@/types/auth";
 import { User } from "@supabase/supabase-js";
 
 export function useAuthStateListener(
-  setUser: (user: AuthUser | null) => void,
+  setUser: (user: AuthUser | null | ((prev: AuthUser | null) => AuthUser | null)) => void,
   setLoading: (loading: boolean) => void,
   enhanceUserWithRoleTier: (sessionUser: User) => Promise<AuthUser>,
   fetchUserData: (userId: string) => Promise<any>
@@ -84,12 +84,18 @@ export function useAuthStateListener(
         // Just update the user object with the current session user data
         if (session?.user) {
           // Keep the existing role/tier when refreshing token
-          setUser((prev) => prev ? { ...session.user, role: prev.role, tier: prev.tier } as AuthUser : null);
+          setUser((prev) => {
+            if (!prev) return null;
+            return { ...session.user, role: prev.role, tier: prev.tier } as AuthUser;
+          });
         }
       } else if (event === 'USER_UPDATED') {
         if (session?.user) {
           // Keep the existing role/tier when user is updated
-          setUser((prev) => prev ? { ...session.user, role: prev.role, tier: prev.tier } as AuthUser : null);
+          setUser((prev) => {
+            if (!prev) return null;
+            return { ...session.user, role: prev.role, tier: prev.tier } as AuthUser;
+          });
         }
       } else if (event === 'INITIAL_SESSION') {
         if (session?.user) {
