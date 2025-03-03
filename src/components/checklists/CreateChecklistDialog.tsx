@@ -1,10 +1,6 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -14,33 +10,31 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlusCircle, FileText, User, Upload, Bot } from "lucide-react";
+import { PlusCircle, FileText, Upload, Bot } from "lucide-react";
 import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
 import { NewChecklist } from "@/types/checklist";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
+import { ManualCreateForm } from "./create-forms/ManualCreateForm";
+import { ImportCreateForm } from "./create-forms/ImportCreateForm";
+import { AICreateForm } from "./create-forms/AICreateForm";
 
-// Checklist category options
-const CATEGORIES = [
-  { value: "safety", label: "Segurança" },
-  { value: "quality", label: "Qualidade" },
-  { value: "maintenance", label: "Manutenção" },
-  { value: "environment", label: "Meio Ambiente" },
-  { value: "operational", label: "Operacional" },
-  { value: "general", label: "Geral" }
-];
+// Criando uma interface estendida do User para incluir company_id
+interface ExtendedUser {
+  id: string;
+  email: string;
+  role?: string;
+  tier?: string;
+  company_id?: string;
+  [key: string]: any;
+}
 
 export function CreateChecklistDialog() {
   const createChecklist = useCreateChecklist();
   const { user } = useAuth();
+  const extendedUser = user as ExtendedUser | null;
+  
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("manual");
   const [form, setForm] = useState<NewChecklist>({
@@ -49,7 +43,7 @@ export function CreateChecklistDialog() {
     is_template: false,
     category: "general",
     responsible_id: "",
-    company_id: user?.company_id
+    company_id: extendedUser?.company_id
   });
   const [users, setUsers] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -82,6 +76,35 @@ export function CreateChecklistDialog() {
       fetchUsers();
     }
   }, [open]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
+  };
+
+  const generateAIChecklist = async () => {
+    if (!aiPrompt) return;
+    
+    setAiLoading(true);
+    
+    try {
+      // Esta é uma simulação - na implementação real, você faria uma chamada à API
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      setForm({
+        ...form,
+        title: `Checklist AI: ${aiPrompt.substring(0, 30)}...`,
+        description: `Checklist gerado automaticamente baseado em: ${aiPrompt}`
+      });
+      
+      setActiveTab("manual");
+    } catch (error) {
+      console.error("Error generating AI checklist:", error);
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,41 +145,12 @@ export function CreateChecklistDialog() {
       is_template: false,
       category: "general",
       responsible_id: "",
-      company_id: user?.company_id
+      company_id: extendedUser?.company_id
     });
     setFile(null);
     setAiPrompt("");
     setNumQuestions(10);
     setActiveTab("manual");
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
-    }
-  };
-
-  const generateAIChecklist = async () => {
-    if (!aiPrompt) return;
-    
-    setAiLoading(true);
-    
-    try {
-      // Esta é uma simulação - na implementação real, você faria uma chamada à API
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      setForm({
-        ...form,
-        title: `Checklist AI: ${aiPrompt.substring(0, 30)}...`,
-        description: `Checklist gerado automaticamente baseado em: ${aiPrompt}`
-      });
-      
-      setActiveTab("manual");
-    } catch (error) {
-      console.error("Error generating AI checklist:", error);
-    } finally {
-      setAiLoading(false);
-    }
   };
 
   return (
@@ -196,231 +190,38 @@ export function CreateChecklistDialog() {
             </TabsList>
             
             <TabsContent value="manual" className="py-4">
-              <div className="grid gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="title">Título do Checklist *</Label>
-                  <Input
-                    id="title"
-                    value={form.title}
-                    onChange={(e) => setForm({ ...form, title: e.target.value })}
-                    placeholder="Ex: Checklist NR-12 para Máquinas"
-                    required
-                  />
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="category">Categoria</Label>
-                  <Select 
-                    value={form.category} 
-                    onValueChange={(value) => setForm({ ...form, category: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map((category) => (
-                        <SelectItem key={category.value} value={category.value}>
-                          {category.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="responsible">Responsável</Label>
-                  <Select 
-                    value={form.responsible_id || ""} 
-                    onValueChange={(value) => setForm({ ...form, responsible_id: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um responsável" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {loadingUsers ? (
-                        <SelectItem value="loading" disabled>Carregando...</SelectItem>
-                      ) : (
-                        users.map((user) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="description">Descrição</Label>
-                  <Textarea
-                    id="description"
-                    value={form.description || ""}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
-                    placeholder="Descreva a finalidade deste checklist..."
-                    rows={3}
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="template"
-                    checked={form.is_template}
-                    onCheckedChange={(checked) => setForm({ ...form, is_template: checked })}
-                  />
-                  <Label htmlFor="template">
-                    Salvar como template
-                  </Label>
-                </div>
-              </div>
+              <ManualCreateForm 
+                form={form}
+                setForm={setForm}
+                users={users}
+                loadingUsers={loadingUsers}
+              />
             </TabsContent>
             
             <TabsContent value="import" className="py-4">
-              <div className="space-y-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="import-file">Selecione um arquivo CSV ou Excel</Label>
-                  <Input 
-                    id="import-file" 
-                    type="file" 
-                    accept=".csv,.xlsx,.xls" 
-                    onChange={handleFileChange}
-                  />
-                  {file && (
-                    <p className="text-sm text-muted-foreground">
-                      Arquivo selecionado: {file.name}
-                    </p>
-                  )}
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="category-import">Categoria</Label>
-                  <Select 
-                    value={form.category} 
-                    onValueChange={(value) => setForm({ ...form, category: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map((category) => (
-                        <SelectItem key={category.value} value={category.value}>
-                          {category.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="responsible-import">Responsável</Label>
-                  <Select 
-                    value={form.responsible_id || ""} 
-                    onValueChange={(value) => setForm({ ...form, responsible_id: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um responsável" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {loadingUsers ? (
-                        <SelectItem value="loading" disabled>Carregando...</SelectItem>
-                      ) : (
-                        users.map((user) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="template-import"
-                    checked={form.is_template}
-                    onCheckedChange={(checked) => setForm({ ...form, is_template: checked })}
-                  />
-                  <Label htmlFor="template-import">
-                    Salvar como template
-                  </Label>
-                </div>
-              </div>
+              <ImportCreateForm 
+                form={form}
+                setForm={setForm}
+                users={users}
+                loadingUsers={loadingUsers}
+                file={file}
+                onFileChange={handleFileChange}
+              />
             </TabsContent>
             
             <TabsContent value="ai" className="py-4">
-              <div className="space-y-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="ai-prompt">Descreva o checklist que deseja criar</Label>
-                  <Textarea 
-                    id="ai-prompt" 
-                    value={aiPrompt}
-                    onChange={(e) => setAiPrompt(e.target.value)}
-                    placeholder="Ex: Gerar um checklist de inspeção de segurança para máquinas baseado na NR-12"
-                    rows={3}
-                  />
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="num-questions">Número de perguntas</Label>
-                  <Input 
-                    id="num-questions" 
-                    type="number" 
-                    min={5} 
-                    max={50} 
-                    value={numQuestions}
-                    onChange={(e) => setNumQuestions(parseInt(e.target.value))}
-                  />
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="category-ai">Categoria</Label>
-                  <Select 
-                    value={form.category} 
-                    onValueChange={(value) => setForm({ ...form, category: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map((category) => (
-                        <SelectItem key={category.value} value={category.value}>
-                          {category.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="responsible-ai">Responsável</Label>
-                  <Select 
-                    value={form.responsible_id || ""} 
-                    onValueChange={(value) => setForm({ ...form, responsible_id: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um responsável" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {loadingUsers ? (
-                        <SelectItem value="loading" disabled>Carregando...</SelectItem>
-                      ) : (
-                        users.map((user) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <Button 
-                  type="button"
-                  onClick={generateAIChecklist}
-                  disabled={!aiPrompt || aiLoading}
-                  className="w-full"
-                >
-                  {aiLoading ? "Gerando..." : "Gerar Checklist com IA"}
-                </Button>
-              </div>
+              <AICreateForm 
+                form={form}
+                setForm={setForm}
+                users={users}
+                loadingUsers={loadingUsers}
+                aiPrompt={aiPrompt}
+                setAiPrompt={setAiPrompt}
+                numQuestions={numQuestions}
+                setNumQuestions={setNumQuestions}
+                onGenerateAI={generateAIChecklist}
+                aiLoading={aiLoading}
+              />
             </TabsContent>
           </Tabs>
           

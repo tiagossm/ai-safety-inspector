@@ -5,9 +5,20 @@ import { toast } from "sonner";
 import { NewChecklist } from "@/types/checklist";
 import { useAuth } from "@/components/AuthProvider";
 
+// Interface estendida para o User
+interface ExtendedUser {
+  id: string;
+  email: string;
+  role?: string;
+  tier?: string;
+  company_id?: string;
+  [key: string]: any;
+}
+
 export function useCreateChecklist() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const extendedUser = user as ExtendedUser | null;
   
   return useMutation({
     mutationFn: async (newChecklist: NewChecklist) => {
@@ -23,7 +34,7 @@ export function useCreateChecklist() {
           status_checklist: "ativo",
           category: newChecklist.category || "general",
           responsible_id: newChecklist.responsible_id,
-          company_id: newChecklist.company_id || user?.company_id
+          company_id: newChecklist.company_id || extendedUser?.company_id
         })
         .select();
 
