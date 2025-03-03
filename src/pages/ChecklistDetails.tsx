@@ -1,288 +1,305 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Checklist, ChecklistItem } from "@/types/checklist";
 import { toast } from "sonner";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, ClipboardCheck } from "lucide-react";
+import { Checklist, ChecklistItem } from "@/types/checklist";
+import { ChecklistHeader } from "@/components/checklists/ChecklistHeader";
+import { ChecklistForm } from "@/components/checklists/ChecklistForm";
+import { ChecklistItemsList } from "@/components/checklists/ChecklistItemsList";
+import { AddChecklistItemForm } from "@/components/checklists/AddChecklistItemForm";
 
-// Import our new components
-import ChecklistHeader from "@/components/checklists/ChecklistHeader";
-import ChecklistForm from "@/components/checklists/ChecklistForm";
-import ChecklistItemsList from "@/components/checklists/ChecklistItemsList";
-import AddChecklistItemForm from "@/components/checklists/AddChecklistItemForm";
+type JsonValue = string | number | boolean | null | { [key: string]: JsonValue } | JsonValue[];
+type Json = JsonValue;
 
 export default function ChecklistDetails() {
-  const { checklistId } = useParams<{ checklistId: string }>();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const queryClient = useQueryClient();
+
   const [checklist, setChecklist] = useState<Checklist | null>(null);
   const [items, setItems] = useState<ChecklistItem[]>([]);
   const [users, setUsers] = useState<any[]>([]);
+  const [saving, setSaving] = useState(false);
 
+  // Question types configuration
   const questionTypes = [
     { value: "sim/não", label: "Sim/Não" },
-    { value: "numérico", label: "Numérico" },
-    { value: "texto", label: "Texto" },
+    { value: "numérico", label: "Resposta Numérica" },
+    { value: "texto", label: "Resposta em Texto" },
     { value: "foto", label: "Foto" },
     { value: "assinatura", label: "Assinatura" },
     { value: "seleção múltipla", label: "Seleção Múltipla" }
   ];
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const { data: checklistData, error: checklistError } = await supabase
-          .from("checklists")
-          .select("*")
-          .eq("id", checklistId)
+  // Fetch the checklist data by ID
+  const { data: checklistData, isLoading } = useQuery({
+    queryKey: ["checklist", id],
+    queryFn: async () => {
+      const { data: checklistData, error } = await supabase
+        .from("checklists")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error) {
+        console.error("Erro ao buscar checklist:", error);
+        toast.error("Erro ao carregar checklist");
+        throw error;
+      }
+
+      // Fetch responsible user name if there's an ID
+      let responsibleName = null;
+      if (checklistData.responsible_id) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('name')
+          .eq('id', checklistData.responsible_id)
           .single();
 
-        if (checklistError) throw checklistError;
-        
-        const { data: itemsData, error: itemsError } = await supabase
-          .from("checklist_itens")
-          .select("*")
-          .eq("checklist_id", checklistId)
-          .order("ordem", { ascending: true });
-
-        if (itemsError) throw itemsError;
-        
-        const { data: usersData, error: usersError } = await supabase
-          .from("users")
-          .select("id, name, email")
-          .order("name");
-          
-        if (usersError) throw usersError;
-        
-        let responsibleName = null;
-        if (checklistData.responsible_id) {
-          const foundUser = usersData.find(u => u.id === checklistData.responsible_id);
-          responsibleName = foundUser?.name || 'Usuário não encontrado';
+        if (userData) {
+          responsibleName = userData.name;
         }
-
-        const typedChecklist: Checklist = {
-          ...checklistData,
-          responsible_name: responsibleName,
-          status_checklist: checklistData.status_checklist === "inativo" ? "inativo" : "ativo" as "ativo" | "inativo"
-        };
-
-        setChecklist(typedChecklist);
-        
-        // Convert the items to the correct type
-        const typedItems: ChecklistItem[] = itemsData?.map(item => ({
-          ...item,
-          tipo_resposta: item.tipo_resposta as "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla",
-          opcoes: Array.isArray(item.opcoes) ? item.opcoes : null
-        })) || [];
-        
-        setItems(typedItems);
-        setUsers(usersData || []);
-        
-      } catch (error) {
-        console.error("Error fetching checklist data:", error);
-        toast.error("Erro ao carregar dados do checklist");
-      } finally {
-        setLoading(false);
       }
-    };
 
-    if (checklistId) {
-      fetchData();
-    }
-  }, [checklistId]);
+      return {
+        ...checklistData,
+        responsible_name: responsibleName,
+        status_checklist: checklistData.status_checklist as "ativo" | "inativo",
+      };
+    },
+    enabled: !!id,
+  });
 
-  const handleSaveChecklist = async () => {
-    if (!checklist) return;
-    
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from("checklists")
-        .update({
-          title: checklist.title,
-          description: checklist.description,
-          is_template: checklist.is_template,
-          status_checklist: checklist.status_checklist,
-          category: checklist.category,
-          responsible_id: checklist.responsible_id
-        })
-        .eq("id", checklistId);
-
-      if (error) throw error;
-      
-      toast.success("Checklist atualizado com sucesso!");
-    } catch (error) {
-      console.error("Error updating checklist:", error);
-      toast.error("Erro ao atualizar checklist");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleAddItem = async (newItem: Partial<ChecklistItem>) => {
-    if (!newItem.pergunta || !checklistId) return;
-    
-    try {
+  // Fetch checklist items
+  const { data: itemsData } = useQuery({
+    queryKey: ["checklist-items", id],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("checklist_itens")
-        .insert({
-          checklist_id: checklistId,
-          pergunta: newItem.pergunta,
-          tipo_resposta: newItem.tipo_resposta || "sim/não",
-          obrigatorio: newItem.obrigatorio === undefined ? true : newItem.obrigatorio,
-          ordem: newItem.ordem || 0,
-          opcoes: null
+        .select("*")
+        .eq("checklist_id", id)
+        .order("ordem", { ascending: true });
+
+      if (error) {
+        console.error("Erro ao buscar itens do checklist:", error);
+        toast.error("Erro ao carregar itens do checklist");
+        throw error;
+      }
+
+      return data.map(item => ({
+        ...item,
+        tipo_resposta: item.tipo_resposta as "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla",
+        opcoes: item.opcoes ? (item.opcoes as string[]) : null
+      }));
+    },
+    enabled: !!id,
+  });
+
+  // Fetch users for responsible selection
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, name')
+          .order('name');
+          
+        if (error) throw error;
+        setUsers(data || []);
+      } catch (error) {
+        console.error("Erro ao buscar usuários:", error);
+      }
+    };
+    
+    fetchUsers();
+  }, []);
+
+  // Update checklist when data is loaded
+  useEffect(() => {
+    if (checklistData) {
+      setChecklist(checklistData);
+    }
+  }, [checklistData]);
+
+  // Update items when data is loaded
+  useEffect(() => {
+    if (itemsData) {
+      setItems(itemsData);
+    }
+  }, [itemsData]);
+
+  // Item update mutation
+  const updateItemMutation = useMutation({
+    mutationFn: async (item: ChecklistItem) => {
+      const { error } = await supabase
+        .from("checklist_itens")
+        .update({
+          pergunta: item.pergunta,
+          tipo_resposta: item.tipo_resposta,
+          obrigatorio: item.obrigatorio,
+          ordem: item.ordem,
+          opcoes: item.opcoes
         })
-        .select();
+        .eq("id", item.id);
 
       if (error) throw error;
-      
-      const typedNewItem: ChecklistItem = {
-        ...data[0],
-        tipo_resposta: data[0].tipo_resposta as "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla",
-        opcoes: null
-      };
-      
-      setItems([...items, typedNewItem]);
-      
-      toast.success("Item adicionado com sucesso!");
-    } catch (error) {
-      console.error("Error adding item:", error);
-      toast.error("Erro ao adicionar item");
+    },
+    onError: (error) => {
+      console.error("Erro ao atualizar item:", error);
+      toast.error("Erro ao atualizar item do checklist");
     }
-  };
+  });
 
-  const handleDeleteItem = async (itemId: string) => {
-    try {
+  // Item delete mutation
+  const deleteItemMutation = useMutation({
+    mutationFn: async (itemId: string) => {
       const { error } = await supabase
         .from("checklist_itens")
         .delete()
         .eq("id", itemId);
 
       if (error) throw error;
-      
-      setItems(items.filter(item => item.id !== itemId));
-      toast.success("Item removido com sucesso!");
-    } catch (error) {
-      console.error("Error deleting item:", error);
-      toast.error("Erro ao remover item");
+    },
+    onSuccess: () => {
+      toast.success("Item removido com sucesso");
+    },
+    onError: (error) => {
+      console.error("Erro ao excluir item:", error);
+      toast.error("Erro ao remover item do checklist");
     }
-  };
+  });
 
-  const handleItemChange = async (updatedItem: ChecklistItem) => {
-    try {
-      const { error } = await supabase
+  // Item add mutation
+  const addItemMutation = useMutation({
+    mutationFn: async (newItem: Partial<ChecklistItem>) => {
+      const { data, error } = await supabase
         .from("checklist_itens")
-        .update({
-          pergunta: updatedItem.pergunta,
-          tipo_resposta: updatedItem.tipo_resposta,
-          obrigatorio: updatedItem.obrigatorio
+        .insert({
+          checklist_id: id,
+          pergunta: newItem.pergunta,
+          tipo_resposta: newItem.tipo_resposta,
+          obrigatorio: newItem.obrigatorio,
+          ordem: newItem.ordem,
+          opcoes: newItem.opcoes || null
         })
-        .eq("id", updatedItem.id);
+        .select();
 
       if (error) throw error;
+      return data[0];
+    },
+    onSuccess: (data) => {
+      const addedItem = {
+        ...data,
+        tipo_resposta: data.tipo_resposta as "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla",
+        opcoes: data.opcoes ? (data.opcoes as string[]) : null
+      };
+      setItems([...items, addedItem]);
+      toast.success("Item adicionado com sucesso");
+    },
+    onError: (error) => {
+      console.error("Erro ao adicionar item:", error);
+      toast.error("Erro ao adicionar item ao checklist");
+    }
+  });
+
+  // Checklist update mutation
+  const updateChecklistMutation = useMutation({
+    mutationFn: async (data: Partial<Checklist>) => {
+      const { error } = await supabase
+        .from("checklists")
+        .update(data)
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["checklists"] });
+      toast.success("Checklist atualizado com sucesso");
+    },
+    onError: (error) => {
+      console.error("Erro ao atualizar checklist:", error);
+      toast.error("Erro ao atualizar checklist");
+    }
+  });
+
+  // Handle item change
+  const handleItemChange = (updatedItem: ChecklistItem) => {
+    const newItems = items.map(item => 
+      item.id === updatedItem.id ? updatedItem : item
+    );
+    setItems(newItems);
+    updateItemMutation.mutate(updatedItem);
+  };
+
+  // Handle item deletion
+  const handleDeleteItem = (itemId: string) => {
+    deleteItemMutation.mutate(itemId);
+    setItems(items.filter(item => item.id !== itemId));
+  };
+
+  // Handle adding a new item
+  const handleAddItem = (newItem: Partial<ChecklistItem>) => {
+    addItemMutation.mutate(newItem);
+  };
+
+  // Save all changes
+  const handleSave = async () => {
+    if (!checklist) return;
+    
+    setSaving(true);
+    try {
+      await updateChecklistMutation.mutateAsync({
+        title: checklist.title,
+        description: checklist.description,
+        is_template: checklist.is_template,
+        status_checklist: checklist.status_checklist,
+        category: checklist.category,
+        responsible_id: checklist.responsible_id
+      });
       
-      setItems(items.map(item => 
-        item.id === updatedItem.id ? updatedItem : item
-      ));
+      setSaving(false);
     } catch (error) {
-      console.error("Error updating item:", error);
-      toast.error("Erro ao atualizar item");
+      setSaving(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="container py-6 space-y-6">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" disabled>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar
-          </Button>
-          <Skeleton className="h-8 w-64" />
-        </div>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-48 mb-2" />
-            <Skeleton className="h-4 w-full" />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-32 w-full" />
-          </CardContent>
-        </Card>
-      </div>
-    );
+  if (isLoading) {
+    return <div className="py-20 text-center">Carregando...</div>;
   }
-
-  if (!checklist) {
-    return (
-      <div className="container py-6">
-        <div className="flex flex-col items-center gap-4 py-12">
-          <AlertTriangle className="h-12 w-12 text-yellow-500" />
-          <h2 className="text-2xl font-bold">Checklist não encontrado</h2>
-          <p className="text-muted-foreground">
-            O checklist que você está procurando não existe ou foi removido.
-          </p>
-          <Button onClick={() => navigate("/checklists")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar para Checklists
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  const getLastOrder = () => {
-    if (items.length === 0) return 0;
-    return Math.max(...items.map(item => item.ordem)) + 1;
-  };
 
   return (
-    <div className="container py-6 space-y-6">
-      <ChecklistHeader 
+    <div className="space-y-6">
+      <ChecklistHeader
         checklist={checklist}
         saving={saving}
-        onSave={handleSaveChecklist}
+        onSave={handleSave}
       />
 
-      <ChecklistForm 
-        checklist={checklist}
-        users={users}
-        setChecklist={setChecklist}
-      />
+      {checklist && (
+        <div className="grid gap-6">
+          <ChecklistForm
+            checklist={checklist}
+            users={users}
+            setChecklist={setChecklist}
+          />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ClipboardCheck className="h-5 w-5" />
-            Itens do Checklist
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <ChecklistItemsList 
+          <ChecklistItemsList
             items={items}
             onItemChange={handleItemChange}
             onDeleteItem={handleDeleteItem}
             questionTypes={questionTypes}
           />
 
-          <AddChecklistItemForm 
-            checklistId={checklistId!}
+          <AddChecklistItemForm
+            checklistId={id!}
             onAddItem={handleAddItem}
-            lastOrder={getLastOrder()}
+            lastOrder={items.length > 0 ? Math.max(...items.map(i => i.ordem)) + 1 : 0}
             questionTypes={questionTypes}
           />
-        </CardContent>
-      </Card>
+        </div>
+      )}
     </div>
   );
 }
