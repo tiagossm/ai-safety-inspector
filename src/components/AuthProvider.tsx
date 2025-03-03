@@ -32,13 +32,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const handleAuthError = async (error: any) => {
     console.error("Auth error:", error);
-    // Clear the session on auth errors
     await supabase.auth.signOut();
     setUser(null);
     setLoading(false);
     navigate("/auth");
     
-    // Show appropriate error message
     toast({
       title: "Erro de autenticação",
       description: "Por favor, faça login novamente.",
@@ -128,7 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(enhancedUser);
           setLoading(false);
           
-          // Redirect based on user tier
+          // Don't redirect if user is already on a valid page
           if (window.location.pathname === "/auth") {
             console.log("🔄 Redirecionando usuário autenticado da página de login");
             if (enhancedUser.tier === "super_admin") {
@@ -226,55 +224,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
         } else if (event === 'TOKEN_REFRESHED') {
           console.log("ℹ️ Evento TOKEN_REFRESHED recebido");
+          // No need to redirect, just ensure the user state is up to date
           if (session?.user) {
-            // Ensure role is either "admin" or "user"
-            const enhancedUser: AuthUser = {
-              ...session.user,
-              role: "user" // Default to user role on token refresh
-            };
-            setUser(enhancedUser);
-          } else {
-            setUser(null);
-          }
-        } else if (event === 'USER_UPDATED') {
-          console.log("ℹ️ Evento USER_UPDATED recebido");
-          if (session?.user) {
-            // Ensure role is either "admin" or "user"
-            const enhancedUser: AuthUser = {
-              ...session.user,
-              role: "user" // Default to user role on user update
-            };
-            setUser(enhancedUser);
-          } else {
-            setUser(null);
-          }
-        } else if (event === 'INITIAL_SESSION') {
-          console.log("ℹ️ Evento INITIAL_SESSION recebido");
-          // Handle initial session load
-          if (session?.user) {
-            // Fetch additional user data from the users table
-            const { data: userData, error: userError } = await supabase
+            // Update user data when token is refreshed
+            const { data: userData } = await supabase
               .from("users")
               .select("role, tier")
               .eq("id", session.user.id)
               .maybeSingle();
+              
+            const userTier = userData?.tier as "super_admin" | "company_admin" | "consultant" | "technician" || "technician";
+            const userRole = (userData?.role === "admin") ? "admin" : "user";
             
-            if (userError && userError.code !== "PGRST116") {
-              console.error("Error fetching user data:", userError);
-            }
-            
-            // Set a default tier if not present
-            let userTier: "super_admin" | "company_admin" | "consultant" | "technician" = "technician";
-            
-            // If we have user data, use it
-            if (userData) {
-              userTier = userData.tier as "super_admin" | "company_admin" | "consultant" | "technician" || "technician";
-            }
-            
-            // Ensure role is always either "admin" or "user"
-            const userRole: "admin" | "user" = (userData?.role === "admin") ? "admin" : "user";
-            
-            // Merge the user data
             const enhancedUser: AuthUser = {
               ...session.user,
               role: userRole,
@@ -282,10 +243,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             };
             
             setUser(enhancedUser);
-          } else {
-            setUser(null);
           }
-          setLoading(false);
+        } else if (event === 'USER_UPDATED') {
+          console.log("ℹ️ Evento USER_UPDATED recebido");
+          // Update user data when user is updated
+          if (session?.user) {
+            const { data: userData } = await supabase
+              .from("users")
+              .select("role, tier")
+              .eq("id", session.user.id)
+              .maybeSingle();
+              
+            const userTier = userData?.tier as "super_admin" | "company_admin" | "consultant" | "technician" || "technician";
+            const userRole = (userData?.role === "admin") ? "admin" : "user";
+            
+            const enhancedUser: AuthUser = {
+              ...session.user,
+              role: userRole,
+              tier: userTier
+            };
+            
+            setUser(enhancedUser);
+          }
         }
         
         setLoading(false);
