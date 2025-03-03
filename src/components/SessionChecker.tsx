@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,16 +11,18 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log("✅ SessionChecker iniciado...");
+
     const checkSession = async () => {
       try {
-        console.log("Verificando sessão do usuário...");
+        console.log("🔍 Verificando sessão do usuário...");
         setIsLoading(true);
         
-        // Get current session
+        // Obtém a sessão atual
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error("Erro ao verificar sessão:", error);
+          console.error("❌ Erro ao verificar sessão:", error);
           toast({
             title: "Erro de autenticação",
             description: "Não foi possível verificar sua sessão",
@@ -33,11 +34,10 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
           return;
         }
 
-        console.log("Sessão verificada:", session ? "Válida" : "Inválida");
+        console.log("✅ Sessão verificada:", session ? "Válida" : "Inválida");
         
         if (!session) {
-          console.log("Usuário não autenticado, redirecionando para login");
-          // Only redirect if not already on auth page
+          console.warn("⚠️ Usuário não autenticado, redirecionando para login...");
           if (location.pathname !== "/auth") {
             navigate("/auth");
           }
@@ -46,10 +46,10 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
           return;
         }
 
-        // Get user data
+        // Obtém os dados do usuário autenticado
         if (session?.user) {
-          console.log("Obtendo dados do usuário...");
-          
+          console.log("🔍 Obtendo dados do usuário...");
+
           const { data: userData, error: userError } = await supabase
             .from("users")
             .select("role, tier")
@@ -57,36 +57,34 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
             .maybeSingle();
           
           if (userError) {
-            console.error("Erro ao obter dados do usuário:", userError);
+            console.error("❌ Erro ao obter dados do usuário:", userError);
             setIsLoading(false);
             setSessionChecked(true);
             return;
           }
           
-          // Determine user tier and set default if not present
-          const userTier = userData?.tier || "technician";
-          console.log("Perfil do usuário:", userTier);
+          const userTier = userData?.tier || "technician"; // Define "technician" como padrão
+          console.log("✅ Perfil do usuário:", userTier);
           
-          // Handle redirection based on tier only if we're on the root or auth page
-          // This prevents redirection loops for other routes
+          // Verifica se a rota é a inicial para evitar redirecionamento em páginas protegidas
           if (location.pathname === "/" || location.pathname === "/auth") {
-            console.log("Redirecionando com base no perfil do usuário");
+            console.log("🔄 Redirecionando com base no perfil do usuário...");
             if (userTier === "super_admin") {
-              console.log("Redirecionando para dashboard de administrador");
+              console.log("🚀 Redirecionando para dashboard de administrador...");
               navigate("/admin/dashboard");
             } else {
-              console.log("Redirecionando para dashboard padrão");
+              console.log("✅ Redirecionando para dashboard padrão...");
               navigate("/dashboard");
             }
           } else {
-            console.log("Usuário já está em uma rota protegida:", location.pathname);
+            console.log("✅ Usuário já está em uma rota protegida:", location.pathname);
           }
         }
 
         setIsLoading(false);
         setSessionChecked(true);
       } catch (err) {
-        console.error("Erro inesperado ao verificar sessão:", err);
+        console.error("❌ Erro inesperado ao verificar sessão:", err);
         toast({
           title: "Erro",
           description: "Ocorreu um erro ao verificar seu login",
@@ -98,22 +96,21 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
       }
     };
 
-    // Check session only if session hasn't been checked yet
+    // Verifica a sessão apenas se ainda não foi verificada
     if (!sessionChecked) {
       checkSession();
     }
     
-    // Set up authentication state change listener
+    // Monitoramento do estado de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Estado de autenticação alterado:", event);
+      console.log("🔄 Estado de autenticação alterado:", event);
       
-      if (event === 'SIGNED_IN') {
-        console.log("Usuário autenticado com sucesso, verificando perfil");
-        // Guaranteed state reset on sign in to prevent getting stuck
+      if (event === "SIGNED_IN") {
+        console.log("✅ Usuário autenticado com sucesso, verificando perfil...");
         setIsLoading(true);
         setSessionChecked(false);
-      } else if (event === 'SIGNED_OUT') {
-        console.log("Usuário desconectado");
+      } else if (event === "SIGNED_OUT") {
+        console.warn("⚠️ Usuário desconectado, redirecionando para login...");
         navigate("/auth");
       }
     });
@@ -123,7 +120,7 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
     };
   }, [navigate, toast, sessionChecked, location.pathname]);
 
-  // Render loading state or children
+  // Renderiza o estado de carregamento ou o conteúdo da aplicação
   if (isLoading && !sessionChecked) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -137,5 +134,5 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
 
   return <>{children}</>;
 };
-
+s
 export default SessionChecker;
