@@ -1,4 +1,5 @@
 
+
 export type Checklist = {
   id: string;
   title: string;
@@ -39,3 +40,4 @@ export type NewChecklist = {
 };
 
 export type ChecklistFilter = "all" | "templates" | "custom";
+

@@ -179,6 +179,7 @@ export type Database = {
           status_checklist: string
           title: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           company_id?: string | null
@@ -189,6 +190,7 @@ export type Database = {
           status_checklist?: string
           title: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           company_id?: string | null
@@ -199,6 +201,7 @@ export type Database = {
           status_checklist?: string
           title?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
