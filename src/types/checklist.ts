@@ -1,3 +1,4 @@
+
 export type Checklist = {
   id: string;
   title: string;
@@ -10,12 +11,12 @@ export type Checklist = {
   company_id?: string;  // Adding this as it appears in error messages
   status?: string;      // Adding this as it appears in error messages
   category?: string;    // Adding category field
+  responsible_id?: string; // ID of the responsible user
+  responsible_name?: string; // Name of the responsible user
   // Adding these properties used in the UI
   collaborators?: CollaboratorType[];
   items?: number;
   permissions?: string[];
-  responsible_id?: string; // ID of the responsible user
-  responsible_name?: string; // Name of the responsible user
 };
 
 export type ChecklistItem = {
