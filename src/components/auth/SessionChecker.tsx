@@ -6,6 +6,8 @@ export const SessionChecker = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log("✅ Supabase carregado:", supabase);
+
     const forceLogout = async () => {
       console.warn("⚠️ Sessão expirada ou inválida. Fazendo logout forçado...");
 
@@ -23,28 +25,37 @@ export const SessionChecker = () => {
 
     const checkSession = async () => {
       console.log("🔍 Verificando sessão do usuário...");
-      const { data, error } = await supabase.auth.getSession();
 
-      if (error || !data.session) {
-        console.warn("⚠️ Nenhuma sessão válida encontrada. Executando logout...");
-        await forceLogout();
-        return;
-      }
+      try {
+        const { data, error } = await supabase.auth.getSession();
 
-      console.log("✅ Sessão válida:", data);
+        if (error || !data.session) {
+          console.warn("⚠️ Nenhuma sessão válida encontrada. Executando logout...");
+          await forceLogout();
+          return;
+        }
 
-      if (data.session.user) {
-        console.log("🔄 Usuário autenticado:", data.session.user.id);
+        console.log("✅ Sessão válida:", data);
+
+        if (data.session.user) {
+          console.log("🔄 Usuário autenticado:", data.session.user.id);
+        }
+      } catch (err) {
+        console.error("❌ Erro inesperado ao verificar a sessão:", err);
       }
     };
 
     const sessionCheckInterval = setInterval(async () => {
       console.log("🔄 Verificando sessão ativa...");
-      const { data, error } = await supabase.auth.getSession();
+      try {
+        const { data, error } = await supabase.auth.getSession();
 
-      if (error || !data.session) {
-        console.warn("⚠️ Sessão inválida detectada. Fazendo logout...");
-        await forceLogout();
+        if (error || !data.session) {
+          console.warn("⚠️ Sessão inválida detectada. Fazendo logout...");
+          await forceLogout();
+        }
+      } catch (err) {
+        console.error("❌ Erro inesperado ao verificar sessão ativa:", err);
       }
     }, 5 * 60 * 1000); // 🔄 Verifica a sessão a cada 5 minutos
 
