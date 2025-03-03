@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,11 +28,14 @@ export function useChecklistDetails(id: string) {
 
       // Fetch responsible user name if there's an ID
       let responsibleName = null;
-      if (checklistData.responsible_id) {
+      // Need to handle the case where checklistData might not have responsible_id directly
+      const responsibleId = checklistData.responsible_id || null;
+      
+      if (responsibleId) {
         const { data: userData } = await supabase
           .from('users')
           .select('name')
-          .eq('id', checklistData.responsible_id)
+          .eq('id', responsibleId)
           .single();
 
         if (userData) {
@@ -39,10 +43,13 @@ export function useChecklistDetails(id: string) {
         }
       }
 
+      // Ensure we return a correctly typed Checklist object
       return {
         ...checklistData,
+        responsible_id: responsibleId,
         responsible_name: responsibleName,
         status_checklist: checklistData.status_checklist as "ativo" | "inativo",
+        is_template: Boolean(checklistData.is_template)
       } as Checklist;
     },
     enabled: !!id,

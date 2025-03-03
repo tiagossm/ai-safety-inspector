@@ -12,7 +12,14 @@ export function useSaveChecklist(checklistId: string) {
       // Ensure we're handling the responsible_id property
       const { error } = await supabase
         .from("checklists")
-        .update(data)
+        .update({
+          title: data.title,
+          description: data.description,
+          is_template: data.is_template,
+          status_checklist: data.status_checklist,
+          category: data.category,
+          responsible_id: data.responsible_id
+        })
         .eq("id", checklistId);
 
       if (error) throw error;
