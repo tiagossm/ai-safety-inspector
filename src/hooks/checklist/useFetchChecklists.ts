@@ -26,7 +26,7 @@ export function useFetchChecklists() {
       // Fetch responsible users information where available
       const responsibleIds = checklists
         .filter(c => c.responsible_id !== undefined && c.responsible_id !== null)
-        .map(c => c.responsible_id as string);
+        .map(c => c.responsible_id);
       
       let usersMap: Record<string, string> = {};
       
@@ -64,7 +64,7 @@ export function useFetchChecklists() {
               ...checklist,
               items: count || 0,
               // Get the responsible name from the users map
-              responsible_name: checklist.responsible_id ? usersMap[checklist.responsible_id as string] || 'Usuário não encontrado' : undefined,
+              responsible_name: checklist.responsible_id ? usersMap[checklist.responsible_id] || 'Usuário não encontrado' : undefined,
               // Ensure status_checklist is always "ativo" or "inativo"
               status_checklist: checklist.status_checklist === "inativo" ? "inativo" : "ativo",
               // Ensure is_template is boolean

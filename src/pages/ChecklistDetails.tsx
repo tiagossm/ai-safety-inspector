@@ -68,7 +68,7 @@ export default function ChecklistDetails() {
         ...checklistData,
         responsible_name: responsibleName,
         status_checklist: checklistData.status_checklist as "ativo" | "inativo",
-      };
+      } as Checklist;
     },
     enabled: !!id,
   });
@@ -153,7 +153,7 @@ export default function ChecklistDetails() {
   // Update items when data is loaded
   useEffect(() => {
     if (itemsData) {
-      setItems(itemsData);
+      setItems(itemsData as ChecklistItem[]);
     }
   }, [itemsData]);
 
