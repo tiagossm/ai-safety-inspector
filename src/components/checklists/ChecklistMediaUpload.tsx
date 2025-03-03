@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -22,13 +21,12 @@ export function ChecklistMediaUpload({
 }: ChecklistMediaUploadProps) {
   const [activeTab, setActiveTab] = useState<"upload" | "capture">("upload");
   const [mediaType, setMediaType] = useState<"image" | "audio" | "video">("image");
-  const { uploadMedia, isUploading, progress } = useMediaUpload();
+  const { uploadFile, isUploading, progress } = useMediaUpload();
   
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     
     const file = e.target.files[0];
-    const path = `checklists/${checklistId}/${itemId}`;
     
     // Determina o tipo do arquivo
     let type: "image" | "audio" | "video";
@@ -43,9 +41,13 @@ export function ChecklistMediaUpload({
       return;
     }
     
-    const url = await uploadMedia(file, path);
-    if (url) {
-      onMediaUploaded(url, type);
+    try {
+      const result = await uploadFile(file);
+      if (result && result.url) {
+        onMediaUploaded(result.url, type);
+      }
+    } catch (error) {
+      console.error("Erro ao fazer upload:", error);
     }
   };
   

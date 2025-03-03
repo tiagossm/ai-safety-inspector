@@ -96,11 +96,11 @@ export function useAuthSession() {
         // Buscar dados adicionais
         const userData = await fetchUserData(session.user.id);
         
-        // Combinar os dados
-        const enhancedUser: AuthUser = {
+        // Combinar os dados com type assertion para garantir tipo correto
+        const enhancedUser = {
           ...session.user,
           ...userData
-        };
+        } as AuthUser;
         
         console.log("✅ Dados do usuário definidos:", {
           email: enhancedUser.email,

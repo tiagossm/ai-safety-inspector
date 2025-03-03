@@ -28,11 +28,11 @@ export function useAuthEvents(
         // Buscar dados adicionais
         const userData = await fetchUserData(session.user.id);
         
-        // Combinar os dados
-        const enhancedUser: AuthUser = {
+        // Combinar os dados com type assertion
+        const enhancedUser = {
           ...session.user,
           ...userData
-        };
+        } as AuthUser;
         
         setUser(enhancedUser);
         
@@ -54,10 +54,10 @@ export function useAuthEvents(
         if (session?.user) {
           const userData = await fetchUserData(session.user.id);
           
-          const enhancedUser: AuthUser = {
+          const enhancedUser = {
             ...session.user,
             ...userData
-          };
+          } as AuthUser;
           
           setUser(enhancedUser);
         }

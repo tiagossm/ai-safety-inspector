@@ -16,16 +16,16 @@ export function useMediaUpload() {
       const fileName = `${uuidv4()}.${fileExt}`;
       const filePath = `uploads/${fileName}`;
       
+      // Upload option with manual progress tracking
       const { data, error } = await supabase.storage
         .from("checklist-media")
         .upload(filePath, file, {
           cacheControl: "3600",
-          upsert: false,
-          onUploadProgress: (progress) => {
-            const percent = Math.round((progress.loaded / progress.total) * 100);
-            setProgress(percent);
-          },
+          upsert: false
         });
+
+      // Simulate progress since onUploadProgress is not available
+      setProgress(100);
 
       if (error) throw error;
 
@@ -48,6 +48,5 @@ export function useMediaUpload() {
     }
   };
 
-  // Renomeando para uploadFile para corresponder ao nome usado no componente
   return { uploadFile, isUploading, progress };
 }
