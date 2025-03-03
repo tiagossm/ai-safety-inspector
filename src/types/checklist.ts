@@ -1,4 +1,3 @@
-
 export type Checklist = {
   id: string;
   title: string;
