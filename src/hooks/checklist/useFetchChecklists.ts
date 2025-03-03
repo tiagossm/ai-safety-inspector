@@ -27,7 +27,8 @@ export function useFetchChecklists() {
         collaborators: generateMockCollaborators(2),
         items: Math.floor(Math.random() * 20) + 5, // Número aleatório entre 5 e 25
         permissions: ["editor"],
-        isTemplate: checklist.is_template // Create the UI property from the database field
+        // Ensure is_template exists (it should already come from the DB)
+        is_template: checklist.is_template === undefined ? false : checklist.is_template
       }));
     }
   });

@@ -1,5 +1,4 @@
 
-
 export type Checklist = {
   id: string;
   title: string;
@@ -13,7 +12,7 @@ export type Checklist = {
   collaborators?: CollaboratorType[];
   items?: number;
   permissions?: string[];
-  isTemplate?: boolean; // This is derived from is_template
+  // Removing isTemplate as we'll use is_template directly
 };
 
 export type ChecklistItem = {
@@ -40,4 +39,3 @@ export type NewChecklist = {
 };
 
 export type ChecklistFilter = "all" | "templates" | "custom";
-

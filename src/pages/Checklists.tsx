@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Check, Search, Clipboard, FileText, Users, MoreHorizontal } from "lucide-react";
@@ -139,7 +140,7 @@ export default function Checklists() {
                         <CardTitle className="text-lg font-medium">
                           {checklist.title}
                         </CardTitle>
-                        {checklist.isTemplate && (
+                        {checklist.is_template && (
                           <Badge variant="secondary" className="mt-1">Template</Badge>
                         )}
                       </div>
@@ -254,7 +255,7 @@ export default function Checklists() {
                       <div className="font-medium">{checklist.title}</div>
                       <div className="text-sm text-muted-foreground mt-1">
                         {checklist.items} itens
-                        {checklist.isTemplate && (
+                        {checklist.is_template && (
                           <Badge variant="secondary" className="ml-2">Template</Badge>
                         )}
                       </div>
