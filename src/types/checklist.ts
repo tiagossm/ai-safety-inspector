@@ -8,11 +8,12 @@ export type Checklist = {
   status_checklist: "ativo" | "inativo";
   is_template: boolean;
   user_id?: string;  // Mark as optional since it might not exist in the database
+  company_id?: string;  // Adding this as it appears in error messages
+  status?: string;      // Adding this as it appears in error messages
   // Adding these properties used in the UI
   collaborators?: CollaboratorType[];
   items?: number;
   permissions?: string[];
-  // Removing isTemplate as we'll use is_template directly
 };
 
 export type ChecklistItem = {

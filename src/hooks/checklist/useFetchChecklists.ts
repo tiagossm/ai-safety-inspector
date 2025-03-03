@@ -23,7 +23,7 @@ export function useFetchChecklists() {
 
       // Transformando os dados para adicionar informações de colaboradores (mockados por enquanto)
       // e garantir que todos os campos necessários estejam presentes
-      return data.map((checklist) => ({
+      return data.map((checklist: any) => ({
         ...checklist,
         // Garantir que status_checklist seja sempre "ativo" ou "inativo"
         status_checklist: checklist.status_checklist === "inativo" ? "inativo" : "ativo",
@@ -33,7 +33,7 @@ export function useFetchChecklists() {
         collaborators: generateMockCollaborators(2),
         items: Math.floor(Math.random() * 20) + 5, // Número aleatório entre 5 e 25
         permissions: ["editor"]
-      }));
+      })) as Checklist[];
     }
   });
 }
