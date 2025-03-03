@@ -4,6 +4,7 @@ import { AuthProvider } from "./components/AuthProvider";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Toaster } from "./components/ui/toaster";
 import { ThemeProvider } from "./components/ui/ThemeContext";
+import SessionChecker from "./components/SessionChecker";
 import Auth from "./pages/Auth";
 import DashboardLayout from "./components/DashboardLayout";
 import Companies from "./pages/Companies";
@@ -28,35 +29,37 @@ function App() {
     <ThemeProvider>
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<Home />} />
-            <Route path="/plans" element={<Plans />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/contact" element={<Contact />} />
-            
-            {/* Admin Routes */}
-            <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-              <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            </Route>
-            
-            {/* Company Routes */}
-            <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/companies" element={<Companies />} />
-              <Route path="/companies/:companyId/units/new" element={<AddUnit />} />
-              <Route path="/inspections" element={<Inspections />} />
-              <Route path="/checklists" element={<Checklists />} />
-              <Route path="/incidents" element={<Incidents />} />
-              <Route path="/reports" element={<Reports />} />
-              <Route path="/users" element={<Users />} />
-              <Route path="/permissions" element={<Settings />} />
-              <Route path="/billing" element={<BillingPage />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="*" element={<NotFound />} />
-            </Route>
-          </Routes>
-          <Toaster />
+          <SessionChecker>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/" element={<Home />} />
+              <Route path="/plans" element={<Plans />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/contact" element={<Contact />} />
+              
+              {/* Admin Routes */}
+              <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              </Route>
+              
+              {/* Company Routes */}
+              <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/companies" element={<Companies />} />
+                <Route path="/companies/:companyId/units/new" element={<AddUnit />} />
+                <Route path="/inspections" element={<Inspections />} />
+                <Route path="/checklists" element={<Checklists />} />
+                <Route path="/incidents" element={<Incidents />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/users" element={<Users />} />
+                <Route path="/permissions" element={<Settings />} />
+                <Route path="/billing" element={<BillingPage />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
+            </Routes>
+            <Toaster />
+          </SessionChecker>
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>
