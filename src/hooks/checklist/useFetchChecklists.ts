@@ -22,13 +22,17 @@ export function useFetchChecklists() {
       console.log("Dados recebidos do Supabase:", data);
 
       // Transformando os dados para adicionar informações de colaboradores (mockados por enquanto)
+      // e garantir que todos os campos necessários estejam presentes
       return data.map((checklist) => ({
         ...checklist,
+        // Garantir que status_checklist seja sempre "ativo" ou "inativo"
+        status_checklist: checklist.status_checklist === "inativo" ? "inativo" : "ativo",
+        // Garantir que is_template seja boolean
+        is_template: Boolean(checklist.is_template),
+        // Adicionar campos mockados para UI
         collaborators: generateMockCollaborators(2),
         items: Math.floor(Math.random() * 20) + 5, // Número aleatório entre 5 e 25
-        permissions: ["editor"],
-        // Ensure is_template exists (it should already come from the DB)
-        is_template: checklist.is_template === undefined ? false : checklist.is_template
+        permissions: ["editor"]
       }));
     }
   });
