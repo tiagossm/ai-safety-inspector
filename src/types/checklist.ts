@@ -35,7 +35,6 @@ export type CollaboratorType = {
 export type NewChecklist = {
   title: string;
   description: string | null;
-  is_template: boolean;
-};
+  };
 
 export type ChecklistFilter = "all" | "templates" | "custom";
