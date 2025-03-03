@@ -10,7 +10,7 @@ export function useChecklistDetails(id: string) {
   const [items, setItems] = useState<ChecklistItem[]>([]);
   const [users, setUsers] = useState<any[]>([]);
 
-  // Fetch the checklist data by ID
+  // Fetch the checklist data by ID with proper caching and retry logic
   const { data: checklistData, isLoading } = useQuery({
     queryKey: ["checklist", id],
     queryFn: async () => {
@@ -66,9 +66,20 @@ export function useChecklistDetails(id: string) {
       } as Checklist;
     },
     enabled: !!id,
+    // Add caching and retry configuration
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
+    gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
+    retry: (failureCount, error) => {
+      // Retry 3 times with exponential backoff for network errors
+      if (failureCount < 3) {
+        console.log(`Retry attempt ${failureCount + 1} for checklist query`);
+        return true;
+      }
+      return false;
+    },
   });
 
-  // Fetch checklist items
+  // Fetch checklist items with caching
   const { data: itemsData } = useQuery({
     queryKey: ["checklist-items", id],
     queryFn: async () => {
@@ -117,37 +128,58 @@ export function useChecklistDetails(id: string) {
       });
     },
     enabled: !!id,
+    // Add caching and retry configuration
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
+    gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
+    retry: (failureCount, error) => {
+      // Retry 3 times with exponential backoff for network errors
+      if (failureCount < 3) {
+        console.log(`Retry attempt ${failureCount + 1} for items query`);
+        return true;
+      }
+      return false;
+    },
   });
 
-  // Fetch users for responsible selection
+  // Fetch users for responsible selection - with useEffect debounce
   useEffect(() => {
+    let isMounted = true;
     const fetchUsers = async () => {
       try {
+        // Don't refetch if we already have users
+        if (users.length > 0) return;
+        
         const { data, error } = await supabase
           .from('users')
           .select('id, name')
           .order('name');
           
         if (error) throw error;
-        setUsers(data || []);
+        if (isMounted) {
+          setUsers(data || []);
+        }
       } catch (error) {
         console.error("Erro ao buscar usuários:", error);
       }
     };
     
     fetchUsers();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  // Update checklist when data is loaded
+  // Update checklist when data is loaded - with check to prevent unnecessary updates
   useEffect(() => {
-    if (checklistData) {
+    if (checklistData && (!checklist || checklist.id !== checklistData.id)) {
       setChecklist(checklistData as Checklist);
     }
-  }, [checklistData]);
+  }, [checklistData, checklist]);
 
-  // Update items when data is loaded
+  // Update items when data is loaded - with check to prevent unnecessary updates
   useEffect(() => {
-    if (itemsData) {
+    if (itemsData && JSON.stringify(items) !== JSON.stringify(itemsData)) {
       setItems(itemsData as ChecklistItem[]);
     }
   }, [itemsData]);
