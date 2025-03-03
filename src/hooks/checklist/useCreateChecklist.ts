@@ -9,17 +9,21 @@ export function useCreateChecklist() {
   
   return useMutation({
     mutationFn: async (newChecklist: NewChecklist) => {
+      // Log what we're sending to help debug
+      console.log("Creating checklist with data:", newChecklist);
+      
       const { data, error } = await supabase
         .from("checklists")
         .insert({
           title: newChecklist.title,
           description: newChecklist.description,
-          is_template: newChecklist.is_template,
+          is_template: newChecklist.is_template || false,
           status_checklist: "ativo",
         })
         .select();
 
       if (error) {
+        console.error("Supabase error:", error);
         throw error;
       }
 

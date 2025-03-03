@@ -22,7 +22,7 @@ export function useFetchChecklists() {
       console.log("Dados recebidos do Supabase:", data);
 
       // Transformando os dados para adicionar informações de colaboradores (mockados por enquanto)
-      return data.map((checklist: any) => ({
+      return data.map((checklist) => ({
         ...checklist,
         collaborators: generateMockCollaborators(2),
         items: Math.floor(Math.random() * 20) + 5, // Número aleatório entre 5 e 25

@@ -38,9 +38,12 @@ export function CreateChecklistDialog() {
     setIsSubmitting(true);
     
     try {
+      console.log("Submitting form:", form);
       await createChecklist.mutateAsync(form);
       setOpen(false);
       resetForm();
+    } catch (error) {
+      console.error("Error in form submission:", error);
     } finally {
       setIsSubmitting(false);
     }

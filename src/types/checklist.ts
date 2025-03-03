@@ -7,7 +7,7 @@ export type Checklist = {
   updated_at: string;
   status_checklist: "ativo" | "inativo";
   is_template: boolean;
-  user_id: string;
+  user_id?: string;  // Mark as optional since it might not exist in the database
   // Adding these properties used in the UI
   collaborators?: CollaboratorType[];
   items?: number;
@@ -35,6 +35,7 @@ export type CollaboratorType = {
 export type NewChecklist = {
   title: string;
   description: string | null;
-  };
+  is_template?: boolean;
+};
 
 export type ChecklistFilter = "all" | "templates" | "custom";
