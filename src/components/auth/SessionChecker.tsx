@@ -7,29 +7,34 @@ export const SessionChecker = () => {
 
   useEffect(() => {
     const forceLogout = async () => {
-      console.warn("⚠️ Sessão expirada ou inválida. Fazendo logout...");
-      await supabase.auth.signOut(); // 🔄 Encerra a sessão completamente
-      localStorage.clear(); // 🔥 Remove todos os dados armazenados no navegador
-      navigate("/login"); // 🔄 Redireciona para o login
+      console.warn("⚠️ Sessão expirada ou inválida. Fazendo logout forçado...");
+
+      await supabase.auth.signOut(); // 🔄 Encerra sessão no Supabase
+      localStorage.clear(); // 🔥 Limpa todo o armazenamento local
+      sessionStorage.clear(); // 🔥 Garante que dados temporários sejam apagados
+      document.cookie.split(";").forEach((c) => { // 🔥 Remove todos os cookies armazenados
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+      });
+
+      navigate("/login"); // 🔄 Redireciona para a tela de login
     };
 
     const checkSession = async () => {
-      try {
-        console.log("🔍 Verificando sessão do usuário...");
-        const { data, error } = await supabase.auth.getSession();
+      console.log("🔍 Verificando sessão do usuário...");
+      const { data, error } = await supabase.auth.getSession();
 
-        if (error || !data.session) {
-          await forceLogout();
-          return;
-        }
+      if (error || !data.session) {
+        console.warn("⚠️ Nenhuma sessão válida encontrada. Executando logout...");
+        await forceLogout();
+        return;
+      }
 
-        console.log("✅ Sessão válida:", data);
+      console.log("✅ Sessão válida:", data);
 
-        if (data.session.user) {
-          console.log("🔄 Usuário autenticado:", data.session.user.id);
-        }
-      } catch (err) {
-        console.error("❌ Erro inesperado em checkSession:", err);
+      if (data.session.user) {
+        console.log("🔄 Usuário autenticado:", data.session.user.id);
       }
     };
 
@@ -38,6 +43,7 @@ export const SessionChecker = () => {
       const { data, error } = await supabase.auth.getSession();
 
       if (error || !data.session) {
+        console.warn("⚠️ Sessão inválida detectada. Fazendo logout...");
         await forceLogout();
       }
     }, 5 * 60 * 1000); // 🔄 Verifica a sessão a cada 5 minutos
