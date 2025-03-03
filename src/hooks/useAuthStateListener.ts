@@ -2,11 +2,12 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import type { AuthUser } from "@/types/auth";
+import { User } from "@supabase/supabase-js";
 
 export function useAuthStateListener(
   setUser: (user: AuthUser | null) => void,
   setLoading: (loading: boolean) => void,
-  enhanceUserWithRoleTier: (sessionUser: any) => Promise<AuthUser>,
+  enhanceUserWithRoleTier: (sessionUser: User) => Promise<AuthUser>,
   fetchUserData: (userId: string) => Promise<any>
 ) {
   const navigate = useNavigate();
@@ -83,12 +84,12 @@ export function useAuthStateListener(
         // Just update the user object with the current session user data
         if (session?.user) {
           // Keep the existing role/tier when refreshing token
-          setUser(prev => prev ? { ...session.user, role: prev.role, tier: prev.tier } as AuthUser : null);
+          setUser((prev) => prev ? { ...session.user, role: prev.role, tier: prev.tier } as AuthUser : null);
         }
       } else if (event === 'USER_UPDATED') {
         if (session?.user) {
           // Keep the existing role/tier when user is updated
-          setUser(prev => prev ? { ...session.user, role: prev.role, tier: prev.tier } as AuthUser : null);
+          setUser((prev) => prev ? { ...session.user, role: prev.role, tier: prev.tier } as AuthUser : null);
         }
       } else if (event === 'INITIAL_SESSION') {
         if (session?.user) {

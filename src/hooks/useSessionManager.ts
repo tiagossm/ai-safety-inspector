@@ -1,10 +1,11 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuthError } from "./useAuthError";
 import type { AuthUser } from "@/types/auth";
+import { User } from "@supabase/supabase-js";
 
 export function useSessionManager() {
   const [user, setUser] = useState<AuthUser | null>(null);
