@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,7 +29,7 @@ export function useChecklistDetails(id: string) {
       // Fetch responsible user name if there's an ID
       let responsibleName = null;
       // We need to check if responsibleId exists on the data returned from the API
-      const responsibleId = checklistData.responsible_id || null;
+      const responsibleId = checklistData?.responsible_id || null;
       
       if (responsibleId) {
         const { data: userData } = await supabase
