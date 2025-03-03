@@ -1,75 +1,53 @@
 
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { v4 as uuidv4 } from "uuid";
 
-interface UseMediaUploadOptions {
-  bucket?: string;
-  folder?: string;
-  maxSizeMB?: number;
-}
-
-export function useMediaUpload({
-  bucket = "media",
-  folder = "uploads",
-  maxSizeMB = 10
-}: UseMediaUploadOptions = {}) {
+export function useMediaUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
 
   const uploadFile = async (file: File) => {
-    // Verificar tamanho do arquivo
-    const fileSizeMB = file.size / (1024 * 1024);
-    if (fileSizeMB > maxSizeMB) {
-      toast.error(`Arquivo muito grande. O tamanho máximo é ${maxSizeMB}MB.`);
-      return null;
-    }
-
-    setIsUploading(true);
-    setProgress(0);
-
     try {
-      // Gerar nome de arquivo único para evitar colisões
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-      const filePath = `${folder}/${fileName}`;
-
-      // Upload para o Supabase Storage
+      setIsUploading(true);
+      setProgress(0);
+      
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${uuidv4()}.${fileExt}`;
+      const filePath = `uploads/${fileName}`;
+      
       const { data, error } = await supabase.storage
-        .from(bucket)
+        .from("checklist-media")
         .upload(filePath, file, {
-          cacheControl: '3600'
+          cacheControl: "3600",
+          upsert: false,
+          onUploadProgress: (progress) => {
+            const percent = Math.round((progress.loaded / progress.total) * 100);
+            setProgress(percent);
+          },
         });
 
       if (error) throw error;
 
-      // Obter URL pública do arquivo
       const { data: urlData } = supabase.storage
-        .from(bucket)
+        .from("checklist-media")
         .getPublicUrl(filePath);
 
-      setProgress(100);
-      toast.success('Arquivo enviado com sucesso');
-      
       return {
-        path: data.path,
+        path: filePath,
         url: urlData.publicUrl,
         name: file.name,
         type: file.type,
         size: file.size
       };
     } catch (error) {
-      console.error('Erro no upload:', error);
-      toast.error('Erro ao enviar arquivo. Tente novamente.');
-      return null;
+      console.error("Error uploading file:", error);
+      throw error;
     } finally {
       setIsUploading(false);
     }
   };
 
-  return {
-    uploadFile,
-    isUploading,
-    progress
-  };
+  // Renomeando para uploadFile para corresponder ao nome usado no componente
+  return { uploadFile, isUploading, progress };
 }

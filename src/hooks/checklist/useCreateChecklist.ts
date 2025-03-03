@@ -4,21 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { NewChecklist } from "@/types/checklist";
 import { useAuth } from "@/components/AuthProvider";
-
-// Interface estendida para o User
-interface ExtendedUser {
-  id: string;
-  email: string;
-  role?: string;
-  tier?: string;
-  company_id?: string;
-  [key: string]: any;
-}
+import { AuthUser } from "@/hooks/auth/useAuthState";
 
 export function useCreateChecklist() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const extendedUser = user as ExtendedUser | null;
+  const extendedUser = user as AuthUser | null;
   
   return useMutation({
     mutationFn: async (newChecklist: NewChecklist) => {

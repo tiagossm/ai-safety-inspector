@@ -1,14 +1,9 @@
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import type { User } from "@supabase/supabase-js";
-import { useToast } from "./ui/use-toast";
-
-interface AuthUser extends User {
-  role?: "admin" | "user";
-  tier?: "super_admin" | "company_admin" | "consultant" | "technician";
-}
+import { useAuthState, AuthUser } from "@/hooks/auth/useAuthState";
+import { useAuthSession } from "@/hooks/auth/useAuthSession";
+import { useAuthEvents } from "@/hooks/auth/useAuthEvents";
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -25,258 +20,36 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, setUser, loading, setLoading } = useAuthState();
+  const { checkSession, logout } = useAuthSession();
   const navigate = useNavigate();
-  const { toast } = useToast();
 
-  const handleAuthError = async (error: any) => {
-    console.error("Auth error:", error);
-    await supabase.auth.signOut();
-    setUser(null);
-    setLoading(false);
-    navigate("/auth");
-    
-    toast({
-      title: "Erro de autenticação",
-      description: "Por favor, faça login novamente.",
-      variant: "destructive",
-    });
-  };
-
-  const logout = async () => {
-    try {
-      console.log("🔄 Iniciando logout...");
-      await supabase.auth.signOut();
-      setUser(null);
-      navigate("/auth");
-      toast({
-        title: "Logout realizado",
-        description: "Até logo!",
-      });
-      console.log("✅ Logout realizado com sucesso");
-    } catch (error) {
-      console.error("Error during logout:", error);
-      toast({
-        title: "Erro ao fazer logout",
-        description: "Tente novamente.",
-        variant: "destructive",
-      });
-    }
-  };
-
+  // Inicialização - verificar sessão atual
   useEffect(() => {
     let mounted = true;
     console.log("🔄 AuthProvider montado - Verificando sessão do usuário");
 
-    // Check active sessions and sets the user
-    const checkSession = async () => {
-      try {
-        console.log("🔍 Tentando obter sessão atual...");
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error("❌ Erro ao obter sessão:", error);
-          if (mounted) {
-            await handleAuthError(error);
-          }
-          return;
-        }
-
-        console.log("ℹ️ Sessão obtida:", session ? "Sessão ativa" : "Sem sessão ativa");
-
-        if (session?.user && mounted) {
-          console.log("✅ Usuário autenticado:", session.user.email);
-          
-          // Fetch additional user data from the users table
-          const { data: userData, error: userError } = await supabase
-            .from("users")
-            .select("role, tier")
-            .eq("id", session.user.id)
-            .maybeSingle();
-          
-          if (userError && userError.code !== "PGRST116") {
-            console.error("Error fetching user data:", userError);
-          }
-          
-          // Set a default tier if not present
-          let userTier: "super_admin" | "company_admin" | "consultant" | "technician" = "technician";
-          
-          // If we have user data, use it
-          if (userData) {
-            userTier = userData.tier as "super_admin" | "company_admin" | "consultant" | "technician" || "technician";
-          }
-          
-          // Ensure role is always either "admin" or "user"
-          const userRole: "admin" | "user" = (userData?.role === "admin") ? "admin" : "user";
-          
-          // Merge the user data with session user
-          const enhancedUser: AuthUser = {
-            ...session.user,
-            role: userRole,
-            tier: userTier
-          };
-          
-          console.log("✅ Dados do usuário definidos:", {
-            email: enhancedUser.email,
-            role: userRole,
-            tier: userTier
-          });
-          
-          setUser(enhancedUser);
-          setLoading(false);
-          
-          // Don't redirect if user is already on a valid page
-          if (window.location.pathname === "/auth") {
-            console.log("🔄 Redirecionando usuário autenticado da página de login");
-            if (enhancedUser.tier === "super_admin") {
-              navigate("/admin/dashboard");
-            } else {
-              navigate("/dashboard");
-            }
-          }
-        } else if (mounted) {
-          console.log("ℹ️ Nenhum usuário autenticado");
-          setUser(null);
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error("❌ Erro inesperado ao verificar sessão:", error);
-        if (mounted) {
-          await handleAuthError(error);
-        }
+    const initializeAuth = async () => {
+      const redirectTo = await checkSession(
+        (user) => { if (mounted) setUser(user); },
+        (loading) => { if (mounted) setLoading(loading); }
+      );
+      
+      if (mounted && redirectTo) {
+        navigate(redirectTo);
       }
     };
 
-    checkSession();
-
-    // Listen for changes on auth state (sign in, sign out, etc.)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("🔄 Estado de autenticação alterado:", event);
-      
-      if (mounted) {
-        if (event === 'SIGNED_IN' && session?.user) {
-          console.log("✅ Evento SIGNED_IN recebido com usuário:", session.user.email);
-          
-          // Fetch additional user data from the users table
-          const { data: userData, error: userError } = await supabase
-            .from("users")
-            .select("role, tier")
-            .eq("id", session.user.id)
-            .maybeSingle();
-          
-          if (userError && userError.code !== "PGRST116") {
-            console.error("Error fetching user data:", userError);
-          }
-          
-          // Set a default tier if not present
-          let userTier: "super_admin" | "company_admin" | "consultant" | "technician" = "technician";
-          
-          // If we have user data, use it
-          if (userData) {
-            userTier = userData.tier as "super_admin" | "company_admin" | "consultant" | "technician" || "technician";
-          }
-          
-          // For testing, set first user as super_admin
-          if (!userData?.tier) {
-            try {
-              await supabase
-                .from("users")
-                .update({ tier: "super_admin" })
-                .eq("id", session.user.id);
-              
-              userTier = "super_admin";
-            } catch (error) {
-              console.error("Could not set super_admin tier:", error);
-            }
-          }
-          
-          // Ensure role is always either "admin" or "user"
-          const userRole: "admin" | "user" = (userData?.role === "admin") ? "admin" : "user";
-          
-          // Merge the user data
-          const enhancedUser: AuthUser = {
-            ...session.user,
-            role: userRole,
-            tier: userTier
-          };
-          
-          setUser(enhancedUser);
-          
-          // Redirect based on user tier
-          if (enhancedUser.tier === "super_admin") {
-            navigate("/admin/dashboard");
-          } else {
-            navigate("/dashboard");
-          }
-          
-          toast({
-            title: "Login realizado com sucesso",
-            description: "Bem-vindo de volta!",
-          });
-        } else if (event === 'SIGNED_OUT') {
-          console.log("ℹ️ Evento SIGNED_OUT recebido");
-          setUser(null);
-          navigate("/auth");
-          toast({
-            title: "Logout realizado",
-            description: "Até logo!",
-          });
-        } else if (event === 'TOKEN_REFRESHED') {
-          console.log("ℹ️ Evento TOKEN_REFRESHED recebido");
-          // No need to redirect, just ensure the user state is up to date
-          if (session?.user) {
-            // Update user data when token is refreshed
-            const { data: userData } = await supabase
-              .from("users")
-              .select("role, tier")
-              .eq("id", session.user.id)
-              .maybeSingle();
-              
-            const userTier = userData?.tier as "super_admin" | "company_admin" | "consultant" | "technician" || "technician";
-            const userRole = (userData?.role === "admin") ? "admin" : "user";
-            
-            const enhancedUser: AuthUser = {
-              ...session.user,
-              role: userRole,
-              tier: userTier
-            };
-            
-            setUser(enhancedUser);
-          }
-        } else if (event === 'USER_UPDATED') {
-          console.log("ℹ️ Evento USER_UPDATED recebido");
-          // Update user data when user is updated
-          if (session?.user) {
-            const { data: userData } = await supabase
-              .from("users")
-              .select("role, tier")
-              .eq("id", session.user.id)
-              .maybeSingle();
-              
-            const userTier = userData?.tier as "super_admin" | "company_admin" | "consultant" | "technician" || "technician";
-            const userRole = (userData?.role === "admin") ? "admin" : "user";
-            
-            const enhancedUser: AuthUser = {
-              ...session.user,
-              role: userRole,
-              tier: userTier
-            };
-            
-            setUser(enhancedUser);
-          }
-        }
-        
-        setLoading(false);
-      }
-    });
+    initializeAuth();
 
     return () => {
       console.log("🔄 Desmontando AuthProvider");
       mounted = false;
-      subscription.unsubscribe();
     };
-  }, [navigate, toast]);
+  }, [navigate]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Configurar eventos de autenticação
+  useAuthEvents(setUser, setLoading);
 
   return (
     <AuthContext.Provider value={{ user, loading, logout }}>
