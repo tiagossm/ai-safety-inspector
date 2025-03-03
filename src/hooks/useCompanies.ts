@@ -43,14 +43,21 @@ export function useCompanies() {
   const fetchCompanies = async () => {
     try {
       setLoading(true);
+      console.log("Fetching companies from Supabase...");
+      
       const { data, error } = await supabase
         .from('companies')
         .select('*')
         .eq('status', 'active')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
 
+      console.log("Companies fetched successfully:", data);
+      
       const companiesWithMetadata = (data || []).map(company => ({
         ...company,
         status: company.status as CompanyStatus,
