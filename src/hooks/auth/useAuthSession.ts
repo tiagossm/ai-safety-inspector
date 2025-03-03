@@ -45,13 +45,14 @@ export function useAuthSession() {
   // Função para buscar dados adicionais do usuário após autenticação
   const fetchUserData = async (userId: string): Promise<Partial<AuthUser>> => {
     try {
+      // Corrigindo a query para apenas selecionar colunas que existem na tabela users
       const { data: userData, error: userError } = await supabase
         .from("users")
-        .select("role, tier, company_id")
+        .select("role, tier")
         .eq("id", userId)
         .maybeSingle();
       
-      if (userError && userError.code !== "PGRST116") {
+      if (userError) {
         console.error("Error fetching user data:", userError);
         return {};
       }
@@ -62,8 +63,7 @@ export function useAuthSession() {
           // Garantir que role é sempre "admin" ou "user"
           role: (userData.role === "admin") ? "admin" : "user" as "admin" | "user",
           // Garantir que tier é um dos valores permitidos
-          tier: userData.tier as "super_admin" | "company_admin" | "consultant" | "technician" || "technician",
-          company_id: userData.company_id
+          tier: userData.tier as "super_admin" | "company_admin" | "consultant" | "technician" || "technician"
         };
       }
       
