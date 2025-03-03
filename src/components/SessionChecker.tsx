@@ -28,6 +28,8 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
             variant: "destructive",
           });
           navigate("/auth");
+          setIsLoading(false);
+          setSessionChecked(true);
           return;
         }
 
@@ -56,6 +58,9 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
           
           if (userError) {
             console.error("Erro ao obter dados do usuário:", userError);
+            setIsLoading(false);
+            setSessionChecked(true);
+            return;
           }
           
           // Determine user tier and set default if not present
@@ -77,6 +82,9 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
             console.log("Usuário já está em uma rota protegida:", location.pathname);
           }
         }
+
+        setIsLoading(false);
+        setSessionChecked(true);
       } catch (err) {
         console.error("Erro inesperado ao verificar sessão:", err);
         toast({
@@ -85,10 +93,8 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
           variant: "destructive",
         });
         navigate("/auth");
-      } finally {
         setIsLoading(false);
         setSessionChecked(true);
-        console.log("Verificação de sessão concluída");
       }
     };
 
@@ -103,13 +109,9 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
       
       if (event === 'SIGNED_IN') {
         console.log("Usuário autenticado com sucesso, verificando perfil");
-        // Only run full check if not already on a protected route
-        if (location.pathname === "/" || location.pathname === "/auth") {
-          checkSession();
-        } else {
-          setIsLoading(false);
-          setSessionChecked(true);
-        }
+        // Guaranteed state reset on sign in to prevent getting stuck
+        setIsLoading(true);
+        setSessionChecked(false);
       } else if (event === 'SIGNED_OUT') {
         console.log("Usuário desconectado");
         navigate("/auth");
