@@ -43,9 +43,11 @@ const Auth = () => {
         if (error) throw error;
         
         console.log("✅ Login bem-sucedido:", data);
-        // Não precisamos salvar manualmente a sessão, o Supabase faz isso automaticamente
-        // com as configurações que adicionamos na inicialização do cliente
-        
+        toast({
+          title: "Login realizado com sucesso!",
+          description: "Bem-vindo de volta!",
+        });
+
         navigate("/companies");
       }
     } catch (error: any) {

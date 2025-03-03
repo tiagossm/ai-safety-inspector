@@ -48,7 +48,11 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
           console.log("ℹ️ Usuário não autenticado");
           setIsLoading(false);
           
-          if (location.pathname !== "/auth") {
+          if (location.pathname !== "/auth" && 
+              location.pathname !== "/" && 
+              location.pathname !== "/plans" && 
+              location.pathname !== "/blog" && 
+              location.pathname !== "/contact") {
             console.log("🔄 Redirecionando para tela de login");
             navigate("/auth");
           }
