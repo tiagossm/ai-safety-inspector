@@ -68,8 +68,10 @@ export function useChecklists() {
         throw error;
       }
 
+      console.log("Dados recebidos do Supabase:", data);
+
       // Transformando os dados para adicionar informações de colaboradores (mockados por enquanto)
-      return data.map((checklist) => ({
+      return data.map((checklist: any) => ({
         ...checklist,
         collaborators: generateMockCollaborators(2),
         items: Math.floor(Math.random() * 20) + 5, // Número aleatório entre 5 e 25
