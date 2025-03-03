@@ -159,8 +159,8 @@ export function useChecklists() {
         // Filtrar por tipo
         const matchesType = 
           filterType === "all" || 
-          (filterType === "templates" && checklist.is_template) || 
-          (filterType === "custom" && !checklist.is_template);
+          (filterType === "templates" && checklist.isTemplate) || 
+          (filterType === "custom" && !checklist.isTemplate);
         
         return matchesSearch && matchesType;
       })
