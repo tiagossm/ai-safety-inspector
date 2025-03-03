@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Check, Search, Clipboard, FileText, Users, MoreHorizontal } from "lucide-react";
@@ -19,8 +20,6 @@ import { DeleteChecklistDialog } from "@/components/checklists/DeleteChecklistDi
 import { useChecklists } from "@/hooks/useChecklists";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useDuplicateChecklist } from "@/hooks/checklist/useDuplicateChecklist";
-import { toast } from "sonner";
 
 export default function Checklists() {
   const navigate = useNavigate();
@@ -32,8 +31,6 @@ export default function Checklists() {
     filterType, 
     setFilterType 
   } = useChecklists();
-  
-  const duplicateChecklist = useDuplicateChecklist();
   
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -49,28 +46,12 @@ export default function Checklists() {
     navigate(`/checklists/${id}`);
   };
 
-  const handleDuplicate = async (checklist: any) => {
-    try {
-      await duplicateChecklist.mutateAsync(checklist);
-    } catch (error) {
-      console.error("Error in handleDuplicate:", error);
-    }
-  };
-
-  const handleShare = (id: string) => {
-    toast.info("Funcionalidade de compartilhamento em desenvolvimento");
-  };
-
   const handleDelete = (id: string, title: string) => {
     setDeleteDialog({
       open: true,
       checklistId: id,
       checklistTitle: title,
     });
-  };
-
-  const handleCreateNew = () => {
-    navigate("/checklists/new");
   };
 
   return (
@@ -82,12 +63,7 @@ export default function Checklists() {
             Gerencie seus modelos de inspeção e checklists
           </p>
         </div>
-        <div className="flex gap-2">
-          <CreateChecklistDialog />
-          <Button variant="outline" onClick={handleCreateNew}>
-            Editor Avançado
-          </Button>
-        </div>
+        <CreateChecklistDialog />
       </div>
 
       <div className="flex flex-col gap-4 md:flex-row md:items-center">
@@ -178,10 +154,10 @@ export default function Checklists() {
                           <DropdownMenuItem onClick={() => handleOpenChecklist(checklist.id)}>
                             Editar
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDuplicate(checklist)}>
+                          <DropdownMenuItem>
                             Duplicar
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleShare(checklist.id)}>
+                          <DropdownMenuItem>
                             Compartilhar
                           </DropdownMenuItem>
                           <DropdownMenuItem 
@@ -204,13 +180,13 @@ export default function Checklists() {
                       <div className="mt-4">
                         <p className="text-sm font-medium mb-1">Colaboradores:</p>
                         <div className="flex -space-x-2">
-                          {checklist.collaborators?.map((user) => (
+                          {checklist.collaborators.map((user) => (
                             <Avatar key={user.id} className="h-7 w-7 border-2 border-background">
                               <AvatarImage src={user.avatar} alt={user.name} />
                               <AvatarFallback>{user.initials}</AvatarFallback>
                             </Avatar>
                           ))}
-                          {checklist.collaborators?.length > 0 && (
+                          {checklist.collaborators.length > 0 && (
                             <Button variant="outline" size="icon" className="h-7 w-7 rounded-full">
                               <Users className="h-3 w-3" />
                             </Button>
@@ -285,7 +261,7 @@ export default function Checklists() {
                       </div>
                     </div>
                     <div className="hidden md:block text-sm">
-                      {checklist.collaborators?.[0]?.name || "N/A"}
+                      {checklist.collaborators[0]?.name || "N/A"}
                     </div>
                     <div className="hidden md:block text-sm">
                       {new Date(checklist.created_at).toLocaleDateString()}
@@ -305,12 +281,8 @@ export default function Checklists() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleDuplicate(checklist)}>
-                            Duplicar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleShare(checklist.id)}>
-                            Compartilhar
-                          </DropdownMenuItem>
+                          <DropdownMenuItem>Duplicar</DropdownMenuItem>
+                          <DropdownMenuItem>Compartilhar</DropdownMenuItem>
                           <DropdownMenuItem 
                             className="text-destructive focus:text-destructive"
                             onClick={() => handleDelete(checklist.id, checklist.title)}
