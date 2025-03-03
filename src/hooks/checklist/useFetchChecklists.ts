@@ -26,9 +26,9 @@ export function useFetchChecklists() {
       // Fetch responsible users information where available
       const responsibleIds = checklists
         .filter(c => c.responsible_id)
-        .map(c => c.responsible_id);
+        .map(c => c.responsible_id as string);
       
-      let usersMap = {};
+      let usersMap: Record<string, string> = {};
       
       if (responsibleIds.length > 0) {
         try {
@@ -38,7 +38,7 @@ export function useFetchChecklists() {
             .in('id', responsibleIds);
             
           if (users) {
-            usersMap = users.reduce((acc, user) => {
+            usersMap = users.reduce((acc: Record<string, string>, user: any) => {
               acc[user.id] = user.name;
               return acc;
             }, {});
@@ -63,7 +63,7 @@ export function useFetchChecklists() {
               ...checklist,
               items: count || 0,
               // Get the responsible name from the users map
-              responsible_name: checklist.responsible_id ? usersMap[checklist.responsible_id] || 'Usuário não encontrado' : null,
+              responsible_name: checklist.responsible_id ? usersMap[checklist.responsible_id as string] || 'Usuário não encontrado' : null,
               // Ensure status_checklist is always "ativo" or "inativo"
               status_checklist: checklist.status_checklist === "inativo" ? "inativo" : "ativo",
               // Ensure is_template is boolean
@@ -71,7 +71,7 @@ export function useFetchChecklists() {
               // Add mock data for UI
               collaborators: generateMockCollaborators(2),
               permissions: ["editor"]
-            };
+            } as Checklist;
           } catch (err) {
             console.error(`Erro ao buscar itens para checklist ${checklist.id}:`, err);
             return {
@@ -80,12 +80,12 @@ export function useFetchChecklists() {
               items: 0,
               collaborators: generateMockCollaborators(1),
               permissions: ["viewer"]
-            };
+            } as Checklist;
           }
         })
       );
 
-      return checklistsWithItems as Checklist[];
+      return checklistsWithItems;
     }
   });
 }

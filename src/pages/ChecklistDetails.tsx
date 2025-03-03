@@ -46,12 +46,10 @@ export default function ChecklistDetails() {
     { value: "seleção múltipla", label: "Seleção Múltipla" }
   ];
 
-  // Fetch checklist and items data
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Fetch checklist
         const { data: checklistData, error: checklistError } = await supabase
           .from("checklists")
           .select("*")
@@ -60,7 +58,6 @@ export default function ChecklistDetails() {
 
         if (checklistError) throw checklistError;
         
-        // Fetch items
         const { data: itemsData, error: itemsError } = await supabase
           .from("checklist_itens")
           .select("*")
@@ -69,7 +66,6 @@ export default function ChecklistDetails() {
 
         if (itemsError) throw itemsError;
         
-        // Fetch users for responsible dropdown
         const { data: usersData, error: usersError } = await supabase
           .from("users")
           .select("id, name, email")
@@ -77,21 +73,28 @@ export default function ChecklistDetails() {
           
         if (usersError) throw usersError;
         
-        // If we have a responsible_id, get their name
         let responsibleName = null;
         if (checklistData.responsible_id) {
           const foundUser = usersData.find(u => u.id === checklistData.responsible_id);
           responsibleName = foundUser?.name || 'Usuário não encontrado';
         }
 
-        setChecklist({
+        const typedChecklist: Checklist = {
           ...checklistData,
-          responsible_name: responsibleName
-        });
-        setItems(itemsData || []);
+          responsible_name: responsibleName,
+          status_checklist: checklistData.status_checklist === "inativo" ? "inativo" : "ativo" as "ativo" | "inativo"
+        };
+
+        setChecklist(typedChecklist);
+        
+        const typedItems = itemsData?.map(item => ({
+          ...item,
+          tipo_resposta: item.tipo_resposta as "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla"
+        })) || [];
+        
+        setItems(typedItems);
         setUsers(usersData || []);
         
-        // Set the order for new items
         if (itemsData && itemsData.length > 0) {
           const maxOrder = Math.max(...itemsData.map(item => item.ordem));
           setNewItem(prev => ({ ...prev, ordem: maxOrder + 1 }));
@@ -155,7 +158,12 @@ export default function ChecklistDetails() {
 
       if (error) throw error;
       
-      setItems([...items, data[0]]);
+      const typedNewItem = {
+        ...data[0],
+        tipo_resposta: data[0].tipo_resposta as "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla"
+      };
+      
+      setItems([...items, typedNewItem]);
       setNewItem({
         pergunta: "",
         tipo_resposta: "sim/não",
@@ -275,7 +283,6 @@ export default function ChecklistDetails() {
         </Button>
       </div>
 
-      {/* Checklist Details */}
       <Card>
         <CardHeader>
           <CardTitle>Detalhes do Checklist</CardTitle>
@@ -368,7 +375,6 @@ export default function ChecklistDetails() {
         </CardContent>
       </Card>
 
-      {/* Checklist Items */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -377,7 +383,6 @@ export default function ChecklistDetails() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Existing Items */}
           {items.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground" />
@@ -456,7 +461,6 @@ export default function ChecklistDetails() {
             </div>
           )}
 
-          {/* Add New Item */}
           <div className="border rounded-md p-4 space-y-4 mt-6">
             <h3 className="text-lg font-medium">Adicionar Novo Item</h3>
             
