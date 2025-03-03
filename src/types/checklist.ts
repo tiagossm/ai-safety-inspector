@@ -7,13 +7,13 @@ export type Checklist = {
   updated_at: string;
   status_checklist: "ativo" | "inativo";
   is_template: boolean;
-  user_id?: string;  // Mark as optional since it might not exist in the database
-  company_id?: string;  // Adding this as it appears in error messages
-  status?: string;      // Adding this as it appears in error messages
-  category?: string;    // Adding category field
-  responsible_id?: string; // ID of the responsible user
-  responsible_name?: string; // Name of the responsible user
-  // Adding these properties used in the UI
+  user_id?: string;
+  company_id?: string;
+  status?: string;
+  category?: string;
+  responsible_id?: string;
+  responsible_name?: string;
+  // Propriedades da UI
   collaborators?: CollaboratorType[];
   items?: number;
   permissions?: string[];
@@ -42,6 +42,30 @@ export type NewChecklist = {
   is_template?: boolean;
   category?: string;
   responsible_id?: string;
+  company_id?: string;
 };
 
 export type ChecklistFilter = "all" | "templates" | "custom";
+
+// Tipos para criação de checklists inteligente
+export type AIChecklistPrompt = {
+  prompt: string;
+  num_questions: number;
+  category?: string;
+};
+
+// Tipo para resposta da IA
+export type AIResponse = {
+  success: boolean;
+  message?: string;
+  data?: any;
+};
+
+// Tipo para upload de mídia em checklists
+export type ChecklistMedia = {
+  id: string;
+  checklist_item_id: string;
+  file_url: string;
+  file_type: "image" | "audio" | "video";
+  created_at: string;
+};

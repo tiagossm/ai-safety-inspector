@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Clipboard, FileText } from "lucide-react";
+import { Clipboard, FileText, BarChart2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DeleteChecklistDialog } from "@/components/checklists/DeleteChecklistDialog";
@@ -10,6 +10,7 @@ import { ChecklistsHeader } from "@/components/checklists/ChecklistsHeader";
 import { ChecklistsFilter } from "@/components/checklists/ChecklistsFilter";
 import { ChecklistsGrid } from "@/components/checklists/ChecklistsGrid";
 import { ChecklistsList } from "@/components/checklists/ChecklistsList";
+import { ChecklistsDashboard } from "@/components/checklists/ChecklistsDashboard";
 
 export default function Checklists() {
   const navigate = useNavigate();
@@ -67,6 +68,10 @@ export default function Checklists() {
               <Clipboard className="h-4 w-4" />
               <span>Lista</span>
             </TabsTrigger>
+            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+              <BarChart2 className="h-4 w-4" />
+              <span>Dashboard</span>
+            </TabsTrigger>
           </TabsList>
           
           <p className="text-sm text-muted-foreground">
@@ -92,6 +97,10 @@ export default function Checklists() {
             onOpenChecklist={handleOpenChecklist} 
             onDelete={handleDelete} 
           />
+        </TabsContent>
+        
+        <TabsContent value="dashboard">
+          <ChecklistsDashboard />
         </TabsContent>
       </Tabs>
 

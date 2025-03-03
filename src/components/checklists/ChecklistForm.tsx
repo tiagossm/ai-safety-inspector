@@ -6,6 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useChecklistPermissions } from "@/hooks/checklist/useChecklistPermissions";
+
+// Checklist category options
+const CATEGORIES = [
+  { value: "safety", label: "Segurança" },
+  { value: "quality", label: "Qualidade" },
+  { value: "maintenance", label: "Manutenção" },
+  { value: "environment", label: "Meio Ambiente" },
+  { value: "operational", label: "Operacional" },
+  { value: "general", label: "Geral" }
+];
 
 interface ChecklistFormProps {
   checklist: Checklist;
@@ -14,6 +25,9 @@ interface ChecklistFormProps {
 }
 
 export default function ChecklistForm({ checklist, users, setChecklist }: ChecklistFormProps) {
+  const { data: permissions } = useChecklistPermissions(checklist.id);
+  const canEdit = permissions?.write || false;
+  
   return (
     <Card>
       <CardHeader>
@@ -26,6 +40,7 @@ export default function ChecklistForm({ checklist, users, setChecklist }: Checkl
             id="title"
             value={checklist.title}
             onChange={(e) => setChecklist({...checklist, title: e.target.value})}
+            disabled={!canEdit}
           />
         </div>
         
@@ -35,17 +50,17 @@ export default function ChecklistForm({ checklist, users, setChecklist }: Checkl
             <Select 
               value={checklist.category || "general"} 
               onValueChange={(value) => setChecklist({...checklist, category: value})}
+              disabled={!canEdit}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione uma categoria" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="safety">Segurança</SelectItem>
-                <SelectItem value="quality">Qualidade</SelectItem>
-                <SelectItem value="maintenance">Manutenção</SelectItem>
-                <SelectItem value="environment">Meio Ambiente</SelectItem>
-                <SelectItem value="operational">Operacional</SelectItem>
-                <SelectItem value="general">Geral</SelectItem>
+                {CATEGORIES.map((category) => (
+                  <SelectItem key={category.value} value={category.value}>
+                    {category.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -55,6 +70,7 @@ export default function ChecklistForm({ checklist, users, setChecklist }: Checkl
             <Select 
               value={checklist.responsible_id || ""} 
               onValueChange={(value) => setChecklist({...checklist, responsible_id: value})}
+              disabled={!canEdit}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um responsável" />
@@ -77,6 +93,7 @@ export default function ChecklistForm({ checklist, users, setChecklist }: Checkl
             value={checklist.description || ""}
             onChange={(e) => setChecklist({...checklist, description: e.target.value})}
             rows={3}
+            disabled={!canEdit}
           />
         </div>
         
@@ -85,6 +102,7 @@ export default function ChecklistForm({ checklist, users, setChecklist }: Checkl
             id="template"
             checked={checklist.is_template}
             onCheckedChange={(checked) => setChecklist({...checklist, is_template: checked})}
+            disabled={!canEdit}
           />
           <Label htmlFor="template">Template</Label>
         </div>
@@ -99,6 +117,7 @@ export default function ChecklistForm({ checklist, users, setChecklist }: Checkl
                 status_checklist: checked ? "ativo" : "inativo"
               })
             }
+            disabled={!canEdit}
           />
           <Label htmlFor="status">
             {checklist.status_checklist === "ativo" ? "Ativo" : "Inativo"}

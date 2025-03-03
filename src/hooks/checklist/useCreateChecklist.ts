@@ -3,9 +3,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { NewChecklist } from "@/types/checklist";
+import { useAuth } from "@/components/AuthProvider";
 
 export function useCreateChecklist() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   
   return useMutation({
     mutationFn: async (newChecklist: NewChecklist) => {
@@ -19,8 +21,9 @@ export function useCreateChecklist() {
           description: newChecklist.description,
           is_template: newChecklist.is_template || false,
           status_checklist: "ativo",
-          category: newChecklist.category || "General",
-          responsible_id: newChecklist.responsible_id
+          category: newChecklist.category || "general",
+          responsible_id: newChecklist.responsible_id,
+          company_id: newChecklist.company_id || user?.company_id
         })
         .select();
 

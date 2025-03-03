@@ -171,11 +171,13 @@ export type Database = {
       }
       checklists: {
         Row: {
+          category: string | null
           company_id: string | null
           created_at: string
           description: string | null
           id: string
           is_template: boolean | null
+          responsible_id: string | null
           status: string | null
           status_checklist: string
           title: string
@@ -183,11 +185,13 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          category?: string | null
           company_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
           is_template?: boolean | null
+          responsible_id?: string | null
           status?: string | null
           status_checklist?: string
           title: string
@@ -195,11 +199,13 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          category?: string | null
           company_id?: string | null
           created_at?: string
           description?: string | null
           id?: string
           is_template?: boolean | null
+          responsible_id?: string | null
           status?: string | null
           status_checklist?: string
           title?: string
@@ -219,6 +225,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklists_responsible_id_fkey"
+            columns: ["responsible_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]

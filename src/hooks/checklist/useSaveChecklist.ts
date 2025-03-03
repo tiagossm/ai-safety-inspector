@@ -9,7 +9,7 @@ export function useSaveChecklist(checklistId: string) {
   
   return useMutation({
     mutationFn: async (data: Partial<Checklist>) => {
-      // Ensure we're handling the responsible_id property
+      // Ensure we're handling all properties
       const { error } = await supabase
         .from("checklists")
         .update({
@@ -18,7 +18,8 @@ export function useSaveChecklist(checklistId: string) {
           is_template: data.is_template,
           status_checklist: data.status_checklist,
           category: data.category,
-          responsible_id: data.responsible_id
+          responsible_id: data.responsible_id,
+          company_id: data.company_id
         })
         .eq("id", checklistId);
 
