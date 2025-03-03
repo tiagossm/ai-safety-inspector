@@ -1,73 +1,64 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { AuthProvider } from "./components/AuthProvider";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import { Toaster } from "./components/ui/toaster";
-import { ThemeProvider } from "./components/ui/ThemeContext";
-import SessionChecker from "./components/SessionChecker";
-import Auth from "./pages/Auth";
-import DashboardLayout from "./components/DashboardLayout";
-import Companies from "./pages/Companies";
-import Home from "./pages/Home";
-import Plans from "./pages/Plans";
-import Blog from "./pages/Blog";
-import Contact from "./pages/Contact";
-import { Users } from "./pages/Users";
-import NotFound from "./pages/NotFound";
-import AddUnit from "./pages/AddUnit";
-import Inspections from "./pages/Inspections";
-import Checklists from "./pages/Checklists";
-import Settings from "./pages/Settings";
-import Dashboard from "./pages/Dashboard";
-import BillingPage from "./pages/BillingPage";
-import Reports from "./pages/Reports";
-import Incidents from "./pages/Incidents";
-import AdminDashboard from "./pages/AdminDashboard";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { Index } from "@/pages";
+import Auth from "@/pages/Auth";
+import Dashboard from "@/pages/Dashboard";
+import Companies from "@/pages/Companies";
+import Checklists from "@/pages/Checklists";
+import Inspections from "@/pages/Inspections";
+import Reports from "@/pages/Reports";
+import Settings from "@/pages/Settings";
+import Profile from "@/pages/Profile";
+import NotFound from "@/pages/NotFound";
+import DashboardLayout from "@/layouts/DashboardLayout";
+import { useAuth } from "@/components/AuthProvider";
+import AdminDashboard from "@/pages/AdminDashboard";
+import ChecklistDetail from "@/pages/ChecklistDetail";
 
-// Criando uma instância do QueryClient
-const queryClient = new QueryClient();
+function ProtectedRoute({ children }: { children: JSX.Element }) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div>Carregando...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" />;
+  }
+
+  return children;
+}
 
 function App() {
   return (
-    <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <AuthProvider>
-            <SessionChecker>
-              <Routes>
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/" element={<Home />} />
-                <Route path="/plans" element={<Plans />} />
-                <Route path="/blog" element={<Blog />} />
-                <Route path="/contact" element={<Contact />} />
-                
-                {/* Admin Routes */}
-                <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-                  <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                </Route>
-                
-                {/* Company Routes */}
-                <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/companies" element={<Companies />} />
-                  <Route path="/companies/:companyId/units/new" element={<AddUnit />} />
-                  <Route path="/inspections" element={<Inspections />} />
-                  <Route path="/checklists" element={<Checklists />} />
-                  <Route path="/incidents" element={<Incidents />} />
-                  <Route path="/reports" element={<Reports />} />
-                  <Route path="/users" element={<Users />} />
-                  <Route path="/permissions" element={<Settings />} />
-                  <Route path="/billing" element={<BillingPage />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="*" element={<NotFound />} />
-                </Route>
-              </Routes>
-              <Toaster />
-            </SessionChecker>
-          </AuthProvider>
-        </BrowserRouter>
-      </QueryClientProvider>
-    </ThemeProvider>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/auth" element={<Auth />} />
+        
+        {/* Protected routes */}
+        <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/companies" element={<Companies />} />
+          <Route path="/checklists" element={<Checklists />} />
+          <Route path="/checklists/:id" element={<ChecklistDetail />} />
+          <Route path="/inspections" element={<Inspections />} />
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/profile" element={<Profile />} />
+        </Route>
+        
+        {/* Admin routes */}
+        <Route path="/admin/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+        
+        {/* 404 route */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Router>
   );
 }
 
