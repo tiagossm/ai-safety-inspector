@@ -4,20 +4,20 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
-import { Index } from "@/pages";
-import Auth from "@/pages/Auth";
-import Dashboard from "@/pages/Dashboard";
-import Companies from "@/pages/Companies";
-import Checklists from "@/pages/Checklists";
-import Inspections from "@/pages/Inspections";
-import Reports from "@/pages/Reports";
-import Settings from "@/pages/Settings";
-import Profile from "@/pages/Profile";
-import NotFound from "@/pages/NotFound";
-import DashboardLayout from "@/layouts/DashboardLayout";
-import { useAuth } from "@/components/AuthProvider";
-import AdminDashboard from "@/pages/AdminDashboard";
-import ChecklistDetail from "@/pages/ChecklistDetail";
+import { Index } from "./pages/Index";
+import Auth from "./pages/Auth";
+import Dashboard from "./pages/Dashboard";
+import Companies from "./pages/Companies";
+import Checklists from "./pages/Checklists";
+import Inspections from "./pages/Inspections";
+import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
+import Profile from "./pages/Profile";
+import NotFound from "./pages/NotFound";
+import DashboardLayout from "./components/DashboardLayout";
+import { useAuth } from "./components/AuthProvider";
+import AdminDashboard from "./pages/AdminDashboard";
+import ChecklistDetail from "./pages/ChecklistDetail";
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
   const { user, loading } = useAuth();
