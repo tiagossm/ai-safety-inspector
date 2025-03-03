@@ -50,7 +50,7 @@ export function useFetchChecklists() {
       
       // For each checklist, get the number of items
       const checklistsWithItems = await Promise.all(
-        checklists.map(async (checklist) => {
+        checklists.map(async (checklist: any) => {
           try {
             const { count, error: itemsError } = await supabase
               .from("checklist_itens")
