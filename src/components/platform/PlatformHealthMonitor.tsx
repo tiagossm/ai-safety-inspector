@@ -5,12 +5,15 @@ import { Progress } from "@/components/ui/progress";
 import { CheckCircle, AlertCircle, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
+// Define the health status type
+type HealthStatusValue = "healthy" | "degraded" | "down";
+
 interface HealthStatus {
-  database: "healthy" | "degraded" | "down";
-  storage: "healthy" | "degraded" | "down";
-  auth: "healthy" | "degraded" | "down";
-  api: "healthy" | "degraded" | "down";
-  overall: "healthy" | "degraded" | "down";
+  database: HealthStatusValue;
+  storage: HealthStatusValue;
+  auth: HealthStatusValue;
+  api: HealthStatusValue;
+  overall: HealthStatusValue;
 }
 
 export function PlatformHealthMonitor() {
@@ -38,7 +41,7 @@ export function PlatformHealthMonitor() {
         const { data: authCheck, error: authError } = await supabase.auth.getSession();
         
         // Simple API check
-        let apiStatus: "healthy" | "degraded" | "down" = "down";
+        let apiStatus: HealthStatusValue = "down";
         try {
           const response = await fetch('https://jkgmgjjtslkozhehwmng.supabase.co/functions/v1/healthcheck', {
             method: 'GET',
@@ -52,14 +55,17 @@ export function PlatformHealthMonitor() {
         }
         
         // Health statuses
-        const dbStatus = dbError ? "down" : "healthy";
-        const authStatus = authError ? "down" : "healthy";
+        const dbStatus: HealthStatusValue = dbError ? "down" : "healthy";
+        const authStatus: HealthStatusValue = authError ? "down" : "healthy";
         
-        // Determine overall health
-        let overallStatus: "healthy" | "degraded" | "down" = "healthy";
-        if (dbStatus === "down" || authStatus === "down" || apiStatus === "down") {
+        // Determine overall health - fix the comparison by ensuring consistent types
+        let overallStatus: HealthStatusValue = "healthy";
+        
+        // Check if any service is down
+        if ([dbStatus, authStatus, apiStatus].includes("down")) {
           overallStatus = "down";
-        } else if (dbStatus === "degraded" || authStatus === "degraded" || apiStatus === "degraded") {
+        // If no service is down but any is degraded
+        } else if ([dbStatus, authStatus, apiStatus].includes("degraded")) {
           overallStatus = "degraded";
         }
         
