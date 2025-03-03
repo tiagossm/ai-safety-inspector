@@ -25,8 +25,8 @@ export function useFetchChecklists() {
       
       // Fetch responsible users information where available
       const responsibleIds = checklists
-        .filter((c: any) => c.responsible_id !== undefined && c.responsible_id !== null)
-        .map((c: any) => c.responsible_id);
+        .filter((c) => c.responsible_id !== undefined && c.responsible_id !== null)
+        .map((c) => c.responsible_id);
       
       let usersMap: Record<string, string> = {};
       
