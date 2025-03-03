@@ -99,6 +99,50 @@ export type Database = {
           },
         ]
       }
+      checklist_itens: {
+        Row: {
+          checklist_id: string
+          created_at: string
+          id: string
+          obrigatorio: boolean
+          opcoes: Json | null
+          ordem: number
+          pergunta: string
+          tipo_resposta: string
+          updated_at: string
+        }
+        Insert: {
+          checklist_id: string
+          created_at?: string
+          id?: string
+          obrigatorio?: boolean
+          opcoes?: Json | null
+          ordem?: number
+          pergunta: string
+          tipo_resposta: string
+          updated_at?: string
+        }
+        Update: {
+          checklist_id?: string
+          created_at?: string
+          id?: string
+          obrigatorio?: boolean
+          opcoes?: Json | null
+          ordem?: number
+          pergunta?: string
+          tipo_resposta?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_itens_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_permissions: {
         Row: {
           checklist_id: string
@@ -132,6 +176,7 @@ export type Database = {
           description: string | null
           id: string
           status: string | null
+          status_checklist: string
           title: string
           updated_at: string
         }
@@ -141,6 +186,7 @@ export type Database = {
           description?: string | null
           id?: string
           status?: string | null
+          status_checklist?: string
           title: string
           updated_at?: string
         }
@@ -150,6 +196,7 @@ export type Database = {
           description?: string | null
           id?: string
           status?: string | null
+          status_checklist?: string
           title?: string
           updated_at?: string
         }
