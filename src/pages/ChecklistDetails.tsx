@@ -1,4 +1,3 @@
-<lov-codelov-code>
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -517,4 +516,3 @@ export default function ChecklistDetails() {
     </div>
   );
 }
-</lov-code>
