@@ -1,5 +1,5 @@
-
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./components/AuthProvider";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Toaster } from "./components/ui/toaster";
@@ -24,44 +24,49 @@ import Reports from "./pages/Reports";
 import Incidents from "./pages/Incidents";
 import AdminDashboard from "./pages/AdminDashboard";
 
+// Criando uma instância do QueryClient
+const queryClient = new QueryClient();
+
 function App() {
   return (
     <ThemeProvider>
-      <BrowserRouter>
-        <AuthProvider>
-          <SessionChecker>
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/" element={<Home />} />
-              <Route path="/plans" element={<Plans />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/contact" element={<Contact />} />
-              
-              {/* Admin Routes */}
-              <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-                <Route path="/admin/dashboard" element={<AdminDashboard />} />
-              </Route>
-              
-              {/* Company Routes */}
-              <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/companies" element={<Companies />} />
-                <Route path="/companies/:companyId/units/new" element={<AddUnit />} />
-                <Route path="/inspections" element={<Inspections />} />
-                <Route path="/checklists" element={<Checklists />} />
-                <Route path="/incidents" element={<Incidents />} />
-                <Route path="/reports" element={<Reports />} />
-                <Route path="/users" element={<Users />} />
-                <Route path="/permissions" element={<Settings />} />
-                <Route path="/billing" element={<BillingPage />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="*" element={<NotFound />} />
-              </Route>
-            </Routes>
-            <Toaster />
-          </SessionChecker>
-        </AuthProvider>
-      </BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AuthProvider>
+            <SessionChecker>
+              <Routes>
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/" element={<Home />} />
+                <Route path="/plans" element={<Plans />} />
+                <Route path="/blog" element={<Blog />} />
+                <Route path="/contact" element={<Contact />} />
+                
+                {/* Admin Routes */}
+                <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                  <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                </Route>
+                
+                {/* Company Routes */}
+                <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/companies" element={<Companies />} />
+                  <Route path="/companies/:companyId/units/new" element={<AddUnit />} />
+                  <Route path="/inspections" element={<Inspections />} />
+                  <Route path="/checklists" element={<Checklists />} />
+                  <Route path="/incidents" element={<Incidents />} />
+                  <Route path="/reports" element={<Reports />} />
+                  <Route path="/users" element={<Users />} />
+                  <Route path="/permissions" element={<Settings />} />
+                  <Route path="/billing" element={<BillingPage />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="*" element={<NotFound />} />
+                </Route>
+              </Routes>
+              <Toaster />
+            </SessionChecker>
+          </AuthProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
     </ThemeProvider>
   );
 }
