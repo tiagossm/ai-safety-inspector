@@ -10,7 +10,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
-import { useChecklists } from "@/hooks/useChecklists";
+import { useDeleteChecklist } from "@/hooks/checklist/useDeleteChecklist";
 
 interface DeleteChecklistDialogProps {
   checklistId: string;
@@ -25,7 +25,7 @@ export function DeleteChecklistDialog({
   isOpen,
   onOpenChange,
 }: DeleteChecklistDialogProps) {
-  const { deleteChecklist } = useChecklists();
+  const deleteChecklist = useDeleteChecklist();
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {

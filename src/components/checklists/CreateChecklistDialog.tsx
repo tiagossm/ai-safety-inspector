@@ -15,10 +15,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { PlusCircle } from "lucide-react";
-import { NewChecklist, useChecklists } from "@/hooks/useChecklists";
+import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
+import { NewChecklist } from "@/types/checklist";
 
 export function CreateChecklistDialog() {
-  const { createChecklist } = useChecklists();
+  const createChecklist = useCreateChecklist();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<NewChecklist>({
     title: "",
