@@ -31,11 +31,9 @@ export function useChecklistDetails(id: string) {
       // Fetch responsible user name if there's an ID
       let responsibleName = null;
       
-      // The response from Supabase might not have responsible_id field
-      // We need to handle this case safely
-      const responsibleId = checklistData.responsible_id !== undefined 
-        ? checklistData.responsible_id 
-        : null;
+      // Access responsible_id safely with type assertion
+      const rawData = checklistData as any;
+      const responsibleId = rawData.responsible_id || null;
       
       if (responsibleId) {
         const { data: userData } = await supabase
@@ -61,9 +59,8 @@ export function useChecklistDetails(id: string) {
         user_id: checklistData.user_id,
         company_id: checklistData.company_id,
         status: checklistData.status,
-        // If category doesn't exist in response, set it to undefined
-        category: checklistData.category !== undefined ? checklistData.category : undefined,
-        // Same for responsible_id
+        // Access category safely with type assertion
+        category: (rawData.category !== undefined) ? rawData.category : undefined,
         responsible_id: responsibleId,
         responsible_name: responsibleName
       } as Checklist;
