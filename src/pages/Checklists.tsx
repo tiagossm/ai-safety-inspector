@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Check, Search, Clipboard, FileText, Users, MoreHorizontal } from "lucide-react";
+import { Check, Search, Clipboard, FileText, Users, MoreHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,86 +15,44 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CreateChecklistDialog } from "@/components/checklists/CreateChecklistDialog";
+import { DeleteChecklistDialog } from "@/components/checklists/DeleteChecklistDialog";
+import { useChecklists } from "@/hooks/useChecklists";
+import { useNavigate } from "react-router-dom";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Checklists() {
-  // Estados
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all");
-
-  // Dados de exemplo para checklists
-  const checklists = [
-    {
-      id: "1",
-      title: "Checklist NR-12 - Maquinário",
-      description: "Checklist para inspeção de segurança de máquinas conforme NR-12",
-      createdBy: "João Silva",
-      createdAt: "2023-10-15",
-      items: 24,
-      isTemplate: false,
-      permissions: ["editor", "approver"],
-      collaborators: [
-        { id: "1", name: "Ana Maria", avatar: "", initials: "AM" },
-        { id: "2", name: "Carlos Eduardo", avatar: "", initials: "CE" },
-      ]
-    },
-    {
-      id: "2",
-      title: "Checklist Ergonômico NR-17",
-      description: "Avaliação ergonômica do ambiente de trabalho",
-      createdBy: "Maria Souza",
-      createdAt: "2023-11-05",
-      items: 18,
-      isTemplate: true,
-      permissions: ["viewer"],
-      collaborators: [
-        { id: "3", name: "Daniel Ferreira", avatar: "", initials: "DF" },
-      ]
-    },
-    {
-      id: "3",
-      title: "Inspeção de EPI NR-6",
-      description: "Verificação de equipamentos de proteção individual",
-      createdBy: "Ricardo Oliveira",
-      createdAt: "2023-11-10",
-      items: 15,
-      isTemplate: false,
-      permissions: ["admin"],
-      collaborators: [
-        { id: "4", name: "Fernanda Lima", avatar: "", initials: "FL" },
-        { id: "5", name: "Gabriel Santos", avatar: "", initials: "GS" },
-        { id: "6", name: "Helena Costa", avatar: "", initials: "HC" },
-      ]
-    },
-    {
-      id: "4",
-      title: "Checklist de Risco de Incêndio NR-23",
-      description: "Avaliação de medidas de prevenção contra incêndios",
-      createdBy: "Patricia Mendes",
-      createdAt: "2023-11-12",
-      items: 22,
-      isTemplate: true,
-      permissions: ["editor"],
-      collaborators: [
-        { id: "7", name: "Igor Martins", avatar: "", initials: "IM" },
-      ]
-    },
-  ];
-
-  // Filtrar checklists
-  const filteredChecklists = checklists.filter(checklist => {
-    // Filtrar por texto de pesquisa
-    const matchesSearch = 
-      checklist.title.toLowerCase().includes(search.toLowerCase()) || 
-      checklist.description.toLowerCase().includes(search.toLowerCase());
-    
-    // Filtrar por tipo
-    const matchesFilter = 
-      filter === "all" || 
-      (filter === "templates" && checklist.isTemplate) || 
-      (filter === "custom" && !checklist.isTemplate);
-    
-    return matchesSearch && matchesFilter;
+  const navigate = useNavigate();
+  const { 
+    checklists, 
+    isLoading, 
+    searchTerm, 
+    setSearchTerm, 
+    filterType, 
+    setFilterType 
+  } = useChecklists();
+  
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    checklistId: string;
+    checklistTitle: string;
+  }>({
+    open: false,
+    checklistId: "",
+    checklistTitle: "",
   });
+
+  const handleOpenChecklist = (id: string) => {
+    navigate(`/checklists/${id}`);
+  };
+
+  const handleDelete = (id: string, title: string) => {
+    setDeleteDialog({
+      open: true,
+      checklistId: id,
+      checklistTitle: title,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -105,10 +63,7 @@ export default function Checklists() {
             Gerencie seus modelos de inspeção e checklists
           </p>
         </div>
-        <Button className="self-start">
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Novo Checklist
-        </Button>
+        <CreateChecklistDialog />
       </div>
 
       <div className="flex flex-col gap-4 md:flex-row md:items-center">
@@ -116,14 +71,14 @@ export default function Checklists() {
           <Search className="h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Buscar checklists..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="flex-1"
           />
         </div>
         
         <div className="w-full md:w-auto">
-          <Select value={filter} onValueChange={setFilter}>
+          <Select value={filterType} onValueChange={(value) => setFilterType(value as any)}>
             <SelectTrigger className="w-full md:w-[180px]">
               <SelectValue placeholder="Filtrar por tipo" />
             </SelectTrigger>
@@ -150,71 +105,110 @@ export default function Checklists() {
           </TabsList>
           
           <p className="text-sm text-muted-foreground">
-            {filteredChecklists.length} {filteredChecklists.length === 1 ? 'checklist' : 'checklists'} encontrados
+            {checklists.length} {checklists.length === 1 ? 'checklist' : 'checklists'} encontrados
           </p>
         </div>
 
         <TabsContent value="grid">
           <ScrollArea className="h-[calc(100vh-300px)]">
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-              {filteredChecklists.map((checklist) => (
-                <Card key={checklist.id} className="flex flex-col">
-                  <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                    <div>
-                      <CardTitle className="text-lg font-medium">
-                        {checklist.title}
-                      </CardTitle>
-                      {checklist.isTemplate && (
-                        <Badge variant="secondary" className="mt-1">Template</Badge>
-                      )}
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Editar</DropdownMenuItem>
-                        <DropdownMenuItem>Duplicar</DropdownMenuItem>
-                        <DropdownMenuItem>Compartilhar</DropdownMenuItem>
-                        <DropdownMenuItem>Excluir</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </CardHeader>
-                  <CardContent className="flex-grow">
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {checklist.description}
-                    </p>
-                    <div className="mt-4 flex items-center text-sm text-muted-foreground">
-                      <Check className="mr-1 h-4 w-4" />
-                      <span>{checklist.items} itens</span>
-                    </div>
-                    <div className="mt-4">
-                      <p className="text-sm font-medium mb-1">Colaboradores:</p>
-                      <div className="flex -space-x-2">
-                        {checklist.collaborators.map((user) => (
-                          <Avatar key={user.id} className="h-7 w-7 border-2 border-background">
-                            <AvatarImage src={user.avatar} alt={user.name} />
-                            <AvatarFallback>{user.initials}</AvatarFallback>
-                          </Avatar>
-                        ))}
-                        {checklist.collaborators.length > 0 && (
-                          <Button variant="outline" size="icon" className="h-7 w-7 rounded-full">
-                            <Users className="h-3 w-3" />
-                          </Button>
+            {isLoading ? (
+              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Card key={i} className="flex flex-col">
+                    <CardHeader className="pb-2">
+                      <Skeleton className="h-6 w-3/4" />
+                    </CardHeader>
+                    <CardContent className="flex-grow">
+                      <Skeleton className="h-4 w-full mb-2" />
+                      <Skeleton className="h-4 w-2/3" />
+                      <div className="mt-4">
+                        <Skeleton className="h-7 w-28 rounded-full" />
+                      </div>
+                    </CardContent>
+                    <CardFooter className="pt-2">
+                      <Skeleton className="h-10 w-full" />
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                {checklists.map((checklist) => (
+                  <Card key={checklist.id} className="flex flex-col">
+                    <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+                      <div>
+                        <CardTitle className="text-lg font-medium">
+                          {checklist.title}
+                        </CardTitle>
+                        {checklist.isTemplate && (
+                          <Badge variant="secondary" className="mt-1">Template</Badge>
                         )}
                       </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="pt-2">
-                    <Button variant="secondary" className="w-full">Abrir Checklist</Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleOpenChecklist(checklist.id)}>
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            Duplicar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            Compartilhar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => handleDelete(checklist.id, checklist.title)}
+                          >
+                            Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </CardHeader>
+                    <CardContent className="flex-grow">
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {checklist.description || "Sem descrição"}
+                      </p>
+                      <div className="mt-4 flex items-center text-sm text-muted-foreground">
+                        <Check className="mr-1 h-4 w-4" />
+                        <span>{checklist.items} itens</span>
+                      </div>
+                      <div className="mt-4">
+                        <p className="text-sm font-medium mb-1">Colaboradores:</p>
+                        <div className="flex -space-x-2">
+                          {checklist.collaborators.map((user) => (
+                            <Avatar key={user.id} className="h-7 w-7 border-2 border-background">
+                              <AvatarImage src={user.avatar} alt={user.name} />
+                              <AvatarFallback>{user.initials}</AvatarFallback>
+                            </Avatar>
+                          ))}
+                          {checklist.collaborators.length > 0 && (
+                            <Button variant="outline" size="icon" className="h-7 w-7 rounded-full">
+                              <Users className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                    <CardFooter className="pt-2">
+                      <Button 
+                        variant="secondary" 
+                        className="w-full"
+                        onClick={() => handleOpenChecklist(checklist.id)}
+                      >
+                        Abrir Checklist
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            )}
             
-            {filteredChecklists.length === 0 && (
+            {!isLoading && checklists.length === 0 && (
               <div className="text-center py-10">
                 <Clipboard className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-4 text-lg font-semibold">Nenhum checklist encontrado</h3>
@@ -235,44 +229,74 @@ export default function Checklists() {
               <div className="text-right">Ações</div>
             </div>
             <ScrollArea className="h-[calc(100vh-340px)]">
-              {filteredChecklists.map((checklist) => (
-                <div key={checklist.id} className="grid grid-cols-5 gap-4 p-4 items-center border-b">
-                  <div className="col-span-2">
-                    <div className="font-medium">{checklist.title}</div>
-                    <div className="text-sm text-muted-foreground mt-1">
-                      {checklist.items} itens
-                      {checklist.isTemplate && (
-                        <Badge variant="secondary" className="ml-2">Template</Badge>
-                      )}
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="grid grid-cols-5 gap-4 p-4 items-center border-b">
+                    <div className="col-span-2">
+                      <Skeleton className="h-6 w-3/4 mb-1" />
+                      <Skeleton className="h-4 w-1/2" />
+                    </div>
+                    <div className="hidden md:block">
+                      <Skeleton className="h-4 w-32" />
+                    </div>
+                    <div className="hidden md:block">
+                      <Skeleton className="h-4 w-24" />
+                    </div>
+                    <div className="flex justify-end">
+                      <Skeleton className="h-9 w-16 mr-1" />
+                      <Skeleton className="h-9 w-9" />
                     </div>
                   </div>
-                  <div className="hidden md:block text-sm">
-                    {checklist.createdBy}
+                ))
+              ) : (
+                checklists.map((checklist) => (
+                  <div key={checklist.id} className="grid grid-cols-5 gap-4 p-4 items-center border-b">
+                    <div className="col-span-2">
+                      <div className="font-medium">{checklist.title}</div>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        {checklist.items} itens
+                        {checklist.isTemplate && (
+                          <Badge variant="secondary" className="ml-2">Template</Badge>
+                        )}
+                      </div>
+                    </div>
+                    <div className="hidden md:block text-sm">
+                      {checklist.collaborators[0]?.name || "N/A"}
+                    </div>
+                    <div className="hidden md:block text-sm">
+                      {new Date(checklist.created_at).toLocaleDateString()}
+                    </div>
+                    <div className="flex justify-end">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleOpenChecklist(checklist.id)}
+                      >
+                        Editar
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>Duplicar</DropdownMenuItem>
+                          <DropdownMenuItem>Compartilhar</DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => handleDelete(checklist.id, checklist.title)}
+                          >
+                            Excluir
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
-                  <div className="hidden md:block text-sm">
-                    {new Date(checklist.createdAt).toLocaleDateString()}
-                  </div>
-                  <div className="flex justify-end">
-                    <Button variant="ghost" size="sm">
-                      Editar
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Duplicar</DropdownMenuItem>
-                        <DropdownMenuItem>Compartilhar</DropdownMenuItem>
-                        <DropdownMenuItem>Excluir</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
               
-              {filteredChecklists.length === 0 && (
+              {!isLoading && checklists.length === 0 && (
                 <div className="text-center py-10">
                   <Clipboard className="mx-auto h-12 w-12 text-muted-foreground" />
                   <h3 className="mt-4 text-lg font-semibold">Nenhum checklist encontrado</h3>
@@ -285,6 +309,13 @@ export default function Checklists() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <DeleteChecklistDialog 
+        checklistId={deleteDialog.checklistId}
+        checklistTitle={deleteDialog.checklistTitle}
+        isOpen={deleteDialog.open}
+        onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
+      />
     </div>
   );
 }
