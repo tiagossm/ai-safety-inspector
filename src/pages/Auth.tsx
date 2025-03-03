@@ -37,10 +37,14 @@ const Auth = () => {
   // Verificar se já existe uma sessão
   useEffect(() => {
     const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        // Usuário já está logado, redirecionar para dashboard
-        navigate("/dashboard");
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          // Usuário já está logado, redirecionar para dashboard
+          navigate("/dashboard");
+        }
+      } catch (error) {
+        console.error("Error checking session:", error);
       }
     };
     checkSession();
@@ -133,6 +137,9 @@ const Auth = () => {
           title: "Cadastro realizado com sucesso!",
           description: "Verifique seu email para confirmar o cadastro.",
         });
+        
+        // Reset loading state after sign up
+        setLoading(false);
       } else {
         // Login
         console.log("Tentando login com:", email);
@@ -158,7 +165,21 @@ const Auth = () => {
         // Login bem-sucedido
         console.log("User signed in:", data.user?.email);
         setLoginAttempts(0);
-        navigate("/dashboard");
+        
+        // Important: Show success toast before navigation
+        toast({
+          title: "Login realizado com sucesso",
+          description: "Você será redirecionado para o dashboard",
+        });
+        
+        // Wait a moment before redirecting to allow toast to show
+        setTimeout(() => {
+          navigate("/dashboard");
+          // Reset loading state after redirect
+          setLoading(false);
+        }, 500);
+        
+        return; // Important: Avoid resetting loading before redirect
       }
     } catch (error: any) {
       let errorMessage = "Erro ao processar solicitação";
@@ -180,7 +201,8 @@ const Auth = () => {
         description: errorMessage,
         variant: "destructive",
       });
-    } finally {
+      
+      // Reset loading state on error
       setLoading(false);
     }
   };
@@ -324,7 +346,7 @@ const Auth = () => {
             </div>
           )}
 
-          <div>
+          <div className="space-y-4">
             <Button
               type="submit"
               className="w-full relative group overflow-hidden transition-all"
@@ -342,6 +364,17 @@ const Auth = () => {
               )}
               <span className="absolute bottom-0 left-0 w-full h-1 bg-primary-foreground transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform"></span>
             </Button>
+            
+            {loading && (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full mt-2"
+                onClick={() => setLoading(false)}
+              >
+                Cancelar
+              </Button>
+            )}
           </div>
 
           <div className="text-center">
