@@ -57,11 +57,9 @@ port = 54327
 vector_port = 54328
 backend = "postgres"
 
-# Fixing the experimental section syntax
 [experimental]
-# Removed the invalid multiuser_enabled key
+# Config options for experimental features
 
-# Fixing the functions configuration syntax
 [functions]
 [functions.check-permissions]
 verify_jwt = true
