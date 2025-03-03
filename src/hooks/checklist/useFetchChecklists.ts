@@ -59,6 +59,7 @@ export function useFetchChecklists() {
               
             if (itemsError) throw itemsError;
             
+            // Cast the database record to our Checklist type with additional fields
             const enrichedChecklist: Checklist = {
               ...checklist,
               items: count || 0,
@@ -76,6 +77,7 @@ export function useFetchChecklists() {
             return enrichedChecklist;
           } catch (err) {
             console.error(`Erro ao buscar itens para checklist ${checklist.id}:`, err);
+            // Cast the database record to our Checklist type with fallback values
             const fallbackChecklist: Checklist = {
               ...checklist,
               // Mock data for UI
