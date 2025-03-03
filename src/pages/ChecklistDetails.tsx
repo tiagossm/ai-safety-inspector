@@ -1,14 +1,13 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Checklist, ChecklistItem } from "@/types/checklist";
-import { ChecklistHeader } from "@/components/checklists/ChecklistHeader";
-import { ChecklistForm } from "@/components/checklists/ChecklistForm";
-import { ChecklistItemsList } from "@/components/checklists/ChecklistItemsList";
-import { AddChecklistItemForm } from "@/components/checklists/AddChecklistItemForm";
+import ChecklistHeader from "@/components/checklists/ChecklistHeader";
+import ChecklistForm from "@/components/checklists/ChecklistForm";
+import ChecklistItemsList from "@/components/checklists/ChecklistItemsList";
+import AddChecklistItemForm from "@/components/checklists/AddChecklistItemForm";
 
 type JsonValue = string | number | boolean | null | { [key: string]: JsonValue } | JsonValue[];
 type Json = JsonValue;
@@ -88,11 +87,30 @@ export default function ChecklistDetails() {
         throw error;
       }
 
-      return data.map(item => ({
-        ...item,
-        tipo_resposta: item.tipo_resposta as "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla",
-        opcoes: item.opcoes ? (item.opcoes as string[]) : null
-      }));
+      return data.map(item => {
+        // Convert opcoes from Json to string[] if it exists
+        let parsedOptions: string[] | null = null;
+        if (item.opcoes) {
+          try {
+            // If opcoes is already an array, use it directly
+            if (Array.isArray(item.opcoes)) {
+              parsedOptions = item.opcoes as string[];
+            } 
+            // If it's a JSON string, parse it
+            else if (typeof item.opcoes === 'string') {
+              parsedOptions = JSON.parse(item.opcoes);
+            }
+          } catch (e) {
+            console.error("Error parsing opcoes:", e);
+          }
+        }
+
+        return {
+          ...item,
+          tipo_resposta: item.tipo_resposta as "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla",
+          opcoes: parsedOptions
+        };
+      });
     },
     enabled: !!id,
   });
@@ -190,10 +208,11 @@ export default function ChecklistDetails() {
       return data[0];
     },
     onSuccess: (data) => {
-      const addedItem = {
+      const addedItem: ChecklistItem = {
         ...data,
         tipo_resposta: data.tipo_resposta as "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla",
-        opcoes: data.opcoes ? (data.opcoes as string[]) : null
+        // Convert opcoes to proper format if needed
+        opcoes: data.opcoes ? (Array.isArray(data.opcoes) ? data.opcoes : []) : null
       };
       setItems([...items, addedItem]);
       toast.success("Item adicionado com sucesso");

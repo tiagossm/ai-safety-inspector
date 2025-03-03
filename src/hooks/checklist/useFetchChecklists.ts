@@ -63,7 +63,7 @@ export function useFetchChecklists() {
               ...checklist,
               items: count || 0,
               // Get the responsible name from the users map
-              responsible_name: checklist.responsible_id ? usersMap[checklist.responsible_id as string] || 'Usuário não encontrado' : null,
+              responsible_name: checklist.responsible_id ? usersMap[checklist.responsible_id as string] || 'Usuário não encontrado' : undefined,
               // Ensure status_checklist is always "ativo" or "inativo"
               status_checklist: checklist.status_checklist === "inativo" ? "inativo" : "ativo",
               // Ensure is_template is boolean
