@@ -76,6 +76,23 @@ export const SessionChecker = () => {
       await checkSession();
     };
 
+    const checkSessionPeriodically = () => {
+      const interval = setInterval(async () => {
+        console.log("🔄 Verificando sessão ativa...");
+        const { data, error } = await supabase.auth.getSession();
+
+        if (error || !data.session) {
+          console.warn("⚠️ Sessão expirada ou inválida. Fazendo logout...");
+          
+          // 🚀 Garante que a sessão será completamente encerrada antes de redirecionar
+          await supabase.auth.signOut();
+          navigate("/login");
+        }
+      }, 5 * 60 * 1000); // 🔄 Verifica a sessão a cada 5 minutos
+
+      return interval;
+    };
+
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log(`🔄 Auth state changed: ${event}`);
@@ -87,10 +104,12 @@ export const SessionChecker = () => {
     );
 
     startSessionCheck();
+    const sessionCheckInterval = checkSessionPeriodically();
 
     return () => {
       console.log("🔄 Removendo listener de autenticação...");
       authListener?.subscription?.unsubscribe?.();
+      clearInterval(sessionCheckInterval);
     };
   }, []);
 
