@@ -49,25 +49,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (userError) {
               console.error("Erro ao buscar dados do usuário:", userError);
               
-              // Check if the error is due to missing company_id column
-              if (userError.message && userError.message.includes("column 'company_id' does not exist")) {
-                console.warn("A coluna 'company_id' não existe na tabela users. Usando valores padrão.");
-                
-                // Default values if we can't access user data due to missing columns
-                const enhancedUser: AuthUser = {
-                  ...data.session.user,
-                  role: "user",
-                  tier: "technician",
-                  company_id: undefined
-                };
-                
-                setUser(enhancedUser);
-                localStorage.setItem("authUser", JSON.stringify(enhancedUser));
-                setLoading(false);
-                return;
-              }
-              
-              // For other errors, use default values
+              // Default values for user regardless of specific error
               const enhancedUser: AuthUser = {
                 ...data.session.user,
                 role: "user",
@@ -131,28 +113,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           if (userError) {
             console.error("Erro ao buscar dados do usuário:", userError);
             
-            // Check if the error is due to missing company_id column
-            if (userError.message && userError.message.includes("column 'company_id' does not exist")) {
-              console.warn("A coluna 'company_id' não existe na tabela users. Usando valores padrão.");
-              
-              // Default values if we can't access user data due to missing columns
-              const enhancedUser: AuthUser = {
-                ...session.user,
-                role: "user",
-                tier: "technician",
-                company_id: undefined
-              };
-              
-              setUser(enhancedUser);
-              localStorage.setItem("authUser", JSON.stringify(enhancedUser));
-              return;
-            }
-            
-            // Default values if we can't access user data for other reasons
+            // Default values for user regardless of specific error
             const enhancedUser: AuthUser = {
               ...session.user,
               role: "user",
-              tier: "technician"
+              tier: "technician",
+              company_id: undefined
             };
             
             setUser(enhancedUser);

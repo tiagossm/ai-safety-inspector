@@ -27,7 +27,7 @@ export function queueForSync(operation: any): void {
 }
 
 // Add this function to fix the import in main.tsx
-export function initOfflineSystem(): () => void {
+export function initOfflineSystem(): void {
   console.log('Initializing offline system...');
   
   // Listen for online events
@@ -46,7 +46,6 @@ export function initOfflineSystem(): () => void {
     setTimeout(handleOnline, 3000);
   }
   
-  return () => {
-    window.removeEventListener('online', handleOnline);
-  };
+  // Return cleanup function
+  window.removeEventListener('online', handleOnline);
 }
