@@ -18,12 +18,6 @@ export function useFetchChecklists() {
       }
       console.log("Usuário estendido:", extendedUser);
 
-      // Se não houver company_id, retorne um array vazio
-      if (!extendedUser.company_id) {
-        console.warn("Nenhuma empresa associada ao usuário. Retornando lista vazia.");
-        return [];
-      }
-
       // Buscar checklists filtrando por user_id e company_id
       const { data: checklists, error } = await supabase
         .from("checklists")
