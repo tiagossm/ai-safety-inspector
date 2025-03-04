@@ -2,8 +2,13 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+interface User {
+  id: string;
+  name: string;
+}
+
 export function useFetchUsers() {
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -19,8 +24,8 @@ export function useFetchUsers() {
           .order('name');
           
         if (error) throw error;
-        if (isMounted) {
-          setUsers(data || []);
+        if (isMounted && data) {
+          setUsers(data as User[]);
         }
       } catch (error) {
         console.error("Erro ao buscar usuários:", error);

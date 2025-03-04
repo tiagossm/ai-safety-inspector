@@ -1,27 +1,41 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Checklist } from "@/types/checklist";
 import { generateMockCollaborators } from "@/utils/checklistUtils";
 
 export function useFetchChecklists() {
-  return useQuery({
+  return useQuery<Checklist[], Error>({
     queryKey: ["checklists"],
     queryFn: async () => {
       console.log("🔍 Buscando checklists...");
 
       // Obter o usuário autenticado
-      const user = supabase.auth.user();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new Error("Usuário não autenticado");
       }
 
-      // Buscar checklists filtrando por user_id e company_id
-      const { data: checklists, error } = await supabase
+      // Buscar o ID da empresa do usuário
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("company_id")
+        .eq("id", user.id)
+        .single();
+
+      const company_id = userError ? null : userData?.company_id;
+
+      // Buscar checklists filtrando por user_id e company_id se disponível
+      let query = supabase
         .from("checklists")
         .select("*")
-        .eq("user_id", user.id)
-        .eq("company_id", user.company_id)
-        .order("created_at", { ascending: false });
+        .eq("user_id", user.id);
+
+      if (company_id) {
+        query = query.eq("company_id", company_id);
+      }
+
+      const { data: checklists, error } = await query.order("created_at", { ascending: false });
 
       if (error) {
         console.error("❌ Erro ao buscar checklists:", error);

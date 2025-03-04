@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -15,14 +16,47 @@ export function useAuthState() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const { data, error } = await supabase.auth.getUser();
-      if (error) {
-        console.error("Erro ao buscar usuário:", error);
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (error) {
+          console.error("Erro ao buscar usuário:", error);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+
+        if (data.user) {
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', data.user.id)
+              .single();
+
+            // Create enhanced user object
+            const enhancedUser: AuthUser = {
+              ...data.user,
+              // Default values in case of error or missing data
+              role: userError ? 'user' : userData?.role || 'user',
+              tier: userError ? 'technician' : userData?.tier || 'technician',
+              company_id: userError ? undefined : userData?.company_id
+            };
+
+            setUser(enhancedUser);
+          } catch (err) {
+            console.error("Error fetching user data:", err);
+            // Still set the basic user if there's an error
+            setUser(data.user as AuthUser);
+          }
+        } else {
+          setUser(null);
+        }
+      } catch (err) {
+        console.error("Error in useAuthState:", err);
         setUser(null);
-      } else {
-        setUser(data.user as AuthUser);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchUser();

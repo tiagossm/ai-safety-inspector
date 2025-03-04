@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,8 +38,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (data?.session?.user) {
           console.log("✅ Sessão restaurada do Supabase");
-          setUser(data.session.user);
-          localStorage.setItem("authUser", JSON.stringify(data.session.user));
+          
+          // Get additional user data from the users table
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', data.session.user.id)
+              .single();
+
+            // Create enhanced user object
+            const enhancedUser: AuthUser = {
+              ...data.session.user,
+              // Default values in case of error or missing data
+              role: userError ? 'user' : userData?.role || 'user',
+              tier: userError ? 'technician' : userData?.tier || 'technician',
+              company_id: userError ? undefined : userData?.company_id
+            };
+
+            setUser(enhancedUser);
+            localStorage.setItem("authUser", JSON.stringify(enhancedUser));
+          } catch (err) {
+            console.error("❌ Error fetching user data:", err);
+            // Still set the basic user if there's an error fetching additional data
+            setUser(data.session.user as AuthUser);
+            localStorage.setItem("authUser", JSON.stringify(data.session.user));
+          }
         }
       } catch (error) {
         console.error("❌ Erro ao inicializar autenticação:", error);
@@ -53,11 +78,34 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // **Configura eventos de autenticação**
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log(`🔄 Estado de autenticação alterado: ${event}`);
+      
       if (session?.user) {
-        setUser(session.user);
-        localStorage.setItem("authUser", JSON.stringify(session.user));
+        try {
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          // Create enhanced user object
+          const enhancedUser: AuthUser = {
+            ...session.user,
+            // Default values in case of error or missing data
+            role: userError ? 'user' : userData?.role || 'user',
+            tier: userError ? 'technician' : userData?.tier || 'technician',
+            company_id: userError ? undefined : userData?.company_id
+          };
+
+          setUser(enhancedUser);
+          localStorage.setItem("authUser", JSON.stringify(enhancedUser));
+        } catch (err) {
+          console.error("❌ Error fetching user data:", err);
+          // Still set the basic user if there's an error fetching additional data
+          setUser(session.user as AuthUser);
+          localStorage.setItem("authUser", JSON.stringify(session.user));
+        }
       } else {
         setUser(null);
         localStorage.removeItem("authUser");
