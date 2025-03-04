@@ -10,7 +10,7 @@ interface UserBasic {
 export function useFetchUsers(companyId?: string) {
   return useQuery<UserBasic[], Error>({
     queryKey: ["users", companyId],
-    queryFn: async () => {
+    queryFn: async (): Promise<UserBasic[]> => {
       console.log("Fetching users for responsible selection");
       
       // Base query to get users

@@ -25,3 +25,28 @@ export function queueForSync(operation: any): void {
     console.error('Failed to queue operation for sync:', error);
   }
 }
+
+// Add this function to fix the import in main.tsx
+export function initOfflineSystem(): () => void {
+  console.log('Initializing offline system...');
+  
+  // Listen for online events
+  const handleOnline = () => {
+    console.log('Back online, attempting to sync');
+    syncWithServer().then(result => {
+      console.log('Sync result:', result);
+    });
+  };
+  
+  window.addEventListener('online', handleOnline);
+  
+  // Also check if we're already online
+  if (navigator.onLine) {
+    // Wait a bit to make sure we're properly connected
+    setTimeout(handleOnline, 3000);
+  }
+  
+  return () => {
+    window.removeEventListener('online', handleOnline);
+  };
+}

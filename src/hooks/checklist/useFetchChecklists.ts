@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Checklist } from "@/types/checklist";
@@ -10,7 +9,7 @@ export function useFetchChecklists() {
   
   return useQuery<Checklist[], Error>({
     queryKey: ["checklists", user?.id, user?.company_id],
-    queryFn: async () => {
+    queryFn: async (): Promise<any[]> => {
       console.log("🔍 Buscando checklists...");
       console.log("👤 Usuario logado:", user?.id);
       console.log("🏢 Empresa do usuário:", user?.company_id);

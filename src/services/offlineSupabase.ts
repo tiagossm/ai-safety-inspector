@@ -1,5 +1,5 @@
 
-// Simple type for database operations that won't cause deep instantiation issues
+// Simple type for database operations
 export type SimpleDbOperation = {
   type: 'select' | 'insert' | 'update' | 'delete' | 'upsert';
   table: string;
@@ -8,18 +8,36 @@ export type SimpleDbOperation = {
   options?: any;
 };
 
-// Simplified types to avoid recursive complexity
-export type TableMethods = {
+// Simplified table methods interface to avoid recursive complexity
+export interface TableMethods {
   select: (columns?: string) => { 
     eq: (column: string, value: any) => { 
-      single: () => Promise<any>;
-      maybeSingle: () => Promise<any>;
+      single: () => Promise<{ data: any | null, error: any | null }>;
+      maybeSingle: () => Promise<{ data: any | null, error: any | null }>;
     } 
   };
-  insert: (data: any) => Promise<any>;
-  update: (data: any) => { eq: (column: string, value: any) => Promise<any> };
-  delete: () => { eq: (column: string, value: any) => Promise<any> };
-};
+  insert: (data: any) => Promise<{ data: any | null, error: any | null }>;
+  update: (data: any) => { 
+    eq: (column: string, value: any) => Promise<{ data: any | null, error: any | null }> 
+  };
+  delete: () => { 
+    eq: (column: string, value: any) => Promise<{ data: any | null, error: any | null }> 
+  };
+}
+
+// Auth methods interface
+export interface AuthMethods {
+  getSession: () => Promise<{ data: any | null, error: any | null }>;
+  getUser: () => Promise<{ data: { user: any | null }, error: any | null }>;
+  signOut: () => Promise<{ error: any | null }>;
+  onAuthStateChange: () => { 
+    data: { 
+      subscription: { 
+        unsubscribe: () => void 
+      } 
+    } 
+  };
+}
 
 // Mock Supabase-like interface for offline use
 export const offlineSupabase = {

@@ -37,10 +37,27 @@ export function useAuthState() {
               
             if (userDataError) {
               console.error("Erro ao buscar dados complementares do usuário:", userDataError);
-              // If error accessing specific columns, use default values
+              
+              // If there's an error accessing the columns, check if it's due to missing columns
+              if (userDataError.message && userDataError.message.includes("column 'company_id' does not exist")) {
+                console.warn("A coluna 'company_id' não existe na tabela users. Usando valores padrão.");
+                
+                // Default values if user data fetch fails due to missing columns
+                const enhancedUser: AuthUser = {
+                  ...data.user,
+                  role: "user",
+                  tier: "technician",
+                  company_id: undefined
+                };
+                
+                setUser(enhancedUser);
+                setLoading(false);
+                return;
+              }
+              
+              // For other errors, use default values
               const enhancedUser: AuthUser = {
                 ...data.user,
-                // Default values if user data fetch fails
                 role: "user",
                 tier: "technician"
               };

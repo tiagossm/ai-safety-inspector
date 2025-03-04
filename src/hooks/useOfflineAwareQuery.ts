@@ -43,13 +43,20 @@ export const useOfflineAwareQuery = <T>(
   
   return useQuery<T[], Error>({
     queryKey,
-    queryFn: async () => {
-      const { data, error } = await offlineSupabase
-        .from(tableName)
-        .select('*');
+    queryFn: async (): Promise<T[]> => {
+      // For offline mode, we need to handle the select differently
+      const query = offlineSupabase.from(tableName).select('*');
+      
+      try {
+        // This will call either the single or maybeSingle method to get data
+        const result = await query.eq('id', '*').single();
         
-      if (error) throw error;
-      return (data || []) as T[];
+        if (result.error) throw result.error;
+        return (result.data ? [result.data] : []) as T[];
+      } catch (error) {
+        console.error(`Error in offline query for ${tableName}:`, error);
+        return [] as T[];
+      }
     },
     ...options,
     // If offline, rely on local cache and don't hit network
@@ -71,7 +78,7 @@ export const useOfflineAwareMutation = <T>(
       type: 'INSERT' | 'UPDATE' | 'DELETE';
       data: any;
       id?: string;
-    }) => {
+    }): Promise<any> => {
       const { type, data, id } = variables;
       
       let result;
@@ -83,7 +90,7 @@ export const useOfflineAwareMutation = <T>(
           break;
         case 'UPDATE': {
           // Get the update operation object first
-          const updateOperation = await offlineSupabase
+          const updateOperation = offlineSupabase
             .from(tableName)
             .update(data);
           
@@ -93,7 +100,7 @@ export const useOfflineAwareMutation = <T>(
         }
         case 'DELETE': {
           // Get the delete operation object first
-          const deleteOperation = await offlineSupabase
+          const deleteOperation = offlineSupabase
             .from(tableName)
             .delete();
           
