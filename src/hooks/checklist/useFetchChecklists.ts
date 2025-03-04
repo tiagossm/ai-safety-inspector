@@ -9,10 +9,18 @@ export function useFetchChecklists() {
     queryFn: async () => {
       console.log("🔍 Buscando checklists...");
 
-      // Buscar checklists com os novos campos
+      // Obter o usuário autenticado
+      const user = supabase.auth.user();
+      if (!user) {
+        throw new Error("Usuário não autenticado");
+      }
+
+      // Buscar checklists filtrando por user_id e company_id
       const { data: checklists, error } = await supabase
         .from("checklists")
         .select("*")
+        .eq("user_id", user.id)
+        .eq("company_id", user.company_id)
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -58,7 +66,7 @@ export function useFetchChecklists() {
 
             if (itemsError) throw itemsError;
 
-            // Garantir que os novos campos estão presentes
+            // Enriquecer o checklist com os novos campos
             const enrichedChecklist: Checklist = {
               ...checklist,
               items: count || 0,
