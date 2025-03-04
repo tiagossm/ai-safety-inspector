@@ -18,7 +18,7 @@ export type Checklist = {
   collaborators?: CollaboratorType[];
   items?: number;
   permissions?: string[];
-  // Adding missing properties needed in ChecklistCard and ChecklistDetailsContainer
+  // Adding properties needed in ChecklistCard and ChecklistDetailsContainer
   items_total?: number;
   items_completed?: number;
 };

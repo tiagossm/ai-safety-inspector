@@ -90,10 +90,16 @@ export default function ChecklistDetailsContainer() {
 
   // Função para adicionar um novo item ao checklist
   const handleAddItem = (newItem: Partial<ChecklistItem>) => {
-    // Ensure opcoes is always an array or null
-    const sanitizedOptions = newItem.opcoes 
-      ? (Array.isArray(newItem.opcoes) ? newItem.opcoes : [String(newItem.opcoes)]) 
-      : null;
+    // Ensure opcoes is always an array of strings or null
+    let sanitizedOptions: string[] | null = null;
+    
+    if (newItem.opcoes) {
+      if (Array.isArray(newItem.opcoes)) {
+        sanitizedOptions = newItem.opcoes.map(option => String(option));
+      } else {
+        sanitizedOptions = [String(newItem.opcoes)];
+      }
+    }
       
     addItemMutation.mutate({
       ...newItem,
@@ -103,7 +109,7 @@ export default function ChecklistDetailsContainer() {
         const addedItem: ChecklistItem = {
           ...data,
           tipo_resposta: data.tipo_resposta as "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla",
-          opcoes: data.opcoes ? (Array.isArray(data.opcoes) ? data.opcoes : []) : null
+          opcoes: data.opcoes ? (Array.isArray(data.opcoes) ? data.opcoes.map(String) : [String(data.opcoes)]) : null
         };
         
         setItems((prevItems) => [...prevItems, addedItem]);
@@ -163,7 +169,7 @@ export default function ChecklistDetailsContainer() {
 
   // Calculate progress or provide defaults
   const totalItems = items.length;
-  const completedItems = 0; // This would need to be calculated from inspection data
+  const completedItems = checklist.items_completed || 0;
   const progressPercentage = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
 
   return (
