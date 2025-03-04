@@ -1,12 +1,11 @@
-
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { AuthUser } from "./useAuthState";
 import { useAuthSession } from "./useAuthSession";
 
-// User data cache for TOKEN_REFRESHED events
-let cachedUserData: Partial<AuthUser> = null;
+// Cache de usuário para eventos TOKEN_REFRESHED
+let cachedUserData: Partial<AuthUser> | null = null;
 
 export function useAuthEvents(
   setUser: (user: AuthUser | null) => void,
@@ -19,7 +18,15 @@ export function useAuthEvents(
     let mounted = true;
     console.log("🔄 AuthProvider montado - Configurando eventos de autenticação");
 
-    // Listen for changes on auth state (sign in, sign out, etc.)
+    // **🔹 Restaurar sessão salva no localStorage**
+    const storedUser = localStorage.getItem("authUser");
+    if (storedUser) {
+      console.log("✅ Sessão restaurada do localStorage");
+      setUser(JSON.parse(storedUser));
+      setLoading(false);
+    }
+
+    // **🔹 Monitorar mudanças na autenticação**
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("🔄 Estado de autenticação alterado:", event);
       
@@ -28,63 +35,62 @@ export function useAuthEvents(
       if (event === 'SIGNED_IN' && session?.user) {
         console.log("✅ Evento SIGNED_IN recebido com usuário:", session.user.email);
         
-        // Clear any cached user data
+        // Resetar cache
         cachedUserData = null;
-        
-        // Buscar dados adicionais
+
+        // Buscar dados adicionais do usuário
         const userData = await fetchUserData(session.user.id);
-        
-        // Combinar os dados com type assertion
         const enhancedUser = {
           ...session.user,
           ...userData
         } as AuthUser;
         
         setUser(enhancedUser);
-        
-        // Redirect based on user tier
+        localStorage.setItem("authUser", JSON.stringify(enhancedUser)); // **Salvar no localStorage**
+
+        // **🔹 Redirecionar com base no tipo de usuário**
         if (enhancedUser.tier === "super_admin") {
           navigate("/admin/dashboard");
         } else {
           navigate("/dashboard");
         }
       } 
+
       else if (event === 'SIGNED_OUT') {
         console.log("ℹ️ Evento SIGNED_OUT recebido");
-        // Clear cache on sign out
         cachedUserData = null;
         setUser(null);
+        localStorage.removeItem("authUser"); // **Remover do localStorage**
         navigate("/auth");
       } 
+
       else if (event === 'TOKEN_REFRESHED') {
-        console.log("ℹ️ Token atualizado - Usando dados em cache quando possível");
-        
-        // Only update the user data if we don't have cached data
-        // or if critical user info is missing
+        console.log("ℹ️ Token atualizado - Verificando cache");
+
         if (session?.user) {
-          // Use cached user data if available
           if (cachedUserData) {
             setUser({
               ...session.user,
               ...cachedUserData
             } as AuthUser);
+            localStorage.setItem("authUser", JSON.stringify(session.user)); // **Atualizar localStorage**
           } else {
-            // If no cache, fetch user data and cache it
             const userData = await fetchUserData(session.user.id);
             cachedUserData = userData;
-            
+
             const enhancedUser = {
               ...session.user,
               ...userData
             } as AuthUser;
             
             setUser(enhancedUser);
+            localStorage.setItem("authUser", JSON.stringify(enhancedUser)); // **Armazenar sessão**
           }
         }
       }
+
       else if (event === 'USER_UPDATED') {
-        console.log(`ℹ️ Evento USER_UPDATED recebido`);
-        // Always clear cache and fetch fresh data for USER_UPDATED
+        console.log("ℹ️ Evento USER_UPDATED recebido");
         cachedUserData = null;
         
         if (session?.user) {
@@ -96,6 +102,7 @@ export function useAuthEvents(
           } as AuthUser;
           
           setUser(enhancedUser);
+          localStorage.setItem("authUser", JSON.stringify(enhancedUser)); // **Atualizar dados do usuário**
         }
       }
       

@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthState, AuthUser } from "@/hooks/auth/useAuthState";
@@ -25,18 +24,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { checkSession, logout } = useAuthSession();
   const navigate = useNavigate();
 
-  // Inicialização - verificar sessão atual
   useEffect(() => {
     let mounted = true;
     console.log("🔄 AuthProvider montado - Verificando sessão do usuário");
 
     const initializeAuth = async () => {
       try {
+        // Recupera a sessão salva no localStorage antes de checar no Supabase
+        const storedUser = localStorage.getItem("authUser");
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+          setLoading(false);
+          console.log("✅ Sessão restaurada do localStorage");
+          return;
+        }
+
         const redirectTo = await checkSession(
-          (user) => { if (mounted) setUser(user); },
+          (user) => { 
+            if (mounted) {
+              setUser(user);
+              localStorage.setItem("authUser", JSON.stringify(user)); // Salva no localStorage
+            }
+          },
           (loading) => { if (mounted) setLoading(loading); }
         );
-        
+
         if (mounted && redirectTo) {
           console.log("🔄 Redirecionando para:", redirectTo);
           navigate(redirectTo);
@@ -56,10 +68,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("🔄 Desmontando AuthProvider");
       mounted = false;
     };
-  }, [navigate]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [navigate]); 
 
   // Configurar eventos de autenticação
-  useAuthEvents(setUser, setLoading);
+  useAuthEvents((user) => {
+    if (user) {
+      setUser(user);
+      localStorage.setItem("authUser", JSON.stringify(user));
+    } else {
+      localStorage.removeItem("authUser");
+    }
+  }, setLoading);
 
   return (
     <AuthContext.Provider value={{ user, loading, logout }}>
