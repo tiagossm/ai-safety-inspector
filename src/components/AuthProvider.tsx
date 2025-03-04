@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuthEvents } from "@/hooks/auth/useAuthEvents";
 import { toast } from "sonner";
 import { AuthUser } from "@/hooks/auth/useAuthState";
 
@@ -19,35 +18,20 @@ const AuthContext = createContext<AuthContextType>({
 
 export const useAuth = () => useContext(AuthContext);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    const storedUser = localStorage.getItem("authUser");
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // **Verifica a sessão ao montar o componente**
   useEffect(() => {
-    let mounted = true;
-
     const initializeAuth = async () => {
       console.log("🔄 Iniciando verificação de sessão...");
 
-      // **Evita re-renderização desnecessária**
-      if (user) {
-        console.log("✅ Usuário já autenticado, ignorando nova verificação.");
-        setLoading(false);
-        return;
-      }
-
       try {
-        // **Verifica se há sessão armazenada**
-        const storedUser = localStorage.getItem("authUser");
-        if (storedUser) {
-          console.log("✅ Sessão restaurada do localStorage");
-          setUser(JSON.parse(storedUser));
-          setLoading(false);
-          return;
-        }
-
-        // **Se não houver sessão no localStorage, verifica com o Supabase**
         const { data, error } = await supabase.auth.getSession();
         if (error) throw error;
 
@@ -60,29 +44,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error("❌ Erro ao inicializar autenticação:", error);
         toast.error("Erro ao verificar sessão. Faça login novamente.");
       } finally {
-        if (mounted) setLoading(false);
+        setLoading(false);
       }
     };
 
     initializeAuth();
+  }, []);
+
+  // **Configura eventos de autenticação**
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log(`🔄 Estado de autenticação alterado: ${event}`);
+      if (session?.user) {
+        setUser(session.user);
+        localStorage.setItem("authUser", JSON.stringify(session.user));
+      } else {
+        setUser(null);
+        localStorage.removeItem("authUser");
+      }
+      setLoading(false);
+    });
 
     return () => {
-      console.log("🔄 Desmontando AuthProvider");
-      mounted = false;
+      authListener?.subscription.unsubscribe();
     };
-  }, []); // **✅ Executa apenas uma vez**
+  }, []);
 
-  // **🔹 Adiciona eventos de autenticação**
-  useAuthEvents(setUser, setLoading);
+  // **Função de logout**
+  const logout = async () => {
+    await supabase.auth.signOut();
+    localStorage.removeItem("authUser");
+    setUser(null);
+    navigate("/auth");
+  };
 
   return (
-    <AuthContext.Provider value={{ user, loading, logout: async () => {
-      await supabase.auth.signOut();
-      localStorage.removeItem("authUser");
-      setUser(null);
-      navigate("/auth");
-    } }}>
+    <AuthContext.Provider value={{ user, loading, logout }}>
       {!loading && children}
     </AuthContext.Provider>
   );
-}
+};
