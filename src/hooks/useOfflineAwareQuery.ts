@@ -56,7 +56,7 @@ export const useOfflineAwareQuery = <T>(
   });
 };
 
-// Offline-aware mutation hook
+// Offline-aware mutation hook with proper Promise handling
 export const useOfflineAwareMutation = <T>(
   tableName: string,
   queryKey: QueryKey,
@@ -81,20 +81,22 @@ export const useOfflineAwareMutation = <T>(
             .insert(data);
           break;
         case 'UPDATE': {
-          const updateOperation = await offlineSupabase
+          // Create the update operation
+          const updateOperation = offlineSupabase
             .from(tableName)
             .update(data);
           
-          // Make sure to await the result of the update operation
+          // Await the result of the update operation with eq chained
           result = await updateOperation.eq('id', id || data.id);
           break;
         }
         case 'DELETE': {
-          const deleteOperation = await offlineSupabase
+          // Create the delete operation
+          const deleteOperation = offlineSupabase
             .from(tableName)
             .delete();
           
-          // Make sure to await the result of the delete operation
+          // Await the result of the delete operation with eq chained
           result = await deleteOperation.eq('id', id || data.id);
           break;
         }
