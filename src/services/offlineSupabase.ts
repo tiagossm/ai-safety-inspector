@@ -9,18 +9,15 @@ interface OfflineOperationResult {
   error: null | Error;
 }
 
-// Define operation functions using type aliases instead of interfaces to avoid recursion
+// Define simple function types without complex nesting
 type SelectFunction = (columns?: string) => Promise<OfflineOperationResult>;
 type EqFunction = (column: string, value: any) => Promise<OfflineOperationResult>;
-type UpdateFunction = (data: any) => { eq: EqFunction };
-type DeleteFunction = () => { eq: EqFunction };
-type InsertFunction = (data: any) => Promise<OfflineOperationResult>;
 
-// Interface for table operations
+// Interfaces with direct function signatures to avoid deep nesting
 interface TableOperations {
-  insert: InsertFunction;
-  update: UpdateFunction;
-  delete: DeleteFunction;
+  insert: (data: any) => Promise<OfflineOperationResult>;
+  update: (data: any) => { eq: EqFunction };
+  delete: () => { eq: EqFunction };
   select: SelectFunction;
 }
 
