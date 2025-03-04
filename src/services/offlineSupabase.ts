@@ -9,9 +9,21 @@ interface OfflineOperationResult {
   error: null | Error;
 }
 
+// Type definitions for the table operations
+type BasicCallback = () => Promise<OfflineOperationResult>;
+type EqMethod = (column: string, value: any) => Promise<OfflineOperationResult>;
+
+// Interface for the table methods
+interface TableMethods {
+  insert: (data: any) => Promise<OfflineOperationResult>;
+  update: (data: any) => { eq: EqMethod };
+  delete: () => { eq: EqMethod };
+  select: (columns?: string) => Promise<OfflineOperationResult>;
+}
+
 // Offline-capable version of supabase operations
 export const offlineSupabase = {
-  from: (tableNameParam: string) => {
+  from: (tableNameParam: string): TableMethods => {
     // Type check the table name
     if (!isValidTable(tableNameParam)) {
       console.error(`Invalid table name: ${tableNameParam}`);
@@ -21,13 +33,13 @@ export const offlineSupabase = {
           data: null, 
           error: new Error(`Invalid table: ${tableNameParam}`) 
         }),
-        update: async (data: any) => ({ 
+        update: (data: any) => ({ 
           eq: async (column: string, value: any): Promise<OfflineOperationResult> => ({ 
             data: null, 
             error: new Error(`Invalid table: ${tableNameParam}`) 
           }) 
         }),
-        delete: async () => ({ 
+        delete: () => ({ 
           eq: async (column: string, value: any): Promise<OfflineOperationResult> => ({ 
             data: null, 
             error: new Error(`Invalid table: ${tableNameParam}`) 
@@ -69,7 +81,7 @@ export const offlineSupabase = {
         }
       },
       
-      update: async (data: any) => {
+      update: (data: any) => {
         return {
           eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
             try {
@@ -102,7 +114,7 @@ export const offlineSupabase = {
         };
       },
       
-      delete: async () => {
+      delete: () => {
         return {
           eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
             try {
