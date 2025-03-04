@@ -13,11 +13,27 @@ export function OfflineStatus() {
     // Check for pending changes
     const checkPendingChanges = async () => {
       try {
-        const db = await window.indexedDB.open("offlineSync");
-        const tx = db.transaction("pendingRequests", "readonly");
-        const store = tx.objectStore("pendingRequests");
-        const count = await store.count();
-        setHasPendingChanges(count > 0);
+        const dbRequest = window.indexedDB.open("offlineSync");
+        
+        dbRequest.onsuccess = (event) => {
+          const db = (event.target as IDBOpenDBRequest).result;
+          const tx = db.transaction("pendingRequests", "readonly");
+          const store = tx.objectStore("pendingRequests");
+          
+          // Use count() method to get the number of records
+          const countRequest = store.count();
+          countRequest.onsuccess = () => {
+            setHasPendingChanges(countRequest.result > 0);
+          };
+          
+          countRequest.onerror = (error) => {
+            console.error("Error counting pending requests:", error);
+          };
+        };
+        
+        dbRequest.onerror = (error) => {
+          console.error("Error opening IndexedDB:", error);
+        };
       } catch (error) {
         console.error("Error checking pending changes:", error);
       }

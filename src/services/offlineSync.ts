@@ -38,6 +38,27 @@ const MAX_RETRIES = 5;
 
 let db: IDBPDatabase<OfflineSyncDB> | null = null;
 
+// List of allowed table names for type safety
+const ALLOWED_TABLES = [
+  "companies",
+  "users",
+  "checklists",
+  "checklist_itens",
+  "inspections",
+  "inspection_responses",
+  "units",
+  "platform",
+  "automated_incidents",
+  "checklist_assignments"
+] as const;
+
+type AllowedTableName = typeof ALLOWED_TABLES[number];
+
+// Helper to check if a table name is valid
+function isValidTable(tableName: string): tableName is AllowedTableName {
+  return ALLOWED_TABLES.includes(tableName as AllowedTableName);
+}
+
 // Initialize the database
 export async function initOfflineDb() {
   if (db) return db;
@@ -143,7 +164,11 @@ export async function syncWithServer() {
         continue;
       }
       
-      // Execute the request
+      // Execute the request - with type checking for table names
+      if (!isValidTable(request.table)) {
+        throw new Error(`Invalid table name: ${request.table}`);
+      }
+      
       switch (request.operation) {
         case 'INSERT':
           result = await supabase
@@ -221,102 +246,122 @@ export function initOnlineSync() {
 
 // Offline-capable version of supabase operations
 export const offlineSupabase = {
-  from: (table: string) => ({
-    insert: async (data: any) => {
-      try {
-        if (navigator.onLine) {
-          const result = await supabase.from(table).insert(data);
-          if (result.error) throw result.error;
-          return result;
-        } else {
-          // Generate a temporary ID if none exists
-          if (!data.id) {
-            data.id = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          }
-          await saveForSync(table, 'INSERT', data);
-          return { data: [data], error: null };
-        }
-      } catch (error) {
-        console.error(`Error in offline insert for ${table}:`, error);
-        // Always fall back to offline storage on error
-        await saveForSync(table, 'INSERT', data);
-        return { data: [data], error: null };
-      }
-    },
+  from: (table: string) => {
+    // Type check the table name
+    if (!isValidTable(table)) {
+      console.error(`Invalid table name: ${table}`);
+      // Return a dummy object that won't crash but will fail gracefully
+      return {
+        insert: async () => ({ data: null, error: new Error(`Invalid table: ${table}`) }),
+        update: async () => ({ 
+          eq: async () => ({ data: null, error: new Error(`Invalid table: ${table}`) }) 
+        }),
+        delete: async () => ({ 
+          eq: async () => ({ data: null, error: new Error(`Invalid table: ${table}`) }) 
+        }),
+        select: async () => ({ data: [], error: new Error(`Invalid table: ${table}`) })
+      };
+    }
     
-    update: async (data: any) => ({
-      eq: async (column: string, value: any) => {
+    const typedTable = table as AllowedTableName;
+    
+    return {
+      insert: async (data: any) => {
         try {
           if (navigator.onLine) {
-            const result = await supabase.from(table).update(data).eq(column, value);
+            const result = await supabase.from(typedTable).insert(data);
             if (result.error) throw result.error;
             return result;
           } else {
-            // For offline update, we need the ID
-            if (column === 'id') {
-              data.id = value;
+            // Generate a temporary ID if none exists
+            if (!data.id) {
+              data.id = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
             }
-            await saveForSync(table, 'UPDATE', data);
+            await saveForSync(typedTable, 'INSERT', data);
             return { data: [data], error: null };
           }
         } catch (error) {
-          console.error(`Error in offline update for ${table}:`, error);
+          console.error(`Error in offline insert for ${typedTable}:`, error);
           // Always fall back to offline storage on error
-          if (column === 'id') {
-            data.id = value;
-          }
-          await saveForSync(table, 'UPDATE', data);
+          await saveForSync(typedTable, 'INSERT', data);
           return { data: [data], error: null };
         }
-      }
-    }),
-    
-    delete: async () => ({
-      eq: async (column: string, value: any) => {
-        try {
-          if (navigator.onLine) {
-            const result = await supabase.from(table).delete().eq(column, value);
-            if (result.error) throw result.error;
-            return result;
-          } else {
-            // For delete we just need the ID
+      },
+      
+      update: async (data: any) => ({
+        eq: async (column: string, value: any) => {
+          try {
+            if (navigator.onLine) {
+              const result = await supabase.from(typedTable).update(data).eq(column, value);
+              if (result.error) throw result.error;
+              return result;
+            } else {
+              // For offline update, we need the ID
+              if (column === 'id') {
+                data.id = value;
+              }
+              await saveForSync(typedTable, 'UPDATE', data);
+              return { data: [data], error: null };
+            }
+          } catch (error) {
+            console.error(`Error in offline update for ${typedTable}:`, error);
+            // Always fall back to offline storage on error
+            if (column === 'id') {
+              data.id = value;
+            }
+            await saveForSync(typedTable, 'UPDATE', data);
+            return { data: [data], error: null };
+          }
+        }
+      }),
+      
+      delete: async () => ({
+        eq: async (column: string, value: any) => {
+          try {
+            if (navigator.onLine) {
+              const result = await supabase.from(typedTable).delete().eq(column, value);
+              if (result.error) throw result.error;
+              return result;
+            } else {
+              // For delete we just need the ID
+              const data = { id: value };
+              await saveForSync(typedTable, 'DELETE', data);
+              return { data: [], error: null };
+            }
+          } catch (error) {
+            console.error(`Error in offline delete for ${typedTable}:`, error);
+            // Always fall back to offline storage on error
             const data = { id: value };
-            await saveForSync(table, 'DELETE', data);
+            await saveForSync(typedTable, 'DELETE', data);
             return { data: [], error: null };
           }
-        } catch (error) {
-          console.error(`Error in offline delete for ${table}:`, error);
-          // Always fall back to offline storage on error
-          const data = { id: value };
-          await saveForSync(table, 'DELETE', data);
-          return { data: [], error: null };
         }
-      }
-    }),
-    
-    select: async (columns: string = '*') => {
-      try {
-        if (navigator.onLine) {
-          return await supabase.from(table).select(columns);
-        } else {
-          // When offline, use local data
-          const offlineData = await getOfflineData(table);
+      }),
+      
+      select: async (columns: string = '*') => {
+        try {
+          if (navigator.onLine) {
+            return await supabase.from(typedTable).select(columns);
+          } else {
+            // When offline, use local data
+            const offlineData = await getOfflineData(typedTable);
+            return { 
+              data: offlineData.map(item => item.data), 
+              error: null 
+            };
+          }
+        } catch (error) {
+          console.error(`Error in offline select for ${typedTable}:`, error);
+          // On error, try to use offline data as fallback
+          const offlineData = await getOfflineData(typedTable);
           return { 
             data: offlineData.map(item => item.data), 
             error: null 
           };
         }
-      } catch (error) {
-        console.error(`Error in offline select for ${table}:`, error);
-        // On error, try to use offline data as fallback
-        const offlineData = await getOfflineData(table);
-        return { 
-          data: offlineData.map(item => item.data), 
-          error: null 
-        };
       }
-    }
-  })
+    };
+  }
 };
 
 // Initialize system
