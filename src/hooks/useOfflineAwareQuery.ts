@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient, QueryKey } from '@tanstack/react-query';
 import { offlineSupabase } from '@/services/offlineSupabase';
 import { syncWithServer } from '@/services/syncManager';

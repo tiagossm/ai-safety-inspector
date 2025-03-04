@@ -9,19 +9,19 @@ interface OfflineOperationResult {
   error: null | Error;
 }
 
-// Define the eq filter function type separately
+// Define simple function types 
 type EqFilterFn = (column: string, value: any) => Promise<OfflineOperationResult>;
+type InsertFn = (data: any) => Promise<OfflineOperationResult>;
+type SelectFn = (columns?: string) => Promise<OfflineOperationResult>;
 
 // Interface for objects with eq method
 interface WithEqFilter {
   eq: EqFilterFn;
 }
 
-// Define each operation function type completely independently 
-type InsertFn = (data: any) => Promise<OfflineOperationResult>;
+// Define update and delete function types that return the WithEqFilter interface
 type UpdateFn = (data: any) => WithEqFilter;
 type DeleteFn = () => WithEqFilter;
-type SelectFn = (columns?: string) => Promise<OfflineOperationResult>;
 
 // Main interface using the simple flat types
 interface TableOperations {
