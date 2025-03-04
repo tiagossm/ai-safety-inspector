@@ -2,25 +2,28 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Checklist } from "@/types/checklist";
 import { generateMockCollaborators } from "@/utils/checklistUtils";
+import { useAuth } from "@/components/AuthProvider";
 
 export function useFetchChecklists() {
+  // Obter o usuário estendido que possui os campos extras (como company_id)
+  const { user: extendedUser } = useAuth();
+  
   return useQuery({
     queryKey: ["checklists"],
     queryFn: async () => {
       console.log("🔍 Buscando checklists...");
 
-      // Obter o usuário autenticado
-      const user = supabase.auth.user();
-      if (!user) {
+      if (!extendedUser) {
         throw new Error("Usuário não autenticado");
       }
+      console.log("Usuário estendido:", extendedUser);
 
       // Buscar checklists filtrando por user_id e company_id
       const { data: checklists, error } = await supabase
         .from("checklists")
         .select("*")
-        .eq("user_id", user.id)
-        .eq("company_id", user.company_id)
+        .eq("user_id", extendedUser.id)
+        .eq("company_id", extendedUser.company_id)
         .order("created_at", { ascending: false });
 
       if (error) {
