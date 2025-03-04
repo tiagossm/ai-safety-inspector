@@ -3,25 +3,39 @@ import { supabase } from "@/integrations/supabase/client";
 import { saveForSync, getOfflineData } from "./offlineDb";
 import { isValidTable, getValidatedTable, type AllowedTableName } from "./tableValidation";
 
-// Simple result type
+// Define a simple result type to be used throughout
 interface OfflineOperationResult {
   data: any;
   error: null | Error;
 }
 
-// Explicitly define function types to avoid recursion in type definitions
-type EqFunction = (column: string, value: any) => Promise<OfflineOperationResult>;
-type InsertFunction = (data: any) => Promise<OfflineOperationResult>;
-type UpdateFunction = (data: any) => { eq: EqFunction };
-type DeleteFunction = () => { eq: EqFunction };
-type SelectFunction = (columns?: string) => Promise<OfflineOperationResult>;
+// Define the individual operation types first
+// Use type literals instead of recursive types
+type EqFilter = (column: string, value: any) => Promise<OfflineOperationResult>;
 
-// Define the table operations interface with explicit function types
+// Create specific types for each operation function
+interface InsertOperation {
+  (data: any): Promise<OfflineOperationResult>;
+}
+
+interface UpdateOperation {
+  (data: any): { eq: EqFilter };
+}
+
+interface DeleteOperation {
+  (): { eq: EqFilter };
+}
+
+interface SelectOperation {
+  (columns?: string): Promise<OfflineOperationResult>;
+}
+
+// Main interface using the defined operation types
 interface TableOperations {
-  insert: InsertFunction;
-  update: UpdateFunction;
-  delete: DeleteFunction;
-  select: SelectFunction;
+  insert: InsertOperation;
+  update: UpdateOperation;
+  delete: DeleteOperation;
+  select: SelectOperation;
 }
 
 // Implementation of the table operations
@@ -54,7 +68,7 @@ function createTableOperations(tableName: AllowedTableName): TableOperations {
     },
     
     // Update operation
-    update: (data: any) => ({
+    update: (data: any): { eq: EqFilter } => ({
       eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
         try {
           if (navigator.onLine) {
@@ -86,7 +100,7 @@ function createTableOperations(tableName: AllowedTableName): TableOperations {
     }),
     
     // Delete operation
-    delete: () => ({
+    delete: (): { eq: EqFilter } => ({
       eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
         try {
           if (navigator.onLine) {
@@ -146,13 +160,13 @@ function createInvalidTableOperations(tableNameParam: string): TableOperations {
       data: null, 
       error: new Error(`Invalid table: ${tableNameParam}`) 
     }),
-    update: (): { eq: EqFunction } => ({ 
+    update: (): { eq: EqFilter } => ({ 
       eq: async (): Promise<OfflineOperationResult> => ({ 
         data: null, 
         error: new Error(`Invalid table: ${tableNameParam}`) 
       }) 
     }),
-    delete: (): { eq: EqFunction } => ({ 
+    delete: (): { eq: EqFilter } => ({ 
       eq: async (): Promise<OfflineOperationResult> => ({ 
         data: null, 
         error: new Error(`Invalid table: ${tableNameParam}`) 
