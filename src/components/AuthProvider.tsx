@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (userError) {
               console.error("Erro ao buscar dados do usuário:", userError);
               
-              // Verificar se o erro é devido à coluna company_id não existir
+              // Check if the error is due to missing company_id column
               if (userError.message && userError.message.includes("column 'company_id' does not exist")) {
                 console.warn("A coluna 'company_id' não existe na tabela users. Usando valores padrão.");
                 
