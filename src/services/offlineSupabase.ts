@@ -9,33 +9,28 @@ interface OfflineOperationResult {
   error: null | Error;
 }
 
-// Define the individual operation types first
-// Use type literals instead of recursive types
-type EqFilter = (column: string, value: any) => Promise<OfflineOperationResult>;
+// Create a completely flat type hierarchy with no nesting that could cause recursive type issues
 
-// Create specific types for each operation function
-interface InsertOperation {
-  (data: any): Promise<OfflineOperationResult>;
+// Define the eq filter function type separately
+type EqFilterFn = (column: string, value: any) => Promise<OfflineOperationResult>;
+
+// Interface for objects with eq method
+interface WithEqFilter {
+  eq: EqFilterFn;
 }
 
-interface UpdateOperation {
-  (data: any): { eq: EqFilter };
-}
+// Define each operation function type completely independently 
+type InsertFn = (data: any) => Promise<OfflineOperationResult>;
+type UpdateFn = (data: any) => WithEqFilter;
+type DeleteFn = () => WithEqFilter;
+type SelectFn = (columns?: string) => Promise<OfflineOperationResult>;
 
-interface DeleteOperation {
-  (): { eq: EqFilter };
-}
-
-interface SelectOperation {
-  (columns?: string): Promise<OfflineOperationResult>;
-}
-
-// Main interface using the defined operation types
+// Main interface using the simple flat types
 interface TableOperations {
-  insert: InsertOperation;
-  update: UpdateOperation;
-  delete: DeleteOperation;
-  select: SelectOperation;
+  insert: InsertFn;
+  update: UpdateFn;
+  delete: DeleteFn;
+  select: SelectFn;
 }
 
 // Implementation of the table operations
@@ -67,65 +62,69 @@ function createTableOperations(tableName: AllowedTableName): TableOperations {
       }
     },
     
-    // Update operation
-    update: (data: any): { eq: EqFilter } => ({
-      eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
-        try {
-          if (navigator.onLine) {
-            const result = await supabase
-              .from(tableName)
-              .update(data)
-              .eq(column, value);
-            
-            if (result.error) throw result.error;
-            return result;
-          } else {
-            // For offline update, we need the ID
+    // Update operation - explicitly annotate the return type to prevent inference issues
+    update: (data: any): WithEqFilter => {
+      return {
+        eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
+          try {
+            if (navigator.onLine) {
+              const result = await supabase
+                .from(tableName)
+                .update(data)
+                .eq(column, value);
+              
+              if (result.error) throw result.error;
+              return result;
+            } else {
+              // For offline update, we need the ID
+              if (column === 'id') {
+                data.id = value;
+              }
+              await saveForSync(tableName, 'UPDATE', data);
+              return { data: [data], error: null };
+            }
+          } catch (error) {
+            console.error(`Error in offline update for ${tableName}:`, error);
+            // Always fall back to offline storage on error
             if (column === 'id') {
               data.id = value;
             }
             await saveForSync(tableName, 'UPDATE', data);
             return { data: [data], error: null };
           }
-        } catch (error) {
-          console.error(`Error in offline update for ${tableName}:`, error);
-          // Always fall back to offline storage on error
-          if (column === 'id') {
-            data.id = value;
-          }
-          await saveForSync(tableName, 'UPDATE', data);
-          return { data: [data], error: null };
         }
-      }
-    }),
+      };
+    },
     
-    // Delete operation
-    delete: (): { eq: EqFilter } => ({
-      eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
-        try {
-          if (navigator.onLine) {
-            const result = await supabase
-              .from(tableName)
-              .delete()
-              .eq(column, value);
-            
-            if (result.error) throw result.error;
-            return result;
-          } else {
-            // For delete we just need the ID
+    // Delete operation - explicitly annotate the return type to prevent inference issues
+    delete: (): WithEqFilter => {
+      return {
+        eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
+          try {
+            if (navigator.onLine) {
+              const result = await supabase
+                .from(tableName)
+                .delete()
+                .eq(column, value);
+              
+              if (result.error) throw result.error;
+              return result;
+            } else {
+              // For delete we just need the ID
+              const data = { id: value };
+              await saveForSync(tableName, 'DELETE', data);
+              return { data: [], error: null };
+            }
+          } catch (error) {
+            console.error(`Error in offline delete for ${tableName}:`, error);
+            // Always fall back to offline storage on error
             const data = { id: value };
             await saveForSync(tableName, 'DELETE', data);
             return { data: [], error: null };
           }
-        } catch (error) {
-          console.error(`Error in offline delete for ${tableName}:`, error);
-          // Always fall back to offline storage on error
-          const data = { id: value };
-          await saveForSync(tableName, 'DELETE', data);
-          return { data: [], error: null };
         }
-      }
-    }),
+      };
+    },
     
     // Select operation
     select: async (columns: string = '*'): Promise<OfflineOperationResult> => {
@@ -155,23 +154,21 @@ function createTableOperations(tableName: AllowedTableName): TableOperations {
 
 // Create an invalid table operations object for type errors
 function createInvalidTableOperations(tableNameParam: string): TableOperations {
+  const errorObj: OfflineOperationResult = { 
+    data: null, 
+    error: new Error(`Invalid table: ${tableNameParam}`) 
+  };
+
+  // Create a reusable error filter function
+  const errorEqFilter: EqFilterFn = async (): Promise<OfflineOperationResult> => errorObj;
+  
+  // Create a reusable error filter object
+  const errorWithEq: WithEqFilter = { eq: errorEqFilter };
+  
   return {
-    insert: async (): Promise<OfflineOperationResult> => ({ 
-      data: null, 
-      error: new Error(`Invalid table: ${tableNameParam}`) 
-    }),
-    update: (): { eq: EqFilter } => ({ 
-      eq: async (): Promise<OfflineOperationResult> => ({ 
-        data: null, 
-        error: new Error(`Invalid table: ${tableNameParam}`) 
-      }) 
-    }),
-    delete: (): { eq: EqFilter } => ({ 
-      eq: async (): Promise<OfflineOperationResult> => ({ 
-        data: null, 
-        error: new Error(`Invalid table: ${tableNameParam}`) 
-      }) 
-    }),
+    insert: async (): Promise<OfflineOperationResult> => errorObj,
+    update: (): WithEqFilter => errorWithEq,
+    delete: (): WithEqFilter => errorWithEq,
     select: async (): Promise<OfflineOperationResult> => ({ 
       data: [], 
       error: new Error(`Invalid table: ${tableNameParam}`) 

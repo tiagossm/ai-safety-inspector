@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuthEvents } from "@/hooks/auth/useAuthEvents";
 import { toast } from "sonner";
+import { AuthUser } from "@/hooks/auth/useAuthState";
 
 interface AuthContextType {
   user: AuthUser | null;
