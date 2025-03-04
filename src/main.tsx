@@ -36,6 +36,13 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// Add versioning function to help with cache invalidation
+window.versionedUrl = (url) => {
+  const APP_VERSION = '1.0.0';
+  const timestamp = new Date().getTime();
+  return `${url}?v=${APP_VERSION}&t=${timestamp}`;
+};
+
 // Add version and last build date to help with cache invalidation
 const APP_VERSION = '1.0.0';
 const BUILD_DATE = new Date().toISOString();
