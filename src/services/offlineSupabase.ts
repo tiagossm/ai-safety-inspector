@@ -9,23 +9,20 @@ interface OfflineOperationResult {
   error: null | Error;
 }
 
-// Simple, non-recursive type definitions
-interface QueryWithEq {
-  eq: (column: string, value: any) => Promise<OfflineOperationResult>;
+// Define simple flat types without circular references
+type EqualsFunction = (column: string, value: any) => Promise<OfflineOperationResult>;
+
+// Interface for the return value of update and delete operations
+interface EqualsOperation {
+  eq: EqualsFunction;
 }
 
-// Direct function types to avoid deep nesting
-type InsertFunction = (data: any) => Promise<OfflineOperationResult>;
-type UpdateFunction = (data: any) => QueryWithEq;
-type DeleteFunction = () => QueryWithEq;
-type SelectFunction = (columns?: string) => Promise<OfflineOperationResult>;
-
-// Flat structure interface with direct function types
+// Flat interface with fully-defined method signatures
 interface TableOperations {
-  insert: InsertFunction;
-  update: UpdateFunction;
-  delete: DeleteFunction;
-  select: SelectFunction;
+  insert: (data: any) => Promise<OfflineOperationResult>;
+  update: (data: any) => EqualsOperation;
+  delete: () => EqualsOperation;
+  select: (columns?: string) => Promise<OfflineOperationResult>;
 }
 
 // Implementation of the table operations
@@ -58,7 +55,7 @@ function createTableOperations(tableName: AllowedTableName): TableOperations {
     },
     
     // Update operation
-    update: (data: any) => {
+    update: (data: any): EqualsOperation => {
       return {
         eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
           try {
@@ -92,7 +89,7 @@ function createTableOperations(tableName: AllowedTableName): TableOperations {
     },
     
     // Delete operation
-    delete: () => {
+    delete: (): EqualsOperation => {
       return {
         eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
           try {
