@@ -9,32 +9,28 @@ interface OfflineOperationResult {
   error: null | Error;
 }
 
-// Define flat function types without circular references
-type EqFilterFn = (column: string, value: any) => Promise<OfflineOperationResult>;
-type InsertFn = (data: any) => Promise<OfflineOperationResult>;
-type SelectFn = (columns?: string) => Promise<OfflineOperationResult>;
+// Basic function types without circular references
+type EqFilterFunction = (column: string, value: any) => Promise<OfflineOperationResult>;
+type InsertFunction = (data: any) => Promise<OfflineOperationResult>;
+type SelectFunction = (columns?: string) => Promise<OfflineOperationResult>;
 
-// Interface for objects with eq method
-interface WithEqFilter {
-  eq: EqFilterFn;
+// Interface for operation objects
+interface FilterOperations {
+  eq: EqFilterFunction;
 }
 
-// Define update and delete function types without circular references
-type UpdateFn = (data: any) => WithEqFilter;
-type DeleteFn = () => WithEqFilter;
-
-// Main interface using the simple flat types
+// Define interface for table operations
 interface TableOperations {
-  insert: InsertFn;
-  update: UpdateFn;
-  delete: DeleteFn;
-  select: SelectFn;
+  insert: InsertFunction;
+  update: (data: any) => FilterOperations;
+  delete: () => FilterOperations;
+  select: SelectFunction;
 }
 
 // Implementation of the table operations
 function createTableOperations(tableName: AllowedTableName): TableOperations {
   // Create the actual implementations
-  const insertImpl: InsertFn = async (data: any): Promise<OfflineOperationResult> => {
+  const insertImpl: InsertFunction = async (data: any): Promise<OfflineOperationResult> => {
     try {
       if (navigator.onLine) {
         const result = await supabase
@@ -59,7 +55,7 @@ function createTableOperations(tableName: AllowedTableName): TableOperations {
     }
   };
 
-  const updateImpl = (data: any): WithEqFilter => {
+  const createUpdateOperations = (data: any): FilterOperations => {
     return {
       eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
         try {
@@ -92,7 +88,7 @@ function createTableOperations(tableName: AllowedTableName): TableOperations {
     };
   };
 
-  const deleteImpl = (): WithEqFilter => {
+  const createDeleteOperations = (): FilterOperations => {
     return {
       eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
         try {
@@ -121,7 +117,7 @@ function createTableOperations(tableName: AllowedTableName): TableOperations {
     };
   };
 
-  const selectImpl: SelectFn = async (columns: string = '*'): Promise<OfflineOperationResult> => {
+  const selectImpl: SelectFunction = async (columns: string = '*'): Promise<OfflineOperationResult> => {
     try {
       if (navigator.onLine) {
         return await supabase.from(tableName).select(columns);
@@ -147,8 +143,8 @@ function createTableOperations(tableName: AllowedTableName): TableOperations {
   // Return the table operations object
   return {
     insert: insertImpl,
-    update: updateImpl,
-    delete: deleteImpl,
+    update: createUpdateOperations,
+    delete: createDeleteOperations,
     select: selectImpl
   };
 }
@@ -161,15 +157,15 @@ function createInvalidTableOperations(tableNameParam: string): TableOperations {
   };
 
   // Create a reusable error filter function
-  const errorEqFilter: EqFilterFn = async (): Promise<OfflineOperationResult> => errorObj;
+  const errorEqFilter: EqFilterFunction = async (): Promise<OfflineOperationResult> => errorObj;
   
   // Create a reusable error filter object
-  const errorWithEq: WithEqFilter = { eq: errorEqFilter };
+  const errorWithEq: FilterOperations = { eq: errorEqFilter };
   
   return {
     insert: async (): Promise<OfflineOperationResult> => errorObj,
-    update: (): WithEqFilter => errorWithEq,
-    delete: (): WithEqFilter => errorWithEq,
+    update: (): FilterOperations => errorWithEq,
+    delete: (): FilterOperations => errorWithEq,
     select: async (): Promise<OfflineOperationResult> => ({ 
       data: [], 
       error: new Error(`Invalid table: ${tableNameParam}`) 
