@@ -18,17 +18,34 @@ interface UpdateOperation {
   eq: (column: string, value: any) => Promise<OfflineOperationResult>;
 }
 
-// Utility type for method returns to break recursion
-type TableMethodsReturnTypes = {
-  insert: (data: any) => Promise<OfflineOperationResult>;
-  update: (data: any) => Promise<UpdateOperation>;
-  delete: () => Promise<DeleteOperation>;
-  select: (columns?: string) => Promise<OfflineOperationResult>;
-};
+// Table method interfaces to break recursive type references
+interface InsertMethod {
+  (data: any): Promise<OfflineOperationResult>;
+}
+
+interface UpdateMethod {
+  (data: any): Promise<UpdateOperation>;
+}
+
+interface DeleteMethod {
+  (): Promise<DeleteOperation>;
+}
+
+interface SelectMethod {
+  (columns?: string): Promise<OfflineOperationResult>;
+}
+
+// Complete table methods return type
+interface TableMethods {
+  insert: InsertMethod;
+  update: UpdateMethod;
+  delete: DeleteMethod;
+  select: SelectMethod;
+}
 
 // Offline-capable version of supabase operations
 export const offlineSupabase = {
-  from: (tableNameParam: string): TableMethodsReturnTypes => {
+  from: (tableNameParam: string): TableMethods => {
     // Type check the table name
     if (!isValidTable(tableNameParam)) {
       console.error(`Invalid table name: ${tableNameParam}`);
