@@ -85,6 +85,7 @@ export const useOfflineAwareMutation = <T>(
             .from(tableName)
             .update(data);
           
+          // Make sure to await the result of the update operation
           result = await updateOperation.eq('id', id || data.id);
           break;
         }
@@ -93,6 +94,7 @@ export const useOfflineAwareMutation = <T>(
             .from(tableName)
             .delete();
           
+          // Make sure to await the result of the delete operation
           result = await deleteOperation.eq('id', id || data.id);
           break;
         }
