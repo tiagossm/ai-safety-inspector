@@ -3,20 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { saveForSync, getOfflineData } from "./offlineDb";
 import { isValidTable, getValidatedTable, type AllowedTableName } from "./tableValidation";
 
-// Simple result type for all operations
+// Define a simple result type
 interface OfflineOperationResult {
   data: any;
   error: null | Error;
-}
-
-// Use primitive types for operation parameters
-type ColumnName = string;
-type Value = any;
-type TableData = any;
-
-// Define operation interfaces with NO recursion or circular references
-interface EqOperation {
-  eq(column: ColumnName, value: Value): Promise<OfflineOperationResult>;
 }
 
 // Offline-capable version of supabase operations
@@ -27,18 +17,18 @@ export const offlineSupabase = {
       console.error(`Invalid table name: ${tableNameParam}`);
       // Return a dummy object that won't crash but will fail gracefully
       return {
-        insert: async (data: TableData): Promise<OfflineOperationResult> => ({ 
+        insert: async (data: any): Promise<OfflineOperationResult> => ({ 
           data: null, 
           error: new Error(`Invalid table: ${tableNameParam}`) 
         }),
-        update: async (data: TableData) => ({ 
-          eq: async (column: ColumnName, value: Value): Promise<OfflineOperationResult> => ({ 
+        update: async (data: any) => ({ 
+          eq: async (column: string, value: any): Promise<OfflineOperationResult> => ({ 
             data: null, 
             error: new Error(`Invalid table: ${tableNameParam}`) 
           }) 
         }),
         delete: async () => ({ 
-          eq: async (column: ColumnName, value: Value): Promise<OfflineOperationResult> => ({ 
+          eq: async (column: string, value: any): Promise<OfflineOperationResult> => ({ 
             data: null, 
             error: new Error(`Invalid table: ${tableNameParam}`) 
           }) 
@@ -54,7 +44,7 @@ export const offlineSupabase = {
     const tableName = tableNameParam as AllowedTableName;
     
     return {
-      insert: async (data: TableData): Promise<OfflineOperationResult> => {
+      insert: async (data: any): Promise<OfflineOperationResult> => {
         try {
           if (navigator.onLine) {
             const result = await supabase
@@ -79,9 +69,9 @@ export const offlineSupabase = {
         }
       },
       
-      update: async (data: TableData) => {
+      update: async (data: any) => {
         return {
-          eq: async (column: ColumnName, value: Value): Promise<OfflineOperationResult> => {
+          eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
             try {
               if (navigator.onLine) {
                 const result = await supabase
@@ -114,7 +104,7 @@ export const offlineSupabase = {
       
       delete: async () => {
         return {
-          eq: async (column: ColumnName, value: Value): Promise<OfflineOperationResult> => {
+          eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
             try {
               if (navigator.onLine) {
                 const result = await supabase

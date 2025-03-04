@@ -1,6 +1,8 @@
 
 import { useQuery, useMutation, useQueryClient, QueryKey } from '@tanstack/react-query';
-import { offlineSupabase, saveForSync, syncWithServer } from '@/services/offlineSync';
+import { offlineSupabase } from '@/services/offlineSupabase';
+import { syncWithServer } from '@/services/syncManager';
+import { saveForSync } from '@/services/offlineDb';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
