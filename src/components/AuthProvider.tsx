@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -37,8 +38,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (data?.session?.user) {
           console.log("✅ Sessão restaurada do Supabase");
-          setUser(data.session.user);
-          localStorage.setItem("authUser", JSON.stringify(data.session.user));
+          // Fetch additional user data including company_id
+          const { data: userData, error: userError } = await supabase
+            .from("users")
+            .select("id, name, role, tier, company_id")
+            .eq("id", data.session.user.id)
+            .single();
+
+          if (userError) {
+            console.error("Erro ao buscar dados do usuário:", userError);
+          }
+
+          // Create enhanced user with proper typing
+          const enhancedUser: AuthUser = {
+            ...data.session.user,
+            role: userData?.role === "admin" ? "admin" : "user",
+            tier: userData?.tier || "technician",
+            company_id: userData?.company_id
+          };
+          
+          setUser(enhancedUser);
+          localStorage.setItem("authUser", JSON.stringify(enhancedUser));
         }
       } catch (error) {
         console.error("❌ Erro ao inicializar autenticação:", error);
@@ -53,11 +73,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // **Configura eventos de autenticação**
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log(`🔄 Estado de autenticação alterado: ${event}`);
       if (session?.user) {
-        setUser(session.user);
-        localStorage.setItem("authUser", JSON.stringify(session.user));
+        // Fetch additional user data including company_id
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("id, name, role, tier, company_id")
+          .eq("id", session.user.id)
+          .single();
+
+        if (userError) {
+          console.error("Erro ao buscar dados do usuário:", userError);
+        }
+
+        // Create enhanced user with proper typing
+        const enhancedUser: AuthUser = {
+          ...session.user,
+          role: userData?.role === "admin" ? "admin" : "user",
+          tier: userData?.tier || "technician",
+          company_id: userData?.company_id
+        };
+        
+        setUser(enhancedUser);
+        localStorage.setItem("authUser", JSON.stringify(enhancedUser));
       } else {
         setUser(null);
         localStorage.removeItem("authUser");

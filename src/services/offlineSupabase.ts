@@ -3,15 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { saveForSync, getOfflineData } from "./offlineDb";
 import { isValidTable, getValidatedTable, type AllowedTableName } from "./tableValidation";
 
-// Define a simple result type to be used throughout
+// Simple result type
 interface OfflineOperationResult {
   data: any;
   error: null | Error;
 }
 
-// Create a completely flat type hierarchy with no nesting that could cause recursive type issues
-
-// Define the eq filter function type separately
+// Simple type for eq filter function
 type EqFilterFn = (column: string, value: any) => Promise<OfflineOperationResult>;
 
 // Interface for objects with eq method
@@ -19,17 +17,15 @@ interface WithEqFilter {
   eq: EqFilterFn;
 }
 
-// Define each operation function type completely independently 
+// Basic operation function types
 type InsertFn = (data: any) => Promise<OfflineOperationResult>;
-type UpdateFn = (data: any) => WithEqFilter;
-type DeleteFn = () => WithEqFilter;
 type SelectFn = (columns?: string) => Promise<OfflineOperationResult>;
 
-// Main interface using the simple flat types
+// Main table operations interface 
 interface TableOperations {
   insert: InsertFn;
-  update: UpdateFn;
-  delete: DeleteFn;
+  update: (data: any) => WithEqFilter;
+  delete: () => WithEqFilter;
   select: SelectFn;
 }
 
@@ -62,7 +58,7 @@ function createTableOperations(tableName: AllowedTableName): TableOperations {
       }
     },
     
-    // Update operation - explicitly annotate the return type to prevent inference issues
+    // Update operation
     update: (data: any): WithEqFilter => {
       return {
         eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
@@ -96,7 +92,7 @@ function createTableOperations(tableName: AllowedTableName): TableOperations {
       };
     },
     
-    // Delete operation - explicitly annotate the return type to prevent inference issues
+    // Delete operation
     delete: (): WithEqFilter => {
       return {
         eq: async (column: string, value: any): Promise<OfflineOperationResult> => {

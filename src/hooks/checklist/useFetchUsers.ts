@@ -1,38 +1,34 @@
 
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export function useFetchUsers() {
-  const [users, setUsers] = useState<any[]>([]);
-
-  useEffect(() => {
-    let isMounted = true;
-    const fetchUsers = async () => {
-      try {
-        // Don't refetch if we already have users
-        if (users.length > 0) return;
-        
-        console.log("Fetching users for responsible selection");
-        const { data, error } = await supabase
-          .from('users')
-          .select('id, name')
-          .order('name');
-          
-        if (error) throw error;
-        if (isMounted) {
-          setUsers(data || []);
-        }
-      } catch (error) {
-        console.error("Erro ao buscar usuários:", error);
+export function useFetchUsers(companyId?: string) {
+  return useQuery({
+    queryKey: ["users", companyId],
+    queryFn: async () => {
+      console.log("Fetching users for responsible selection");
+      
+      // Base query to get users
+      let query = supabase
+        .from("users")
+        .select("id, name")
+        .eq("status", "active");
+      
+      // Filter by company if provided
+      if (companyId) {
+        console.log("Filtering users by company_id:", companyId);
+        query = query.eq("company_id", companyId);
       }
-    };
-    
-    fetchUsers();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [users.length]);
-
-  return users;
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error("Error fetching users:", error);
+        return [];
+      }
+      
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 }

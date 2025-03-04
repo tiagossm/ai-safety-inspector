@@ -6,40 +6,76 @@ import { AuthUser } from "@/hooks/auth/useAuthState";
 
 export function useChecklistPermissions(checklistId?: string) {
   const { user } = useAuth();
-  const typedUser = user as AuthUser | null;
   
   return useQuery({
-    queryKey: ["checklist-permissions", checklistId],
+    queryKey: ["checklist-permissions", checklistId, user?.id, user?.company_id],
     queryFn: async () => {
-      if (!checklistId) {
+      if (!checklistId || !user) {
+        console.log("Sem ID do checklist ou usuário não autenticado - permissões negadas");
         return { read: false, write: false, delete: false };
       }
       
-      // Verifique se o usuário é admin (verificação rápida sem chamar a edge function)
-      if (typedUser?.role === "admin" || typedUser?.tier === "super_admin") {
+      // Verificação rápida para admins
+      if (user.role === "admin" || user.tier === "super_admin") {
+        console.log("Usuário é admin - todas as permissões concedidas");
         return { read: true, write: true, delete: true };
       }
 
       try {
-        const { data, error } = await supabase.functions.invoke("check-permissions", {
-          body: { checklist_id: checklistId }
-        });
-        
-        if (error) throw error;
-        
-        if (data.success) {
-          return data.permissions;
+        // Verificar se o checklist pertence à empresa do usuário
+        if (user.company_id) {
+          const { data: checklist, error } = await supabase
+            .from("checklists")
+            .select("company_id")
+            .eq("id", checklistId)
+            .single();
+          
+          if (error) {
+            console.error("Erro ao verificar empresa do checklist:", error);
+            return { read: false, write: false, delete: false };
+          }
+          
+          // Se o checklist for da mesma empresa do usuário, concede permissões
+          if (checklist && checklist.company_id === user.company_id) {
+            console.log("Checklist pertence à empresa do usuário - permissões concedidas");
+            return { read: true, write: true, delete: true };
+          }
         }
         
-        return { read: false, write: false, delete: false };
+        // Verificar permissões específicas na tabela checklist_permissions
+        const { data: permissions, error } = await supabase
+          .from("checklist_permissions")
+          .select("role")
+          .eq("checklist_id", checklistId)
+          .eq("user_id", user.id)
+          .single();
+        
+        if (error) {
+          console.log("Sem permissões específicas para este checklist");
+          return { read: false, write: false, delete: false };
+        }
+        
+        if (permissions) {
+          const role = permissions.role;
+          console.log(`Permissão do usuário para o checklist: ${role}`);
+          
+          if (role === "owner" || role === "admin") {
+            return { read: true, write: true, delete: true };
+          } else if (role === "editor") {
+            return { read: true, write: true, delete: false };
+          } else if (role === "viewer") {
+            return { read: true, write: false, delete: false };
+          }
+        }
+        
+        // Por padrão, permitir apenas leitura para usuários autenticados
+        return { read: true, write: false, delete: false };
       } catch (error) {
         console.error("Erro ao verificar permissões:", error);
-        // Por padrão, permitir apenas leitura em caso de erro
-        return { read: true, write: false, delete: false };
+        return { read: false, write: false, delete: false };
       }
     },
-    enabled: !!checklistId && !!typedUser,
-    // Mantém as permissões em cache por um tempo razoável
+    enabled: !!checklistId && !!user,
     staleTime: 5 * 60 * 1000, // 5 minutos
     gcTime: 30 * 60 * 1000, // 30 minutos
   });
