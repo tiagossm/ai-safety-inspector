@@ -8,9 +8,9 @@ interface UserBasic {
 }
 
 export function useFetchUsers(companyId?: string) {
-  return useQuery({
+  return useQuery<UserBasic[], Error>({
     queryKey: ["users", companyId],
-    queryFn: async (): Promise<UserBasic[]> => {
+    queryFn: async () => {
       console.log("Fetching users for responsible selection");
       
       // Base query to get users
@@ -32,7 +32,7 @@ export function useFetchUsers(companyId?: string) {
         return [];
       }
       
-      return data || [];
+      return (data || []) as UserBasic[];
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });

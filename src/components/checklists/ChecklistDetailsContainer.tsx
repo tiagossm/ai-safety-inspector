@@ -93,13 +93,22 @@ export default function ChecklistDetailsContainer() {
     addItemMutation.mutate(newItem, {
       onSuccess: (data) => {
         // Ensure opcoes is an array, not a string or any other type
-        const opcoes = Array.isArray(data.opcoes) ? data.opcoes : 
-                      (data.opcoes ? [data.opcoes.toString()] : []);
+        let options: string[] = [];
+        
+        if (data.opcoes) {
+          if (Array.isArray(data.opcoes)) {
+            // Try to convert each item to string
+            options = data.opcoes.map(option => String(option));
+          } else {
+            // If it's not an array, convert it to string and put in array
+            options = [String(data.opcoes)];
+          }
+        }
                       
         const addedItem: ChecklistItem = {
           ...data,
           tipo_resposta: data.tipo_resposta as "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla",
-          opcoes: opcoes
+          opcoes: options
         };
         
         setItems((prevItems) => [...prevItems, addedItem]);
@@ -175,7 +184,7 @@ export default function ChecklistDetailsContainer() {
         <div className="grid gap-6">
           <ChecklistForm
             checklist={checklist}
-            users={users}
+            users={users.data || []}
             setChecklist={setChecklist}
           />
 

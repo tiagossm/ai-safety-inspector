@@ -1,10 +1,9 @@
 
 import { useQuery, useMutation, useQueryClient, QueryKey } from '@tanstack/react-query';
-import { offlineSupabase } from '@/services/offlineSupabase';
-import { syncWithServer } from '@/services/syncManager';
-import { saveForSync } from '@/services/offlineDb';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { offlineSupabase } from '@/services/offlineSupabase';
+import { syncWithServer } from '@/services/syncManager';
 
 // Network status hook
 export const useNetworkStatus = () => {
@@ -42,7 +41,7 @@ export const useOfflineAwareQuery = <T>(
 ) => {
   const isOnline = useNetworkStatus();
   
-  return useQuery({
+  return useQuery<T[], Error>({
     queryKey,
     queryFn: async () => {
       const { data, error } = await offlineSupabase
@@ -50,7 +49,7 @@ export const useOfflineAwareQuery = <T>(
         .select('*');
         
       if (error) throw error;
-      return data as T[];
+      return (data || []) as T[];
     },
     ...options,
     // If offline, rely on local cache and don't hit network
@@ -119,7 +118,7 @@ export const useOfflineAwareMutation = <T>(
       if (!isOnline) {
         toast.warning("Error occurred while offline. Will retry when online.");
       } else {
-        toast.error(`Error: ${error.message || 'Unknown error occurred'}`);
+        toast.error(`Error: ${(error as Error).message || 'Unknown error occurred'}`);
       }
     },
     ...options

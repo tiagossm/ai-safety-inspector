@@ -27,37 +27,49 @@ export function useAuthState() {
         }
         
         if (data.user) {
-          // Get additional user data from the users table
-          const { data: userData, error: userDataError } = await supabase
-            .from("users")
-            .select("role, tier, company_id") 
-            .eq("id", data.user.id)
-            .single();
+          try {
+            // Get additional user data from the users table
+            const { data: userData, error: userDataError } = await supabase
+              .from("users")
+              .select("role, tier, company_id") 
+              .eq("id", data.user.id)
+              .single();
+              
+            if (userDataError) {
+              console.error("Erro ao buscar dados complementares do usuário:", userDataError);
+              // If error accessing specific columns, use default values
+              const enhancedUser: AuthUser = {
+                ...data.user,
+                // Default values if user data fetch fails
+                role: "user",
+                tier: "technician"
+              };
+              
+              setUser(enhancedUser);
+              setLoading(false);
+              return;
+            }
             
-          if (userDataError) {
-            console.error("Erro ao buscar dados complementares do usuário:", userDataError);
-            // If error accessing specific columns, let's try a more general approach
+            // Criar usuário estendido com tipagem correta
             const enhancedUser: AuthUser = {
               ...data.user,
-              // Default values if user data fetch fails
+              role: userData?.role === "admin" ? "admin" : "user",
+              tier: userData?.tier || "technician",
+              company_id: userData?.company_id
+            };
+            
+            setUser(enhancedUser);
+          } catch (err) {
+            console.error("Error fetching user data:", err);
+            // Default user if exception occurs
+            const enhancedUser: AuthUser = {
+              ...data.user,
               role: "user",
               tier: "technician"
             };
             
             setUser(enhancedUser);
-            setLoading(false);
-            return;
           }
-          
-          // Criar usuário estendido com tipagem correta
-          const enhancedUser: AuthUser = {
-            ...data.user,
-            role: userData?.role === "admin" ? "admin" : "user",
-            tier: userData?.tier || "technician",
-            company_id: userData?.company_id
-          };
-          
-          setUser(enhancedUser);
         } else {
           setUser(null);
         }

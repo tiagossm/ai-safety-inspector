@@ -8,9 +8,9 @@ import { useAuth } from "@/components/AuthProvider";
 export function useFetchChecklists() {
   const { user } = useAuth();
   
-  return useQuery({
+  return useQuery<Checklist[], Error>({
     queryKey: ["checklists", user?.id, user?.company_id],
-    queryFn: async (): Promise<Checklist[]> => {
+    queryFn: async () => {
       console.log("🔍 Buscando checklists...");
       console.log("👤 Usuario logado:", user?.id);
       console.log("🏢 Empresa do usuário:", user?.company_id);
@@ -111,7 +111,7 @@ export function useFetchChecklists() {
               due_date: checklist.due_date || null,
               collaborators: generateMockCollaborators(1),
               permissions: ["viewer"],
-            };
+            } as Checklist;
           }
         })
       );
