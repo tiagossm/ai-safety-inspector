@@ -81,16 +81,20 @@ export const useOfflineAwareMutation = <T>(
             .insert(data);
           break;
         case 'UPDATE': {
-          const updatePromise = offlineSupabase
+          // Fix: Await the promise first, then call eq()
+          const updatePromise = await offlineSupabase
             .from(tableName)
             .update(data);
+          
           result = await updatePromise.eq('id', id || data.id);
           break;
         }
         case 'DELETE': {
-          const deletePromise = offlineSupabase
+          // Fix: Await the promise first, then call eq()
+          const deletePromise = await offlineSupabase
             .from(tableName)
             .delete();
+          
           result = await deletePromise.eq('id', id || data.id);
           break;
         }
