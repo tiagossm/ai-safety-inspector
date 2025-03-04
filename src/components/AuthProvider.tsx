@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,53 +37,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (data?.session?.user) {
           console.log("✅ Sessão restaurada do Supabase");
-          // Fetch additional user data
-          try {
-            const { data: userData, error: userError } = await supabase
-              .from("users")
-              .select("role, tier, company_id")
-              .eq("id", data.session.user.id)
-              .single();
-
-            if (userError) {
-              console.error("Erro ao buscar dados do usuário:", userError);
-              
-              // Default values for user regardless of specific error
-              const enhancedUser: AuthUser = {
-                ...data.session.user,
-                role: "user",
-                tier: "technician",
-                company_id: undefined
-              };
-              
-              setUser(enhancedUser);
-              localStorage.setItem("authUser", JSON.stringify(enhancedUser));
-              setLoading(false);
-              return;
-            }
-
-            // Create enhanced user with proper typing
-            const enhancedUser: AuthUser = {
-              ...data.session.user,
-              role: userData?.role === "admin" ? "admin" : "user",
-              tier: userData?.tier || "technician",
-              company_id: userData?.company_id
-            };
-            
-            setUser(enhancedUser);
-            localStorage.setItem("authUser", JSON.stringify(enhancedUser));
-          } catch (err) {
-            console.error("Error fetching user data:", err);
-            // Default values if exception occurs
-            const enhancedUser: AuthUser = {
-              ...data.session.user,
-              role: "user",
-              tier: "technician"
-            };
-            
-            setUser(enhancedUser);
-            localStorage.setItem("authUser", JSON.stringify(enhancedUser));
-          }
+          setUser(data.session.user);
+          localStorage.setItem("authUser", JSON.stringify(data.session.user));
         }
       } catch (error) {
         console.error("❌ Erro ao inicializar autenticação:", error);
@@ -99,55 +53,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // **Configura eventos de autenticação**
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       console.log(`🔄 Estado de autenticação alterado: ${event}`);
       if (session?.user) {
-        try {
-          // Fetch additional user data
-          const { data: userData, error: userError } = await supabase
-            .from("users")
-            .select("role, tier, company_id")
-            .eq("id", session.user.id)
-            .single();
-
-          if (userError) {
-            console.error("Erro ao buscar dados do usuário:", userError);
-            
-            // Default values for user regardless of specific error
-            const enhancedUser: AuthUser = {
-              ...session.user,
-              role: "user",
-              tier: "technician",
-              company_id: undefined
-            };
-            
-            setUser(enhancedUser);
-            localStorage.setItem("authUser", JSON.stringify(enhancedUser));
-            return;
-          }
-
-          // Create enhanced user with proper typing
-          const enhancedUser: AuthUser = {
-            ...session.user,
-            role: userData?.role === "admin" ? "admin" : "user",
-            tier: userData?.tier || "technician",
-            company_id: userData?.company_id
-          };
-          
-          setUser(enhancedUser);
-          localStorage.setItem("authUser", JSON.stringify(enhancedUser));
-        } catch (err) {
-          console.error("Error in auth state change:", err);
-          // Default values if exception occurs
-          const enhancedUser: AuthUser = {
-            ...session.user,
-            role: "user",
-            tier: "technician"
-          };
-          
-          setUser(enhancedUser);
-          localStorage.setItem("authUser", JSON.stringify(enhancedUser));
-        }
+        setUser(session.user);
+        localStorage.setItem("authUser", JSON.stringify(session.user));
       } else {
         setUser(null);
         localStorage.removeItem("authUser");

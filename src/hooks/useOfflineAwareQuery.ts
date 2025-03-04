@@ -1,9 +1,10 @@
 
 import { useQuery, useMutation, useQueryClient, QueryKey } from '@tanstack/react-query';
-import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
 import { offlineSupabase } from '@/services/offlineSupabase';
 import { syncWithServer } from '@/services/syncManager';
+import { saveForSync } from '@/services/offlineDb';
+import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 
 // Network status hook
 export const useNetworkStatus = () => {
@@ -41,22 +42,15 @@ export const useOfflineAwareQuery = <T>(
 ) => {
   const isOnline = useNetworkStatus();
   
-  return useQuery<T[], Error>({
+  return useQuery({
     queryKey,
-    queryFn: async (): Promise<T[]> => {
-      // For offline mode, we need to handle the select differently
-      const query = offlineSupabase.from(tableName).select('*');
-      
-      try {
-        // This will call either the single or maybeSingle method to get data
-        const result = await query.eq('id', '*').single();
+    queryFn: async () => {
+      const { data, error } = await offlineSupabase
+        .from(tableName)
+        .select('*');
         
-        if (result.error) throw result.error;
-        return (result.data ? [result.data] : []) as T[];
-      } catch (error) {
-        console.error(`Error in offline query for ${tableName}:`, error);
-        return [] as T[];
-      }
+      if (error) throw error;
+      return data as T[];
     },
     ...options,
     // If offline, rely on local cache and don't hit network
@@ -78,7 +72,7 @@ export const useOfflineAwareMutation = <T>(
       type: 'INSERT' | 'UPDATE' | 'DELETE';
       data: any;
       id?: string;
-    }): Promise<any> => {
+    }) => {
       const { type, data, id } = variables;
       
       let result;
@@ -90,7 +84,7 @@ export const useOfflineAwareMutation = <T>(
           break;
         case 'UPDATE': {
           // Get the update operation object first
-          const updateOperation = offlineSupabase
+          const updateOperation = await offlineSupabase
             .from(tableName)
             .update(data);
           
@@ -100,7 +94,7 @@ export const useOfflineAwareMutation = <T>(
         }
         case 'DELETE': {
           // Get the delete operation object first
-          const deleteOperation = offlineSupabase
+          const deleteOperation = await offlineSupabase
             .from(tableName)
             .delete();
           
@@ -125,7 +119,7 @@ export const useOfflineAwareMutation = <T>(
       if (!isOnline) {
         toast.warning("Error occurred while offline. Will retry when online.");
       } else {
-        toast.error(`Error: ${(error as Error).message || 'Unknown error occurred'}`);
+        toast.error(`Error: ${error.message || 'Unknown error occurred'}`);
       }
     },
     ...options

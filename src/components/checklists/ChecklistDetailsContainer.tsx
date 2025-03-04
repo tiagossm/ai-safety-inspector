@@ -11,8 +11,9 @@ import ChecklistForm from "@/components/checklists/ChecklistForm";
 import ChecklistItemsList from "@/components/checklists/ChecklistItemsList";
 import AddChecklistItemForm from "@/components/checklists/AddChecklistItemForm";
 import { toast } from "sonner";
-import { Progress } from "@/components/ui/progress";
+import { Progress } from "@/components/ui/progress"; // Barra de progresso
 
+// Tipos de perguntas disponíveis no checklist
 const questionTypes = [
   { value: "sim/não", label: "Sim/Não" },
   { value: "numérico", label: "Resposta Numérica" },
@@ -43,6 +44,7 @@ export default function ChecklistDetailsContainer() {
   const addItemMutation = useAddChecklistItem(id);
   const saveChecklistMutation = useSaveChecklist(id);
 
+  // Verifica se o checklist existe e trata erros
   useEffect(() => {
     if (error) {
       console.error("Erro ao carregar checklist:", error);
@@ -50,6 +52,7 @@ export default function ChecklistDetailsContainer() {
     }
   }, [error]);
 
+  // Redireciona caso o checklist não seja encontrado
   useEffect(() => {
     if (notFound) {
       toast.error("Checklist não encontrado ou acesso negado.");
@@ -57,6 +60,7 @@ export default function ChecklistDetailsContainer() {
     }
   }, [notFound, navigate]);
 
+  // Função para atualizar um item do checklist
   const handleItemChange = (updatedItem: ChecklistItem) => {
     setItems((prevItems) =>
       prevItems.map(item => (item.id === updatedItem.id ? updatedItem : item))
@@ -70,6 +74,7 @@ export default function ChecklistDetailsContainer() {
     });
   };
 
+  // Função para deletar um item do checklist
   const handleDeleteItem = (itemId: string) => {
     deleteItemMutation.mutate(itemId, {
       onSuccess: () => {
@@ -82,23 +87,14 @@ export default function ChecklistDetailsContainer() {
     });
   };
 
+  // Função para adicionar um novo item ao checklist
   const handleAddItem = (newItem: Partial<ChecklistItem>) => {
     addItemMutation.mutate(newItem, {
       onSuccess: (data) => {
-        let options: string[] = [];
-        
-        if (data.opcoes) {
-          if (Array.isArray(data.opcoes)) {
-            options = data.opcoes.map(option => String(option));
-          } else {
-            options = [String(data.opcoes)];
-          }
-        }
-                      
         const addedItem: ChecklistItem = {
           ...data,
           tipo_resposta: data.tipo_resposta as "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla",
-          opcoes: options
+          opcoes: data.opcoes || []
         };
         
         setItems((prevItems) => [...prevItems, addedItem]);
@@ -111,6 +107,7 @@ export default function ChecklistDetailsContainer() {
     });
   };
 
+  // Função para salvar o checklist atualizado
   const handleSave = async () => {
     if (!checklist) return;
     
@@ -155,11 +152,6 @@ export default function ChecklistDetailsContainer() {
     );
   }
 
-  const completedPercentage = 
-    checklist.items_total && checklist.items_total > 0 
-      ? (checklist.items_completed || 0) / checklist.items_total * 100 
-      : 0;
-
   return (
     <div className="space-y-6">
       <ChecklistHeader
@@ -172,11 +164,12 @@ export default function ChecklistDetailsContainer() {
         <div className="grid gap-6">
           <ChecklistForm
             checklist={checklist}
-            users={users.data || []}
+            users={users}
             setChecklist={setChecklist}
           />
 
-          <Progress value={completedPercentage} className="mt-2" />
+          {/* Barra de progresso para indicar andamento */}
+          <Progress value={checklist.items_total ? (checklist.items_completed / checklist.items_total) * 100 : 0} className="mt-2" />
 
           <ChecklistItemsList
             items={items}

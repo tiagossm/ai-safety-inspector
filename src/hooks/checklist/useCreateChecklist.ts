@@ -15,11 +15,6 @@ export function useCreateChecklist() {
     mutationFn: async (newChecklist: NewChecklist) => {
       // Log what we're sending to help debug
       console.log("Creating checklist with data:", newChecklist);
-      console.log("Current user company_id:", extendedUser?.company_id);
-      
-      if (!extendedUser?.company_id && !newChecklist.company_id) {
-        console.warn("Atenção: Criando checklist sem associação com empresa.");
-      }
       
       const { data, error } = await supabase
         .from("checklists")
@@ -30,8 +25,7 @@ export function useCreateChecklist() {
           status_checklist: "ativo",
           category: newChecklist.category || "general",
           responsible_id: newChecklist.responsible_id,
-          user_id: extendedUser?.id, // Garantir que o user_id está definido
-          company_id: newChecklist.company_id || extendedUser?.company_id, // Priorizar company_id do checklist, depois do usuário
+          company_id: newChecklist.company_id || extendedUser?.company_id,
           due_date: newChecklist.due_date || null
         })
         .select();

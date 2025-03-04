@@ -4,12 +4,10 @@ import { Checklist, ChecklistItem } from "@/types/checklist";
 import { useFetchChecklistData } from "./useFetchChecklistData";
 import { useFetchChecklistItems } from "./useFetchChecklistItems";
 import { useFetchUsers } from "./useFetchUsers";
-import { useAuth } from "@/components/AuthProvider";
 
 export function useChecklistDetails(id: string) {
   const [checklist, setChecklist] = useState<Checklist | null>(null);
   const [items, setItems] = useState<ChecklistItem[]>([]);
-  const { user } = useAuth();
   
   // Fetch the checklist data by ID with proper caching and retry logic
   const { 
@@ -21,23 +19,16 @@ export function useChecklistDetails(id: string) {
   // Fetch checklist items with caching
   const { data: itemsData } = useFetchChecklistItems(id, !error);
 
-  // Fetch users for responsible selection - filter by company if needed
-  const usersQuery = useFetchUsers(user?.company_id);
+  // Fetch users for responsible selection
+  const users = useFetchUsers();
 
   // Update checklist when data is loaded - with check to prevent unnecessary updates
   useEffect(() => {
     if (checklistData && (!checklist || checklist.id !== checklistData.id)) {
       console.log("Setting checklist data:", checklistData);
-      
-      // Ensure company_id is set if not already
-      const updatedChecklist = {
-        ...checklistData,
-        company_id: checklistData.company_id || user?.company_id
-      } as Checklist;
-      
-      setChecklist(updatedChecklist);
+      setChecklist(checklistData as Checklist);
     }
-  }, [checklistData, checklist, user]);
+  }, [checklistData, checklist]);
 
   // Update items when data is loaded - with check to prevent unnecessary updates
   useEffect(() => {
@@ -52,7 +43,7 @@ export function useChecklistDetails(id: string) {
     setChecklist,
     items,
     setItems,
-    users: usersQuery,
+    users,
     isLoading,
     error
   };

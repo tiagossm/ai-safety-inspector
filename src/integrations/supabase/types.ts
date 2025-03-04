@@ -175,7 +175,6 @@ export type Database = {
           company_id: string | null
           created_at: string
           description: string | null
-          due_date: string | null
           id: string
           is_template: boolean | null
           responsible_id: string | null
@@ -190,7 +189,6 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           description?: string | null
-          due_date?: string | null
           id?: string
           is_template?: boolean | null
           responsible_id?: string | null
@@ -205,7 +203,6 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           description?: string | null
-          due_date?: string | null
           id?: string
           is_template?: boolean | null
           responsible_id?: string | null
