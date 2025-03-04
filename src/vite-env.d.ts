@@ -1,3 +1,4 @@
+
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
@@ -15,4 +16,21 @@ interface ImportMeta {
 interface Window {
   refreshApp?: () => void;
   versionedUrl?: (url: string) => string;
+  checkConnection?: () => {
+    online: boolean;
+    type: string;
+    version: string;
+  };
+}
+
+// Add Connection API type definitions
+interface Navigator {
+  connection?: {
+    type: string;
+    effectiveType?: string;
+    downlink?: number;
+    rtt?: number;
+    saveData?: boolean;
+    onchange?: () => void;
+  };
 }

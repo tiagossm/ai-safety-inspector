@@ -3,6 +3,14 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import { initOfflineSystem } from './services/offlineSync';
+
+// App version for cache control
+const APP_VERSION = '1.0.1';
+const BUILD_DATE = new Date().toISOString();
+
+// Initialize offline system
+const cleanupOfflineSystem = initOfflineSystem();
 
 // Register service worker for cache control
 if ('serviceWorker' in navigator) {
@@ -34,19 +42,30 @@ if ('serviceWorker' in navigator) {
       }
     });
   });
+  
+  // Add global cleanup on unload
+  window.addEventListener('beforeunload', () => {
+    cleanupOfflineSystem();
+  });
 }
 
 // Add versioning function to help with cache invalidation
 window.versionedUrl = (url) => {
-  const APP_VERSION = '1.0.0';
   const timestamp = new Date().getTime();
   return `${url}?v=${APP_VERSION}&t=${timestamp}`;
 };
 
-// Add version and last build date to help with cache invalidation
-const APP_VERSION = '1.0.0';
-const BUILD_DATE = new Date().toISOString();
+// Log app version and build date
 console.log(`App Version: ${APP_VERSION}, Build Date: ${BUILD_DATE}`);
+
+// Add debug utility
+window.checkConnection = () => {
+  return {
+    online: navigator.onLine,
+    type: navigator.connection ? navigator.connection.type : 'unknown',
+    version: APP_VERSION
+  };
+};
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

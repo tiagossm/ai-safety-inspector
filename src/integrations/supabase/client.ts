@@ -3,20 +3,30 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
+// Define singleton instance
+let supabaseInstance: ReturnType<typeof createClient<Database>> | null = null;
+
 const SUPABASE_URL = "https://jkgmgjjtslkozhehwmng.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprZ21namp0c2xrb3poZWh3bW5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzgxNzc0MjYsImV4cCI6MjA1Mzc1MzQyNn0.KVx6pqvHJZ0m-tnI-M_oaBhRoxva0PJRYcaRorKWzEA";
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
+function createSupabaseClient() {
+  // Only create the client once
+  if (!supabaseInstance) {
+    console.log("✅ Creating new Supabase client instance");
+    supabaseInstance = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        storageKey: 'supabase_auth_token',
+        detectSessionInUrl: true
+      },
+    });
+  }
+  return supabaseInstance;
+}
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    storageKey: 'supabase_auth_token',
-    detectSessionInUrl: true
-  },
-});
+// Export a singleton instance
+export const supabase = createSupabaseClient();
 
 // Log to confirm the client is initialized
 console.log("✅ Supabase client initialized successfully");
