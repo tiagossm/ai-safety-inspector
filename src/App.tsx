@@ -18,6 +18,7 @@ import NotFound from "./pages/NotFound";
 import AddUnit from "./pages/AddUnit";
 import Inspections from "./pages/Inspections";
 import Checklists from "./pages/Checklists";
+import CreateChecklist from "./pages/CreateChecklist";
 import Settings from "./pages/Settings";
 import Dashboard from "./pages/Dashboard";
 import BillingPage from "./pages/BillingPage";
@@ -26,8 +27,16 @@ import Incidents from "./pages/Incidents";
 import AdminDashboard from "./pages/AdminDashboard";
 import ChecklistDetails from "./pages/ChecklistDetails";
 
-// Criando uma instância do QueryClient
-const queryClient = new QueryClient();
+// Criando uma instância do QueryClient com configuração para cache
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      cacheTime: 1000 * 60 * 30, // 30 minutes
+      refetchOnWindowFocus: false, // Prevent unnecessary refetches
+    },
+  },
+});
 
 function App() {
   return (
@@ -55,6 +64,7 @@ function App() {
                   <Route path="/companies/:companyId/units/new" element={<AddUnit />} />
                   <Route path="/inspections" element={<Inspections />} />
                   <Route path="/checklists" element={<Checklists />} />
+                  <Route path="/checklists/new" element={<CreateChecklist />} />
                   <Route path="/checklists/:checklistId" element={<ChecklistDetails />} />
                   <Route path="/incidents" element={<Incidents />} />
                   <Route path="/reports" element={<Reports />} />

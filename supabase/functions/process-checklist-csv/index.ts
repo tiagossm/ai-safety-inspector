@@ -29,15 +29,33 @@ serve(async (req) => {
       throw new Error('No file uploaded');
     }
     
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    
+    // Validate file extension
+    if (!['csv', 'xls', 'xlsx'].includes(fileExtension || '')) {
+      throw new Error('Invalid file type. Only CSV, XLS, and XLSX files are supported.');
+    }
+    
     // Parse form data
     const form = JSON.parse(formJson || '{}');
     
     // Get file content
     const text = await file.text();
+    console.log(`File content preview: ${text.substring(0, 200)}...`);
     
-    // Properly detect and handle different CSV formats
-    const hasHeader = true; // Assume CSV has headers
-    const rows = parse(text, { skipFirstRow: hasHeader });
+    // Parse CSV file with proper options
+    const parseOptions = {
+      skipFirstRow: true, // Skip header row
+      separator: ',', // Default separator
+    };
+    
+    // Try to detect if the file uses semicolon as separator (common in some regions)
+    if (text.split(';').length > text.split(',').length) {
+      parseOptions.separator = ';';
+    }
+    
+    // Parse the CSV
+    const rows = parse(text, parseOptions);
     
     console.log(`Processing ${rows.length} rows from file: ${file.name}`);
     console.log('Form data:', form);
@@ -58,7 +76,8 @@ serve(async (req) => {
         category: form.category || 'general',
         responsible_id: form.responsible_id || null,
         user_id: form.user_id || null,
-        company_id: form.company_id || null
+        company_id: form.company_id || null,
+        due_date: form.due_date || null
       })
       .select()
       .single();
