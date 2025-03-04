@@ -25,7 +25,8 @@ export function useCreateChecklist() {
           status_checklist: "ativo",
           category: newChecklist.category || "general",
           responsible_id: newChecklist.responsible_id,
-          company_id: newChecklist.company_id || extendedUser?.company_id
+          company_id: newChecklist.company_id || extendedUser?.company_id,
+          due_date: newChecklist.due_date || null
         })
         .select();
 

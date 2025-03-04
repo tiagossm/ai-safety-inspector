@@ -33,7 +33,8 @@ export function CreateChecklistDialog() {
     is_template: false,
     category: "general",
     responsible_id: "",
-    company_id: undefined // We'll handle this in the createChecklist mutation
+    company_id: undefined,
+    due_date: null
   });
   const [users, setUsers] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,6 +43,11 @@ export function CreateChecklistDialog() {
   const [aiPrompt, setAiPrompt] = useState("");
   const [numQuestions, setNumQuestions] = useState(10);
   const [aiLoading, setAiLoading] = useState(false);
+  const [questions, setQuestions] = useState<Array<{
+    text: string,
+    type: string,
+    required: boolean
+  }>>([{ text: "", type: "texto", required: true }]);
 
   // Fetch users for the responsible field
   useEffect(() => {
@@ -71,6 +77,22 @@ export function CreateChecklistDialog() {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
     }
+  };
+
+  const handleAddQuestion = () => {
+    setQuestions([...questions, { text: "", type: "texto", required: true }]);
+  };
+
+  const handleRemoveQuestion = (index: number) => {
+    const newQuestions = [...questions];
+    newQuestions.splice(index, 1);
+    setQuestions(newQuestions);
+  };
+
+  const handleQuestionChange = (index: number, field: string, value: any) => {
+    const newQuestions = [...questions];
+    newQuestions[index] = { ...newQuestions[index], [field]: value };
+    setQuestions(newQuestions);
   };
 
   const generateAIChecklist = async () => {
@@ -154,7 +176,26 @@ export function CreateChecklistDialog() {
     try {
       if (activeTab === "manual") {
         console.log("Submitting manual form:", form);
-        await createChecklist.mutateAsync(form);
+        const newChecklist = await createChecklist.mutateAsync(form);
+        
+        // Add questions to the created checklist
+        if (newChecklist?.id && questions.length > 0) {
+          for (let i = 0; i < questions.length; i++) {
+            const q = questions[i];
+            if (q.text.trim()) {
+              await supabase
+                .from("checklist_itens")
+                .insert({
+                  checklist_id: newChecklist.id,
+                  pergunta: q.text,
+                  tipo_resposta: q.type,
+                  obrigatorio: q.required,
+                  ordem: i
+                });
+            }
+          }
+        }
+        
         setOpen(false);
         resetForm();
       } else if (activeTab === "import" && file) {
@@ -206,12 +247,14 @@ export function CreateChecklistDialog() {
       is_template: false,
       category: "general",
       responsible_id: "",
-      company_id: undefined
+      company_id: undefined,
+      due_date: null
     });
     setFile(null);
     setAiPrompt("");
     setNumQuestions(10);
     setActiveTab("manual");
+    setQuestions([{ text: "", type: "texto", required: true }]);
   };
 
   return (
@@ -225,28 +268,28 @@ export function CreateChecklistDialog() {
           Novo Checklist
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="max-w-[800px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Criar Novo Checklist</DialogTitle>
+            <DialogTitle>Criar Nova Lista de Verificação</DialogTitle>
             <DialogDescription>
-              Escolha como deseja criar seu checklist.
+              Escolha como você deseja criar sua lista de verificação.
             </DialogDescription>
           </DialogHeader>
           
           <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-            <TabsList className="grid grid-cols-3">
+            <TabsList className="grid grid-cols-3 mb-4">
               <TabsTrigger value="manual" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
-                <span>Manual</span>
+                <span>Criação Manual</span>
               </TabsTrigger>
               <TabsTrigger value="import" className="flex items-center gap-2">
                 <Upload className="h-4 w-4" />
-                <span>Importar</span>
+                <span>Importar Planilha</span>
               </TabsTrigger>
               <TabsTrigger value="ai" className="flex items-center gap-2">
                 <Bot className="h-4 w-4" />
-                <span>Gerar com IA</span>
+                <span>Gerado por IA</span>
               </TabsTrigger>
             </TabsList>
             
@@ -256,6 +299,10 @@ export function CreateChecklistDialog() {
                 setForm={setForm}
                 users={users}
                 loadingUsers={loadingUsers}
+                questions={questions}
+                onAddQuestion={handleAddQuestion}
+                onRemoveQuestion={handleRemoveQuestion}
+                onQuestionChange={handleQuestionChange}
               />
             </TabsContent>
             
@@ -286,7 +333,7 @@ export function CreateChecklistDialog() {
             </TabsContent>
           </Tabs>
           
-          <DialogFooter className="mt-4">
+          <DialogFooter className="mt-6">
             <Button 
               variant="outline" 
               type="button" 
@@ -303,7 +350,7 @@ export function CreateChecklistDialog() {
                 (activeTab === "ai" && (!aiPrompt.trim() || aiLoading))
               }
             >
-              {isSubmitting ? "Criando..." : "Criar Checklist"}
+              {isSubmitting ? "Criando..." : "Criar Lista de Verificação"}
             </Button>
           </DialogFooter>
         </form>

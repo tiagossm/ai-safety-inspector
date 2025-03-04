@@ -13,6 +13,7 @@ export type Checklist = {
   category?: string;
   responsible_id?: string;
   responsible_name?: string;
+  due_date?: string | null;
   // Propriedades da UI
   collaborators?: CollaboratorType[];
   items?: number;
@@ -43,6 +44,7 @@ export type NewChecklist = {
   category?: string;
   responsible_id?: string;
   company_id?: string;
+  due_date?: string | null;
 };
 
 export type ChecklistFilter = "all" | "templates" | "custom";
