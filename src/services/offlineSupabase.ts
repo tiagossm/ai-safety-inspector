@@ -9,22 +9,17 @@ interface OfflineOperationResult {
   error: null | Error;
 }
 
-// Define concrete function types without nesting
-type InsertFunction = (data: any) => Promise<OfflineOperationResult>;
-type SelectFunction = (columns?: string) => Promise<OfflineOperationResult>;
-type EqFunction = (column: string, value: any) => Promise<OfflineOperationResult>;
-
-// Create simple interfaces for query operations
-interface QueryWithEq {
-  eq: EqFunction;
+// Define the interface for the 'eq' operation
+interface EqOperation {
+  eq: (column: string, value: any) => Promise<OfflineOperationResult>;
 }
 
-// Define the table operations interface with concrete types
+// Define the table operations interface
 interface TableOperations {
-  insert: InsertFunction;
-  update: (data: any) => QueryWithEq;
-  delete: () => QueryWithEq;
-  select: SelectFunction;
+  insert: (data: any) => Promise<OfflineOperationResult>;
+  update: (data: any) => EqOperation;
+  delete: () => EqOperation;
+  select: (columns?: string) => Promise<OfflineOperationResult>;
 }
 
 // Implementation of the table operations
@@ -57,7 +52,7 @@ function createTableOperations(tableName: AllowedTableName): TableOperations {
     },
     
     // Update operation
-    update: (data: any): QueryWithEq => ({
+    update: (data: any): EqOperation => ({
       eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
         try {
           if (navigator.onLine) {
@@ -89,7 +84,7 @@ function createTableOperations(tableName: AllowedTableName): TableOperations {
     }),
     
     // Delete operation
-    delete: (): QueryWithEq => ({
+    delete: (): EqOperation => ({
       eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
         try {
           if (navigator.onLine) {
@@ -145,23 +140,23 @@ function createTableOperations(tableName: AllowedTableName): TableOperations {
 // Create an invalid table operations object for type errors
 function createInvalidTableOperations(tableNameParam: string): TableOperations {
   return {
-    insert: async () => ({ 
+    insert: async (): Promise<OfflineOperationResult> => ({ 
       data: null, 
       error: new Error(`Invalid table: ${tableNameParam}`) 
     }),
-    update: () => ({ 
-      eq: async () => ({ 
+    update: (): EqOperation => ({ 
+      eq: async (): Promise<OfflineOperationResult> => ({ 
         data: null, 
         error: new Error(`Invalid table: ${tableNameParam}`) 
       }) 
     }),
-    delete: () => ({ 
-      eq: async () => ({ 
+    delete: (): EqOperation => ({ 
+      eq: async (): Promise<OfflineOperationResult> => ({ 
         data: null, 
         error: new Error(`Invalid table: ${tableNameParam}`) 
       }) 
     }),
-    select: async () => ({ 
+    select: async (): Promise<OfflineOperationResult> => ({ 
       data: [], 
       error: new Error(`Invalid table: ${tableNameParam}`) 
     })
