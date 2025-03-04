@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChecklistItem } from "@/types/checklist";
@@ -12,9 +11,9 @@ import ChecklistForm from "@/components/checklists/ChecklistForm";
 import ChecklistItemsList from "@/components/checklists/ChecklistItemsList";
 import AddChecklistItemForm from "@/components/checklists/AddChecklistItemForm";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { Progress } from "@/components/ui/progress"; // Barra de progresso
 
-// Define question types configuration
+// Tipos de perguntas disponíveis no checklist
 const questionTypes = [
   { value: "sim/não", label: "Sim/Não" },
   { value: "numérico", label: "Resposta Numérica" },
@@ -45,100 +44,75 @@ export default function ChecklistDetailsContainer() {
   const addItemMutation = useAddChecklistItem(id);
   const saveChecklistMutation = useSaveChecklist(id);
 
-  // Check if checklist exists
+  // Verifica se o checklist existe e trata erros
   useEffect(() => {
     if (error) {
-      console.error("Error loading checklist:", error);
+      console.error("Erro ao carregar checklist:", error);
       setNotFound(true);
     }
   }, [error]);
 
-  // Redirect if not found
+  // Redireciona caso o checklist não seja encontrado
   useEffect(() => {
     if (notFound) {
-      toast.error("Checklist não encontrado ou você não tem permissão para acessá-lo");
+      toast.error("Checklist não encontrado ou acesso negado.");
       navigate("/checklists");
     }
   }, [notFound, navigate]);
 
-  // Handle item change
+  // Função para atualizar um item do checklist
   const handleItemChange = (updatedItem: ChecklistItem) => {
-    const newItems = items.map(item => 
-      item.id === updatedItem.id ? updatedItem : item
+    setItems((prevItems) =>
+      prevItems.map(item => (item.id === updatedItem.id ? updatedItem : item))
     );
-    setItems(newItems);
+
     updateItemMutation.mutate(updatedItem, {
       onError: (error) => {
-        console.error("Error updating item:", error);
-        toast.error("Erro ao atualizar item");
+        console.error("Erro ao atualizar item:", error);
+        toast.error("Falha ao atualizar item.");
       }
     });
   };
 
-  // Handle item deletion
+  // Função para deletar um item do checklist
   const handleDeleteItem = (itemId: string) => {
     deleteItemMutation.mutate(itemId, {
       onSuccess: () => {
-        setItems(items.filter(item => item.id !== itemId));
+        setItems((prevItems) => prevItems.filter(item => item.id !== itemId));
       },
       onError: (error) => {
-        console.error("Error deleting item:", error);
-        toast.error("Erro ao excluir item");
+        console.error("Erro ao excluir item:", error);
+        toast.error("Falha ao excluir item.");
       }
     });
   };
 
-  // Handle adding a new item
+  // Função para adicionar um novo item ao checklist
   const handleAddItem = (newItem: Partial<ChecklistItem>) => {
-    console.log("Adding new item:", newItem);
     addItemMutation.mutate(newItem, {
       onSuccess: (data) => {
-        // Convert opcoes to proper format for UI
-        let parsedOptions: string[] | null = null;
-        if (data.opcoes) {
-          try {
-            if (Array.isArray(data.opcoes)) {
-              parsedOptions = data.opcoes.map(String);
-            } else {
-              parsedOptions = [];
-            }
-          } catch (e) {
-            console.error("Error parsing opcoes:", e);
-            parsedOptions = [];
-          }
-        }
-
         const addedItem: ChecklistItem = {
           ...data,
           tipo_resposta: data.tipo_resposta as "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla",
-          opcoes: parsedOptions
+          opcoes: data.opcoes || []
         };
         
-        setItems([...items, addedItem]);
-        toast.success("Item adicionado com sucesso");
+        setItems((prevItems) => [...prevItems, addedItem]);
+        toast.success("Item adicionado com sucesso.");
       },
       onError: (error) => {
-        console.error("Error adding item:", error);
-        toast.error("Erro ao adicionar item");
+        console.error("Erro ao adicionar item:", error);
+        toast.error("Falha ao adicionar item.");
       }
     });
   };
 
-  // Save all changes
+  // Função para salvar o checklist atualizado
   const handleSave = async () => {
     if (!checklist) return;
     
     setSaving(true);
     try {
-      console.log("Saving checklist:", {
-        title: checklist.title,
-        description: checklist.description,
-        is_template: checklist.is_template,
-        status_checklist: checklist.status_checklist,
-        category: checklist.category,
-        responsible_id: checklist.responsible_id
-      });
-      
       await saveChecklistMutation.mutateAsync({
         title: checklist.title,
         description: checklist.description,
@@ -147,12 +121,12 @@ export default function ChecklistDetailsContainer() {
         category: checklist.category,
         responsible_id: checklist.responsible_id
       });
-      
-      toast.success("Checklist salvo com sucesso");
-      setSaving(false);
+
+      toast.success("Checklist salvo com sucesso.");
     } catch (error) {
-      console.error("Error saving checklist:", error);
-      toast.error("Erro ao salvar checklist");
+      console.error("Erro ao salvar checklist:", error);
+      toast.error("Falha ao salvar checklist.");
+    } finally {
       setSaving(false);
     }
   };
@@ -161,7 +135,7 @@ export default function ChecklistDetailsContainer() {
     return <div className="py-20 text-center">Carregando...</div>;
   }
 
-  if (!checklist && !isLoading) {
+  if (!checklist) {
     return (
       <div className="py-20 text-center">
         <h2 className="text-2xl font-bold mb-4">Checklist não encontrado</h2>
@@ -193,6 +167,9 @@ export default function ChecklistDetailsContainer() {
             users={users}
             setChecklist={setChecklist}
           />
+
+          {/* Barra de progresso para indicar andamento */}
+          <Progress value={checklist.items_total ? (checklist.items_completed / checklist.items_total) * 100 : 0} className="mt-2" />
 
           <ChecklistItemsList
             items={items}

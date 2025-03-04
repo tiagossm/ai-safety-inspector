@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Checklist } from "@/types/checklist";
@@ -8,35 +7,35 @@ export function useFetchChecklists() {
   return useQuery({
     queryKey: ["checklists"],
     queryFn: async () => {
-      console.log("Buscando checklists...");
-      
-      // First fetch the checklists
+      console.log("🔍 Buscando checklists...");
+
+      // Buscar checklists com os novos campos
       const { data: checklists, error } = await supabase
         .from("checklists")
         .select("*")
         .order("created_at", { ascending: false });
 
       if (error) {
-        console.error("Erro ao buscar checklists:", error);
+        console.error("❌ Erro ao buscar checklists:", error);
         throw error;
       }
 
-      console.log("Checklists recebidos do Supabase:", checklists);
-      
-      // Fetch responsible users information where available
+      console.log("✅ Checklists recebidos do Supabase:", checklists);
+
+      // Obter os IDs dos responsáveis
       const responsibleIds = checklists
-        .filter((c: any) => c.responsible_id !== undefined && c.responsible_id !== null)
+        .filter((c: any) => c.responsible_id)
         .map((c: any) => c.responsible_id);
-      
+
       let usersMap: Record<string, string> = {};
-      
+
       if (responsibleIds.length > 0) {
         try {
           const { data: users } = await supabase
-            .from('users')
-            .select('id, name')
-            .in('id', responsibleIds);
-            
+            .from("users")
+            .select("id, name")
+            .in("id", responsibleIds);
+
           if (users) {
             usersMap = users.reduce((acc: Record<string, string>, user: any) => {
               acc[user.id] = user.name;
@@ -44,11 +43,11 @@ export function useFetchChecklists() {
             }, {});
           }
         } catch (err) {
-          console.error("Erro ao buscar responsáveis:", err);
+          console.error("❌ Erro ao buscar responsáveis:", err);
         }
       }
-      
-      // For each checklist, get the number of items
+
+      // Adicionar informações aos checklists
       const checklistsWithItems = await Promise.all(
         checklists.map(async (checklist: any) => {
           try {
@@ -56,43 +55,41 @@ export function useFetchChecklists() {
               .from("checklist_itens")
               .select("*", { count: "exact", head: true })
               .eq("checklist_id", checklist.id);
-              
+
             if (itemsError) throw itemsError;
-            
-            // Cast the database record to our Checklist type with additional fields
+
+            // Garantir que os novos campos estão presentes
             const enrichedChecklist: Checklist = {
               ...checklist,
               items: count || 0,
-              // Get the responsible name from the users map
-              responsible_name: checklist.responsible_id ? usersMap[checklist.responsible_id] || 'Usuário não encontrado' : undefined,
-              // Ensure status_checklist is always "ativo" or "inativo"
+              responsible_name: usersMap[checklist.responsible_id] || "Não atribuído",
               status_checklist: checklist.status_checklist === "inativo" ? "inativo" : "ativo",
-              // Ensure is_template is boolean
               is_template: Boolean(checklist.is_template),
-              // Add mock data for UI
+              category: checklist.category || "Sem categoria",
+              due_date: checklist.due_date || null,
               collaborators: generateMockCollaborators(2),
-              permissions: ["editor"]
+              permissions: ["editor"],
             };
-            
+
             return enrichedChecklist;
           } catch (err) {
-            console.error(`Erro ao buscar itens para checklist ${checklist.id}:`, err);
-            // Cast the database record to our Checklist type with fallback values
-            const fallbackChecklist: Checklist = {
+            console.error(`❌ Erro ao buscar itens para checklist ${checklist.id}:`, err);
+            return {
               ...checklist,
-              // Mock data for UI
               items: 0,
+              responsible_name: "Não atribuído",
+              status_checklist: checklist.status_checklist === "inativo" ? "inativo" : "ativo",
+              is_template: Boolean(checklist.is_template),
+              category: checklist.category || "Sem categoria",
+              due_date: checklist.due_date || null,
               collaborators: generateMockCollaborators(1),
               permissions: ["viewer"],
-              status_checklist: checklist.status_checklist === "inativo" ? "inativo" : "ativo",
-              is_template: Boolean(checklist.is_template)
             };
-            return fallbackChecklist;
           }
         })
       );
 
       return checklistsWithItems;
-    }
+    },
   });
 }

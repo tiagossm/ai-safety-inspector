@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChecklistActions } from "./ChecklistActions";
 import { Progress } from "@/components/ui/progress"; // Barra de progresso
-import { CheckCircle, Clock, Circle } from "lucide-react"; // Ícones de status
+import { CheckCircle, Clock, Circle, Calendar } from "lucide-react"; // Ícones de status
 
 interface ChecklistCardProps {
   checklist: Checklist;
@@ -12,20 +12,29 @@ interface ChecklistCardProps {
 
 // Função para definir ícone de status
 function getStatusIcon(status: string) {
-  if (status === "concluído") return <CheckCircle className="text-green-500 w-4 h-4" />;
+  if (status === "ativo") return <CheckCircle className="text-green-500 w-4 h-4" />;
   if (status === "em andamento") return <Clock className="text-yellow-500 w-4 h-4" />;
   return <Circle className="text-red-500 w-4 h-4" />;
 }
 
+// Função para formatar data
+function formatDate(dateString?: string | null) {
+  if (!dateString) return "Sem data";
+  return new Date(dateString).toLocaleDateString("pt-BR");
+}
+
 export function ChecklistCard({ checklist }: ChecklistCardProps) {
-  const progress = checklist.items_total > 0 ? (checklist.items_completed / checklist.items_total) * 100 : 0;
+  const progress =
+    checklist.items && checklist.items > 0
+      ? ((checklist.items - (checklist.items_completed || 0)) / checklist.items) * 100
+      : 0;
 
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow">
       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
         <div className="flex flex-col space-y-1.5">
           <div className="flex items-center space-x-2">
-            {getStatusIcon(checklist.status)}
+            {getStatusIcon(checklist.status_checklist)}
             <CardTitle className="line-clamp-1 text-base font-medium">
               {checklist.title}
             </CardTitle>
@@ -38,6 +47,7 @@ export function ChecklistCard({ checklist }: ChecklistCardProps) {
         </div>
         <ChecklistActions checklist={checklist} />
       </CardHeader>
+
       <CardContent className="pb-2">
         <p className="text-sm text-muted-foreground line-clamp-2 h-10">
           {checklist.description || "Sem descrição"}
@@ -45,10 +55,14 @@ export function ChecklistCard({ checklist }: ChecklistCardProps) {
         {/* Barra de Progresso */}
         <Progress value={progress} className="mt-2" />
       </CardContent>
+
       <CardFooter className="flex justify-between pt-2">
-        <div className="flex items-center">
+        <div className="flex flex-col space-y-1">
           <p className="text-xs text-muted-foreground">
-            {checklist.items_completed}/{checklist.items_total} itens concluídos
+            {checklist.items_completed}/{checklist.items} itens concluídos
+          </p>
+          <p className="text-xs text-muted-foreground flex items-center">
+            <Calendar className="w-4 h-4 mr-1 text-gray-500" /> {formatDate(checklist.due_date)}
           </p>
         </div>
         <div className="flex -space-x-2">
