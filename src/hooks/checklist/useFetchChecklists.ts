@@ -10,7 +10,7 @@ export function useFetchChecklists() {
   
   return useQuery({
     queryKey: ["checklists", user?.id, user?.company_id],
-    queryFn: async () => {
+    queryFn: async (): Promise<Checklist[]> => {
       console.log("🔍 Buscando checklists...");
       console.log("👤 Usuario logado:", user?.id);
       console.log("🏢 Empresa do usuário:", user?.company_id);

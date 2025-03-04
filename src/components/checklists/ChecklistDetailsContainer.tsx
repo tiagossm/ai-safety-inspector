@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChecklistItem } from "@/types/checklist";
@@ -91,10 +92,14 @@ export default function ChecklistDetailsContainer() {
   const handleAddItem = (newItem: Partial<ChecklistItem>) => {
     addItemMutation.mutate(newItem, {
       onSuccess: (data) => {
+        // Ensure opcoes is an array, not a string or any other type
+        const opcoes = Array.isArray(data.opcoes) ? data.opcoes : 
+                      (data.opcoes ? [data.opcoes.toString()] : []);
+                      
         const addedItem: ChecklistItem = {
           ...data,
           tipo_resposta: data.tipo_resposta as "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla",
-          opcoes: data.opcoes || []
+          opcoes: opcoes
         };
         
         setItems((prevItems) => [...prevItems, addedItem]);
@@ -152,6 +157,12 @@ export default function ChecklistDetailsContainer() {
     );
   }
 
+  // Correctly calculate progress
+  const completedPercentage = 
+    checklist.items_total && checklist.items_total > 0 
+      ? (checklist.items_completed || 0) / checklist.items_total * 100 
+      : 0;
+
   return (
     <div className="space-y-6">
       <ChecklistHeader
@@ -169,7 +180,7 @@ export default function ChecklistDetailsContainer() {
           />
 
           {/* Barra de progresso para indicar andamento */}
-          <Progress value={checklist.items_total ? (checklist.items_completed / checklist.items_total) * 100 : 0} className="mt-2" />
+          <Progress value={completedPercentage} className="mt-2" />
 
           <ChecklistItemsList
             items={items}

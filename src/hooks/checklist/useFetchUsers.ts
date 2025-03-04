@@ -2,10 +2,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+interface UserBasic {
+  id: string;
+  name: string;
+}
+
 export function useFetchUsers(companyId?: string) {
   return useQuery({
     queryKey: ["users", companyId],
-    queryFn: async () => {
+    queryFn: async (): Promise<UserBasic[]> => {
       console.log("Fetching users for responsible selection");
       
       // Base query to get users

@@ -17,6 +17,8 @@ export type Checklist = {
   // Propriedades da UI
   collaborators?: CollaboratorType[];
   items?: number;
+  items_total?: number;
+  items_completed?: number;
   permissions?: string[];
 };
 

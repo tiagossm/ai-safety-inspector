@@ -22,7 +22,7 @@ export function useChecklistDetails(id: string) {
   const { data: itemsData } = useFetchChecklistItems(id, !error);
 
   // Fetch users for responsible selection - filter by company if needed
-  const users = useFetchUsers(user?.company_id);
+  const usersQuery = useFetchUsers(user?.company_id);
 
   // Update checklist when data is loaded - with check to prevent unnecessary updates
   useEffect(() => {
@@ -52,7 +52,7 @@ export function useChecklistDetails(id: string) {
     setChecklist,
     items,
     setItems,
-    users,
+    users: usersQuery,
     isLoading,
     error
   };

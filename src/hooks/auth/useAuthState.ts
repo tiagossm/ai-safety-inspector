@@ -27,15 +27,26 @@ export function useAuthState() {
         }
         
         if (data.user) {
-          // Buscar informações adicionais do usuário, incluindo company_id
-          const { data: userData, error: userError } = await supabase
+          // Get additional user data from the users table
+          const { data: userData, error: userDataError } = await supabase
             .from("users")
-            .select("role, tier, company_id")
+            .select("role, tier, company_id") 
             .eq("id", data.user.id)
             .single();
             
-          if (userError) {
-            console.error("Erro ao buscar dados complementares do usuário:", userError);
+          if (userDataError) {
+            console.error("Erro ao buscar dados complementares do usuário:", userDataError);
+            // If error accessing specific columns, let's try a more general approach
+            const enhancedUser: AuthUser = {
+              ...data.user,
+              // Default values if user data fetch fails
+              role: "user",
+              tier: "technician"
+            };
+            
+            setUser(enhancedUser);
+            setLoading(false);
+            return;
           }
           
           // Criar usuário estendido com tipagem correta

@@ -38,15 +38,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (data?.session?.user) {
           console.log("✅ Sessão restaurada do Supabase");
-          // Fetch additional user data including company_id
+          // Fetch additional user data
           const { data: userData, error: userError } = await supabase
             .from("users")
-            .select("id, name, role, tier, company_id")
+            .select("role, tier, company_id")
             .eq("id", data.session.user.id)
             .single();
 
           if (userError) {
             console.error("Erro ao buscar dados do usuário:", userError);
+            // Default values if we can't access user data
+            const enhancedUser: AuthUser = {
+              ...data.session.user,
+              role: "user",
+              tier: "technician"
+            };
+            
+            setUser(enhancedUser);
+            localStorage.setItem("authUser", JSON.stringify(enhancedUser));
+            setLoading(false);
+            return;
           }
 
           // Create enhanced user with proper typing
@@ -76,15 +87,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log(`🔄 Estado de autenticação alterado: ${event}`);
       if (session?.user) {
-        // Fetch additional user data including company_id
+        // Fetch additional user data
         const { data: userData, error: userError } = await supabase
           .from("users")
-          .select("id, name, role, tier, company_id")
+          .select("role, tier, company_id")
           .eq("id", session.user.id)
           .single();
 
         if (userError) {
           console.error("Erro ao buscar dados do usuário:", userError);
+          // Default values if we can't access user data
+          const enhancedUser: AuthUser = {
+            ...session.user,
+            role: "user",
+            tier: "technician"
+          };
+          
+          setUser(enhancedUser);
+          localStorage.setItem("authUser", JSON.stringify(enhancedUser));
+          return;
         }
 
         // Create enhanced user with proper typing
