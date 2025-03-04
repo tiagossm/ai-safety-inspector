@@ -37,8 +37,9 @@ export function useAuthState() {
             const enhancedUser: AuthUser = {
               ...data.user,
               // Default values in case of error or missing data
-              role: userError ? 'user' : userData?.role || 'user',
-              tier: userError ? 'technician' : userData?.tier || 'technician',
+              // Cast database role value to allowed type
+              role: userError ? 'user' : (userData?.role === 'Administrador' ? 'admin' : 'user'),
+              tier: userError ? 'technician' : (userData?.tier as any || 'technician'),
               company_id: userError ? undefined : userData?.company_id
             };
 

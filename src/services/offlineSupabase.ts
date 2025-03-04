@@ -9,8 +9,6 @@ interface OfflineOperationResult {
   error: null | Error;
 }
 
-// Create a completely flat type hierarchy with no nesting that could cause recursive type issues
-
 // Define the eq filter function type separately
 type EqFilterFn = (column: string, value: any) => Promise<OfflineOperationResult>;
 
@@ -51,18 +49,18 @@ function createTableOperations(tableName: AllowedTableName): TableOperations {
           if (!data.id) {
             data.id = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
           }
-          await saveForSync(tableName, 'INSERT', data);
+          await saveForSync(tableName, 'insert', data);
           return { data: [data], error: null };
         }
       } catch (error) {
         console.error(`Error in offline insert for ${tableName}:`, error);
         // Always fall back to offline storage on error
-        await saveForSync(tableName, 'INSERT', data);
+        await saveForSync(tableName, 'insert', data);
         return { data: [data], error: null };
       }
     },
     
-    // Update operation - explicitly annotate the return type to prevent inference issues
+    // Update operation
     update: (data: any): WithEqFilter => {
       return {
         eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
@@ -80,7 +78,7 @@ function createTableOperations(tableName: AllowedTableName): TableOperations {
               if (column === 'id') {
                 data.id = value;
               }
-              await saveForSync(tableName, 'UPDATE', data);
+              await saveForSync(tableName, 'update', data);
               return { data: [data], error: null };
             }
           } catch (error) {
@@ -89,14 +87,14 @@ function createTableOperations(tableName: AllowedTableName): TableOperations {
             if (column === 'id') {
               data.id = value;
             }
-            await saveForSync(tableName, 'UPDATE', data);
+            await saveForSync(tableName, 'update', data);
             return { data: [data], error: null };
           }
         }
       };
     },
     
-    // Delete operation - explicitly annotate the return type to prevent inference issues
+    // Delete operation
     delete: (): WithEqFilter => {
       return {
         eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
@@ -112,14 +110,14 @@ function createTableOperations(tableName: AllowedTableName): TableOperations {
             } else {
               // For delete we just need the ID
               const data = { id: value };
-              await saveForSync(tableName, 'DELETE', data);
+              await saveForSync(tableName, 'delete', data);
               return { data: [], error: null };
             }
           } catch (error) {
             console.error(`Error in offline delete for ${tableName}:`, error);
             // Always fall back to offline storage on error
             const data = { id: value };
-            await saveForSync(tableName, 'DELETE', data);
+            await saveForSync(tableName, 'delete', data);
             return { data: [], error: null };
           }
         }

@@ -138,6 +138,9 @@ export const useSyncData = () => {
       if (result.success) {
         // Invalidate all queries to refresh data
         queryClient.invalidateQueries();
+        toast.success(result.message || "Sync completed successfully");
+      } else {
+        toast.error(result.message || "Sync failed");
       }
       return result;
     } finally {
