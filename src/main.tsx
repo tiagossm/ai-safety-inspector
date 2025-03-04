@@ -5,9 +5,10 @@ import App from './App.tsx';
 import './index.css';
 import { initOfflineSystem } from './services/offlineSync';
 import { registerServiceWorker } from './services/serviceWorkerManager';
+import { toast } from 'sonner';
 
 // App version for cache control
-const APP_VERSION = '1.0.2';
+const APP_VERSION = '1.0.3'; // Incremented version
 const BUILD_DATE = new Date().toISOString();
 
 // Initialize offline system
@@ -18,14 +19,25 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     registerServiceWorker()
       .then(registration => {
-        console.log('Service Worker registered with scope:', registration?.scope);
-        
-        // Listen for messages from service worker
-        navigator.serviceWorker.addEventListener('message', (event) => {
-          if (event.data && event.data.type === 'CACHE_INVALIDATED') {
-            console.log('Cache has been invalidated by service worker');
-          }
-        });
+        if (registration) {
+          console.log('Service Worker registered with scope:', registration.scope);
+          
+          // Listen for messages from service worker
+          navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data) {
+              if (event.data.type === 'CACHE_INVALIDATED') {
+                console.log('Cache has been invalidated by service worker');
+                toast.info('App cache cleared. Using the latest version.');
+              } else if (event.data.type === 'SYNC_NEEDED') {
+                console.log('Sync requested by service worker');
+                toast.info('Syncing offline data...');
+              }
+            }
+          });
+        }
+      })
+      .catch(error => {
+        console.error('Service worker registration failed:', error);
       });
       
     // Add global cleanup on unload
@@ -51,6 +63,12 @@ window.checkConnection = () => {
     type: navigator.connection ? navigator.connection.type : 'unknown',
     version: APP_VERSION
   };
+};
+
+// Add debug function for offline data
+window.debugOfflineData = async () => {
+  const { debugViewAllData } = await import('./services/offlineDb');
+  return await debugViewAllData();
 };
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

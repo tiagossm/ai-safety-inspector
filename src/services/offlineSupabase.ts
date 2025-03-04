@@ -9,43 +9,47 @@ interface OfflineOperationResult {
   error: null | Error;
 }
 
-// Type definitions for the table operations
-type BasicCallback = () => Promise<OfflineOperationResult>;
-type EqMethod = (column: string, value: any) => Promise<OfflineOperationResult>;
-
-// Interface for the table methods
-interface TableMethods {
+// Define non-recursive types for table operations
+interface TableOperations {
   insert: (data: any) => Promise<OfflineOperationResult>;
-  update: (data: any) => { eq: EqMethod };
-  delete: () => { eq: EqMethod };
+  update: (data: any) => UpdateOperation;
+  delete: () => DeleteOperation;
   select: (columns?: string) => Promise<OfflineOperationResult>;
+}
+
+interface UpdateOperation {
+  eq: (column: string, value: any) => Promise<OfflineOperationResult>;
+}
+
+interface DeleteOperation {
+  eq: (column: string, value: any) => Promise<OfflineOperationResult>;
 }
 
 // Offline-capable version of supabase operations
 export const offlineSupabase = {
-  from: (tableNameParam: string): TableMethods => {
+  from: (tableNameParam: string): TableOperations => {
     // Type check the table name
     if (!isValidTable(tableNameParam)) {
       console.error(`Invalid table name: ${tableNameParam}`);
       // Return a dummy object that won't crash but will fail gracefully
       return {
-        insert: async (data: any): Promise<OfflineOperationResult> => ({ 
+        insert: async (data: any) => ({ 
           data: null, 
           error: new Error(`Invalid table: ${tableNameParam}`) 
         }),
         update: (data: any) => ({ 
-          eq: async (column: string, value: any): Promise<OfflineOperationResult> => ({ 
+          eq: async (column: string, value: any) => ({ 
             data: null, 
             error: new Error(`Invalid table: ${tableNameParam}`) 
           }) 
         }),
         delete: () => ({ 
-          eq: async (column: string, value: any): Promise<OfflineOperationResult> => ({ 
+          eq: async (column: string, value: any) => ({ 
             data: null, 
             error: new Error(`Invalid table: ${tableNameParam}`) 
           }) 
         }),
-        select: async (columns?: string): Promise<OfflineOperationResult> => ({ 
+        select: async (columns?: string) => ({ 
           data: [], 
           error: new Error(`Invalid table: ${tableNameParam}`) 
         })
@@ -81,7 +85,7 @@ export const offlineSupabase = {
         }
       },
       
-      update: (data: any) => {
+      update: (data: any): UpdateOperation => {
         return {
           eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
             try {
@@ -114,7 +118,7 @@ export const offlineSupabase = {
         };
       },
       
-      delete: () => {
+      delete: (): DeleteOperation => {
         return {
           eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
             try {

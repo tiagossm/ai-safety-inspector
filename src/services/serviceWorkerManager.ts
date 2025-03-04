@@ -24,6 +24,7 @@ export async function registerServiceWorker() {
       
       if (existingWorker) {
         console.log('Service worker already registered with scope:', existingWorker.scope);
+        setupCacheManagement(existingWorker);
         return existingWorker;
       }
       
@@ -189,7 +190,72 @@ self.addEventListener('message', (event) => {
     });
   }
 });
-  `;
+
+// Add sync event for offline data
+self.addEventListener('sync', (event) => {
+  console.log('[SW] Sync event triggered:', event.tag);
+  
+  if (event.tag === 'sync-pending-data') {
+    event.waitUntil(
+      syncPendingData().then(result => {
+        console.log('[SW] Sync result:', result);
+      })
+    );
+  }
+});
+
+// Function to sync pending data
+async function syncPendingData() {
+  try {
+    // Fetch the IndexedDB data
+    const dbName = 'offlineSync';
+    const request = indexedDB.open(dbName, 1);
+    
+    return new Promise((resolve, reject) => {
+      request.onerror = () => {
+        console.error('[SW] Failed to open IndexedDB for sync');
+        resolve({ success: false, message: 'Failed to open IndexedDB' });
+      };
+      
+      request.onsuccess = (event) => {
+        const db = request.result;
+        const transaction = db.transaction('pendingRequests', 'readonly');
+        const store = transaction.objectStore('pendingRequests');
+        const countRequest = store.count();
+        
+        countRequest.onsuccess = () => {
+          const count = countRequest.result;
+          
+          if (count === 0) {
+            console.log('[SW] No pending requests to sync');
+            resolve({ success: true, message: 'No pending requests to sync' });
+            return;
+          }
+          
+          console.log('[SW] Found', count, 'pending requests to sync');
+          // The actual sync will be handled by the syncManager.ts
+          // This just notifies the main thread that sync is needed
+          self.clients.matchAll().then(clients => {
+            clients.forEach(client => {
+              client.postMessage({ type: 'SYNC_NEEDED' });
+            });
+          });
+          
+          resolve({ success: true, message: 'Sync notification sent' });
+        };
+        
+        countRequest.onerror = () => {
+          console.error('[SW] Failed to count pending requests');
+          resolve({ success: false, message: 'Failed to count pending requests' });
+        };
+      };
+    });
+  } catch (error) {
+    console.error('[SW] Error in syncPendingData:', error);
+    return { success: false, message: error.message };
+  }
+}
+`;
 }
 
 // Function to manually install a service worker - useful for development

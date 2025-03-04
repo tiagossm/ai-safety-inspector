@@ -22,19 +22,27 @@ export async function syncWithServer() {
     return { success: true, message: 'No pending requests to sync' };
   }
   
-  console.log(`Syncing ${pendingRequests.length} pending requests`);
+  console.log(`Starting sync for ${pendingRequests.length} pending requests`);
   
   let successCount = 0;
   let failureCount = 0;
+  const errors = [];
   
   // Process each request
   for (const request of pendingRequests) {
     try {
+      console.log(`Syncing request: ${request.table}.${request.operation} for ID: ${request.data.id || 'new item'}`);
+      
       let result;
       
       // Skip if max retries reached
       if (request.retries >= MAX_RETRIES) {
-        console.error(`Request ${request.id} has reached max retries, will be skipped`);
+        console.error(`Request ${request.id} has reached max retries (${MAX_RETRIES}), will be skipped`);
+        errors.push({
+          id: request.id,
+          table: request.table,
+          reason: `Max retries (${MAX_RETRIES}) reached`
+        });
         failureCount++;
         continue;
       }
@@ -71,9 +79,15 @@ export async function syncWithServer() {
       // If successful, remove from pending requests
       await removePendingRequest(request.id);
       successCount++;
+      console.log(`Sync successful for request: ${request.id}`);
       
     } catch (error) {
       console.error(`Error syncing request ${request.id}:`, error);
+      errors.push({
+        id: request.id,
+        table: request.table,
+        error: error.message || 'Unknown error'
+      });
       
       // Increment retry count
       await incrementRetryCount(request);
@@ -83,7 +97,12 @@ export async function syncWithServer() {
   
   const result = {
     success: failureCount === 0,
-    message: `Sync completed: ${successCount} succeeded, ${failureCount} failed`
+    message: `Sync completed: ${successCount} succeeded, ${failureCount} failed`,
+    details: {
+      successCount,
+      failureCount,
+      errors
+    }
   };
   
   if (failureCount > 0) {
@@ -92,6 +111,35 @@ export async function syncWithServer() {
     toast.success(`Sync completed successfully. ${successCount} items synced.`);
   }
   
-  console.log(result.message);
+  console.log('Sync result:', result);
   return result;
+}
+
+// Function to register for sync events
+export function registerSyncEvents() {
+  // Listen for sync events from the service worker
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'SYNC_NEEDED') {
+        console.log('Received sync request from service worker');
+        syncWithServer().then(result => {
+          console.log('Sync requested by service worker completed:', result);
+        });
+      }
+    });
+  }
+  
+  // Register a background sync if supported
+  if ('serviceWorker' in navigator && 'SyncManager' in window) {
+    navigator.serviceWorker.ready.then(registration => {
+      // Register for sync event
+      registration.sync.register('sync-pending-data')
+        .then(() => {
+          console.log('Background sync registered successfully');
+        })
+        .catch(err => {
+          console.error('Background sync registration failed:', err);
+        });
+    });
+  }
 }
