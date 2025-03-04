@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,22 +27,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Função para buscar os dados completos do usuário (por exemplo, company_id)
-  async function fetchExtendedUser(userId: string): Promise<AuthUser | null> {
-    const { data, error } = await supabase
-      .from("users")
-      .select("id, company_id, name") // adicione outros campos conforme necessário
-      .eq("id", userId)
-      .single();
-
-    if (error) {
-      console.error("Erro ao buscar detalhes do usuário:", error);
-      return null;
-    }
-    return data;
-  }
-
-  // Inicializa a sessão e busca dados completos do usuário
+  // **Verifica a sessão ao montar o componente**
   useEffect(() => {
     const initializeAuth = async () => {
       console.log("🔄 Iniciando verificação de sessão...");
@@ -52,14 +38,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (data?.session?.user) {
           console.log("✅ Sessão restaurada do Supabase");
-          // Busca os dados completos do usuário
-          const extendedUser = await fetchExtendedUser(data.session.user.id);
-          if (extendedUser) {
-            setUser(extendedUser);
-            localStorage.setItem("authUser", JSON.stringify(extendedUser));
-          } else {
-            // Caso não consiga buscar os dados completos, mantenha o usuário básico
-            setUser(data.session.user);
+          
+          // Get additional user data from the users table
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', data.session.user.id)
+              .single();
+
+            // Create enhanced user object
+            const enhancedUser: AuthUser = {
+              ...data.session.user,
+              // Default values in case of error or missing data
+              role: userError ? 'user' : userData?.role || 'user',
+              tier: userError ? 'technician' : userData?.tier || 'technician',
+              company_id: userError ? undefined : userData?.company_id
+            };
+
+            setUser(enhancedUser);
+            localStorage.setItem("authUser", JSON.stringify(enhancedUser));
+          } catch (err) {
+            console.error("❌ Error fetching user data:", err);
+            // Still set the basic user if there's an error fetching additional data
+            setUser(data.session.user as AuthUser);
             localStorage.setItem("authUser", JSON.stringify(data.session.user));
           }
         }
@@ -74,34 +76,49 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     initializeAuth();
   }, []);
 
-  // Atualiza o estado do usuário em eventos de autenticação
+  // **Configura eventos de autenticação**
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log(`🔄 Estado de autenticação alterado: ${event}`);
-        if (session?.user) {
-          // Busca os dados completos do usuário após a mudança de estado
-          const extendedUser = await fetchExtendedUser(session.user.id);
-          if (extendedUser) {
-            setUser(extendedUser);
-            localStorage.setItem("authUser", JSON.stringify(extendedUser));
-          } else {
-            setUser(session.user);
-            localStorage.setItem("authUser", JSON.stringify(session.user));
-          }
-        } else {
-          setUser(null);
-          localStorage.removeItem("authUser");
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log(`🔄 Estado de autenticação alterado: ${event}`);
+      
+      if (session?.user) {
+        try {
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          // Create enhanced user object
+          const enhancedUser: AuthUser = {
+            ...session.user,
+            // Default values in case of error or missing data
+            role: userError ? 'user' : userData?.role || 'user',
+            tier: userError ? 'technician' : userData?.tier || 'technician',
+            company_id: userError ? undefined : userData?.company_id
+          };
+
+          setUser(enhancedUser);
+          localStorage.setItem("authUser", JSON.stringify(enhancedUser));
+        } catch (err) {
+          console.error("❌ Error fetching user data:", err);
+          // Still set the basic user if there's an error fetching additional data
+          setUser(session.user as AuthUser);
+          localStorage.setItem("authUser", JSON.stringify(session.user));
         }
-        setLoading(false);
+      } else {
+        setUser(null);
+        localStorage.removeItem("authUser");
       }
-    );
+      setLoading(false);
+    });
 
     return () => {
       authListener?.subscription.unsubscribe();
     };
   }, []);
 
+  // **Função de logout**
   const logout = async () => {
     await supabase.auth.signOut();
     localStorage.removeItem("authUser");

@@ -175,6 +175,7 @@ export type Database = {
           company_id: string | null
           created_at: string
           description: string | null
+          due_date: string | null
           id: string
           is_template: boolean | null
           responsible_id: string | null
@@ -189,6 +190,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           description?: string | null
+          due_date?: string | null
           id?: string
           is_template?: boolean | null
           responsible_id?: string | null
@@ -203,6 +205,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           description?: string | null
+          due_date?: string | null
           id?: string
           is_template?: boolean | null
           responsible_id?: string | null
@@ -230,6 +233,13 @@ export type Database = {
           {
             foreignKeyName: "checklists_responsible_id_fkey"
             columns: ["responsible_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_checklists_user_id"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -551,7 +561,9 @@ export type Database = {
           approved_by: string | null
           audio_url: string | null
           checklist: Json | null
+          checklist_id: string | null
           cnae: string
+          company_id: string | null
           created_at: string
           id: string
           photos: string[] | null
@@ -569,7 +581,9 @@ export type Database = {
           approved_by?: string | null
           audio_url?: string | null
           checklist?: Json | null
+          checklist_id?: string | null
           cnae: string
+          company_id?: string | null
           created_at?: string
           id?: string
           photos?: string[] | null
@@ -587,7 +601,9 @@ export type Database = {
           approved_by?: string | null
           audio_url?: string | null
           checklist?: Json | null
+          checklist_id?: string | null
           cnae?: string
+          company_id?: string | null
           created_at?: string
           id?: string
           photos?: string[] | null
@@ -597,7 +613,29 @@ export type Database = {
           sync_status?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_inspections_checklist_id"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "checklists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_inspections_company_id"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "active_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_inspections_company_id"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       nr22_dimensionamento: {
         Row: {
@@ -1195,6 +1233,7 @@ export type Database = {
       users: {
         Row: {
           avatar_url: string | null
+          company_id: string | null
           cpf: string | null
           created_at: string | null
           email: string | null
@@ -1212,6 +1251,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          company_id?: string | null
           cpf?: string | null
           created_at?: string | null
           email?: string | null
@@ -1229,6 +1269,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          company_id?: string | null
           cpf?: string | null
           created_at?: string | null
           email?: string | null
@@ -1244,7 +1285,22 @@ export type Database = {
           tier?: Database["public"]["Enums"]["user_tier"] | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_users_company_id"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "active_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_users_company_id"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

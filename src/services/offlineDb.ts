@@ -1,266 +1,124 @@
-import { openDB, DBSchema, IDBPDatabase } from 'idb';
-import { toast } from 'sonner';
 
-// Define our database schema
-interface OfflineSyncDB extends DBSchema {
-  pendingRequests: {
-    key: string;
-    value: {
-      id: string;
-      table: string;
-      operation: 'INSERT' | 'UPDATE' | 'DELETE';
-      data: any;
-      timestamp: number;
-      retries: number;
-    };
-    indexes: { 'by-table': string };
-  };
-  offlineData: {
-    key: string;
-    value: {
-      table: string;
-      id: string;
-      data: any;
-      lastUpdated: number;
-    };
-    indexes: { 'by-table': string };
-  };
+import { openDB, IDBPDatabase } from 'idb';
+
+// Define interface for sync item
+interface SyncItem {
+  id: string;
+  table: string;
+  operation: 'insert' | 'update' | 'delete';
+  data: any;
+  timestamp: number;
 }
 
-// Database version
-const DB_VERSION = 1;
-const DB_NAME = 'offlineSync';
+let db: IDBPDatabase;
 
-let db: IDBPDatabase<OfflineSyncDB> | null = null;
-
-// Initialize the database
 export async function initOfflineDb() {
-  if (db) return db;
-  
-  console.log('Initializing offline database...');
-  
   try {
-    db = await openDB<OfflineSyncDB>(DB_NAME, DB_VERSION, {
-      upgrade(database) {
-        // Create stores if they don't exist
-        console.log('Upgrading database to version', DB_VERSION);
-        
-        if (!database.objectStoreNames.contains('pendingRequests')) {
-          console.log('Creating pendingRequests store');
-          const pendingRequestsStore = database.createObjectStore('pendingRequests', { keyPath: 'id' });
-          pendingRequestsStore.createIndex('by-table', 'table');
+    db = await openDB('offlineSync', 1, {
+      upgrade(db) {
+        // Create stores for each table we want to sync
+        if (!db.objectStoreNames.contains('syncQueue')) {
+          db.createObjectStore('syncQueue', { keyPath: 'id' });
         }
         
-        if (!database.objectStoreNames.contains('offlineData')) {
-          console.log('Creating offlineData store');
-          const offlineDataStore = database.createObjectStore('offlineData', { keyPath: 'id' });
-          offlineDataStore.createIndex('by-table', 'table');
+        // Create stores for offline data
+        if (!db.objectStoreNames.contains('checklists')) {
+          db.createObjectStore('checklists', { keyPath: 'id' });
+        }
+        
+        if (!db.objectStoreNames.contains('users')) {
+          db.createObjectStore('users', { keyPath: 'id' });
+        }
+        
+        if (!db.objectStoreNames.contains('companies')) {
+          db.createObjectStore('companies', { keyPath: 'id' });
+        }
+        
+        if (!db.objectStoreNames.contains('inspections')) {
+          db.createObjectStore('inspections', { keyPath: 'id' });
         }
       }
     });
     
-    console.log('Offline database initialized successfully');
-    return db;
+    console.log('Offline database initialized');
+    return true;
   } catch (error) {
     console.error('Failed to initialize offline database:', error);
-    toast.error('Failed to initialize offline storage. Some features may not work correctly.');
-    throw error;
+    return false;
   }
 }
 
-// Save data to be synced later
 export async function saveForSync(
-  table: string, 
-  operation: 'INSERT' | 'UPDATE' | 'DELETE', 
+  table: string,
+  operation: 'insert' | 'update' | 'delete',
   data: any
-) {
-  console.log(`Saving ${operation} operation for ${table} to be synced later:`, data);
+): Promise<boolean> {
+  if (!db) {
+    await initOfflineDb();
+  }
   
   try {
-    const database = await initOfflineDb();
-    
-    const requestId = `${table}_${operation}_${data.id || Date.now()}`;
-    
-    await database.put('pendingRequests', {
-      id: requestId,
+    const syncItem: SyncItem = {
+      id: `${table}_${data.id}_${Date.now()}`,
       table,
       operation,
       data,
-      timestamp: Date.now(),
-      retries: 0
-    });
+      timestamp: Date.now()
+    };
     
-    // If it's not a DELETE operation, update the offlineData store
-    if (operation !== 'DELETE') {
-      await database.put('offlineData', {
-        table,
-        id: data.id || requestId,
-        data,
-        lastUpdated: Date.now()
-      });
-      console.log(`Saved ${operation} data to offline storage for ${table}`);
-    } else if (data.id) {
-      // For DELETE operations, remove from offlineData
-      try {
-        await database.delete('offlineData', data.id);
-        console.log(`Marked item for deletion in offline storage: ${table} ID:${data.id}`);
-      } catch (error) {
-        console.error('Error deleting from offlineData:', error);
-      }
+    // Save to sync queue
+    await db.put('syncQueue', syncItem);
+    
+    // Also save to the corresponding table for local use
+    if (operation !== 'delete') {
+      await db.put(table, data);
+    } else {
+      await db.delete(table, data.id);
     }
     
-    // Trigger a sync registration if available
-    if ('serviceWorker' in navigator && 'SyncManager' in window) {
-      const registration = await navigator.serviceWorker.ready;
-      
-      try {
-        // Check if sync is available on this registration
-        if (registration.sync) {
-          await registration.sync.register('sync-pending-data');
-          console.log('Registered for background sync');
-        } else {
-          console.log('SyncManager not available in this browser');
-        }
-      } catch (err) {
-        console.error('Background sync registration failed:', err);
-      }
-    }
-    
-    return requestId;
+    return true;
   } catch (error) {
-    console.error(`Error saving ${operation} operation for ${table}:`, error);
-    toast.error(`Failed to save offline data. Please try again.`);
-    throw error;
+    console.error('Failed to save for sync:', error);
+    return false;
   }
 }
 
-// Get data that was saved offline
-export async function getOfflineData(table: string) {
+export async function getOfflineData(table: string): Promise<any[]> {
+  if (!db) {
+    await initOfflineDb();
+  }
+  
   try {
-    const database = await initOfflineDb();
-    
-    const tableIndex = database.transaction('offlineData').store.index('by-table');
-    const data = await tableIndex.getAll(table);
-    
-    console.log(`Retrieved ${data.length} offline items for ${table}`);
-    return data;
+    return await db.getAll(table);
   } catch (error) {
-    console.error(`Error getting offline data for ${table}:`, error);
+    console.error(`Failed to get offline data for ${table}:`, error);
     return [];
   }
 }
 
-// Get all pending requests
-export async function getPendingRequests() {
+export async function getSyncQueue(): Promise<SyncItem[]> {
+  if (!db) {
+    await initOfflineDb();
+  }
+  
   try {
-    const database = await initOfflineDb();
-    const requests = await database.getAll('pendingRequests');
-    console.log(`Retrieved ${requests.length} pending requests for sync`);
-    return requests;
+    return await db.getAll('syncQueue');
   } catch (error) {
-    console.error('Error getting pending requests:', error);
+    console.error('Failed to get sync queue:', error);
     return [];
   }
 }
 
-// Get pending requests for a specific table
-export async function getPendingRequestsByTable(table: string) {
-  try {
-    const database = await initOfflineDb();
-    const index = database.transaction('pendingRequests').store.index('by-table');
-    const requests = await index.getAll(table);
-    console.log(`Retrieved ${requests.length} pending requests for table ${table}`);
-    return requests;
-  } catch (error) {
-    console.error(`Error getting pending requests for table ${table}:`, error);
-    return [];
+export async function clearSyncItem(id: string): Promise<boolean> {
+  if (!db) {
+    await initOfflineDb();
   }
-}
-
-// Remove a pending request
-export async function removePendingRequest(id: string) {
-  try {
-    const database = await initOfflineDb();
-    await database.delete('pendingRequests', id);
-    console.log(`Removed pending request: ${id}`);
-  } catch (error) {
-    console.error(`Error removing pending request ${id}:`, error);
-    throw error;
-  }
-}
-
-// Update retry count for a request
-export async function incrementRetryCount(request: any) {
-  try {
-    const database = await initOfflineDb();
-    request.retries++;
-    await database.put('pendingRequests', request);
-    console.log(`Incremented retry count for request ${request.id} to ${request.retries}`);
-  } catch (error) {
-    console.error(`Error incrementing retry count for request ${request.id}:`, error);
-    throw error;
-  }
-}
-
-// Initialize the database system
-export function initOfflineSystem() {
-  console.log('Initializing offline system...');
   
-  initOfflineDb();
-  return initOnlineSync();
-}
-
-// Check for sync when online
-export function initOnlineSync() {
-  let cleanup: (() => void) | null = null;
-  
-  // We will import this function dynamically to avoid circular dependencies
-  import('./syncManager').then(({ syncWithServer, registerSyncEvents }) => {
-    const handleOnline = () => {
-      console.log('Back online, attempting to sync');
-      syncWithServer().then(result => {
-        console.log('Sync result:', result);
-      });
-    };
-    
-    // Register for sync events
-    registerSyncEvents();
-    
-    window.addEventListener('online', handleOnline);
-    
-    // Also check if we're already online
-    if (navigator.onLine) {
-      // Wait a bit to make sure we're properly connected
-      setTimeout(handleOnline, 3000);
-    }
-    
-    cleanup = () => {
-      window.removeEventListener('online', handleOnline);
-    };
-  });
-  
-  return () => {
-    if (cleanup) cleanup();
-  };
-}
-
-// Debug function to view all stored data
-export async function debugViewAllData() {
   try {
-    const database = await initOfflineDb();
-    
-    const pendingRequests = await database.getAll('pendingRequests');
-    const offlineData = await database.getAll('offlineData');
-    
-    return {
-      pendingRequests,
-      offlineData
-    };
+    await db.delete('syncQueue', id);
+    return true;
   } catch (error) {
-    console.error('Error debugging offline data:', error);
-    return {
-      pendingRequests: [],
-      offlineData: []
-    };
+    console.error('Failed to clear sync item:', error);
+    return false;
   }
 }

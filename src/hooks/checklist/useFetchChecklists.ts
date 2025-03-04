@@ -1,51 +1,47 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Checklist } from "@/types/checklist";
 import { generateMockCollaborators } from "@/utils/checklistUtils";
-import { useAuth } from "@/components/AuthProvider";
 
 export function useFetchChecklists() {
-  // Obter o usuário estendido que possui os campos extras (como company_id, tier, role)
-  const { user: extendedUser } = useAuth();
-
-  return useQuery({
+  return useQuery<Checklist[], Error>({
     queryKey: ["checklists"],
     queryFn: async () => {
       console.log("🔍 Buscando checklists...");
 
-      if (!extendedUser) {
+      // Obter o usuário autenticado
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
         throw new Error("Usuário não autenticado");
       }
-      console.log("Usuário estendido:", extendedUser);
 
-      // Verifica se o usuário é admin
-      const isAdmin =
-        extendedUser.tier === "super_admin" || extendedUser.role === "admin";
-      console.log("Usuário é admin?", isAdmin);
+      // Buscar o ID da empresa do usuário
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("company_id")
+        .eq("id", user.id)
+        .single();
 
-      // Se o usuário não for admin e não tiver company_id, retorna um array vazio
-      if (!isAdmin && !extendedUser.company_id) {
-        console.warn("Nenhuma empresa associada ao usuário. Retornando lista vazia.");
-        return [];
-      }
+      const company_id = userError ? null : userData?.company_id;
 
-      // Cria a query base
+      // Buscar checklists filtrando por user_id e company_id se disponível
       let query = supabase
         .from("checklists")
         .select("*")
-        .order("created_at", { ascending: false });
+        .eq("user_id", user.id);
 
-      // Se o usuário não for admin, aplica os filtros de user_id e company_id
-      if (!isAdmin) {
-        query = query.eq("user_id", extendedUser.id)
-                     .eq("company_id", extendedUser.company_id);
+      if (company_id) {
+        query = query.eq("company_id", company_id);
       }
 
-      const { data: checklists, error } = await query;
+      const { data: checklists, error } = await query.order("created_at", { ascending: false });
+
       if (error) {
         console.error("❌ Erro ao buscar checklists:", error);
         throw error;
       }
+
       console.log("✅ Checklists recebidos do Supabase:", checklists);
 
       // Obter os IDs dos responsáveis
@@ -54,12 +50,14 @@ export function useFetchChecklists() {
         .map((c: any) => c.responsible_id);
 
       let usersMap: Record<string, string> = {};
+
       if (responsibleIds.length > 0) {
         try {
           const { data: users } = await supabase
             .from("users")
             .select("id, name")
             .in("id", responsibleIds);
+
           if (users) {
             usersMap = users.reduce((acc: Record<string, string>, user: any) => {
               acc[user.id] = user.name;
@@ -71,7 +69,7 @@ export function useFetchChecklists() {
         }
       }
 
-      // Enriquecer os checklists com informações adicionais
+      // Adicionar informações aos checklists
       const checklistsWithItems = await Promise.all(
         checklists.map(async (checklist: any) => {
           try {
@@ -79,20 +77,22 @@ export function useFetchChecklists() {
               .from("checklist_itens")
               .select("*", { count: "exact", head: true })
               .eq("checklist_id", checklist.id);
+
             if (itemsError) throw itemsError;
 
+            // Enriquecer o checklist com os novos campos
             const enrichedChecklist: Checklist = {
               ...checklist,
               items: count || 0,
               responsible_name: usersMap[checklist.responsible_id] || "Não atribuído",
-              status_checklist:
-                checklist.status_checklist === "inativo" ? "inativo" : "ativo",
+              status_checklist: checklist.status_checklist === "inativo" ? "inativo" : "ativo",
               is_template: Boolean(checklist.is_template),
               category: checklist.category || "Sem categoria",
               due_date: checklist.due_date || null,
-              collaborators: generateMockCollaborators(isAdmin ? 2 : 1),
-              permissions: isAdmin ? ["editor"] : ["viewer"],
+              collaborators: generateMockCollaborators(2),
+              permissions: ["editor"],
             };
+
             return enrichedChecklist;
           } catch (err) {
             console.error(`❌ Erro ao buscar itens para checklist ${checklist.id}:`, err);
@@ -100,13 +100,12 @@ export function useFetchChecklists() {
               ...checklist,
               items: 0,
               responsible_name: "Não atribuído",
-              status_checklist:
-                checklist.status_checklist === "inativo" ? "inativo" : "ativo",
+              status_checklist: checklist.status_checklist === "inativo" ? "inativo" : "ativo",
               is_template: Boolean(checklist.is_template),
               category: checklist.category || "Sem categoria",
               due_date: checklist.due_date || null,
-              collaborators: generateMockCollaborators(isAdmin ? 2 : 1),
-              permissions: isAdmin ? ["editor"] : ["viewer"],
+              collaborators: generateMockCollaborators(1),
+              permissions: ["viewer"],
             };
           }
         })

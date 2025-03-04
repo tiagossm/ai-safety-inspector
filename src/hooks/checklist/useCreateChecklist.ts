@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -12,7 +13,7 @@ export function useCreateChecklist() {
   
   return useMutation({
     mutationFn: async (newChecklist: NewChecklist) => {
-      // Log para depuração
+      // Log what we're sending to help debug
       console.log("Creating checklist with data:", newChecklist);
       
       const { data, error } = await supabase
@@ -23,8 +24,7 @@ export function useCreateChecklist() {
           is_template: newChecklist.is_template || false,
           status_checklist: "ativo",
           category: newChecklist.category || "general",
-          responsible_id: newChecklist.responsible_id || extendedUser?.id,
-          user_id: extendedUser?.id, // Campo adicionado para associar o checklist ao usuário que o criou
+          responsible_id: newChecklist.responsible_id,
           company_id: newChecklist.company_id || extendedUser?.company_id,
           due_date: newChecklist.due_date || null
         })
