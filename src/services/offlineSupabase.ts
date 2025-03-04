@@ -9,7 +9,7 @@ interface OfflineOperationResult {
   error: null | Error;
 }
 
-// Define simple function types 
+// Define flat function types without circular references
 type EqFilterFn = (column: string, value: any) => Promise<OfflineOperationResult>;
 type InsertFn = (data: any) => Promise<OfflineOperationResult>;
 type SelectFn = (columns?: string) => Promise<OfflineOperationResult>;
@@ -19,7 +19,7 @@ interface WithEqFilter {
   eq: EqFilterFn;
 }
 
-// Define update and delete function types that return the WithEqFilter interface
+// Define update and delete function types without circular references
 type UpdateFn = (data: any) => WithEqFilter;
 type DeleteFn = () => WithEqFilter;
 
@@ -33,120 +33,123 @@ interface TableOperations {
 
 // Implementation of the table operations
 function createTableOperations(tableName: AllowedTableName): TableOperations {
-  return {
-    // Insert operation
-    insert: async (data: any): Promise<OfflineOperationResult> => {
-      try {
-        if (navigator.onLine) {
-          const result = await supabase
-            .from(tableName)
-            .insert(data);
-          
-          if (result.error) throw result.error;
-          return result;
-        } else {
-          // Generate a temporary ID if none exists
-          if (!data.id) {
-            data.id = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          }
-          await saveForSync(tableName, 'insert', data);
-          return { data: [data], error: null };
+  // Create the actual implementations
+  const insertImpl: InsertFn = async (data: any): Promise<OfflineOperationResult> => {
+    try {
+      if (navigator.onLine) {
+        const result = await supabase
+          .from(tableName)
+          .insert(data);
+        
+        if (result.error) throw result.error;
+        return result;
+      } else {
+        // Generate a temporary ID if none exists
+        if (!data.id) {
+          data.id = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         }
-      } catch (error) {
-        console.error(`Error in offline insert for ${tableName}:`, error);
-        // Always fall back to offline storage on error
         await saveForSync(tableName, 'insert', data);
         return { data: [data], error: null };
       }
-    },
-    
-    // Update operation
-    update: (data: any): WithEqFilter => {
-      return {
-        eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
-          try {
-            if (navigator.onLine) {
-              const result = await supabase
-                .from(tableName)
-                .update(data)
-                .eq(column, value);
-              
-              if (result.error) throw result.error;
-              return result;
-            } else {
-              // For offline update, we need the ID
-              if (column === 'id') {
-                data.id = value;
-              }
-              await saveForSync(tableName, 'update', data);
-              return { data: [data], error: null };
-            }
-          } catch (error) {
-            console.error(`Error in offline update for ${tableName}:`, error);
-            // Always fall back to offline storage on error
+    } catch (error) {
+      console.error(`Error in offline insert for ${tableName}:`, error);
+      // Always fall back to offline storage on error
+      await saveForSync(tableName, 'insert', data);
+      return { data: [data], error: null };
+    }
+  };
+
+  const updateImpl = (data: any): WithEqFilter => {
+    return {
+      eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
+        try {
+          if (navigator.onLine) {
+            const result = await supabase
+              .from(tableName)
+              .update(data)
+              .eq(column, value);
+            
+            if (result.error) throw result.error;
+            return result;
+          } else {
+            // For offline update, we need the ID
             if (column === 'id') {
               data.id = value;
             }
             await saveForSync(tableName, 'update', data);
             return { data: [data], error: null };
           }
+        } catch (error) {
+          console.error(`Error in offline update for ${tableName}:`, error);
+          // Always fall back to offline storage on error
+          if (column === 'id') {
+            data.id = value;
+          }
+          await saveForSync(tableName, 'update', data);
+          return { data: [data], error: null };
         }
-      };
-    },
-    
-    // Delete operation
-    delete: (): WithEqFilter => {
-      return {
-        eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
-          try {
-            if (navigator.onLine) {
-              const result = await supabase
-                .from(tableName)
-                .delete()
-                .eq(column, value);
-              
-              if (result.error) throw result.error;
-              return result;
-            } else {
-              // For delete we just need the ID
-              const data = { id: value };
-              await saveForSync(tableName, 'delete', data);
-              return { data: [], error: null };
-            }
-          } catch (error) {
-            console.error(`Error in offline delete for ${tableName}:`, error);
-            // Always fall back to offline storage on error
+      }
+    };
+  };
+
+  const deleteImpl = (): WithEqFilter => {
+    return {
+      eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
+        try {
+          if (navigator.onLine) {
+            const result = await supabase
+              .from(tableName)
+              .delete()
+              .eq(column, value);
+            
+            if (result.error) throw result.error;
+            return result;
+          } else {
+            // For delete we just need the ID
             const data = { id: value };
             await saveForSync(tableName, 'delete', data);
             return { data: [], error: null };
           }
+        } catch (error) {
+          console.error(`Error in offline delete for ${tableName}:`, error);
+          // Always fall back to offline storage on error
+          const data = { id: value };
+          await saveForSync(tableName, 'delete', data);
+          return { data: [], error: null };
         }
-      };
-    },
-    
-    // Select operation
-    select: async (columns: string = '*'): Promise<OfflineOperationResult> => {
-      try {
-        if (navigator.onLine) {
-          return await supabase.from(tableName).select(columns);
-        } else {
-          // When offline, use local data
-          const offlineData = await getOfflineData(tableName);
-          return { 
-            data: offlineData.map(item => item.data), 
-            error: null 
-          };
-        }
-      } catch (error) {
-        console.error(`Error in offline select for ${tableName}:`, error);
-        // On error, try to use offline data as fallback
+      }
+    };
+  };
+
+  const selectImpl: SelectFn = async (columns: string = '*'): Promise<OfflineOperationResult> => {
+    try {
+      if (navigator.onLine) {
+        return await supabase.from(tableName).select(columns);
+      } else {
+        // When offline, use local data
         const offlineData = await getOfflineData(tableName);
         return { 
-          data: offlineData.map(item => item.data), 
+          data: offlineData, 
           error: null 
         };
       }
+    } catch (error) {
+      console.error(`Error in offline select for ${tableName}:`, error);
+      // On error, try to use offline data as fallback
+      const offlineData = await getOfflineData(tableName);
+      return { 
+        data: offlineData, 
+        error: null 
+      };
     }
+  };
+
+  // Return the table operations object
+  return {
+    insert: insertImpl,
+    update: updateImpl,
+    delete: deleteImpl,
+    select: selectImpl
   };
 }
 
@@ -185,7 +188,7 @@ export const offlineSupabase = {
     }
     
     // Now we know it's a valid table name
-    const tableName = tableNameParam as AllowedTableName;
+    const tableName = getValidatedTable(tableNameParam);
     return createTableOperations(tableName);
   }
 };

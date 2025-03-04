@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient, QueryKey } from '@tanstack/react-query';
 import { offlineSupabase } from '@/services/offlineSupabase';
 import { syncWithServer } from '@/services/syncManager';
@@ -68,7 +69,7 @@ export const useOfflineAwareMutation = <T>(
   
   return useMutation({
     mutationFn: async (variables: {
-      type: 'INSERT' | 'UPDATE' | 'DELETE';
+      type: 'insert' | 'update' | 'delete';
       data: any;
       id?: string;
     }) => {
@@ -76,14 +77,14 @@ export const useOfflineAwareMutation = <T>(
       
       let result;
       switch (type) {
-        case 'INSERT':
+        case 'insert':
           result = await offlineSupabase
             .from(tableName)
             .insert(data);
           break;
-        case 'UPDATE': {
+        case 'update': {
           // Get the update operation object first
-          const updateOperation = await offlineSupabase
+          const updateOperation = offlineSupabase
             .from(tableName)
             .update(data);
           
@@ -91,9 +92,9 @@ export const useOfflineAwareMutation = <T>(
           result = await updateOperation.eq('id', id || data.id);
           break;
         }
-        case 'DELETE': {
+        case 'delete': {
           // Get the delete operation object first
-          const deleteOperation = await offlineSupabase
+          const deleteOperation = offlineSupabase
             .from(tableName)
             .delete();
           
