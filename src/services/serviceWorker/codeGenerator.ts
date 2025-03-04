@@ -1,87 +1,15 @@
 
-// Service Worker Manager for the SafetyBPM app
-// This file registers the service worker and manages cache invalidation
+// Service worker code generator
 
-const CACHE_NAME = 'safetybpm-cache-v2';
+import { getCacheName, getAssetsList } from './cacheUtils';
 
-// List of assets to pre-cache
-const ASSETS = [
-  '/',
-  '/index.html',
-  '/main.js',
-  '/styles.css'
-];
-
-// Register service worker and set up listeners
-export async function registerServiceWorker() {
-  if ('serviceWorker' in navigator) {
-    try {
-      // Check if service worker is already registered
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      const existingWorker = registrations.find(r => 
-        r.scope.includes(window.location.origin)
-      );
-      
-      if (existingWorker) {
-        console.log('Service worker already registered with scope:', existingWorker.scope);
-        setupCacheManagement(existingWorker);
-        return existingWorker;
-      }
-      
-      // Register new service worker
-      const registration = await navigator.serviceWorker.register('/service-worker.js', {
-        scope: '/'
-      });
-      
-      console.log('Service Worker registered with scope:', registration.scope);
-      
-      // Set up cache management
-      setupCacheManagement(registration);
-      
-      return registration;
-    } catch (error) {
-      console.error('Service Worker registration failed:', error);
-      return null;
-    }
-  }
-  
-  return null;
-}
-
-// Set up cache management functions
-function setupCacheManagement(registration: ServiceWorkerRegistration) {
-  // Function to refresh app and invalidate cache
-  window.refreshApp = () => {
-    if (registration.active) {
-      // Send message to service worker to invalidate cache
-      registration.active.postMessage({ type: 'INVALIDATE_CACHE' });
-      
-      // Reload page after a small delay
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
-    } else {
-      // If no active service worker, just reload
-      window.location.reload();
-    }
-  };
-  
-  // Listen for messages from service worker
-  navigator.serviceWorker.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'CACHE_INVALIDATED') {
-      console.log('Cache has been invalidated by service worker');
-    }
-  });
-}
-
-// Function to check if the URL is valid for caching
-export function isValidCacheUrl(url: string): boolean {
-  // Only cache HTTP/HTTPS URLs or relative URLs
-  return url.startsWith('http') || url.startsWith('/');
-}
-
-// Create a service worker code string that can be used for development
+/**
+ * Create a service worker code string that can be used for development
+ */
 export function getServiceWorkerCode(): string {
+  const CACHE_NAME = getCacheName();
+  const ASSETS = getAssetsList();
+
   return `
 // SafetyBPM Service Worker v2
 // Generated on ${new Date().toISOString()}
@@ -256,26 +184,4 @@ async function syncPendingData() {
   }
 }
 `;
-}
-
-// Function to manually install a service worker - useful for development
-export async function installServiceWorkerForDev(): Promise<boolean> {
-  try {
-    const blob = new Blob([getServiceWorkerCode()], { type: 'text/javascript' });
-    const url = URL.createObjectURL(blob);
-    
-    const registration = await navigator.serviceWorker.register(url, {
-      scope: '/'
-    });
-    
-    // Revoke the object URL since the registration is complete
-    URL.revokeObjectURL(url);
-    
-    console.log('Development service worker installed successfully');
-    setupCacheManagement(registration);
-    return true;
-  } catch (error) {
-    console.error('Failed to install development service worker:', error);
-    return false;
-  }
 }

@@ -4,7 +4,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { initOfflineSystem } from './services/offlineSync';
-import { registerServiceWorker } from './services/serviceWorkerManager';
+import { registerAndSetupServiceWorker } from './services/serviceWorker';
 import { toast } from 'sonner';
 
 // App version for cache control
@@ -17,7 +17,7 @@ const cleanupOfflineSystem = initOfflineSystem();
 // Register service worker for cache control
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    registerServiceWorker()
+    registerAndSetupServiceWorker()
       .then(registration => {
         if (registration) {
           console.log('Service Worker registered with scope:', registration.scope);
@@ -65,11 +65,19 @@ window.checkConnection = () => {
   };
 };
 
-// Add debug function for offline data
-window.debugOfflineData = async () => {
-  const { debugViewAllData } = await import('./services/offlineDb');
-  return await debugViewAllData();
-};
+// Debug function declaration for TypeScript
+declare global {
+  interface Window {
+    refreshApp?: () => void;
+    versionedUrl?: (url: string) => string;
+    checkConnection?: () => {
+      online: boolean;
+      type: string;
+      version: string;
+    };
+    debugOfflineData?: () => Promise<any>;
+  }
+}
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

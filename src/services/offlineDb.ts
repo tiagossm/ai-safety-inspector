@@ -113,9 +113,14 @@ export async function saveForSync(
     // Trigger a sync registration if available
     if ('serviceWorker' in navigator && 'SyncManager' in window) {
       navigator.serviceWorker.ready.then(registration => {
-        registration.sync.register('sync-pending-data')
-          .then(() => console.log('Registered for background sync'))
-          .catch(err => console.error('Background sync registration failed:', err));
+        // Check if SyncManager is available
+        if ('sync' in registration) {
+          registration.sync.register('sync-pending-data')
+            .then(() => console.log('Registered for background sync'))
+            .catch(err => console.error('Background sync registration failed:', err));
+        } else {
+          console.log('SyncManager not available in this browser');
+        }
       });
     }
     

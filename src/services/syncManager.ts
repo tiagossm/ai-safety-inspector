@@ -132,14 +132,19 @@ export function registerSyncEvents() {
   // Register a background sync if supported
   if ('serviceWorker' in navigator && 'SyncManager' in window) {
     navigator.serviceWorker.ready.then(registration => {
-      // Register for sync event
-      registration.sync.register('sync-pending-data')
-        .then(() => {
-          console.log('Background sync registered successfully');
-        })
-        .catch(err => {
-          console.error('Background sync registration failed:', err);
-        });
+      // Check if SyncManager is available
+      if ('sync' in registration) {
+        // Register for sync event
+        registration.sync.register('sync-pending-data')
+          .then(() => {
+            console.log('Background sync registered successfully');
+          })
+          .catch(err => {
+            console.error('Background sync registration failed:', err);
+          });
+      } else {
+        console.log('SyncManager not available in this browser');
+      }
     });
   }
 }
