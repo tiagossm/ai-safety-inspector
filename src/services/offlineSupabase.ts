@@ -9,21 +9,18 @@ interface OfflineOperationResult {
   error: null | Error;
 }
 
-// Basic function types without circular references
+// Define function types without circular references
 type EqFilterFunction = (column: string, value: any) => Promise<OfflineOperationResult>;
 type InsertFunction = (data: any) => Promise<OfflineOperationResult>;
+type UpdateFunction = (data: any) => { eq: EqFilterFunction };
+type DeleteFunction = () => { eq: EqFilterFunction };
 type SelectFunction = (columns?: string) => Promise<OfflineOperationResult>;
 
-// Interface for operation objects
-interface FilterOperations {
-  eq: EqFilterFunction;
-}
-
-// Define interface for table operations
+// Define interface for table operations using the flat types
 interface TableOperations {
   insert: InsertFunction;
-  update: (data: any) => FilterOperations;
-  delete: () => FilterOperations;
+  update: UpdateFunction;
+  delete: DeleteFunction;
   select: SelectFunction;
 }
 
@@ -55,7 +52,7 @@ function createTableOperations(tableName: AllowedTableName): TableOperations {
     }
   };
 
-  const createUpdateOperations = (data: any): FilterOperations => {
+  const updateImpl: UpdateFunction = (data: any) => {
     return {
       eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
         try {
@@ -88,7 +85,7 @@ function createTableOperations(tableName: AllowedTableName): TableOperations {
     };
   };
 
-  const createDeleteOperations = (): FilterOperations => {
+  const deleteImpl: DeleteFunction = () => {
     return {
       eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
         try {
@@ -143,8 +140,8 @@ function createTableOperations(tableName: AllowedTableName): TableOperations {
   // Return the table operations object
   return {
     insert: insertImpl,
-    update: createUpdateOperations,
-    delete: createDeleteOperations,
+    update: updateImpl,
+    delete: deleteImpl,
     select: selectImpl
   };
 }
@@ -159,13 +156,13 @@ function createInvalidTableOperations(tableNameParam: string): TableOperations {
   // Create a reusable error filter function
   const errorEqFilter: EqFilterFunction = async (): Promise<OfflineOperationResult> => errorObj;
   
-  // Create a reusable error filter object
-  const errorWithEq: FilterOperations = { eq: errorEqFilter };
+  // Create a reusable error eq operation
+  const errorWithEq = { eq: errorEqFilter };
   
   return {
     insert: async (): Promise<OfflineOperationResult> => errorObj,
-    update: (): FilterOperations => errorWithEq,
-    delete: (): FilterOperations => errorWithEq,
+    update: (): { eq: EqFilterFunction } => errorWithEq,
+    delete: (): { eq: EqFilterFunction } => errorWithEq,
     select: async (): Promise<OfflineOperationResult> => ({ 
       data: [], 
       error: new Error(`Invalid table: ${tableNameParam}`) 
