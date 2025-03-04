@@ -1,4 +1,3 @@
-
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
 import { toast } from 'sonner';
 
@@ -114,16 +113,16 @@ export async function saveForSync(
     if ('serviceWorker' in navigator && 'SyncManager' in window) {
       const registration = await navigator.serviceWorker.ready;
       
-      // Type guard for the SyncManager
-      if (registration.sync) {
-        try {
+      try {
+        // Check if sync is available on this registration
+        if (registration.sync) {
           await registration.sync.register('sync-pending-data');
           console.log('Registered for background sync');
-        } catch (err) {
-          console.error('Background sync registration failed:', err);
+        } else {
+          console.log('SyncManager not available in this browser');
         }
-      } else {
-        console.log('SyncManager not available in this browser');
+      } catch (err) {
+        console.error('Background sync registration failed:', err);
       }
     }
     

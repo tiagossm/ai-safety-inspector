@@ -34,3 +34,12 @@ interface Navigator {
     onchange?: () => void;
   };
 }
+
+// Add SyncManager interface for background sync
+interface SyncManager {
+  register(tag: string): Promise<void>;
+}
+
+interface ServiceWorkerRegistration {
+  sync?: SyncManager;
+}

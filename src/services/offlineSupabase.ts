@@ -9,33 +9,20 @@ interface OfflineOperationResult {
   error: null | Error;
 }
 
-// Define explicit interfaces for table methods to avoid recursive types
-interface TableSelectMethods {
-  select: (columns?: string) => Promise<OfflineOperationResult>;
-}
+// Define operation functions using type aliases instead of interfaces to avoid recursion
+type SelectFunction = (columns?: string) => Promise<OfflineOperationResult>;
+type EqFunction = (column: string, value: any) => Promise<OfflineOperationResult>;
+type UpdateFunction = (data: any) => { eq: EqFunction };
+type DeleteFunction = () => { eq: EqFunction };
+type InsertFunction = (data: any) => Promise<OfflineOperationResult>;
 
-interface TableEqOperation {
-  eq: (column: string, value: any) => Promise<OfflineOperationResult>;
+// Interface for table operations
+interface TableOperations {
+  insert: InsertFunction;
+  update: UpdateFunction;
+  delete: DeleteFunction;
+  select: SelectFunction;
 }
-
-interface TableUpdateMethods {
-  update: (data: any) => TableEqOperation;
-}
-
-interface TableDeleteMethods {
-  delete: () => TableEqOperation;
-}
-
-interface TableInsertMethods {
-  insert: (data: any) => Promise<OfflineOperationResult>;
-}
-
-// Combine all table operation interfaces
-interface TableOperations extends 
-  TableInsertMethods,
-  TableUpdateMethods,
-  TableDeleteMethods,
-  TableSelectMethods {}
 
 // Implementation of the table operations
 function createTableOperations(tableName: AllowedTableName): TableOperations {
@@ -67,7 +54,7 @@ function createTableOperations(tableName: AllowedTableName): TableOperations {
     },
     
     // Update operation
-    update: (data: any): TableEqOperation => {
+    update: (data: any) => {
       return {
         eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
           try {
@@ -101,7 +88,7 @@ function createTableOperations(tableName: AllowedTableName): TableOperations {
     },
     
     // Delete operation
-    delete: (): TableEqOperation => {
+    delete: () => {
       return {
         eq: async (column: string, value: any): Promise<OfflineOperationResult> => {
           try {
