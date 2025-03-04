@@ -1,8 +1,8 @@
 
-export type AllowedTableName = 'checklists' | 'users' | 'companies' | 'inspections' | 'checklist_itens';
+export type AllowedTableName = 'checklists' | 'users' | 'companies' | 'inspections';
 
 export function isValidTable(tableName: string): tableName is AllowedTableName {
-  const allowedTables: AllowedTableName[] = ['checklists', 'users', 'companies', 'inspections', 'checklist_itens'];
+  const allowedTables: AllowedTableName[] = ['checklists', 'users', 'companies', 'inspections'];
   return allowedTables.includes(tableName as AllowedTableName);
 }
 

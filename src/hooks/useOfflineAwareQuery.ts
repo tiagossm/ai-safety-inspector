@@ -69,7 +69,7 @@ export const useOfflineAwareMutation = <T>(
   
   return useMutation({
     mutationFn: async (variables: {
-      type: 'insert' | 'update' | 'delete';
+      type: 'INSERT' | 'UPDATE' | 'DELETE';
       data: any;
       id?: string;
     }) => {
@@ -77,14 +77,14 @@ export const useOfflineAwareMutation = <T>(
       
       let result;
       switch (type) {
-        case 'insert':
+        case 'INSERT':
           result = await offlineSupabase
             .from(tableName)
             .insert(data);
           break;
-        case 'update': {
+        case 'UPDATE': {
           // Get the update operation object first
-          const updateOperation = offlineSupabase
+          const updateOperation = await offlineSupabase
             .from(tableName)
             .update(data);
           
@@ -92,9 +92,9 @@ export const useOfflineAwareMutation = <T>(
           result = await updateOperation.eq('id', id || data.id);
           break;
         }
-        case 'delete': {
+        case 'DELETE': {
           // Get the delete operation object first
-          const deleteOperation = offlineSupabase
+          const deleteOperation = await offlineSupabase
             .from(tableName)
             .delete();
           
@@ -138,9 +138,6 @@ export const useSyncData = () => {
       if (result.success) {
         // Invalidate all queries to refresh data
         queryClient.invalidateQueries();
-        toast.success(result.message || "Sync completed successfully");
-      } else {
-        toast.error(result.message || "Sync failed");
       }
       return result;
     } finally {

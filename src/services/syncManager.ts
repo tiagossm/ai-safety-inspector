@@ -1,12 +1,11 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { getSyncQueue, clearSyncItem } from './offlineDb';
-import { getValidatedTable, type AllowedTableName, isValidTable } from './tableValidation';
 
 export async function syncWithServer(
   syncCallback?: (isSyncing: boolean) => void,
   errorCallback?: (error: Error) => void
-): Promise<{ success: boolean; message?: string }> {
+): Promise<boolean> {
   try {
     if (syncCallback) {
       syncCallback(true);
@@ -18,7 +17,7 @@ export async function syncWithServer(
       if (syncCallback) {
         syncCallback(false);
       }
-      return { success: true };
+      return true;
     }
     
     console.log(`Syncing ${queue.length} items with server...`);
@@ -27,24 +26,15 @@ export async function syncWithServer(
       try {
         const { table, operation, data } = item;
         
-        // Validate table name before using it
-        if (!isValidTable(table)) {
-          console.error(`Invalid table name: ${table}, skipping sync`);
-          await clearSyncItem(item.id);
-          continue;
-        }
-        
-        const validatedTable = getValidatedTable(table);
-        
         switch (operation) {
           case 'insert':
-            await supabase.from(validatedTable).insert(data);
+            await supabase.from(table).insert(data);
             break;
           case 'update':
-            await supabase.from(validatedTable).update(data).eq('id', data.id);
+            await supabase.from(table).update(data).eq('id', data.id);
             break;
           case 'delete':
-            await supabase.from(validatedTable).delete().eq('id', data.id);
+            await supabase.from(table).delete().eq('id', data.id);
             break;
         }
         
@@ -63,12 +53,7 @@ export async function syncWithServer(
       syncCallback(false);
     }
     
-    return { 
-      success: remainingQueue.length === 0,
-      message: remainingQueue.length === 0 
-        ? "All items synced successfully" 
-        : `${remainingQueue.length} items failed to sync`
-    };
+    return remainingQueue.length === 0;
   } catch (error) {
     console.error('Sync failed:', error);
     
@@ -80,9 +65,6 @@ export async function syncWithServer(
       syncCallback(false);
     }
     
-    return { 
-      success: false,
-      message: error instanceof Error ? error.message : "Unknown error during sync"
-    };
+    return false;
   }
 }

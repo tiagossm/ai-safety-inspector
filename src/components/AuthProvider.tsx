@@ -51,9 +51,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             const enhancedUser: AuthUser = {
               ...data.session.user,
               // Default values in case of error or missing data
-              // Cast database role value to allowed type
-              role: userError ? 'user' : (userData?.role === 'Administrador' ? 'admin' : 'user'),
-              tier: userError ? 'technician' : (userData?.tier as any || 'technician'),
+              role: userError ? 'user' : userData?.role || 'user',
+              tier: userError ? 'technician' : userData?.tier || 'technician',
               company_id: userError ? undefined : userData?.company_id
             };
 
@@ -94,9 +93,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const enhancedUser: AuthUser = {
             ...session.user,
             // Default values in case of error or missing data
-            // Cast database role value to allowed type
-            role: userError ? 'user' : (userData?.role === 'Administrador' ? 'admin' : 'user'),
-            tier: userError ? 'technician' : (userData?.tier as any || 'technician'),
+            role: userError ? 'user' : userData?.role || 'user',
+            tier: userError ? 'technician' : userData?.tier || 'technician',
             company_id: userError ? undefined : userData?.company_id
           };
 
