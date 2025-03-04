@@ -9,16 +9,22 @@ interface OfflineOperationResult {
   error: null | Error;
 }
 
-// Define simple function types without complex nesting
-type SelectFunction = (columns?: string) => Promise<OfflineOperationResult>;
-type EqFunction = (column: string, value: any) => Promise<OfflineOperationResult>;
+// Function signatures for table operations
+type InsertFn = (data: any) => Promise<OfflineOperationResult>;
+type SelectFn = (columns?: string) => Promise<OfflineOperationResult>;
+type EqFn = (column: string, value: any) => Promise<OfflineOperationResult>;
 
-// Interfaces with direct function signatures to avoid deep nesting
+// Interface with flat structure for update/delete operations
+interface QueryWithEq {
+  eq: EqFn;
+}
+
+// Flattened structure without nested types
 interface TableOperations {
-  insert: (data: any) => Promise<OfflineOperationResult>;
-  update: (data: any) => { eq: EqFunction };
-  delete: () => { eq: EqFunction };
-  select: SelectFunction;
+  insert: InsertFn;
+  update: (data: any) => QueryWithEq;
+  delete: () => QueryWithEq;
+  select: SelectFn;
 }
 
 // Implementation of the table operations
