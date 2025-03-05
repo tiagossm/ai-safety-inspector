@@ -38,9 +38,11 @@ const createInsertOperation = (tableName: string) => {
   };
 };
 
-// Simplify update operation to prevent deep type instantiation
+// Create a simplified update operation to prevent deep type instantiation
 const createUpdateOperation = (tableName: string) => {
+  // Return a simple object with eq function
   return (data: any) => {
+    // Define this outside to avoid recursive type instantiation
     const eqFn: EqOperation = async (column, value) => {
       try {
         if (navigator.onLine) {
@@ -71,13 +73,15 @@ const createUpdateOperation = (tableName: string) => {
       }
     };
     
+    // Return a fixed shape object to prevent type recursion
     return { eq: eqFn };
   };
 };
 
-// Simplify delete operation in a similar way
+// Create a simplified delete operation in the same way
 const createDeleteOperation = (tableName: string) => {
   return () => {
+    // Define this outside to avoid recursive type instantiation
     const eqFn: EqOperation = async (column, value) => {
       try {
         if (navigator.onLine) {
@@ -104,6 +108,7 @@ const createDeleteOperation = (tableName: string) => {
       }
     };
     
+    // Return a fixed shape object to prevent type recursion
     return { eq: eqFn };
   };
 };
@@ -134,7 +139,7 @@ const createSelectOperation = (tableName: string) => {
   };
 };
 
-// Main offlineSupabase API
+// Main offlineSupabase API with simplified types
 export const offlineSupabase = {
   from: (tableNameParam: string) => {
     // Type check the table name

@@ -1,28 +1,22 @@
 
-import { useAuth } from "@/components/AuthProvider";
-import { AuthUser } from "@/hooks/auth/useAuthState";
-import { UserRole } from "@/types/user";
+import { useAuthState } from "../auth/useAuthState";
 
 export function useBulkOperationsPermissions() {
-  const { user } = useAuth();
-  const typedUser = user as AuthUser | null;
+  const { user, userRole } = useAuthState();
   
-  // Determine permissions based on user tier and role
-  const isSuperAdmin = typedUser?.tier === "super_admin";
-  const isCompanyAdmin = 
-    typedUser?.tier === "company_admin" || 
-    typedUser?.role === "admin" || 
-    (typedUser?.role as string === "Administrador");
+  // Check if the user has permissions to perform bulk operations
+  const canPerformBulkOperations = () => {
+    // Only allow bulk operations for administrators
+    // The userRole could be undefined or null initially, so we need to handle that
+    if (!userRole) {
+      return false;
+    }
+    
+    // Use type assertion to compare with string literal
+    return (userRole as string) === "Administrador";
+  };
   
   return {
-    canCreateChecklist: true, // Everyone can create checklists for now
-    canAssignUsers: isSuperAdmin || isCompanyAdmin,
-    canAssignCompanies: isSuperAdmin, // Only super admin can assign companies
-    canManageAllChecklists: isSuperAdmin,
-    canManageCompanyChecklists: isCompanyAdmin,
-    canExportChecklists: isSuperAdmin || isCompanyAdmin,
-    isSuperAdmin,
-    isCompanyAdmin,
-    userCompanyId: typedUser?.company_id
+    canPerformBulkOperations,
   };
 }
