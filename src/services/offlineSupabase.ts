@@ -38,81 +38,87 @@ const createInsertOperation = (tableName: string) => {
   };
 };
 
-// Create a simplified update operation to prevent deep type instantiation
-const createUpdateOperation = (tableName: string) => {
-  // Return a factory function that produces an object with eq method
-  return (data: any) => {
-    // Define the concrete eq implementation
-    const eqImplementation = async (column: string, value: any): Promise<OperationResult> => {
-      try {
-        if (navigator.onLine) {
-          const validatedTable = getValidatedTable(tableName);
-          const result = await supabase
-            .from(validatedTable)
-            .update(data)
-            .eq(column, value);
-          
-          if (result.error) throw result.error;
-          return result;
-        } else {
-          // For offline update, we need the ID
-          if (column === 'id') {
-            data.id = value;
-          }
-          await saveForSync(tableName, 'update', data);
-          return { data: [data], error: null };
-        }
-      } catch (error) {
-        console.error(`Error in offline update for ${tableName}:`, error);
-        // Always fall back to offline storage on error
-        if (column === 'id') {
-          data.id = value;
-        }
-        await saveForSync(tableName, 'update', data);
-        return { data: [data], error: null };
+// Standalone implementation for update.eq to avoid recursive type issues
+async function executeUpdateEq(
+  tableName: string, 
+  data: any, 
+  column: string, 
+  value: any
+): Promise<OperationResult> {
+  try {
+    if (navigator.onLine) {
+      const validatedTable = getValidatedTable(tableName);
+      const result = await supabase
+        .from(validatedTable)
+        .update(data)
+        .eq(column, value);
+      
+      if (result.error) throw result.error;
+      return result;
+    } else {
+      // For offline update, we need the ID
+      if (column === 'id') {
+        data.id = value;
       }
-    };
-    
-    // Return an object with the eq method explicitly typed
-    return { 
-      eq: eqImplementation 
+      await saveForSync(tableName, 'update', data);
+      return { data: [data], error: null };
+    }
+  } catch (error) {
+    console.error(`Error in offline update for ${tableName}:`, error);
+    // Always fall back to offline storage on error
+    if (column === 'id') {
+      data.id = value;
+    }
+    await saveForSync(tableName, 'update', data);
+    return { data: [data], error: null };
+  }
+}
+
+// Create update operation with fixed return type
+const createUpdateOperation = (tableName: string) => {
+  return (data: any) => {
+    return {
+      eq: (column: string, value: any) => executeUpdateEq(tableName, data, column, value)
     };
   };
 };
 
-// Create a simplified delete operation with the same approach
+// Standalone implementation for delete.eq to avoid recursive type issues
+async function executeDeleteEq(
+  tableName: string, 
+  column: string, 
+  value: any
+): Promise<OperationResult> {
+  try {
+    if (navigator.onLine) {
+      const validatedTable = getValidatedTable(tableName);
+      const result = await supabase
+        .from(validatedTable)
+        .delete()
+        .eq(column, value);
+      
+      if (result.error) throw result.error;
+      return result;
+    } else {
+      // For delete we just need the ID
+      const data = { id: value };
+      await saveForSync(tableName, 'delete', data);
+      return { data: [], error: null };
+    }
+  } catch (error) {
+    console.error(`Error in offline delete for ${tableName}:`, error);
+    // Always fall back to offline storage on error
+    const data = { id: value };
+    await saveForSync(tableName, 'delete', data);
+    return { data: [], error: null };
+  }
+}
+
+// Create delete operation with fixed return type
 const createDeleteOperation = (tableName: string) => {
   return () => {
-    // Define the concrete eq implementation for delete
-    const eqImplementation = async (column: string, value: any): Promise<OperationResult> => {
-      try {
-        if (navigator.onLine) {
-          const validatedTable = getValidatedTable(tableName);
-          const result = await supabase
-            .from(validatedTable)
-            .delete()
-            .eq(column, value);
-          
-          if (result.error) throw result.error;
-          return result;
-        } else {
-          // For delete we just need the ID
-          const data = { id: value };
-          await saveForSync(tableName, 'delete', data);
-          return { data: [], error: null };
-        }
-      } catch (error) {
-        console.error(`Error in offline delete for ${tableName}:`, error);
-        // Always fall back to offline storage on error
-        const data = { id: value };
-        await saveForSync(tableName, 'delete', data);
-        return { data: [], error: null };
-      }
-    };
-    
-    // Return an object with the eq method explicitly typed
-    return { 
-      eq: eqImplementation 
+    return {
+      eq: (column: string, value: any) => executeDeleteEq(tableName, column, value)
     };
   };
 };
@@ -144,14 +150,14 @@ const createSelectOperation = (tableName: string) => {
 };
 
 // Type definition for the table operations
-type TableOperations = {
+interface TableOperations {
   insert: (data: any) => Promise<OperationResult>;
-  update: (data: any) => { eq: EqOperation };
-  delete: () => { eq: EqOperation };
+  update: (data: any) => { eq: (column: string, value: any) => Promise<OperationResult> };
+  delete: () => { eq: (column: string, value: any) => Promise<OperationResult> };
   select: (columns?: string) => Promise<OperationResult>;
-};
+}
 
-// Main offlineSupabase API with simplified types
+// Main offlineSupabase API
 export const offlineSupabase = {
   from: (tableNameParam: string): TableOperations => {
     // Type check the table name
