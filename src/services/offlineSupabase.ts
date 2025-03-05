@@ -40,10 +40,10 @@ const createInsertOperation = (tableName: string) => {
 
 // Create a simplified update operation to prevent deep type instantiation
 const createUpdateOperation = (tableName: string) => {
-  // Return a simple object with eq function
+  // Return a factory function that produces an object with eq method
   return (data: any) => {
-    // Define this outside to avoid recursive type instantiation
-    const eqFn: EqOperation = async (column, value) => {
+    // Define the concrete eq implementation
+    const eqImplementation = async (column: string, value: any): Promise<OperationResult> => {
       try {
         if (navigator.onLine) {
           const validatedTable = getValidatedTable(tableName);
@@ -73,16 +73,18 @@ const createUpdateOperation = (tableName: string) => {
       }
     };
     
-    // Return a fixed shape object to prevent type recursion
-    return { eq: eqFn };
+    // Return an object with the eq method explicitly typed
+    return { 
+      eq: eqImplementation 
+    };
   };
 };
 
-// Create a simplified delete operation in the same way
+// Create a simplified delete operation with the same approach
 const createDeleteOperation = (tableName: string) => {
   return () => {
-    // Define this outside to avoid recursive type instantiation
-    const eqFn: EqOperation = async (column, value) => {
+    // Define the concrete eq implementation for delete
+    const eqImplementation = async (column: string, value: any): Promise<OperationResult> => {
       try {
         if (navigator.onLine) {
           const validatedTable = getValidatedTable(tableName);
@@ -108,8 +110,10 @@ const createDeleteOperation = (tableName: string) => {
       }
     };
     
-    // Return a fixed shape object to prevent type recursion
-    return { eq: eqFn };
+    // Return an object with the eq method explicitly typed
+    return { 
+      eq: eqImplementation 
+    };
   };
 };
 
@@ -139,12 +143,22 @@ const createSelectOperation = (tableName: string) => {
   };
 };
 
+// Type definition for the table operations
+type TableOperations = {
+  insert: (data: any) => Promise<OperationResult>;
+  update: (data: any) => { eq: EqOperation };
+  delete: () => { eq: EqOperation };
+  select: (columns?: string) => Promise<OperationResult>;
+};
+
 // Main offlineSupabase API with simplified types
 export const offlineSupabase = {
-  from: (tableNameParam: string) => {
+  from: (tableNameParam: string): TableOperations => {
     // Type check the table name
     if (!isValidTable(tableNameParam)) {
       console.error(`Invalid table name: ${tableNameParam}`);
+      
+      // Return a TableOperations object with error handlers
       return {
         insert: async () => ({ 
           data: null, 
