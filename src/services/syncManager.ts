@@ -28,6 +28,7 @@ async function processDeleteOperation(table: string, data: any): Promise<void> {
   if (result.error) throw result.error;
 }
 
+// Main sync function that doesn't use nested functions causing deep type instantiation
 export async function syncWithServer(
   syncCallback?: (isSyncing: boolean) => void,
   errorCallback?: (error: Error) => void

@@ -138,7 +138,7 @@ interface TableOperations {
   select: (columns?: string) => Promise<OperationResult>;
 }
 
-// Helper functions that return well-defined objects
+// Create factory functions instead of nested structure
 function createUpdateOperation(tableName: string, data: any): UpdateOperation {
   return {
     eq: (column: string, value: any) => executeUpdateEq(tableName, data, column, value)
@@ -151,7 +151,7 @@ function createDeleteOperation(tableName: string): DeleteOperation {
   };
 }
 
-// Main offlineSupabase API with explicit return types
+// Export a factory function for creating table operations
 export const offlineSupabase = {
   from: (tableNameParam: string): TableOperations => {
     // Type check the table name
@@ -183,7 +183,7 @@ export const offlineSupabase = {
       };
     }
     
-    // Return a table operations object that uses the standalone functions
+    // Use factory functions to create operations
     return {
       insert: (data: any) => executeInsert(tableNameParam, data),
       update: (data: any) => createUpdateOperation(tableNameParam, data),
