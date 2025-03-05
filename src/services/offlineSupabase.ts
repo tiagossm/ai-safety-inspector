@@ -3,42 +3,36 @@ import { supabase } from "@/integrations/supabase/client";
 import { saveForSync, getOfflineData } from "./offlineDb";
 import { isValidTable, getValidatedTable } from "./tableValidation";
 
-// Simple result type to avoid complex nesting
+// Define types with explicit structure
 type OperationResult = {
   data: any;
   error: Error | null;
 };
 
-// Define standard return type for eq operations
-type EqOperation = (column: string, value: any) => Promise<OperationResult>;
-
-// Factory functions to create operations
-const createInsertOperation = (tableName: string) => {
-  return async (data: any): Promise<OperationResult> => {
-    try {
-      if (navigator.onLine) {
-        const validatedTable = getValidatedTable(tableName);
-        const result = await supabase.from(validatedTable).insert(data);
-        if (result.error) throw result.error;
-        return result;
-      } else {
-        // Generate a temporary ID if none exists
-        if (!data.id) {
-          data.id = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        }
-        await saveForSync(tableName, 'insert', data);
-        return { data: [data], error: null };
+// Create standalone functions to avoid nested function issues
+async function executeInsert(tableName: string, data: any): Promise<OperationResult> {
+  try {
+    if (navigator.onLine) {
+      const validatedTable = getValidatedTable(tableName);
+      const result = await supabase.from(validatedTable).insert(data);
+      if (result.error) throw result.error;
+      return result;
+    } else {
+      // Generate a temporary ID if none exists
+      if (!data.id) {
+        data.id = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       }
-    } catch (error) {
-      console.error(`Error in offline insert for ${tableName}:`, error);
-      // Always fall back to offline storage on error
       await saveForSync(tableName, 'insert', data);
       return { data: [data], error: null };
     }
-  };
-};
+  } catch (error) {
+    console.error(`Error in offline insert for ${tableName}:`, error);
+    // Always fall back to offline storage on error
+    await saveForSync(tableName, 'insert', data);
+    return { data: [data], error: null };
+  }
+}
 
-// Standalone implementation for update.eq to avoid recursive type issues
 async function executeUpdateEq(
   tableName: string, 
   data: any, 
@@ -74,16 +68,6 @@ async function executeUpdateEq(
   }
 }
 
-// Create update operation with fixed return type
-const createUpdateOperation = (tableName: string) => {
-  return (data: any) => {
-    return {
-      eq: (column: string, value: any) => executeUpdateEq(tableName, data, column, value)
-    };
-  };
-};
-
-// Standalone implementation for delete.eq to avoid recursive type issues
 async function executeDeleteEq(
   tableName: string, 
   column: string, 
@@ -114,50 +98,60 @@ async function executeDeleteEq(
   }
 }
 
-// Create delete operation with fixed return type
-const createDeleteOperation = (tableName: string) => {
-  return () => {
-    return {
-      eq: (column: string, value: any) => executeDeleteEq(tableName, column, value)
-    };
-  };
-};
-
-const createSelectOperation = (tableName: string) => {
-  return async (columns: string = '*'): Promise<OperationResult> => {
-    try {
-      if (navigator.onLine) {
-        const validatedTable = getValidatedTable(tableName);
-        return await supabase.from(validatedTable).select(columns);
-      } else {
-        // When offline, use local data
-        const offlineData = await getOfflineData(tableName);
-        return { 
-          data: offlineData, 
-          error: null 
-        };
-      }
-    } catch (error) {
-      console.error(`Error in offline select for ${tableName}:`, error);
-      // On error, try to use offline data as fallback
+async function executeSelect(tableName: string, columns: string = '*'): Promise<OperationResult> {
+  try {
+    if (navigator.onLine) {
+      const validatedTable = getValidatedTable(tableName);
+      return await supabase.from(validatedTable).select(columns);
+    } else {
+      // When offline, use local data
       const offlineData = await getOfflineData(tableName);
       return { 
         data: offlineData, 
         error: null 
       };
     }
-  };
-};
+  } catch (error) {
+    console.error(`Error in offline select for ${tableName}:`, error);
+    // On error, try to use offline data as fallback
+    const offlineData = await getOfflineData(tableName);
+    return { 
+      data: offlineData, 
+      error: null 
+    };
+  }
+}
 
-// Type definition for the table operations
+// Define the interfaces without recursive structures
+interface UpdateOperation {
+  eq: (column: string, value: any) => Promise<OperationResult>;
+}
+
+interface DeleteOperation {
+  eq: (column: string, value: any) => Promise<OperationResult>;
+}
+
 interface TableOperations {
   insert: (data: any) => Promise<OperationResult>;
-  update: (data: any) => { eq: (column: string, value: any) => Promise<OperationResult> };
-  delete: () => { eq: (column: string, value: any) => Promise<OperationResult> };
+  update: (data: any) => UpdateOperation;
+  delete: () => DeleteOperation;
   select: (columns?: string) => Promise<OperationResult>;
 }
 
-// Main offlineSupabase API
+// Helper functions that return well-defined objects
+function createUpdateOperation(tableName: string, data: any): UpdateOperation {
+  return {
+    eq: (column: string, value: any) => executeUpdateEq(tableName, data, column, value)
+  };
+}
+
+function createDeleteOperation(tableName: string): DeleteOperation {
+  return {
+    eq: (column: string, value: any) => executeDeleteEq(tableName, column, value)
+  };
+}
+
+// Main offlineSupabase API with explicit return types
 export const offlineSupabase = {
   from: (tableNameParam: string): TableOperations => {
     // Type check the table name
@@ -189,12 +183,12 @@ export const offlineSupabase = {
       };
     }
     
-    // Return the table operations object with factory-created methods
+    // Return a table operations object that uses the standalone functions
     return {
-      insert: createInsertOperation(tableNameParam),
-      update: createUpdateOperation(tableNameParam),
-      delete: createDeleteOperation(tableNameParam),
-      select: createSelectOperation(tableNameParam)
+      insert: (data: any) => executeInsert(tableNameParam, data),
+      update: (data: any) => createUpdateOperation(tableNameParam, data),
+      delete: () => createDeleteOperation(tableNameParam),
+      select: (columns?: string) => executeSelect(tableNameParam, columns)
     };
   }
 };
