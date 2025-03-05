@@ -1,19 +1,20 @@
 
-import { useAuthState } from "../auth/useAuthState";
+import { useAuth } from "@/components/AuthProvider";
+import { AuthUser } from "@/hooks/auth/useAuthState";
 
 export function useBulkOperationsPermissions() {
-  const { user, userRole } = useAuthState();
+  const { user } = useAuth();
   
   // Check if the user has permissions to perform bulk operations
   const canPerformBulkOperations = () => {
     // Only allow bulk operations for administrators
-    // The userRole could be undefined or null initially, so we need to handle that
-    if (!userRole) {
+    if (!user) {
       return false;
     }
     
     // Use type assertion to compare with string literal
-    return (userRole as string) === "Administrador";
+    return (user as AuthUser).role === "admin" || 
+           (user as any).role === "Administrador";
   };
   
   return {
