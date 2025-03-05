@@ -14,10 +14,13 @@ export type Checklist = {
   responsible_id?: string;
   responsible_name?: string;
   due_date?: string | null;
-  // Propriedades da UI
+  // UI properties
   collaborators?: CollaboratorType[];
   items?: number;
   permissions?: string[];
+  // Adding properties needed in ChecklistCard and ChecklistDetailsContainer
+  items_total?: number;
+  items_completed?: number;
 };
 
 export type ChecklistItem = {

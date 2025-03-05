@@ -1,4 +1,5 @@
 
+// Only updating the SyncItem interface to use lowercase operation types
 import { openDB, IDBPDatabase } from 'idb';
 
 // Define interface for sync item

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChecklistItem } from "@/types/checklist";
@@ -89,12 +90,26 @@ export default function ChecklistDetailsContainer() {
 
   // Função para adicionar um novo item ao checklist
   const handleAddItem = (newItem: Partial<ChecklistItem>) => {
-    addItemMutation.mutate(newItem, {
+    // Ensure opcoes is always an array of strings or null
+    let sanitizedOptions: string[] | null = null;
+    
+    if (newItem.opcoes) {
+      if (Array.isArray(newItem.opcoes)) {
+        sanitizedOptions = newItem.opcoes.map(option => String(option));
+      } else {
+        sanitizedOptions = [String(newItem.opcoes)];
+      }
+    }
+      
+    addItemMutation.mutate({
+      ...newItem,
+      opcoes: sanitizedOptions
+    }, {
       onSuccess: (data) => {
         const addedItem: ChecklistItem = {
           ...data,
           tipo_resposta: data.tipo_resposta as "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla",
-          opcoes: data.opcoes || []
+          opcoes: data.opcoes ? (Array.isArray(data.opcoes) ? data.opcoes.map(String) : [String(data.opcoes)]) : null
         };
         
         setItems((prevItems) => [...prevItems, addedItem]);
@@ -152,6 +167,11 @@ export default function ChecklistDetailsContainer() {
     );
   }
 
+  // Calculate progress or provide defaults
+  const totalItems = items.length;
+  const completedItems = checklist.items_completed || 0;
+  const progressPercentage = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
+
   return (
     <div className="space-y-6">
       <ChecklistHeader
@@ -169,7 +189,7 @@ export default function ChecklistDetailsContainer() {
           />
 
           {/* Barra de progresso para indicar andamento */}
-          <Progress value={checklist.items_total ? (checklist.items_completed / checklist.items_total) * 100 : 0} className="mt-2" />
+          <Progress value={progressPercentage} className="mt-2" />
 
           <ChecklistItemsList
             items={items}
