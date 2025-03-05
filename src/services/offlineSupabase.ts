@@ -35,8 +35,9 @@ const createInsertOperation = (tableName: string) => {
   };
 };
 
+// Break the deep type instantiation by simplifying the return structure
 const createUpdateOperation = (tableName: string) => {
-  return (data: any) => {
+  return (data: any): { eq: (column: string, value: any) => Promise<OperationResult> } => {
     return {
       eq: async (column: string, value: any): Promise<OperationResult> => {
         try {
@@ -71,8 +72,9 @@ const createUpdateOperation = (tableName: string) => {
   };
 };
 
+// Similarly simplify delete operation
 const createDeleteOperation = (tableName: string) => {
-  return () => {
+  return (): { eq: (column: string, value: any) => Promise<OperationResult> } => {
     return {
       eq: async (column: string, value: any): Promise<OperationResult> => {
         try {

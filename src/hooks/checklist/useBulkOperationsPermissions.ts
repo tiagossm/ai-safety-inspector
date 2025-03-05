@@ -11,7 +11,7 @@ export function useBulkOperationsPermissions() {
   const isCompanyAdmin = 
     typedUser?.tier === "company_admin" || 
     typedUser?.role === "admin" || 
-    typedUser?.role === "Administrador";
+    (typeof typedUser?.role === "string" && typedUser?.role === "Administrador");
   
   return {
     canCreateChecklist: true, // Everyone can create checklists for now

@@ -45,18 +45,30 @@ export async function syncWithServer(
         
         const validatedTable = getValidatedTable(table);
         
-        // Process the sync operation based on its type
+        // Process each operation type separately to avoid deep type instantiation
         if (operation === 'insert') {
-          const result = await supabase.from(validatedTable).insert(data);
-          if (result.error) throw result.error;
+          try {
+            const result = await supabase.from(validatedTable).insert(data);
+            if (result.error) throw result.error;
+          } catch (operationError) {
+            throw operationError;
+          }
         } 
         else if (operation === 'update') {
-          const result = await supabase.from(validatedTable).update(data).eq('id', data.id);
-          if (result.error) throw result.error;
+          try {
+            const result = await supabase.from(validatedTable).update(data).eq('id', data.id);
+            if (result.error) throw result.error;
+          } catch (operationError) {
+            throw operationError;
+          }
         } 
         else if (operation === 'delete') {
-          const result = await supabase.from(validatedTable).delete().eq('id', data.id);
-          if (result.error) throw result.error;
+          try {
+            const result = await supabase.from(validatedTable).delete().eq('id', data.id);
+            if (result.error) throw result.error;
+          } catch (operationError) {
+            throw operationError;
+          }
         }
         
         // Clear item from sync queue after successful sync
