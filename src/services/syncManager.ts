@@ -1,12 +1,18 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { getSyncQueue, clearSyncItem } from './offlineDb';
-import { getValidatedTable, type AllowedTableName, isValidTable } from './tableValidation';
+import { getValidatedTable, isValidTable } from './tableValidation';
+
+// Simple synchronization result type
+interface SyncResult {
+  success: boolean;
+  message?: string;
+}
 
 export async function syncWithServer(
   syncCallback?: (isSyncing: boolean) => void,
   errorCallback?: (error: Error) => void
-): Promise<{ success: boolean; message?: string }> {
+): Promise<SyncResult> {
   try {
     if (syncCallback) {
       syncCallback(true);
@@ -36,16 +42,15 @@ export async function syncWithServer(
         
         const validatedTable = getValidatedTable(table);
         
-        switch (operation) {
-          case 'insert':
-            await supabase.from(validatedTable).insert(data);
-            break;
-          case 'update':
-            await supabase.from(validatedTable).update(data).eq('id', data.id);
-            break;
-          case 'delete':
-            await supabase.from(validatedTable).delete().eq('id', data.id);
-            break;
+        // Process the sync operation based on its type
+        if (operation === 'insert') {
+          await supabase.from(validatedTable).insert(data);
+        } 
+        else if (operation === 'update') {
+          await supabase.from(validatedTable).update(data).eq('id', data.id);
+        } 
+        else if (operation === 'delete') {
+          await supabase.from(validatedTable).delete().eq('id', data.id);
         }
         
         // Clear item from sync queue after successful sync
