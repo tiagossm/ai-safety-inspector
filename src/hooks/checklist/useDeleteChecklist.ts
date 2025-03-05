@@ -55,27 +55,25 @@ async function deleteChecklist(id: string) {
   }
 }
 
-// Define type for mutation function to avoid deep type instantiation
-type DeleteChecklistFn = (id: string) => Promise<{ success: boolean }>;
+// Define simple result type to avoid deep type instantiation
+type DeleteResult = { success: boolean };
 
 export function useDeleteChecklist() {
   const queryClient = useQueryClient();
   
-  const mutationFn: DeleteChecklistFn = async (id: string) => {
-    console.log("Starting deletion of checklist:", id);
-    
-    // First, delete any user_checklists associations to prevent foreign key errors
-    await deleteUserChecklists(id);
-
-    // Next, delete any checklist items to prevent foreign key errors
-    await deleteChecklistItems(id);
-    
-    // Finally, delete the checklist itself
-    return await deleteChecklist(id);
-  };
-  
   return useMutation({
-    mutationFn,
+    mutationFn: async (id: string): Promise<DeleteResult> => {
+      console.log("Starting deletion of checklist:", id);
+      
+      // First, delete any user_checklists associations to prevent foreign key errors
+      await deleteUserChecklists(id);
+
+      // Next, delete any checklist items to prevent foreign key errors
+      await deleteChecklistItems(id);
+      
+      // Finally, delete the checklist itself
+      return await deleteChecklist(id);
+    },
     onSuccess: () => {
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["checklists"] });
