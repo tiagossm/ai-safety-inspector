@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { saveForSync, getOfflineData } from "./offlineDb";
 import { isValidTable, getValidatedTable } from "./tableValidation";
 
-// Define basic result type
+// Define simple result type
 type OperationResult = {
   data: any;
   error: Error | null;
