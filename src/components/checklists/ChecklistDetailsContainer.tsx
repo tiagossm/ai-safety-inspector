@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChecklistItem } from "@/types/checklist";
+import { Checklist, ChecklistItem } from "@/types/checklist";
 import { useChecklistDetails } from "@/hooks/checklist/useChecklistDetails";
 import { useUpdateChecklistItem } from "@/hooks/checklist/useUpdateChecklistItem";
 import { useDeleteChecklistItem } from "@/hooks/checklist/useDeleteChecklistItem";
@@ -24,11 +23,18 @@ const questionTypes = [
   { value: "seleção múltipla", label: "Seleção Múltipla" }
 ];
 
-export default function ChecklistDetailsContainer() {
-  const { id = "" } = useParams<{ id: string }>();
+interface ChecklistDetailsContainerProps {
+  checklistId?: string;
+}
+
+export default function ChecklistDetailsContainer({ checklistId }: ChecklistDetailsContainerProps) {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  
+  // Use the passed checklistId or the one from URL params
+  const effectiveId = checklistId || id || "";
   
   const {
     checklist,
@@ -38,12 +44,12 @@ export default function ChecklistDetailsContainer() {
     users,
     isLoading,
     error
-  } = useChecklistDetails(id);
+  } = useChecklistDetails(effectiveId);
 
   const updateItemMutation = useUpdateChecklistItem();
   const deleteItemMutation = useDeleteChecklistItem();
-  const addItemMutation = useAddChecklistItem(id);
-  const saveChecklistMutation = useSaveChecklist(id);
+  const addItemMutation = useAddChecklistItem(effectiveId);
+  const saveChecklistMutation = useSaveChecklist(effectiveId);
 
   // Verifica se o checklist existe e trata erros
   useEffect(() => {
@@ -199,7 +205,7 @@ export default function ChecklistDetailsContainer() {
           />
 
           <AddChecklistItemForm
-            checklistId={id}
+            checklistId={effectiveId}
             onAddItem={handleAddItem}
             lastOrder={items.length > 0 ? Math.max(...items.map(i => i.ordem)) + 1 : 0}
             questionTypes={questionTypes}
