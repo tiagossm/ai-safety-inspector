@@ -1,6 +1,7 @@
 
 import { useAuth } from "@/components/AuthProvider";
 import { AuthUser } from "@/hooks/auth/useAuthState";
+import { UserRole } from "@/types/user";
 
 export function useBulkOperationsPermissions() {
   const { user } = useAuth();
@@ -11,7 +12,7 @@ export function useBulkOperationsPermissions() {
   const isCompanyAdmin = 
     typedUser?.tier === "company_admin" || 
     typedUser?.role === "admin" || 
-    (typeof typedUser?.role === "string" && typedUser?.role === "Administrador");
+    (typedUser?.role as string === "Administrador");
   
   return {
     canCreateChecklist: true, // Everyone can create checklists for now

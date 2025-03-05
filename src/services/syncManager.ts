@@ -9,6 +9,25 @@ interface SyncResult {
   message?: string;
 }
 
+// Process each operation type with a dedicated function to avoid type instantiation issues
+async function processInsertOperation(table: string, data: any): Promise<void> {
+  const validatedTable = getValidatedTable(table);
+  const result = await supabase.from(validatedTable).insert(data);
+  if (result.error) throw result.error;
+}
+
+async function processUpdateOperation(table: string, data: any): Promise<void> {
+  const validatedTable = getValidatedTable(table);
+  const result = await supabase.from(validatedTable).update(data).eq('id', data.id);
+  if (result.error) throw result.error;
+}
+
+async function processDeleteOperation(table: string, data: any): Promise<void> {
+  const validatedTable = getValidatedTable(table);
+  const result = await supabase.from(validatedTable).delete().eq('id', data.id);
+  if (result.error) throw result.error;
+}
+
 export async function syncWithServer(
   syncCallback?: (isSyncing: boolean) => void,
   errorCallback?: (error: Error) => void
@@ -43,32 +62,15 @@ export async function syncWithServer(
           continue;
         }
         
-        const validatedTable = getValidatedTable(table);
-        
-        // Process each operation type separately to avoid deep type instantiation
+        // Process each operation type using the dedicated functions
         if (operation === 'insert') {
-          try {
-            const result = await supabase.from(validatedTable).insert(data);
-            if (result.error) throw result.error;
-          } catch (operationError) {
-            throw operationError;
-          }
+          await processInsertOperation(table, data);
         } 
         else if (operation === 'update') {
-          try {
-            const result = await supabase.from(validatedTable).update(data).eq('id', data.id);
-            if (result.error) throw result.error;
-          } catch (operationError) {
-            throw operationError;
-          }
+          await processUpdateOperation(table, data);
         } 
         else if (operation === 'delete') {
-          try {
-            const result = await supabase.from(validatedTable).delete().eq('id', data.id);
-            if (result.error) throw result.error;
-          } catch (operationError) {
-            throw operationError;
-          }
+          await processDeleteOperation(table, data);
         }
         
         // Clear item from sync queue after successful sync

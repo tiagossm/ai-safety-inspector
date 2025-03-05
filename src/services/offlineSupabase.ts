@@ -9,6 +9,9 @@ type OperationResult = {
   error: Error | null;
 };
 
+// Define standard return type for eq operations
+type EqOperation = (column: string, value: any) => Promise<OperationResult>;
+
 // Factory functions to create operations
 const createInsertOperation = (tableName: string) => {
   return async (data: any): Promise<OperationResult> => {
@@ -35,73 +38,73 @@ const createInsertOperation = (tableName: string) => {
   };
 };
 
-// Break the deep type instantiation by simplifying the return structure
+// Simplify update operation to prevent deep type instantiation
 const createUpdateOperation = (tableName: string) => {
-  return (data: any): { eq: (column: string, value: any) => Promise<OperationResult> } => {
-    return {
-      eq: async (column: string, value: any): Promise<OperationResult> => {
-        try {
-          if (navigator.onLine) {
-            const validatedTable = getValidatedTable(tableName);
-            const result = await supabase
-              .from(validatedTable)
-              .update(data)
-              .eq(column, value);
-            
-            if (result.error) throw result.error;
-            return result;
-          } else {
-            // For offline update, we need the ID
-            if (column === 'id') {
-              data.id = value;
-            }
-            await saveForSync(tableName, 'update', data);
-            return { data: [data], error: null };
-          }
-        } catch (error) {
-          console.error(`Error in offline update for ${tableName}:`, error);
-          // Always fall back to offline storage on error
+  return (data: any) => {
+    const eqFn: EqOperation = async (column, value) => {
+      try {
+        if (navigator.onLine) {
+          const validatedTable = getValidatedTable(tableName);
+          const result = await supabase
+            .from(validatedTable)
+            .update(data)
+            .eq(column, value);
+          
+          if (result.error) throw result.error;
+          return result;
+        } else {
+          // For offline update, we need the ID
           if (column === 'id') {
             data.id = value;
           }
           await saveForSync(tableName, 'update', data);
           return { data: [data], error: null };
         }
+      } catch (error) {
+        console.error(`Error in offline update for ${tableName}:`, error);
+        // Always fall back to offline storage on error
+        if (column === 'id') {
+          data.id = value;
+        }
+        await saveForSync(tableName, 'update', data);
+        return { data: [data], error: null };
       }
     };
+    
+    return { eq: eqFn };
   };
 };
 
-// Similarly simplify delete operation
+// Simplify delete operation in a similar way
 const createDeleteOperation = (tableName: string) => {
-  return (): { eq: (column: string, value: any) => Promise<OperationResult> } => {
-    return {
-      eq: async (column: string, value: any): Promise<OperationResult> => {
-        try {
-          if (navigator.onLine) {
-            const validatedTable = getValidatedTable(tableName);
-            const result = await supabase
-              .from(validatedTable)
-              .delete()
-              .eq(column, value);
-            
-            if (result.error) throw result.error;
-            return result;
-          } else {
-            // For delete we just need the ID
-            const data = { id: value };
-            await saveForSync(tableName, 'delete', data);
-            return { data: [], error: null };
-          }
-        } catch (error) {
-          console.error(`Error in offline delete for ${tableName}:`, error);
-          // Always fall back to offline storage on error
+  return () => {
+    const eqFn: EqOperation = async (column, value) => {
+      try {
+        if (navigator.onLine) {
+          const validatedTable = getValidatedTable(tableName);
+          const result = await supabase
+            .from(validatedTable)
+            .delete()
+            .eq(column, value);
+          
+          if (result.error) throw result.error;
+          return result;
+        } else {
+          // For delete we just need the ID
           const data = { id: value };
           await saveForSync(tableName, 'delete', data);
           return { data: [], error: null };
         }
+      } catch (error) {
+        console.error(`Error in offline delete for ${tableName}:`, error);
+        // Always fall back to offline storage on error
+        const data = { id: value };
+        await saveForSync(tableName, 'delete', data);
+        return { data: [], error: null };
       }
     };
+    
+    return { eq: eqFn };
   };
 };
 
