@@ -29,6 +29,9 @@ export async function syncWithServer(
     
     console.log(`Syncing ${queue.length} items with server...`);
     
+    let successCount = 0;
+    let failureCount = 0;
+    
     for (const item of queue) {
       try {
         const { table, operation, data } = item;
@@ -44,19 +47,24 @@ export async function syncWithServer(
         
         // Process the sync operation based on its type
         if (operation === 'insert') {
-          await supabase.from(validatedTable).insert(data);
+          const result = await supabase.from(validatedTable).insert(data);
+          if (result.error) throw result.error;
         } 
         else if (operation === 'update') {
-          await supabase.from(validatedTable).update(data).eq('id', data.id);
+          const result = await supabase.from(validatedTable).update(data).eq('id', data.id);
+          if (result.error) throw result.error;
         } 
         else if (operation === 'delete') {
-          await supabase.from(validatedTable).delete().eq('id', data.id);
+          const result = await supabase.from(validatedTable).delete().eq('id', data.id);
+          if (result.error) throw result.error;
         }
         
         // Clear item from sync queue after successful sync
         await clearSyncItem(item.id);
+        successCount++;
       } catch (itemError) {
         console.error(`Failed to sync item ${item.id}:`, itemError);
+        failureCount++;
         // Continue with next item
       }
     }
@@ -71,8 +79,8 @@ export async function syncWithServer(
     return { 
       success: remainingQueue.length === 0,
       message: remainingQueue.length === 0 
-        ? "All items synced successfully" 
-        : `${remainingQueue.length} items failed to sync`
+        ? `All ${successCount} items synced successfully` 
+        : `${successCount} items synced, ${failureCount} items failed to sync`
     };
   } catch (error) {
     console.error('Sync failed:', error);

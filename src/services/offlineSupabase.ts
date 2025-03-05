@@ -14,7 +14,8 @@ const createInsertOperation = (tableName: string) => {
   return async (data: any): Promise<OperationResult> => {
     try {
       if (navigator.onLine) {
-        const result = await supabase.from(tableName).insert(data);
+        const validatedTable = getValidatedTable(tableName);
+        const result = await supabase.from(validatedTable).insert(data);
         if (result.error) throw result.error;
         return result;
       } else {
@@ -40,8 +41,9 @@ const createUpdateOperation = (tableName: string) => {
       eq: async (column: string, value: any): Promise<OperationResult> => {
         try {
           if (navigator.onLine) {
+            const validatedTable = getValidatedTable(tableName);
             const result = await supabase
-              .from(tableName)
+              .from(validatedTable)
               .update(data)
               .eq(column, value);
             
@@ -75,8 +77,9 @@ const createDeleteOperation = (tableName: string) => {
       eq: async (column: string, value: any): Promise<OperationResult> => {
         try {
           if (navigator.onLine) {
+            const validatedTable = getValidatedTable(tableName);
             const result = await supabase
-              .from(tableName)
+              .from(validatedTable)
               .delete()
               .eq(column, value);
             
@@ -104,7 +107,8 @@ const createSelectOperation = (tableName: string) => {
   return async (columns: string = '*'): Promise<OperationResult> => {
     try {
       if (navigator.onLine) {
-        return await supabase.from(tableName).select(columns);
+        const validatedTable = getValidatedTable(tableName);
+        return await supabase.from(validatedTable).select(columns);
       } else {
         // When offline, use local data
         const offlineData = await getOfflineData(tableName);
@@ -155,15 +159,12 @@ export const offlineSupabase = {
       };
     }
     
-    // Now we know it's a valid table name
-    const tableName = getValidatedTable(tableNameParam);
-    
     // Return the table operations object with factory-created methods
     return {
-      insert: createInsertOperation(tableName),
-      update: createUpdateOperation(tableName),
-      delete: createDeleteOperation(tableName),
-      select: createSelectOperation(tableName)
+      insert: createInsertOperation(tableNameParam),
+      update: createUpdateOperation(tableNameParam),
+      delete: createDeleteOperation(tableNameParam),
+      select: createSelectOperation(tableNameParam)
     };
   }
 };
