@@ -21,6 +21,8 @@ export type Checklist = {
   // Adding properties needed in ChecklistCard and ChecklistDetailsContainer
   items_total?: number;
   items_completed?: number;
+  // New property to track access level
+  access_level?: "owner" | "admin" | "editor" | "viewer";
 };
 
 export type ChecklistItem = {
@@ -73,4 +75,24 @@ export type ChecklistMedia = {
   file_url: string;
   file_type: "image" | "audio" | "video";
   created_at: string;
+};
+
+// New types for user access control
+export type ChecklistPermission = {
+  id: string;
+  checklist_id: string;
+  user_id: string;
+  access_level: "owner" | "admin" | "editor" | "viewer";
+  granted_by: string;
+  granted_at: string;
+};
+
+export type ChecklistAssignment = {
+  id: string;
+  checklist_id: string;
+  company_id: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  status: "active" | "inactive";
 };
