@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAssignChecklist } from "@/hooks/checklist/useAssignChecklist";
 import { useAuth } from "@/components/AuthProvider";
 import { AuthUser } from "@/hooks/auth/useAuthState";
+import { toast } from "sonner";
 
 interface AssignChecklistDialogProps {
   open: boolean;
@@ -40,32 +41,11 @@ export function AssignChecklistDialog({
   const typedUser = user as AuthUser | null;
   const assignChecklist = useAssignChecklist();
 
-  // Load already assigned users when dialog opens
-  useEffect(() => {
-    if (open && checklistId) {
-      loadAssignedUsers();
-      loadAvailableUsers();
-    }
-  }, [open, checklistId]);
-
-  const loadAssignedUsers = async () => {
-    try {
-      const { data } = await supabase
-        .from("user_checklists")
-        .select("user_id")
-        .eq("checklist_id", checklistId);
-      
-      if (data) {
-        setSelectedUsers(data.map(item => item.user_id));
-      }
-    } catch (error) {
-      console.error("Error loading assigned users:", error);
-    }
-  };
-
-  const loadAvailableUsers = async () => {
+  // Load available users - improved with useCallback and error handling
+  const loadAvailableUsers = useCallback(async () => {
     setLoading(true);
     try {
+      console.log("Loading available users for assignment...");
       let query = supabase
         .from("users")
         .select("id, name, email, company_id")
@@ -84,13 +64,49 @@ export function AssignChecklistDialog({
       const { data, error } = await query;
 
       if (error) throw error;
+      console.log("Users loaded successfully:", data?.length || 0, "users");
       setUsers(data || []);
     } catch (error) {
       console.error("Error loading users:", error);
+      toast("Erro ao carregar usuários", {
+        description: "Tente novamente mais tarde",
+        duration: 3000
+      });
     } finally {
       setLoading(false);
     }
-  };
+  }, [typedUser, companyId]);
+
+  // Load already assigned users
+  const loadAssignedUsers = useCallback(async () => {
+    if (!checklistId) return;
+    
+    try {
+      console.log("Loading assigned users for checklist:", checklistId);
+      const { data, error } = await supabase
+        .from("user_checklists")
+        .select("user_id")
+        .eq("checklist_id", checklistId);
+      
+      if (error) throw error;
+      
+      if (data) {
+        console.log("Assigned users loaded:", data.length);
+        setSelectedUsers(data.map(item => item.user_id));
+      }
+    } catch (error) {
+      console.error("Error loading assigned users:", error);
+    }
+  }, [checklistId]);
+
+  // Load data when dialog opens
+  useEffect(() => {
+    if (open) {
+      setSearch("");
+      loadAssignedUsers();
+      loadAvailableUsers();
+    }
+  }, [open, loadAssignedUsers, loadAvailableUsers]);
 
   const handleAssign = async () => {
     if (!checklistId || selectedUsers.length === 0) return;
@@ -109,8 +125,8 @@ export function AssignChecklistDialog({
   };
 
   const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(search.toLowerCase()) ||
-    user.email.toLowerCase().includes(search.toLowerCase())
+    user.name?.toLowerCase().includes(search.toLowerCase()) ||
+    user.email?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -141,7 +157,7 @@ export function AssignChecklistDialog({
             </div>
           ) : filteredUsers.length === 0 ? (
             <div className="text-center p-4 text-muted-foreground">
-              Nenhum usuário encontrado
+              {search ? "Nenhum usuário encontrado" : "Nenhum usuário disponível"}
             </div>
           ) : (
             filteredUsers.map((user) => (
@@ -161,7 +177,7 @@ export function AssignChecklistDialog({
                   htmlFor={user.id}
                   className="flex-grow cursor-pointer"
                 >
-                  <div className="font-medium">{user.name}</div>
+                  <div className="font-medium">{user.name || user.email}</div>
                   <div className="text-sm text-muted-foreground">{user.email}</div>
                 </label>
               </div>
@@ -170,7 +186,7 @@ export function AssignChecklistDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={assignChecklist.isPending}>
             Cancelar
           </Button>
           <Button 

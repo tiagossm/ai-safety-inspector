@@ -11,6 +11,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { useDeleteChecklist } from "@/hooks/checklist/useDeleteChecklist";
+import { Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface DeleteChecklistDialogProps {
   checklistId: string;
@@ -27,11 +29,22 @@ export function DeleteChecklistDialog({
 }: DeleteChecklistDialogProps) {
   const deleteChecklist = useDeleteChecklist();
   const [isDeleting, setIsDeleting] = useState(false);
+  const navigate = useNavigate();
 
   const handleDelete = async () => {
+    if (!checklistId || isDeleting) return;
+    
     setIsDeleting(true);
     try {
+      console.log("Deleting checklist:", checklistId);
       await deleteChecklist.mutateAsync(checklistId);
+      
+      // Redirect to checklists page if necessary
+      if (window.location.pathname.includes(`/checklists/${checklistId}`)) {
+        navigate('/checklists');
+      }
+    } catch (error) {
+      console.error("Error deleting checklist:", error);
     } finally {
       setIsDeleting(false);
       onOpenChange(false);
@@ -58,7 +71,14 @@ export function DeleteChecklistDialog({
             disabled={isDeleting}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {isDeleting ? "Excluindo..." : "Excluir Checklist"}
+            {isDeleting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Excluindo...
+              </>
+            ) : (
+              "Excluir Checklist"
+            )}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
