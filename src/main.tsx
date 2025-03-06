@@ -4,6 +4,12 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 import { initOfflineSystem } from './services/offlineSync';
+import { initOfflineDb } from './services/offlineDb';
+
+// Initialize offline database immediately 
+initOfflineDb().then(success => {
+  console.log(`IndexedDB initialization ${success ? 'succeeded' : 'failed'}`);
+});
 
 // Initialize offline system 
 const cleanup = initOfflineSystem(

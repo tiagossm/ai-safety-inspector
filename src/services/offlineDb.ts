@@ -16,7 +16,7 @@ let db: IDBPDatabase;
 export async function initOfflineDb() {
   try {
     // Increment the version number to force schema update
-    db = await openDB('offlineSync', 2, {
+    db = await openDB('offlineSync', 3, {
       upgrade(db, oldVersion, newVersion, transaction) {
         console.log(`Upgrading IndexedDB from version ${oldVersion} to ${newVersion}`);
         

@@ -3,6 +3,7 @@ import { useNetworkStatus, useSyncData } from "@/hooks/useOfflineAwareQuery";
 import { useState, useEffect } from "react";
 import { Button } from "./button";
 import { Wifi, WifiOff, RefreshCw } from "lucide-react";
+import { getSyncQueue } from "@/services/offlineDb";
 
 export function OfflineStatus() {
   const isOnline = useNetworkStatus();
@@ -10,30 +11,11 @@ export function OfflineStatus() {
   const [hasPendingChanges, setHasPendingChanges] = useState(false);
   
   useEffect(() => {
-    // Check for pending changes
+    // Check for pending changes using our existing getSyncQueue function
     const checkPendingChanges = async () => {
       try {
-        const dbRequest = window.indexedDB.open("offlineSync");
-        
-        dbRequest.onsuccess = (event) => {
-          const db = (event.target as IDBOpenDBRequest).result;
-          const tx = db.transaction("pendingRequests", "readonly");
-          const store = tx.objectStore("pendingRequests");
-          
-          // Use count() method to get the number of records
-          const countRequest = store.count();
-          countRequest.onsuccess = () => {
-            setHasPendingChanges(countRequest.result > 0);
-          };
-          
-          countRequest.onerror = (error) => {
-            console.error("Error counting pending requests:", error);
-          };
-        };
-        
-        dbRequest.onerror = (error) => {
-          console.error("Error opening IndexedDB:", error);
-        };
+        const pendingItems = await getSyncQueue();
+        setHasPendingChanges(pendingItems.length > 0);
       } catch (error) {
         console.error("Error checking pending changes:", error);
       }
