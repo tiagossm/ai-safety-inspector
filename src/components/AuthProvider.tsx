@@ -1,6 +1,5 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AuthUser } from "@/hooks/auth/useAuthState";
@@ -27,44 +26,52 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // **Verifica a sessão ao montar o componente**
+  // Função para buscar dados completos do usuário
+  async function fetchExtendedUser(userId: string): Promise<AuthUser | null> {
+    const { data, error } = await supabase
+      .from("users")
+      .select("id, company_id, name, role, tier")
+      .eq("id", userId)
+      .single();
+
+    if (error) {
+      console.error("Erro ao buscar detalhes do usuário:", error);
+      return null;
+    }
+    return data;
+  }
+
+  // Verifica a sessão ao montar o componente
   useEffect(() => {
     const initializeAuth = async () => {
       console.log("🔄 Iniciando verificação de sessão...");
-
       try {
         const { data, error } = await supabase.auth.getSession();
         if (error) throw error;
 
         if (data?.session?.user) {
           console.log("✅ Sessão restaurada do Supabase");
+          // Tenta obter os dados completos do usuário
+          const userData = await fetchExtendedUser(data.session.user.id);
+          // Normaliza os valores de role e tier
+          const normalizedRole = userData && userData.role
+            ? userData.role.toLowerCase() === 'administrador'
+              ? 'admin'
+              : userData.role.toLowerCase()
+            : 'user';
+          const normalizedTier = userData && userData.tier
+            ? userData.tier.toLowerCase()
+            : 'technician';
           
-          // Get additional user data from the users table
-          try {
-            const { data: userData, error: userError } = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', data.session.user.id)
-              .single();
+          const enhancedUser: AuthUser = {
+            ...data.session.user,
+            role: normalizedRole,
+            tier: normalizedTier,
+            company_id: userData?.company_id // Pode ser null para super_admin
+          };
 
-            // Create enhanced user object
-            const enhancedUser: AuthUser = {
-              ...data.session.user,
-              // Default values in case of error or missing data
-              // Cast database role value to allowed type
-              role: userError ? 'user' : (userData?.role === 'Administrador' ? 'admin' : 'user'),
-              tier: userError ? 'technician' : (userData?.tier as any || 'technician'),
-              company_id: userError ? undefined : userData?.company_id
-            };
-
-            setUser(enhancedUser);
-            localStorage.setItem("authUser", JSON.stringify(enhancedUser));
-          } catch (err) {
-            console.error("❌ Error fetching user data:", err);
-            // Still set the basic user if there's an error fetching additional data
-            setUser(data.session.user as AuthUser);
-            localStorage.setItem("authUser", JSON.stringify(data.session.user));
-          }
+          setUser(enhancedUser);
+          localStorage.setItem("authUser", JSON.stringify(enhancedUser));
         }
       } catch (error) {
         console.error("❌ Erro ao inicializar autenticação:", error);
@@ -77,34 +84,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     initializeAuth();
   }, []);
 
-  // **Configura eventos de autenticação**
+  // Configura eventos de autenticação
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log(`🔄 Estado de autenticação alterado: ${event}`);
-      
       if (session?.user) {
         try {
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+          const userData = await fetchExtendedUser(session.user.id);
+          const normalizedRole = userData && userData.role
+            ? userData.role.toLowerCase() === 'administrador'
+              ? 'admin'
+              : userData.role.toLowerCase()
+            : 'user';
+          const normalizedTier = userData && userData.tier
+            ? userData.tier.toLowerCase()
+            : 'technician';
 
-          // Create enhanced user object
           const enhancedUser: AuthUser = {
             ...session.user,
-            // Default values in case of error or missing data
-            // Cast database role value to allowed type
-            role: userError ? 'user' : (userData?.role === 'Administrador' ? 'admin' : 'user'),
-            tier: userError ? 'technician' : (userData?.tier as any || 'technician'),
-            company_id: userError ? undefined : userData?.company_id
+            role: normalizedRole,
+            tier: normalizedTier,
+            company_id: userData?.company_id
           };
 
           setUser(enhancedUser);
           localStorage.setItem("authUser", JSON.stringify(enhancedUser));
         } catch (err) {
           console.error("❌ Error fetching user data:", err);
-          // Still set the basic user if there's an error fetching additional data
           setUser(session.user as AuthUser);
           localStorage.setItem("authUser", JSON.stringify(session.user));
         }
@@ -120,7 +126,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  // **Função de logout**
+  // Função de logout
   const logout = async () => {
     await supabase.auth.signOut();
     localStorage.removeItem("authUser");
@@ -130,7 +136,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <AuthContext.Provider value={{ user, loading, logout }}>
-      {!loading && children}
+      {loading ? <div>Carregando...</div> : children}
     </AuthContext.Provider>
   );
 };
