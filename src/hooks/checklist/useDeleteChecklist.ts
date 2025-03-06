@@ -4,21 +4,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { offlineSupabase } from "@/services/offlineSupabase";
 
-// Simple result type with no nested generic types
-type DeleteResult = { success: boolean };
+// Define a simple result type to avoid deep type nesting
+type DeleteResult = { success: boolean; message?: string };
 
 // Simplified standalone functions to avoid deep type nesting
 async function deleteUserChecklists(id: string): Promise<void> {
   const client = navigator.onLine ? supabase : offlineSupabase;
   try {
-    // Using any here to avoid deep type instantiation
-    const result: any = await client
+    const { error } = await client
       .from("user_checklists")
       .delete()
       .eq("checklist_id", id);
 
-    if (result.error) {
-      console.error("Error deleting user_checklists:", result.error);
+    if (error) {
+      console.error("Error deleting user_checklists:", error);
     }
   } catch (error) {
     console.error("Exception when deleting user_checklists:", error);
@@ -28,14 +27,13 @@ async function deleteUserChecklists(id: string): Promise<void> {
 async function deleteChecklistItems(id: string): Promise<void> {
   const client = navigator.onLine ? supabase : offlineSupabase;
   try {
-    // Using any here to avoid deep type instantiation
-    const result: any = await client
+    const { error } = await client
       .from("checklist_itens")
       .delete()
       .eq("checklist_id", id);
 
-    if (result.error) {
-      console.error("Error deleting checklist items:", result.error);
+    if (error) {
+      console.error("Error deleting checklist items:", error);
     }
   } catch (error) {
     console.error("Exception when deleting checklist items:", error);
@@ -45,14 +43,13 @@ async function deleteChecklistItems(id: string): Promise<void> {
 async function deleteChecklist(id: string): Promise<DeleteResult> {
   const client = navigator.onLine ? supabase : offlineSupabase;
   try {
-    // Using any here to avoid deep type instantiation
-    const result: any = await client
+    const { error } = await client
       .from("checklists")
       .delete()
       .eq("id", id);
 
-    if (result.error) {
-      throw result.error;
+    if (error) {
+      throw error;
     }
     
     console.log("Checklist deleted successfully:", id);

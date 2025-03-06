@@ -1,3 +1,4 @@
+
 import { openDB, IDBPDatabase } from 'idb';
 
 interface SyncItem {
