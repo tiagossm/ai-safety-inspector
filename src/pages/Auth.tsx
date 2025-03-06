@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -107,6 +106,48 @@ const Auth = () => {
             >
               {loading ? "Carregando..." : isSignUp ? "Cadastrar" : "Entrar"}
             </Button>
+          </div>
+
+          <div className="flex items-center justify-between">
+            {/* Checkbox "Lembrar-me" */}
+            <label className="flex items-center text-sm text-white">
+              <input type="checkbox" className="mr-2" />
+              Lembrar-me
+            </label>
+            {/* Link de Recuperação de Senha */}
+            <button
+              type="button"
+              onClick={async () => {
+                if (!email) {
+                  toast({
+                    title: "Atenção",
+                    description: "Por favor, informe seu e-mail para recuperar a senha.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                try {
+                  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: "https://seu-dominio.com/reset-password",
+                  });
+                  if (error) throw error;
+                  toast({
+                    title: "Recuperação de senha",
+                    description: "E-mail de recuperação enviado com sucesso!",
+                  });
+                } catch (err: any) {
+                  toast({
+                    title: "Erro",
+                    description: err.message,
+                    variant: "destructive",
+                  });
+                }
+              }}
+              className="text-sm text-blue-400 hover:underline"
+              disabled={loading}
+            >
+              Esqueci minha senha
+            </button>
           </div>
 
           <div className="text-center">
