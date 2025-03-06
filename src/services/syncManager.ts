@@ -18,18 +18,20 @@ interface SyncQueueItem {
   timestamp: number;
 }
 
-// Define SupabaseResponse type to handle all possible response types
-type SupabaseResponse = {
+// Define a simpler SupabaseResponse type to avoid deep nesting
+interface SupabaseResponse {
   error: Error | null;
   data?: any;
-};
+  // Add any other common properties needed
+}
 
 // Process each operation type with a dedicated function
 async function processInsertOperation(table: string, data: any): Promise<void> {
   console.log(`Processing insert operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  const response: SupabaseResponse = await supabase.from(validatedTable).insert(data);
+  // Use the simplified response type
+  const response = await supabase.from(validatedTable).insert(data) as SupabaseResponse;
   
   if (response.error) {
     console.error(`Error in sync insert operation for table ${table}:`, response.error);
@@ -42,7 +44,8 @@ async function processUpdateOperation(table: string, data: any): Promise<void> {
   console.log(`Processing update operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  const response: SupabaseResponse = await supabase.from(validatedTable).update(data).eq('id', data.id);
+  // Use the simplified response type
+  const response = await supabase.from(validatedTable).update(data).eq('id', data.id) as SupabaseResponse;
   
   if (response.error) {
     console.error(`Error in sync update operation for table ${table}:`, response.error);
@@ -55,7 +58,8 @@ async function processDeleteOperation(table: string, data: any): Promise<void> {
   console.log(`Processing delete operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  const response: SupabaseResponse = await supabase.from(validatedTable).delete().eq('id', data.id);
+  // Use the simplified response type
+  const response = await supabase.from(validatedTable).delete().eq('id', data.id) as SupabaseResponse;
   
   if (response.error) {
     console.error(`Error in sync delete operation for table ${table}:`, response.error);

@@ -49,13 +49,21 @@ export const useOfflineAwareQuery = <T>(
         const result = await offlineSupabase.from(tableName).select();
         
         // Handle both online and offline response formats
-        if (result && typeof result._getFilteredData === 'function') {
-          const queryResult = await result._getFilteredData();
-          return (queryResult.data || []) as T[];
+        if (result && typeof result === 'object') {
+          // For offline query handler that implements _getFilteredData method
+          if (result && typeof (result as any)._getFilteredData === 'function') {
+            const queryResult = await (result as any)._getFilteredData();
+            return (queryResult.data || []) as T[];
+          }
+          
+          // For regular Supabase responses
+          if ('data' in result) {
+            return (result.data || []) as T[];
+          }
         }
         
-        // For regular Supabase responses
-        return (result?.data || []) as T[];
+        // Return empty array as fallback
+        return [] as T[];
       } catch (error) {
         console.error(`Error fetching data from ${tableName}:`, error);
         throw error;

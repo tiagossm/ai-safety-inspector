@@ -7,9 +7,10 @@ import { offlineSupabase } from "@/services/offlineSupabase";
 // Define a simple result type to avoid deep type nesting
 type DeleteResult = { success: boolean; message?: string };
 
-// Handle response types more explicitly
-interface SupabaseResponse {
+// Define a custom response type to handle both online and offline responses
+interface OperationResponse {
   error: Error | null;
+  data?: any;
 }
 
 // Simplified standalone functions to avoid deep type nesting
@@ -21,11 +22,10 @@ async function deleteUserChecklists(id: string): Promise<void> {
       .delete()
       .eq("checklist_id", id);
       
-    // Check error for both online and offline clients
-    const error = 'error' in result ? result.error : null;
-    
-    if (error) {
-      console.error("Error deleting user_checklists:", error);
+    // Check for errors in the response
+    const response = result as unknown as OperationResponse;
+    if (response.error) {
+      console.error("Error deleting user_checklists:", response.error);
     }
   } catch (error) {
     console.error("Exception when deleting user_checklists:", error);
@@ -40,11 +40,10 @@ async function deleteChecklistItems(id: string): Promise<void> {
       .delete()
       .eq("checklist_id", id);
       
-    // Check error for both online and offline clients
-    const error = 'error' in result ? result.error : null;
-    
-    if (error) {
-      console.error("Error deleting checklist items:", error);
+    // Check for errors in the response
+    const response = result as unknown as OperationResponse;
+    if (response.error) {
+      console.error("Error deleting checklist items:", response.error);
     }
   } catch (error) {
     console.error("Exception when deleting checklist items:", error);
@@ -59,11 +58,10 @@ async function deleteChecklist(id: string): Promise<DeleteResult> {
       .delete()
       .eq("id", id);
       
-    // Check error for both online and offline clients
-    const error = 'error' in result ? result.error : null;
-    
-    if (error) {
-      throw error;
+    // Check for errors in the response
+    const response = result as unknown as OperationResponse;
+    if (response.error) {
+      throw response.error;
     }
     
     console.log("Checklist deleted successfully:", id);
