@@ -1,16 +1,17 @@
-
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
 import { AuthUser } from "@/hooks/auth/useAuthState";
 
+export type UserTier = "super_admin" | "company_admin" | "consultant" | "technician";
+
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredTier?: ("super_admin" | "company_admin" | "consultant" | "technician")[];
+  requiredTier?: UserTier[];
 }
 
-export function ProtectedRoute({ 
-  children, 
-  requiredTier = ["super_admin", "company_admin", "consultant", "technician"] 
+export function ProtectedRoute({
+  children,
+  requiredTier = ["super_admin", "company_admin", "consultant", "technician"]
 }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
   const location = useLocation();
@@ -40,8 +41,11 @@ export function ProtectedRoute({
 
   // Verificação de permissão baseada no tier
   if (typedUser.tier && !requiredTier.includes(typedUser.tier)) {
-    console.log(`🚫 Acesso negado: usuário com tier ${typedUser.tier} tentando acessar rota que requer [${requiredTier.join(', ')}]`);
-    
+    console.log(
+      `🚫 Acesso negado: usuário com tier ${typedUser.tier} tentando acessar rota que requer [${requiredTier.join(
+        ", "
+      )}]`
+    );
     // Redireciona para o dashboard apropriado com base no tier
     const redirectPath = typedUser.tier === "super_admin" ? "/admin/dashboard" : "/dashboard";
     console.log(`🔄 Redirecionando para ${redirectPath}`);

@@ -1,4 +1,3 @@
-
 import { openDB, IDBPDatabase } from 'idb';
 
 interface SyncItem {
@@ -13,7 +12,7 @@ let db: IDBPDatabase;
 
 export async function initOfflineDb() {
   try {
-    db = await openDB('offlineSync', 4, {  // Increased version to 4 to accommodate changes
+    db = await openDB('offlineSync', 4, {  // Versão atualizada para 4
       upgrade(db, oldVersion, newVersion) {
         console.log(`Upgrading IndexedDB from version ${oldVersion} to ${newVersion}`);
 
@@ -22,7 +21,7 @@ export async function initOfflineDb() {
           db.createObjectStore('syncQueue', { keyPath: 'id' });
         }
 
-        // Criação de stores para dados offline, conforme as tabelas permitidas
+        // Lista de stores que devem existir
         const stores = [
           'checklists',
           'users',
@@ -93,10 +92,10 @@ export async function saveForSync(
   }
   const id = `${Date.now()}-${Math.random()}`;
   const syncItem: SyncItem = {
-    id: id,
-    table: table,
-    operation: operation,
-    data: data,
+    id,
+    table,
+    operation,
+    data,
     timestamp: Date.now(),
   };
   try {
@@ -106,7 +105,7 @@ export async function saveForSync(
     await tx.done;
     console.log(`Saved ${operation} operation for table ${table} in sync queue.`);
 
-    // Also save the data in the respective offline store
+    // Salvar também na store offline correspondente
     if (operation === 'insert' || operation === 'update') {
       await saveDataOffline(table, data);
     } else if (operation === 'delete') {
