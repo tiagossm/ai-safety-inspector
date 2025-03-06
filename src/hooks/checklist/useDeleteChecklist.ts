@@ -4,16 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { offlineSupabase } from "@/services/offlineSupabase";
 
-// Use a simpler interface to avoid deep type nesting
-interface DeleteResult {
-  success: boolean;
-}
+// Simple result type with no nested generic types
+type DeleteResult = { success: boolean };
 
-// Break down the operations into separate functions with simplified types
+// Simplified standalone functions to avoid deep type nesting
 async function deleteUserChecklists(id: string): Promise<void> {
   const client = navigator.onLine ? supabase : offlineSupabase;
   try {
-    // Use explicit any to avoid deep type instantiation
+    // Using any here to avoid deep type instantiation
     const result: any = await client
       .from("user_checklists")
       .delete()
@@ -30,7 +28,7 @@ async function deleteUserChecklists(id: string): Promise<void> {
 async function deleteChecklistItems(id: string): Promise<void> {
   const client = navigator.onLine ? supabase : offlineSupabase;
   try {
-    // Use explicit any to avoid deep type instantiation
+    // Using any here to avoid deep type instantiation
     const result: any = await client
       .from("checklist_itens")
       .delete()
@@ -47,7 +45,7 @@ async function deleteChecklistItems(id: string): Promise<void> {
 async function deleteChecklist(id: string): Promise<DeleteResult> {
   const client = navigator.onLine ? supabase : offlineSupabase;
   try {
-    // Use explicit any to avoid deep type instantiation
+    // Using any here to avoid deep type instantiation
     const result: any = await client
       .from("checklists")
       .delete()
