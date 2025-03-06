@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Shield } from "lucide-react";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -64,8 +63,15 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
+        {/* Exibir o logo no topo */}
+        <div className="flex justify-center">
+          <img
+            src="/36e6d20d-9248-4e9f-967f-aeeea5a2bc30.png" // ajuste a extensão se necessário
+            alt="Logo"
+            className="h-16 w-auto"
+          />
+        </div>
         <div className="flex flex-col items-center">
-          <Shield className="h-12 w-12 text-primary" />
           <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
             {isSignUp ? "Criar nova conta" : "Entrar na plataforma"}
           </h2>
@@ -114,7 +120,7 @@ const Auth = () => {
               <input type="checkbox" className="mr-2" />
               Lembrar-me
             </label>
-            {/* Link de Recuperação de Senha */}
+            {/* Link para Recuperação de Senha */}
             <button
               type="button"
               onClick={async () => {
@@ -128,7 +134,7 @@ const Auth = () => {
                 }
                 try {
                   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                    redirectTo: "https://seu-dominio.com/reset-password",
+                    redirectTo: "https://seu-dominio.com/reset-password", // ajuste conforme necessário
                   });
                   if (error) throw error;
                   toast({
