@@ -3,13 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { getSyncQueue, clearSyncItem } from './offlineDb';
 import { getValidatedTable, isValidTable } from './tableValidation';
 
-// Simple synchronization result type
+// Simplified interface for sync results
 interface SyncResult {
   success: boolean;
   message?: string;
 }
 
-// Create dedicated type for items in sync queue
+// Simplified interface for sync queue items
 interface SyncQueueItem {
   id: string;
   table: string;
@@ -18,12 +18,12 @@ interface SyncQueueItem {
   timestamp: number;
 }
 
-// Process each operation type with a dedicated function
+// Separate function for insert operations to simplify types
 async function processInsertOperation(table: string, data: any): Promise<void> {
   console.log(`Processing insert operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  // Using any to avoid deep type instantiation
+  // Use explicit any to avoid deep type nesting
   const result: any = await supabase.from(validatedTable).insert(data);
   
   if (result.error) {
@@ -33,11 +33,12 @@ async function processInsertOperation(table: string, data: any): Promise<void> {
   console.log(`Successfully inserted data into ${table}`);
 }
 
+// Separate function for update operations
 async function processUpdateOperation(table: string, data: any): Promise<void> {
   console.log(`Processing update operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  // Using any to avoid deep type instantiation
+  // Use explicit any to avoid deep type nesting
   const result: any = await supabase.from(validatedTable).update(data).eq('id', data.id);
   
   if (result.error) {
@@ -47,11 +48,12 @@ async function processUpdateOperation(table: string, data: any): Promise<void> {
   console.log(`Successfully updated data in ${table}`);
 }
 
+// Separate function for delete operations
 async function processDeleteOperation(table: string, data: any): Promise<void> {
   console.log(`Processing delete operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  // Using any to avoid deep type instantiation
+  // Use explicit any to avoid deep type nesting
   const result: any = await supabase.from(validatedTable).delete().eq('id', data.id);
   
   if (result.error) {
@@ -61,7 +63,7 @@ async function processDeleteOperation(table: string, data: any): Promise<void> {
   console.log(`Successfully deleted data from ${table}`);
 }
 
-// Main sync function 
+// Main sync function with simplified type handling
 export async function syncWithServer(
   syncCallback?: (isSyncing: boolean) => void,
   errorCallback?: (error: Error) => void

@@ -3,19 +3,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { saveForSync, getOfflineData } from "./offlineDb";
 import { isValidTable, getValidatedTable, isOfflineStore } from "./tableValidation";
 
-// Define simple result type
+// Simple result interface to avoid complex type nesting
 interface OperationResult {
   data: any;
   error: Error | null;
 }
 
-// Function to create insert operations
+// Factory function for create operations with explicit types
 function createInsertOperation(tableName: string) {
   return async function(data: any): Promise<OperationResult> {
     try {
       if (navigator.onLine) {
         const validatedTable = getValidatedTable(tableName);
-        // Use any to avoid deep type instantiation
+        // Use explicit any to avoid deep type instantiation
         const result: any = await supabase.from(validatedTable).insert(data);
         if (result.error) throw result.error;
         return result;
@@ -38,7 +38,7 @@ function createInsertOperation(tableName: string) {
   };
 }
 
-// Function to create update operations
+// Factory function for update operations
 function createUpdateOperation(tableName: string) {
   return function(data: any) {
     return {
@@ -46,7 +46,7 @@ function createUpdateOperation(tableName: string) {
         try {
           if (navigator.onLine) {
             const validatedTable = getValidatedTable(tableName);
-            // Use any to avoid deep type instantiation
+            // Use explicit any to avoid deep type instantiation
             const result: any = await supabase
               .from(validatedTable)
               .update(data)
@@ -78,7 +78,7 @@ function createUpdateOperation(tableName: string) {
   };
 }
 
-// Function to create delete operations
+// Factory function for delete operations with explicit types
 function createDeleteOperation(tableName: string) {
   return function() {
     return {
@@ -86,7 +86,7 @@ function createDeleteOperation(tableName: string) {
         try {
           if (navigator.onLine) {
             const validatedTable = getValidatedTable(tableName);
-            // Use any to avoid deep type instantiation
+            // Use explicit any to avoid deep type instantiation
             const result: any = await supabase
               .from(validatedTable)
               .delete()
@@ -114,13 +114,13 @@ function createDeleteOperation(tableName: string) {
   };
 }
 
-// Function to create select operations
+// Factory function for select operations
 function createSelectOperation(tableName: string) {
   return async function(columns: string = '*'): Promise<OperationResult> {
     try {
       if (navigator.onLine) {
         const validatedTable = getValidatedTable(tableName);
-        // Use any to avoid deep type instantiation
+        // Use explicit any to avoid deep type instantiation
         return await supabase.from(validatedTable).select(columns);
       } else {
         // When offline, use local data
@@ -143,7 +143,7 @@ function createSelectOperation(tableName: string) {
   };
 }
 
-// Main factory function for creating table operations
+// Factory function for table operations
 function createTableOperations(tableNameParam: string) {
   // Check if this table is in our allowed list
   if (!isValidTable(tableNameParam)) {
