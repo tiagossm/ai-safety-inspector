@@ -4,12 +4,20 @@ import { saveForSync, getOfflineData } from "./offlineDb";
 import { isValidTable, getValidatedTable, isOfflineStore } from "./tableValidation";
 
 // Define simple result type
-type OperationResult = {
+interface OperationResult {
   data: any;
   error: Error | null;
-};
+}
 
-// Create standalone functions to avoid nested function issues
+// Simpler interface definitions without nested types
+interface TableOperations {
+  insert: (data: any) => Promise<OperationResult>;
+  update: (data: any) => { eq: (column: string, value: any) => Promise<OperationResult> };
+  delete: () => { eq: (column: string, value: any) => Promise<OperationResult> };
+  select: (columns?: string) => Promise<OperationResult>;
+}
+
+// Standalone operation functions to avoid nesting
 async function executeInsert(tableName: string, data: any): Promise<OperationResult> {
   try {
     if (navigator.onLine) {
@@ -129,78 +137,55 @@ async function executeSelect(tableName: string, columns: string = '*'): Promise<
   }
 }
 
-// Define the interfaces without recursive structures
-interface UpdateOperation {
-  eq: (column: string, value: any) => Promise<OperationResult>;
-}
-
-interface DeleteOperation {
-  eq: (column: string, value: any) => Promise<OperationResult>;
-}
-
-interface TableOperations {
-  insert: (data: any) => Promise<OperationResult>;
-  update: (data: any) => UpdateOperation;
-  delete: () => DeleteOperation;
-  select: (columns?: string) => Promise<OperationResult>;
-}
-
-// Create factory functions instead of nested structure
-function createUpdateOperation(tableName: string, data: any): UpdateOperation {
-  return {
-    eq: (column: string, value: any) => executeUpdateEq(tableName, data, column, value)
-  };
-}
-
-function createDeleteOperation(tableName: string): DeleteOperation {
-  return {
-    eq: (column: string, value: any) => executeDeleteEq(tableName, column, value)
-  };
-}
-
-// Export a factory function for creating table operations
-export const offlineSupabase = {
-  from: (tableNameParam: string): TableOperations => {
-    // Check if this table is in our allowed list
-    if (!isValidTable(tableNameParam)) {
-      console.error(`Invalid table name: ${tableNameParam}`);
-      
-      // Return a TableOperations object with error handlers
-      return {
-        insert: async () => ({ 
+// Main factory function for creating table operations
+function createTableOperations(tableNameParam: string): TableOperations {
+  // Check if this table is in our allowed list
+  if (!isValidTable(tableNameParam)) {
+    console.error(`Invalid table name: ${tableNameParam}`);
+    
+    // Return a TableOperations object with error handlers
+    return {
+      insert: async () => ({ 
+        data: null, 
+        error: new Error(`Invalid table: ${tableNameParam}`) 
+      }),
+      update: () => ({
+        eq: async () => ({ 
           data: null, 
           error: new Error(`Invalid table: ${tableNameParam}`) 
-        }),
-        update: () => ({
-          eq: async () => ({ 
-            data: null, 
-            error: new Error(`Invalid table: ${tableNameParam}`) 
-          })
-        }),
-        delete: () => ({
-          eq: async () => ({ 
-            data: null, 
-            error: new Error(`Invalid table: ${tableNameParam}`) 
-          })
-        }),
-        select: async () => ({ 
-          data: [], 
+        })
+      }),
+      delete: () => ({
+        eq: async () => ({ 
+          data: null, 
           error: new Error(`Invalid table: ${tableNameParam}`) 
         })
-      };
-    }
-    
-    // Warn if this is not configured as an offline store
-    if (!isOfflineStore(tableNameParam)) {
-      console.warn(`Table "${tableNameParam}" is not configured as an offline store in offlineDb.ts`);
-    }
-    
-    // Use factory functions to create operations
-    return {
-      insert: (data: any) => executeInsert(tableNameParam, data),
-      update: (data: any) => createUpdateOperation(tableNameParam, data),
-      delete: () => createDeleteOperation(tableNameParam),
-      select: (columns?: string) => executeSelect(tableNameParam, columns)
+      }),
+      select: async () => ({ 
+        data: [], 
+        error: new Error(`Invalid table: ${tableNameParam}`) 
+      })
     };
   }
+  
+  // Warn if this is not configured as an offline store
+  if (!isOfflineStore(tableNameParam)) {
+    console.warn(`Table "${tableNameParam}" is not configured as an offline store in offlineDb.ts`);
+  }
+  
+  return {
+    insert: (data: any) => executeInsert(tableNameParam, data),
+    update: (data: any) => ({
+      eq: (column: string, value: any) => executeUpdateEq(tableNameParam, data, column, value)
+    }),
+    delete: () => ({
+      eq: (column: string, value: any) => executeDeleteEq(tableNameParam, column, value)
+    }),
+    select: (columns?: string) => executeSelect(tableNameParam, columns)
+  };
+}
+
+// Export the offlineSupabase object with a from method
+export const offlineSupabase = {
+  from: createTableOperations
 };

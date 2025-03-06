@@ -9,14 +9,24 @@ interface SyncResult {
   message?: string;
 }
 
-// Process each operation type with a dedicated function to avoid type instantiation issues
+// Create dedicated type for items in sync queue
+interface SyncQueueItem {
+  id: string;
+  table: string;
+  operation: 'insert' | 'update' | 'delete';
+  data: any;
+  timestamp: number;
+}
+
+// Process each operation type with a dedicated function
 async function processInsertOperation(table: string, data: any): Promise<void> {
   console.log(`Processing insert operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
-  const result = await supabase.from(validatedTable).insert(data);
-  if (result.error) {
-    console.error(`Error in sync insert operation for table ${table}:`, result.error);
-    throw result.error;
+  const { error } = await supabase.from(validatedTable).insert(data);
+  
+  if (error) {
+    console.error(`Error in sync insert operation for table ${table}:`, error);
+    throw error;
   }
   console.log(`Successfully inserted data into ${table}`);
 }
@@ -24,10 +34,11 @@ async function processInsertOperation(table: string, data: any): Promise<void> {
 async function processUpdateOperation(table: string, data: any): Promise<void> {
   console.log(`Processing update operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
-  const result = await supabase.from(validatedTable).update(data).eq('id', data.id);
-  if (result.error) {
-    console.error(`Error in sync update operation for table ${table}:`, result.error);
-    throw result.error;
+  const { error } = await supabase.from(validatedTable).update(data).eq('id', data.id);
+  
+  if (error) {
+    console.error(`Error in sync update operation for table ${table}:`, error);
+    throw error;
   }
   console.log(`Successfully updated data in ${table}`);
 }
@@ -35,15 +46,16 @@ async function processUpdateOperation(table: string, data: any): Promise<void> {
 async function processDeleteOperation(table: string, data: any): Promise<void> {
   console.log(`Processing delete operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
-  const result = await supabase.from(validatedTable).delete().eq('id', data.id);
-  if (result.error) {
-    console.error(`Error in sync delete operation for table ${table}:`, result.error);
-    throw result.error;
+  const { error } = await supabase.from(validatedTable).delete().eq('id', data.id);
+  
+  if (error) {
+    console.error(`Error in sync delete operation for table ${table}:`, error);
+    throw error;
   }
   console.log(`Successfully deleted data from ${table}`);
 }
 
-// Main sync function that doesn't use nested functions causing deep type instantiation
+// Main sync function 
 export async function syncWithServer(
   syncCallback?: (isSyncing: boolean) => void,
   errorCallback?: (error: Error) => void
@@ -53,7 +65,7 @@ export async function syncWithServer(
       syncCallback(true);
     }
     
-    const queue = await getSyncQueue();
+    const queue = await getSyncQueue() as SyncQueueItem[];
     
     if (queue.length === 0) {
       if (syncCallback) {
