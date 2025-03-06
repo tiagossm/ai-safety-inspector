@@ -4,21 +4,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { offlineSupabase } from "@/services/offlineSupabase";
 
-// Use simple type aliases to avoid excessive type instantiation
-type SupabaseResponse = { error: any | null };
+// Simple result type with no nested generic types
 type DeleteResult = { success: boolean };
 
-// Define standalone functions to avoid nesting
+// Simplified standalone functions to avoid deep type nesting
 async function deleteUserChecklists(id: string): Promise<void> {
   const client = navigator.onLine ? supabase : offlineSupabase;
   try {
-    const { error } = await client
+    // Using any here to avoid deep type instantiation
+    const result: any = await client
       .from("user_checklists")
       .delete()
       .eq("checklist_id", id);
 
-    if (error) {
-      console.error("Error deleting user_checklists:", error);
+    if (result.error) {
+      console.error("Error deleting user_checklists:", result.error);
     }
   } catch (error) {
     console.error("Exception when deleting user_checklists:", error);
@@ -28,13 +28,14 @@ async function deleteUserChecklists(id: string): Promise<void> {
 async function deleteChecklistItems(id: string): Promise<void> {
   const client = navigator.onLine ? supabase : offlineSupabase;
   try {
-    const { error } = await client
+    // Using any here to avoid deep type instantiation
+    const result: any = await client
       .from("checklist_itens")
       .delete()
       .eq("checklist_id", id);
 
-    if (error) {
-      console.error("Error deleting checklist items:", error);
+    if (result.error) {
+      console.error("Error deleting checklist items:", result.error);
     }
   } catch (error) {
     console.error("Exception when deleting checklist items:", error);
@@ -44,13 +45,14 @@ async function deleteChecklistItems(id: string): Promise<void> {
 async function deleteChecklist(id: string): Promise<DeleteResult> {
   const client = navigator.onLine ? supabase : offlineSupabase;
   try {
-    const { error } = await client
+    // Using any here to avoid deep type instantiation
+    const result: any = await client
       .from("checklists")
       .delete()
       .eq("id", id);
 
-    if (error) {
-      throw error;
+    if (result.error) {
+      throw result.error;
     }
     
     console.log("Checklist deleted successfully:", id);
@@ -64,7 +66,7 @@ async function deleteChecklist(id: string): Promise<DeleteResult> {
 export function useDeleteChecklist() {
   const queryClient = useQueryClient();
   
-  return useMutation<DeleteResult, Error, string>({
+  return useMutation({
     mutationFn: async (id: string): Promise<DeleteResult> => {
       console.log("Starting deletion of checklist:", id);
       
