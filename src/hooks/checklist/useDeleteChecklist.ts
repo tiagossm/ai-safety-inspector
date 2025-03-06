@@ -7,7 +7,8 @@ import { offlineSupabase } from "@/services/offlineSupabase";
 // Define async deletion functions to avoid nested structures
 async function deleteUserChecklists(id: string) {
   try {
-    const { error: userChecklistsError } = await supabase
+    const client = navigator.onLine ? supabase : offlineSupabase;
+    const { error: userChecklistsError } = await client
       .from("user_checklists")
       .delete()
       .eq("checklist_id", id);
@@ -22,7 +23,8 @@ async function deleteUserChecklists(id: string) {
 
 async function deleteChecklistItems(id: string) {
   try {
-    const { error: itemsError } = await supabase
+    const client = navigator.onLine ? supabase : offlineSupabase;
+    const { error: itemsError } = await client
       .from("checklist_itens")
       .delete()
       .eq("checklist_id", id);

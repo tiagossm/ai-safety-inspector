@@ -2,7 +2,7 @@
 // This file re-exports all offline sync functionality from the modular files
 import { initOfflineDb, saveForSync, getOfflineData } from './offlineDb';
 import { syncWithServer } from './syncManager';
-import { getValidatedTable, type AllowedTableName } from './tableValidation';
+import { getValidatedTable, isValidTable, isOfflineStore, type AllowedTableName } from './tableValidation';
 
 // Define the initOfflineSystem function properly
 function initOfflineSystem(
@@ -55,5 +55,7 @@ export {
   initOfflineSystem,
   syncWithServer,
   getValidatedTable,
+  isValidTable,
+  isOfflineStore,
   type AllowedTableName
 };

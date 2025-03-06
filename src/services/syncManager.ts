@@ -11,21 +11,36 @@ interface SyncResult {
 
 // Process each operation type with a dedicated function to avoid type instantiation issues
 async function processInsertOperation(table: string, data: any): Promise<void> {
+  console.log(`Processing insert operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   const result = await supabase.from(validatedTable).insert(data);
-  if (result.error) throw result.error;
+  if (result.error) {
+    console.error(`Error in sync insert operation for table ${table}:`, result.error);
+    throw result.error;
+  }
+  console.log(`Successfully inserted data into ${table}`);
 }
 
 async function processUpdateOperation(table: string, data: any): Promise<void> {
+  console.log(`Processing update operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   const result = await supabase.from(validatedTable).update(data).eq('id', data.id);
-  if (result.error) throw result.error;
+  if (result.error) {
+    console.error(`Error in sync update operation for table ${table}:`, result.error);
+    throw result.error;
+  }
+  console.log(`Successfully updated data in ${table}`);
 }
 
 async function processDeleteOperation(table: string, data: any): Promise<void> {
+  console.log(`Processing delete operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   const result = await supabase.from(validatedTable).delete().eq('id', data.id);
-  if (result.error) throw result.error;
+  if (result.error) {
+    console.error(`Error in sync delete operation for table ${table}:`, result.error);
+    throw result.error;
+  }
+  console.log(`Successfully deleted data from ${table}`);
 }
 
 // Main sync function that doesn't use nested functions causing deep type instantiation
@@ -44,6 +59,7 @@ export async function syncWithServer(
       if (syncCallback) {
         syncCallback(false);
       }
+      console.log('No items to sync. Queue is empty.');
       return { success: true };
     }
     
@@ -73,10 +89,14 @@ export async function syncWithServer(
         else if (operation === 'delete') {
           await processDeleteOperation(table, data);
         }
+        else {
+          console.warn(`Unknown operation type: ${operation}, skipping`);
+        }
         
         // Clear item from sync queue after successful sync
         await clearSyncItem(item.id);
         successCount++;
+        console.log(`Successfully synced item ${item.id} (${operation} on ${table})`);
       } catch (itemError) {
         console.error(`Failed to sync item ${item.id}:`, itemError);
         failureCount++;

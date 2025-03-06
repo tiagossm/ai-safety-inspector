@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { saveForSync, getOfflineData } from "./offlineDb";
-import { isValidTable, getValidatedTable } from "./tableValidation";
+import { isValidTable, getValidatedTable, isOfflineStore } from "./tableValidation";
 
 // Define simple result type
 type OperationResult = {
@@ -22,6 +22,8 @@ async function executeInsert(tableName: string, data: any): Promise<OperationRes
       if (!data.id) {
         data.id = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       }
+      
+      console.log(`Storing offline insert for table: ${tableName}`);
       await saveForSync(tableName, 'insert', data);
       return { data: [data], error: null };
     }
@@ -54,6 +56,8 @@ async function executeUpdateEq(
       if (column === 'id') {
         data.id = value;
       }
+      
+      console.log(`Storing offline update for table: ${tableName}`);
       await saveForSync(tableName, 'update', data);
       return { data: [data], error: null };
     }
@@ -86,6 +90,8 @@ async function executeDeleteEq(
     } else {
       // For delete we just need the ID
       const data = { id: value };
+      
+      console.log(`Storing offline delete for table: ${tableName}`);
       await saveForSync(tableName, 'delete', data);
       return { data: [], error: null };
     }
@@ -105,6 +111,7 @@ async function executeSelect(tableName: string, columns: string = '*'): Promise<
       return await supabase.from(validatedTable).select(columns);
     } else {
       // When offline, use local data
+      console.log(`Getting offline data for table: ${tableName}`);
       const offlineData = await getOfflineData(tableName);
       return { 
         data: offlineData, 
@@ -154,7 +161,7 @@ function createDeleteOperation(tableName: string): DeleteOperation {
 // Export a factory function for creating table operations
 export const offlineSupabase = {
   from: (tableNameParam: string): TableOperations => {
-    // Type check the table name
+    // Check if this table is in our allowed list
     if (!isValidTable(tableNameParam)) {
       console.error(`Invalid table name: ${tableNameParam}`);
       
@@ -181,6 +188,11 @@ export const offlineSupabase = {
           error: new Error(`Invalid table: ${tableNameParam}`) 
         })
       };
+    }
+    
+    // Warn if this is not configured as an offline store
+    if (!isOfflineStore(tableNameParam)) {
+      console.warn(`Table "${tableNameParam}" is not configured as an offline store in offlineDb.ts`);
     }
     
     // Use factory functions to create operations

@@ -15,33 +15,37 @@ let db: IDBPDatabase;
 
 export async function initOfflineDb() {
   try {
-    db = await openDB('offlineSync', 1, {
-      upgrade(db) {
-        // Create stores for each table we want to sync
+    // Increment the version number to force schema update
+    db = await openDB('offlineSync', 2, {
+      upgrade(db, oldVersion, newVersion, transaction) {
+        console.log(`Upgrading IndexedDB from version ${oldVersion} to ${newVersion}`);
+        
+        // Create stores for sync queue
         if (!db.objectStoreNames.contains('syncQueue')) {
           db.createObjectStore('syncQueue', { keyPath: 'id' });
         }
         
-        // Create stores for offline data
-        if (!db.objectStoreNames.contains('checklists')) {
-          db.createObjectStore('checklists', { keyPath: 'id' });
-        }
+        // Create stores for offline data - main entities
+        const mainStores = [
+          'checklists',
+          'users',
+          'companies', 
+          'inspections',
+          'checklist_itens',   // Adding this missing store
+          'user_checklists',   // Adding this missing store
+          'checklist_permissions' // Adding this missing store
+        ];
         
-        if (!db.objectStoreNames.contains('users')) {
-          db.createObjectStore('users', { keyPath: 'id' });
-        }
-        
-        if (!db.objectStoreNames.contains('companies')) {
-          db.createObjectStore('companies', { keyPath: 'id' });
-        }
-        
-        if (!db.objectStoreNames.contains('inspections')) {
-          db.createObjectStore('inspections', { keyPath: 'id' });
-        }
+        mainStores.forEach(storeName => {
+          if (!db.objectStoreNames.contains(storeName)) {
+            console.log(`Creating object store: ${storeName}`);
+            db.createObjectStore(storeName, { keyPath: 'id' });
+          }
+        });
       }
     });
     
-    console.log('Offline database initialized');
+    console.log('Offline database initialized with stores:', Array.from(db.objectStoreNames));
     return true;
   } catch (error) {
     console.error('Failed to initialize offline database:', error);
@@ -70,6 +74,12 @@ export async function saveForSync(
     // Save to sync queue
     await db.put('syncQueue', syncItem);
     
+    // Ensure the table exists in our schema before attempting to put data in it
+    if (!db.objectStoreNames.contains(table)) {
+      console.warn(`Object store "${table}" not found. Data will be in sync queue but not locally available.`);
+      return true; // We still return true as we added it to the sync queue
+    }
+    
     // Also save to the corresponding table for local use
     if (operation !== 'delete') {
       await db.put(table, data);
@@ -79,7 +89,7 @@ export async function saveForSync(
     
     return true;
   } catch (error) {
-    console.error('Failed to save for sync:', error);
+    console.error(`Failed to save for sync (table: ${table}):`, error);
     return false;
   }
 }
@@ -90,6 +100,12 @@ export async function getOfflineData(table: string): Promise<any[]> {
   }
   
   try {
+    // Check if the object store exists
+    if (!db.objectStoreNames.contains(table)) {
+      console.warn(`Object store "${table}" not found when trying to get offline data.`);
+      return []; // Return empty array if store doesn't exist
+    }
+    
     return await db.getAll(table);
   } catch (error) {
     console.error(`Failed to get offline data for ${table}:`, error);
