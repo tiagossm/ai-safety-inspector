@@ -18,16 +18,22 @@ interface SyncQueueItem {
   timestamp: number;
 }
 
+// Define SupabaseResponse type to handle all possible response types
+type SupabaseResponse = {
+  error: Error | null;
+  data?: any;
+};
+
 // Process each operation type with a dedicated function
 async function processInsertOperation(table: string, data: any): Promise<void> {
   console.log(`Processing insert operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  const { error } = await supabase.from(validatedTable).insert(data);
+  const response: SupabaseResponse = await supabase.from(validatedTable).insert(data);
   
-  if (error) {
-    console.error(`Error in sync insert operation for table ${table}:`, error);
-    throw error;
+  if (response.error) {
+    console.error(`Error in sync insert operation for table ${table}:`, response.error);
+    throw response.error;
   }
   console.log(`Successfully inserted data into ${table}`);
 }
@@ -36,11 +42,11 @@ async function processUpdateOperation(table: string, data: any): Promise<void> {
   console.log(`Processing update operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  const { error } = await supabase.from(validatedTable).update(data).eq('id', data.id);
+  const response: SupabaseResponse = await supabase.from(validatedTable).update(data).eq('id', data.id);
   
-  if (error) {
-    console.error(`Error in sync update operation for table ${table}:`, error);
-    throw error;
+  if (response.error) {
+    console.error(`Error in sync update operation for table ${table}:`, response.error);
+    throw response.error;
   }
   console.log(`Successfully updated data in ${table}`);
 }
@@ -49,11 +55,11 @@ async function processDeleteOperation(table: string, data: any): Promise<void> {
   console.log(`Processing delete operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  const { error } = await supabase.from(validatedTable).delete().eq('id', data.id);
+  const response: SupabaseResponse = await supabase.from(validatedTable).delete().eq('id', data.id);
   
-  if (error) {
-    console.error(`Error in sync delete operation for table ${table}:`, error);
-    throw error;
+  if (response.error) {
+    console.error(`Error in sync delete operation for table ${table}:`, response.error);
+    throw response.error;
   }
   console.log(`Successfully deleted data from ${table}`);
 }

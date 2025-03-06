@@ -45,12 +45,21 @@ export const useOfflineAwareQuery = <T>(
   return useQuery({
     queryKey,
     queryFn: async () => {
-      const { data, error } = await offlineSupabase
-        .from(tableName)
-        .select('*');
+      try {
+        const result = await offlineSupabase.from(tableName).select();
         
-      if (error) throw error;
-      return data as T[];
+        // Handle both online and offline response formats
+        if (result && typeof result._getFilteredData === 'function') {
+          const queryResult = await result._getFilteredData();
+          return (queryResult.data || []) as T[];
+        }
+        
+        // For regular Supabase responses
+        return (result?.data || []) as T[];
+      } catch (error) {
+        console.error(`Error fetching data from ${tableName}:`, error);
+        throw error;
+      }
     },
     ...options,
     // If offline, rely on local cache and don't hit network

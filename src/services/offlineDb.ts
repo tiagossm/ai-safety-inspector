@@ -13,7 +13,7 @@ let db: IDBPDatabase;
 
 export async function initOfflineDb() {
   try {
-    db = await openDB('offlineSync', 3, {  // Increased version to 3 to accommodate changes
+    db = await openDB('offlineSync', 4, {  // Increased version to 4 to accommodate changes
       upgrade(db, oldVersion, newVersion) {
         console.log(`Upgrading IndexedDB from version ${oldVersion} to ${newVersion}`);
 

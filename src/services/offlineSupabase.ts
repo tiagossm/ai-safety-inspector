@@ -2,65 +2,23 @@
 import { saveForSync, getOfflineData } from './offlineDb';
 import { AllowedTableName, isOfflineStore } from './tableValidation';
 
-// Define simplified interfaces for Supabase-like operations
-type OfflineResponse<T> = {
+// Define a common response type
+type OfflineResponse<T = any> = {
   data: T | null;
   error: Error | null;
 };
 
-// Interface for the offline Supabase client
-interface OfflineSupabaseClient {
-  from: (table: string) => OfflineTable;
-}
-
-// Interface for table operations
-interface OfflineTable {
-  select: (columns?: string) => OfflineQuery;
-  insert: (data: any) => OfflineInsert;
-  update: (data: any) => OfflineUpdate;
-  delete: () => OfflineDelete;
-}
-
-// Interfaces for different query operations
-interface OfflineQuery {
-  eq: (column: string, value: any) => OfflineQueryResult;
-  in: (column: string, values: any[]) => OfflineQueryResult;
-  order: (column: string, options?: any) => OfflineQuery;
-  maybeSingle: () => Promise<OfflineResponse<any>>;
-  single: () => Promise<OfflineResponse<any>>;
-}
-
+// Define an interface for the offline query result
 interface OfflineQueryResult {
-  eq: (column: string, value: any) => OfflineQueryResult;
-  in: (column: string, values: any[]) => OfflineQueryResult;
-  order: (column: string, options?: any) => OfflineQuery;
-  maybeSingle: () => Promise<OfflineResponse<any>>;
-  single: () => Promise<OfflineResponse<any>>;
+  data: any[] | null;
+  error: Error | null; 
 }
 
-interface OfflineInsert {
-  select: (columns?: string) => OfflineQuery;
-}
-
-interface OfflineUpdate {
-  eq: (column: string, value: any) => OfflineUpdateResult;
-}
-
-interface OfflineUpdateResult {
-  select: (columns?: string) => OfflineQuery;
-}
-
-interface OfflineDelete {
-  eq: (column: string, value: any) => OfflineDeleteResult;
-}
-
-interface OfflineDeleteResult {
-  select: (columns?: string) => OfflineQuery;
-}
-
-class OfflineSupabase implements OfflineSupabaseClient {
+// Simplified offline Supabase client that mimics the real Supabase client API
+// but operates on IndexedDB
+class OfflineSupabase {
   from(table: string) {
-    // If the table is not allowed for offline operations, return null
+    // If the table is not allowed for offline operations, throw an error
     if (!isOfflineStore(table)) {
       throw new Error(`Table '${table}' is not supported for offline operations`);
     }
@@ -69,7 +27,7 @@ class OfflineSupabase implements OfflineSupabaseClient {
   }
 }
 
-class OfflineTableHandler implements OfflineTable {
+class OfflineTableHandler {
   private table: string;
   
   constructor(table: string) {
@@ -80,18 +38,14 @@ class OfflineTableHandler implements OfflineTable {
     return new OfflineQueryHandler(this.table);
   }
   
-  insert(data: any) {
+  async insert(data: any) {
     // Queue for sync when back online
-    saveForSync(this.table, 'insert', data);
+    await saveForSync(this.table, 'insert', data);
     
-    // Return success response
+    // Return success response that mimics Supabase response
     return {
-      select: () => {
-        return {
-          data: [data],
-          error: null
-        };
-      }
+      data: [data],
+      error: null
     };
   }
   
@@ -104,7 +58,7 @@ class OfflineTableHandler implements OfflineTable {
   }
 }
 
-class OfflineQueryHandler implements OfflineQuery {
+class OfflineQueryHandler {
   private table: string;
   private filters: Array<{column: string, value: any, operator: 'eq' | 'in'}> = [];
   private orderBy?: {column: string, ascending: boolean};
@@ -131,7 +85,8 @@ class OfflineQueryHandler implements OfflineQuery {
     return this;
   }
   
-  async _getFilteredData() {
+  // Exposed for useOfflineAwareQuery
+  async _getFilteredData(): Promise<OfflineQueryResult> {
     try {
       const allData = await getOfflineData(this.table);
       
@@ -171,7 +126,7 @@ class OfflineQueryHandler implements OfflineQuery {
     }
   }
   
-  async maybeSingle() {
+  async maybeSingle(): Promise<OfflineResponse> {
     const result = await this._getFilteredData();
     
     if (result.error) {
@@ -187,7 +142,7 @@ class OfflineQueryHandler implements OfflineQuery {
     };
   }
   
-  async single() {
+  async single(): Promise<OfflineResponse> {
     const result = await this._getFilteredData();
     
     if (result.error) {
@@ -218,7 +173,7 @@ class OfflineQueryHandler implements OfflineQuery {
   }
 }
 
-class OfflineUpdateHandler implements OfflineUpdate {
+class OfflineUpdateHandler {
   private table: string;
   private data: any;
   
@@ -227,47 +182,39 @@ class OfflineUpdateHandler implements OfflineUpdate {
     this.data = data;
   }
   
-  eq(column: string, value: any) {
+  async eq(column: string, value: any): Promise<OfflineResponse> {
     // When back online, we'll need the ID for the update
     if (column === 'id') {
       this.data.id = value;
     }
     
     // Queue for sync when back online
-    saveForSync(this.table, 'update', this.data);
+    await saveForSync(this.table, 'update', this.data);
     
     return {
-      select: () => {
-        return {
-          data: [this.data],
-          error: null
-        };
-      }
+      data: [this.data],
+      error: null
     };
   }
 }
 
-class OfflineDeleteHandler implements OfflineDelete {
+class OfflineDeleteHandler {
   private table: string;
   
   constructor(table: string) {
     this.table = table;
   }
   
-  eq(column: string, value: any) {
+  async eq(column: string, value: any): Promise<OfflineResponse> {
     // Only handle ID-based deletes
     if (column === 'id') {
       // Queue for sync when back online
-      saveForSync(this.table, 'delete', { id: value });
+      await saveForSync(this.table, 'delete', { id: value });
     }
     
     return {
-      select: () => {
-        return {
-          data: [],
-          error: null
-        };
-      }
+      data: [],
+      error: null
     };
   }
 }

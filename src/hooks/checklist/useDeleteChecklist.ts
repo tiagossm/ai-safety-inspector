@@ -7,15 +7,23 @@ import { offlineSupabase } from "@/services/offlineSupabase";
 // Define a simple result type to avoid deep type nesting
 type DeleteResult = { success: boolean; message?: string };
 
+// Handle response types more explicitly
+interface SupabaseResponse {
+  error: Error | null;
+}
+
 // Simplified standalone functions to avoid deep type nesting
 async function deleteUserChecklists(id: string): Promise<void> {
   const client = navigator.onLine ? supabase : offlineSupabase;
   try {
-    const { error } = await client
+    const result = await client
       .from("user_checklists")
       .delete()
       .eq("checklist_id", id);
-
+      
+    // Check error for both online and offline clients
+    const error = 'error' in result ? result.error : null;
+    
     if (error) {
       console.error("Error deleting user_checklists:", error);
     }
@@ -27,11 +35,14 @@ async function deleteUserChecklists(id: string): Promise<void> {
 async function deleteChecklistItems(id: string): Promise<void> {
   const client = navigator.onLine ? supabase : offlineSupabase;
   try {
-    const { error } = await client
+    const result = await client
       .from("checklist_itens")
       .delete()
       .eq("checklist_id", id);
-
+      
+    // Check error for both online and offline clients
+    const error = 'error' in result ? result.error : null;
+    
     if (error) {
       console.error("Error deleting checklist items:", error);
     }
@@ -43,11 +54,14 @@ async function deleteChecklistItems(id: string): Promise<void> {
 async function deleteChecklist(id: string): Promise<DeleteResult> {
   const client = navigator.onLine ? supabase : offlineSupabase;
   try {
-    const { error } = await client
+    const result = await client
       .from("checklists")
       .delete()
       .eq("id", id);
-
+      
+    // Check error for both online and offline clients
+    const error = 'error' in result ? result.error : null;
+    
     if (error) {
       throw error;
     }
