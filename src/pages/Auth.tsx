@@ -63,20 +63,22 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        {/* Logo com tamanho menor e espaçamento extra abaixo */}
-        <div className="flex justify-center mb-8">
+        {/* Logo com tamanho menor e margem inferior */}
+        <div className="flex justify-center mb-6">
           <img
             src="/lovable-uploads/logobrancoFT.png"
             alt="Logo"
-            className="h-32 w-auto" 
+            className="h-24 w-auto"
           />
         </div>
-        {/* Título maior para dar ênfase */}
+
+        {/* Título */}
         <div className="flex flex-col items-center">
           <h2 className="text-center text-4xl font-extrabold text-white">
             {isSignUp ? "Criar nova conta" : "Entrar na plataforma"}
           </h2>
         </div>
+
         <form className="mt-8 space-y-6" onSubmit={handleAuth}>
           <div className="rounded-md shadow-sm space-y-4">
             <div>
@@ -115,8 +117,8 @@ const Auth = () => {
             </Button>
           </div>
 
-          {/* Linha com checkbox e link de recuperação */}
-          <div className="flex items-center gap-4 text-sm text-white">
+          {/* Linha com checkbox e link de recuperação, alinhados horizontalmente */}
+          <div className="flex items-center justify-between text-sm text-white">
             <label className="flex items-center">
               <input type="checkbox" className="mr-2" />
               Lembrar-me
