@@ -63,10 +63,10 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        {/* Exibir o logo no topo */}
+        {/* Exibir o logo */}
         <div className="flex justify-center">
           <img
-            src="/36e6d20d-9248-4e9f-967f-aeeea5a2bc30.png" // ajuste a extensão se necessário
+            src="/lovable-uploads/logobrancoFT.png"
             alt="Logo"
             className="h-16 w-auto"
           />
@@ -134,7 +134,7 @@ const Auth = () => {
                 }
                 try {
                   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                    redirectTo: "https://seu-dominio.com/reset-password", // ajuste conforme necessário
+                    redirectTo: "https://seu-dominio.com/reset-password",
                   });
                   if (error) throw error;
                   toast({
