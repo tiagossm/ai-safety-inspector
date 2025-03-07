@@ -63,12 +63,12 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        {/* Exibir o logo */}
+        {/* Exibir o logo 4x maior */}
         <div className="flex justify-center">
           <img
             src="/lovable-uploads/logobrancoFT.png"
             alt="Logo"
-            className="h-16 w-auto"
+            className="h-64 w-auto"  // Aumentado de h-16 para h-64
           />
         </div>
         <div className="flex flex-col items-center">
