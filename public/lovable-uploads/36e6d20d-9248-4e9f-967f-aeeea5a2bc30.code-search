@@ -1,0 +1,9 @@
+# Query: 36e6d20d-9248-4e9f-967f-aeeea5a2bc30
+# ContextLines: 1
+
+Um resultado - Um arquivo
+
+src/components/Logo.tsx:
+  18            ? "/lovable-uploads/LogoVerdeFT.png"  // Logo verde para tema claro
+  19:           : "/lovable-uploads/logobrancoFT.png"  // Logo branco para tema escuro
+  20          }
