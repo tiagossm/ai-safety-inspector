@@ -53,15 +53,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           console.log("✅ Sessão restaurada do Supabase");
           // Tenta obter os dados completos do usuário
           const userData = await fetchExtendedUser(data.session.user.id);
-          // Normaliza os valores de role e tier
-          const normalizedRole = userData && userData.role
-            ? userData.role.toLowerCase() === 'administrador'
-              ? 'admin'
-              : userData.role.toLowerCase()
-            : 'user';
-          const normalizedTier = userData && userData.tier
-            ? userData.tier.toLowerCase()
-            : 'technician';
+          
+          let normalizedRole = 'user';
+          let normalizedTier = 'technician';
+
+          if (userData) {
+            normalizedRole = userData.role
+              ? userData.role.toLowerCase() === 'administrador'
+                ? 'admin'
+                : userData.role.toLowerCase()
+              : 'user';
+            normalizedTier = userData.tier ? userData.tier.toLowerCase() : 'technician';
+          }
+          
+          // Se o usuário for o super admin (ex.: email específico), force tier = "super_admin"
+          if (data.session.user.email === "eng.tiagosm@gmail.com") {
+            normalizedTier = "super_admin";
+          }
           
           const enhancedUser: AuthUser = {
             ...data.session.user,
@@ -91,15 +99,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (session?.user) {
         try {
           const userData = await fetchExtendedUser(session.user.id);
-          const normalizedRole = userData && userData.role
-            ? userData.role.toLowerCase() === 'administrador'
-              ? 'admin'
-              : userData.role.toLowerCase()
-            : 'user';
-          const normalizedTier = userData && userData.tier
-            ? userData.tier.toLowerCase()
-            : 'technician';
+          
+          let normalizedRole = 'user';
+          let normalizedTier = 'technician';
 
+          if (userData) {
+            normalizedRole = userData.role
+              ? userData.role.toLowerCase() === 'administrador'
+                ? 'admin'
+                : userData.role.toLowerCase()
+              : 'user';
+            normalizedTier = userData.tier ? userData.tier.toLowerCase() : 'technician';
+          }
+          
+          // Força tier "super_admin" para o super admin
+          if (session.user.email === "eng.tiagosm@gmail.com") {
+            normalizedTier = "super_admin";
+          }
+          
           const enhancedUser: AuthUser = {
             ...session.user,
             role: normalizedRole,
