@@ -63,16 +63,17 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        {/* Exibir o logo 4x maior com margem superior de 1cm */}
-        <div className="flex justify-center" style={{ marginTop: "1cm" }}>
+        {/* Logo com tamanho menor e espaçamento extra abaixo */}
+        <div className="flex justify-center mb-8">
           <img
             src="/lovable-uploads/logobrancoFT.png"
             alt="Logo"
-            className="h-64 w-auto"
+            className="h-32 w-auto" 
           />
         </div>
+        {/* Título maior para dar ênfase */}
         <div className="flex flex-col items-center">
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
+          <h2 className="text-center text-4xl font-extrabold text-white">
             {isSignUp ? "Criar nova conta" : "Entrar na plataforma"}
           </h2>
         </div>
@@ -114,13 +115,12 @@ const Auth = () => {
             </Button>
           </div>
 
-          <div className="flex items-center justify-between">
-            {/* Checkbox "Lembrar-me" */}
-            <label className="flex items-center text-sm text-white">
+          {/* Linha com checkbox e link de recuperação */}
+          <div className="flex items-center gap-4 text-sm text-white">
+            <label className="flex items-center">
               <input type="checkbox" className="mr-2" />
               Lembrar-me
             </label>
-            {/* Link para Recuperação de Senha */}
             <button
               type="button"
               onClick={async () => {
@@ -149,7 +149,7 @@ const Auth = () => {
                   });
                 }
               }}
-              className="text-sm text-blue-400 hover:underline"
+              className="text-blue-400 hover:underline"
               disabled={loading}
             >
               Esqueci minha senha
