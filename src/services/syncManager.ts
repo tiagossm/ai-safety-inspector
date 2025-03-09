@@ -1,3 +1,4 @@
+
 import { SupabaseClient } from "@supabase/supabase-js";
 import { toast } from "sonner";
 
@@ -184,9 +185,14 @@ export async function syncWithServer(
             
             // Clear the operation from the queue after successful processing
             const { clearSyncItem } = await import('./offlineDb');
-            await clearSyncItem(op.id);
+            // Safely check if op has an id property before accessing it
+            if (op && 'id' in op) {
+              await clearSyncItem(op.id);
+            } else {
+              console.warn(`Cannot clear sync item: missing ID property`);
+            }
           } catch (opError) {
-            console.error(`Error processing operation ${op.id}:`, opError);
+            console.error(`Error processing operation ${op && 'id' in op ? op.id : 'unknown'}:`, opError);
             // We continue with other operations even if one fails
           }
         }
