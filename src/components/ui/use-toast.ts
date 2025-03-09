@@ -10,7 +10,7 @@ export const toast = {
   ...originalToast,
   success: (message: string, options?: any) => {
     sonnerToast.success(message, options);
-    return originalToast.default({
+    return originalToast({
       title: message,
       variant: "default",
       ...options
@@ -18,7 +18,7 @@ export const toast = {
   },
   error: (message: string, options?: any) => {
     sonnerToast.error(message, options);
-    return originalToast.destructive({
+    return originalToast({
       title: message,
       variant: "destructive",
       ...options
@@ -26,7 +26,7 @@ export const toast = {
   },
   info: (message: string, options?: any) => {
     sonnerToast.info(message, options);
-    return originalToast.default({
+    return originalToast({
       title: message,
       variant: "default",
       ...options
