@@ -68,23 +68,28 @@ export function useOfflineAwareQuery<T>(
   const [offlineData, setOfflineData] = useState<T | undefined>(undefined);
   const [isOffline, setIsOffline] = useState(false);
 
+  // Create a modified options object that handles failures properly
+  const modifiedOptions: UseQueryOptions<T, Error, T, QueryKey> = {
+    ...options,
+  };
+
   // Use the standard React Query hook with updated options format
   const queryResult = useQuery<T, Error, T, QueryKey>({
     queryKey,
     queryFn,
-    ...options,
-    // Use the onError in the meta object for React Query v5
-    onSettled: (data, error) => {
-      if (error && tableName && 
+    ...modifiedOptions,
+    // In React Query v5, we need to use the onError option correctly
+    onError: (error) => {
+      if (tableName && 
           (error.message.includes('network') || !navigator.onLine)) {
         console.error('Query error, falling back to offline data:', error);
         setIsOffline(true);
         fetchOfflineData(tableName);
       }
       
-      // Call the original onSettled if provided
-      if (options?.onSettled) {
-        options.onSettled(data, error);
+      // Call the original onError if provided
+      if (options?.onError) {
+        options.onError(error);
       }
     }
   });

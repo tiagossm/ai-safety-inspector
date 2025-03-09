@@ -19,7 +19,7 @@ interface SyncQueueItem {
 }
 
 // Simplified response type to avoid deep type nesting
-interface SupabaseResponse {
+type SupabaseResponse = {
   error: any | null;
   data?: any;
   status?: number;
@@ -32,8 +32,8 @@ async function processInsertOperation(table: string, data: any): Promise<void> {
   console.log(`Processing insert operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  // Use type assertion to fix infinite type instantiation
-  const response = await supabase.from(validatedTable).insert(data) as SupabaseResponse;
+  // Use any type assertion to fix infinite type instantiation
+  const response = await supabase.from(validatedTable).insert(data) as any as SupabaseResponse;
   
   if (response.error) {
     console.error(`Error in sync insert operation for table ${table}:`, response.error);
@@ -46,8 +46,8 @@ async function processUpdateOperation(table: string, data: any): Promise<void> {
   console.log(`Processing update operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  // Use type assertion to fix infinite type instantiation
-  const response = await supabase.from(validatedTable).update(data).eq('id', data.id) as SupabaseResponse;
+  // Use any type assertion to fix infinite type instantiation
+  const response = await supabase.from(validatedTable).update(data).eq('id', data.id) as any as SupabaseResponse;
   
   if (response.error) {
     console.error(`Error in sync update operation for table ${table}:`, response.error);
@@ -60,8 +60,8 @@ async function processDeleteOperation(table: string, data: any): Promise<void> {
   console.log(`Processing delete operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  // Use type assertion to fix infinite type instantiation
-  const response = await supabase.from(validatedTable).delete().eq('id', data.id) as SupabaseResponse;
+  // Use any type assertion to fix infinite type instantiation 
+  const response = await supabase.from(validatedTable).delete().eq('id', data.id) as any as SupabaseResponse;
   
   if (response.error) {
     console.error(`Error in sync delete operation for table ${table}:`, response.error);
