@@ -10,15 +10,20 @@ export default function ChecklistDetails() {
   
   useEffect(() => {
     if (!id) {
-      toast.error("ID do checklist não fornecido");
-      // Adicionando um pequeno atraso para garantir que o usuário veja a mensagem
+      console.error("ChecklistDetails: Missing checklist ID in URL parameters");
+      toast.error("ID do checklist não fornecido", {
+        description: "Não foi possível carregar o checklist pois o ID não foi encontrado",
+        duration: 3000
+      });
+      
+      // Adding a small delay to ensure the user sees the message
       setTimeout(() => {
         navigate("/checklists");
       }, 300);
     }
   }, [id, navigate]);
 
-  // Retorne null imediatamente se não houver ID, não renderize o container
+  // Return null immediately if there's no ID, don't render the container
   if (!id) return null;
   
   return <ChecklistDetailsContainer checklistId={id} />;

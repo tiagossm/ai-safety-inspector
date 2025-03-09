@@ -22,6 +22,7 @@ export function useCreateChecklist() {
           throw new Error("Não foi possível criar o checklist: ID da empresa não está disponível");
         }
         
+        // First, create the checklist and select its ID
         const { data, error } = await supabase
           .from("checklists")
           .insert({
@@ -38,7 +39,7 @@ export function useCreateChecklist() {
           .select();
 
         if (error) {
-          console.error("Supabase error:", error);
+          console.error("Supabase error during checklist creation:", error);
           throw error;
         }
 
@@ -47,7 +48,24 @@ export function useCreateChecklist() {
           throw new Error("Falha ao criar checklist: Nenhum dado retornado");
         }
 
+        // Explicitly verify that the ID exists on the returned data
+        if (!data[0].id) {
+          console.error("Created checklist is missing ID:", data[0]);
+          throw new Error("Falha ao criar checklist: ID não gerado");
+        }
+
         console.log("Checklist created successfully:", data[0]);
+        
+        // Also save to IndexedDB if we have the offline sync functionality
+        try {
+          const { saveForSync } = await import('@/services/offlineSync');
+          await saveForSync('checklists', 'insert', data[0]);
+          console.log("Checklist also saved for offline sync");
+        } catch (syncError) {
+          // Non-critical error, just log it
+          console.warn("Could not save checklist for offline sync:", syncError);
+        }
+        
         return data[0];
       } catch (error) {
         console.error("Error in checklist creation:", error);

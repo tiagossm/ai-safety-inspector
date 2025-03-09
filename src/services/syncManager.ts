@@ -12,6 +12,8 @@ export class SyncManager {
   private client: SupabaseClient;
   private operations: SyncOperation[] = [];
   private isSyncing: boolean = false;
+  private retryCount: number = 0;
+  private maxRetries: number = 3;
 
   constructor(supabaseClient: SupabaseClient) {
     this.client = supabaseClient;
@@ -33,47 +35,93 @@ export class SyncManager {
       if (!operation) break;
 
       const { table, operationType, record } = operation;
+      this.retryCount = 0;
 
       try {
         if (operationType === 'insert') {
-          // Usar uma conversão de tipo (type assertion) para evitar recursão de tipos
-          const { data, error } = await this.client
-            .from(table)
-            .insert(record) as unknown as { data: any; error: any };
-
-          if (error) {
-            console.error(`Erro ao inserir registro na tabela ${table}:`, error);
-            // Lidar com o erro (por exemplo, readicionar a operação à fila ou registrar o erro)
-          }
+          await this.handleInsert(table, record);
         } else if (operationType === 'update') {
-          // Usar uma conversão de tipo (type assertion) para evitar recursão de tipos
-          const { data, error } = await this.client
-            .from(table)
-            .upsert(operation.record) as unknown as { data: any; error: any };
-
-          if (error) {
-            console.error(`Erro ao atualizar registro na tabela ${table}:`, error);
-            // Lidar com o erro
-          }
+          await this.handleUpdate(table, record);
         } else if (operationType === 'delete') {
-          // Usar uma conversão de tipo (type assertion) para evitar recursão de tipos
-          const { data, error } = await this.client
-            .from(table)
-            .delete()
-            .match({ id: record.id }) as unknown as { data: any; error: any };
-
-          if (error) {
-            console.error(`Erro ao excluir registro da tabela ${table}:`, error);
-            // Lidar com o erro
-          }
+          await this.handleDelete(table, record);
         }
       } catch (error) {
-        console.error("Erro durante a sincronização:", error);
-        // Lidar com o erro geral de sincronização
+        console.error(`Error during ${operationType} operation on ${table}:`, error);
+        
+        // For critical operations, retry a few times
+        if (this.retryCount < this.maxRetries) {
+          this.retryCount++;
+          this.operations.unshift(operation); // Put it back at the start of the queue
+          await new Promise(resolve => setTimeout(resolve, 1000 * this.retryCount)); // Exponential backoff
+        } else {
+          // Give up after max retries
+          toast.error(`Falha na sincronização de ${table}. Tente novamente mais tarde.`);
+        }
       }
     }
 
     this.isSyncing = false;
+  }
+
+  private async handleInsert(table: string, record: any) {
+    // Explicitly use select() to get back the data with ID
+    const { data, error } = await this.client
+      .from(table)
+      .insert(record)
+      .select();
+
+    if (error) {
+      console.error(`Error inserting record into ${table}:`, error);
+      throw error;
+    }
+
+    if (!data || data.length === 0 || !data[0].id) {
+      console.error(`No data or ID returned from ${table} insert operation`);
+      throw new Error(`Failed to insert into ${table}: No data or ID returned`);
+    }
+
+    console.log(`Successfully inserted record into ${table} with ID:`, data[0].id);
+    return data[0];
+  }
+
+  private async handleUpdate(table: string, record: any) {
+    if (!record.id) {
+      console.error(`Cannot update ${table} record without ID:`, record);
+      throw new Error(`Failed to update ${table}: Missing ID`);
+    }
+
+    const { data, error } = await this.client
+      .from(table)
+      .upsert(record)
+      .select();
+
+    if (error) {
+      console.error(`Error updating record in ${table}:`, error);
+      throw error;
+    }
+
+    console.log(`Successfully updated record in ${table} with ID:`, record.id);
+    return data?.[0] || record;
+  }
+
+  private async handleDelete(table: string, record: any) {
+    if (!record.id) {
+      console.error(`Cannot delete ${table} record without ID:`, record);
+      throw new Error(`Failed to delete from ${table}: Missing ID`);
+    }
+
+    const { error } = await this.client
+      .from(table)
+      .delete()
+      .match({ id: record.id });
+
+    if (error) {
+      console.error(`Error deleting record from ${table}:`, error);
+      throw error;
+    }
+
+    console.log(`Successfully deleted record from ${table} with ID:`, record.id);
+    return true;
   }
 }
 
@@ -96,7 +144,47 @@ export async function syncWithServer(
       // Process each pending operation
       if (pendingOperations.length > 0) {
         console.log("Processing pending operations...");
-        // Implementation would go here
+        // Import the supabase client for processing the operations
+        const { supabase } = await import('@/integrations/supabase/client');
+        
+        for (const op of pendingOperations) {
+          try {
+            console.log(`Processing operation: ${op.operation} for table ${op.table}`);
+            // Handle each operation type
+            if (op.operation === 'insert') {
+              const { data, error } = await supabase
+                .from(op.table)
+                .insert(op.data)
+                .select();
+                
+              if (error) throw error;
+              console.log(`Inserted record into ${op.table}:`, data?.[0]?.id);
+            } else if (op.operation === 'update') {
+              const { data, error } = await supabase
+                .from(op.table)
+                .upsert(op.data)
+                .select();
+                
+              if (error) throw error;
+              console.log(`Updated record in ${op.table}:`, op.data.id);
+            } else if (op.operation === 'delete') {
+              const { error } = await supabase
+                .from(op.table)
+                .delete()
+                .match({ id: op.data.id });
+                
+              if (error) throw error;
+              console.log(`Deleted record from ${op.table}:`, op.data.id);
+            }
+            
+            // Clear the operation from the queue after successful processing
+            const { clearSyncItem } = await import('./offlineDb');
+            await clearSyncItem(op.id);
+          } catch (opError) {
+            console.error(`Error processing operation ${op.id}:`, opError);
+            // We continue with other operations even if one fails
+          }
+        }
       }
     } catch (dbError) {
       console.error("Error accessing offline database:", dbError);
@@ -114,7 +202,7 @@ export async function syncWithServer(
         throw new Error(`Supabase connection error: ${error.message}`);
       }
       
-      // Continue with other sync operations
+      // Continue with other sync operations if needed
       // ...
       
     } catch (apiError) {
