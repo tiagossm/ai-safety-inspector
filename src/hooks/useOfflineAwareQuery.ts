@@ -1,176 +1,96 @@
 
-import { useQuery, useMutation, useQueryClient, QueryKey } from '@tanstack/react-query';
-import { offlineSupabase } from '@/services/offlineSupabase';
-import { syncWithServer } from '@/services/syncManager';
-import { saveForSync } from '@/services/offlineDb';
-import { useState, useEffect } from 'react';
-import { toast } from 'sonner';
+import { useEffect, useState } from 'react';
+import { useQuery, UseQueryOptions, QueryKey } from '@tanstack/react-query';
+import { getOfflineData, isOfflineStore } from '@/services/offlineSync';
 
-// Network status hook
-export const useNetworkStatus = () => {
-  const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
-  
-  useEffect(() => {
-    const handleOnline = () => {
-      setIsOnline(true);
-      toast.success("You're back online. Syncing data...");
-      syncWithServer();
-    };
-    
-    const handleOffline = () => {
-      setIsOnline(false);
-      toast.warning("You're offline. Changes will be synced when you reconnect.");
-    };
-    
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-  
-  return isOnline;
-};
-
-// Simplify types to avoid complex type issues
-interface QueryResult {
-  data?: any[];
-  error?: any;
+interface OfflineQueryResult<T> {
+  data: T | undefined;
+  error: Error | null;
+  isLoading: boolean;
+  isOffline: boolean;
 }
 
-// Offline-aware query hook with simplified types
-export const useOfflineAwareQuery = <T>(
+type QueryFn<T> = (...args: any[]) => Promise<T>;
+
+// Create a simple checker function to determine if a response is from an offline source
+function isOfflineResponse(response: any): boolean {
+  return response && typeof response === 'object' && 'isOffline' in response;
+}
+
+export function useOfflineAwareQuery<T>(
   queryKey: QueryKey,
-  tableName: string,
-  options?: any
-) => {
-  const isOnline = useNetworkStatus();
-  
-  return useQuery({
+  queryFn: QueryFn<T>,
+  tableName: string | null = null,
+  options?: UseQueryOptions<T>
+): OfflineQueryResult<T> {
+  const [offlineData, setOfflineData] = useState<T | undefined>(undefined);
+  const [isOffline, setIsOffline] = useState(false);
+
+  // Use the standard React Query hook
+  const queryResult = useQuery<T>({
     queryKey,
-    queryFn: async () => {
-      try {
-        const result = await offlineSupabase.from(tableName).select() as any;
-        
-        // Handle different response formats
-        if (!result) {
-          return [] as T[];
-        }
-        
-        // For offline query handler
-        if (typeof result._getFilteredData === 'function') {
-          const queryResult = await result._getFilteredData() as QueryResult;
-          return (queryResult.data || []) as T[];
-        }
-        
-        // For regular Supabase responses
-        if (result && 'data' in result) {
-          return (result.data || []) as T[];
-        }
-        
-        return [] as T[];
-      } catch (error) {
-        console.error(`Error fetching data from ${tableName}:`, error);
-        throw error;
-      }
-    },
+    queryFn,
     ...options,
-    // If offline, rely on local cache and don't hit network
-    networkMode: isOnline ? 'always' : 'offlineFirst'
-  });
-};
-
-// Offline-aware mutation hook with proper Promise handling
-export const useOfflineAwareMutation = <T>(
-  tableName: string,
-  queryKey: QueryKey,
-  options?: any
-) => {
-  const queryClient = useQueryClient();
-  const isOnline = useNetworkStatus();
-  
-  return useMutation({
-    mutationFn: async (variables: {
-      type: 'insert' | 'update' | 'delete';
-      data: any;
-      id?: string;
-    }) => {
-      const { type, data, id } = variables;
-      
-      let result;
-      switch (type) {
-        case 'insert':
-          result = await offlineSupabase
-            .from(tableName)
-            .insert(data);
-          break;
-        case 'update': {
-          // Get the update operation object
-          const updateOperation = offlineSupabase
-            .from(tableName)
-            .update(data);
-          
-          // Then call eq() on the returned operation object
-          result = await updateOperation.eq('id', id || data.id);
-          break;
-        }
-        case 'delete': {
-          // Get the delete operation object
-          const deleteOperation = offlineSupabase
-            .from(tableName)
-            .delete();
-          
-          // Then call eq() on the returned operation object
-          result = await deleteOperation.eq('id', id || data.id);
-          break;
-        }
-      }
-      
-      return result;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey });
-      
-      if (!isOnline) {
-        toast.info("You're offline. Changes will be synced when you reconnect.");
-      }
-    },
     onError: (error) => {
-      console.error(`Error with ${tableName} operation:`, error);
+      console.error('Query error:', error);
+      // Only fallback to offline mode for network errors and when tableName is provided
+      if (tableName && error instanceof Error && 
+          (error.message.includes('network') || !navigator.onLine)) {
+        setIsOffline(true);
+        fetchOfflineData(tableName);
+      }
       
-      if (!isOnline) {
-        toast.warning("Error occurred while offline. Will retry when online.");
-      } else {
-        toast.error(`Error: ${error.message || 'Unknown error occurred'}`);
+      // Call the original onError if provided
+      if (options?.onError) {
+        options.onError(error);
       }
-    },
-    ...options
-  });
-};
-
-// Sync hook - manually trigger sync
-export const useSyncData = () => {
-  const [isSyncing, setIsSyncing] = useState(false);
-  const queryClient = useQueryClient();
-  
-  const sync = async () => {
-    setIsSyncing(true);
-    try {
-      const result = await syncWithServer();
-      if (result.success) {
-        // Invalidate all queries to refresh data
-        queryClient.invalidateQueries();
-        toast.success(result.message || "Sync completed successfully");
-      } else {
-        toast.error(result.message || "Sync failed");
-      }
-      return result;
-    } finally {
-      setIsSyncing(false);
     }
-  };
-  
-  return { sync, isSyncing };
-};
+  });
+
+  // Function to fetch offline data from IndexedDB
+  async function fetchOfflineData(table: string) {
+    if (!isOfflineStore(table)) {
+      console.warn(`Table '${table}' is not configured for offline storage.`);
+      return;
+    }
+    
+    try {
+      const data = await getOfflineData(table);
+      if (data && data.length > 0) {
+        console.log(`Retrieved ${data.length} records from offline storage for table '${table}'`);
+        setOfflineData(data as unknown as T);
+      } else {
+        console.log(`No offline data available for table '${table}'`);
+      }
+    } catch (err) {
+      console.error(`Error retrieving offline data for table '${table}':`, err);
+    }
+  }
+
+  // Return the appropriate data based on online/offline status
+  if (isOffline && offlineData !== undefined) {
+    // We're offline and have offline data
+    return {
+      data: offlineData,
+      error: null,
+      isLoading: false,
+      isOffline: true
+    };
+  } else if (queryResult.data !== undefined) {
+    // We have online data
+    return {
+      data: queryResult.data,
+      error: null,
+      isLoading: queryResult.isLoading,
+      isOffline: false
+    };
+  } else {
+    // Either loading or error state
+    return {
+      data: undefined,
+      error: queryResult.error instanceof Error ? queryResult.error : null,
+      isLoading: queryResult.isLoading,
+      isOffline: isOffline
+    };
+  }
+}

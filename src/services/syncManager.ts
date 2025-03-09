@@ -19,9 +19,12 @@ interface SyncQueueItem {
 }
 
 // Define a simple response type without deep nesting
-interface SimpleSupabaseResponse {
+interface SupabaseResponse {
   error: any | null;
   data?: any;
+  status?: number;
+  statusText?: string;
+  count?: number;
 }
 
 // Process each operation type with a dedicated function
@@ -29,7 +32,7 @@ async function processInsertOperation(table: string, data: any): Promise<void> {
   console.log(`Processing insert operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  const response = await supabase.from(validatedTable).insert(data) as SimpleSupabaseResponse;
+  const response = await supabase.from(validatedTable).insert(data) as SupabaseResponse;
   
   if (response.error) {
     console.error(`Error in sync insert operation for table ${table}:`, response.error);
@@ -42,7 +45,7 @@ async function processUpdateOperation(table: string, data: any): Promise<void> {
   console.log(`Processing update operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  const response = await supabase.from(validatedTable).update(data).eq('id', data.id) as SimpleSupabaseResponse;
+  const response = await supabase.from(validatedTable).update(data).eq('id', data.id) as SupabaseResponse;
   
   if (response.error) {
     console.error(`Error in sync update operation for table ${table}:`, response.error);
@@ -55,7 +58,7 @@ async function processDeleteOperation(table: string, data: any): Promise<void> {
   console.log(`Processing delete operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  const response = await supabase.from(validatedTable).delete().eq('id', data.id) as SimpleSupabaseResponse;
+  const response = await supabase.from(validatedTable).delete().eq('id', data.id) as SupabaseResponse;
   
   if (response.error) {
     console.error(`Error in sync delete operation for table ${table}:`, response.error);

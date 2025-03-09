@@ -28,7 +28,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
 
   // Função para buscar dados completos do usuário
-  async function fetchExtendedUser(userId: string): Promise<AuthUser | null> {
+  async function fetchExtendedUser(userId: string): Promise<any | null> {
     try {
       const { data, error } = await supabase
         .from("users")
@@ -60,21 +60,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           console.log("✅ Sessão restaurada do Supabase");
           // Tenta obter os dados completos do usuário
           const userData = await fetchExtendedUser(data.session.user.id);
-          // Normaliza os valores de role e tier
+          
+          // Normalizar role de acordo com a definição do tipo
           const normalizedRole = userData && userData.role
-            ? userData.role.toLowerCase() === 'administrador'
-              ? 'admin'
-              : userData.role.toLowerCase()
-            : 'user';
+            ? (userData.role.toLowerCase() === 'administrador' ? 'admin' : 'user') as 'admin' | 'user'
+            : 'user' as const;
+          
+          // Normalizar tier de acordo com a definição do tipo
           const normalizedTier = userData && userData.tier
-            ? userData.tier.toLowerCase()
-            : 'technician';
+            ? userData.tier.toLowerCase() as "super_admin" | "company_admin" | "consultant" | "technician"
+            : 'technician' as const;
           
           const enhancedUser: AuthUser = {
             ...data.session.user,
             role: normalizedRole,
             tier: normalizedTier,
-            company_id: userData?.company_id // Pode ser null para super_admin
+            company_id: userData?.company_id
           };
 
           setUser(enhancedUser);
@@ -107,14 +108,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
           setLoading(true);
           const userData = await fetchExtendedUser(session.user.id);
+          
+          // Normalizar role de acordo com a definição do tipo
           const normalizedRole = userData && userData.role
-            ? userData.role.toLowerCase() === 'administrador'
-              ? 'admin'
-              : userData.role.toLowerCase()
-            : 'user';
+            ? (userData.role.toLowerCase() === 'administrador' ? 'admin' : 'user') as 'admin' | 'user'
+            : 'user' as const;
+          
+          // Normalizar tier de acordo com a definição do tipo
           const normalizedTier = userData && userData.tier
-            ? userData.tier.toLowerCase()
-            : 'technician';
+            ? userData.tier.toLowerCase() as "super_admin" | "company_admin" | "consultant" | "technician"
+            : 'technician' as const;
 
           const enhancedUser: AuthUser = {
             ...session.user,
@@ -130,8 +133,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           // Fallback para dados básicos se não conseguir buscar os dados estendidos
           const basicUser: AuthUser = {
             ...session.user,
-            role: 'user',
-            tier: 'technician'
+            role: 'user' as const,
+            tier: 'technician' as const
           };
           setUser(basicUser);
           localStorage.setItem("authUser", JSON.stringify(basicUser));
