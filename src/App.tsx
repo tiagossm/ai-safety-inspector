@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { ThemeProvider } from "./components/ui/ThemeProvider"
+import { ThemeProvider, useTheme } from "./components/ui/ThemeContext";
 import { AuthContext, AuthProvider } from './components/AuthProvider';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
@@ -14,10 +14,7 @@ import ChecklistForm from './pages/ChecklistForm';
 
 function App() {
   return (
-    <ThemeProvider
-      defaultTheme="system"
-      storageKey="vite-react-theme"
-    >
+    <ThemeProvider>
       <AuthProvider>
         <Router>
           <Routes>
