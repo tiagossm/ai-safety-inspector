@@ -164,7 +164,12 @@ export async function syncWithServer(
                 .select();
                 
               if (error) throw error;
-              console.log(`Inserted record into ${op.table}:`, data?.[0]?.id);
+              // Type-safe check for data and id property
+              if (data && data.length > 0 && 'id' in data[0]) {
+                console.log(`Inserted record into ${op.table}:`, data[0].id);
+              } else {
+                console.log(`Inserted record into ${op.table}, but couldn't get ID`);
+              }
             } else if (op.operation === 'update') {
               const { data, error } = await supabase
                 .from(op.table)
