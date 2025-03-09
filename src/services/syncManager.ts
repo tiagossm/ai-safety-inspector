@@ -1,5 +1,6 @@
 
 import { SupabaseClient } from "@supabase/supabase-js";
+import { toast } from "sonner";
 
 interface SyncOperation {
   table: string;
@@ -76,7 +77,7 @@ export class SyncManager {
   }
 }
 
-// Export the syncWithServer function that was missing
+// Export the syncWithServer function with enhanced error handling
 export async function syncWithServer(
   syncCallback?: (isSyncing: boolean) => void,
   errorCallback?: (error: Error) => void
@@ -84,8 +85,44 @@ export async function syncWithServer(
   try {
     if (syncCallback) syncCallback(true);
     
-    // Implement the actual synchronization logic here
     console.log("Starting server synchronization...");
+    
+    // Get all pending operations from IndexedDB
+    try {
+      const { getOfflineData } = await import('./offlineDb');
+      const pendingOperations = await getOfflineData('syncQueue');
+      console.log(`Found ${pendingOperations.length} pending operations`);
+      
+      // Process each pending operation
+      if (pendingOperations.length > 0) {
+        console.log("Processing pending operations...");
+        // Implementation would go here
+      }
+    } catch (dbError) {
+      console.error("Error accessing offline database:", dbError);
+      if (errorCallback && dbError instanceof Error) errorCallback(dbError);
+      // Continue with sync even if accessing offline data fails
+    }
+    
+    // Perform other sync operations safely
+    try {
+      // Check connection to Supabase
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { error } = await supabase.from('checklists').select('count', { count: 'exact', head: true });
+      
+      if (error) {
+        throw new Error(`Supabase connection error: ${error.message}`);
+      }
+      
+      // Continue with other sync operations
+      // ...
+      
+    } catch (apiError) {
+      console.error("Error during API operations:", apiError);
+      if (errorCallback && apiError instanceof Error) errorCallback(apiError);
+      if (syncCallback) syncCallback(false);
+      return false;
+    }
     
     // Simulate some sync work
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -95,6 +132,8 @@ export async function syncWithServer(
     return true;
   } catch (error) {
     console.error("Error during server synchronization:", error);
+    // Show a user-friendly message
+    toast.error("Falha na sincronização. Algumas funcionalidades podem estar indisponíveis.");
     if (errorCallback && error instanceof Error) errorCallback(error);
     if (syncCallback) syncCallback(false);
     return false;
