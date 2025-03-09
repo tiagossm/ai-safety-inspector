@@ -23,8 +23,8 @@ async function processInsertOperation(table: string, data: any): Promise<void> {
   console.log(`Processing insert operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  // Use simple approach without complex type handling
-  const response = await supabase.from(validatedTable).insert(data);
+  // Use type assertion to avoid TypeScript excessive instantiation error
+  const response = await supabase.from(validatedTable).insert(data) as any;
   
   if (response.error) {
     console.error(`Error in sync insert operation for table ${table}:`, response.error);
@@ -37,11 +37,11 @@ async function processUpdateOperation(table: string, data: any): Promise<void> {
   console.log(`Processing update operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  // Use simple approach without complex type handling
+  // Use type assertion to avoid TypeScript excessive instantiation error
   const response = await supabase
     .from(validatedTable)
     .update(data)
-    .eq('id', data.id);
+    .eq('id', data.id) as any;
   
   if (response.error) {
     console.error(`Error in sync update operation for table ${table}:`, response.error);
@@ -54,11 +54,11 @@ async function processDeleteOperation(table: string, data: any): Promise<void> {
   console.log(`Processing delete operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  // Use simple approach without complex type handling
+  // Use type assertion to avoid TypeScript excessive instantiation error
   const response = await supabase
     .from(validatedTable)
     .delete()
-    .eq('id', data.id);
+    .eq('id', data.id) as any;
   
   if (response.error) {
     console.error(`Error in sync delete operation for table ${table}:`, response.error);
