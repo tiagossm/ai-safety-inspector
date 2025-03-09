@@ -1,159 +1,66 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { useNavigate, Navigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "./AuthProvider";
 import { AuthUser } from "@/hooks/auth/useAuthState";
 
-interface AuthContextType {
-  user: AuthUser | null;
-  loading: boolean;
-  logout: () => Promise<void>;
+// Define os tiers permitidos
+export type UserTier = "super_admin" | "company_admin" | "consultant" | "technician";
+
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  requiredTier?: UserTier[];
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  loading: true,
-  logout: async () => {}
-});
+// Componente de loading reutilizável
+const LoadingScreen = () => (
+  <div className="flex items-center justify-center h-screen">
+    <div className="text-center">
+      <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+      <p className="mt-4 text-lg">Verificando permissões...</p>
+    </div>
+  </div>
+);
 
-export const useAuth = () => useContext(AuthContext);
+// Função auxiliar para log apenas em desenvolvimento
+const devLog = (...args: any[]) => {
+  if (process.env.NODE_ENV === "development") {
+    console.log(...args);
+  }
+};
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    const storedUser = localStorage.getItem("authUser");
-    return storedUser ? JSON.parse(storedUser) : null;
-  });
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+export function ProtectedRoute({
+  children,
+  requiredTier = ["super_admin", "company_admin", "consultant", "technician"]
+}: ProtectedRouteProps) {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+  const typedUser = user as AuthUser | null;
 
-  // Função para buscar dados completos do usuário
-  async function fetchExtendedUser(userId: string): Promise<AuthUser | null> {
-    const { data, error } = await supabase
-      .from("users")
-      .select("id, company_id, name, role, tier")
-      .eq("id", userId)
-      .single();
+  devLog("🔒 ProtectedRoute - Rota:", location.pathname);
+  devLog("👤 Usuário:", typedUser ? `${typedUser.email} (${typedUser.tier})` : "Não autenticado");
+  devLog("⏳ Carregamento:", loading ? "Carregando" : "Completo");
 
-    if (error) {
-      console.error("Erro ao buscar detalhes do usuário:", error);
-      return null;
-    }
-    return data;
+  // Enquanto a autenticação estiver carregando, exibe o componente de loading
+  if (loading) {
+    devLog("⏳ Aguardando carregamento de autenticação...");
+    return <LoadingScreen />;
   }
 
-  // Verifica a sessão ao montar o componente
-  useEffect(() => {
-    const initializeAuth = async () => {
-      console.log("🔄 Iniciando verificação de sessão...");
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        if (error) throw error;
+  // Se não houver usuário autenticado, redireciona para a tela de login
+  if (!typedUser) {
+    devLog("🚫 Acesso negado: usuário não autenticado, redirecionando para login");
+    return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
 
-        if (data?.session?.user) {
-          console.log("✅ Sessão restaurada do Supabase");
-          // Tenta obter os dados completos do usuário
-          const userData = await fetchExtendedUser(data.session.user.id);
-          
-          let normalizedRole = 'user';
-          let normalizedTier = 'technician';
+  // Verificação das permissões com base no tier do usuário
+  if (typedUser.tier && !requiredTier.includes(typedUser.tier)) {
+    devLog(
+      `🚫 Acesso negado: usuário com tier ${typedUser.tier} tentando acessar rota que requer [${requiredTier.join(", ")}]`
+    );
+    const redirectPath = typedUser.tier === "super_admin" ? "/admin/dashboard" : "/dashboard";
+    devLog(`🔄 Redirecionando para ${redirectPath}`);
+    return <Navigate to={redirectPath} replace />;
+  }
 
-          if (userData) {
-            normalizedRole = userData.role
-              ? userData.role.toLowerCase() === 'administrador'
-                ? 'admin'
-                : userData.role.toLowerCase()
-              : 'user';
-            normalizedTier = userData.tier ? userData.tier.toLowerCase() : 'technician';
-          }
-          
-          // Se o usuário for o super admin (ex.: email específico), force tier = "super_admin"
-          if (data.session.user.email === "eng.tiagosm@gmail.com") {
-            normalizedTier = "super_admin";
-          }
-          
-          const enhancedUser: AuthUser = {
-            ...data.session.user,
-            role: normalizedRole,
-            tier: normalizedTier,
-            company_id: userData?.company_id // Pode ser null para super_admin
-          };
-
-          setUser(enhancedUser);
-          localStorage.setItem("authUser", JSON.stringify(enhancedUser));
-        }
-      } catch (error) {
-        console.error("❌ Erro ao inicializar autenticação:", error);
-        toast.error("Erro ao verificar sessão. Faça login novamente.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initializeAuth();
-  }, []);
-
-  // Configura eventos de autenticação
-  useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log(`🔄 Estado de autenticação alterado: ${event}`);
-      if (session?.user) {
-        try {
-          const userData = await fetchExtendedUser(session.user.id);
-          
-          let normalizedRole = 'user';
-          let normalizedTier = 'technician';
-
-          if (userData) {
-            normalizedRole = userData.role
-              ? userData.role.toLowerCase() === 'administrador'
-                ? 'admin'
-                : userData.role.toLowerCase()
-              : 'user';
-            normalizedTier = userData.tier ? userData.tier.toLowerCase() : 'technician';
-          }
-          
-          // Força tier "super_admin" para o super admin
-          if (session.user.email === "eng.tiagosm@gmail.com") {
-            normalizedTier = "super_admin";
-          }
-          
-          const enhancedUser: AuthUser = {
-            ...session.user,
-            role: normalizedRole,
-            tier: normalizedTier,
-            company_id: userData?.company_id
-          };
-
-          setUser(enhancedUser);
-          localStorage.setItem("authUser", JSON.stringify(enhancedUser));
-        } catch (err) {
-          console.error("❌ Error fetching user data:", err);
-          setUser(session.user as AuthUser);
-          localStorage.setItem("authUser", JSON.stringify(session.user));
-        }
-      } else {
-        setUser(null);
-        localStorage.removeItem("authUser");
-      }
-      setLoading(false);
-    });
-
-    return () => {
-      authListener?.subscription.unsubscribe();
-    };
-  }, []);
-
-  // Função de logout
-  const logout = async () => {
-    await supabase.auth.signOut();
-    localStorage.removeItem("authUser");
-    setUser(null);
-    navigate("/auth");
-  };
-
-  return (
-    <AuthContext.Provider value={{ user, loading, logout }}>
-      {loading ? <div>Carregando...</div> : children}
-    </AuthContext.Provider>
-  );
-};
+  devLog("✅ Acesso permitido à rota:", location.pathname);
+  return <>{children}</>;
+}
