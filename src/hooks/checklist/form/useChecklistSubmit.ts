@@ -85,18 +85,18 @@ export function useChecklistSubmit() {
         success = await submitManualChecklist(form, questions);
         // Note: Navigation is handled inside submitManualChecklist
       } else if (activeTab === "import" && file) {
-        const result = await importFromFile(file, form);
-        success = !!result;
+        const importResult = await importFromFile(file, form);
+        success = !!importResult;
         
-        if (success && result.id) {
-          checklistId = result.id;
+        if (success && importResult && typeof importResult === 'object' && 'id' in importResult) {
+          checklistId = importResult.id as string;
         }
       } else if (activeTab === "ai") {
-        const result = await generateAIChecklist(form);
-        success = !!result;
+        const aiResult = await generateAIChecklist(form);
+        success = !!aiResult;
         
-        if (success && result.checklist_id) {
-          checklistId = result.checklist_id;
+        if (success && aiResult && typeof aiResult === 'object' && 'checklist_id' in aiResult) {
+          checklistId = aiResult.checklist_id as string;
         }
       } else {
         console.error(`Invalid tab selected: ${activeTab}`);

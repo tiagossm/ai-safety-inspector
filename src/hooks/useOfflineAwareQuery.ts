@@ -2,7 +2,48 @@
 import { useState, useEffect } from 'react';
 import { UseQueryResult, UseQueryOptions, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { getOfflineData, isOfflineStore } from '@/services/offlineSync';
+import { getOfflineData, isOfflineStore, syncWithServer } from '@/services/offlineSync';
+
+// Hook to track network status
+export function useNetworkStatus() {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  
+  useEffect(() => {
+    const handleOnlineStatus = () => {
+      setIsOnline(navigator.onLine);
+    };
+
+    window.addEventListener('online', handleOnlineStatus);
+    window.addEventListener('offline', handleOnlineStatus);
+
+    return () => {
+      window.removeEventListener('online', handleOnlineStatus);
+      window.removeEventListener('offline', handleOnlineStatus);
+    };
+  }, []);
+  
+  return isOnline;
+}
+
+// Hook to manage data synchronization
+export function useSyncData() {
+  const [isSyncing, setIsSyncing] = useState(false);
+  
+  const sync = async () => {
+    if (isSyncing) return;
+    
+    try {
+      setIsSyncing(true);
+      await syncWithServer();
+    } catch (error) {
+      console.error("Error syncing data:", error);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+  
+  return { sync, isSyncing };
+}
 
 export function useOfflineAwareQuery<TData>(
   queryKey: string[],
@@ -55,15 +96,20 @@ export function useOfflineAwareQuery<TData>(
   });
 
   if (isOffline && offlineData) {
+    // Fix the typing issue by being explicit about the properties we're setting
     return {
       ...result,
       data: offlineData,
       isOffline: true,
-      status: 'success',
+      status: 'success' as const,
       isSuccess: true,
       isLoading: false,
+      isPending: false,
       isError: false,
       error: null,
+      isLoadingError: false,
+      isRefetchError: false, // Changed from true to false to match the expected type
+      fetchStatus: 'idle' as const,
     };
   }
 
