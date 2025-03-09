@@ -110,8 +110,11 @@ export function useChecklistSubmit() {
           // Handle different possible response structures
           if ('id' in aiResult) {
             checklistId = aiResult.id as string;
-          } else if ('data' in aiResult && typeof aiResult.data === 'object' && aiResult.data && 'checklist_id' in aiResult.data) {
-            checklistId = aiResult.data.checklist_id as string;
+          } else if ('data' in aiResult) {
+            const resultData = aiResult.data as Record<string, any>;
+            if (resultData && 'checklist_id' in resultData) {
+              checklistId = resultData.checklist_id as string;
+            }
           }
         } else {
           success = false;
