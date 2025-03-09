@@ -72,7 +72,7 @@ export function ChecklistsHeader() {
         </DropdownMenu>
 
         <Button asChild>
-          <Link to="/checklists/create" className="flex items-center gap-2">
+          <Link to="/checklists/new" className="flex items-center gap-2">
             <PlusCircle className="h-4 w-4" />
             Criar Nova Lista
           </Link>

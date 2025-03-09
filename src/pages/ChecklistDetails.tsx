@@ -18,7 +18,7 @@ export default function ChecklistDetails() {
     }
   }, [id, navigate]);
 
-  // Retorne null imediatamente se não houver ID, não renderize o container
+  // Se não houver ID, não renderize o container
   if (!id) return null;
   
   return <ChecklistDetailsContainer checklistId={id} />;
