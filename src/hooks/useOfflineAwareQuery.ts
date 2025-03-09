@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from 'react';
 import { useQuery, UseQueryOptions, QueryKey, UseQueryResult } from '@tanstack/react-query';
 import { getOfflineData, isOfflineStore } from '@/services/offlineSync';
@@ -68,34 +67,8 @@ export function useOfflineAwareQuery<T>(
   const [offlineData, setOfflineData] = useState<T | undefined>(undefined);
   const [isOffline, setIsOffline] = useState(false);
 
-  // Create a modified options object that handles failures properly
-  const modifiedOptions: UseQueryOptions<T, Error, T, QueryKey> = {
-    ...options,
-  };
-
-  // Use the standard React Query hook with updated options format
-  const queryResult = useQuery<T, Error, T, QueryKey>({
-    queryKey,
-    queryFn,
-    ...modifiedOptions,
-    // In React Query v5, we need to use the onError option correctly
-    onError: (error) => {
-      if (tableName && 
-          (error.message.includes('network') || !navigator.onLine)) {
-        console.error('Query error, falling back to offline data:', error);
-        setIsOffline(true);
-        fetchOfflineData(tableName);
-      }
-      
-      // Call the original onError if provided
-      if (options?.onError) {
-        options.onError(error);
-      }
-    }
-  });
-
   // Function to fetch offline data from IndexedDB
-  async function fetchOfflineData(table: string) {
+  const fetchOfflineData = async (table: string) => {
     if (!isOfflineStore(table)) {
       console.warn(`Table '${table}' is not configured for offline storage.`);
       return;
@@ -112,7 +85,45 @@ export function useOfflineAwareQuery<T>(
     } catch (err) {
       console.error(`Error retrieving offline data for table '${table}':`, err);
     }
-  }
+  };
+
+  // Use the standard React Query hook with updated options
+  const queryResult = useQuery<T, Error>({
+    queryKey,
+    queryFn,
+    ...options,
+    meta: {
+      ...options?.meta,
+      fallbackToOffline: !!tableName
+    },
+    retry: (failureCount, error) => {
+      // On network errors, don't retry if we can fall back to offline data
+      if (tableName && (error.message.includes('network') || !navigator.onLine)) {
+        console.log('Network error detected, falling back to offline data');
+        setIsOffline(true);
+        fetchOfflineData(tableName);
+        return false;
+      }
+      
+      // Otherwise use the retry configuration from options or default
+      if (options?.retry !== undefined) {
+        return typeof options.retry === 'function' 
+          ? options.retry(failureCount, error) 
+          : options.retry;
+      }
+      
+      return failureCount < 3;
+    }
+  });
+
+  // Effect to handle offline fallback on error
+  useEffect(() => {
+    if (queryResult.error && tableName && !offlineData) {
+      console.error('Query error, checking for offline data:', queryResult.error);
+      setIsOffline(true);
+      fetchOfflineData(tableName);
+    }
+  }, [queryResult.error, tableName]);
 
   // Return the appropriate data based on online/offline status
   if (isOffline && offlineData !== undefined) {

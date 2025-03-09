@@ -6,7 +6,8 @@ import { Link, useLocation, Outlet, useNavigate } from "react-router-dom";
 import { 
   Search, Bell, User, Menu, Building, ClipboardList, 
   Settings, LogOut, WifiOff, X, Home, BarChart, 
-  CheckSquare, FileText, AlertTriangle, Users, Key, CreditCard
+  CheckSquare, FileText, AlertTriangle, Users, Key, CreditCard,
+  ShieldAlert
 } from "lucide-react";
 import { useSwipeable } from "react-swipeable";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -19,6 +20,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { AuthUser } from "@/hooks/auth/useAuthState";
 
 interface DashboardLayoutProps {
   children?: ReactNode;
@@ -29,6 +31,7 @@ interface MenuItem {
   name: string;
   path: string;
   submenu?: MenuItem[];
+  roleRequired?: "super_admin" | "company_admin" | "consultant" | "technician";
 }
 
 function DashboardLayout({
@@ -50,6 +53,9 @@ function DashboardLayout({
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     companies: true
   });
+
+  const typedUser = user as AuthUser | null;
+  const isSuperAdmin = typedUser?.tier === "super_admin";
 
   useEffect(() => {
     const updateOnlineStatus = () => {
@@ -92,6 +98,15 @@ function DashboardLayout({
       name: "Dashboard",
       path: "/dashboard"
     },
+    // Admin link only for super admins
+    ...(isSuperAdmin ? [
+      {
+        icon: ShieldAlert,
+        name: "Painel Administrativo",
+        path: "/admin/dashboard",
+        roleRequired: "super_admin"
+      }
+    ] : []),
     {
       icon: Building,
       name: "Empresas",
@@ -159,7 +174,13 @@ function DashboardLayout({
     return false;
   };
 
+  // Renderiza um item de menu se o usuário tiver a permissão necessária
   const renderMenuItem = (item: MenuItem) => {
+    // Verificar se o usuário tem permissão para ver este item
+    if (item.roleRequired && typedUser?.tier !== item.roleRequired) {
+      return null;
+    }
+
     const hasSubmenu = !!item.submenu?.length;
     const isMenuActive = isSubmenuActive(item);
 
