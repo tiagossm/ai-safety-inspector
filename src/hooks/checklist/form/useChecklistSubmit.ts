@@ -6,27 +6,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useChecklistAI } from "./useChecklistAI";
 import { useChecklistImport } from "./useChecklistImport";
-import { useAuth } from "@/components/AuthProvider";
-import { AuthUser } from "@/hooks/auth/useAuthState";
 
 export function useChecklistSubmit() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const createChecklist = useCreateChecklist();
   const { generateAIChecklist } = useChecklistAI();
   const { importFromFile } = useChecklistImport();
-  const { user } = useAuth();
-  const extendedUser = user as AuthUser | null;
 
   const submitManualChecklist = async (
     form: NewChecklist, 
     questions: Array<{ text: string; type: string; required: boolean }>
   ) => {
     try {
-      // Ensure company_id is set if the user has one
-      if (extendedUser?.company_id && !form.company_id) {
-        form.company_id = extendedUser.company_id;
-      }
-      
       console.log("Submitting manual form:", form);
       const newChecklist = await createChecklist.mutateAsync(form);
       
@@ -75,11 +66,6 @@ export function useChecklistSubmit() {
     if (!form.title.trim() && activeTab !== "ai") {
       toast.error("O título é obrigatório");
       return false;
-    }
-    
-    // Ensure company_id is set if the user has one
-    if (extendedUser?.company_id && !form.company_id) {
-      form.company_id = extendedUser.company_id;
     }
     
     setIsSubmitting(true);

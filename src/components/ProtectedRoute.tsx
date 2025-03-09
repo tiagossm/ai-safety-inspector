@@ -1,3 +1,4 @@
+
 import { Navigate, useLocation } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "./AuthProvider";
@@ -23,7 +24,7 @@ export function ProtectedRoute({
   console.log("👤 Usuário:", typedUser ? `${typedUser.email} (${typedUser.tier})` : "Não autenticado");
   
   // Fast path for super_admin users - skip lengthy checks
-  if (typedUser?.tier === "super_admin" as UserTier) {
+  if (typedUser?.tier === "super_admin") {
     console.log("✅ Acesso automático concedido para super_admin");
     return <>{children}</>;
   }
@@ -50,7 +51,7 @@ export function ProtectedRoute({
   }
 
   // Verificação de permissão baseada no tier
-  if (typedUser.tier && !requiredTier.includes(typedUser.tier as UserTier)) {
+  if (typedUser.tier && !requiredTier.includes(typedUser.tier)) {
     console.log(
       `🚫 Acesso negado: usuário com tier ${typedUser.tier} tentando acessar rota que requer [${requiredTier.join(
         ", "

@@ -62,9 +62,7 @@ const Auth = () => {
           description: "Bem-vindo de volta!",
         });
 
-        // Changed navigation target from /companies to /dashboard since /companies
-        // route doesn't appear to be defined in App.tsx
-        navigate("/dashboard");
+        navigate("/companies");
       }
     } catch (error: any) {
       console.error("❌ Erro na autenticação:", error);

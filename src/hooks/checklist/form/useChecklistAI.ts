@@ -4,16 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
 import { NewChecklist } from "@/types/checklist";
 import { toast } from "sonner";
-import { useAuth } from "@/components/AuthProvider";
-import { AuthUser } from "@/hooks/auth/useAuthState";
 
 export function useChecklistAI() {
   const [aiPrompt, setAiPrompt] = useState("");
   const [numQuestions, setNumQuestions] = useState(10);
   const [aiLoading, setAiLoading] = useState(false);
   const createChecklist = useCreateChecklist();
-  const { user } = useAuth();
-  const extendedUser = user as AuthUser | null;
 
   const generateAIChecklist = async (form: NewChecklist) => {
     if (!aiPrompt) {
@@ -26,17 +22,12 @@ export function useChecklistAI() {
     try {
       console.log("Generating checklist with AI using prompt:", aiPrompt);
       
-      // Ensure company_id is set if available
-      const effectiveCompanyId = form.company_id || extendedUser?.company_id;
-      
       // Call the edge function to generate the checklist
       const { data, error } = await supabase.functions.invoke("generate-checklist", {
         body: { 
           prompt: aiPrompt,
           num_questions: numQuestions,
-          category: form.category,
-          user_id: user?.id,
-          company_id: effectiveCompanyId
+          category: form.category
         }
       });
       
@@ -58,8 +49,7 @@ export function useChecklistAI() {
         const updatedForm = {
           ...form,
           title: data.data.title || `Checklist AI: ${aiPrompt.substring(0, 30)}...`,
-          description: data.data.description || `Checklist gerado automaticamente baseado em: ${aiPrompt}`,
-          company_id: effectiveCompanyId
+          description: data.data.description || `Checklist gerado automaticamente baseado em: ${aiPrompt}`
         };
         
         // Create the checklist

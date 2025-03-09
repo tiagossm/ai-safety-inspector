@@ -18,26 +18,6 @@ export async function createChecklist(
   formData: ChecklistFormData,
   fileName: string
 ): Promise<{ id: string; error?: any }> {
-  // Get user information if user_id is available
-  let companyId = formData.company_id;
-  if (formData.user_id && !companyId) {
-    try {
-      console.log("Attempting to find company_id for user:", formData.user_id);
-      const { data: userData, error: userError } = await supabaseClient
-        .from('users')
-        .select('company_id')
-        .eq('id', formData.user_id)
-        .single();
-        
-      if (!userError && userData?.company_id) {
-        companyId = userData.company_id;
-        console.log("Found company_id from user:", companyId);
-      }
-    } catch (error) {
-      console.error("Error fetching user's company_id:", error);
-    }
-  }
-
   console.log("Creating new checklist with data:", {
     title: formData.title || fileName.replace(/\.[^/.]+$/, ""),
     description: formData.description || `Importado de ${fileName}`,
@@ -46,7 +26,7 @@ export async function createChecklist(
     category: formData.category || 'general',
     responsible_id: formData.responsible_id || null,
     user_id: formData.user_id || null,
-    company_id: companyId || null,
+    company_id: formData.company_id || null,
     due_date: formData.due_date || null
   });
   
@@ -60,7 +40,7 @@ export async function createChecklist(
       category: formData.category || 'general',
       responsible_id: formData.responsible_id || null,
       user_id: formData.user_id || null,
-      company_id: companyId || null,
+      company_id: formData.company_id || null,
       due_date: formData.due_date || null
     })
     .select()

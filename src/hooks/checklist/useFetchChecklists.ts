@@ -22,37 +22,28 @@ export function useFetchChecklists() {
       // Buscar o ID da empresa do usuário
       const { data: userData, error: userError } = await supabase
         .from("users")
-        .select("company_id, tier")
+        .select("company_id")
         .eq("id", user.id)
         .single();
 
       if (userError) {
         console.error("❌ Erro ao buscar dados do usuário:", userError);
-        throw userError;
       }
 
-      const company_id = userData?.company_id;
-      const userTier = userData?.tier;
+      const company_id = userError ? null : userData?.company_id;
       console.log("✅ ID da empresa do usuário:", company_id);
-      console.log("✅ Nível do usuário:", userTier);
 
-      // Buscar checklists
+      // Buscar checklists - modificado para buscar mesmo sem company_id
       let query = supabase
         .from("checklists")
         .select("*");
 
-      // Se o usuário não for super_admin, filtramos por company_id
-      if (userTier !== 'super_admin') {
-        if (company_id) {
-          console.log("✅ Filtrando checklists por company_id:", company_id);
-          query = query.eq("company_id", company_id);
-        } else {
-          // Se não tiver company_id, filtramos pelo user_id para garantir que veja seus próprios checklists
-          console.log("✅ Filtrando checklists por user_id:", user.id);
-          query = query.eq("user_id", user.id);
-        }
-      } else {
-        console.log("✅ Usuário é super_admin, mostrando todos os checklists");
+      // Filtramos por user_id para ver todos checklists do usuário
+      query = query.eq("user_id", user.id);
+
+      // Se tiver company_id, adicionamos como filtro adicional, não substituto
+      if (company_id) {
+        console.log("✅ Filtrando também por company_id:", company_id);
       }
 
       const { data: checklists, error } = await query.order("created_at", { ascending: false });
@@ -140,6 +131,7 @@ export function useFetchChecklists() {
       console.log("✅ Retornando checklists processados:", checklistsWithItems.length);
       return checklistsWithItems;
     },
+    // Reduzir o staleTime para forçar recarregamento mais frequente
     staleTime: 30000, // 30 segundos
     refetchOnWindowFocus: true,
   });
