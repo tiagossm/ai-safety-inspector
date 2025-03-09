@@ -1,7 +1,7 @@
 
 // This file re-exports all offline sync functionality from the modular files
 import { initOfflineDb, saveForSync, getOfflineData } from './offlineDb';
-import { syncWithServer } from './syncManager';
+import { syncWithServer } from './sync/syncWithServer';
 import { getValidatedTable, isValidTable, isOfflineStore, type AllowedTableName } from './tableValidation';
 import { toast } from "sonner";
 
