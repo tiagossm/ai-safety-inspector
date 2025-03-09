@@ -1,16 +1,27 @@
 
+import { Checklist } from "@/types/checklist";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { 
-  DropdownMenu, 
+import { MoreHorizontal, User, FileText } from "lucide-react";
+import {
+  DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Clipboard, MoreHorizontal } from "lucide-react";
-import { Checklist } from "@/types/checklist";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useChecklistPermissions } from "@/hooks/checklist/useChecklistPermissions";
 
 interface ChecklistsListProps {
   checklists: Checklist[];
@@ -19,103 +30,154 @@ interface ChecklistsListProps {
   onDelete: (id: string, title: string) => void;
 }
 
-export function ChecklistsList({ 
-  checklists, 
-  isLoading, 
-  onOpenChecklist, 
-  onDelete 
+export function ChecklistsList({
+  checklists,
+  isLoading,
+  onOpenChecklist,
+  onDelete
 }: ChecklistsListProps) {
-  return (
-    <div className="rounded-md border">
-      <div className="grid grid-cols-5 gap-4 p-4 font-medium border-b">
-        <div className="col-span-2">Nome</div>
-        <div className="hidden md:block">Responsável</div>
-        <div className="hidden md:block">Data</div>
-        <div className="text-right">Ações</div>
+  if (isLoading) {
+    return (
+      <div className="border rounded-md">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Categoria</TableHead>
+              <TableHead>Responsável</TableHead>
+              <TableHead>Criado em</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {Array(5).fill(0).map((_, index) => (
+              <TableRow key={index}>
+                <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
-      <ScrollArea className="h-[calc(100vh-340px)]">
-        {isLoading ? (
-          Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="grid grid-cols-5 gap-4 p-4 items-center border-b">
-              <div className="col-span-2">
-                <Skeleton className="h-6 w-3/4 mb-1" />
-                <Skeleton className="h-4 w-1/2" />
-              </div>
-              <div className="hidden md:block">
-                <Skeleton className="h-4 w-32" />
-              </div>
-              <div className="hidden md:block">
-                <Skeleton className="h-4 w-24" />
-              </div>
-              <div className="flex justify-end">
-                <Skeleton className="h-9 w-16 mr-1" />
-                <Skeleton className="h-9 w-9" />
-              </div>
-            </div>
-          ))
-        ) : checklists.length === 0 ? (
-          <div className="text-center py-10">
-            <Clipboard className="mx-auto h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-semibold">Nenhum checklist encontrado</h3>
-            <p className="text-muted-foreground">
-              Crie um novo checklist ou ajuste os filtros de busca.
-            </p>
-          </div>
-        ) : (
-          checklists.map((checklist) => (
-            <div key={checklist.id} className="grid grid-cols-5 gap-4 p-4 items-center border-b">
-              <div className="col-span-2">
-                <div className="font-medium">{checklist.title}</div>
-                <div className="text-sm text-muted-foreground mt-1">
-                  {checklist.items} itens
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {checklist.is_template && (
-                      <Badge variant="secondary">Template</Badge>
-                    )}
-                    {checklist.category && (
-                      <Badge variant="outline">
-                        {checklist.category.charAt(0).toUpperCase() + checklist.category.slice(1)}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="hidden md:block text-sm">
-                {checklist.responsible_name || "Não atribuído"}
-              </div>
-              <div className="hidden md:block text-sm">
-                {new Date(checklist.created_at).toLocaleDateString()}
-              </div>
-              <div className="flex justify-end">
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => onOpenChecklist(checklist.id)}
-                >
-                  Editar
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>Duplicar</DropdownMenuItem>
-                    <DropdownMenuItem>Compartilhar</DropdownMenuItem>
-                    <DropdownMenuItem 
-                      className="text-destructive focus:text-destructive"
-                      onClick={() => onDelete(checklist.id, checklist.title)}
-                    >
-                      Excluir
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-          ))
-        )}
-      </ScrollArea>
+    );
+  }
+
+  if (checklists.length === 0) {
+    return (
+      <div className="text-center py-12 border rounded-md">
+        <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+        <h3 className="text-lg font-medium mb-2">Nenhum checklist encontrado</h3>
+        <p className="text-muted-foreground mb-6">
+          Crie seu primeiro checklist para começar ou ajuste os filtros de busca.
+        </p>
+        <Button asChild>
+          <a href="/checklists/create">Criar Checklist</a>
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border rounded-md">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Nome</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Categoria</TableHead>
+            <TableHead>Responsável</TableHead>
+            <TableHead>Criado em</TableHead>
+            <TableHead className="text-right">Ações</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {checklists.map((checklist) => (
+            <ChecklistRow
+              key={checklist.id}
+              checklist={checklist}
+              onOpenChecklist={onOpenChecklist}
+              onDelete={onDelete}
+            />
+          ))}
+        </TableBody>
+      </Table>
     </div>
+  );
+}
+
+function ChecklistRow({
+  checklist,
+  onOpenChecklist,
+  onDelete
+}: {
+  checklist: Checklist;
+  onOpenChecklist: (id: string) => void;
+  onDelete: (id: string, title: string) => void;
+}) {
+  const { data: permissions } = useChecklistPermissions(checklist.id);
+  const canDelete = permissions?.delete || false;
+  
+  return (
+    <TableRow
+      className="cursor-pointer hover:bg-accent/50"
+      onClick={() => onOpenChecklist(checklist.id)}
+    >
+      <TableCell className="font-medium">
+        {checklist.title}
+      </TableCell>
+      <TableCell>
+        {checklist.is_template ? (
+          <Badge variant="secondary">Template</Badge>
+        ) : (
+          <Badge variant={checklist.status_checklist === "ativo" ? "default" : "outline"}>
+            {checklist.status_checklist === "ativo" ? "Ativo" : "Inativo"}
+          </Badge>
+        )}
+      </TableCell>
+      <TableCell>{checklist.category || "-"}</TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <User className="h-4 w-4" />
+          <span>{checklist.responsible_name || "Não atribuído"}</span>
+        </div>
+      </TableCell>
+      <TableCell>
+        {format(new Date(checklist.created_at), "dd MMM yyyy", { locale: ptBR })}
+      </TableCell>
+      <TableCell className="text-right">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+            <Button variant="ghost" size="icon">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={(e) => {
+              e.stopPropagation();
+              onOpenChecklist(checklist.id);
+            }}>
+              Abrir Checklist
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            {canDelete && (
+              <DropdownMenuItem 
+                className="text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(checklist.id, checklist.title);
+                }}
+              >
+                Excluir
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </TableCell>
+    </TableRow>
   );
 }
