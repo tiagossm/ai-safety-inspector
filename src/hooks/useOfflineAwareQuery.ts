@@ -111,7 +111,8 @@ export function useOfflineAwareQuery<T>(
         if (typeof options.retry === 'function') {
           return options.retry(failureCount, error) as boolean;
         }
-        return options.retry > failureCount;
+        // Fix for the operator '>' error - ensure we return a boolean
+        return failureCount < (typeof options.retry === 'number' ? options.retry : 3);
       }
       
       return failureCount < 3;

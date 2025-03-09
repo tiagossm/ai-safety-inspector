@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { getSyncQueue, clearSyncItem } from './offlineDb';
 import { getValidatedTable, isValidTable } from './tableValidation';
@@ -17,7 +18,7 @@ interface SyncQueueItem {
   timestamp: number;
 }
 
-// Simplified response type without complex generic parameters
+// Simplified response type 
 interface SupabaseResponse {
   error: any | null;
   data?: any;
@@ -31,11 +32,13 @@ async function processInsertOperation(table: string, data: any): Promise<void> {
   console.log(`Processing insert operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  const response = await supabase.from(validatedTable).insert(data) as unknown as SupabaseResponse;
+  // Use `as unknown` before the final type to break the deep instantiation 
+  const response = supabase.from(validatedTable).insert(data) as unknown as Promise<SupabaseResponse>;
+  const result = await response;
   
-  if (response.error) {
-    console.error(`Error in sync insert operation for table ${table}:`, response.error);
-    throw response.error;
+  if (result.error) {
+    console.error(`Error in sync insert operation for table ${table}:`, result.error);
+    throw result.error;
   }
   console.log(`Successfully inserted data into ${table}`);
 }
@@ -44,11 +47,13 @@ async function processUpdateOperation(table: string, data: any): Promise<void> {
   console.log(`Processing update operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  const response = await supabase.from(validatedTable).update(data).eq('id', data.id) as unknown as SupabaseResponse;
+  // Use `as unknown` before the final type to break the deep instantiation
+  const response = supabase.from(validatedTable).update(data).eq('id', data.id) as unknown as Promise<SupabaseResponse>;
+  const result = await response;
   
-  if (response.error) {
-    console.error(`Error in sync update operation for table ${table}:`, response.error);
-    throw response.error;
+  if (result.error) {
+    console.error(`Error in sync update operation for table ${table}:`, result.error);
+    throw result.error;
   }
   console.log(`Successfully updated data in ${table}`);
 }
@@ -57,11 +62,13 @@ async function processDeleteOperation(table: string, data: any): Promise<void> {
   console.log(`Processing delete operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  const response = await supabase.from(validatedTable).delete().eq('id', data.id) as unknown as SupabaseResponse;
+  // Use `as unknown` before the final type to break the deep instantiation
+  const response = supabase.from(validatedTable).delete().eq('id', data.id) as unknown as Promise<SupabaseResponse>;
+  const result = await response;
   
-  if (response.error) {
-    console.error(`Error in sync delete operation for table ${table}:`, response.error);
-    throw response.error;
+  if (result.error) {
+    console.error(`Error in sync delete operation for table ${table}:`, result.error);
+    throw result.error;
   }
   console.log(`Successfully deleted data from ${table}`);
 }
