@@ -23,8 +23,8 @@ async function processInsertOperation(table: string, data: any): Promise<void> {
   console.log(`Processing insert operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  // Store the complete response object first
-  const response = await supabase.from(validatedTable).insert(data);
+  // Use type assertion to avoid complex type inference
+  const response = await supabase.from(validatedTable).insert(data) as any;
   
   // Then check for errors
   if (response.error) {
@@ -38,11 +38,11 @@ async function processUpdateOperation(table: string, data: any): Promise<void> {
   console.log(`Processing update operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  // Store the complete response object first without type inference
+  // Use type assertion to avoid complex type inference
   const response = await supabase
     .from(validatedTable)
     .update(data)
-    .eq('id', data.id);
+    .eq('id', data.id) as any;
   
   // Then check for errors
   if (response.error) {
@@ -56,11 +56,11 @@ async function processDeleteOperation(table: string, data: any): Promise<void> {
   console.log(`Processing delete operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  // Store the complete response object first without type inference
+  // Use type assertion to avoid complex type inference
   const response = await supabase
     .from(validatedTable)
     .delete()
-    .eq('id', data.id);
+    .eq('id', data.id) as any;
   
   // Then check for errors
   if (response.error) {
