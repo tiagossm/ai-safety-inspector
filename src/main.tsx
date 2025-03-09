@@ -8,9 +8,9 @@ import { initOfflineDb } from './services/offlineDb';
 import { toast } from 'sonner';
 
 // Error reporting function for unhandled errors
-const reportError = (error: Error, info: { componentStack: string }) => {
+const reportError = (error: Error, info: React.ErrorInfo) => {
   console.error("Unhandled application error:", error);
-  console.error("Component stack:", info.componentStack);
+  console.error("Component stack:", info.componentStack || "No component stack available");
   toast.error("Ocorreu um erro inesperado", {
     description: error.message || "Tente recarregar a página",
     duration: 6000

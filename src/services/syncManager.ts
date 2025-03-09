@@ -1,4 +1,3 @@
-
 import { SupabaseClient } from "@supabase/supabase-js";
 import { toast } from "sonner";
 
@@ -75,13 +74,20 @@ export class SyncManager {
       throw error;
     }
 
-    if (!data || data.length === 0 || !data[0].id) {
-      console.error(`No data or ID returned from ${table} insert operation`);
-      throw new Error(`Failed to insert into ${table}: No data or ID returned`);
+    if (!data || data.length === 0) {
+      console.error(`No data returned from ${table} insert operation`);
+      throw new Error(`Failed to insert into ${table}: No data returned`);
     }
 
-    console.log(`Successfully inserted record into ${table} with ID:`, data[0].id);
-    return data[0];
+    // Check if the first item in data has an id
+    const firstItem = data[0];
+    if (!firstItem || !('id' in firstItem)) {
+      console.error(`Created ${table} record is missing ID:`, firstItem);
+      throw new Error(`Failed to insert into ${table}: ID not generated`);
+    }
+
+    console.log(`Successfully inserted record into ${table} with ID:`, firstItem.id);
+    return firstItem;
   }
 
   private async handleUpdate(table: string, record: any) {
