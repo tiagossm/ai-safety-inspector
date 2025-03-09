@@ -51,12 +51,17 @@ export function ProtectedRoute({
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Verificação das permissões com base no tier do usuário
-  if (typedUser.tier && !requiredTier.includes(typedUser.tier)) {
+  // Normaliza o valor de tier para comparação (tudo em minúsculas)
+  const normalizedTier: UserTier =
+    typedUser.tier?.toLowerCase() as UserTier || "technician";
+
+  // Verificação das permissões com base no tier do usuário (comparação case-insensitive)
+  const normalizedRequired = requiredTier.map(t => t.toLowerCase());
+  if (!normalizedRequired.includes(normalizedTier)) {
     devLog(
-      `🚫 Acesso negado: usuário com tier ${typedUser.tier} tentando acessar rota que requer [${requiredTier.join(", ")}]`
+      `🚫 Acesso negado: usuário com tier ${normalizedTier} tentando acessar rota que requer [${requiredTier.join(", ")}]`
     );
-    const redirectPath = typedUser.tier === "super_admin" ? "/admin/dashboard" : "/dashboard";
+    const redirectPath = normalizedTier === "super_admin" ? "/admin/dashboard" : "/dashboard";
     devLog(`🔄 Redirecionando para ${redirectPath}`);
     return <Navigate to={redirectPath} replace />;
   }
