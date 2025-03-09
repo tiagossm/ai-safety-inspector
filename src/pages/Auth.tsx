@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -5,12 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [resetPasswordMode, setResetPasswordMode] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -21,7 +24,20 @@ const Auth = () => {
     try {
       console.log("🔍 Tentando autenticar com:", { email, isSignUp });
       
-      if (isSignUp) {
+      if (resetPasswordMode) {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin + "/reset-password",
+        });
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Email enviado",
+          description: "Verifique seu email para redefinir sua senha.",
+        });
+        
+        setResetPasswordMode(false);
+      } else if (isSignUp) {
         const { error } = await supabase.auth.signUp({
           email,
           password,
@@ -75,7 +91,11 @@ const Auth = () => {
         {/* Título */}
         <div className="flex flex-col items-center">
           <h2 className="text-center text-4xl font-extrabold text-white">
-            {isSignUp ? "Criar nova conta" : "Entrar na plataforma"}
+            {resetPasswordMode 
+              ? "Recuperar senha" 
+              : isSignUp 
+                ? "Criar nova conta" 
+                : "Entrar na plataforma"}
           </h2>
         </div>
 
@@ -91,20 +111,25 @@ const Auth = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 className="bg-gray-800 border-gray-700 text-white"
                 placeholder="seu@email.com"
+                disabled={loading}
               />
             </div>
-            <div>
-              <Label htmlFor="password" className="text-white">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="bg-gray-800 border-gray-700 text-white"
-                placeholder="••••••••"
-              />
-            </div>
+            
+            {!resetPasswordMode && (
+              <div>
+                <Label htmlFor="password" className="text-white">Senha</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  required={!resetPasswordMode}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="bg-gray-800 border-gray-700 text-white"
+                  placeholder="••••••••"
+                  disabled={loading}
+                />
+              </div>
+            )}
           </div>
 
           <div>
@@ -113,62 +138,62 @@ const Auth = () => {
               className="w-full"
               disabled={loading}
             >
-              {loading ? "Carregando..." : isSignUp ? "Cadastrar" : "Entrar"}
+              {loading ? (
+                <span className="flex items-center justify-center">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Carregando...
+                </span>
+              ) : resetPasswordMode 
+                ? "Enviar email de recuperação" 
+                : isSignUp 
+                  ? "Cadastrar" 
+                  : "Entrar"}
             </Button>
           </div>
 
           {/* Linha com checkbox e link de recuperação, alinhados horizontalmente */}
-          <div className="flex items-center justify-between text-sm text-white">
-            <label className="flex items-center">
-              <input type="checkbox" className="mr-2" />
-              Lembrar-me
-            </label>
-            <button
-              type="button"
-              onClick={async () => {
-                if (!email) {
-                  toast({
-                    title: "Atenção",
-                    description: "Por favor, informe seu e-mail para recuperar a senha.",
-                    variant: "destructive",
-                  });
-                  return;
-                }
-                try {
-                  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                    redirectTo: "https://seu-dominio.com/reset-password",
-                  });
-                  if (error) throw error;
-                  toast({
-                    title: "Recuperação de senha",
-                    description: "E-mail de recuperação enviado com sucesso!",
-                  });
-                } catch (err: any) {
-                  toast({
-                    title: "Erro",
-                    description: err.message,
-                    variant: "destructive",
-                  });
-                }
-              }}
-              className="text-blue-400 hover:underline"
-              disabled={loading}
-            >
-              Esqueci minha senha
-            </button>
-          </div>
+          {!resetPasswordMode && (
+            <div className="flex items-center justify-between text-sm text-white">
+              <label className="flex items-center">
+                <input type="checkbox" className="mr-2" />
+                Lembrar-me
+              </label>
+              <button
+                type="button"
+                onClick={() => setResetPasswordMode(true)}
+                className="text-blue-400 hover:underline"
+                disabled={loading}
+              >
+                Esqueci minha senha
+              </button>
+            </div>
+          )}
 
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-primary hover:text-primary/80"
-            >
-              {isSignUp
-                ? "Já tem uma conta? Entre aqui"
-                : "Não tem uma conta? Cadastre-se"}
-            </button>
-          </div>
+          {resetPasswordMode && (
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setResetPasswordMode(false)}
+                className="text-blue-400 hover:underline"
+              >
+                Voltar ao login
+              </button>
+            </div>
+          )}
+
+          {!resetPasswordMode && (
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="text-primary hover:text-primary/80"
+              >
+                {isSignUp
+                  ? "Já tem uma conta? Entre aqui"
+                  : "Não tem uma conta? Cadastre-se"}
+              </button>
+            </div>
+          )}
         </form>
       </div>
     </div>

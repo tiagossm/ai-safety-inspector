@@ -1,5 +1,6 @@
+
 import { createContext, useContext, useEffect, useState } from "react";
-import { useNavigate, Navigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AuthUser } from "@/hooks/auth/useAuthState";
@@ -10,7 +11,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType>({
+export const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   logout: async () => {}
@@ -28,17 +29,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Função para buscar dados completos do usuário
   async function fetchExtendedUser(userId: string): Promise<AuthUser | null> {
-    const { data, error } = await supabase
-      .from("users")
-      .select("id, company_id, name, role, tier")
-      .eq("id", userId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("id, company_id, name, role, tier")
+        .eq("id", userId)
+        .single();
 
-    if (error) {
-      console.error("Erro ao buscar detalhes do usuário:", error);
+      if (error) {
+        console.error("Erro ao buscar detalhes do usuário:", error);
+        return null;
+      }
+      return data;
+    } catch (err) {
+      console.error("Erro ao buscar dados do usuário:", err);
       return null;
     }
-    return data;
   }
 
   // Verifica a sessão ao montar o componente
@@ -46,6 +52,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const initializeAuth = async () => {
       console.log("🔄 Iniciando verificação de sessão...");
       try {
+        setLoading(true);
         const { data, error } = await supabase.auth.getSession();
         if (error) throw error;
 
@@ -88,8 +95,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log(`🔄 Estado de autenticação alterado: ${event}`);
+      
+      if (event === 'SIGNED_OUT') {
+        setUser(null);
+        localStorage.removeItem("authUser");
+        setLoading(false);
+        return;
+      }
+      
       if (session?.user) {
         try {
+          setLoading(true);
           const userData = await fetchExtendedUser(session.user.id);
           const normalizedRole = userData && userData.role
             ? userData.role.toLowerCase() === 'administrador'
@@ -111,14 +127,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           localStorage.setItem("authUser", JSON.stringify(enhancedUser));
         } catch (err) {
           console.error("❌ Error fetching user data:", err);
-          setUser(session.user as AuthUser);
-          localStorage.setItem("authUser", JSON.stringify(session.user));
+          // Fallback para dados básicos se não conseguir buscar os dados estendidos
+          const basicUser: AuthUser = {
+            ...session.user,
+            role: 'user',
+            tier: 'technician'
+          };
+          setUser(basicUser);
+          localStorage.setItem("authUser", JSON.stringify(basicUser));
+        } finally {
+          setLoading(false);
         }
       } else {
-        setUser(null);
-        localStorage.removeItem("authUser");
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => {
@@ -128,15 +150,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Função de logout
   const logout = async () => {
-    await supabase.auth.signOut();
-    localStorage.removeItem("authUser");
-    setUser(null);
-    navigate("/auth");
+    setLoading(true);
+    try {
+      await supabase.auth.signOut();
+      localStorage.removeItem("authUser");
+      setUser(null);
+      navigate("/auth");
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+      toast.error("Erro ao fazer logout");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <AuthContext.Provider value={{ user, loading, logout }}>
-      {loading ? <div>Carregando...</div> : children}
+      {children}
     </AuthContext.Provider>
   );
 };

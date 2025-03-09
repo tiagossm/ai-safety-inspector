@@ -1,5 +1,7 @@
+
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "./AuthProvider";
+import { useContext } from "react";
+import { AuthContext } from "./AuthProvider";
 import { AuthUser } from "@/hooks/auth/useAuthState";
 
 export type UserTier = "super_admin" | "company_admin" | "consultant" | "technician";
@@ -13,7 +15,7 @@ export function ProtectedRoute({
   children,
   requiredTier = ["super_admin", "company_admin", "consultant", "technician"]
 }: ProtectedRouteProps) {
-  const { user, loading } = useAuth();
+  const { user, loading } = useContext(AuthContext);
   const location = useLocation();
   const typedUser = user as AuthUser | null;
 

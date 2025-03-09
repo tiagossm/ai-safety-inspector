@@ -34,7 +34,13 @@ export const useNetworkStatus = () => {
   return isOnline;
 };
 
-// Offline-aware query hook
+// Simplify types to avoid complex type issues
+interface QueryResult {
+  data?: any[];
+  error?: any;
+}
+
+// Offline-aware query hook with simplified types
 export const useOfflineAwareQuery = <T>(
   queryKey: QueryKey,
   tableName: string,
@@ -46,23 +52,24 @@ export const useOfflineAwareQuery = <T>(
     queryKey,
     queryFn: async () => {
       try {
-        const result = await offlineSupabase.from(tableName).select();
+        const result = await offlineSupabase.from(tableName).select() as any;
         
-        // Handle both online and offline response formats
-        if (result && typeof result === 'object') {
-          // For offline query handler that implements _getFilteredData method
-          if (result && typeof (result as any)._getFilteredData === 'function') {
-            const queryResult = await (result as any)._getFilteredData();
-            return (queryResult.data || []) as T[];
-          }
-          
-          // For regular Supabase responses
-          if ('data' in result) {
-            return (result.data || []) as T[];
-          }
+        // Handle different response formats
+        if (!result) {
+          return [] as T[];
         }
         
-        // Return empty array as fallback
+        // For offline query handler
+        if (typeof result._getFilteredData === 'function') {
+          const queryResult = await result._getFilteredData() as QueryResult;
+          return (queryResult.data || []) as T[];
+        }
+        
+        // For regular Supabase responses
+        if (result && 'data' in result) {
+          return (result.data || []) as T[];
+        }
+        
         return [] as T[];
       } catch (error) {
         console.error(`Error fetching data from ${tableName}:`, error);
@@ -100,7 +107,7 @@ export const useOfflineAwareMutation = <T>(
             .insert(data);
           break;
         case 'update': {
-          // Get the update operation object first
+          // Get the update operation object
           const updateOperation = offlineSupabase
             .from(tableName)
             .update(data);
@@ -110,7 +117,7 @@ export const useOfflineAwareMutation = <T>(
           break;
         }
         case 'delete': {
-          // Get the delete operation object first
+          // Get the delete operation object
           const deleteOperation = offlineSupabase
             .from(tableName)
             .delete();
