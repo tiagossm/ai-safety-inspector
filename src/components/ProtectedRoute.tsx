@@ -51,7 +51,7 @@ export function ProtectedRoute({
   }
 
   // Verificação de permissão baseada no tier
-  if (typedUser.tier && !requiredTier.includes(typedUser.tier)) {
+  if (typedUser.tier && !requiredTier.includes(typedUser.tier as UserTier)) {
     console.log(
       `🚫 Acesso negado: usuário com tier ${typedUser.tier} tentando acessar rota que requer [${requiredTier.join(
         ", "
