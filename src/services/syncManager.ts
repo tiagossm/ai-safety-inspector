@@ -1,100 +1,163 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { getSyncQueue, clearSyncItem } from './offlineDb';
 import { getValidatedTable, isValidTable } from './tableValidation';
 
-// Tipagem de resposta do Supabase (evita inferência excessiva)
-interface SupabaseResponse {
-  error: Error | null;
-  data?: Record<string, any>;
+// Simple synchronization result type
+interface SyncResult {
+  success: boolean;
+  message?: string;
 }
 
-// Tipagem simplificada para evitar aninhamentos profundos no TypeScript
+// Create dedicated type for items in sync queue
 interface SyncQueueItem {
   id: string;
   table: string;
   operation: 'insert' | 'update' | 'delete';
-  data: Record<string, any>; // Evita inferência excessiva
+  data: any;
   timestamp: number;
 }
 
-// Processamento genérico para operações no banco de dados
-async function processSupabaseOperation(
-  table: string,
-  operation: 'insert' | 'update' | 'delete',
-  data: Record<string, any>
-): Promise<void> {
-  console.log(`🔄 Processando operação ${operation} para tabela: ${table}`);
+// Process each operation type with a dedicated function
+async function processInsertOperation(table: string, data: any): Promise<void> {
+  console.log(`Processing insert operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  let response: SupabaseResponse;
-  if (operation === 'insert') {
-    response = await supabase.from(validatedTable).insert(data) as SupabaseResponse;
-  } else if (operation === 'update') {
-    response = await supabase.from(validatedTable).update(data).eq('id', data.id) as SupabaseResponse;
-  } else {
-    response = await supabase.from(validatedTable).delete().eq('id', data.id) as SupabaseResponse;
-  }
-
+  // Use type assertion to avoid complex type inference
+  const response = await supabase.from(validatedTable).insert(data) as any;
+  
+  // Then check for errors
   if (response.error) {
-    console.error(`❌ Erro na operação ${operation} na tabela ${table}:`, response.error);
+    console.error(`Error in sync insert operation for table ${table}:`, response.error);
     throw response.error;
   }
-  console.log(`✅ ${operation.charAt(0).toUpperCase() + operation.slice(1)} realizado com sucesso em ${table}`);
+  console.log(`Successfully inserted data into ${table}`);
 }
 
-// Função principal de sincronização
+async function processUpdateOperation(table: string, data: any): Promise<void> {
+  console.log(`Processing update operation for table: ${table}`);
+  const validatedTable = getValidatedTable(table);
+  
+  // Use type assertion to avoid complex type inference
+  const response = await supabase
+    .from(validatedTable)
+    .update(data)
+    .eq('id', data.id) as any;
+  
+  // Then check for errors
+  if (response.error) {
+    console.error(`Error in sync update operation for table ${table}:`, response.error);
+    throw response.error;
+  }
+  console.log(`Successfully updated data in ${table}`);
+}
+
+async function processDeleteOperation(table: string, data: any): Promise<void> {
+  console.log(`Processing delete operation for table: ${table}`);
+  const validatedTable = getValidatedTable(table);
+  
+  // Use type assertion to avoid complex type inference
+  const response = await supabase
+    .from(validatedTable)
+    .delete()
+    .eq('id', data.id) as any;
+  
+  // Then check for errors
+  if (response.error) {
+    console.error(`Error in sync delete operation for table ${table}:`, response.error);
+    throw response.error;
+  }
+  console.log(`Successfully deleted data from ${table}`);
+}
+
+// Main sync function 
 export async function syncWithServer(
   syncCallback?: (isSyncing: boolean) => void,
   errorCallback?: (error: Error) => void
-): Promise<{ success: boolean; message?: string }> {
+): Promise<SyncResult> {
   try {
-    syncCallback?.(true);
-    
-    const queue: SyncQueueItem[] = await getSyncQueue();
-    if (queue.length === 0) {
-      syncCallback?.(false);
-      console.log('✅ Nenhum item para sincronizar.');
-      return { success: true, message: "Nada para sincronizar." };
+    if (syncCallback) {
+      syncCallback(true);
     }
-
-    console.log(`🔄 Sincronizando ${queue.length} itens...`);
-
+    
+    const queue = await getSyncQueue() as SyncQueueItem[];
+    
+    if (queue.length === 0) {
+      if (syncCallback) {
+        syncCallback(false);
+      }
+      console.log('No items to sync. Queue is empty.');
+      return { success: true };
+    }
+    
+    console.log(`Syncing ${queue.length} items with server...`);
+    
     let successCount = 0;
     let failureCount = 0;
-
+    
     for (const item of queue) {
       try {
-        if (!isValidTable(item.table)) {
-          console.warn(`⚠️ Tabela inválida detectada: ${item.table}, pulando...`);
+        const { table, operation, data } = item;
+        
+        // Validate table name before using it
+        if (!isValidTable(table)) {
+          console.error(`Invalid table name: ${table}, skipping sync`);
           await clearSyncItem(item.id);
           continue;
         }
-
-        // Processa operação no Supabase
-        await processSupabaseOperation(item.table, item.operation, item.data);
-
-        // Remove item da fila após sincronização bem-sucedida
+        
+        // Process each operation type using the dedicated functions
+        if (operation === 'insert') {
+          await processInsertOperation(table, data);
+        } 
+        else if (operation === 'update') {
+          await processUpdateOperation(table, data);
+        } 
+        else if (operation === 'delete') {
+          await processDeleteOperation(table, data);
+        }
+        else {
+          console.warn(`Unknown operation type: ${operation}, skipping`);
+        }
+        
+        // Clear item from sync queue after successful sync
         await clearSyncItem(item.id);
         successCount++;
-      } catch (error) {
-        console.error(`❌ Falha ao sincronizar item ${item.id}:`, error);
+        console.log(`Successfully synced item ${item.id} (${operation} on ${table})`);
+      } catch (itemError) {
+        console.error(`Failed to sync item ${item.id}:`, itemError);
         failureCount++;
+        // Continue with next item
       }
     }
-
+    
+    // Check if there are any remaining items in the queue
     const remainingQueue = await getSyncQueue();
-    syncCallback?.(false);
-
-    return {
+    
+    if (syncCallback) {
+      syncCallback(false);
+    }
+    
+    return { 
       success: remainingQueue.length === 0,
-      message: remainingQueue.length === 0
-        ? `✅ Todos os ${successCount} itens sincronizados com sucesso`
-        : `✅ ${successCount} itens sincronizados, ❌ ${failureCount} falhas`
+      message: remainingQueue.length === 0 
+        ? `All ${successCount} items synced successfully` 
+        : `${successCount} items synced, ${failureCount} items failed to sync`
     };
   } catch (error) {
-    console.error('❌ Falha geral na sincronização:', error);
-    errorCallback?.(error as Error);
-    syncCallback?.(false);
-    return { success: false, message: "Erro desconhecido ao sincronizar." };
+    console.error('Sync failed:', error);
+    
+    if (errorCallback && error instanceof Error) {
+      errorCallback(error);
+    }
+    
+    if (syncCallback) {
+      syncCallback(false);
+    }
+    
+    return { 
+      success: false,
+      message: error instanceof Error ? error.message : "Unknown error during sync"
+    };
   }
 }
