@@ -18,26 +18,17 @@ interface SyncQueueItem {
   timestamp: number;
 }
 
-// Simplified response type without recursive references
-interface SupabaseResponse {
-  error: any | null;
-  data?: any;
-  status?: number;
-  statusText?: string;
-  count?: number;
-}
-
 // Process each operation type with a dedicated function
 async function processInsertOperation(table: string, data: any): Promise<void> {
   console.log(`Processing insert operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  // Avoid complex type chains by using Promise<any>
-  const response = await supabase.from(validatedTable).insert(data);
+  // Use a more direct approach without complex type chains
+  const { error } = await supabase.from(validatedTable).insert(data);
   
-  if (response.error) {
-    console.error(`Error in sync insert operation for table ${table}:`, response.error);
-    throw response.error;
+  if (error) {
+    console.error(`Error in sync insert operation for table ${table}:`, error);
+    throw error;
   }
   console.log(`Successfully inserted data into ${table}`);
 }
@@ -46,12 +37,12 @@ async function processUpdateOperation(table: string, data: any): Promise<void> {
   console.log(`Processing update operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  // Avoid complex type chains by using Promise<any>
-  const response = await supabase.from(validatedTable).update(data).eq('id', data.id);
+  // Use a more direct approach without complex type chains
+  const { error } = await supabase.from(validatedTable).update(data).eq('id', data.id);
   
-  if (response.error) {
-    console.error(`Error in sync update operation for table ${table}:`, response.error);
-    throw response.error;
+  if (error) {
+    console.error(`Error in sync update operation for table ${table}:`, error);
+    throw error;
   }
   console.log(`Successfully updated data in ${table}`);
 }
@@ -60,12 +51,12 @@ async function processDeleteOperation(table: string, data: any): Promise<void> {
   console.log(`Processing delete operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  // Avoid complex type chains by using Promise<any>
-  const response = await supabase.from(validatedTable).delete().eq('id', data.id);
+  // Use a more direct approach without complex type chains
+  const { error } = await supabase.from(validatedTable).delete().eq('id', data.id);
   
-  if (response.error) {
-    console.error(`Error in sync delete operation for table ${table}:`, response.error);
-    throw response.error;
+  if (error) {
+    console.error(`Error in sync delete operation for table ${table}:`, error);
+    throw error;
   }
   console.log(`Successfully deleted data from ${table}`);
 }
