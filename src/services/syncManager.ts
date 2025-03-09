@@ -24,11 +24,11 @@ async function processInsertOperation(table: string, data: any): Promise<void> {
   const validatedTable = getValidatedTable(table);
   
   // Use explicit destructuring and avoid complex type chains
-  const { error } = await supabase.from(validatedTable).insert(data);
+  const response = await supabase.from(validatedTable).insert(data);
   
-  if (error) {
-    console.error(`Error in sync insert operation for table ${table}:`, error);
-    throw error;
+  if (response.error) {
+    console.error(`Error in sync insert operation for table ${table}:`, response.error);
+    throw response.error;
   }
   console.log(`Successfully inserted data into ${table}`);
 }
@@ -37,13 +37,12 @@ async function processUpdateOperation(table: string, data: any): Promise<void> {
   console.log(`Processing update operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  // Use explicit destructuring and avoid complex type chains
-  const result = await supabase.from(validatedTable).update(data).eq('id', data.id);
-  const error = result.error;
+  // Avoid complex type chains by using a simple approach
+  const response = await supabase.from(validatedTable).update(data).eq('id', data.id);
   
-  if (error) {
-    console.error(`Error in sync update operation for table ${table}:`, error);
-    throw error;
+  if (response.error) {
+    console.error(`Error in sync update operation for table ${table}:`, response.error);
+    throw response.error;
   }
   console.log(`Successfully updated data in ${table}`);
 }
@@ -52,13 +51,12 @@ async function processDeleteOperation(table: string, data: any): Promise<void> {
   console.log(`Processing delete operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  // Use explicit destructuring and avoid complex type chains
-  const result = await supabase.from(validatedTable).delete().eq('id', data.id);
-  const error = result.error;
+  // Avoid complex type chains by using a simple approach
+  const response = await supabase.from(validatedTable).delete().eq('id', data.id);
   
-  if (error) {
-    console.error(`Error in sync delete operation for table ${table}:`, error);
-    throw error;
+  if (response.error) {
+    console.error(`Error in sync delete operation for table ${table}:`, response.error);
+    throw response.error;
   }
   console.log(`Successfully deleted data from ${table}`);
 }
