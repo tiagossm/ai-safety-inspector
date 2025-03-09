@@ -16,10 +16,46 @@ serve(async (req) => {
   try {
     console.log("Starting process-checklist-csv function");
     
+    // Create Supabase client with anon key
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error("Missing Supabase environment variables");
+    }
+    
+    // Extract JWT from Authorization header
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Missing authentication" }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
+    
+    // Create authenticated client with user's JWT
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      supabaseUrl,
+      supabaseServiceKey,
+      {
+        global: {
+          headers: { Authorization: authHeader }
+        }
+      }
     );
+    
+    // Verify the user is authenticated
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    
+    if (authError || !user) {
+      console.error("Authentication error:", authError);
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid authentication" }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      );
+    }
+    
+    console.log("User authenticated:", user.id);
 
     // Parse form data with file
     const formData = await req.formData();
@@ -38,6 +74,12 @@ serve(async (req) => {
     // Parse form data
     const form = JSON.parse(formJson || '{}') as ChecklistFormData;
     console.log("Parsed form data:", form);
+    
+    // Add the authenticated user ID to the form data if not present
+    if (!form.user_id) {
+      form.user_id = user.id;
+      console.log("Added user_id to form:", form.user_id);
+    }
     
     // Get file content
     const text = await file.text();

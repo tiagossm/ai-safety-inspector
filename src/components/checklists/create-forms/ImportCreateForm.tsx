@@ -51,16 +51,20 @@ export function ImportCreateForm({
   
   return (
     <div className="space-y-6">
-      <Alert className="bg-blue-50 border-blue-200">
+      <Alert variant="default" className="bg-blue-50 border-blue-200">
         <AlertTriangle className="h-4 w-4" />
         <AlertTitle>Informações para importação</AlertTitle>
         <AlertDescription>
           <p className="mb-2">Para importar corretamente, o arquivo deve conter as seguintes colunas:</p>
           <ul className="list-disc pl-5 space-y-1">
             <li>Pergunta (obrigatória)</li>
-            <li>Tipo de Resposta (sim/não, numérico, texto, foto, audio_recording, file_upload, assinatura, seleção múltipla)</li>
+            <li>Tipo de Resposta (text, text_area, yes_no, file_upload, checklist_item_select, parts_select, services_select, date)</li>
             <li>Obrigatório (sim/não)</li>
-            <li>Opções (apenas para tipo "seleção múltipla", separadas por vírgula)</li>
+            <li>Ordem (número)</li>
+            <li>Opções (apenas para tipos "select", separadas por vírgula)</li>
+            <li>Permite Áudio (sim/não)</li>
+            <li>Permite Vídeo (sim/não)</li>
+            <li>Permite Foto (sim/não)</li>
           </ul>
           <div className="mt-3">
             <Button 

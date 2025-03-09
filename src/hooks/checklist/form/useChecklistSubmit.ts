@@ -85,6 +85,16 @@ export function useChecklistSubmit() {
         success = await submitManualChecklist(form, questions);
         // Note: Navigation is handled inside submitManualChecklist
       } else if (activeTab === "import" && file) {
+        // Get current session JWT for authentication
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData?.session?.access_token) {
+          toast.error("Você precisa estar autenticado para importar um checklist");
+          setIsSubmitting(false);
+          return false;
+        }
+        
+        console.log("User authenticated, proceeding with import");
+        
         const importResult = await importFromFile(file, form);
         
         // Check if importResult exists and has the expected structure

@@ -54,12 +54,15 @@ export function useChecklistImport() {
       console.log("Calling Edge Function to process CSV");
       
       // Get the current session JWT
-      const { data: sessionData } = await supabase.auth.getSession();
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       const jwt = sessionData?.session?.access_token;
       
-      if (!jwt) {
+      if (sessionError || !jwt) {
+        console.error("Session error:", sessionError);
         throw new Error("Você precisa estar autenticado para importar um checklist");
       }
+      
+      console.log("Authentication token acquired, proceeding with request");
       
       // Call the edge function to process the file
       const response = await fetch(
@@ -76,6 +79,12 @@ export function useChecklistImport() {
       if (!response.ok) {
         console.error("Edge function returned error status:", response.status);
         const errorText = await response.text();
+        console.error("Error response:", errorText);
+        
+        if (response.status === 401) {
+          throw new Error("Erro de autenticação. Por favor, faça login novamente.");
+        }
+        
         throw new Error(`Erro na importação (${response.status}): ${errorText}`);
       }
       
