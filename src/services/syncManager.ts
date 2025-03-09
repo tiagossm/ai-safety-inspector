@@ -164,6 +164,7 @@ export async function syncWithServer(
                 .select();
                 
               if (error) throw error;
+              
               // Type-safe check for data and id property
               if (data && data.length > 0 && 'id' in data[0]) {
                 console.log(`Inserted record into ${op.table}:`, data[0].id);

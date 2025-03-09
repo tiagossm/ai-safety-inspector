@@ -4,56 +4,71 @@ import { supabase } from "@/integrations/supabase/client";
 import { Checklist } from "@/types/checklist";
 import { generateMockCollaborators } from "@/utils/checklistUtils";
 import { toast } from "sonner";
+import { useAuth } from "@/components/AuthProvider";
+import { AuthUser } from "@/hooks/auth/useAuthState";
 
 export function useFetchChecklists() {
+  const { user } = useAuth();
+  const typedUser = user as AuthUser | null;
+  
   return useQuery<Checklist[], Error>({
     queryKey: ["checklists"],
     queryFn: async () => {
       console.log("🔍 Buscando checklists...");
 
       try {
-        // Get the authenticated user
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        if (authError) {
-          console.error("❌ Erro de autenticação:", authError);
-          throw new Error("Erro de autenticação: " + authError.message);
-        }
-        
-        if (!user) {
+        // Se não há usuário autenticado, não podemos buscar checklists
+        if (!typedUser || !typedUser.id) {
           console.error("❌ Usuário não autenticado");
           throw new Error("Usuário não autenticado");
         }
 
-        console.log("✅ Usuário autenticado:", user.id);
+        console.log("✅ Usuário autenticado:", typedUser.id);
+        console.log("👤 Tipo de usuário:", typedUser.tier);
 
-        // Fetch the user's company ID
-        const { data: userData, error: userError } = await supabase
-          .from("users")
-          .select("company_id")
-          .eq("id", user.id)
-          .single();
+        // Determina se o usuário é super_admin
+        const isSuperAdmin = typedUser.tier === "super_admin";
+        console.log("🔑 É super_admin?", isSuperAdmin);
 
-        if (userError) {
-          console.error("❌ Erro ao buscar dados do usuário:", userError);
-          // Not throwing here as we can still try to get checklists by user_id
+        // Buscar dados da empresa do usuário se não for super_admin
+        let company_id = null;
+        if (!isSuperAdmin) {
+          const { data: userData, error: userError } = await supabase
+            .from("users")
+            .select("company_id")
+            .eq("id", typedUser.id)
+            .single();
+
+          if (userError) {
+            console.error("❌ Erro ao buscar dados do usuário:", userError);
+            // Não lançamos erro para continuar e tentar buscar por user_id
+          } else {
+            company_id = userData?.company_id;
+            console.log("✅ ID da empresa do usuário:", company_id);
+          }
         }
 
-        const company_id = userError ? null : userData?.company_id;
-        console.log("✅ ID da empresa do usuário:", company_id);
-
-        // Build the query to fetch checklists
+        // Constrói a query base para buscar checklists
         let query = supabase
           .from("checklists")
           .select("*");
 
-        // Filter by user_id to see all checklists created by this user
-        query = query.eq("user_id", user.id);
-
-        // If we have company_id, add it as an additional filter, not a substitute
-        if (company_id) {
-          console.log("✅ Filtrando também por company_id:", company_id);
+        // Super_admin vê todos os checklists, outros usuários veem apenas os próprios ou da empresa
+        if (!isSuperAdmin) {
+          if (company_id) {
+            // Buscar checklists da empresa do usuário ou criados pelo próprio usuário
+            query = query.or(`user_id.eq.${typedUser.id},company_id.eq.${company_id}`);
+            console.log("✅ Buscando checklists da empresa ou do usuário");
+          } else {
+            // Se não tem company_id, busca apenas checklists criados pelo usuário
+            query = query.eq("user_id", typedUser.id);
+            console.log("✅ Buscando apenas checklists do usuário");
+          }
+        } else {
+          console.log("✅ Super_admin: buscando TODOS os checklists");
         }
 
+        // Execute a query
         const { data: checklists, error } = await query.order("created_at", { ascending: false });
 
         if (error) {
@@ -63,7 +78,7 @@ export function useFetchChecklists() {
 
         console.log("✅ Checklists recebidos do Supabase:", checklists?.length || 0);
 
-        // Verify each checklist has an ID
+        // Verifica cada checklist
         if (checklists) {
           for (const checklist of checklists) {
             if (!checklist.id) {
@@ -72,18 +87,17 @@ export function useFetchChecklists() {
           }
         }
 
-        // If no checklists, return empty array
+        // Se não há checklists, retorna array vazio
         if (!checklists || checklists.length === 0) {
           console.log("❓ Nenhum checklist encontrado para o usuário");
           return [];
         }
 
-        // Get IDs of responsible users
+        // Buscar os nomes dos responsáveis
+        let usersMap: Record<string, string> = {};
         const responsibleIds = checklists
           .filter((c: any) => c.responsible_id)
           .map((c: any) => c.responsible_id);
-
-        let usersMap: Record<string, string> = {};
 
         if (responsibleIds.length > 0) {
           try {
@@ -103,7 +117,7 @@ export function useFetchChecklists() {
           }
         }
 
-        // Add information to checklists
+        // Adiciona informações complementares aos checklists
         const checklistsWithItems = await Promise.all(
           checklists.map(async (checklist: any) => {
             try {
@@ -114,7 +128,7 @@ export function useFetchChecklists() {
 
               if (itemsError) throw itemsError;
 
-              // Enrich the checklist with new fields
+              // Enriquece o checklist com novos campos
               const enrichedChecklist: Checklist = {
                 ...checklist,
                 items: count || 0,
@@ -156,7 +170,6 @@ export function useFetchChecklists() {
         throw error;
       }
     },
-    // Reduce staleTime to force more frequent reloading
     staleTime: 30000, // 30 seconds
     refetchOnWindowFocus: true,
     retry: 2, // Retry failed requests twice

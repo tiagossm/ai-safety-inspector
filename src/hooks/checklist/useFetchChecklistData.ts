@@ -13,6 +13,7 @@ export function useFetchChecklistData(id: string) {
         throw new Error("Checklist ID is required");
       }
       
+      // Garantir que o ID seja tratado como UUID
       const { data: checklistData, error } = await supabase
         .from("checklists")
         .select("*")
@@ -26,10 +27,10 @@ export function useFetchChecklistData(id: string) {
 
       console.log("Raw checklist data:", checklistData);
 
-      // Fetch responsible user name if there's an ID
+      // Buscar o nome do responsável se houver um ID
       let responsibleName = null;
       
-      // Access responsible_id safely with type assertion
+      // Acessa responsible_id com segurança
       const rawData = checklistData as any;
       const responsibleId = rawData.responsible_id || null;
       
@@ -45,7 +46,7 @@ export function useFetchChecklistData(id: string) {
         }
       }
 
-      // Ensure we return a correctly typed Checklist object
+      // Garantir que retornamos um objeto Checklist corretamente tipado
       return {
         id: checklistData.id,
         title: checklistData.title,
@@ -57,18 +58,18 @@ export function useFetchChecklistData(id: string) {
         user_id: checklistData.user_id,
         company_id: checklistData.company_id,
         status: checklistData.status,
-        // Access category safely with type assertion
+        // Acessa category com segurança
         category: (rawData.category !== undefined) ? rawData.category : undefined,
         responsible_id: responsibleId,
         responsible_name: responsibleName
       } as Checklist;
     },
     enabled: !!id,
-    // Add caching and retry configuration
-    staleTime: 5 * 60 * 1000, // 5 minutes cache
-    gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
+    // Adiciona configuração de cache e tentativas
+    staleTime: 5 * 60 * 1000, // 5 minutos de cache
+    gcTime: 10 * 60 * 1000, // 10 minutos de coleta de lixo
     retry: (failureCount, error) => {
-      // Retry 3 times with exponential backoff for network errors
+      // Tentar 3 vezes com backoff exponencial para erros de rede
       if (failureCount < 3) {
         console.log(`Retry attempt ${failureCount + 1} for checklist query`);
         return true;
