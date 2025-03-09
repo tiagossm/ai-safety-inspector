@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback } from 'react';
 import { useQuery, UseQueryOptions, QueryKey, UseQueryResult } from '@tanstack/react-query';
 import { getOfflineData, isOfflineStore } from '@/services/offlineSync';
@@ -62,7 +63,7 @@ export function useOfflineAwareQuery<T>(
   queryKey: QueryKey,
   queryFn: QueryFn<T>,
   tableName: string | null = null,
-  options?: UseQueryOptions<T, Error, T, QueryKey>
+  options?: Omit<UseQueryOptions<T, Error, T, QueryKey>, 'queryKey' | 'queryFn'>
 ): OfflineQueryResult<T> {
   const [offlineData, setOfflineData] = useState<T | undefined>(undefined);
   const [isOffline, setIsOffline] = useState(false);
@@ -96,7 +97,7 @@ export function useOfflineAwareQuery<T>(
       ...options?.meta,
       fallbackToOffline: !!tableName
     },
-    retry: (failureCount, error) => {
+    retry: (failureCount: number, error: Error): boolean => {
       // On network errors, don't retry if we can fall back to offline data
       if (tableName && (error.message.includes('network') || !navigator.onLine)) {
         console.log('Network error detected, falling back to offline data');
@@ -107,9 +108,10 @@ export function useOfflineAwareQuery<T>(
       
       // Otherwise use the retry configuration from options or default
       if (options?.retry !== undefined) {
-        return typeof options.retry === 'function' 
-          ? options.retry(failureCount, error) 
-          : options.retry;
+        if (typeof options.retry === 'function') {
+          return options.retry(failureCount, error) as boolean;
+        }
+        return options.retry > failureCount;
       }
       
       return failureCount < 3;

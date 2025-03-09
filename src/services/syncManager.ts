@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { getSyncQueue, clearSyncItem } from './offlineDb';
 import { getValidatedTable, isValidTable } from './tableValidation';
@@ -19,7 +18,7 @@ interface SyncQueueItem {
 }
 
 // Simplified response type without complex generic parameters
-type SupabaseResponse = {
+interface SupabaseResponse {
   error: any | null;
   data?: any;
   status?: number;
@@ -32,8 +31,7 @@ async function processInsertOperation(table: string, data: any): Promise<void> {
   console.log(`Processing insert operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  // Double type assertion to avoid infinite type instantiation
-  const response = await supabase.from(validatedTable).insert(data) as any as SupabaseResponse;
+  const response = await supabase.from(validatedTable).insert(data) as unknown as SupabaseResponse;
   
   if (response.error) {
     console.error(`Error in sync insert operation for table ${table}:`, response.error);
@@ -46,8 +44,7 @@ async function processUpdateOperation(table: string, data: any): Promise<void> {
   console.log(`Processing update operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  // Double type assertion to avoid infinite type instantiation
-  const response = await supabase.from(validatedTable).update(data).eq('id', data.id) as any as SupabaseResponse;
+  const response = await supabase.from(validatedTable).update(data).eq('id', data.id) as unknown as SupabaseResponse;
   
   if (response.error) {
     console.error(`Error in sync update operation for table ${table}:`, response.error);
@@ -60,8 +57,7 @@ async function processDeleteOperation(table: string, data: any): Promise<void> {
   console.log(`Processing delete operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  // Double type assertion to avoid infinite type instantiation
-  const response = await supabase.from(validatedTable).delete().eq('id', data.id) as any as SupabaseResponse;
+  const response = await supabase.from(validatedTable).delete().eq('id', data.id) as unknown as SupabaseResponse;
   
   if (response.error) {
     console.error(`Error in sync delete operation for table ${table}:`, response.error);

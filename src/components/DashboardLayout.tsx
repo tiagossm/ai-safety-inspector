@@ -105,7 +105,7 @@ function DashboardLayout({
         name: "Painel Administrativo",
         path: "/admin/dashboard",
         roleRequired: "super_admin"
-      }
+      } as MenuItem
     ] : []),
     {
       icon: Building,
