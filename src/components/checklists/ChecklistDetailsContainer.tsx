@@ -1,34 +1,20 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useChecklistEditing } from "@/hooks/checklist/useChecklistEditing";
-import { useUpdateChecklistItem } from "@/hooks/checklist/useUpdateChecklistItem";
-import { useDeleteChecklistItem } from "@/hooks/checklist/useDeleteChecklistItem";
-import { useAddChecklistItem } from "@/hooks/checklist/useAddChecklistItem";
 import ChecklistHeader from "@/components/checklists/ChecklistHeader";
 import ChecklistForm from "@/components/checklists/ChecklistForm";
 import ChecklistItemsList from "@/components/checklists/ChecklistItemsList";
 import AddChecklistItemForm from "@/components/checklists/AddChecklistItemForm";
-import { toast } from "sonner";
-import { Progress } from "@/components/ui/progress";
-
-// Tipos de perguntas disponíveis no checklist
-const questionTypes = [
-  { value: "sim/não", label: "Sim/Não" },
-  { value: "numérico", label: "Resposta Numérica" },
-  { value: "texto", label: "Resposta em Texto" },
-  { value: "foto", label: "Foto" },
-  { value: "assinatura", label: "Assinatura" },
-  { value: "seleção múltipla", label: "Seleção Múltipla" }
-];
+import ChecklistNotFound from "@/components/checklists/ChecklistNotFound";
+import ChecklistLoading from "@/components/checklists/ChecklistLoading";
+import ChecklistProgress from "@/components/checklists/ChecklistProgress";
+import { questionTypes } from "./constants/questionTypes";
+import { useChecklistItemHandlers } from "./hooks/useChecklistItemHandlers";
 
 interface ChecklistDetailsContainerProps {
   checklistId: string;
 }
 
 export default function ChecklistDetailsContainer({ checklistId }: ChecklistDetailsContainerProps) {
-  const navigate = useNavigate();
-  
   const {
     checklist,
     setChecklist,
@@ -36,120 +22,32 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
     setItems,
     users,
     isLoading,
-    error,
     saving,
     handleSave,
     notFound
   } = useChecklistEditing(checklistId);
 
-  const updateItemMutation = useUpdateChecklistItem();
-  const deleteItemMutation = useDeleteChecklistItem();
-  const addItemMutation = useAddChecklistItem(checklistId);
+  const {
+    handleItemChange,
+    handleDeleteItem,
+    handleAddItem
+  } = useChecklistItemHandlers(checklistId, items, setItems);
 
   // Redireciona caso o checklist não seja encontrado
   if (notFound) {
-    return (
-      <div className="py-20 text-center">
-        <h2 className="text-2xl font-bold mb-4">Checklist não encontrado</h2>
-        <p className="text-muted-foreground mb-6">
-          O checklist solicitado não existe ou você não tem permissão para acessá-lo.
-        </p>
-        <button 
-          className="bg-primary text-white px-4 py-2 rounded"
-          onClick={() => navigate("/checklists")}
-        >
-          Voltar para Checklists
-        </button>
-      </div>
-    );
+    return <ChecklistNotFound />;
   }
 
-  // Função para atualizar um item do checklist
-  const handleItemChange = (updatedItem: ChecklistItem) => {
-    setItems((prevItems) =>
-      prevItems.map(item => (item.id === updatedItem.id ? updatedItem : item))
-    );
-
-    updateItemMutation.mutate(updatedItem, {
-      onError: (error) => {
-        console.error("Erro ao atualizar item:", error);
-        toast.error("Falha ao atualizar item.");
-      }
-    });
-  };
-
-  // Função para deletar um item do checklist
-  const handleDeleteItem = (itemId: string) => {
-    deleteItemMutation.mutate(itemId, {
-      onSuccess: () => {
-        setItems((prevItems) => prevItems.filter(item => item.id !== itemId));
-      },
-      onError: (error) => {
-        console.error("Erro ao excluir item:", error);
-        toast.error("Falha ao excluir item.");
-      }
-    });
-  };
-
-  // Função para adicionar um novo item ao checklist
-  const handleAddItem = (newItem: Partial<ChecklistItem>) => {
-    // Ensure opcoes is always an array of strings or null
-    let sanitizedOptions: string[] | null = null;
-    
-    if (newItem.opcoes) {
-      if (Array.isArray(newItem.opcoes)) {
-        sanitizedOptions = newItem.opcoes.map(option => String(option));
-      } else {
-        sanitizedOptions = [String(newItem.opcoes)];
-      }
-    }
-      
-    addItemMutation.mutate({
-      ...newItem,
-      opcoes: sanitizedOptions
-    }, {
-      onSuccess: (data) => {
-        const addedItem: ChecklistItem = {
-          ...data,
-          tipo_resposta: data.tipo_resposta as "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla",
-          opcoes: data.opcoes ? (Array.isArray(data.opcoes) ? data.opcoes.map(String) : [String(data.opcoes)]) : null
-        };
-        
-        setItems((prevItems) => [...prevItems, addedItem]);
-        toast.success("Item adicionado com sucesso.");
-      },
-      onError: (error) => {
-        console.error("Erro ao adicionar item:", error);
-        toast.error("Falha ao adicionar item.");
-      }
-    });
-  };
-
   if (isLoading) {
-    return <div className="py-20 text-center">Carregando...</div>;
+    return <ChecklistLoading />;
   }
 
   if (!checklist) {
-    return (
-      <div className="py-20 text-center">
-        <h2 className="text-2xl font-bold mb-4">Checklist não encontrado</h2>
-        <p className="text-muted-foreground mb-6">
-          O checklist solicitado não existe ou você não tem permissão para acessá-lo.
-        </p>
-        <button 
-          className="bg-primary text-white px-4 py-2 rounded"
-          onClick={() => navigate("/checklists")}
-        >
-          Voltar para Checklists
-        </button>
-      </div>
-    );
+    return <ChecklistNotFound />;
   }
 
-  // Calculate progress or provide defaults
+  // Calculate total items
   const totalItems = items.length;
-  const completedItems = checklist.items_completed || 0;
-  const progressPercentage = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
 
   return (
     <div className="space-y-6">
@@ -167,8 +65,7 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
             setChecklist={setChecklist}
           />
 
-          {/* Barra de progresso para indicar andamento */}
-          <Progress value={progressPercentage} className="mt-2" />
+          <ChecklistProgress checklist={checklist} totalItems={totalItems} />
 
           <ChecklistItemsList
             items={items}
