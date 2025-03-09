@@ -31,10 +31,9 @@ export const CompanyAssistantDialog = ({
   useEffect(() => {
     if (open) {
       onLoad().catch(() => {
-        toast({
-          title: "Erro ao carregar assistentes",
-          description: "Verifique se a chave da API da OpenAI está configurada corretamente.",
-          variant: "destructive"
+        // Using toast.error instead of toast() directly
+        toast.error("Erro ao carregar assistentes", {
+          description: "Verifique se a chave da API da OpenAI está configurada corretamente."
         });
       });
     }

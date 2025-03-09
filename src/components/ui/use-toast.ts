@@ -8,6 +8,8 @@ export const useToast = useToastOriginal;
 // Exporta uma função toast ampliada que também usa o Sonner para mensagens mais visíveis
 export const toast = {
   ...originalToast,
+  // Add default call signature to match original toast function
+  __proto__: originalToast,
   success: (message: string, options?: any) => {
     sonnerToast.success(message, options);
     return originalToast({
