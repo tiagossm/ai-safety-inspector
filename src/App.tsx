@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { ThemeProvider, useTheme } from "./components/ui/ThemeContext";
+import { ThemeProvider } from "./components/ui/ThemeContext";
 import { AuthContext, AuthProvider } from './components/AuthProvider';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
