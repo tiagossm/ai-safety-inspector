@@ -68,4 +68,6 @@ export function ProtectedRoute({
 
   devLog("✅ Acesso permitido à rota:", location.pathname);
   return <>{children}</>;
+  export const useAuth = () => useContext(AuthContext);
+
 }
