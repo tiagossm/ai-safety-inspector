@@ -9,16 +9,6 @@ interface ProtectedRouteProps {
   requiredTier?: UserTier[];
 }
 
-// Componente de loading reutilizável
-const LoadingScreen = () => (
-  <div className="flex items-center justify-center h-screen">
-    <div className="text-center">
-      <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-      <p className="mt-4 text-lg">Verificando permissões...</p>
-    </div>
-  </div>
-);
-
 export function ProtectedRoute({
   children,
   requiredTier = ["super_admin", "company_admin", "consultant", "technician"]
@@ -27,32 +17,41 @@ export function ProtectedRoute({
   const location = useLocation();
   const typedUser = user as AuthUser | null;
 
-  console.log("🔒 ProtectedRoute - Rota:", location.pathname);
+  console.log("🔒 ProtectedRoute - Verificando acesso à rota:", location.pathname);
   console.log("👤 Usuário:", typedUser ? `${typedUser.email} (${typedUser.tier})` : "Não autenticado");
-  console.log("⏳ Carregamento:", loading ? "Carregando" : "Completo");
+  console.log("⏳ Estado de carregamento:", loading ? "Carregando" : "Completo");
 
-  // Enquanto a autenticação estiver carregando, exibe o componente de loading
   if (loading) {
     console.log("⏳ Aguardando carregamento de autenticação...");
-    return <LoadingScreen />;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-lg">Verificando permissões...</p>
+        </div>
+      </div>
+    );
   }
 
-  // Se não houver usuário autenticado, redireciona para a tela de login
+  // Se não houver usuário autenticado, redirecione para a página de login
   if (!typedUser) {
     console.log("🚫 Acesso negado: usuário não autenticado, redirecionando para login");
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  // Verificação das permissões com base no tier
+  // Verificação de permissão baseada no tier
   if (typedUser.tier && !requiredTier.includes(typedUser.tier)) {
     console.log(
-      `🚫 Acesso negado: usuário com tier ${typedUser.tier} tentando acessar rota que requer [${requiredTier.join(", ")}]`
+      `🚫 Acesso negado: usuário com tier ${typedUser.tier} tentando acessar rota que requer [${requiredTier.join(
+        ", "
+      )}]`
     );
+    // Redireciona para o dashboard apropriado com base no tier
     const redirectPath = typedUser.tier === "super_admin" ? "/admin/dashboard" : "/dashboard";
     console.log(`🔄 Redirecionando para ${redirectPath}`);
     return <Navigate to={redirectPath} replace />;
   }
 
-  console.log("✅ Acesso permitido à rota:", location.pathname);
+  console.log("✅ Acesso permitido à rota protegida:", location.pathname);
   return <>{children}</>;
 }
