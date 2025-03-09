@@ -101,6 +101,7 @@ export function useChecklistSubmit() {
           success = false;
         }
       } else if (activeTab === "ai") {
+        // Fixed TypeScript error by properly handling the aiResult type
         const aiResult = await generateAIChecklist(form);
         
         // Check if aiResult exists and has the expected structure
@@ -111,6 +112,7 @@ export function useChecklistSubmit() {
           if ('id' in aiResult) {
             checklistId = aiResult.id as string;
           } else if ('data' in aiResult) {
+            // Use a type assertion to tell TypeScript this is a Record with string keys
             const resultData = aiResult.data as Record<string, any>;
             if (resultData && 'checklist_id' in resultData) {
               checklistId = resultData.checklist_id as string;
