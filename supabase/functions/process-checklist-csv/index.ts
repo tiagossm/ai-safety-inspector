@@ -15,6 +15,8 @@ serve(async (req) => {
   }
 
   try {
+    console.log("Starting process-checklist-csv function");
+    
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -24,6 +26,9 @@ serve(async (req) => {
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const formJson = formData.get('form') as string;
+    
+    console.log("Received file:", file?.name);
+    console.log("Received form data:", formJson);
     
     if (!file) {
       throw new Error('No file uploaded');
@@ -38,6 +43,7 @@ serve(async (req) => {
     
     // Parse form data
     const form = JSON.parse(formJson || '{}');
+    console.log("Parsed form data:", form);
     
     // Get file content
     const text = await file.text();
@@ -51,6 +57,7 @@ serve(async (req) => {
     
     // Try to detect if the file uses semicolon as separator (common in some regions)
     if (text.split(';').length > text.split(',').length) {
+      console.log("Detected semicolon as separator");
       parseOptions.separator = ';';
     }
     
@@ -58,7 +65,7 @@ serve(async (req) => {
     const rows = parse(text, parseOptions);
     
     console.log(`Processing ${rows.length} rows from file: ${file.name}`);
-    console.log('Form data:', form);
+    console.log('Form data for checklist creation:', form);
 
     // Validate the file has the expected format before processing
     if (rows.length === 0) {
@@ -66,6 +73,18 @@ serve(async (req) => {
     }
 
     // Create checklist
+    console.log("Creating new checklist with data:", {
+      title: form.title || file.name.replace(/\.[^/.]+$/, ""),
+      description: form.description || `Importado de ${file.name}`,
+      is_template: form.is_template || false,
+      status_checklist: 'ativo',
+      category: form.category || 'general',
+      responsible_id: form.responsible_id || null,
+      user_id: form.user_id || null,
+      company_id: form.company_id || null,
+      due_date: form.due_date || null
+    });
+    
     const { data: checklist, error: checklistError } = await supabaseClient
       .from('checklists')
       .insert({
@@ -88,6 +107,7 @@ serve(async (req) => {
     }
 
     const checklistId = checklist.id;
+    console.log("Created checklist with ID:", checklistId);
     
     // Process the CSV rows and create checklist items
     let processed = 0;
@@ -99,8 +119,11 @@ serve(async (req) => {
         
         // Skip empty rows
         if (!row.length || row.every(cell => !cell || cell.trim() === '')) {
+          console.log(`Skipping empty row ${i + 1}`);
           continue;
         }
+        
+        console.log(`Processing row ${i + 1}:`, row);
         
         // Expected CSV format: pergunta, tipo_resposta, obrigatorio, opcoes (optional)
         const pergunta = row[0]?.trim() || '';
@@ -136,6 +159,7 @@ serve(async (req) => {
             if (typeof row[3] === 'string') {
               // Split by comma, semicolon, or pipe
               opcoes = row[3].split(/[,;|]/).map(opt => opt.trim()).filter(opt => opt);
+              console.log(`Parsed options for row ${i + 1}:`, opcoes);
             } else {
               opcoes = [String(row[3])];
             }
@@ -146,9 +170,19 @@ serve(async (req) => {
         }
 
         if (!pergunta.trim()) {
+          console.log(`Skipping row ${i + 1} due to empty question`);
           continue; // Skip empty questions
         }
 
+        console.log(`Creating checklist item for row ${i + 1}:`, {
+          checklist_id: checklistId,
+          pergunta,
+          tipo_resposta: tipoResposta,
+          obrigatorio,
+          opcoes,
+          ordem: i + 1
+        });
+        
         // Create checklist item
         const { error: itemError } = await supabaseClient
           .from('checklist_itens')
@@ -167,12 +201,15 @@ serve(async (req) => {
         }
         
         processed++;
+        console.log(`Successfully processed row ${i + 1}`);
       } catch (error) {
         console.error(`Error processing row ${i + 1}:`, error);
         errors.push({ row: i + 1, error: error.message });
       }
     }
 
+    console.log(`Completed processing with ${processed} successful items and ${errors.length} errors`);
+    
     // Return a detailed response with the results
     return new Response(
       JSON.stringify({

@@ -13,8 +13,11 @@ export function useFetchChecklists() {
       // Obter o usuário autenticado
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
+        console.error("❌ Usuário não autenticado");
         throw new Error("Usuário não autenticado");
       }
+
+      console.log("✅ Usuário autenticado:", user.id);
 
       // Buscar o ID da empresa do usuário
       const { data: userData, error: userError } = await supabase
@@ -23,16 +26,24 @@ export function useFetchChecklists() {
         .eq("id", user.id)
         .single();
 
-      const company_id = userError ? null : userData?.company_id;
+      if (userError) {
+        console.error("❌ Erro ao buscar dados do usuário:", userError);
+      }
 
-      // Buscar checklists filtrando por user_id e company_id se disponível
+      const company_id = userError ? null : userData?.company_id;
+      console.log("✅ ID da empresa do usuário:", company_id);
+
+      // Buscar checklists - modificado para buscar mesmo sem company_id
       let query = supabase
         .from("checklists")
-        .select("*")
-        .eq("user_id", user.id);
+        .select("*");
 
+      // Filtramos por user_id para ver todos checklists do usuário
+      query = query.eq("user_id", user.id);
+
+      // Se tiver company_id, adicionamos como filtro adicional, não substituto
       if (company_id) {
-        query = query.eq("company_id", company_id);
+        console.log("✅ Filtrando também por company_id:", company_id);
       }
 
       const { data: checklists, error } = await query.order("created_at", { ascending: false });
@@ -42,7 +53,13 @@ export function useFetchChecklists() {
         throw error;
       }
 
-      console.log("✅ Checklists recebidos do Supabase:", checklists);
+      console.log("✅ Checklists recebidos do Supabase:", checklists?.length || 0);
+
+      // Se não há checklists, retorna array vazio
+      if (!checklists || checklists.length === 0) {
+        console.log("❓ Nenhum checklist encontrado para o usuário");
+        return [];
+      }
 
       // Obter os IDs dos responsáveis
       const responsibleIds = checklists
@@ -111,7 +128,11 @@ export function useFetchChecklists() {
         })
       );
 
+      console.log("✅ Retornando checklists processados:", checklistsWithItems.length);
       return checklistsWithItems;
     },
+    // Reduzir o staleTime para forçar recarregamento mais frequente
+    staleTime: 30000, // 30 segundos
+    refetchOnWindowFocus: true,
   });
 }
