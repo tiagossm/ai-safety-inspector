@@ -87,10 +87,11 @@ export function useChecklistSubmit() {
       } else if (activeTab === "import" && file) {
         const importResult = await importFromFile(file, form);
         
-        // Check if importResult exists and is not just a boolean false
+        // Check if importResult exists and has the expected structure
         if (importResult && typeof importResult === 'object') {
           success = true;
           
+          // Handle different possible response structures
           if ('id' in importResult) {
             checklistId = importResult.id as string;
           } else if ('checklist_id' in importResult) {
@@ -102,14 +103,15 @@ export function useChecklistSubmit() {
       } else if (activeTab === "ai") {
         const aiResult = await generateAIChecklist(form);
         
-        // Check if aiResult exists and is not just a boolean
+        // Check if aiResult exists and has the expected structure
         if (aiResult && typeof aiResult === 'object') {
           success = true;
           
+          // Handle different possible response structures
           if ('id' in aiResult) {
             checklistId = aiResult.id as string;
-          } else if ('checklist_id' in aiResult) {
-            checklistId = aiResult.checklist_id as string;
+          } else if ('data' in aiResult && typeof aiResult.data === 'object' && aiResult.data && 'checklist_id' in aiResult.data) {
+            checklistId = aiResult.data.checklist_id as string;
           }
         } else {
           success = false;

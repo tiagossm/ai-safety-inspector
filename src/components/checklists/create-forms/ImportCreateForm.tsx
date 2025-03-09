@@ -51,7 +51,7 @@ export function ImportCreateForm({
   
   return (
     <div className="space-y-6">
-      <Alert variant="info" className="bg-blue-50 border-blue-200">
+      <Alert className="bg-blue-50 border-blue-200">
         <AlertTriangle className="h-4 w-4" />
         <AlertTitle>Informações para importação</AlertTitle>
         <AlertDescription>
