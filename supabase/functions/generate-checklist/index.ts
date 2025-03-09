@@ -143,6 +143,25 @@ serve(async (req) => {
 
     console.log(`Generating checklist for prompt: ${prompt}, questions: ${num_questions}, category: ${category}`);
 
+    // If company_id is not provided but user_id is, try to get the company_id from the user
+    let effectiveCompanyId = company_id;
+    if (!effectiveCompanyId && user_id) {
+      try {
+        const { data: userData, error: userError } = await supabaseClient
+          .from('users')
+          .select('company_id')
+          .eq('id', user_id)
+          .single();
+          
+        if (!userError && userData?.company_id) {
+          effectiveCompanyId = userData.company_id;
+          console.log("Retrieved company_id from user:", effectiveCompanyId);
+        }
+      } catch (error) {
+        console.error("Error fetching user's company_id:", error);
+      }
+    }
+
     // Generate questions based on the prompt and category
     const questions = generateQuestions(prompt, num_questions || 10, category || 'general');
     
@@ -161,7 +180,7 @@ serve(async (req) => {
         status_checklist: 'ativo',
         category: category || 'general',
         user_id: user_id || null,
-        company_id: company_id || null
+        company_id: effectiveCompanyId || null
       })
       .select()
       .single();
