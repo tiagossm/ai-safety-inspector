@@ -19,7 +19,7 @@ export default function ChecklistDetails() {
       // Adding a small delay to ensure the user sees the message
       setTimeout(() => {
         navigate("/checklists");
-      }, 300);
+      }, 500);
     }
   }, [id, navigate]);
 

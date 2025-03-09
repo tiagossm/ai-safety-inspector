@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Checklist, ChecklistItem } from "@/types/checklist";
 import { useChecklistDetails } from "@/hooks/checklist/useChecklistDetails";
 import { useUpdateChecklistItem } from "@/hooks/checklist/useUpdateChecklistItem";
@@ -24,18 +25,15 @@ const questionTypes = [
 ];
 
 interface ChecklistDetailsContainerProps {
-  checklistId?: string;
+  checklistId: string;
 }
 
 export default function ChecklistDetailsContainer({ checklistId }: ChecklistDetailsContainerProps) {
-  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
   const [notFound, setNotFound] = useState(false);
   
-  // Use the passed checklistId or the one from URL params
-  const effectiveId = checklistId || id || "";
-  
+  // Use the passed checklistId
   const {
     checklist,
     setChecklist,
@@ -44,12 +42,12 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
     users,
     isLoading,
     error
-  } = useChecklistDetails(effectiveId);
+  } = useChecklistDetails(checklistId);
 
   const updateItemMutation = useUpdateChecklistItem();
   const deleteItemMutation = useDeleteChecklistItem();
-  const addItemMutation = useAddChecklistItem(effectiveId);
-  const saveChecklistMutation = useSaveChecklist(effectiveId);
+  const addItemMutation = useAddChecklistItem(checklistId);
+  const saveChecklistMutation = useSaveChecklist(checklistId);
 
   // Verifica se o checklist existe e trata erros
   useEffect(() => {
@@ -205,7 +203,7 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
           />
 
           <AddChecklistItemForm
-            checklistId={effectiveId}
+            checklistId={checklistId}
             onAddItem={handleAddItem}
             lastOrder={items.length > 0 ? Math.max(...items.map(i => i.ordem)) + 1 : 0}
             questionTypes={questionTypes}

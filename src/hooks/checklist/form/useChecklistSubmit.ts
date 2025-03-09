@@ -6,12 +6,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useChecklistAI } from "./useChecklistAI";
 import { useChecklistImport } from "./useChecklistImport";
+import { useNavigate } from "react-router-dom";
 
 export function useChecklistSubmit() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const createChecklist = useCreateChecklist();
   const { generateAIChecklist } = useChecklistAI();
   const { importFromFile } = useChecklistImport();
+  const navigate = useNavigate();
 
   const submitManualChecklist = async (
     form: NewChecklist, 
@@ -45,6 +47,9 @@ export function useChecklistSubmit() {
         }
       }
       
+      // Redirect to the newly created checklist details page
+      navigate(`/checklists/${newChecklist.id}`);
+      
       return true;
     } catch (error) {
       console.error("Error in manual submission:", error);
@@ -72,16 +77,27 @@ export function useChecklistSubmit() {
     
     try {
       let success = false;
+      let checklistId: string | null = null;
       
       console.log(`Processing submission for ${activeTab} tab`);
       
       if (activeTab === "manual") {
         success = await submitManualChecklist(form, questions);
+        // Note: Navigation is handled inside submitManualChecklist
       } else if (activeTab === "import" && file) {
-        success = await importFromFile(file, form);
+        const result = await importFromFile(file, form);
+        success = !!result;
+        
+        if (success && result.id) {
+          checklistId = result.id;
+        }
       } else if (activeTab === "ai") {
         const result = await generateAIChecklist(form);
         success = !!result;
+        
+        if (success && result.checklist_id) {
+          checklistId = result.checklist_id;
+        }
       } else {
         console.error(`Invalid tab selected: ${activeTab}`);
         toast.error("Opção de criação inválida");
@@ -89,6 +105,11 @@ export function useChecklistSubmit() {
       
       if (success) {
         toast.success("Checklist criado com sucesso!");
+        
+        // Navigate to the details page if we have an ID and haven't already navigated
+        if (checklistId && activeTab !== "manual") {
+          navigate(`/checklists/${checklistId}`);
+        }
       }
       
       return success;

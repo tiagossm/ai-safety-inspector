@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./components/AuthProvider";
@@ -71,8 +72,8 @@ function App() {
                     <Route path="/companies/:companyId/units/new" element={<AddUnit />} />
                     <Route path="/inspections" element={<Inspections />} />
                     <Route path="/checklists" element={<Checklists />} />
-                    <Route path="/checklists/new" element={<CreateChecklist />} />
-                    <Route path="/checklists/:checklistId" element={<ChecklistDetails />} />
+                    <Route path="/checklists/create" element={<CreateChecklist />} />
+                    <Route path="/checklists/:id" element={<ChecklistDetails />} />
                     <Route path="/incidents" element={<Incidents />} />
                     <Route path="/reports" element={<Reports />} />
                     <Route path="/users" element={<Users />} />
