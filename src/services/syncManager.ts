@@ -23,9 +23,10 @@ async function processInsertOperation(table: string, data: any): Promise<void> {
   console.log(`Processing insert operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  // Use explicit destructuring and avoid complex type chains
+  // Store the complete response object first
   const response = await supabase.from(validatedTable).insert(data);
   
+  // Then check for errors
   if (response.error) {
     console.error(`Error in sync insert operation for table ${table}:`, response.error);
     throw response.error;
@@ -37,9 +38,13 @@ async function processUpdateOperation(table: string, data: any): Promise<void> {
   console.log(`Processing update operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  // Avoid complex type chains by using a simple approach
-  const response = await supabase.from(validatedTable).update(data).eq('id', data.id);
+  // Store the complete response object first without type inference
+  const response = await supabase
+    .from(validatedTable)
+    .update(data)
+    .eq('id', data.id);
   
+  // Then check for errors
   if (response.error) {
     console.error(`Error in sync update operation for table ${table}:`, response.error);
     throw response.error;
@@ -51,9 +56,13 @@ async function processDeleteOperation(table: string, data: any): Promise<void> {
   console.log(`Processing delete operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
-  // Avoid complex type chains by using a simple approach
-  const response = await supabase.from(validatedTable).delete().eq('id', data.id);
+  // Store the complete response object first without type inference
+  const response = await supabase
+    .from(validatedTable)
+    .delete()
+    .eq('id', data.id);
   
+  // Then check for errors
   if (response.error) {
     console.error(`Error in sync delete operation for table ${table}:`, response.error);
     throw response.error;
