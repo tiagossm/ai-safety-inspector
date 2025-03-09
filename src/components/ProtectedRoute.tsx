@@ -51,14 +51,15 @@ export function ProtectedRoute({
   }
 
   // Verificação de permissão baseada no tier
-  if (typedUser.tier && !requiredTier.includes(typedUser.tier as UserTier)) {
+  const userTier = typedUser.tier as UserTier | undefined;
+  if (userTier && !requiredTier.includes(userTier)) {
     console.log(
       `🚫 Acesso negado: usuário com tier ${typedUser.tier} tentando acessar rota que requer [${requiredTier.join(
         ", "
       )}]`
     );
     // Redireciona para o dashboard apropriado com base no tier
-    const redirectPath = typedUser.tier === "super_admin" ? "/admin/dashboard" : "/dashboard";
+    const redirectPath = userTier === "super_admin" ? "/admin/dashboard" : "/dashboard";
     console.log(`🔄 Redirecionando para ${redirectPath}`);
     return <Navigate to={redirectPath} replace />;
   }

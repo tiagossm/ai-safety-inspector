@@ -131,7 +131,6 @@ export class SyncManager {
   }
 }
 
-// Export the syncWithServer function with enhanced error handling
 export async function syncWithServer(
   syncCallback?: (isSyncing: boolean) => void,
   errorCallback?: (error: Error) => void
