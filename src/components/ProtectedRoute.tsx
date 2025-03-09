@@ -18,9 +18,18 @@ export function ProtectedRoute({
   const { user, loading } = useContext(AuthContext);
   const location = useLocation();
   const typedUser = user as AuthUser | null;
-
+  
+  // Log route access attempt
   console.log("🔒 ProtectedRoute - Verificando acesso à rota:", location.pathname);
   console.log("👤 Usuário:", typedUser ? `${typedUser.email} (${typedUser.tier})` : "Não autenticado");
+  
+  // Fast path for super_admin users - skip lengthy checks
+  if (typedUser?.tier === "super_admin") {
+    console.log("✅ Acesso automático concedido para super_admin");
+    return <>{children}</>;
+  }
+  
+  // Continue with normal authorization flow for other users
   console.log("⏳ Estado de carregamento:", loading ? "Carregando" : "Completo");
 
   if (loading) {
