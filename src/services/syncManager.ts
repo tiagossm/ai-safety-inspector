@@ -18,7 +18,7 @@ interface SyncQueueItem {
   timestamp: number;
 }
 
-// Define a simple response type without deep nesting
+// Simplified response type to avoid deep type nesting
 interface SupabaseResponse {
   error: any | null;
   data?: any;
@@ -32,6 +32,7 @@ async function processInsertOperation(table: string, data: any): Promise<void> {
   console.log(`Processing insert operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
+  // Use type assertion to fix infinite type instantiation
   const response = await supabase.from(validatedTable).insert(data) as SupabaseResponse;
   
   if (response.error) {
@@ -45,6 +46,7 @@ async function processUpdateOperation(table: string, data: any): Promise<void> {
   console.log(`Processing update operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
+  // Use type assertion to fix infinite type instantiation
   const response = await supabase.from(validatedTable).update(data).eq('id', data.id) as SupabaseResponse;
   
   if (response.error) {
@@ -58,6 +60,7 @@ async function processDeleteOperation(table: string, data: any): Promise<void> {
   console.log(`Processing delete operation for table: ${table}`);
   const validatedTable = getValidatedTable(table);
   
+  // Use type assertion to fix infinite type instantiation
   const response = await supabase.from(validatedTable).delete().eq('id', data.id) as SupabaseResponse;
   
   if (response.error) {

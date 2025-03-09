@@ -1,7 +1,8 @@
 
-import { useEffect, useState } from 'react';
-import { useQuery, UseQueryOptions, QueryKey } from '@tanstack/react-query';
+import { useEffect, useState, useCallback } from 'react';
+import { useQuery, UseQueryOptions, QueryKey, UseQueryResult } from '@tanstack/react-query';
 import { getOfflineData, isOfflineStore } from '@/services/offlineSync';
+import { syncWithServer } from '@/services/syncManager';
 
 interface OfflineQueryResult<T> {
   data: T | undefined;
@@ -12,6 +13,47 @@ interface OfflineQueryResult<T> {
 
 type QueryFn<T> = (...args: any[]) => Promise<T>;
 
+// Network status hook
+export function useNetworkStatus() {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  return isOnline;
+}
+
+// Data synchronization hook
+export function useSyncData() {
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const sync = useCallback(async () => {
+    setIsSyncing(true);
+    try {
+      await syncWithServer(
+        (syncing) => setIsSyncing(syncing),
+        (error) => console.error('Sync error:', error)
+      );
+    } catch (error) {
+      console.error('Error during sync:', error);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, []);
+
+  return { sync, isSyncing };
+}
+
 // Create a simple checker function to determine if a response is from an offline source
 function isOfflineResponse(response: any): boolean {
   return response && typeof response === 'object' && 'isOffline' in response;
@@ -21,28 +63,28 @@ export function useOfflineAwareQuery<T>(
   queryKey: QueryKey,
   queryFn: QueryFn<T>,
   tableName: string | null = null,
-  options?: UseQueryOptions<T>
+  options?: UseQueryOptions<T, Error, T, QueryKey>
 ): OfflineQueryResult<T> {
   const [offlineData, setOfflineData] = useState<T | undefined>(undefined);
   const [isOffline, setIsOffline] = useState(false);
 
-  // Use the standard React Query hook
-  const queryResult = useQuery<T>({
+  // Use the standard React Query hook with updated options format
+  const queryResult = useQuery<T, Error, T, QueryKey>({
     queryKey,
     queryFn,
     ...options,
-    onError: (error) => {
-      console.error('Query error:', error);
-      // Only fallback to offline mode for network errors and when tableName is provided
-      if (tableName && error instanceof Error && 
+    // Use the onError in the meta object for React Query v5
+    onSettled: (data, error) => {
+      if (error && tableName && 
           (error.message.includes('network') || !navigator.onLine)) {
+        console.error('Query error, falling back to offline data:', error);
         setIsOffline(true);
         fetchOfflineData(tableName);
       }
       
-      // Call the original onError if provided
-      if (options?.onError) {
-        options.onError(error);
+      // Call the original onSettled if provided
+      if (options?.onSettled) {
+        options.onSettled(data, error);
       }
     }
   });
@@ -88,7 +130,7 @@ export function useOfflineAwareQuery<T>(
     // Either loading or error state
     return {
       data: undefined,
-      error: queryResult.error instanceof Error ? queryResult.error : null,
+      error: queryResult.error || null,
       isLoading: queryResult.isLoading,
       isOffline: isOffline
     };
