@@ -1,5 +1,4 @@
-
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "./components/AuthProvider";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -27,20 +26,18 @@ import Incidents from "./pages/Incidents";
 import AdminDashboard from "./pages/AdminDashboard";
 import ChecklistDetails from "./pages/ChecklistDetails";
 import { OfflineStatus } from "./components/ui/OfflineStatus";
+import IdleTimeoutManager from "@/components/IdleTimeoutManager";
+import { Toaster as SonnerToaster } from "sonner";
 
-// Creating a QueryClient instance with appropriate cache configuration
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      gcTime: 1000 * 60 * 30, // 30 minutes (renamed from cacheTime)
-      refetchOnWindowFocus: false, // Prevent unnecessary refetches
-      // Configure offline behavior
-      networkMode: 'always', // Default fallback to cache when offline
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 30,
+      refetchOnWindowFocus: false,
+      networkMode: 'always',
       retry: (failureCount, error: any) => {
-        // Don't retry on 4xx errors
         if (error?.status >= 400 && error?.status < 500) return false;
-        // Only retry 3 times for network errors
         return failureCount < 3;
       }
     },
@@ -51,44 +48,44 @@ function App() {
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
+        <Router>
           <AuthProvider>
             <SessionChecker>
-              <Routes>
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/" element={<Home />} />
-                <Route path="/plans" element={<Plans />} />
-                <Route path="/blog" element={<Blog />} />
-                <Route path="/contact" element={<Contact />} />
-                
-                {/* Admin Routes */}
-                <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-                  <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                </Route>
-                
-                {/* Company Routes */}
-                <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/companies" element={<Companies />} />
-                  <Route path="/companies/:companyId/units/new" element={<AddUnit />} />
-                  <Route path="/inspections" element={<Inspections />} />
-                  <Route path="/checklists" element={<Checklists />} />
-                  <Route path="/checklists/new" element={<CreateChecklist />} />
-                  <Route path="/checklists/:checklistId" element={<ChecklistDetails />} />
-                  <Route path="/incidents" element={<Incidents />} />
-                  <Route path="/reports" element={<Reports />} />
-                  <Route path="/users" element={<Users />} />
-                  <Route path="/permissions" element={<Settings />} />
-                  <Route path="/billing" element={<BillingPage />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="*" element={<NotFound />} />
-                </Route>
-              </Routes>
-              <Toaster />
-              <OfflineStatus />
+              <IdleTimeoutManager timeout={60}>
+                <SonnerToaster richColors position="top-right" />
+                <Toaster />
+                <Routes>
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/" element={<Home />} />
+                  <Route path="/plans" element={<Plans />} />
+                  <Route path="/blog" element={<Blog />} />
+                  <Route path="/contact" element={<Contact />} />
+                  
+                  <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                    <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                  </Route>
+                  
+                  <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/companies" element={<Companies />} />
+                    <Route path="/companies/:companyId/units/new" element={<AddUnit />} />
+                    <Route path="/inspections" element={<Inspections />} />
+                    <Route path="/checklists" element={<Checklists />} />
+                    <Route path="/checklists/new" element={<CreateChecklist />} />
+                    <Route path="/checklists/:checklistId" element={<ChecklistDetails />} />
+                    <Route path="/incidents" element={<Incidents />} />
+                    <Route path="/reports" element={<Reports />} />
+                    <Route path="/users" element={<Users />} />
+                    <Route path="/permissions" element={<Settings />} />
+                    <Route path="/billing" element={<BillingPage />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Route>
+                </Routes>
+              </IdleTimeoutManager>
             </SessionChecker>
           </AuthProvider>
-        </BrowserRouter>
+        </Router>
       </QueryClientProvider>
     </ThemeProvider>
   );

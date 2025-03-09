@@ -1,9 +1,11 @@
 
 import React from "react";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarIcon } from "lucide-react";
@@ -57,29 +59,41 @@ export function AICreateForm({
     <div className="space-y-6">
       <div className="grid gap-4">
         <div className="grid gap-2">
-          <Label htmlFor="ai-prompt">Descreva a lista de verificação que deseja criar</Label>
-          <Textarea 
-            id="ai-prompt" 
+          <Label htmlFor="ai-prompt">Descreva o checklist que você quer criar</Label>
+          <Textarea
+            id="ai-prompt"
+            placeholder="Ex: Checklist de inspeção de segurança para construção civil com foco em trabalho em altura"
+            className="min-h-[100px]"
             value={aiPrompt}
             onChange={(e) => setAiPrompt(e.target.value)}
-            placeholder="Ex: Gerar uma lista de verificação de inspeção de segurança para máquinas baseado na NR-12"
-            rows={3}
           />
         </div>
         
         <div className="grid gap-2">
-          <Label htmlFor="num-questions">Número de perguntas</Label>
-          <Input 
-            id="num-questions" 
-            type="number" 
-            min={5} 
-            max={50} 
-            value={numQuestions}
-            onChange={(e) => setNumQuestions(parseInt(e.target.value))}
+          <div className="flex items-center justify-between">
+            <Label htmlFor="num-questions">Número de perguntas: {numQuestions}</Label>
+          </div>
+          <Slider
+            id="num-questions"
+            min={5}
+            max={30}
+            step={1}
+            value={[numQuestions]}
+            onValueChange={(value) => setNumQuestions(value[0])}
           />
         </div>
         
         <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="title-ai">Título (opcional)</Label>
+            <Input
+              id="title-ai"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              placeholder="Gerado automaticamente se não preenchido"
+            />
+          </div>
+          
           <div className="grid gap-2">
             <Label htmlFor="category-ai">Categoria</Label>
             <Select 
@@ -98,7 +112,9 @@ export function AICreateForm({
               </SelectContent>
             </Select>
           </div>
-          
+        </div>
+        
+        <div className="grid md:grid-cols-2 gap-4">
           <div className="grid gap-2">
             <Label htmlFor="responsible-ai">Responsável</Label>
             <Select 
@@ -121,47 +137,49 @@ export function AICreateForm({
               </SelectContent>
             </Select>
           </div>
+          
+          <div className="grid gap-2">
+            <Label htmlFor="due-date-ai">Data de vencimento</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  id="due-date-ai"
+                  variant="outline"
+                  className="w-full justify-start text-left font-normal"
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {form.due_date ? (
+                    format(new Date(form.due_date), "PPP", { locale: ptBR })
+                  ) : (
+                    "Escolha uma data"
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={form.due_date ? new Date(form.due_date) : undefined}
+                  onSelect={(date) => 
+                    setForm({ ...form, due_date: date ? date.toISOString() : null })
+                  }
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
         
-        <div className="grid gap-2">
-          <Label htmlFor="due-date-ai">Data de vencimento</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                id="due-date-ai"
-                variant="outline"
-                className="w-full justify-start text-left font-normal"
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {form.due_date ? (
-                  format(new Date(form.due_date), "PPP", { locale: ptBR })
-                ) : (
-                  "Escolha uma data"
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <Calendar
-                mode="single"
-                selected={form.due_date ? new Date(form.due_date) : undefined}
-                onSelect={(date) => 
-                  setForm({ ...form, due_date: date ? date.toISOString() : null })
-                }
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="template-ai"
+            checked={form.is_template}
+            onCheckedChange={(checked) => setForm({ ...form, is_template: checked })}
+          />
+          <Label htmlFor="template-ai">
+            Salvar como template
+          </Label>
         </div>
       </div>
-      
-      <Button 
-        type="button"
-        onClick={onGenerateAI}
-        disabled={!aiPrompt || aiLoading}
-        className="w-full"
-      >
-        {aiLoading ? "Gerando..." : "Gerar Lista de Verificação com IA"}
-      </Button>
     </div>
   );
 }

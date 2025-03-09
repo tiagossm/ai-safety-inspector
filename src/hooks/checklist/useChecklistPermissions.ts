@@ -1,92 +1,79 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/components/AuthProvider";
-import { AuthUser } from "@/hooks/auth/useAuthState";
 
-export function useChecklistPermissions(checklistId?: string) {
-  const { user } = useAuth();
-  const typedUser = user as AuthUser | null;
-  
-  return useQuery({
+interface ChecklistPermissions {
+  read: boolean;
+  write: boolean;
+  delete: boolean;
+}
+
+export function useChecklistPermissions(checklistId: string) {
+  return useQuery<ChecklistPermissions>({
     queryKey: ["checklist-permissions", checklistId],
     queryFn: async () => {
       if (!checklistId) {
         return { read: false, write: false, delete: false };
       }
-      
-      // Super admin always has full access
-      if (typedUser?.tier === "super_admin") {
-        return { read: true, write: true, delete: true };
-      }
-      
-      // Company admin has full access to all checklists associated with their company
-      if (typedUser?.tier === "company_admin") {
-        try {
-          // Check if the checklist belongs to the admin's company
-          const { data: checklistData, error: checklistError } = await supabase
-            .from('checklists')
-            .select('company_id')
-            .eq('id', checklistId)
-            .single();
-          
-          if (checklistError) throw checklistError;
-          
-          // If the checklist belongs to this admin's company, grant full access
-          if (checklistData.company_id === typedUser.company_id) {
-            return { read: true, write: true, delete: true };
-          }
-        } catch (error) {
-          console.error("Error checking company association:", error);
-        }
-      }
 
       try {
-        // Check for explicit permissions in checklist_permissions table
-        const { data, error } = await supabase
-          .from('checklist_permissions')
-          .select('role')
-          .eq('user_id', typedUser?.id)
-          .eq('checklist_id', checklistId)
+        // Verificar se o usuário é o criador do checklist
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          return { read: false, write: false, delete: false };
+        }
+
+        // Buscar o checklist para verificar se o usuário é o criador
+        const { data: checklist, error: checklistError } = await supabase
+          .from("checklists")
+          .select("user_id")
+          .eq("id", checklistId)
           .single();
-        
-        if (error) {
-          // If no explicit permissions, check if user is assigned to this checklist
-          const { data: assignmentData, error: assignmentError } = await supabase
-            .from('user_checklists')
-            .select('*')
-            .eq('user_id', typedUser?.id)
-            .eq('checklist_id', checklistId)
-            .single();
-          
-          if (assignmentError) {
-            // No permission record or assignment found
+
+        if (checklistError) {
+          console.error("Erro ao verificar permissões do checklist:", checklistError);
+          return { read: false, write: false, delete: false };
+        }
+
+        // Se o usuário é o criador, conceder permissões totais
+        if (checklist.user_id === user.id) {
+          return { read: true, write: true, delete: true };
+        }
+
+        // Verificar permissões específicas na tabela checklist_permissions
+        const { data: permissions, error: permissionsError } = await supabase
+          .from("checklist_permissions")
+          .select("role")
+          .eq("checklist_id", checklistId)
+          .eq("user_id", user.id)
+          .single();
+
+        if (permissionsError) {
+          // Se não encontrar permissões específicas, assumir que não tem acesso
+          if (permissionsError.code === "PGRST116") { // Código de erro "não encontrado"
             return { read: false, write: false, delete: false };
           }
-          
-          // User is assigned to this checklist, grant read and write but not delete
-          return { read: true, write: true, delete: false };
+          console.error("Erro ao buscar permissões:", permissionsError);
+          return { read: false, write: false, delete: false };
         }
-        
-        // Map roles to permissions
-        const role = data.role;
-        if (role === 'owner' || role === 'admin') {
-          return { read: true, write: true, delete: true };
-        } else if (role === 'editor') {
-          return { read: true, write: true, delete: false };
-        } else if (role === 'viewer') {
-          return { read: true, write: false, delete: false };
+
+        // Definir permissões com base no papel do usuário
+        switch (permissions.role) {
+          case "admin":
+            return { read: true, write: true, delete: true };
+          case "editor":
+            return { read: true, write: true, delete: false };
+          case "viewer":
+            return { read: true, write: false, delete: false };
+          default:
+            return { read: false, write: false, delete: false };
         }
-        
-        return { read: true, write: false, delete: false };
       } catch (error) {
-        console.error("Error checking permissions:", error);
-        // By default, allow only reading in case of error
-        return { read: true, write: false, delete: false };
+        console.error("Erro ao verificar permissões:", error);
+        return { read: false, write: false, delete: false };
       }
     },
-    enabled: !!checklistId && !!typedUser,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
+    enabled: !!checklistId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
   });
 }

@@ -47,6 +47,19 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
         const session = data.session;
         console.log("ℹ️ Status da sessão:", session ? "Autenticado" : "Não autenticado");
         
+        // Verificar se a sessão está expirada
+        if (session && session.expires_at) {
+          const expiresAt = new Date(session.expires_at * 1000);
+          if (expiresAt < new Date()) {
+            console.log("⚠️ Sessão expirada, redirecionando para login");
+            await supabase.auth.signOut();
+            if (!isPublicPath(location.pathname)) {
+              navigate("/auth");
+              toast.error("Sua sessão expirou. Por favor, faça login novamente.");
+            }
+          }
+        }
+        
         // Se não houver sessão e não estiver em uma rota pública, redirecione para /auth
         if (!session && !isPublicPath(location.pathname)) {
           console.log("🔄 Redirecionando para tela de login");
@@ -85,6 +98,10 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
       } else if (event === "SIGNED_OUT") {
         console.log("ℹ️ Usuário desconectado");
         navigate("/auth");
+      } else if (event === "TOKEN_REFRESHED") {
+        console.log("♻️ Token atualizado com sucesso");
+      } else if (event === "USER_UPDATED") {
+        console.log("📝 Dados do usuário atualizados");
       }
       
       setIsLoading(false);

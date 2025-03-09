@@ -1,18 +1,16 @@
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useDeleteChecklist } from "@/hooks/checklist/useDeleteChecklist";
-import { Loader2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { toast } from "@/components/ui/use-toast";
 
 interface DeleteChecklistDialogProps {
   checklistId: string;
@@ -27,61 +25,52 @@ export function DeleteChecklistDialog({
   isOpen,
   onOpenChange,
 }: DeleteChecklistDialogProps) {
-  const deleteChecklist = useDeleteChecklist();
   const [isDeleting, setIsDeleting] = useState(false);
-  const navigate = useNavigate();
+  const deleteChecklistMutation = useDeleteChecklist();
 
   const handleDelete = async () => {
-    if (!checklistId || isDeleting) return;
+    if (!checklistId) return;
     
     setIsDeleting(true);
     try {
-      console.log("Deleting checklist:", checklistId);
-      await deleteChecklist.mutateAsync(checklistId);
-      
-      // Redirect to checklists page if necessary
-      if (window.location.pathname.includes(`/checklists/${checklistId}`)) {
-        navigate('/checklists');
-      }
+      await deleteChecklistMutation.mutateAsync(checklistId);
+      toast.success("Checklist excluído com sucesso");
+      onOpenChange(false);
     } catch (error) {
-      console.error("Error deleting checklist:", error);
+      console.error("Erro ao excluir checklist:", error);
+      toast.error("Erro ao excluir checklist. Tente novamente.");
     } finally {
       setIsDeleting(false);
-      onOpenChange(false);
     }
   };
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Excluir Checklist</AlertDialogTitle>
-          <AlertDialogDescription>
-            Tem certeza que deseja excluir o checklist <strong>"{checklistTitle}"</strong>? Esta ação é irreversível 
-            e todos os dados relacionados a este checklist serão perdidos.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={(e) => {
-              e.preventDefault();
-              handleDelete();
-            }}
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Excluir Checklist</DialogTitle>
+          <DialogDescription>
+            Tem certeza que deseja excluir o checklist <strong>{checklistTitle}</strong>? Esta ação não pode ser desfeita.
+          </DialogDescription>
+        </DialogHeader>
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
             disabled={isDeleting}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {isDeleting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Excluindo...
-              </>
-            ) : (
-              "Excluir Checklist"
-            )}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+            Cancelar
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleDelete}
+            disabled={isDeleting}
+          >
+            {isDeleting ? "Excluindo..." : "Excluir"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
