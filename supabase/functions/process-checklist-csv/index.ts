@@ -88,6 +88,7 @@ serve(async (req) => {
         success: true,
         message: `Checklist criado com ${processed} itens`,
         checklist_id: checklistId,
+        id: checklistId, // Added for backward compatibility
         processed_items: processed,
         total_rows: rows.length,
         errors: errors.length > 0 ? errors : null

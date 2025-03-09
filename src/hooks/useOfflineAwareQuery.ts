@@ -96,7 +96,6 @@ export function useOfflineAwareQuery<TData>(
   });
 
   if (isOffline && offlineData) {
-    // Fix the typing issue by being explicit about the properties we're setting
     return {
       ...result,
       data: offlineData,
@@ -108,7 +107,7 @@ export function useOfflineAwareQuery<TData>(
       isError: false,
       error: null,
       isLoadingError: false,
-      isRefetchError: false, // Changed from true to false to match the expected type
+      isRefetchError: false,
       fetchStatus: 'idle' as const,
     };
   }

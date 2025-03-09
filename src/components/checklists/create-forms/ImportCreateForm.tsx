@@ -6,9 +6,10 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, Download, Upload, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
@@ -17,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { NewChecklist } from "@/types/checklist";
+import { useChecklistImport } from "@/hooks/checklist/form/useChecklistImport";
 
 // Checklist category options
 const CATEGORIES = [
@@ -45,19 +47,58 @@ export function ImportCreateForm({
   file,
   onFileChange
 }: ImportCreateFormProps) {
+  const { getTemplateFileUrl } = useChecklistImport();
+  
   return (
     <div className="space-y-6">
+      <Alert variant="info" className="bg-blue-50 border-blue-200">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>Informações para importação</AlertTitle>
+        <AlertDescription>
+          <p className="mb-2">Para importar corretamente, o arquivo deve conter as seguintes colunas:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Pergunta (obrigatória)</li>
+            <li>Tipo de Resposta (sim/não, numérico, texto, foto, audio_recording, file_upload, assinatura, seleção múltipla)</li>
+            <li>Obrigatório (sim/não)</li>
+            <li>Opções (apenas para tipo "seleção múltipla", separadas por vírgula)</li>
+          </ul>
+          <div className="mt-3">
+            <Button 
+              variant="outline" 
+              size="sm"
+              className="flex items-center" 
+              onClick={() => window.open(getTemplateFileUrl(), '_blank')}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Baixar modelo
+            </Button>
+          </div>
+        </AlertDescription>
+      </Alert>
+
       <div className="grid gap-4">
         <div className="grid gap-2">
           <Label htmlFor="import-file">Selecione um arquivo CSV ou Excel</Label>
-          <Input 
-            id="import-file" 
-            type="file" 
-            accept=".csv,.xlsx,.xls" 
-            onChange={onFileChange}
-          />
+          <div className="flex items-center gap-2">
+            <Input 
+              id="import-file" 
+              type="file" 
+              accept=".csv,.xlsx,.xls" 
+              onChange={onFileChange}
+              className="flex-1"
+            />
+            <Button 
+              variant="outline" 
+              size="icon"
+              title="Baixar modelo" 
+              onClick={() => window.open(getTemplateFileUrl(), '_blank')}
+            >
+              <Download className="h-4 w-4" />
+            </Button>
+          </div>
           {file && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground flex items-center">
+              <Upload className="h-3 w-3 mr-1" />
               Arquivo selecionado: {file.name}
             </p>
           )}

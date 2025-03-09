@@ -86,17 +86,33 @@ export function useChecklistSubmit() {
         // Note: Navigation is handled inside submitManualChecklist
       } else if (activeTab === "import" && file) {
         const importResult = await importFromFile(file, form);
-        success = !!importResult;
         
-        if (success && importResult && typeof importResult === 'object' && 'id' in importResult) {
-          checklistId = importResult.id as string;
+        // Check if importResult exists and is not just a boolean false
+        if (importResult && typeof importResult === 'object') {
+          success = true;
+          
+          if ('id' in importResult) {
+            checklistId = importResult.id as string;
+          } else if ('checklist_id' in importResult) {
+            checklistId = importResult.checklist_id as string;
+          }
+        } else {
+          success = false;
         }
       } else if (activeTab === "ai") {
         const aiResult = await generateAIChecklist(form);
-        success = !!aiResult;
         
-        if (success && aiResult && typeof aiResult === 'object' && 'checklist_id' in aiResult) {
-          checklistId = aiResult.checklist_id as string;
+        // Check if aiResult exists and is not just a boolean
+        if (aiResult && typeof aiResult === 'object') {
+          success = true;
+          
+          if ('id' in aiResult) {
+            checklistId = aiResult.id as string;
+          } else if ('checklist_id' in aiResult) {
+            checklistId = aiResult.checklist_id as string;
+          }
+        } else {
+          success = false;
         }
       } else {
         console.error(`Invalid tab selected: ${activeTab}`);
@@ -108,7 +124,12 @@ export function useChecklistSubmit() {
         
         // Navigate to the details page if we have an ID and haven't already navigated
         if (checklistId && activeTab !== "manual") {
+          console.log(`Redirecting to checklist details: /checklists/${checklistId}`);
           navigate(`/checklists/${checklistId}`);
+        } else if (!checklistId && activeTab !== "manual" && success) {
+          console.log("Success but no ID returned, redirecting to main checklists page");
+          navigate('/checklists');
+          toast.info("Checklist criado, mas não foi possível abrir automaticamente.");
         }
       }
       

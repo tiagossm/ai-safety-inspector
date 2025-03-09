@@ -25,6 +25,12 @@ export function normalizeResponseType(type: string): string {
     return 'foto';
   } else if (typeStr.includes('assin')) {
     return 'assinatura';
+  } else if (typeStr.includes('audio') || typeStr.includes('gravação')) {
+    return 'audio_recording';
+  } else if (typeStr.includes('file') || typeStr.includes('arquivo')) {
+    return 'file_upload';
+  } else if (typeStr.includes('video') || typeStr.includes('vídeo')) {
+    return 'video';
   }
   
   return 'sim/não'; // Default

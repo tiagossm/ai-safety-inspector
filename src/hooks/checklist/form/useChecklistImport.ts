@@ -4,12 +4,40 @@ import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
 import { NewChecklist } from "@/types/checklist";
 import { supabase } from "@/integrations/supabase/client";
 
+/**
+ * Validates if the file is in correct format (CSV, XLS, XLSX)
+ * @param file File to validate
+ * @returns Object with validation result and message
+ */
+const validateFileFormat = (file: File): { valid: boolean; message?: string } => {
+  if (!file) {
+    return { valid: false, message: 'Nenhum arquivo selecionado' };
+  }
+  
+  const fileExtension = file.name.split('.').pop()?.toLowerCase();
+  
+  if (!['csv', 'xls', 'xlsx'].includes(fileExtension || '')) {
+    return { 
+      valid: false, 
+      message: 'Formato de arquivo inválido. Apenas arquivos CSV, XLS e XLSX são suportados.' 
+    };
+  }
+  
+  return { valid: true };
+};
+
 export function useChecklistImport() {
   const createChecklist = useCreateChecklist();
 
+  const getTemplateFileUrl = () => {
+    return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/templates/checklist_import_template.xlsx`;
+  };
+
   const importFromFile = async (file: File, form: NewChecklist) => {
-    if (!file) {
-      toast.error("Nenhum arquivo selecionado");
+    // Validate file format
+    const validation = validateFileFormat(file);
+    if (!validation.valid) {
+      toast.error(validation.message || "Arquivo inválido");
       return false;
     }
     
@@ -40,7 +68,6 @@ export function useChecklistImport() {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${jwt}`,
-            'Content-Type': 'multipart/form-data',
           },
           body: formData
         }
@@ -69,6 +96,7 @@ export function useChecklistImport() {
   };
 
   return {
-    importFromFile
+    importFromFile,
+    getTemplateFileUrl
   };
 }

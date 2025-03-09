@@ -13,5 +13,14 @@ export function validateFile(file: File | null): { valid: boolean; message?: str
     };
   }
   
+  // Check file size (limit to 10MB)
+  const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+  if (file.size > maxSize) {
+    return {
+      valid: false,
+      message: 'File too large. Maximum file size is 10MB.'
+    };
+  }
+  
   return { valid: true };
 }
