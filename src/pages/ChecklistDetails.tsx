@@ -11,10 +11,14 @@ export default function ChecklistDetails() {
   useEffect(() => {
     if (!id) {
       toast.error("ID do checklist não fornecido");
-      navigate("/checklists");
+      // Adicionando um pequeno atraso para garantir que o usuário veja a mensagem
+      setTimeout(() => {
+        navigate("/checklists");
+      }, 300);
     }
   }, [id, navigate]);
 
+  // Retorne null imediatamente se não houver ID, não renderize o container
   if (!id) return null;
   
   return <ChecklistDetailsContainer checklistId={id} />;

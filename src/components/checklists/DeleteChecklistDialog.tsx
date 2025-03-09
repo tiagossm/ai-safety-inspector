@@ -30,7 +30,11 @@ export function DeleteChecklistDialog({
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
-    if (!checklistId) return;
+    if (!checklistId) {
+      toast.error("ID do checklist não fornecido");
+      onOpenChange(false);
+      return;
+    }
     
     setIsDeleting(true);
     try {
