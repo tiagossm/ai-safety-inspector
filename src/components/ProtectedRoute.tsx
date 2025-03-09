@@ -1,4 +1,3 @@
-
 import { Navigate, useLocation } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "./AuthProvider";
@@ -24,7 +23,7 @@ export function ProtectedRoute({
   console.log("👤 Usuário:", typedUser ? `${typedUser.email} (${typedUser.tier})` : "Não autenticado");
   
   // Fast path for super_admin users - skip lengthy checks
-  if (typedUser?.tier === "super_admin") {
+  if (typedUser?.tier === "super_admin" as UserTier) {
     console.log("✅ Acesso automático concedido para super_admin");
     return <>{children}</>;
   }
