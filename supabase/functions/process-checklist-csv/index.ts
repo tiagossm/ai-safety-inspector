@@ -33,19 +33,12 @@ serve(async (req) => {
       );
     }
     
-    // Create authenticated client with user's JWT
-    const supabaseClient = createClient(
-      supabaseUrl,
-      supabaseServiceKey,
-      {
-        global: {
-          headers: { Authorization: authHeader }
-        }
-      }
-    );
+    // Create authenticated client with Service Role key for admin operations
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Verify the user is authenticated
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    // Verify the user is authenticated by decoding the JWT
+    const jwt = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(jwt);
     
     if (authError || !user) {
       console.error("Authentication error:", authError);
@@ -95,7 +88,7 @@ serve(async (req) => {
     }
     
     // Create checklist
-    const { id: checklistId } = await createChecklist(supabaseClient, form, file.name);
+    const { id: checklistId } = await createChecklist(supabaseAdmin, form, file.name);
     
     // Process the CSV rows and create checklist items
     let processed = 0;
@@ -113,7 +106,7 @@ serve(async (req) => {
         
         console.log(`Processing row ${i + 1}:`, row);
         
-        await processChecklistItem(supabaseClient, checklistId, row, i);
+        await processChecklistItem(supabaseAdmin, checklistId, row, i);
         processed++;
         
       } catch (error) {

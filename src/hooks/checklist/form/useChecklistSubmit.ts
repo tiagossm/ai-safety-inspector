@@ -121,9 +121,8 @@ export function useChecklistSubmit() {
           // Handle different possible response structures
           if ('id' in aiResult) {
             checklistId = aiResult.id as string;
-          } else if ('data' in aiResult) {
-            // Use a type assertion to tell TypeScript this is a Record with string keys
-            const resultData = aiResult.data as Record<string, any>;
+          } else if ('data' in aiResult && typeof (aiResult as Record<string, any>).data === 'object') {
+            const resultData = (aiResult as Record<string, any>).data as Record<string, any>;
             if (resultData && 'checklist_id' in resultData) {
               checklistId = resultData.checklist_id as string;
             }

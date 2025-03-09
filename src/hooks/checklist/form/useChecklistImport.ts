@@ -64,38 +64,33 @@ export function useChecklistImport() {
       
       console.log("Authentication token acquired, proceeding with request");
       
-      // Call the edge function to process the file
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-checklist-csv`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${jwt}`,
-          },
-          body: formData
-        }
-      );
+      // Call the edge function using Supabase SDK instead of direct fetch
+      const { data, error } = await supabase.functions.invoke('process-checklist-csv', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${jwt}`,
+          'Content-Type': 'multipart/form-data'
+        },
+        body: formData
+      });
       
-      if (!response.ok) {
-        console.error("Edge function returned error status:", response.status);
-        const errorText = await response.text();
-        console.error("Error response:", errorText);
+      if (error) {
+        console.error("Edge function returned error:", error);
         
-        if (response.status === 401) {
+        if (error.message?.includes('401')) {
           throw new Error("Erro de autenticação. Por favor, faça login novamente.");
         }
         
-        throw new Error(`Erro na importação (${response.status}): ${errorText}`);
+        throw new Error(`Erro na importação: ${error.message || 'Falha desconhecida'}`);
       }
       
-      const result = await response.json();
-      console.log("Edge function result:", result);
+      console.log("Edge function result:", data);
       
-      if (result.success) {
-        toast.success(`Checklist importado com sucesso! ${result.processed_items || 0} itens processados.`);
-        return result;
+      if (data?.success) {
+        toast.success(`Checklist importado com sucesso! ${data.processed_items || 0} itens processados.`);
+        return data;
       } else {
-        throw new Error(result.error || "Erro ao importar checklist");
+        throw new Error(data?.error || "Erro ao importar checklist");
       }
     } catch (error) {
       console.error("Error importing checklist:", error);

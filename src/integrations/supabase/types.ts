@@ -108,6 +108,9 @@ export type Database = {
           opcoes: Json | null
           ordem: number
           pergunta: string
+          permite_audio: boolean | null
+          permite_foto: boolean | null
+          permite_video: boolean | null
           tipo_resposta: string
           updated_at: string
         }
@@ -119,6 +122,9 @@ export type Database = {
           opcoes?: Json | null
           ordem?: number
           pergunta: string
+          permite_audio?: boolean | null
+          permite_foto?: boolean | null
+          permite_video?: boolean | null
           tipo_resposta: string
           updated_at?: string
         }
@@ -130,6 +136,9 @@ export type Database = {
           opcoes?: Json | null
           ordem?: number
           pergunta?: string
+          permite_audio?: boolean | null
+          permite_foto?: boolean | null
+          permite_video?: boolean | null
           tipo_resposta?: string
           updated_at?: string
         }
