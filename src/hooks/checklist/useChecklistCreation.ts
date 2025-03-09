@@ -23,9 +23,17 @@ export function useChecklistCreation() {
   const { isSubmitting, handleSubmit } = useChecklistSubmit();
 
   const onSubmit = async (e: React.FormEvent) => {
-    const success = await handleSubmit(e, activeTab, form, questions, file, aiPrompt);
-    if (success) {
-      navigate("/checklists");
+    console.log("Submit handler triggered");
+    try {
+      const success = await handleSubmit(e, activeTab, form, questions, file, aiPrompt);
+      if (success) {
+        console.log("Submission successful, navigating to /checklists");
+        navigate("/checklists");
+      } else {
+        console.error("Submission failed but no exception thrown");
+      }
+    } catch (error) {
+      console.error("Error in onSubmit:", error);
     }
   };
 

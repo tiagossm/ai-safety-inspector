@@ -12,7 +12,10 @@ export function useChecklistAI() {
   const createChecklist = useCreateChecklist();
 
   const generateAIChecklist = async (form: NewChecklist) => {
-    if (!aiPrompt) return null;
+    if (!aiPrompt) {
+      toast.error("Por favor, informe um prompt para a IA");
+      return null;
+    }
     
     setAiLoading(true);
     
@@ -28,7 +31,16 @@ export function useChecklistAI() {
         }
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error from edge function:", error);
+        throw error;
+      }
+      
+      if (!data) {
+        throw new Error("Nenhum dado retornado pela função de IA");
+      }
+      
+      console.log("AI response:", data);
       
       if (data?.success && data?.data) {
         console.log("AI generated checklist data:", data.data);
@@ -43,8 +55,12 @@ export function useChecklistAI() {
         // Create the checklist
         const newChecklist = await createChecklist.mutateAsync(updatedForm);
         
+        if (!newChecklist?.id) {
+          throw new Error("Falha ao criar checklist: ID não foi gerado");
+        }
+        
         // If questions were generated, add them to the checklist
-        if (data.data.questions && data.data.questions.length > 0 && newChecklist?.id) {
+        if (data.data.questions && data.data.questions.length > 0) {
           console.log("Adding AI generated questions to checklist:", newChecklist.id);
           
           for (const question of data.data.questions) {
@@ -69,7 +85,7 @@ export function useChecklistAI() {
       }
     } catch (error) {
       console.error("Error generating AI checklist:", error);
-      toast.error("Erro ao gerar checklist com IA");
+      toast.error(`Erro ao gerar checklist com IA: ${error instanceof Error ? error.message : 'Tente novamente.'}`);
       return null;
     } finally {
       setAiLoading(false);

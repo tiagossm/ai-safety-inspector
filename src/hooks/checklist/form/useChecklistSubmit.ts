@@ -21,8 +21,14 @@ export function useChecklistSubmit() {
       console.log("Submitting manual form:", form);
       const newChecklist = await createChecklist.mutateAsync(form);
       
+      if (!newChecklist?.id) {
+        console.error("No checklist ID was returned");
+        throw new Error("Erro ao criar checklist: ID não foi gerado");
+      }
+      
       // Add questions to the created checklist
-      if (newChecklist?.id && questions.length > 0) {
+      if (questions.length > 0) {
+        console.log(`Adding ${questions.length} questions to checklist ${newChecklist.id}`);
         for (let i = 0; i < questions.length; i++) {
           const q = questions[i];
           if (q.text.trim()) {
@@ -65,15 +71,27 @@ export function useChecklistSubmit() {
     setIsSubmitting(true);
     
     try {
+      let success = false;
+      
+      console.log(`Processing submission for ${activeTab} tab`);
+      
       if (activeTab === "manual") {
-        return await submitManualChecklist(form, questions);
+        success = await submitManualChecklist(form, questions);
       } else if (activeTab === "import" && file) {
-        return await importFromFile(file, form);
+        success = await importFromFile(file, form);
       } else if (activeTab === "ai") {
         const result = await generateAIChecklist(form);
-        return !!result;
+        success = !!result;
+      } else {
+        console.error(`Invalid tab selected: ${activeTab}`);
+        toast.error("Opção de criação inválida");
       }
-      return false;
+      
+      if (success) {
+        toast.success("Checklist criado com sucesso!");
+      }
+      
+      return success;
     } catch (error) {
       console.error("Error in form submission:", error);
       toast.error("Erro ao criar checklist. Tente novamente.");
