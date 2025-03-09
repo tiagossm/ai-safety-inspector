@@ -2,6 +2,7 @@
 import { toast } from "sonner";
 import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist"; 
 import { NewChecklist } from "@/types/checklist";
+import { supabase } from "@/integrations/supabase/client";
 
 export function useChecklistImport() {
   const createChecklist = useCreateChecklist();
@@ -24,13 +25,22 @@ export function useChecklistImport() {
       
       console.log("Calling Edge Function to process CSV");
       
+      // Get the current session JWT
+      const { data: sessionData } = await supabase.auth.getSession();
+      const jwt = sessionData?.session?.access_token;
+      
+      if (!jwt) {
+        throw new Error("Você precisa estar autenticado para importar um checklist");
+      }
+      
       // Call the edge function to process the file
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-checklist-csv`,
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Authorization': `Bearer ${jwt}`,
+            'Content-Type': 'multipart/form-data',
           },
           body: formData
         }
@@ -47,7 +57,7 @@ export function useChecklistImport() {
       
       if (result.success) {
         toast.success(`Checklist importado com sucesso! ${result.processed_items || 0} itens processados.`);
-        return true;
+        return result;
       } else {
         throw new Error(result.error || "Erro ao importar checklist");
       }
