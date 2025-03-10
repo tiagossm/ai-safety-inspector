@@ -74,30 +74,21 @@ export function useChecklistSubmit() {
     }
     
     setIsSubmitting(true);
+    let success = false;
+    let checklistId: string | null = null;
     
     try {
-      let success = false;
-      let checklistId: string | null = null;
-      
       console.log(`Processing submission for ${activeTab} tab`);
       
       if (activeTab === "manual") {
         success = await submitManualChecklist(form, questions);
         // Note: Navigation is handled inside submitManualChecklist
-      } else if (activeTab === "import" && file) {
-        // Get current session JWT for authentication
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (!sessionData?.session?.access_token) {
-          toast.error("Você precisa estar autenticado para importar um checklist");
-          setIsSubmitting(false);
-          return false;
-        }
-        
-        console.log("User authenticated, proceeding with import");
-        
+        return success;
+      } 
+      else if (activeTab === "import" && file) {
+        console.log("Processing file import");
         const importResult = await importFromFile(file, form);
         
-        // Check if importResult exists and has the expected structure
         if (importResult && typeof importResult === 'object') {
           success = true;
           
@@ -109,30 +100,37 @@ export function useChecklistSubmit() {
           }
         } else {
           success = false;
+          console.error("Import failed or returned invalid result", importResult);
         }
-      } else if (activeTab === "ai") {
-        // Fixed TypeScript error by properly handling the aiResult type
+      } 
+      else if (activeTab === "ai") {
+        console.log("Processing AI generation");
         const aiResult = await generateAIChecklist(form);
         
-        // Check if aiResult exists and has the expected structure
         if (aiResult && typeof aiResult === 'object') {
           success = true;
           
           // Handle different possible response structures
           if ('id' in aiResult) {
             checklistId = aiResult.id as string;
-          } else if ('data' in aiResult && typeof (aiResult as Record<string, any>).data === 'object') {
-            const resultData = (aiResult as Record<string, any>).data as Record<string, any>;
+          } else if ('data' in aiResult && typeof aiResult.data === 'object') {
+            const resultData = aiResult.data as Record<string, any>;
             if (resultData && 'checklist_id' in resultData) {
               checklistId = resultData.checklist_id as string;
             }
           }
+          
+          if (!checklistId) {
+            console.error("AI generation succeeded but no checklist ID was found in the response", aiResult);
+          }
         } else {
           success = false;
+          console.error("AI generation failed or returned invalid result", aiResult);
         }
       } else {
         console.error(`Invalid tab selected: ${activeTab}`);
         toast.error("Opção de criação inválida");
+        success = false;
       }
       
       if (success) {
@@ -147,12 +145,14 @@ export function useChecklistSubmit() {
           navigate('/checklists');
           toast.info("Checklist criado, mas não foi possível abrir automaticamente.");
         }
+      } else {
+        toast.error("Erro ao criar checklist. Verifique os dados e tente novamente.");
       }
       
       return success;
     } catch (error) {
       console.error("Error in form submission:", error);
-      toast.error("Erro ao criar checklist. Tente novamente.");
+      toast.error(`Erro ao criar checklist: ${error instanceof Error ? error.message : 'Tente novamente.'}`);
       return false;
     } finally {
       setIsSubmitting(false);

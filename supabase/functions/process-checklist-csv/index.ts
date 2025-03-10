@@ -27,6 +27,7 @@ serve(async (req) => {
     // Extract JWT from Authorization header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error("Missing Authorization header");
       return new Response(
         JSON.stringify({ success: false, error: "Missing authentication" }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
@@ -38,103 +39,147 @@ serve(async (req) => {
     
     // Verify the user is authenticated by decoding the JWT
     const jwt = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(jwt);
     
-    if (authError || !user) {
-      console.error("Authentication error:", authError);
+    // Log the token length for debugging (without exposing the actual token)
+    console.log(`JWT token present (length: ${jwt.length})`);
+    
+    try {
+      // Verify the JWT is valid by getting the user
+      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(jwt);
+      
+      if (authError) {
+        console.error("Authentication error:", authError);
+        throw authError;
+      }
+      
+      if (!user) {
+        console.error("No user found for the provided JWT");
+        throw new Error("Invalid authentication - no user found");
+      }
+      
+      console.log("User authenticated:", user.id);
+
+      // Check for the expected Content-Type header
+      const contentType = req.headers.get('Content-Type') || '';
+      console.log("Request Content-Type:", contentType);
+      
+      // Parse form data with file - make sure to handle potential errors in FormData parsing
+      let formData;
+      try {
+        formData = await req.formData();
+      } catch (formDataError) {
+        console.error("Error parsing FormData:", formDataError);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: "Erro ao processar dados do formulário. Verifique se está enviando um FormData válido." 
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        );
+      }
+      
+      const file = formData.get('file') as File;
+      const formJson = formData.get('form') as string;
+      
+      if (!file) {
+        console.error("No file found in request");
+        return new Response(
+          JSON.stringify({ success: false, error: "Nenhum arquivo encontrado na requisição" }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        );
+      }
+      
+      console.log("Received file:", file?.name);
+      console.log("Received form data:", formJson);
+      
+      // Validate the file
+      const fileValidation = validateFile(file);
+      if (!fileValidation.valid) {
+        throw new Error(fileValidation.message);
+      }
+      
+      // Parse form data
+      const form = JSON.parse(formJson || '{}') as ChecklistFormData;
+      console.log("Parsed form data:", form);
+      
+      // Add the authenticated user ID to the form data if not present
+      if (!form.user_id) {
+        form.user_id = user.id;
+        console.log("Added user_id to form:", form.user_id);
+      }
+      
+      // Get file content
+      const text = await file.text();
+      console.log(`File content preview: ${text.substring(0, 200)}...`);
+      
+      // Parse CSV file and validate
+      const rows = parseCSV(text, { skipFirstRow: true });
+      console.log(`Processing ${rows.length} rows from file: ${file.name}`);
+      
+      const csvValidation = validateCSVData(rows);
+      if (!csvValidation.valid) {
+        throw new Error(csvValidation.message);
+      }
+      
+      // Create checklist
+      const { id: checklistId } = await createChecklist(supabaseAdmin, form, file.name);
+      
+      // Process the CSV rows and create checklist items
+      let processed = 0;
+      const errors: Array<{ row: number; error: string }> = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        try {
+          const row = rows[i];
+          
+          // Skip empty rows
+          if (!row.length || row.every(cell => !cell || cell.trim() === '')) {
+            console.log(`Skipping empty row ${i + 1}`);
+            continue;
+          }
+          
+          console.log(`Processing row ${i + 1}:`, row);
+          
+          await processChecklistItem(supabaseAdmin, checklistId, row, i);
+          processed++;
+          
+        } catch (error) {
+          console.error(`Error processing row ${i + 1}:`, error);
+          errors.push({ row: i + 1, error: error.message });
+        }
+      }
+
+      console.log(`Completed processing with ${processed} successful items and ${errors.length} errors`);
+      
+      // Return a detailed response with the results
       return new Response(
-        JSON.stringify({ success: false, error: "Invalid authentication" }),
+        JSON.stringify({
+          success: true,
+          message: `Checklist criado com ${processed} itens`,
+          checklist_id: checklistId,
+          id: checklistId, // Added for backward compatibility
+          processed_items: processed,
+          total_rows: rows.length,
+          errors: errors.length > 0 ? errors : null
+        }),
+        { 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      );
+    } catch (authError) {
+      console.error("JWT Validation error:", authError);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: "Autenticação inválida. Talvez sua sessão tenha expirado. Faça login novamente.",
+          details: authError.message 
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
       );
     }
-    
-    console.log("User authenticated:", user.id);
-
-    // Parse form data with file
-    const formData = await req.formData();
-    const file = formData.get('file') as File;
-    const formJson = formData.get('form') as string;
-    
-    console.log("Received file:", file?.name);
-    console.log("Received form data:", formJson);
-    
-    // Validate the file
-    const fileValidation = validateFile(file);
-    if (!fileValidation.valid) {
-      throw new Error(fileValidation.message);
-    }
-    
-    // Parse form data
-    const form = JSON.parse(formJson || '{}') as ChecklistFormData;
-    console.log("Parsed form data:", form);
-    
-    // Add the authenticated user ID to the form data if not present
-    if (!form.user_id) {
-      form.user_id = user.id;
-      console.log("Added user_id to form:", form.user_id);
-    }
-    
-    // Get file content
-    const text = await file.text();
-    console.log(`File content preview: ${text.substring(0, 200)}...`);
-    
-    // Parse CSV file and validate
-    const rows = parseCSV(text, { skipFirstRow: true });
-    console.log(`Processing ${rows.length} rows from file: ${file.name}`);
-    
-    const csvValidation = validateCSVData(rows);
-    if (!csvValidation.valid) {
-      throw new Error(csvValidation.message);
-    }
-    
-    // Create checklist
-    const { id: checklistId } = await createChecklist(supabaseAdmin, form, file.name);
-    
-    // Process the CSV rows and create checklist items
-    let processed = 0;
-    const errors: Array<{ row: number; error: string }> = [];
-
-    for (let i = 0; i < rows.length; i++) {
-      try {
-        const row = rows[i];
-        
-        // Skip empty rows
-        if (!row.length || row.every(cell => !cell || cell.trim() === '')) {
-          console.log(`Skipping empty row ${i + 1}`);
-          continue;
-        }
-        
-        console.log(`Processing row ${i + 1}:`, row);
-        
-        await processChecklistItem(supabaseAdmin, checklistId, row, i);
-        processed++;
-        
-      } catch (error) {
-        console.error(`Error processing row ${i + 1}:`, error);
-        errors.push({ row: i + 1, error: error.message });
-      }
-    }
-
-    console.log(`Completed processing with ${processed} successful items and ${errors.length} errors`);
-    
-    // Return a detailed response with the results
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: `Checklist criado com ${processed} itens`,
-        checklist_id: checklistId,
-        id: checklistId, // Added for backward compatibility
-        processed_items: processed,
-        total_rows: rows.length,
-        errors: errors.length > 0 ? errors : null
-      }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
-    );
   } catch (error) {
     console.error('Error:', error);
     return new Response(

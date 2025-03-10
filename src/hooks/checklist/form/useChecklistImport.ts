@@ -64,37 +64,38 @@ export function useChecklistImport() {
       
       console.log("Authentication token acquired, proceeding with request");
       
-      // Call the edge function using Supabase SDK instead of direct fetch
-      const { data, error } = await supabase.functions.invoke('process-checklist-csv', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${jwt}`,
-          'Content-Type': 'multipart/form-data'
-        },
-        body: formData
-      });
-      
-      if (error) {
-        console.error("Edge function returned error:", error);
+      // Use try/catch to handle potential errors from the function invocation
+      try {
+        const { data, error } = await supabase.functions.invoke('process-checklist-csv', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${jwt}`,
+            // Important: Do NOT set Content-Type when using FormData
+          },
+          body: formData
+        });
         
-        if (error.message?.includes('401')) {
-          throw new Error("Erro de autenticação. Por favor, faça login novamente.");
+        if (error) {
+          console.error("Edge function returned error:", error);
+          throw new Error(`Erro na importação: ${error.message || 'Falha desconhecida'}`);
         }
         
-        throw new Error(`Erro na importação: ${error.message || 'Falha desconhecida'}`);
-      }
-      
-      console.log("Edge function result:", data);
-      
-      if (data?.success) {
-        toast.success(`Checklist importado com sucesso! ${data.processed_items || 0} itens processados.`);
-        return data;
-      } else {
-        throw new Error(data?.error || "Erro ao importar checklist");
+        console.log("Edge function result:", data);
+        
+        if (data?.success) {
+          toast.success(`Checklist importado com sucesso! ${data.processed_items || 0} itens processados.`);
+          return data;
+        } else {
+          throw new Error(data?.error || "Erro ao importar checklist");
+        }
+      } catch (invocationError) {
+        console.error("Function invocation error:", invocationError);
+        throw new Error(`Erro ao processar arquivo: ${invocationError.message}`);
       }
     } catch (error) {
       console.error("Error importing checklist:", error);
       toast.error(`Erro ao importar checklist. ${error instanceof Error ? error.message : 'Verifique o formato do arquivo.'}`);
+      // Important: Return false here to indicate failure
       return false;
     }
   };
