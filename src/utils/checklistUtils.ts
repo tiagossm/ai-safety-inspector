@@ -17,7 +17,8 @@ export function generateMockCollaborators(count: number): CollaboratorType[] {
       id: `mock-${i}`,
       name,
       avatar: "",
-      initials
+      email: `${name.toLowerCase().replace(' ', '.')}@example.com`, // Adding missing email field
+      initials // This is now properly typed
     });
   }
   

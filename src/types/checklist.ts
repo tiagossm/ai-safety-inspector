@@ -3,6 +3,7 @@ export interface CollaboratorType {
   name: string;
   avatar: string;
   email: string;
+  initials?: string; // Adding the initials property as optional
 }
 
 export interface Checklist {
