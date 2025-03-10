@@ -42,10 +42,9 @@ export function useChecklistSubmit() {
       // Add questions to the created checklist
       if (questions.length > 0) {
         console.log(`Adding ${questions.length} questions to checklist ${newChecklist.id}`);
-        for (let i = 0; i < questions.length; i++) {
-          const q = questions[i];
+        const promises = questions.map((q, i) => {
           if (q.text.trim()) {
-            await supabase
+            return supabase
               .from("checklist_itens")
               .insert({
                 checklist_id: newChecklist.id,
@@ -58,8 +57,13 @@ export function useChecklistSubmit() {
                 permite_foto: true
               });
           }
-        }
+          return Promise.resolve(null);
+        });
+        
+        await Promise.all(promises.filter(Boolean));
       }
+      
+      toast.success("Checklist criado com sucesso!");
       
       // Redirect to the newly created checklist details page
       navigate(`/checklists/${newChecklist.id}`);
@@ -84,6 +88,11 @@ export function useChecklistSubmit() {
     
     if (!form.title.trim() && activeTab !== "ai") {
       toast.error("O título é obrigatório");
+      return false;
+    }
+    
+    if (isSubmitting) {
+      console.log("Submission already in progress, ignoring duplicate submit");
       return false;
     }
     

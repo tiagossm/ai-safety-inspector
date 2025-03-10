@@ -24,12 +24,14 @@ export function useChecklistAI() {
       if (sessionError) {
         console.error("Session error:", sessionError);
         toast.error("Você precisa estar autenticado para gerar um checklist com IA");
+        setAiLoading(false);
         return false;
       }
       
       if (!jwt) {
         console.error("No JWT token found in session");
         toast.error("Sessão inválida. Faça login novamente.");
+        setAiLoading(false);
         return false;
       }
       
@@ -58,11 +60,12 @@ export function useChecklistAI() {
       
       if (error) {
         console.error("Edge function error:", error);
-        if (error.message.includes('401') || error.message.includes('JWT')) {
+        if (error.message && (error.message.includes('401') || error.message.includes('JWT'))) {
           toast.error("Sua sessão expirou, faça login novamente");
         } else {
           toast.error(`Erro ao gerar checklist: ${error.message}`);
         }
+        setAiLoading(false);
         return false;
       }
       

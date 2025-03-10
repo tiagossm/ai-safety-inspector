@@ -14,10 +14,18 @@ export function useCreateChecklist() {
   return useMutation({
     mutationFn: async (newChecklist: NewChecklist) => {
       try {
-        // Log o que está sendo enviado para ajudar a depurar
+        // Ensure authentication before proceeding
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError || !sessionData.session) {
+          console.error("Session error:", sessionError);
+          throw new Error("Você precisa estar autenticado para criar um checklist");
+        }
+        
+        // Log what's being sent to help debug
         console.log("Creating checklist with data:", newChecklist);
         
-        // Preparar dados do checklist
+        // Prepare checklist data with all mandatory fields
         const checklistData = {
           title: newChecklist.title,
           description: newChecklist.description,
@@ -27,12 +35,12 @@ export function useCreateChecklist() {
           responsible_id: newChecklist.responsible_id || null,
           company_id: newChecklist.company_id || extendedUser?.company_id || null,
           due_date: newChecklist.due_date || null,
-          user_id: extendedUser?.id // Garante que user_id está definido
+          user_id: extendedUser?.id // Ensure user_id is set
         };
         
-        console.log("Checklist preparado para inserção:", checklistData);
+        console.log("Checklist prepared for insertion:", checklistData);
         
-        // Inserir o checklist
+        // Insert the checklist
         const { data, error } = await supabase
           .from("checklists")
           .insert(checklistData)
@@ -48,7 +56,7 @@ export function useCreateChecklist() {
           throw new Error("Falha ao criar checklist: Nenhum dado retornado");
         }
 
-        // Verificar explicitamente se o ID existe nos dados retornados
+        // Verify explicitly that the ID exists in the returned data
         if (!data[0].id) {
           console.error("Created checklist is missing ID:", data[0]);
           throw new Error("Falha ao criar checklist: ID não gerado");
@@ -56,13 +64,13 @@ export function useCreateChecklist() {
 
         console.log("Checklist created successfully:", data[0]);
         
-        // Salvar também no IndexedDB se tivermos a funcionalidade de sincronia offline
+        // Also save to IndexedDB if we have offline sync functionality
         try {
           const { saveForSync } = await import('@/services/offlineSync');
           await saveForSync('checklists', 'insert', data[0]);
           console.log("Checklist also saved for offline sync");
         } catch (syncError) {
-          // Não é um erro crítico, apenas registre
+          // Not a critical error, just log it
           console.warn("Could not save checklist for offline sync:", syncError);
         }
         
@@ -80,11 +88,11 @@ export function useCreateChecklist() {
     onError: (error) => {
       console.error("Erro ao criar checklist:", error);
       
-      // Mensagem de erro mais específica com base no erro
+      // More specific error message based on the error
       let errorMessage = "Erro ao criar checklist. Tente novamente.";
       
       if (error instanceof Error) {
-        // Verificar erros específicos do Supabase
+        // Check for specific Supabase errors
         if ('code' in error && 'details' in error && 'hint' in error) {
           const supabaseError = error as any;
           if (supabaseError.code === '23505') {
