@@ -78,15 +78,6 @@ export function useFetchChecklists() {
 
         console.log("✅ Checklists recebidos do Supabase:", checklists?.length || 0);
 
-        // Verifica cada checklist
-        if (checklists) {
-          for (const checklist of checklists) {
-            if (!checklist.id) {
-              console.error("❌ Checklist sem ID detectado:", checklist);
-            }
-          }
-        }
-
         // Se não há checklists, retorna array vazio
         if (!checklists || checklists.length === 0) {
           console.log("❓ Nenhum checklist encontrado para o usuário");
@@ -127,12 +118,12 @@ export function useFetchChecklists() {
           try {
             const { data: companies } = await supabase
               .from("companies")
-              .select("id, name")
+              .select("id, name, fantasy_name")
               .in("id", companyIds);
 
             if (companies) {
               companiesMap = companies.reduce((acc: Record<string, string>, company: any) => {
-                acc[company.id] = company.name;
+                acc[company.id] = company.fantasy_name || company.name || "Empresa sem nome";
                 return acc;
               }, {});
             }
@@ -152,10 +143,20 @@ export function useFetchChecklists() {
 
               if (itemsError) throw itemsError;
 
+              // Count completed items
+              const { count: completedCount, error: completedError } = await supabase
+                .from("checklist_itens")
+                .select("*", { count: "exact", head: true })
+                .eq("checklist_id", checklist.id)
+                .not("resposta", "is", null);
+                
+              if (completedError) throw completedError;
+
               // Enriquece o checklist com novos campos
               const enrichedChecklist: Checklist = {
                 ...checklist,
                 items: count || 0,
+                items_completed: completedCount || 0,
                 responsible_name: usersMap[checklist.responsible_id] || "Não atribuído",
                 company_name: companiesMap[checklist.company_id] || "Não atribuída",
                 status_checklist: checklist.status_checklist === "inativo" ? "inativo" : "ativo",
@@ -172,6 +173,7 @@ export function useFetchChecklists() {
               return {
                 ...checklist,
                 items: 0,
+                items_completed: 0,
                 responsible_name: "Não atribuído",
                 company_name: "Não atribuída",
                 status_checklist: checklist.status_checklist === "inativo" ? "inativo" : "ativo",

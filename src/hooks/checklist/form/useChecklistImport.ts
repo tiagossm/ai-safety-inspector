@@ -8,8 +8,6 @@ import { AuthUser } from "@/hooks/auth/useAuthState";
 
 /**
  * Validates if the file is in correct format (CSV, XLS, XLSX)
- * @param file File to validate
- * @returns Object with validation result and message
  */
 const validateFileFormat = (file: File): { valid: boolean; message?: string } => {
   if (!file) {
@@ -38,6 +36,12 @@ export function useChecklistImport() {
   };
 
   const importFromFile = async (file: File, form: NewChecklist) => {
+    // Validate file exists
+    if (!file) {
+      toast.error("Nenhum arquivo selecionado");
+      return false;
+    }
+    
     // Validate file format
     const validation = validateFileFormat(file);
     if (!validation.valid) {
@@ -46,11 +50,12 @@ export function useChecklistImport() {
     }
     
     try {
-      console.log("Importing from file:", file.name);
+      console.log("Importing from file:", file.name, "Size:", Math.round(file.size / 1024), "KB");
       
       // Ensure the form has user_id set
       if (!form.user_id && typedUser?.id) {
         form.user_id = typedUser.id;
+        console.log("Added user_id to form:", form.user_id);
       }
       
       // Create a FormData instance
@@ -60,26 +65,33 @@ export function useChecklistImport() {
       // Add form data as JSON string
       formData.append('form', JSON.stringify(form));
       
-      console.log("Calling Edge Function to process CSV with form data:", form);
+      console.log("Form data prepared:", form);
       
       // Get the current session JWT
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       const jwt = sessionData?.session?.access_token;
       
-      if (sessionError || !jwt) {
+      if (sessionError) {
         console.error("Session error:", sessionError);
         toast.error("Você precisa estar autenticado para importar um checklist");
         return false;
       }
       
-      console.log("Authentication token acquired, length:", jwt.length);
+      if (!jwt) {
+        console.error("No JWT token found in session");
+        toast.error("Sessão inválida. Faça login novamente.");
+        return false;
+      }
+      
+      console.log("JWT token acquired, length:", jwt.length);
       
       // Use try/catch to handle potential errors from the function invocation
       try {
+        console.log("Calling edge function to process CSV...");
         const { data, error } = await supabase.functions.invoke('process-checklist-csv', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${jwt}`,
+            'Authorization': `Bearer ${jwt}`
             // Important: Do NOT set Content-Type when using FormData
           },
           body: formData

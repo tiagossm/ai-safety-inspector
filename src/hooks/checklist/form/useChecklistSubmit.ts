@@ -29,6 +29,7 @@ export function useChecklistSubmit() {
       // Ensure user_id is set
       if (!form.user_id && typedUser?.id) {
         form.user_id = typedUser.id;
+        console.log("Added user_id to form:", form.user_id);
       }
       
       const newChecklist = await createChecklist.mutateAsync(form);
@@ -91,7 +92,7 @@ export function useChecklistSubmit() {
     let checklistId: string | null = null;
     
     try {
-      console.log(`Processing submission for ${activeTab} tab`);
+      console.log(`Processing submission for ${activeTab} tab with user:`, typedUser?.id);
       
       // Ensure user_id is set in the form
       if (!form.user_id && typedUser?.id) {
@@ -102,7 +103,6 @@ export function useChecklistSubmit() {
       if (activeTab === "manual") {
         success = await submitManualChecklist(form, questions);
         // Note: Navigation is handled inside submitManualChecklist
-        setIsSubmitting(false);
         return success;
       } 
       else if (activeTab === "import" && file) {
@@ -118,6 +118,8 @@ export function useChecklistSubmit() {
           } else if ('checklist_id' in importResult) {
             checklistId = importResult.checklist_id as string;
           }
+          
+          console.log("Import successful, checklist ID:", checklistId);
         } else {
           success = false;
           console.error("Import failed or returned invalid result", importResult);
@@ -142,14 +144,22 @@ export function useChecklistSubmit() {
           
           if (!checklistId) {
             console.error("AI generation succeeded but no checklist ID was found in the response", aiResult);
+          } else {
+            console.log("AI generation successful, checklist ID:", checklistId);
           }
         } else {
           success = false;
           console.error("AI generation failed or returned invalid result", aiResult);
         }
       } else {
-        console.error(`Invalid tab selected: ${activeTab}`);
-        toast.error("Opção de criação inválida");
+        if (activeTab === "import" && !file) {
+          toast.error("Por favor, selecione um arquivo para importar");
+        } else if (activeTab === "ai" && !aiPrompt.trim()) {
+          toast.error("Por favor, forneça um prompt para gerar o checklist");
+        } else {
+          console.error(`Invalid tab selected: ${activeTab}`);
+          toast.error("Opção de criação inválida");
+        }
         success = false;
       }
       

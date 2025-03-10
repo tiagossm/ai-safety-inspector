@@ -21,15 +21,24 @@ export function useChecklistAI() {
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       const jwt = sessionData?.session?.access_token;
       
-      if (sessionError || !jwt) {
+      if (sessionError) {
         console.error("Session error:", sessionError);
         toast.error("Você precisa estar autenticado para gerar um checklist com IA");
         return false;
       }
       
+      if (!jwt) {
+        console.error("No JWT token found in session");
+        toast.error("Sessão inválida. Faça login novamente.");
+        return false;
+      }
+      
+      console.log("JWT token length:", jwt.length, "User ID:", typedUser?.id);
+      
       // Ensure user_id is set
       if (!form.user_id && typedUser?.id) {
         form.user_id = typedUser.id;
+        console.log("Added user_id to form:", form.user_id);
       }
       
       const { data, error } = await supabase.functions.invoke('generate-checklist', {
@@ -41,14 +50,23 @@ export function useChecklistAI() {
         body: JSON.stringify({
           prompt: aiPrompt,
           num_questions: numQuestions,
-          form: form
+          category: form.category || 'general',
+          user_id: form.user_id,
+          company_id: form.company_id
         })
       });
       
       if (error) {
-        throw error;
+        console.error("Edge function error:", error);
+        if (error.message.includes('401') || error.message.includes('JWT')) {
+          toast.error("Sua sessão expirou, faça login novamente");
+        } else {
+          toast.error(`Erro ao gerar checklist: ${error.message}`);
+        }
+        return false;
       }
       
+      console.log("AI generation successful:", data);
       return data;
     } catch (err) {
       console.error("Error generating AI checklist:", err);
@@ -59,7 +77,7 @@ export function useChecklistAI() {
           toast.error(`Erro ao gerar checklist: ${err.message}`);
         }
       } else {
-        toast.error("Erro ao gerar checklist com IA");
+        toast.error("Erro desconhecido ao gerar checklist com IA");
       }
       return false;
     } finally {

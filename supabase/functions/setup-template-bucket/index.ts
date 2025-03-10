@@ -84,6 +84,37 @@ serve(async (req) => {
       console.log('Checklist media bucket already exists')
     }
 
+    // Create storage RLS policies to make files publicly accessible
+    try {
+      // Set up public access policy for templates bucket
+      await supabase.rpc('create_storage_policy', {
+        bucket_name: 'templates',
+        definition: 'true', // Everyone can access
+        policy_name: 'Public Access Templates',
+        operation: 'SELECT'
+      });
+      
+      // Set up public access policy for checklist-media bucket
+      await supabase.rpc('create_storage_policy', {
+        bucket_name: 'checklist-media',
+        definition: 'true', // Everyone can access
+        policy_name: 'Public Access Checklist Media',
+        operation: 'SELECT'
+      });
+      
+      // Set up insert policy for authenticated users
+      await supabase.rpc('create_storage_policy', {
+        bucket_name: 'checklist-media',
+        definition: '(auth.role() = \'authenticated\')', 
+        policy_name: 'Authenticated Insert Checklist Media',
+        operation: 'INSERT'
+      });
+      
+      console.log('Storage policies created successfully');
+    } catch (policyError) {
+      console.warn('Error setting up storage policies (may already exist):', policyError);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
