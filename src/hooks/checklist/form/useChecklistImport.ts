@@ -3,6 +3,8 @@ import { toast } from "sonner";
 import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist"; 
 import { NewChecklist } from "@/types/checklist";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
+import { AuthUser } from "@/hooks/auth/useAuthState";
 
 /**
  * Validates if the file is in correct format (CSV, XLS, XLSX)
@@ -28,6 +30,8 @@ const validateFileFormat = (file: File): { valid: boolean; message?: string } =>
 
 export function useChecklistImport() {
   const createChecklist = useCreateChecklist();
+  const { user } = useAuth();
+  const typedUser = user as AuthUser | null;
 
   const getTemplateFileUrl = () => {
     return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/templates/checklist_import_template.xlsx`;
@@ -44,6 +48,11 @@ export function useChecklistImport() {
     try {
       console.log("Importing from file:", file.name);
       
+      // Ensure the form has user_id set
+      if (!form.user_id && typedUser?.id) {
+        form.user_id = typedUser.id;
+      }
+      
       // Create a FormData instance
       const formData = new FormData();
       formData.append('file', file);
@@ -51,7 +60,7 @@ export function useChecklistImport() {
       // Add form data as JSON string
       formData.append('form', JSON.stringify(form));
       
-      console.log("Calling Edge Function to process CSV");
+      console.log("Calling Edge Function to process CSV with form data:", form);
       
       // Get the current session JWT
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -59,10 +68,11 @@ export function useChecklistImport() {
       
       if (sessionError || !jwt) {
         console.error("Session error:", sessionError);
-        throw new Error("Você precisa estar autenticado para importar um checklist");
+        toast.error("Você precisa estar autenticado para importar um checklist");
+        return false;
       }
       
-      console.log("Authentication token acquired, proceeding with request");
+      console.log("Authentication token acquired, length:", jwt.length);
       
       // Use try/catch to handle potential errors from the function invocation
       try {
@@ -90,12 +100,26 @@ export function useChecklistImport() {
         }
       } catch (invocationError) {
         console.error("Function invocation error:", invocationError);
-        throw new Error(`Erro ao processar arquivo: ${invocationError.message}`);
+        // Check if this is a JWT authentication error
+        if (invocationError.message?.includes('401') || invocationError.message?.includes('JWT')) {
+          toast.error("Sua sessão expirou, faça login novamente");
+        } else {
+          toast.error(`Erro ao processar arquivo: ${invocationError.message}`);
+        }
+        return false;
       }
     } catch (error) {
       console.error("Error importing checklist:", error);
-      toast.error(`Erro ao importar checklist. ${error instanceof Error ? error.message : 'Verifique o formato do arquivo.'}`);
-      // Important: Return false here to indicate failure
+      if (error instanceof Error) {
+        // Check for JWT-related errors
+        if (error.message.includes('401') || error.message.includes('JWT')) {
+          toast.error("Sua sessão expirou, faça login novamente");
+        } else {
+          toast.error(`Erro ao importar checklist. ${error.message}`);
+        }
+      } else {
+        toast.error('Erro ao importar checklist. Verifique o formato do arquivo.');
+      }
       return false;
     }
   };

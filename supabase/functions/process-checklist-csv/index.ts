@@ -49,12 +49,26 @@ serve(async (req) => {
       
       if (authError) {
         console.error("Authentication error:", authError);
-        throw authError;
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: `Autenticação falhou: ${authError.message}`,
+            code: 401
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+        );
       }
       
       if (!user) {
         console.error("No user found for the provided JWT");
-        throw new Error("Invalid authentication - no user found");
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: "Autenticação inválida - nenhum usuário encontrado",
+            code: 401
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+        );
       }
       
       console.log("User authenticated:", user.id);
@@ -175,7 +189,8 @@ serve(async (req) => {
         JSON.stringify({ 
           success: false, 
           error: "Autenticação inválida. Talvez sua sessão tenha expirado. Faça login novamente.",
-          details: authError.message 
+          details: authError.message,
+          code: 401
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
       );

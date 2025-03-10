@@ -37,7 +37,7 @@ export default function CreateChecklist() {
       case "manual":
         return form.title.trim() !== "";
       case "import":
-        return file !== null;
+        return file !== null && form.title.trim() !== "";
       case "ai":
         return aiPrompt.trim() !== "" && !aiLoading;
       default:

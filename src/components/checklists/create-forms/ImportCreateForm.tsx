@@ -6,7 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon, Upload } from "lucide-react";
+import { Calendar as CalendarIcon, Upload, Download } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -19,6 +19,7 @@ import {
 import { FormSection } from "./FormSection";
 import { NewChecklist } from "@/types/checklist";
 import { Card, CardContent } from "@/components/ui/card";
+import { useChecklistImport } from "@/hooks/checklist/form/useChecklistImport";
 
 // Checklist category options
 const CATEGORIES = [
@@ -47,6 +48,13 @@ export function ImportCreateForm({
   file,
   onFileChange
 }: ImportCreateFormProps) {
+  const { getTemplateFileUrl } = useChecklistImport();
+  
+  const downloadTemplateFile = () => {
+    const templateUrl = getTemplateFileUrl();
+    window.open(templateUrl, '_blank');
+  };
+
   return (
     <div className="space-y-6">
       <FormSection title="Informações Básicas">
@@ -164,17 +172,28 @@ export function ImportCreateForm({
               <Input
                 id="file-upload"
                 type="file"
-                accept=".csv,.xlsx"
+                accept=".csv,.xlsx,.xls"
                 onChange={onFileChange}
                 className="hidden"
               />
-              <Button 
-                type="button" 
-                variant="outline"
-                onClick={() => document.getElementById('file-upload')?.click()}
-              >
-                Selecionar Arquivo
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={() => document.getElementById('file-upload')?.click()}
+                >
+                  Selecionar Arquivo
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={downloadTemplateFile}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Baixar Modelo
+                </Button>
+              </div>
               {file && (
                 <p className="mt-4 text-sm font-medium text-green-600">
                   Arquivo selecionado: {file.name}
@@ -184,26 +203,17 @@ export function ImportCreateForm({
             <div className="text-sm text-gray-500">
               <p>O arquivo deve seguir o formato padrão com as colunas:</p>
               <ul className="list-disc pl-5 mt-1">
-                <li>Pergunta (obrigatório)</li>
-                <li>Tipo de Resposta (obrigatório)</li>
-                <li>Obrigatório (sim/não)</li>
-                <li>Ordem</li>
-                <li>Opções (separadas por vírgula)</li>
-                <li>Permite Áudio (sim/não)</li>
-                <li>Permite Vídeo (sim/não)</li>
-                <li>Permite Foto (sim/não)</li>
+                <li><strong>Pergunta</strong> (obrigatório)</li>
+                <li><strong>Tipo de Resposta</strong> (obrigatório)</li>
+                <li><strong>Obrigatório</strong> (sim/não)</li>
+                <li><strong>Ordem</strong></li>
+                <li><strong>Opções</strong> (separadas por vírgula)</li>
+                <li><strong>Permite Áudio</strong> (sim/não)</li>
+                <li><strong>Permite Vídeo</strong> (sim/não)</li>
+                <li><strong>Permite Foto</strong> (sim/não)</li>
               </ul>
-              <p className="mt-2">
-                <a 
-                  href="#" 
-                  className="text-blue-600 hover:underline"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    // Add functionality to download a template file
-                  }}
-                >
-                  Baixar modelo de planilha
-                </a>
+              <p className="mt-2 text-blue-600">
+                <strong>Tipos de resposta aceitos:</strong> Texto, Numérico, Múltipla Escolha, Data, Sim/Não
               </p>
             </div>
           </div>

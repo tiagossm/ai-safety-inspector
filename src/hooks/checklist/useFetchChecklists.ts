@@ -117,6 +117,30 @@ export function useFetchChecklists() {
           }
         }
 
+        // Buscar informações das empresas
+        let companiesMap: Record<string, string> = {};
+        const companyIds = checklists
+          .filter((c: any) => c.company_id)
+          .map((c: any) => c.company_id);
+
+        if (companyIds.length > 0) {
+          try {
+            const { data: companies } = await supabase
+              .from("companies")
+              .select("id, name")
+              .in("id", companyIds);
+
+            if (companies) {
+              companiesMap = companies.reduce((acc: Record<string, string>, company: any) => {
+                acc[company.id] = company.name;
+                return acc;
+              }, {});
+            }
+          } catch (err) {
+            console.error("❌ Erro ao buscar empresas:", err);
+          }
+        }
+
         // Adiciona informações complementares aos checklists
         const checklistsWithItems = await Promise.all(
           checklists.map(async (checklist: any) => {
@@ -133,6 +157,7 @@ export function useFetchChecklists() {
                 ...checklist,
                 items: count || 0,
                 responsible_name: usersMap[checklist.responsible_id] || "Não atribuído",
+                company_name: companiesMap[checklist.company_id] || "Não atribuída",
                 status_checklist: checklist.status_checklist === "inativo" ? "inativo" : "ativo",
                 is_template: Boolean(checklist.is_template),
                 category: checklist.category || "Sem categoria",
@@ -148,6 +173,7 @@ export function useFetchChecklists() {
                 ...checklist,
                 items: 0,
                 responsible_name: "Não atribuído",
+                company_name: "Não atribuída",
                 status_checklist: checklist.status_checklist === "inativo" ? "inativo" : "ativo",
                 is_template: Boolean(checklist.is_template),
                 category: checklist.category || "Sem categoria",

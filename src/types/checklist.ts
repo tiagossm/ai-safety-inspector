@@ -1,99 +1,53 @@
+export interface CollaboratorType {
+  id: string;
+  name: string;
+  avatar: string;
+  email: string;
+}
 
-export type Checklist = {
+export interface Checklist {
   id: string;
   title: string;
-  description: string | null;
-  created_at: string;
-  updated_at: string;
-  status_checklist: "ativo" | "inativo";
+  description?: string;
   is_template: boolean;
-  user_id?: string;
-  company_id?: string;
-  status?: string;
-  category?: string;
-  responsible_id?: string;
+  status_checklist: "ativo" | "inativo";
+  category: string;
+  responsible_id?: string | null;
   responsible_name?: string;
+  company_id?: string | null;
+  company_name?: string;
+  user_id?: string | null;
+  created_at?: string;
+  updated_at?: string;
   due_date?: string | null;
-  // UI properties
-  collaborators?: CollaboratorType[];
   items?: number;
-  permissions?: string[];
-  // Adding properties needed in ChecklistCard and ChecklistDetailsContainer
-  items_total?: number;
   items_completed?: number;
-  // New property to track access level
-  access_level?: "owner" | "admin" | "editor" | "viewer";
-};
+  collaborators?: CollaboratorType[];
+  permissions?: string[];
+}
 
-export type ChecklistItem = {
+export interface ChecklistItem {
   id: string;
   checklist_id: string;
   pergunta: string;
   tipo_resposta: "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla";
   obrigatorio: boolean;
-  ordem: number;
   opcoes: string[] | null;
-};
+  ordem: number;
+  resposta?: string | number | boolean | null;
+  permite_audio: boolean;
+  permite_video: boolean;
+  permite_foto: boolean;
+}
 
-export type CollaboratorType = {
-  id: string;
-  name: string;
-  avatar: string;
-  initials: string;
-};
-
-export type NewChecklist = {
+export interface NewChecklist {
   title: string;
-  description: string | null;
+  description?: string;
   is_template?: boolean;
+  status_checklist?: string;
   category?: string;
-  responsible_id?: string;
-  company_id?: string;
-  user_id?: string;
+  responsible_id?: string | null;
+  company_id?: string | null;
   due_date?: string | null;
-};
-
-export type ChecklistFilter = "all" | "templates" | "custom";
-
-// Tipos para criação de checklists inteligente
-export type AIChecklistPrompt = {
-  prompt: string;
-  num_questions: number;
-  category?: string;
-};
-
-// Tipo para resposta da IA
-export type AIResponse = {
-  success: boolean;
-  message?: string;
-  data?: any;
-};
-
-// Tipo para upload de mídia em checklists
-export type ChecklistMedia = {
-  id: string;
-  checklist_item_id: string;
-  file_url: string;
-  file_type: "image" | "audio" | "video";
-  created_at: string;
-};
-
-// New types for user access control
-export type ChecklistPermission = {
-  id: string;
-  checklist_id: string;
-  user_id: string;
-  access_level: "owner" | "admin" | "editor" | "viewer";
-  granted_by: string;
-  granted_at: string;
-};
-
-export type ChecklistAssignment = {
-  id: string;
-  checklist_id: string;
-  company_id: string;
-  user_id: string;
-  created_at: string;
-  updated_at: string;
-  status: "active" | "inactive";
-};
+  user_id?: string | null;
+}

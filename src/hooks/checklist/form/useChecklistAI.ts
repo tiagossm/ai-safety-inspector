@@ -1,67 +1,67 @@
 
 import { useState } from "react";
-import { NewChecklist } from "@/types/checklist";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { NewChecklist } from "@/types/checklist";
 import { useAuth } from "@/components/AuthProvider";
+import { AuthUser } from "@/hooks/auth/useAuthState";
 
 export function useChecklistAI() {
-  const [aiPrompt, setAiPrompt] = useState("");
-  const [numQuestions, setNumQuestions] = useState(10);
-  const [aiLoading, setAiLoading] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState<string>("");
+  const [numQuestions, setNumQuestions] = useState<number>(5);
+  const [aiLoading, setAiLoading] = useState<boolean>(false);
   const { user } = useAuth();
+  const typedUser = user as AuthUser | null;
 
-  // Generate checklist using AI
   const generateAIChecklist = async (form: NewChecklist) => {
-    setAiLoading(true);
     try {
-      // Get the current session JWT
+      setAiLoading(true);
+      
+      // Get current session
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       const jwt = sessionData?.session?.access_token;
       
       if (sessionError || !jwt) {
         console.error("Session error:", sessionError);
-        throw new Error("Você precisa estar autenticado para gerar um checklist com IA");
+        toast.error("Você precisa estar autenticado para gerar um checklist com IA");
+        return false;
       }
       
-      console.log("Calling AI to generate checklist based on prompt:", aiPrompt);
+      // Ensure user_id is set
+      if (!form.user_id && typedUser?.id) {
+        form.user_id = typedUser.id;
+      }
       
-      // Prepare the request data
-      const requestData = {
-        prompt: aiPrompt,
-        num_questions: numQuestions,
-        category: form.category || 'general',
-        user_id: form.user_id || user?.id,
-        company_id: form.company_id
-      };
-      
-      // Use the Supabase Functions API directly to avoid content-type issues with FormData
       const { data, error } = await supabase.functions.invoke('generate-checklist', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${jwt}`,
           'Content-Type': 'application/json'
         },
-        body: requestData
+        body: JSON.stringify({
+          prompt: aiPrompt,
+          num_questions: numQuestions,
+          form: form
+        })
       });
       
       if (error) {
-        console.error("Error calling AI function:", error);
         throw error;
       }
       
-      console.log("AI generated response:", data);
-      
-      if (data?.success) {
-        toast.success("Checklist gerado com sucesso pela IA!");
-        return data;
+      return data;
+    } catch (err) {
+      console.error("Error generating AI checklist:", err);
+      if (err instanceof Error) {
+        if (err.message.includes('401') || err.message.includes('JWT')) {
+          toast.error("Sua sessão expirou, faça login novamente");
+        } else {
+          toast.error(`Erro ao gerar checklist: ${err.message}`);
+        }
       } else {
-        throw new Error(data?.error || "Erro ao gerar checklist com IA");
+        toast.error("Erro ao gerar checklist com IA");
       }
-    } catch (error) {
-      console.error("Error generating AI checklist:", error);
-      toast.error(`Erro ao gerar checklist com IA: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-      return null;
+      return false;
     } finally {
       setAiLoading(false);
     }

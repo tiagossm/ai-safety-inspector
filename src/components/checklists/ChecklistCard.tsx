@@ -1,77 +1,145 @@
-import { Checklist } from "@/types/checklist";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+
+import { CalendarIcon, CheckSquare, MoreHorizontal, Users } from "lucide-react";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ChecklistActions } from "./ChecklistActions";
-import { Progress } from "@/components/ui/progress"; // Barra de progresso
-import { CheckCircle, Clock, Circle, Calendar } from "lucide-react"; // Ícones de status
+import { Checklist } from "@/types/checklist";
 
 interface ChecklistCardProps {
   checklist: Checklist;
+  onOpen: (id: string) => void;
+  onDelete: (id: string, title: string) => void;
 }
 
-// Função para definir ícone de status
-function getStatusIcon(status: string) {
-  if (status === "ativo") return <CheckCircle className="text-green-500 w-4 h-4" />;
-  if (status === "em andamento") return <Clock className="text-yellow-500 w-4 h-4" />;
-  return <Circle className="text-red-500 w-4 h-4" />;
-}
+export function ChecklistCard({ checklist, onOpen, onDelete }: ChecklistCardProps) {
+  // Determina a cor do badge com base na categoria
+  const getCategoryColor = (category: string) => {
+    switch(category) {
+      case "safety": return "bg-red-100 text-red-800 hover:bg-red-200";
+      case "quality": return "bg-purple-100 text-purple-800 hover:bg-purple-200";
+      case "maintenance": return "bg-blue-100 text-blue-800 hover:bg-blue-200";
+      case "environment": return "bg-green-100 text-green-800 hover:bg-green-200";
+      case "operational": return "bg-orange-100 text-orange-800 hover:bg-orange-200";
+      default: return "bg-gray-100 text-gray-800 hover:bg-gray-200";
+    }
+  };
 
-// Função para formatar data
-function formatDate(dateString?: string | null) {
-  if (!dateString) return "Sem data";
-  return new Date(dateString).toLocaleDateString("pt-BR");
-}
-
-export function ChecklistCard({ checklist }: ChecklistCardProps) {
-  const progress =
-    checklist.items && checklist.items > 0
-      ? ((checklist.items - (checklist.items_completed || 0)) / checklist.items) * 100
-      : 0;
+  // Traduz o nome da categoria
+  const translateCategory = (category: string) => {
+    switch(category) {
+      case "safety": return "Segurança";
+      case "quality": return "Qualidade";
+      case "maintenance": return "Manutenção";
+      case "environment": return "Meio Ambiente";
+      case "operational": return "Operacional";
+      case "general": return "Geral";
+      default: return category;
+    }
+  };
 
   return (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow">
-      <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-        <div className="flex flex-col space-y-1.5">
-          <div className="flex items-center space-x-2">
-            {getStatusIcon(checklist.status_checklist)}
-            <CardTitle className="line-clamp-1 text-base font-medium">
-              {checklist.title}
-            </CardTitle>
+    <Card 
+      className="h-full flex flex-col hover:shadow-md transition-shadow"
+      onClick={() => onOpen(checklist.id)}
+    >
+      <CardHeader className="pb-2 flex flex-row justify-between items-start">
+        <div>
+          <Badge 
+            className={`${getCategoryColor(checklist.category)} mb-2`}
+          >
+            {translateCategory(checklist.category)}
+          </Badge>
+          <h3 className="font-semibold text-xl">{checklist.title}</h3>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+            <Button variant="ghost" size="icon">
+              <MoreHorizontal className="h-5 w-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={(e) => {
+              e.stopPropagation();
+              onOpen(checklist.id);
+            }}>
+              Ver detalhes
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => {
+              e.stopPropagation();
+              onDelete(checklist.id, checklist.title);
+            }} className="text-destructive">
+              Excluir
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </CardHeader>
+      <CardContent className="pb-2 flex-grow">
+        {checklist.description && (
+          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+            {checklist.description}
+          </p>
+        )}
+        <div className="space-y-2">
+          <div className="flex items-center text-sm">
+            <CheckSquare className="mr-2 h-4 w-4 text-muted-foreground" />
+            <span>
+              {checklist.items || 0} item{(checklist.items || 0) !== 1 ? 's' : ''}
+            </span>
           </div>
-          {checklist.is_template && (
-            <Badge variant="outline" className="bg-blue-50 text-blue-700 hover:bg-blue-100">
-              Template
-            </Badge>
+          {checklist.due_date && (
+            <div className="flex items-center text-sm">
+              <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+              <span>
+                {new Date(checklist.due_date).toLocaleDateString()}
+              </span>
+            </div>
+          )}
+          {checklist.company_name && (
+            <div className="flex items-center text-sm">
+              <Users className="mr-2 h-4 w-4 text-muted-foreground" />
+              <span>
+                {checklist.company_name}
+              </span>
+            </div>
           )}
         </div>
-        <ChecklistActions checklist={checklist} />
-      </CardHeader>
-
-      <CardContent className="pb-2">
-        <p className="text-sm text-muted-foreground line-clamp-2 h-10">
-          {checklist.description || "Sem descrição"}
-        </p>
-        {/* Barra de Progresso */}
-        <Progress value={progress} className="mt-2" />
       </CardContent>
-
-      <CardFooter className="flex justify-between pt-2">
-        <div className="flex flex-col space-y-1">
-          <p className="text-xs text-muted-foreground">
-            {checklist.items_completed}/{checklist.items} itens concluídos
-          </p>
-          <p className="text-xs text-muted-foreground flex items-center">
-            <Calendar className="w-4 h-4 mr-1 text-gray-500" /> {formatDate(checklist.due_date)}
-          </p>
-        </div>
-        <div className="flex -space-x-2">
-          {checklist.collaborators?.map((collaborator) => (
-            <Avatar key={collaborator.id} className="h-6 w-6 border-2 border-background">
-              <AvatarImage src={collaborator.avatar} alt={collaborator.name} />
-              <AvatarFallback className="text-xs">{collaborator.initials}</AvatarFallback>
+      <CardFooter className="pt-2 border-t">
+        <div className="flex justify-between items-center w-full">
+          <div className="flex items-center">
+            <Avatar className="h-6 w-6 mr-1">
+              <AvatarImage src="" />
+              <AvatarFallback className="text-xs">
+                {checklist.responsible_name?.charAt(0) || "?"}
+              </AvatarFallback>
             </Avatar>
-          ))}
+            <span className="text-xs text-muted-foreground">
+              {checklist.responsible_name || "Não atribuído"}
+            </span>
+          </div>
+          <div>
+            {checklist.status_checklist === "ativo" ? (
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                Ativo
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
+                Inativo
+              </Badge>
+            )}
+            {checklist.is_template && (
+              <Badge variant="outline" className="ml-2 bg-blue-50 text-blue-700 border-blue-200">
+                Template
+              </Badge>
+            )}
+          </div>
         </div>
       </CardFooter>
     </Card>

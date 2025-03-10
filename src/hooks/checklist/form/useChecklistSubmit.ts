@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { useChecklistAI } from "./useChecklistAI";
 import { useChecklistImport } from "./useChecklistImport";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/components/AuthProvider";
+import { AuthUser } from "@/hooks/auth/useAuthState";
 
 export function useChecklistSubmit() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -14,6 +16,8 @@ export function useChecklistSubmit() {
   const { generateAIChecklist } = useChecklistAI();
   const { importFromFile } = useChecklistImport();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const typedUser = user as AuthUser | null;
 
   const submitManualChecklist = async (
     form: NewChecklist, 
@@ -21,6 +25,12 @@ export function useChecklistSubmit() {
   ) => {
     try {
       console.log("Submitting manual form:", form);
+      
+      // Ensure user_id is set
+      if (!form.user_id && typedUser?.id) {
+        form.user_id = typedUser.id;
+      }
+      
       const newChecklist = await createChecklist.mutateAsync(form);
       
       if (!newChecklist?.id) {
@@ -41,7 +51,10 @@ export function useChecklistSubmit() {
                 pergunta: q.text,
                 tipo_resposta: q.type,
                 obrigatorio: q.required,
-                ordem: i
+                ordem: i,
+                permite_audio: true,
+                permite_video: true,
+                permite_foto: true
               });
           }
         }
@@ -80,9 +93,16 @@ export function useChecklistSubmit() {
     try {
       console.log(`Processing submission for ${activeTab} tab`);
       
+      // Ensure user_id is set in the form
+      if (!form.user_id && typedUser?.id) {
+        form.user_id = typedUser.id;
+        console.log("Added user_id to form:", form.user_id);
+      }
+      
       if (activeTab === "manual") {
         success = await submitManualChecklist(form, questions);
         // Note: Navigation is handled inside submitManualChecklist
+        setIsSubmitting(false);
         return success;
       } 
       else if (activeTab === "import" && file) {
