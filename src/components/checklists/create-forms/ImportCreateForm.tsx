@@ -1,178 +1,214 @@
 
-import { Skeleton } from "@/components/ui/skeleton";
+import React from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { HelpCircle, Upload } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { NewChecklist } from "@/types/checklist";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarIcon, Upload } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { FormSection } from "./FormSection";
-import { useChecklistImport } from "@/hooks/checklist/form/useChecklistImport";
+import { NewChecklist } from "@/types/checklist";
+import { Card, CardContent } from "@/components/ui/card";
+
+// Checklist category options
+const CATEGORIES = [
+  { value: "safety", label: "Segurança" },
+  { value: "quality", label: "Qualidade" },
+  { value: "maintenance", label: "Manutenção" },
+  { value: "environment", label: "Meio Ambiente" },
+  { value: "operational", label: "Operacional" },
+  { value: "general", label: "Geral" }
+];
 
 interface ImportCreateFormProps {
   form: NewChecklist;
-  setForm: (form: NewChecklist) => void;
+  setForm: React.Dispatch<React.SetStateAction<NewChecklist>>;
   users: any[];
   loadingUsers: boolean;
   file: File | null;
-  onFileChange: (file: File | null) => void;
+  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-export function ImportCreateForm({ 
-  form, 
-  setForm, 
-  users, 
-  loadingUsers, 
-  file, 
-  onFileChange 
+export function ImportCreateForm({
+  form,
+  setForm,
+  users,
+  loadingUsers,
+  file,
+  onFileChange
 }: ImportCreateFormProps) {
-  const { getTemplateFileUrl } = useChecklistImport();
-
   return (
     <div className="space-y-6">
-      <p className="text-sm text-muted-foreground mb-6">
-        Importe um arquivo CSV ou XLSX com a estrutura padrão para criar um checklist automaticamente.
-      </p>
-      
       <FormSection title="Informações Básicas">
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="title">Título do Checklist</Label>
-            <Input 
-              id="title" 
-              placeholder="Ex: Inspeção de Segurança Mensal" 
-              value={form.title} 
-              onChange={(e) => setForm({...form, title: e.target.value})}
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="title-import">Título *</Label>
+            <Input
+              id="title-import"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              placeholder="Nome da lista de verificação"
+              required
             />
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="category">Categoria</Label>
-            <Input 
-              id="category" 
-              placeholder="Ex: Segurança, Manutenção" 
-              value={form.category || ''} 
-              onChange={(e) => setForm({...form, category: e.target.value})}
-            />
-          </div>
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="description">Descrição</Label>
-          <Input 
-            id="description" 
-            placeholder="Descreva o objetivo deste checklist" 
-            value={form.description || ''} 
-            onChange={(e) => setForm({...form, description: e.target.value})}
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label 
-            htmlFor="responsible" 
-            className="flex items-center gap-2"
-          >
-            Responsável
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="max-w-xs">O responsável pela execução deste checklist</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </Label>
-          
-          {loadingUsers ? (
-            <Skeleton className="h-10 w-full" />
-          ) : (
-            <select 
-              id="responsible"
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              value={form.responsible_id || ''}
-              onChange={(e) => setForm({...form, responsible_id: e.target.value})}
+          <div className="grid gap-2">
+            <Label htmlFor="category-import">Categoria</Label>
+            <Select 
+              value={form.category} 
+              onValueChange={(value) => setForm({ ...form, category: value })}
             >
-              <option value="">Selecione um responsável</option>
-              {users.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.name || user.email}
-                </option>
-              ))}
-            </select>
-          )}
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione uma categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORIES.map((category) => (
+                  <SelectItem key={category.value} value={category.value}>
+                    {category.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      </FormSection>
-      
-      <FormSection title="Arquivo para Importação">
-        <div className="space-y-4">
-          <div className="border border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center">
-            {file ? (
-              <div className="space-y-2 text-center">
-                <p className="text-sm font-medium">{file.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {(file.size / 1024).toFixed(2)} KB
-                </p>
-                <button
-                  type="button"
-                  onClick={() => onFileChange(null)}
-                  className="text-sm text-red-500 hover:text-red-700"
+
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="responsible-import">Responsável</Label>
+            <Select 
+              value={form.responsible_id || ""} 
+              onValueChange={(value) => setForm({ ...form, responsible_id: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um responsável" />
+              </SelectTrigger>
+              <SelectContent>
+                {loadingUsers ? (
+                  <SelectItem value="loading" disabled>Carregando...</SelectItem>
+                ) : (
+                  users.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="grid gap-2">
+            <Label htmlFor="due-date-import">Data de vencimento</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  id="due-date-import"
+                  variant="outline"
+                  className="w-full justify-start text-left font-normal"
                 >
-                  Remover arquivo
-                </button>
-              </div>
-            ) : (
-              <>
-                <Upload className="h-10 w-10 text-muted-foreground mb-2" />
-                <p className="text-sm font-medium mb-1">Arraste e solte ou clique para fazer upload</p>
-                <p className="text-xs text-muted-foreground mb-4">Suporta arquivos CSV, XLS e XLSX</p>
-                <Input
-                  id="file-upload"
-                  type="file"
-                  className="hidden"
-                  accept=".csv,.xls,.xlsx"
-                  onChange={(e) => {
-                    const files = e.target.files;
-                    if (files && files.length > 0) {
-                      onFileChange(files[0]);
-                    }
-                  }}
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {form.due_date ? (
+                    format(new Date(form.due_date), "PPP", { locale: ptBR })
+                  ) : (
+                    "Escolha uma data"
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={form.due_date ? new Date(form.due_date) : undefined}
+                  onSelect={(date) => 
+                    setForm({ ...form, due_date: date ? date.toISOString() : null })
+                  }
+                  initialFocus
                 />
-                <label 
-                  htmlFor="file-upload" 
-                  className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground ring-offset-background transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer"
-                >
-                  Selecionar Arquivo
-                </label>
-              </>
-            )}
-          </div>
-          
-          <div className="flex justify-between items-center">
-            <div className="text-sm space-y-1">
-              <p className="font-medium">Estrutura do Arquivo:</p>
-              <ul className="list-disc list-inside text-muted-foreground text-xs">
-                <li>Pergunta</li>
-                <li>Tipo de Resposta</li>
-                <li>Obrigatório (Sim/Não)</li>
-                <li>Ordem</li>
-                <li>Opções (Para questões de múltipla escolha)</li>
-                <li>Permite Áudio (Sim/Não)</li>
-                <li>Permite Vídeo (Sim/Não)</li>
-                <li>Permite Foto (Sim/Não)</li>
-              </ul>
-            </div>
-            
-            <a 
-              href={getTemplateFileUrl()}
-              download
-              className="text-sm text-primary hover:underline"
-            >
-              Baixar Modelo
-            </a>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
+        
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="template-import"
+            checked={form.is_template}
+            onCheckedChange={(checked) => setForm({ ...form, is_template: checked })}
+          />
+          <Label htmlFor="template-import">
+            Salvar como template
+          </Label>
+        </div>
       </FormSection>
+
+      <Card className="overflow-hidden">
+        <CardContent className="p-6">
+          <div className="grid gap-4">
+            <Label htmlFor="file-upload">Upload de Arquivo</Label>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center">
+              <Upload className="h-10 w-10 text-gray-400 mb-4" />
+              <p className="text-sm text-gray-600 mb-2">
+                Arraste e solte seu arquivo CSV ou XLSX aqui, ou clique para selecionar
+              </p>
+              <p className="text-xs text-gray-500 mb-4">
+                (Tamanho máximo: 5MB)
+              </p>
+              <Input
+                id="file-upload"
+                type="file"
+                accept=".csv,.xlsx"
+                onChange={onFileChange}
+                className="hidden"
+              />
+              <Button 
+                type="button" 
+                variant="outline"
+                onClick={() => document.getElementById('file-upload')?.click()}
+              >
+                Selecionar Arquivo
+              </Button>
+              {file && (
+                <p className="mt-4 text-sm font-medium text-green-600">
+                  Arquivo selecionado: {file.name}
+                </p>
+              )}
+            </div>
+            <div className="text-sm text-gray-500">
+              <p>O arquivo deve seguir o formato padrão com as colunas:</p>
+              <ul className="list-disc pl-5 mt-1">
+                <li>Pergunta (obrigatório)</li>
+                <li>Tipo de Resposta (obrigatório)</li>
+                <li>Obrigatório (sim/não)</li>
+                <li>Ordem</li>
+                <li>Opções (separadas por vírgula)</li>
+                <li>Permite Áudio (sim/não)</li>
+                <li>Permite Vídeo (sim/não)</li>
+                <li>Permite Foto (sim/não)</li>
+              </ul>
+              <p className="mt-2">
+                <a 
+                  href="#" 
+                  className="text-blue-600 hover:underline"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    // Add functionality to download a template file
+                  }}
+                >
+                  Baixar modelo de planilha
+                </a>
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

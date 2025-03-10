@@ -3,11 +3,13 @@ import { useState } from "react";
 import { NewChecklist } from "@/types/checklist";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/components/AuthProvider";
 
 export function useChecklistAI() {
   const [aiPrompt, setAiPrompt] = useState("");
   const [numQuestions, setNumQuestions] = useState(10);
   const [aiLoading, setAiLoading] = useState(false);
+  const { user } = useAuth();
 
   // Generate checklist using AI
   const generateAIChecklist = async (form: NewChecklist) => {
@@ -29,7 +31,7 @@ export function useChecklistAI() {
         prompt: aiPrompt,
         num_questions: numQuestions,
         category: form.category || 'general',
-        user_id: form.user_id,
+        user_id: form.user_id || user?.id,
         company_id: form.company_id
       };
       

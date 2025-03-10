@@ -91,7 +91,7 @@ export default function CreateChecklist() {
               users={users}
               loadingUsers={loadingUsers}
               file={file}
-              onFileChange={handleFileChange}
+              onFileChange={(e) => handleFileChange(e)}
             />
           </TabsContent>
           
