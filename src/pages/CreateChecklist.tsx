@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useChecklistCreation } from "@/hooks/checklist/useChecklistCreation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -41,15 +40,12 @@ export default function CreateChecklist() {
   
   const { user, refreshSession } = useAuth();
   
-  // Check auth status and refresh token on component mount
   useEffect(() => {
     const checkAuth = async () => {
       setIsLoading(true);
       try {
-        // Explicitly refresh the session
         await refreshSession();
         
-        // Get current session
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -68,10 +64,8 @@ export default function CreateChecklist() {
           return;
         }
         
-        // Session is valid
         setIsSessionValid(true);
         
-        // Log user info for debugging
         console.log("User authentication info:", {
           authenticated: !!data.session,
           userId: user?.id,
@@ -92,61 +86,31 @@ export default function CreateChecklist() {
     checkAuth();
   }, [navigate, refreshSession, user]);
 
-  // Determinar se o botão de envio deve estar habilitado
-  const isSubmitEnabled = () => {
-    if (!isSessionValid) return false;
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubmitting) return;
     
-    switch (activeTab) {
-      case "manual":
-        return form.title.trim() !== "";
-      case "import":
-        return file !== null && form.title.trim() !== "";
-      case "ai":
-        return aiPrompt.trim() !== "" && !aiLoading;
-      default:
-        return false;
+    const success = await handleSubmit(e);
+    
+    if (success) {
+      toast.success("Checklist criado com sucesso!");
     }
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-        <span className="ml-3">Verificando sessão...</span>
-      </div>
-    );
+    return <div className="py-20 text-center">Carregando...</div>;
   }
 
   if (!isSessionValid) {
     return (
-      <div className="flex flex-col items-center justify-center h-64 space-y-4">
-        <p className="text-lg">Você precisa estar autenticado para criar uma lista de verificação.</p>
-        <button 
-          onClick={() => navigate("/auth")} 
-          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
-        >
+      <div className="py-20 text-center">
+        <h2 className="text-2xl font-bold mb-4">Você precisa estar autenticado</h2>
+        <button onClick={() => navigate("/auth")}>
           Fazer login
         </button>
       </div>
     );
   }
-
-  const handleFormSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Form submit triggered with active tab:", activeTab);
-    
-    // Check session before submission
-    const { data } = await supabase.auth.getSession();
-    if (!data.session) {
-      toast.error("Sua sessão expirou. Por favor, faça login novamente.");
-      navigate("/auth");
-      return;
-    }
-    
-    // Fix: calling handleSubmit with only one argument (the event)
-    const result = await handleSubmit(e);
-    console.log("Form submission result:", result);
-  };
 
   return (
     <div className="space-y-6">
@@ -157,8 +121,8 @@ export default function CreateChecklist() {
         </div>
       </div>
 
-      <form onSubmit={handleFormSubmit} className="space-y-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
+      <form onSubmit={onSubmit} className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid grid-cols-3 mb-4">
             <TabsTrigger value="manual" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
@@ -217,7 +181,7 @@ export default function CreateChecklist() {
         <FormActions 
           isSubmitting={isSubmitting}
           onCancel={() => navigate("/checklists")}
-          canSubmit={isSubmitEnabled()}
+          canSubmit={!isSubmitting}
           submitText={isSubmitting ? "Criando..." : "Criar Lista de Verificação"}
         />
       </form>
