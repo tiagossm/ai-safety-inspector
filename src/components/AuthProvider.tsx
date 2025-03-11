@@ -9,12 +9,14 @@ interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
   logout: () => Promise<void>;
+  refreshSession: () => Promise<boolean>;
 }
 
 export const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
-  logout: async () => {}
+  logout: async () => {},
+  refreshSession: async () => false
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -46,6 +48,56 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return null;
     }
   }
+  
+  // Function to refresh the session
+  const refreshSession = async (): Promise<boolean> => {
+    try {
+      console.log("🔄 Refreshing authentication session...");
+      const { data, error } = await supabase.auth.refreshSession();
+      
+      if (error) {
+        console.error("Failed to refresh session:", error);
+        return false;
+      }
+      
+      if (data.session) {
+        console.log("✅ Session refreshed successfully");
+        
+        // Update user data if needed
+        if (data.user && (!user || user.id !== data.user.id)) {
+          const userData = await fetchExtendedUser(data.user.id);
+          
+          // Normalize role
+          const normalizedRole = userData && userData.role
+            ? (userData.role.toLowerCase() === 'administrador' ? 'admin' : 'user') as 'admin' | 'user'
+            : 'user' as const;
+          
+          // Normalize tier
+          const normalizedTier = userData && userData.tier
+            ? userData.tier.toLowerCase() as "super_admin" | "company_admin" | "consultant" | "technician"
+            : 'technician' as const;
+          
+          const enhancedUser: AuthUser = {
+            ...data.user,
+            role: normalizedRole,
+            tier: normalizedTier,
+            company_id: userData?.company_id
+          };
+          
+          setUser(enhancedUser);
+          localStorage.setItem("authUser", JSON.stringify(enhancedUser));
+        }
+        
+        return true;
+      } else {
+        console.warn("No session returned after refresh");
+        return false;
+      }
+    } catch (err) {
+      console.error("Error refreshing session:", err);
+      return false;
+    }
+  };
 
   // Verifica a sessão ao montar o componente
   useEffect(() => {
@@ -168,7 +220,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, logout }}>
+    <AuthContext.Provider value={{ user, loading, logout, refreshSession }}>
       {children}
     </AuthContext.Provider>
   );

@@ -19,7 +19,6 @@ export function useChecklistAI() {
       
       // Get current session
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      const jwt = sessionData?.session?.access_token;
       
       if (sessionError) {
         console.error("Session error:", sessionError);
@@ -28,14 +27,20 @@ export function useChecklistAI() {
         return false;
       }
       
-      if (!jwt) {
-        console.error("No JWT token found in session");
+      if (!sessionData.session) {
+        console.error("No active session");
         toast.error("Sessão inválida. Faça login novamente.");
         setAiLoading(false);
         return false;
       }
       
+      const jwt = sessionData.session.access_token;
+      
       console.log("JWT token length:", jwt.length, "User ID:", typedUser?.id);
+      console.log("User details for AI generation:", {
+        role: typedUser?.role,
+        tier: typedUser?.tier
+      });
       
       // Ensure user_id is set
       if (!form.user_id && typedUser?.id) {
@@ -71,16 +76,12 @@ export function useChecklistAI() {
       
       console.log("AI generation successful:", data);
       return data;
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error generating AI checklist:", err);
-      if (err instanceof Error) {
-        if (err.message.includes('401') || err.message.includes('JWT')) {
-          toast.error("Sua sessão expirou, faça login novamente");
-        } else {
-          toast.error(`Erro ao gerar checklist: ${err.message}`);
-        }
+      if (err.message?.includes('401') || err.message?.includes('JWT')) {
+        toast.error("Sua sessão expirou, faça login novamente");
       } else {
-        toast.error("Erro desconhecido ao gerar checklist com IA");
+        toast.error(`Erro ao gerar checklist: ${err.message}`);
       }
       return false;
     } finally {

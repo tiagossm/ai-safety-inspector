@@ -1,4 +1,5 @@
 
+import { useEffect } from "react";
 import { useChecklistCreation } from "@/hooks/checklist/useChecklistCreation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, Upload, Bot } from "lucide-react";
@@ -6,6 +7,9 @@ import { ManualCreateForm } from "@/components/checklists/create-forms/ManualCre
 import { ImportCreateForm } from "@/components/checklists/create-forms/ImportCreateForm";
 import { AICreateForm } from "@/components/checklists/create-forms/AICreateForm";
 import { BackButton, FormActions } from "@/components/checklists/create-forms/FormActions";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
+import { toast } from "sonner";
 
 export default function CreateChecklist() {
   const {
@@ -30,6 +34,49 @@ export default function CreateChecklist() {
     handleSubmit,
     navigate
   } = useChecklistCreation();
+  
+  const { user, refreshSession } = useAuth();
+  
+  // Check auth status and refresh token on component mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        // Get current session
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Error checking session:", error);
+          toast.error("Erro ao verificar sessão. Tente fazer login novamente.");
+          return;
+        }
+        
+        if (!data.session) {
+          console.warn("No active session found");
+          toast.error("Sessão expirada. Faça login novamente.");
+          navigate("/auth");
+          return;
+        }
+        
+        // Log user info for debugging
+        console.log("User authentication info:", {
+          authenticated: !!data.session,
+          userId: user?.id,
+          userTier: user?.tier,
+          userRole: user?.role,
+          tokenExpiry: data.session.expires_at 
+            ? new Date(data.session.expires_at * 1000).toLocaleString() 
+            : 'unknown'
+        });
+        
+        // Manually refresh token to ensure it's valid
+        await refreshSession();
+      } catch (err) {
+        console.error("Error in auth check:", err);
+      }
+    };
+    
+    checkAuth();
+  }, [navigate, refreshSession, user]);
 
   // Determinar se o botão de envio deve estar habilitado
   const isSubmitEnabled = () => {
@@ -115,6 +162,7 @@ export default function CreateChecklist() {
           isSubmitting={isSubmitting}
           onCancel={() => navigate("/checklists")}
           canSubmit={isSubmitEnabled()}
+          submitText={isSubmitting ? "Criando..." : "Criar Lista de Verificação"}
         />
       </form>
     </div>

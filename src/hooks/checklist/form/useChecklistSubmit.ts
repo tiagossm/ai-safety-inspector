@@ -32,6 +32,14 @@ export function useChecklistSubmit() {
         console.log("Added user_id to form:", form.user_id);
       }
       
+      // Log the user tier for debugging
+      console.log("User tier:", typedUser?.tier);
+      console.log("User role:", typedUser?.role);
+      
+      // Add additional logs for form validation
+      console.log("Form validation - has title:", !!form.title);
+      console.log("Questions count:", questions.length);
+      
       const newChecklist = await createChecklist.mutateAsync(form);
       
       if (!newChecklist?.id) {
@@ -60,7 +68,8 @@ export function useChecklistSubmit() {
           return Promise.resolve(null);
         });
         
-        await Promise.all(promises.filter(Boolean));
+        const results = await Promise.all(promises.filter(Boolean));
+        console.log("Questions insertion results:", results);
       }
       
       toast.success("Checklist criado com sucesso!");
@@ -86,21 +95,33 @@ export function useChecklistSubmit() {
   ) => {
     e.preventDefault();
     
-    if (!form.title.trim() && activeTab !== "ai") {
-      toast.error("O título é obrigatório");
-      return false;
-    }
-    
+    // Prevent multiple submissions
     if (isSubmitting) {
       console.log("Submission already in progress, ignoring duplicate submit");
       return false;
     }
     
+    // Validate form data
+    if (!form.title.trim() && activeTab !== "ai") {
+      toast.error("O título é obrigatório");
+      return false;
+    }
+    
+    console.log(`Starting checklist creation via ${activeTab} tab`);
     setIsSubmitting(true);
     let success = false;
     let checklistId: string | null = null;
     
     try {
+      // Check authentication status
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        console.error("No active session found");
+        toast.error("Você precisa estar autenticado para criar um checklist");
+        setIsSubmitting(false);
+        return false;
+      }
+      
       console.log(`Processing submission for ${activeTab} tab with user:`, typedUser?.id);
       
       // Ensure user_id is set in the form
@@ -116,6 +137,8 @@ export function useChecklistSubmit() {
       } 
       else if (activeTab === "import" && file) {
         console.log("Processing file import");
+        console.log("File details:", file.name, file.type, `${Math.round(file.size / 1024)} KB`);
+        
         const importResult = await importFromFile(file, form);
         
         if (importResult && typeof importResult === 'object') {
@@ -132,10 +155,13 @@ export function useChecklistSubmit() {
         } else {
           success = false;
           console.error("Import failed or returned invalid result", importResult);
+          toast.error("Falha ao importar checklist. Verifique o arquivo e tente novamente.");
         }
       } 
       else if (activeTab === "ai") {
         console.log("Processing AI generation");
+        console.log("AI Prompt:", aiPrompt);
+        
         const aiResult = await generateAIChecklist(form);
         
         if (aiResult && typeof aiResult === 'object') {
@@ -159,6 +185,7 @@ export function useChecklistSubmit() {
         } else {
           success = false;
           console.error("AI generation failed or returned invalid result", aiResult);
+          toast.error("Falha ao gerar checklist com IA. Tente novamente.");
         }
       } else {
         if (activeTab === "import" && !file) {
@@ -184,14 +211,26 @@ export function useChecklistSubmit() {
           navigate('/checklists');
           toast.info("Checklist criado, mas não foi possível abrir automaticamente.");
         }
-      } else {
+      } else if (activeTab !== "manual") {
+        // Only show this error if we haven't already shown a more specific one
         toast.error("Erro ao criar checklist. Verifique os dados e tente novamente.");
       }
       
       return success;
     } catch (error) {
       console.error("Error in form submission:", error);
-      toast.error(`Erro ao criar checklist: ${error instanceof Error ? error.message : 'Tente novamente.'}`);
+      let errorMessage = "Erro ao criar checklist.";
+      
+      if (error instanceof Error) {
+        // Check for JWT-related errors
+        if (error.message.includes('JWT') || error.message.includes('token') || error.message.includes('auth')) {
+          errorMessage += " Problema de autenticação. Tente fazer login novamente.";
+        } else {
+          errorMessage += ` ${error.message}`;
+        }
+      }
+      
+      toast.error(errorMessage);
       return false;
     } finally {
       setIsSubmitting(false);

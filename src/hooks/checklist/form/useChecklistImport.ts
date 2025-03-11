@@ -58,18 +58,15 @@ export function useChecklistImport() {
         console.log("Added user_id to form:", form.user_id);
       }
       
-      // Create a FormData instance
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      // Add form data as JSON string
-      formData.append('form', JSON.stringify(form));
-      
-      console.log("Form data prepared:", form);
+      console.log("User details for import:", {
+        id: typedUser?.id,
+        role: typedUser?.role,
+        tier: typedUser?.tier,
+        email: typedUser?.email
+      });
       
       // Get the current session JWT
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      const jwt = sessionData?.session?.access_token;
       
       if (sessionError) {
         console.error("Session error:", sessionError);
@@ -77,13 +74,26 @@ export function useChecklistImport() {
         return false;
       }
       
-      if (!jwt) {
-        console.error("No JWT token found in session");
+      if (!sessionData.session) {
+        console.error("No active session");
         toast.error("Sessão inválida. Faça login novamente.");
         return false;
       }
       
+      const jwt = sessionData.session.access_token;
       console.log("JWT token acquired, length:", jwt.length);
+      
+      // Create a FormData instance
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // Add form data as JSON string
+      formData.append('form', JSON.stringify({
+        ...form,
+        user_id: typedUser?.id
+      }));
+      
+      console.log("Form data prepared:", form);
       
       // Use try/catch to handle potential errors from the function invocation
       try {
@@ -99,7 +109,12 @@ export function useChecklistImport() {
         
         if (error) {
           console.error("Edge function returned error:", error);
-          throw new Error(`Erro na importação: ${error.message || 'Falha desconhecida'}`);
+          if (error.message?.includes('JWT') || error.message?.includes('auth') || error.message?.includes('401')) {
+            toast.error("Erro de autenticação. Faça login novamente.");
+          } else {
+            toast.error(`Erro na importação: ${error.message || 'Falha desconhecida'}`);
+          }
+          return false;
         }
         
         console.log("Edge function result:", data);
@@ -108,29 +123,32 @@ export function useChecklistImport() {
           toast.success(`Checklist importado com sucesso! ${data.processed_items || 0} itens processados.`);
           return data;
         } else {
-          throw new Error(data?.error || "Erro ao importar checklist");
+          const errorMsg = data?.error || "Erro ao importar checklist";
+          console.error("Import failed with error:", errorMsg);
+          toast.error(errorMsg);
+          return false;
         }
-      } catch (invocationError) {
+      } catch (invocationError: any) {
         console.error("Function invocation error:", invocationError);
         // Check if this is a JWT authentication error
-        if (invocationError.message?.includes('401') || invocationError.message?.includes('JWT')) {
+        if (invocationError.message?.includes('401') || 
+            invocationError.message?.includes('JWT') || 
+            invocationError.message?.includes('auth')) {
           toast.error("Sua sessão expirou, faça login novamente");
         } else {
           toast.error(`Erro ao processar arquivo: ${invocationError.message}`);
         }
         return false;
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error importing checklist:", error);
-      if (error instanceof Error) {
-        // Check for JWT-related errors
-        if (error.message.includes('401') || error.message.includes('JWT')) {
-          toast.error("Sua sessão expirou, faça login novamente");
-        } else {
-          toast.error(`Erro ao importar checklist. ${error.message}`);
-        }
+      // Check for JWT-related errors
+      if (error.message?.includes('401') || 
+          error.message?.includes('JWT') || 
+          error.message?.includes('auth')) {
+        toast.error("Sua sessão expirou, faça login novamente");
       } else {
-        toast.error('Erro ao importar checklist. Verifique o formato do arquivo.');
+        toast.error(`Erro ao importar checklist. ${error.message}`);
       }
       return false;
     }

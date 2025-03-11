@@ -9,11 +9,30 @@ import { useChecklistUsers } from "./form/useChecklistUsers";
 import { useChecklistSubmit } from "./form/useChecklistSubmit";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export function useChecklistCreation() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("manual");
+  
+  // Check and refresh JWT token on component mount
+  const refreshToken = async () => {
+    const { data, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      console.error("Failed to refresh token:", error);
+    } else if (data?.session) {
+      console.log("Session token refreshed successfully");
+    } else {
+      console.warn("No active session found");
+    }
+  };
+  
+  // Call refreshToken once to ensure we have a valid token
+  useState(() => {
+    refreshToken();
+  });
   
   // Import all our smaller hooks
   const { form, setForm } = useChecklistForm();
@@ -25,6 +44,9 @@ export function useChecklistCreation() {
 
   const onSubmit = async (e: React.FormEvent) => {
     console.log("Submit handler triggered");
+    
+    // Refresh token before submission to ensure we have a valid JWT
+    await refreshToken();
     
     // Form validation based on active tab
     if (activeTab === "manual" && !form.title.trim()) {
@@ -39,10 +61,25 @@ export function useChecklistCreation() {
     }
     
     try {
+      // Ensure user_id is set
+      if (!form.user_id && user?.id) {
+        form.user_id = user.id;
+      }
+      
+      // Log debugging information
+      console.log("Form being submitted:", {
+        activeTab,
+        title: form.title,
+        user_id: form.user_id,
+        user_tier: user?.tier,
+        user_role: user?.role,
+        fileIncluded: !!file,
+        aiPromptLength: aiPrompt?.length || 0
+      });
+      
       const success = await handleSubmit(e, activeTab, form, questions, file, aiPrompt);
       if (success) {
-        console.log("Submission successful, navigating to /checklists");
-        // Note: Navigation is now handled inside handleSubmit for better control
+        console.log("Submission successful");
       } else {
         console.error("Submission failed but no exception thrown");
       }
