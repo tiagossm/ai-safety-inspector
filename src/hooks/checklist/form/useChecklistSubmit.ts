@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
 import { NewChecklist } from "@/types/checklist";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,12 +12,35 @@ import { AuthUser } from "@/hooks/auth/useAuthState";
 
 export function useChecklistSubmit() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sessionChecked, setSessionChecked] = useState(false);
   const createChecklist = useCreateChecklist();
   const { generateAIChecklist } = useChecklistAI();
   const { importFromFile } = useChecklistImport();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshSession } = useAuth();
   const typedUser = user as AuthUser | null;
+
+  // Verify session on mount
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        await refreshSession();
+        const { data } = await supabase.auth.getSession();
+        if (data?.session) {
+          console.log("Session verified in useChecklistSubmit");
+          setSessionChecked(true);
+        } else {
+          console.error("No valid session found in useChecklistSubmit");
+          toast.error("Sua sessão expirou. Faça login novamente.");
+          navigate("/auth");
+        }
+      } catch (error) {
+        console.error("Session check error:", error);
+      }
+    };
+    
+    checkSession();
+  }, [refreshSession, navigate]);
 
   const submitManualChecklist = async (
     form: NewChecklist, 
@@ -40,6 +63,9 @@ export function useChecklistSubmit() {
       console.log("Form validation - has title:", !!form.title);
       console.log("Questions count:", questions.length);
       
+      // Refresh session before creating checklist
+      await refreshSession();
+      
       const newChecklist = await createChecklist.mutateAsync(form);
       
       if (!newChecklist?.id) {
@@ -50,6 +76,14 @@ export function useChecklistSubmit() {
       // Add questions to the created checklist
       if (questions.length > 0) {
         console.log(`Adding ${questions.length} questions to checklist ${newChecklist.id}`);
+        
+        // Get current session for questions insertion
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          console.error("No active session for questions insertion");
+          throw new Error("Sessão expirada. Faça login novamente.");
+        }
+        
         const promises = questions.map((q, i) => {
           if (q.text.trim()) {
             return supabase
@@ -80,7 +114,7 @@ export function useChecklistSubmit() {
       return true;
     } catch (error) {
       console.error("Error in manual submission:", error);
-      toast.error("Erro ao criar checklist. Tente novamente.");
+      toast.error(`Erro ao criar checklist: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
       return false;
     }
   };
@@ -101,28 +135,37 @@ export function useChecklistSubmit() {
       return false;
     }
     
-    // Validate form data
-    if (!form.title.trim() && activeTab !== "ai") {
+    // Validate form data based on active tab
+    if (activeTab === "manual" && !form.title.trim()) {
       toast.error("O título é obrigatório");
+      return false;
+    } else if (activeTab === "import" && !file) {
+      toast.error("Por favor, selecione um arquivo para importar");
+      return false;
+    } else if (activeTab === "ai" && !aiPrompt.trim()) {
+      toast.error("Por favor, forneça um prompt para gerar o checklist");
       return false;
     }
     
     console.log(`Starting checklist creation via ${activeTab} tab`);
     setIsSubmitting(true);
-    let success = false;
-    let checklistId: string | null = null;
     
     try {
+      // Refresh token before submission
+      await refreshSession();
+      
       // Check authentication status
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) {
         console.error("No active session found");
         toast.error("Você precisa estar autenticado para criar um checklist");
         setIsSubmitting(false);
+        navigate("/auth");
         return false;
       }
       
       console.log(`Processing submission for ${activeTab} tab with user:`, typedUser?.id);
+      console.log("Current session valid:", !!sessionData.session);
       
       // Ensure user_id is set in the form
       if (!form.user_id && typedUser?.id) {
@@ -130,9 +173,12 @@ export function useChecklistSubmit() {
         console.log("Added user_id to form:", form.user_id);
       }
       
+      let success = false;
+      let checklistId: string | null = null;
+      
       if (activeTab === "manual") {
         success = await submitManualChecklist(form, questions);
-        // Note: Navigation is handled inside submitManualChecklist
+        // Navigation is handled inside submitManualChecklist
         return success;
       } 
       else if (activeTab === "import" && file) {
@@ -187,16 +233,6 @@ export function useChecklistSubmit() {
           console.error("AI generation failed or returned invalid result", aiResult);
           toast.error("Falha ao gerar checklist com IA. Tente novamente.");
         }
-      } else {
-        if (activeTab === "import" && !file) {
-          toast.error("Por favor, selecione um arquivo para importar");
-        } else if (activeTab === "ai" && !aiPrompt.trim()) {
-          toast.error("Por favor, forneça um prompt para gerar o checklist");
-        } else {
-          console.error(`Invalid tab selected: ${activeTab}`);
-          toast.error("Opção de criação inválida");
-        }
-        success = false;
       }
       
       if (success) {
@@ -211,12 +247,15 @@ export function useChecklistSubmit() {
           navigate('/checklists');
           toast.info("Checklist criado, mas não foi possível abrir automaticamente.");
         }
-      } else if (activeTab !== "manual") {
+        
+        return true;
+      } else {
         // Only show this error if we haven't already shown a more specific one
-        toast.error("Erro ao criar checklist. Verifique os dados e tente novamente.");
+        if (activeTab !== "manual") {
+          toast.error("Erro ao criar checklist. Verifique os dados e tente novamente.");
+        }
+        return false;
       }
-      
-      return success;
     } catch (error) {
       console.error("Error in form submission:", error);
       let errorMessage = "Erro ao criar checklist.";
@@ -225,6 +264,7 @@ export function useChecklistSubmit() {
         // Check for JWT-related errors
         if (error.message.includes('JWT') || error.message.includes('token') || error.message.includes('auth')) {
           errorMessage += " Problema de autenticação. Tente fazer login novamente.";
+          navigate("/auth");
         } else {
           errorMessage += ` ${error.message}`;
         }
@@ -239,6 +279,7 @@ export function useChecklistSubmit() {
 
   return {
     isSubmitting,
-    handleSubmit
+    handleSubmit,
+    sessionChecked
   };
 }

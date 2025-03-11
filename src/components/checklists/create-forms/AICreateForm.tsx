@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -142,18 +141,20 @@ export function AICreateForm({
             <Label htmlFor="due-date-ai">Data de vencimento</Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button
+                <button
                   id="due-date-ai"
-                  variant="outline"
-                  className="w-full justify-start text-left font-normal"
+                  type="button"
+                  className="w-full flex items-center justify-between rounded px-3 py-2 text-sm border border-input bg-background"
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {form.due_date ? (
-                    format(new Date(form.due_date), "PPP", { locale: ptBR })
-                  ) : (
-                    "Escolha uma data"
-                  )}
-                </Button>
+                  <span>
+                    {form.due_date ? (
+                      format(new Date(form.due_date), "PPP", { locale: ptBR })
+                    ) : (
+                      "Escolha uma data"
+                    )}
+                  </span>
+                  <CalendarIcon className="h-4 w-4 opacity-50" />
+                </button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
                 <Calendar

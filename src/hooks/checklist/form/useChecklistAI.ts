@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { NewChecklist } from "@/types/checklist";
@@ -10,14 +10,31 @@ export function useChecklistAI() {
   const [aiPrompt, setAiPrompt] = useState<string>("");
   const [numQuestions, setNumQuestions] = useState<number>(5);
   const [aiLoading, setAiLoading] = useState<boolean>(false);
-  const { user } = useAuth();
+  const { user, refreshSession } = useAuth();
   const typedUser = user as AuthUser | null;
+
+  // Refresh token when the hook is initialized
+  useEffect(() => {
+    const checkAndRefreshToken = async () => {
+      try {
+        await refreshSession();
+        console.log("Token refreshed on useChecklistAI initialization");
+      } catch (error) {
+        console.error("Failed to refresh token:", error);
+      }
+    };
+    
+    checkAndRefreshToken();
+  }, [refreshSession]);
 
   const generateAIChecklist = async (form: NewChecklist) => {
     try {
       setAiLoading(true);
       
-      // Get current session
+      // Refresh the session to ensure we have a valid token
+      await refreshSession();
+      
+      // Get current session with refreshed token
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
@@ -47,6 +64,14 @@ export function useChecklistAI() {
         form.user_id = typedUser.id;
         console.log("Added user_id to form:", form.user_id);
       }
+      
+      console.log("Calling generate-checklist with:", {
+        prompt: aiPrompt,
+        num_questions: numQuestions,
+        category: form.category || 'general',
+        user_id: form.user_id,
+        company_id: form.company_id
+      });
       
       const { data, error } = await supabase.functions.invoke('generate-checklist', {
         method: 'POST',

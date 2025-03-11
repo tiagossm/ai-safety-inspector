@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useChecklistCreation } from "@/hooks/checklist/useChecklistCreation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, Upload, Bot } from "lucide-react";
@@ -12,6 +12,9 @@ import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
 
 export default function CreateChecklist() {
+  const [isSessionValid, setIsSessionValid] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  
   const {
     activeTab,
     setActiveTab,
@@ -22,6 +25,7 @@ export default function CreateChecklist() {
     loadingUsers,
     file,
     handleFileChange,
+    clearFile,
     aiPrompt,
     setAiPrompt,
     numQuestions,
@@ -40,22 +44,32 @@ export default function CreateChecklist() {
   // Check auth status and refresh token on component mount
   useEffect(() => {
     const checkAuth = async () => {
+      setIsLoading(true);
       try {
+        // Explicitly refresh the session
+        await refreshSession();
+        
         // Get current session
         const { data, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error("Error checking session:", error);
           toast.error("Erro ao verificar sessão. Tente fazer login novamente.");
+          setIsSessionValid(false);
+          navigate("/auth");
           return;
         }
         
         if (!data.session) {
           console.warn("No active session found");
           toast.error("Sessão expirada. Faça login novamente.");
+          setIsSessionValid(false);
           navigate("/auth");
           return;
         }
+        
+        // Session is valid
+        setIsSessionValid(true);
         
         // Log user info for debugging
         console.log("User authentication info:", {
@@ -67,11 +81,11 @@ export default function CreateChecklist() {
             ? new Date(data.session.expires_at * 1000).toLocaleString() 
             : 'unknown'
         });
-        
-        // Manually refresh token to ensure it's valid
-        await refreshSession();
       } catch (err) {
         console.error("Error in auth check:", err);
+        setIsSessionValid(false);
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -80,6 +94,8 @@ export default function CreateChecklist() {
 
   // Determinar se o botão de envio deve estar habilitado
   const isSubmitEnabled = () => {
+    if (!isSessionValid) return false;
+    
     switch (activeTab) {
       case "manual":
         return form.title.trim() !== "";
@@ -92,6 +108,45 @@ export default function CreateChecklist() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <span className="ml-3">Verificando sessão...</span>
+      </div>
+    );
+  }
+
+  if (!isSessionValid) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <p className="text-lg">Você precisa estar autenticado para criar uma lista de verificação.</p>
+        <button 
+          onClick={() => navigate("/auth")} 
+          className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+        >
+          Fazer login
+        </button>
+      </div>
+    );
+  }
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Form submit triggered with active tab:", activeTab);
+    
+    // Check session before submission
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) {
+      toast.error("Sua sessão expirou. Por favor, faça login novamente.");
+      navigate("/auth");
+      return;
+    }
+    
+    const result = await handleSubmit(e, activeTab, form, questions, file, aiPrompt);
+    console.log("Form submission result:", result);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -101,7 +156,7 @@ export default function CreateChecklist() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleFormSubmit} className="space-y-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
           <TabsList className="grid grid-cols-3 mb-4">
             <TabsTrigger value="manual" className="flex items-center gap-2">

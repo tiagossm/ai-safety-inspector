@@ -5,6 +5,7 @@ import { NewChecklist } from "@/types/checklist";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { AuthUser } from "@/hooks/auth/useAuthState";
+import { useState, useEffect } from "react";
 
 /**
  * Validates if the file is in correct format (CSV, XLS, XLSX)
@@ -28,8 +29,26 @@ const validateFileFormat = (file: File): { valid: boolean; message?: string } =>
 
 export function useChecklistImport() {
   const createChecklist = useCreateChecklist();
-  const { user } = useAuth();
+  const { user, refreshSession } = useAuth();
   const typedUser = user as AuthUser | null;
+  const [sessionValid, setSessionValid] = useState(false);
+  
+  // Check session validity on mount
+  useEffect(() => {
+    const validateSession = async () => {
+      try {
+        await refreshSession();
+        const { data } = await supabase.auth.getSession();
+        setSessionValid(!!data.session);
+        console.log("Session validated in useChecklistImport:", !!data.session);
+      } catch (error) {
+        console.error("Session validation error:", error);
+        setSessionValid(false);
+      }
+    };
+    
+    validateSession();
+  }, [refreshSession]);
 
   const getTemplateFileUrl = () => {
     return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/templates/checklist_import_template.xlsx`;
@@ -64,6 +83,9 @@ export function useChecklistImport() {
         tier: typedUser?.tier,
         email: typedUser?.email
       });
+      
+      // Refresh the token before proceeding
+      await refreshSession();
       
       // Get the current session JWT
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -156,6 +178,7 @@ export function useChecklistImport() {
 
   return {
     importFromFile,
-    getTemplateFileUrl
+    getTemplateFileUrl,
+    sessionValid
   };
 }

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useChecklistForm } from "./form/useChecklistForm";
 import { useChecklistQuestions } from "./form/useChecklistQuestions";
@@ -13,26 +13,61 @@ import { supabase } from "@/integrations/supabase/client";
 
 export function useChecklistCreation() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshSession } = useAuth();
   const [activeTab, setActiveTab] = useState("manual");
+  const [tokenRefreshed, setTokenRefreshed] = useState(false);
   
   // Check and refresh JWT token on component mount
-  const refreshToken = async () => {
-    const { data, error } = await supabase.auth.getSession();
+  useEffect(() => {
+    const refreshToken = async () => {
+      try {
+        await refreshSession();
+        
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Failed to refresh token:", error);
+          toast.error("Erro ao atualizar sua sessão");
+          return false;
+        } else if (data?.session) {
+          console.log("Session token refreshed successfully");
+          setTokenRefreshed(true);
+          
+          // Log session details for debugging
+          console.log("Session details:", {
+            expiresAt: data.session.expires_at,
+            expiryFormatted: data.session.expires_at 
+              ? new Date(data.session.expires_at * 1000).toLocaleString() 
+              : 'unknown',
+            userId: data.session.user?.id,
+            tokenLength: data.session.access_token.length
+          });
+          
+          return true;
+        } else {
+          console.warn("No active session found");
+          toast.error("Você não está autenticado");
+          navigate("/auth");
+          return false;
+        }
+      } catch (err) {
+        console.error("Token refresh error:", err);
+        return false;
+      }
+    };
     
-    if (error) {
-      console.error("Failed to refresh token:", error);
-    } else if (data?.session) {
-      console.log("Session token refreshed successfully");
-    } else {
-      console.warn("No active session found");
-    }
-  };
-  
-  // Call refreshToken once to ensure we have a valid token
-  useState(() => {
     refreshToken();
-  });
+    
+    // Setup a timer to refresh the token every 10 minutes
+    const intervalId = setInterval(() => {
+      console.log("Refreshing token (scheduled)");
+      refreshToken();
+    }, 10 * 60 * 1000);
+    
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [refreshSession, navigate]);
   
   // Import all our smaller hooks
   const { form, setForm } = useChecklistForm();
@@ -46,24 +81,32 @@ export function useChecklistCreation() {
     console.log("Submit handler triggered");
     
     // Refresh token before submission to ensure we have a valid JWT
-    await refreshToken();
+    const tokenValid = await refreshSession();
+    
+    if (!tokenValid) {
+      console.error("Failed to refresh token before submission");
+      toast.error("Erro de autenticação. Faça login novamente.");
+      navigate("/auth");
+      return false;
+    }
     
     // Form validation based on active tab
     if (activeTab === "manual" && !form.title.trim()) {
       toast.error("O título é obrigatório");
-      return;
+      return false;
     } else if (activeTab === "import" && !file) {
       toast.error("Por favor, selecione um arquivo para importar");
-      return;
+      return false;
     } else if (activeTab === "ai" && !aiPrompt.trim()) {
       toast.error("Por favor, forneça um prompt para gerar o checklist");
-      return;
+      return false;
     }
     
     try {
       // Ensure user_id is set
       if (!form.user_id && user?.id) {
         form.user_id = user.id;
+        console.log("Setting user_id in form:", user.id);
       }
       
       // Log debugging information
@@ -78,14 +121,18 @@ export function useChecklistCreation() {
       });
       
       const success = await handleSubmit(e, activeTab, form, questions, file, aiPrompt);
+      
       if (success) {
         console.log("Submission successful");
+        return true;
       } else {
         console.error("Submission failed but no exception thrown");
+        return false;
       }
     } catch (error) {
       console.error("Error in onSubmit:", error);
       toast.error(`Erro ao criar checklist: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      return false;
     }
   };
 
@@ -110,6 +157,7 @@ export function useChecklistCreation() {
     handleRemoveQuestion,
     handleQuestionChange,
     handleSubmit: onSubmit,
-    navigate
+    navigate,
+    tokenRefreshed
   };
 }
