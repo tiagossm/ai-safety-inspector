@@ -75,7 +75,7 @@ export function useChecklistCreation() {
   const { file, handleFileChange, clearFile } = useChecklistFileUpload();
   const { aiPrompt, setAiPrompt, numQuestions, setNumQuestions, aiLoading } = useChecklistAI();
   const { users, loadingUsers } = useChecklistUsers();
-  const { isSubmitting, handleSubmit } = useChecklistSubmit();
+  const { isSubmitting, handleSubmit: submitChecklist } = useChecklistSubmit();
 
   const onSubmit = async (e: React.FormEvent) => {
     console.log("Submit handler triggered");
@@ -120,7 +120,7 @@ export function useChecklistCreation() {
         aiPromptLength: aiPrompt?.length || 0
       });
       
-      const success = await handleSubmit(e, activeTab, form, questions, file, aiPrompt);
+      const success = await submitChecklist(e, activeTab, form, questions, file, aiPrompt);
       
       if (success) {
         console.log("Submission successful");

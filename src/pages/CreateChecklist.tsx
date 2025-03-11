@@ -143,7 +143,8 @@ export default function CreateChecklist() {
       return;
     }
     
-    const result = await handleSubmit(e, activeTab, form, questions, file, aiPrompt);
+    // Fix: calling handleSubmit with only one argument (the event)
+    const result = await handleSubmit(e);
     console.log("Form submission result:", result);
   };
 
