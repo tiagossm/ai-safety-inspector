@@ -7,14 +7,15 @@ export function useBulkOperationsPermissions() {
   
   // Check if the user has permissions to perform bulk operations
   const canPerformBulkOperations = () => {
-    // Only allow bulk operations for administrators
     if (!user) {
       return false;
     }
     
-    // Use type assertion to compare with string literal
-    return (user as AuthUser).role === "admin" || 
-           (user as any).role === "Administrador";
+    // Super admins and company admins can perform bulk operations
+    const typedUser = user as AuthUser;
+    return typedUser.tier === "super_admin" || 
+           typedUser.tier === "company_admin" || 
+           typedUser.role === "admin";
   };
   
   return {

@@ -13,14 +13,14 @@ export function useChecklistPermissions(checklistId: string) {
     queryKey: ["checklist-permissions", checklistId],
     queryFn: async () => {
       try {
-        // Primeiro verificamos se o usuário é o criador do checklist
+        // First check if the user is authenticated
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user) {
           throw new Error("Usuário não autenticado");
         }
         
-        // Verificar se o usuário é o dono do checklist
+        // Check if the user is the owner of the checklist
         const { data: checklist } = await supabase
           .from("checklists")
           .select("user_id")
@@ -28,7 +28,7 @@ export function useChecklistPermissions(checklistId: string) {
           .single();
           
         if (checklist?.user_id === user.id) {
-          // Se o usuário é o dono, tem todas as permissões
+          // If the user is the owner, they have all permissions
           return {
             read: true,
             write: true,
@@ -36,7 +36,7 @@ export function useChecklistPermissions(checklistId: string) {
           };
         }
         
-        // Verificar na tabela de permissões
+        // Check permissions in the permissions table
         const { data: permissions } = await supabase
           .from("checklist_permissions")
           .select("role")
@@ -45,7 +45,7 @@ export function useChecklistPermissions(checklistId: string) {
           .single();
           
         if (permissions) {
-          // Define permissões baseadas no papel
+          // Define permissions based on role
           switch (permissions.role) {
             case "admin":
               return { read: true, write: true, delete: true };
@@ -58,7 +58,7 @@ export function useChecklistPermissions(checklistId: string) {
           }
         }
         
-        // Verificar se o usuário pertence à mesma empresa do checklist
+        // Check if the user belongs to the same company as the checklist
         const { data: checklistCompany } = await supabase
           .from("checklists")
           .select("company_id")
@@ -73,12 +73,12 @@ export function useChecklistPermissions(checklistId: string) {
             .eq("company_id", checklistCompany.company_id);
             
           if (userCompanies && userCompanies.length > 0) {
-            // O usuário pertence à mesma empresa, conceder acesso básico
+            // User belongs to the same company, grant basic access
             return { read: true, write: false, delete: false };
           }
         }
         
-        // Por padrão, negar acesso
+        // Default: deny access
         return { read: false, write: false, delete: false };
       } catch (error) {
         console.error("Erro ao verificar permissões:", error);
@@ -86,6 +86,6 @@ export function useChecklistPermissions(checklistId: string) {
       }
     },
     enabled: !!checklistId,
-    staleTime: 5 * 60 * 1000, // 5 minutos de cache
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
 }
