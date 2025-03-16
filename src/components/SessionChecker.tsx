@@ -6,7 +6,7 @@ import { toast } from "sonner";
 const SessionChecker = ({ children }: { children: React.ReactNode }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [hasCheckedSession, setHasCheckedSession] = useState(false); // ✅ Evita múltiplas verificações
+  const [session, setSession] = useState<any>(null); // ✅ Corrigido: Definição correta da session
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -25,8 +25,6 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
     };
 
     const checkSession = async () => {
-      if (hasCheckedSession) return; // ✅ Impede verificações repetidas 🚀
-
       try {
         console.log("🔍 Verificando sessão do usuário...");
         const { data, error } = await supabase.auth.getSession();
@@ -44,32 +42,33 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
           return;
         }
 
-        const session = data.session;
-        console.log("ℹ️ Status da sessão:", session ? "Autenticado" : "Não autenticado");
-
-        if (!session && !isPublicPath(location.pathname)) {
-          console.log("🔄 Redirecionando para tela de login");
+        if (!data || !data.session) {
+          console.log("🔄 Nenhuma sessão encontrada, redirecionando...");
+          setSession(null);
           navigate("/auth");
+          setIsLoading(false);
+          setIsInitialized(true);
+          return;
         }
 
+        console.log("✅ Sessão encontrada:", data.session);
+        setSession(data.session);
         setIsLoading(false);
         setIsInitialized(true);
-        setHasCheckedSession(true); // ✅ Evita que a verificação rode várias vezes 🚀
       } catch (error) {
         console.error("❌ Erro inesperado:", error);
         setIsLoading(false);
         setIsInitialized(true);
+        setSession(null);
       }
     };
 
-    if (!hasCheckedSession) {
-      checkSession();
-    }
+    checkSession();
 
-    // ✅ Mantendo o listener de mudanças na autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
       console.log("🔄 Estado de autenticação alterado:", event);
-
+      setSession(newSession);
+      
       if (event === "SIGNED_IN") {
         console.log("✅ Usuário autenticado");
         if (location.pathname === "/auth") {
@@ -100,7 +99,6 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
       </div>
     );
   }
-  console.log("👤 Role do usuário autenticado:", session?.user?.role || "Não definida");
 
   return <>{children}</>;
 };
