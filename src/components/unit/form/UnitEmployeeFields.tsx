@@ -31,10 +31,7 @@ export function UnitEmployeeFields({
               <Input 
                 type="number"
                 placeholder="Digite o número de funcionários" 
-                onChange={(e) => {
-                  field.onChange(e);
-                  handleEmployeeCountChange(e);
-                }}
+                onChange={handleEmployeeCountChange}
                 value={field.value || ''}
               />
             </FormControl>

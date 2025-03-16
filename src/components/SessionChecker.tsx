@@ -33,17 +33,7 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
         
         if (error) {
           console.error("❌ Erro ao verificar sessão:", error);
-          
-          // Check if the error is related to API keys
-          if (error.message.includes('Invalid API key')) {
-            toast.error("Erro de configuração do servidor", {
-              description: "Por favor, tente novamente em alguns instantes ou contate o suporte."
-            });
-          } else {
-            toast.error("Não foi possível verificar sua sessão", {
-              description: error.message
-            });
-          }
+          toast.error("Não foi possível verificar sua sessão");
           
           if (!isPublicPath(location.pathname)) {
             navigate("/auth");
@@ -80,9 +70,6 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
         setIsInitialized(true);
       } catch (error) {
         console.error("❌ Erro inesperado:", error);
-        toast.error("Erro ao verificar sessão", {
-          description: "Ocorreu um erro inesperado. Tente novamente."
-        });
         setIsLoading(false);
         setIsInitialized(true);
         

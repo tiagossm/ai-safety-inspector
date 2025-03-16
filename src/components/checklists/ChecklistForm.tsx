@@ -8,16 +8,13 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useChecklistPermissions } from "@/hooks/checklist/useChecklistPermissions";
 
-// Expanded category options
+// Checklist category options
 const CATEGORIES = [
   { value: "safety", label: "Segurança" },
   { value: "quality", label: "Qualidade" },
   { value: "maintenance", label: "Manutenção" },
   { value: "environment", label: "Meio Ambiente" },
   { value: "operational", label: "Operacional" },
-  { value: "compliance", label: "Conformidade" },
-  { value: "training", label: "Treinamento" },
-  { value: "risk", label: "Gestão de Riscos" },
   { value: "general", label: "Geral" }
 ];
 
@@ -25,17 +22,16 @@ interface ChecklistFormProps {
   checklist: Checklist;
   users: any[];
   setChecklist: React.Dispatch<React.SetStateAction<Checklist | null>>;
-  isNewChecklist?: boolean;
 }
 
-export default function ChecklistForm({ checklist, users, setChecklist, isNewChecklist = false }: ChecklistFormProps) {
+export default function ChecklistForm({ checklist, users, setChecklist }: ChecklistFormProps) {
   const { data: permissions } = useChecklistPermissions(checklist.id);
-  const canEdit = isNewChecklist || permissions?.write || false;
+  const canEdit = permissions?.write || false;
   
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{isNewChecklist ? "Criar Novo Checklist" : "Detalhes do Checklist"}</CardTitle>
+        <CardTitle>Detalhes do Checklist</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-2">
@@ -44,7 +40,6 @@ export default function ChecklistForm({ checklist, users, setChecklist, isNewChe
             id="title"
             value={checklist.title}
             onChange={(e) => setChecklist({...checklist, title: e.target.value})}
-            placeholder="Digite o título do checklist"
             disabled={!canEdit}
           />
         </div>
@@ -81,7 +76,6 @@ export default function ChecklistForm({ checklist, users, setChecklist, isNewChe
                 <SelectValue placeholder="Selecione um responsável" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Sem responsável</SelectItem>
                 {users.map((user) => (
                   <SelectItem key={user.id} value={user.id}>
                     {user.name}
@@ -98,7 +92,6 @@ export default function ChecklistForm({ checklist, users, setChecklist, isNewChe
             id="description"
             value={checklist.description || ""}
             onChange={(e) => setChecklist({...checklist, description: e.target.value})}
-            placeholder="Descreva o propósito deste checklist"
             rows={3}
             disabled={!canEdit}
           />

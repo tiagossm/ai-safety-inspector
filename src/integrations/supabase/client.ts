@@ -5,25 +5,13 @@ import type { Database } from './types';
 // Define singleton instance
 let supabaseInstance: ReturnType<typeof createClient<Database>> | null = null;
 
-// Read from environment variables 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://jkgmgjjtslkozhehwmng.supabase.co';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprZ21namp0c2xrb3poZWh3bW5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE3MjMwNDAsImV4cCI6MjA1NzI5OTA0MH0.VHL_5dontJ5Zin2cPTrQgkdx-CbnqWtRkVq-nNSnAZg';
-
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error("Missing Supabase environment variables!");
-}
+const SUPABASE_URL = "https://jkgmgjjtslkozhehwmng.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprZ21namp0c2xrb3poZWh3bW5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE3MjMwNDAsImV4cCI6MjA1NzI5OTA0MH0.VHL_5dontJ5Zin2cPTrQgkdx-CbnqWtRkVq-nNSnAZg";
 
 function createSupabaseClient() {
   // Only create the client once
   if (!supabaseInstance) {
     console.log("✅ Creating new Supabase client instance");
-    console.log("URL:", SUPABASE_URL);
-    console.log("ANON KEY (first 10 chars):", SUPABASE_ANON_KEY?.substring(0, 10) + "...");
-    
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-      throw new Error("Missing Supabase environment variables. Check your .env file.");
-    }
-    
     supabaseInstance = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: {
         persistSession: true,

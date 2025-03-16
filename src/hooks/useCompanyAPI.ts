@@ -1,3 +1,4 @@
+
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -34,33 +35,10 @@ export const useCompanyAPI = () => {
         .eq('cnae', formattedCnae)
         .maybeSingle();
 
-      if (error) {
-        console.error('Erro ao buscar grau de risco:', error);
-        throw error;
-      }
+      if (error) throw error;
       
       if (data) {
-        console.log('Grau de risco encontrado:', data.grau_risco);
         return data.grau_risco.toString();
-      }
-      
-      const cnaeNoHyphen = formattedCnae.replace('-', '');
-      console.log('Tentando buscar sem hífen:', cnaeNoHyphen);
-      
-      const { data: dataAlt, error: errorAlt } = await supabase
-        .from('nr4_riscos')
-        .select('grau_risco')
-        .or(`cnae.eq.${cnaeNoHyphen},cnae.eq.${formattedCnae}`)
-        .maybeSingle();
-        
-      if (errorAlt) {
-        console.error('Erro na busca alternativa:', errorAlt);
-        throw errorAlt;
-      }
-      
-      if (dataAlt) {
-        console.log('Grau de risco encontrado (busca alternativa):', dataAlt.grau_risco);
-        return dataAlt.grau_risco.toString();
       }
       
       toast({
@@ -98,9 +76,11 @@ export const useCompanyAPI = () => {
 
       console.log('Dados retornados da API:', response);
 
+      // Formata o CNAE e busca o grau de risco
       const formattedCnae = response.cnae ? formatCNAE(response.cnae) : '';
       const riskLevel = formattedCnae ? await fetchRiskLevel(formattedCnae) : '';
 
+      // Retorna exatamente os dados que recebemos da API
       const result: CNPJResponse = {
         fantasyName: response.fantasyName,
         cnae: formattedCnae,
