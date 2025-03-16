@@ -12,14 +12,13 @@ export function Navbar() {
 
   const handleLogout = async () => {
     try {
-      console.log("Initiating logout...");
+      console.log("Initiating logout from Navbar...");
       await supabase.auth.signOut();
       console.log("Supabase signOut completed");
       
-      // Call our own logout function to clear state
-      await logout();
+      // Call our own logout function to clear state and navigate
+      logout();
       
-      navigate("/auth");
       toast({
         title: "Logout realizado com sucesso",
         description: "Você foi desconectado do sistema",

@@ -8,14 +8,14 @@ import { AuthUser } from "@/hooks/auth/useAuthState";
 interface AuthContextType {
   user: AuthUser | null;
   loading: boolean;
-  logout: () => Promise<void>;
+  logout: () => void;
   refreshSession: () => Promise<boolean>;
 }
 
 export const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
-  logout: async () => {},
+  logout: () => {},
   refreshSession: async () => false
 });
 
@@ -210,20 +210,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  // Logout function
-  const logout = async () => {
-    setLoading(true);
-    try {
-      await supabase.auth.signOut();
-      localStorage.removeItem("authUser");
-      setUser(null);
-      navigate("/auth");
-    } catch (error) {
-      console.error("Error logging out:", error);
-      toast.error("Erro ao fazer logout");
-    } finally {
-      setLoading(false);
-    }
+  // Simplify the logout function to avoid async issues
+  const logout = () => {
+    console.log("Executing logout in AuthProvider...");
+    // Clear all authentication data
+    localStorage.removeItem("authUser");
+    setUser(null);
+    // Navigate to auth page
+    navigate("/auth");
   };
 
   return (

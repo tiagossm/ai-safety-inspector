@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/ui/ThemeContext";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const menuItems = [
   { title: "Dashboard", icon: LayoutDashboard, url: "/dashboard" },
@@ -49,12 +50,13 @@ export function AppSidebar() {
       await supabase.auth.signOut();
       console.log("AppSidebar: Supabase signOut completed");
       
-      // Call our own logout function to clear state
-      await logout();
+      // Use our logout function and let it handle navigation
+      logout();
       
-      navigate("/auth");
+      toast.success("Logout realizado com sucesso");
     } catch (error) {
       console.error("Error during logout:", error);
+      toast.error("Erro ao fazer logout");
       // Still try to navigate to auth page even if there's an error
       navigate("/auth");
     }

@@ -55,17 +55,11 @@ export function useCompanies() {
       
       console.log("Fetching companies for user:", user?.id, "with tier:", user?.tier);
       
-      let query = supabase.from('companies').select('*');
-      
-      // Only filter by active status for non-super_admin users
-      if (user?.tier !== "super_admin") {
-        console.log("Non-super_admin user, filtering by active status");
-        query = query.eq('status', 'active');
-      } else {
-        console.log("Super_admin user, showing all companies");
-      }
-      
-      const { data, error } = await query.order('created_at', { ascending: false });
+      // Simplify the query to avoid potential RLS issues
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (error) {
         console.error("Error fetching companies:", error);
