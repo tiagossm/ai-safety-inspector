@@ -66,7 +66,10 @@ const Auth = () => {
           password,
         });
         
-        if (error) throw error;
+        if (error) {
+          console.error("❌ Erro na autenticação:", error);
+          throw error;
+        }
         
         console.log("✅ Login bem-sucedido:", data);
         toast({
@@ -78,9 +81,23 @@ const Auth = () => {
       }
     } catch (error: any) {
       console.error("❌ Erro na autenticação:", error);
-      setError(error.message);
+      
+      // Handle specific error messages
+      let errorMessage = "Falha na autenticação. Verifique suas credenciais.";
+      
+      if (error.message.includes('Invalid API key')) {
+        errorMessage = "Erro de configuração do servidor. Por favor, contate o suporte.";
+      } else if (error.message.includes('Invalid login credentials')) {
+        errorMessage = "Credenciais inválidas. Verifique seu email e senha.";
+      } else if (error.message.includes('Email not confirmed')) {
+        errorMessage = "Email não confirmado. Verifique sua caixa de entrada.";
+      } else if (error.message.includes('Rate limit exceeded')) {
+        errorMessage = "Muitas tentativas. Tente novamente mais tarde.";
+      }
+      
+      setError(errorMessage);
       sonnerToast.error("Erro de autenticação", {
-        description: error.message || "Falha na autenticação. Verifique suas credenciais."
+        description: errorMessage
       });
     } finally {
       setLoading(false);
