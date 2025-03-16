@@ -69,10 +69,17 @@ export function ChecklistAttachments({
       
       if (error) throw error;
       
-      onAddAttachment({
-        ...data,
-        uploaded_by: user.name || 'Usuário'
-      });
+      const formattedAttachment: ChecklistAttachment = {
+        id: data.id,
+        checklist_id: data.checklist_id,
+        file_name: data.file_name,
+        file_url: data.file_url,
+        file_type: data.file_type,
+        uploaded_by: user.email || 'Usuário',
+        created_at: data.created_at
+      };
+      
+      onAddAttachment(formattedAttachment);
       
       toast.success("Arquivo enviado com sucesso!");
     } catch (error) {

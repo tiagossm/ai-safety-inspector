@@ -47,7 +47,7 @@ export function ChecklistComments({ checklistId, comments, onAddComment }: Check
         id: data.id,
         checklist_id: data.checklist_id,
         user_id: data.user_id,
-        user_name: data.users?.name || 'Usuário',
+        user_name: data.users?.name || user.email || 'Usuário',
         content: data.content,
         created_at: data.created_at,
       };
@@ -108,7 +108,7 @@ export function ChecklistComments({ checklistId, comments, onAddComment }: Check
         <div className="flex gap-2 items-start pt-4 border-t">
           <Avatar className="h-8 w-8">
             <AvatarFallback>
-              {user?.name ? getInitials(user.name) : 'U'}
+              {user ? getInitials(user.email || 'U') : 'U'}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1">

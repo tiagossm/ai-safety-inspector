@@ -1,243 +1,236 @@
 
+import { useState, useEffect } from "react";
 import { Checklist } from "@/types/checklist";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useChecklistPermissions } from "@/hooks/checklist/useChecklistPermissions";
+import { Label } from "@/components/ui/label";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Company } from "@/types/company";
-
-// Checklist category options
-const CATEGORIES = [
-  { value: "safety", label: "Segurança" },
-  { value: "quality", label: "Qualidade" },
-  { value: "maintenance", label: "Manutenção" },
-  { value: "environment", label: "Meio Ambiente" },
-  { value: "operational", label: "Operacional" },
-  { value: "general", label: "Geral" }
-];
-
-const STATUS_OPTIONS = [
-  { value: "pendente", label: "Pendente" },
-  { value: "em_andamento", label: "Em andamento" },
-  { value: "concluido", label: "Concluído" }
-];
 
 interface ChecklistFormProps {
   checklist: Checklist;
   users: any[];
-  setChecklist: React.Dispatch<React.SetStateAction<Checklist | null>>;
+  setChecklist: (checklist: Checklist) => void;
 }
 
 export default function ChecklistForm({ checklist, users, setChecklist }: ChecklistFormProps) {
-  const { data: permissions } = useChecklistPermissions(checklist.id);
-  const canEdit = permissions?.write || false;
-  const [companies, setCompanies] = useState<Company[]>([]);
+  const [companies, setCompanies] = useState<{ id: string; fantasy_name: string }[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Fetch companies user has access to
+  // Fetch companies
   useEffect(() => {
-    async function fetchCompanies() {
+    const fetchCompanies = async () => {
       setLoading(true);
       try {
         const { data, error } = await supabase
           .from('companies')
           .select('id, fantasy_name')
           .eq('status', 'active')
-          .order('fantasy_name');
-
+          .order('fantasy_name', { ascending: true });
+        
         if (error) throw error;
+        
         setCompanies(data || []);
       } catch (error) {
         console.error('Error fetching companies:', error);
       } finally {
         setLoading(false);
       }
-    }
-
+    };
+    
     fetchCompanies();
   }, []);
-  
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setChecklist({ ...checklist, [name]: value });
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setChecklist({ ...checklist, [name]: value });
+  };
+
+  const handleSwitchChange = (name: string, checked: boolean) => {
+    setChecklist({ ...checklist, [name]: checked });
+  };
+
+  const handleDateChange = (date: Date | undefined) => {
+    if (date) {
+      setChecklist({ ...checklist, due_date: date.toISOString() });
+    } else {
+      setChecklist({ ...checklist, due_date: null });
+    }
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Detalhes do Checklist</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-2">
+    <div className="space-y-4 bg-card p-6 rounded-lg border">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
           <Label htmlFor="title">Título</Label>
           <Input
             id="title"
+            name="title"
             value={checklist.title}
-            onChange={(e) => setChecklist({...checklist, title: e.target.value})}
-            disabled={!canEdit}
+            onChange={handleInputChange}
+            placeholder="Título do checklist"
           />
         </div>
         
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="category">Categoria</Label>
-            <Select 
-              value={checklist.category || "general"} 
-              onValueChange={(value) => setChecklist({...checklist, category: value})}
-              disabled={!canEdit}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione uma categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map((category) => (
-                  <SelectItem key={category.value} value={category.value}>
-                    {category.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="grid gap-2">
-            <Label htmlFor="company">Empresa</Label>
-            <Select 
-              value={checklist.company_id || ""} 
-              onValueChange={(value) => setChecklist({...checklist, company_id: value})}
-              disabled={!canEdit || loading}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione uma empresa" />
-              </SelectTrigger>
-              <SelectContent>
+        <div className="space-y-2">
+          <Label htmlFor="category">Categoria</Label>
+          <Select
+            value={checklist.category || ""}
+            onValueChange={(value) => handleSelectChange("category", value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione uma categoria" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="segurança">Segurança</SelectItem>
+                <SelectItem value="saúde">Saúde</SelectItem>
+                <SelectItem value="meio ambiente">Meio Ambiente</SelectItem>
+                <SelectItem value="qualidade">Qualidade</SelectItem>
+                <SelectItem value="manutenção">Manutenção</SelectItem>
+                <SelectItem value="operação">Operação</SelectItem>
+                <SelectItem value="administrativo">Administrativo</SelectItem>
+                <SelectItem value="outro">Outro</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="description">Descrição</Label>
+        <Textarea
+          id="description"
+          name="description"
+          value={checklist.description || ""}
+          onChange={handleInputChange}
+          placeholder="Descrição detalhada do checklist"
+          rows={3}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="company">Empresa</Label>
+          <Select
+            value={checklist.company_id || ""}
+            onValueChange={(value) => handleSelectChange("company_id", value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione uma empresa" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="">Nenhuma</SelectItem>
                 {companies.map((company) => (
                   <SelectItem key={company.id} value={company.id}>
                     {company.fantasy_name}
                   </SelectItem>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
         </div>
         
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="responsible">Responsável</Label>
-            <Select 
-              value={checklist.responsible_id || ""} 
-              onValueChange={(value) => setChecklist({...checklist, responsible_id: value})}
-              disabled={!canEdit}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um responsável" />
-              </SelectTrigger>
-              <SelectContent>
+        <div className="space-y-2">
+          <Label htmlFor="responsible">Responsável</Label>
+          <Select
+            value={checklist.responsible_id || ""}
+            onValueChange={(value) => handleSelectChange("responsible_id", value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione um responsável" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="">Nenhum</SelectItem>
                 {users.map((user) => (
                   <SelectItem key={user.id} value={user.id}>
-                    {user.name}
+                    {user.name || user.email}
                   </SelectItem>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="grid gap-2">
-            <Label htmlFor="status">Status</Label>
-            <Select 
-              value={checklist.status || "pendente"} 
-              onValueChange={(value) => setChecklist({...checklist, status: value as "pendente" | "em_andamento" | "concluido"})}
-              disabled={!canEdit}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um status" />
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_OPTIONS.map((status) => (
-                  <SelectItem key={status.value} value={status.value}>
-                    {status.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="status">Status</Label>
+          <Select
+            value={checklist.status || "pendente"}
+            onValueChange={(value) => handleSelectChange("status", value)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="pendente">Pendente</SelectItem>
+              <SelectItem value="em_andamento">Em Andamento</SelectItem>
+              <SelectItem value="concluido">Concluído</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        <div className="grid gap-2">
-          <Label htmlFor="dueDate">Data de Vencimento</Label>
+        <div className="space-y-2">
+          <Label htmlFor="due_date">Data de Vencimento</Label>
           <Popover>
             <PopoverTrigger asChild>
               <Button
-                variant={"outline"}
+                variant="outline"
                 className={cn(
                   "w-full justify-start text-left font-normal",
                   !checklist.due_date && "text-muted-foreground"
                 )}
-                disabled={!canEdit}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {checklist.due_date ? (
-                  format(new Date(checklist.due_date), "PPP", { locale: ptBR })
-                ) : (
-                  <span>Selecione uma data</span>
-                )}
+                {checklist.due_date ? format(new Date(checklist.due_date), "PP") : "Selecione uma data"}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0">
               <Calendar
                 mode="single"
                 selected={checklist.due_date ? new Date(checklist.due_date) : undefined}
-                onSelect={(date) => setChecklist({...checklist, due_date: date ? date.toISOString() : null})}
+                onSelect={handleDateChange}
                 initialFocus
               />
             </PopoverContent>
           </Popover>
         </div>
-        
-        <div className="grid gap-2">
-          <Label htmlFor="description">Descrição</Label>
-          <Textarea
-            id="description"
-            value={checklist.description || ""}
-            onChange={(e) => setChecklist({...checklist, description: e.target.value})}
-            rows={3}
-            disabled={!canEdit}
-          />
+
+        <div className="space-y-2">
+          <Label htmlFor="is_template" className="block mb-2">Modelo</Label>
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="is_template"
+              checked={checklist.is_template || false}
+              onCheckedChange={(checked) => handleSwitchChange("is_template", checked)}
+            />
+            <Label htmlFor="is_template">
+              {checklist.is_template ? "Sim" : "Não"}
+            </Label>
+          </div>
         </div>
-        
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="template"
-            checked={checklist.is_template}
-            onCheckedChange={(checked) => setChecklist({...checklist, is_template: checked})}
-            disabled={!canEdit}
-          />
-          <Label htmlFor="template">Template</Label>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="status"
-            checked={checklist.status_checklist === "ativo"}
-            onCheckedChange={(checked) => 
-              setChecklist({
-                ...checklist, 
-                status_checklist: checked ? "ativo" : "inativo"
-              })
-            }
-            disabled={!canEdit}
-          />
-          <Label htmlFor="status">
-            {checklist.status_checklist === "ativo" ? "Ativo" : "Inativo"}
-          </Label>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

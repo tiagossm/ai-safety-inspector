@@ -1,24 +1,16 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
-import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Company } from "@/types/company";
+import { Checkbox } from "@/components/ui/checkbox";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CreateChecklistModalProps {
   isOpen: boolean;
@@ -29,184 +21,182 @@ export function CreateChecklistModal({ isOpen, onClose }: CreateChecklistModalPr
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("general");
+  const [category, setCategory] = useState("");
   const [companyId, setCompanyId] = useState("");
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
-  const [responsible, setResponsible] = useState("");
+  const [isTemplate, setIsTemplate] = useState(false);
   const [loading, setLoading] = useState(false);
-  const createChecklistMutation = useCreateChecklist();
+  const [companies, setCompanies] = useState<{ id: string; fantasy_name: string; }[]>([]);
   
+  const createChecklist = useCreateChecklist();
+  
+  // Fetch companies on mount
   useEffect(() => {
-    if (isOpen) {
-      // Reset form
-      setTitle("");
-      setDescription("");
-      setCategory("general");
-      setCompanyId("");
-      setResponsible("");
-      
-      // Fetch companies and users
-      const fetchData = async () => {
-        setLoading(true);
-        try {
-          // Fetch companies
-          const { data: companiesData, error: companiesError } = await supabase
-            .from('companies')
-            .select('id, fantasy_name')
-            .eq('status', 'active')
-            .order('fantasy_name');
-            
-          if (companiesError) throw companiesError;
-          setCompanies(companiesData || []);
+    const fetchCompanies = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('companies')
+          .select('id, fantasy_name')
+          .eq('status', 'active')
+          .order('fantasy_name', { ascending: true });
           
-          // Fetch users
-          const { data: usersData, error: usersError } = await supabase
-            .from('users')
-            .select('id, name')
-            .eq('status', 'active')
-            .order('name');
-            
-          if (usersError) throw usersError;
-          setUsers(usersData || []);
-        } catch (error) {
-          console.error("Error fetching data:", error);
-          toast.error("Erro ao carregar dados");
-        } finally {
-          setLoading(false);
-        }
-      };
-      
-      fetchData();
+        if (error) throw error;
+        setCompanies(data || []);
+      } catch (error) {
+        console.error('Error fetching companies:', error);
+        toast.error('Erro ao carregar empresas');
+      }
+    };
+    
+    if (isOpen) {
+      fetchCompanies();
     }
   }, [isOpen]);
   
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (!title.trim()) {
       toast.error("O título é obrigatório");
       return;
     }
     
+    setLoading(true);
+    
     try {
-      setLoading(true);
-      const newChecklist = await createChecklistMutation.mutateAsync({
+      const newChecklist = {
         title,
         description,
         category,
-        company_id: companyId || undefined,
-        responsible_id: responsible || undefined,
-        status: "pendente"
-      });
+        company_id: companyId || null,
+        is_template: isTemplate,
+        status_checklist: "ativo"
+      };
+      
+      const result = await createChecklist.mutateAsync(newChecklist);
       
       toast.success("Checklist criado com sucesso!");
       onClose();
-      navigate(`/checklists/${newChecklist.id}`);
+      
+      // Add history entry
+      try {
+        await supabase.from('checklist_history').insert({
+          checklist_id: result.id,
+          user_id: (await supabase.auth.getUser()).data.user?.id,
+          action: 'create',
+          details: 'Criou o checklist'
+        });
+      } catch (historyError) {
+        console.warn("Erro ao registrar histórico:", historyError);
+      }
+      
+      // Navigate to the checklist details page
+      navigate(`/checklists/${result.id}`);
     } catch (error) {
       console.error("Error creating checklist:", error);
+      toast.error("Erro ao criar checklist");
     } finally {
       setLoading(false);
     }
   };
   
+  const handleClose = () => {
+    // Reset form
+    setTitle("");
+    setDescription("");
+    setCategory("");
+    setCompanyId("");
+    setIsTemplate(false);
+    onClose();
+  };
+  
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Criar Novo Checklist</DialogTitle>
-          <DialogDescription>
-            Preencha as informações básicas para criar rapidamente um checklist.
-          </DialogDescription>
         </DialogHeader>
         
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="title">Título</Label>
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Título *</Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Nome do checklist"
+              placeholder="Título do checklist"
+              required
             />
           </div>
           
-          <div className="grid gap-2">
+          <div className="space-y-2">
             <Label htmlFor="description">Descrição</Label>
             <Textarea
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Descrição breve do checklist"
+              placeholder="Descrição do checklist"
               rows={3}
             />
           </div>
           
-          <div className="grid gap-2">
+          <div className="space-y-2">
             <Label htmlFor="category">Categoria</Label>
             <Select value={category} onValueChange={setCategory}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione uma categoria" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="safety">Segurança</SelectItem>
-                <SelectItem value="quality">Qualidade</SelectItem>
-                <SelectItem value="maintenance">Manutenção</SelectItem>
-                <SelectItem value="environment">Meio Ambiente</SelectItem>
-                <SelectItem value="operational">Operacional</SelectItem>
-                <SelectItem value="general">Geral</SelectItem>
+                <SelectGroup>
+                  <SelectItem value="segurança">Segurança</SelectItem>
+                  <SelectItem value="saúde">Saúde</SelectItem>
+                  <SelectItem value="meio ambiente">Meio Ambiente</SelectItem>
+                  <SelectItem value="qualidade">Qualidade</SelectItem>
+                  <SelectItem value="manutenção">Manutenção</SelectItem>
+                  <SelectItem value="operação">Operação</SelectItem>
+                  <SelectItem value="administrativo">Administrativo</SelectItem>
+                  <SelectItem value="outro">Outro</SelectItem>
+                </SelectGroup>
               </SelectContent>
             </Select>
           </div>
           
-          <div className="grid gap-2">
+          <div className="space-y-2">
             <Label htmlFor="company">Empresa</Label>
             <Select value={companyId} onValueChange={setCompanyId}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione uma empresa" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhuma</SelectItem>
-                {companies.map((company) => (
-                  <SelectItem key={company.id} value={company.id}>
-                    {company.fantasy_name}
-                  </SelectItem>
-                ))}
+                <SelectGroup>
+                  <SelectItem value="">Nenhuma</SelectItem>
+                  {companies.map((company) => (
+                    <SelectItem key={company.id} value={company.id}>
+                      {company.fantasy_name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
           </div>
           
-          <div className="grid gap-2">
-            <Label htmlFor="responsible">Responsável</Label>
-            <Select value={responsible} onValueChange={setResponsible}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um responsável" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Nenhum</SelectItem>
-                {users.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="isTemplate"
+              checked={isTemplate}
+              onCheckedChange={(checked) => setIsTemplate(checked as boolean)}
+            />
+            <Label htmlFor="isTemplate">Criar como modelo</Label>
           </div>
-        </div>
-        
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Criando...
-              </>
-            ) : (
-              'Criar Checklist'
-            )}
-          </Button>
-        </DialogFooter>
+          
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={handleClose}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Criando..." : "Criar Checklist"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

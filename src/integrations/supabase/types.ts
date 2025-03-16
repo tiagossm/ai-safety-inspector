@@ -99,6 +99,111 @@ export type Database = {
           },
         ]
       }
+      checklist_attachments: {
+        Row: {
+          checklist_id: string
+          created_at: string
+          file_name: string
+          file_type: string
+          file_url: string
+          id: string
+          uploaded_by: string
+        }
+        Insert: {
+          checklist_id: string
+          created_at?: string
+          file_name: string
+          file_type: string
+          file_url: string
+          id?: string
+          uploaded_by: string
+        }
+        Update: {
+          checklist_id?: string
+          created_at?: string
+          file_name?: string
+          file_type?: string
+          file_url?: string
+          id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_attachments_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_comments: {
+        Row: {
+          checklist_id: string
+          content: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          checklist_id: string
+          content: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          checklist_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_comments_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_history: {
+        Row: {
+          action: string
+          checklist_id: string
+          created_at: string
+          details: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          checklist_id: string
+          created_at?: string
+          details: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          checklist_id?: string
+          created_at?: string
+          details?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_history_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_itens: {
         Row: {
           checklist_id: string

@@ -8,6 +8,7 @@ export interface AuthUser extends User {
   role?: "super_admin" | "company_admin" | "consultant" | "technician" | "user";
   tier?: string;
   company_id?: string;
+  name?: string; // Added name property
 }
 
 export function useAuthState() {
@@ -40,7 +41,7 @@ export function useAuthState() {
         try {
           const { data: userData, error: userError } = await supabase
             .from("users")
-            .select("role, tier, company_id")
+            .select("role, tier, company_id, name")
             .eq("id", sessionUser.id)
             .maybeSingle(); // Using maybeSingle instead of single to prevent errors
 
@@ -69,6 +70,7 @@ export function useAuthState() {
             ...sessionUser,
             role,
             tier,
+            name: userData?.name || sessionUser.email,
             company_id: userData?.company_id || undefined,
           };
 
