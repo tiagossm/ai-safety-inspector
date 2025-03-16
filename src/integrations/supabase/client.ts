@@ -6,7 +6,7 @@ import type { Database } from './types';
 let supabaseInstance: ReturnType<typeof createClient<Database>> | null = null;
 
 const SUPABASE_URL = "https://jkgmgjjtslkozhehwmng.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprZ21namp0c2xrb3poZWh3bW5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE3MDQ5MTUsImV4cCI6MjA1NzI4MDkxNX0.4WiEt8e-j4LHUl7PHda6xvb3mXSU1xiDjZxdrqm5TqU";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprZ21namp0c2xrb3poZWh3bW5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE3MjMwNDAsImV4cCI6MjA1NzI5OTA0MH0.VHL_5dontJ5Zin2cPTrQgkdx-CbnqWtRkVq-nNSnAZg";
 
 function createSupabaseClient() {
   // Only create the client once
