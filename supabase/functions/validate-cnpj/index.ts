@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -34,11 +35,45 @@ serve(async (req) => {
 
     console.log('Dados recebidos da ReceitaWS:', data)
 
+    // Formata o CNAE para buscar o grau de risco
+    const extractCnae = (cnaeString) => {
+      // Extrai apenas os números do CNAE
+      const numbers = cnaeString.replace(/[^\d]/g, '');
+      return numbers.length >= 5 
+        ? `${numbers.slice(0, 4)}-${numbers.slice(4, 5)}` 
+        : `${numbers.padEnd(4, '0')}-0`;
+    };
+
+    // Pega o CNAE principal
+    const cnae = data.atividade_principal?.[0]?.code || '';
+    const formattedCnae = extractCnae(cnae);
+    
+    // Criar cliente Supabase para consultar o grau de risco
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://jkgmgjjtslkozhehwmng.supabase.co';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprZ21namp0c2xrb3poZWh3bW5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE3MjMwNDAsImV4cCI6MjA1NzI5OTA0MH0.VHL_5dontJ5Zin2cPTrQgkdx-CbnqWtRkVq-nNSnAZg';
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+    // Buscar grau de risco na tabela nr4_riscos
+    let riskLevel = '';
+    if (formattedCnae) {
+      const { data: riskData, error } = await supabase
+        .from('nr4_riscos')
+        .select('grau_risco')
+        .eq('cnae', formattedCnae)
+        .maybeSingle();
+
+      if (!error && riskData) {
+        riskLevel = riskData.grau_risco.toString();
+      }
+      console.log('Grau de risco encontrado:', riskLevel, 'para CNAE:', formattedCnae);
+    }
+
     // Formata os dados para retornar
     const formattedData = {
       fantasyName: data.fantasia || data.nome,
-      cnae: data.atividade_principal?.[0]?.code || '',
-      riskLevel: '',  // Será preenchido pelo frontend
+      cnae: formattedCnae,
+      riskLevel: riskLevel,
+      address: `${data.logradouro}, ${data.numero}${data.complemento ? `, ${data.complemento}` : ''} - ${data.bairro}, ${data.municipio}/${data.uf}`,
       contactEmail: data.email || '',
       contactPhone: data.telefone || '',
       contactName: data.qsa?.[0]?.nome || ''

@@ -1,3 +1,4 @@
+
 import { useAuth } from "@/components/AuthProvider";
 import { CompaniesList } from "@/components/CompaniesList";
 import { Button } from "@/components/ui/button";
@@ -6,9 +7,6 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-
-const SUPABASE_ANON_KEY = "SUA_API_KEY_AQUI"; // 🔴 Insira sua API Key correta
-const SUPABASE_URL = "https://jkgmgjjtslkozhehwmng.supabase.co";
 
 const Companies = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -22,23 +20,13 @@ const Companies = () => {
     try {
       console.log("🔍 Buscando empresas no Supabase...");
       
-      const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/companies?select=*&status=eq.active`,
-        {
-          method: "GET",
-          headers: {
-            "apikey": SUPABASE_ANON_KEY, // 🔴 API Key correta
-            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-            "Content-Type": "application/json"
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Erro ao buscar empresas: ${response.statusText}`);
-      }
-
-      const data = await response.json();
+      const { data, error } = await supabase
+        .from("companies")
+        .select("*")
+        .eq("status", "active");
+        
+      if (error) throw error;
+      
       setCompanies(data);
       console.log("✅ Empresas carregadas:", data);
     } catch (error: any) {
