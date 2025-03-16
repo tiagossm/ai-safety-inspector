@@ -23,16 +23,17 @@ export default function AddUnit() {
       // Calcular o dimensionamento da CIPA se houver número de funcionários e CNAE
       let cipaDimensioning = null;
       if (unitData.employee_count !== null && unitData.cnae) {
+        const riskGrade = parseInt(unitData.metadata?.risk_grade || '1');
         console.log("Calculating CIPA dimensioning with:", {
           employeeCount: unitData.employee_count,
           cnae: unitData.cnae,
-          riskLevel: parseInt(unitData.metadata?.risk_grade || '1')
+          riskLevel: riskGrade
         });
         
         const { data: dimensioning, error } = await supabase.rpc('get_cipa_dimensioning', {
           p_employee_count: unitData.employee_count,
-          p_cnae: unitData.cnae,
-          p_risk_level: parseInt(unitData.metadata?.risk_grade || '1')
+          p_cnae: unitData.cnae.replace(/[^\d]/g, ''),
+          p_risk_level: riskGrade
         });
         
         if (error) {
@@ -43,7 +44,7 @@ export default function AddUnit() {
         if (dimensioning && typeof dimensioning === 'object' && 'norma' in dimensioning) {
           console.log("CIPA dimensioning result:", dimensioning);
           cipaDimensioning = dimensioning;
-        } else if (unitData.employee_count < 20 && parseInt(unitData.metadata?.risk_grade || '1') === 4) {
+        } else if (unitData.employee_count < 20 && riskGrade === 4) {
           cipaDimensioning = { message: 'Designar 1 representante da CIPA', norma: 'NR-5' };
         }
       }

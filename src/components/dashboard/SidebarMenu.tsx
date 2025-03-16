@@ -63,24 +63,22 @@ export function SidebarMenu({ user, onLogout }: SidebarMenuProps) {
     {
       icon: Building,
       name: "Empresas",
-      path: "/companies",
-      submenu: [
-        {
-          icon: CheckSquare,
-          name: "Checklists",
-          path: "/checklists"
-        },
-        {
-          icon: ClipboardList,
-          name: "Inspeções",
-          path: "/inspections"
-        },
-        {
-          icon: AlertTriangle,
-          name: "Ocorrências",
-          path: "/incidents"
-        }
-      ]
+      path: "/companies"
+    },
+    {
+      icon: CheckSquare,
+      name: "Checklists",
+      path: "/checklists"
+    },
+    {
+      icon: ClipboardList,
+      name: "Inspeções",
+      path: "/inspections"
+    },
+    {
+      icon: AlertTriangle,
+      name: "Ocorrências",
+      path: "/incidents"
     },
     {
       icon: FileText,

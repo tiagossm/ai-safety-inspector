@@ -60,7 +60,7 @@ export const useCompanyAPI = () => {
         description: `Não foi possível encontrar o grau de risco para o CNAE ${formattedCnae}`,
         variant: "destructive",
       });
-      return "";
+      return "1"; // Default to level 1 risk if not found
     } catch (error: any) {
       console.error('Error fetching risk level:', error);
       toast({
@@ -68,7 +68,7 @@ export const useCompanyAPI = () => {
         description: error.message || "Verifique o formato do CNAE",
         variant: "destructive",
       });
-      return "";
+      return "1"; // Default to level 1 risk if error
     }
   };
 
@@ -104,6 +104,9 @@ export const useCompanyAPI = () => {
       if (formattedCnae) {
         riskLevel = await fetchRiskLevel(formattedCnae);
         console.log('Grau de risco obtido:', riskLevel);
+      } else {
+        // Default to level 1 if no CNAE provided
+        riskLevel = "1";
       }
 
       // Return data in expected format
