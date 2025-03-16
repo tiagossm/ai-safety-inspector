@@ -17,9 +17,20 @@ export function useCreateChecklist() {
         // Ensure authentication before proceeding
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         
-        if (sessionError || !sessionData.session) {
+        if (sessionError) {
           console.error("Session error:", sessionError);
-          throw new Error("Você precisa estar autenticado para criar um checklist");
+          throw new Error("Falha na autenticação. Por favor, faça login novamente.");
+        }
+        
+        if (!sessionData.session) {
+          console.error("No active session found");
+          throw new Error("Sessão expirada. Por favor, faça login novamente.");
+        }
+        
+        // Validate that we have a user_id
+        if (!extendedUser?.id) {
+          console.error("No user ID available");
+          throw new Error("Não foi possível identificar o usuário. Por favor, faça login novamente.");
         }
         
         // Log what's being sent to help debug
@@ -27,15 +38,15 @@ export function useCreateChecklist() {
         
         // Prepare checklist data with all mandatory fields
         const checklistData = {
-          title: newChecklist.title,
-          description: newChecklist.description,
+          title: newChecklist.title || "Checklist sem título",
+          description: newChecklist.description || "Sem descrição",
           is_template: newChecklist.is_template || false,
           status_checklist: "ativo",
           category: newChecklist.category || "general",
           responsible_id: newChecklist.responsible_id || null,
           company_id: newChecklist.company_id || extendedUser?.company_id || null,
           due_date: newChecklist.due_date || null,
-          user_id: extendedUser?.id // Ensure user_id is set
+          user_id: newChecklist.user_id || extendedUser?.id // Ensure user_id is set
         };
         
         console.log("Checklist prepared for insertion:", checklistData);
@@ -48,7 +59,16 @@ export function useCreateChecklist() {
 
         if (error) {
           console.error("Supabase error during checklist creation:", error);
-          throw error;
+          // Format error messages for different error types
+          if (error.code === '23503') {
+            throw new Error(`Falha na criação: referência inválida. Detalhes: ${error.details}`);
+          } else if (error.code === '23505') {
+            throw new Error("Este checklist já existe.");
+          } else if (error.code === '42501') {
+            throw new Error("Permissão negada. Verifique se você tem acesso para criar checklists.");
+          } else {
+            throw new Error(`Falha na criação: ${error.message || 'Erro desconhecido'}`);
+          }
         }
 
         if (!data || data.length === 0) {
@@ -92,19 +112,7 @@ export function useCreateChecklist() {
       let errorMessage = "Erro ao criar checklist. Tente novamente.";
       
       if (error instanceof Error) {
-        // Check for specific Supabase errors
-        if ('code' in error && 'details' in error && 'hint' in error) {
-          const supabaseError = error as any;
-          if (supabaseError.code === '23505') {
-            errorMessage = "Este checklist já existe.";
-          } else if (supabaseError.code === '23503') {
-            errorMessage = "Referência inválida no checklist.";
-          } else if (supabaseError.message) {
-            errorMessage = `Erro: ${supabaseError.message}`;
-          }
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
+        errorMessage = error.message;
       }
       
       toast.error(errorMessage);

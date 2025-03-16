@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -34,7 +35,7 @@ export function useAuthState() {
               .from("users")
               .select("role, tier, company_id")
               .eq("id", data.user.id)
-              .single();
+              .maybeSingle(); // Using maybeSingle instead of single to prevent errors
 
             if (userError) {
               console.error("⚠️ Erro ao buscar dados do usuário:", userError);
@@ -86,6 +87,22 @@ export function useAuthState() {
     };
 
     fetchUser();
+
+    // Set up auth subscription to detect changes in real-time
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log("🔄 Auth state changed:", event);
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          fetchUser(); // Refresh user data
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+        }
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   return {

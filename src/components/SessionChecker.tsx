@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +7,7 @@ import { toast } from "sonner";
 const SessionChecker = ({ children }: { children: React.ReactNode }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [session, setSession] = useState<any>(null); // ✅ Corrigido: Definição correta da session
+  const [session, setSession] = useState<any>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -31,7 +32,7 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
 
         if (error) {
           console.error("❌ Erro ao verificar sessão:", error);
-          toast.error("Não foi possível verificar sua sessão");
+          toast.error("Não foi possível verificar sua sessão. Tente novamente.");
 
           if (!isPublicPath(location.pathname)) {
             navigate("/auth");
@@ -43,15 +44,30 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
         }
 
         if (!data || !data.session) {
-          console.log("🔄 Nenhuma sessão encontrada, redirecionando...");
+          console.log("🔄 Nenhuma sessão encontrada");
           setSession(null);
-          navigate("/auth");
+          
+          if (!isPublicPath(location.pathname)) {
+            console.log("🔄 Redirecionando para página de autenticação...");
+            navigate("/auth");
+          }
+          
           setIsLoading(false);
           setIsInitialized(true);
           return;
         }
 
-        console.log("✅ Sessão encontrada:", data.session);
+        // Check if token is close to expiration (within 5 minutes)
+        const expiresAt = data.session.expires_at ? data.session.expires_at * 1000 : 0;
+        const now = Date.now();
+        const fiveMinutes = 5 * 60 * 1000;
+        
+        if (expiresAt && expiresAt - now < fiveMinutes) {
+          console.log("⚠️ Token próximo do vencimento, refreshing...");
+          await supabase.auth.refreshSession();
+        }
+
+        console.log("✅ Sessão encontrada:", data.session.user?.email);
         setSession(data.session);
         setIsLoading(false);
         setIsInitialized(true);
@@ -60,6 +76,10 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
         setIsLoading(false);
         setIsInitialized(true);
         setSession(null);
+        
+        if (!isPublicPath(location.pathname)) {
+          navigate("/auth");
+        }
       }
     };
 
@@ -76,18 +96,33 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
         }
       } else if (event === "SIGNED_OUT") {
         console.log("ℹ️ Usuário desconectado");
-        navigate("/auth");
+        if (!isPublicPath(location.pathname)) {
+          navigate("/auth");
+        }
       }
 
       setIsLoading(false);
       setIsInitialized(true);
     });
 
+    // Set up a refresh timer to regularly check and refresh the token
+    const intervalId = setInterval(async () => {
+      if (session) {
+        try {
+          console.log("🔄 Verificando e atualizando token...");
+          await supabase.auth.refreshSession();
+        } catch (error) {
+          console.error("❌ Erro ao atualizar token:", error);
+        }
+      }
+    }, 10 * 60 * 1000); // Every 10 minutes
+
     return () => {
       console.log("🔄 Desmontando SessionChecker");
       subscription.unsubscribe();
+      clearInterval(intervalId);
     };
-  }, []);
+  }, [location.pathname, navigate]);
 
   if (isLoading && !isInitialized) {
     return (

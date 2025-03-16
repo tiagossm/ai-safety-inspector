@@ -36,6 +36,7 @@ export function useChecklistSubmit() {
         }
       } catch (error) {
         console.error("Session check error:", error);
+        toast.error("Erro ao verificar sua sessão. Tente novamente.");
       }
     };
     
@@ -60,7 +61,15 @@ export function useChecklistSubmit() {
       // Get current session
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       
-      if (sessionError || !sessionData.session) {
+      if (sessionError) {
+        console.error("Session error:", sessionError);
+        toast.error("Falha na autenticação. Por favor, faça login novamente.");
+        setIsSubmitting(false);
+        navigate("/auth");
+        return false;
+      }
+      
+      if (!sessionData.session) {
         console.error("No active session found");
         toast.error("Você precisa estar autenticado para criar um checklist");
         setIsSubmitting(false);
@@ -69,7 +78,7 @@ export function useChecklistSubmit() {
       }
       
       // Update checklist data
-      const form = {
+      const form: NewChecklist = {
         title: "New Checklist",
         description: "Description",
         user_id: typedUser?.id,
@@ -77,6 +86,15 @@ export function useChecklistSubmit() {
         status_checklist: "ativo",
       };
 
+      if (!form.user_id) {
+        console.error("No user ID available");
+        toast.error("Não foi possível identificar o usuário. Por favor, faça login novamente.");
+        setIsSubmitting(false);
+        navigate("/auth");
+        return false;
+      }
+
+      console.log("Submitting checklist with user ID:", form.user_id);
       const result = await createChecklist.mutateAsync(form);
       
       if (result) {
@@ -85,12 +103,18 @@ export function useChecklistSubmit() {
         return true;
       }
       
-      toast.error("Erro ao criar checklist");
+      toast.error("Erro ao criar checklist. Tente novamente.");
       return false;
       
     } catch (error) {
       console.error("Error in form submission:", error);
-      toast.error(`Erro ao criar checklist: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      let errorMessage = "Erro ao criar checklist";
+      
+      if (error instanceof Error) {
+        errorMessage += `: ${error.message}`;
+      }
+      
+      toast.error(errorMessage);
       return false;
     } finally {
       setIsSubmitting(false);
