@@ -100,6 +100,7 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
       </div>
     );
   }
+  console.log("👤 Role do usuário autenticado:", session?.user?.role || "Não definida");
 
   return <>{children}</>;
 };
