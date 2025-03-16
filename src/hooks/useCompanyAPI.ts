@@ -19,18 +19,22 @@ export const useCompanyAPI = () => {
    */
   const formatCNAE = (cnae: string): string => {
     if (!cnae) return '';
-
+    
+    // Remove todos os caracteres não numéricos
     const numbers = cnae.replace(/[^\d]/g, '');
 
+    // Verifica se o CNAE tem exatamente 5 dígitos para aplicar o formato XXXX-X
     if (numbers.length === 5) {
-      return `${numbers.slice(0, 4)}-${numbers.slice(4)}`;
+      return `${numbers.slice(0, 4)}-${numbers.slice(4)}`; // Formato correto
     }
 
+    // Caso o CNAE tenha apenas 4 dígitos, adiciona o "-0" no final
     if (numbers.length === 4) {
-      return `${numbers}-0`;
+      return `${numbers}-0`; // Formato correto para CNAE com 4 dígitos
     }
 
-    return `${numbers.padEnd(4, '0')}-0`;
+    // Caso contrário, preenche o número com 4 dígitos e adiciona "-0"
+    return `${numbers.padEnd(4, '0')}-0`; // Padroniza para XXXX-0 se for menor
   };
 
   /**
@@ -41,13 +45,13 @@ export const useCompanyAPI = () => {
       if (!cnae) throw new Error("CNAE é obrigatório");
 
       const formattedCnae = formatCNAE(cnae);
-      console.log('Buscando grau de risco para CNAE:', formattedCnae);
-
-      // Tenta buscar com várias variações do CNAE
+      console.log('📌 Buscando grau de risco para CNAE:', formattedCnae);
+      
+      // Consulta o grau de risco diretamente no Supabase com o CNAE formatado
       const { data, error } = await supabase
         .from('nr4_riscos')
         .select('grau_risco')
-        .eq('cnae', formattedCnae)
+        .eq('cnae', formattedCnae) // Consulta com o CNAE formatado corretamente
         .maybeSingle();
 
       if (error) {
@@ -61,11 +65,11 @@ export const useCompanyAPI = () => {
       }
 
       if (data) {
-        console.log('Grau de risco encontrado:', data.grau_risco);
-        return data.grau_risco.toString();
+        console.log('✅ Grau de risco encontrado:', data.grau_risco);
+        return data.grau_risco.toString(); // Retorna o grau de risco
       }
 
-      console.warn('Grau de risco não encontrado para o CNAE:', formattedCnae);
+      console.warn('⚠️ Grau de risco não encontrado para o CNAE:', formattedCnae);
       toast({
         title: "CNAE não encontrado",
         description: `Não foi possível encontrar o grau de risco para o CNAE ${formattedCnae}`,
@@ -73,7 +77,7 @@ export const useCompanyAPI = () => {
       });
       return "1"; // Default to level 1 risk if not found
     } catch (error: any) {
-      console.error("Erro ao buscar grau de risco:", error);
+      console.error("❌ Erro ao buscar grau de risco:", error);
       toast({
         title: "Erro ao buscar grau de risco",
         description: error.message || "Verifique o formato do CNAE",
@@ -100,29 +104,32 @@ export const useCompanyAPI = () => {
       });
 
       if (error) {
-        console.error('Error calling validate-cnpj function:', error);
+        console.error('❌ Erro ao chamar a função validate-cnpj:', error);
         throw error;
       }
-
+      
       if (!response) {
-        console.error('No response from validate-cnpj function');
+        console.error('❌ Sem resposta da função validate-cnpj');
         throw new Error('Sem resposta da API');
       }
 
       console.log("✅ Dados retornados da API:", response);
 
+      // Result already has risk level from the edge function
+      // But just as a fallback check if missing
       let riskLevel = response.riskLevel;
-
-      // Verifica se o grau de risco está presente
+      
+      // Se o grau de risco não estiver presente na resposta da API, busque no Supabase
       if (!riskLevel && response.cnae) {
-        console.log('Buscando grau de risco localmente como fallback');
-        riskLevel = await fetchRiskLevel(response.cnae);
+        console.log('🧐 Buscando grau de risco localmente como fallback');
+        riskLevel = await fetchRiskLevel(response.cnae); // Aqui garantimos que o grau de risco é buscado do Supabase diretamente
       }
 
+      // Return data in expected format with risk level
       const result: CNPJResponse = {
         fantasyName: response.fantasyName || '',
         cnae: response.cnae || '',
-        riskLevel: riskLevel || '1',
+        riskLevel: riskLevel || '1', // Caso a API não retorne, usamos o fallback
         address: response.address || '',
         contactEmail: response.contactEmail || '',
         contactPhone: response.contactPhone || '',
