@@ -246,21 +246,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = async () => {
     setLoading(true);
     try {
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut();
+  
+      if (error) {
+        throw error;
+      }
+  
+      // Remover qualquer sessão persistida manualmente
+      await supabase.auth.refreshSession();
+  
+      // Remover usuário do estado e do localStorage
       localStorage.removeItem("authUser");
       setUser(null);
-      navigate("/auth");
+  
+      // Redirecionar para a tela de login
+      navigate("/auth", { replace: true });
+  
+      console.log("✅ Logout bem-sucedido!");
     } catch (error) {
-      console.error("Erro ao fazer logout:", error);
+      console.error("❌ Erro ao fazer logout:", error);
       toast.error("Erro ao fazer logout");
     } finally {
       setLoading(false);
     }
   };
-
-  return (
-    <AuthContext.Provider value={{ user, loading, logout, refreshSession }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
+  

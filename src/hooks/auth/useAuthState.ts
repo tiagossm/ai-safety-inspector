@@ -18,7 +18,25 @@ export function useAuthState() {
     const fetchUser = async () => {
       try {
         console.log("🔍 Buscando usuário autenticado...");
-        const { data, error } = await supabase.auth.getUser();
+        const { data, error } = await supabase.auth.getSession();
+
+if (error || !data.session) {
+  console.error("⚠️ Erro ao obter a sessão:", error);
+  setUser(null);
+  setLoading(false);
+  return;
+}
+
+const sessionUser = data.session.user;
+if (!sessionUser) {
+  console.warn("⚠️ Nenhum usuário na sessão!");
+  setUser(null);
+  setLoading(false);
+  return;
+}
+
+console.log("✅ Sessão carregada com usuário:", sessionUser.email);
+
 
         if (error) {
           console.error("❌ Erro ao buscar usuário:", error);
