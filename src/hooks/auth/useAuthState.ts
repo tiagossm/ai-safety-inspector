@@ -1,12 +1,11 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 // Interface estendida para o User
 export interface AuthUser extends User {
-  role?: "admin" | "user";
-  tier?: "super_admin" | "company_admin" | "consultant" | "technician";
+  role?: "super_admin" | "company_admin" | "consultant" | "technician" | "user";
+  tier?: string;
   company_id?: string;
 }
 
@@ -17,43 +16,69 @@ export function useAuthState() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
+        console.log("🔍 Buscando usuário autenticado...");
         const { data, error } = await supabase.auth.getUser();
+
         if (error) {
-          console.error("Erro ao buscar usuário:", error);
+          console.error("❌ Erro ao buscar usuário:", error);
           setUser(null);
           setLoading(false);
           return;
         }
 
         if (data.user) {
+          console.log("✅ Usuário autenticado:", data.user.email);
+          
           try {
             const { data: userData, error: userError } = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', data.user.id)
+              .from("users")
+              .select("role, tier, company_id")
+              .eq("id", data.user.id)
               .single();
 
-            // Create enhanced user object
+            if (userError) {
+              console.error("⚠️ Erro ao buscar dados do usuário:", userError);
+            }
+
+            console.log("🔍 Dados do usuário no banco:", userData);
+
+            // Correção da role para garantir que "Administrador" seja "super_admin"
+            let role: AuthUser["role"] = "user"; // Padrão
+            if (userData?.role === "Administrador") {
+              role = "super_admin"; // 🔴 Aqui forçamos "Administrador" a ser "super_admin"
+            } else if (userData?.role === "Company_Admin") {
+              role = "company_admin";
+            } else if (userData?.role === "Consultor") {
+              role = "consultant";
+            } else if (userData?.role === "Técnico") {
+              role = "technician";
+            }
+
+            // Ajuste para garantir que tier seja coerente
+            let tier: string = userData?.tier || role; // 🔴 Se tier não existir, assume a role
+
             const enhancedUser: AuthUser = {
               ...data.user,
-              // Default values in case of error or missing data
-              // Cast database role value to allowed type
-              role: userError ? 'user' : (userData?.role === 'Administrador' ? 'admin' : 'user'),
-              tier: userError ? 'technician' : (userData?.tier as any || 'technician'),
-              company_id: userError ? undefined : userData?.company_id
+              role,
+              tier,
+              company_id: userData?.company_id || undefined,
             };
 
+            console.log("✅ Usuário final carregado:", enhancedUser);
             setUser(enhancedUser);
           } catch (err) {
-            console.error("Error fetching user data:", err);
-            // Still set the basic user if there's an error
-            setUser(data.user as AuthUser);
+            console.error("❌ Erro ao buscar dados do usuário no banco:", err);
+            setUser({
+              ...data.user,
+              role: "user", // Padrão para evitar erros
+              tier: "technician",
+            });
           }
         } else {
           setUser(null);
         }
       } catch (err) {
-        console.error("Error in useAuthState:", err);
+        console.error("❌ Erro inesperado em useAuthState:", err);
         setUser(null);
       } finally {
         setLoading(false);
