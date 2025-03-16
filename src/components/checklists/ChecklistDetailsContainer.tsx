@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Checklist, ChecklistItem, ChecklistComment, ChecklistAttachment, ChecklistHistory } from "@/types/checklist";
@@ -84,88 +85,100 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
       try {
         // Load comments
         if (activeTab === 'comments') {
+          // First, get comments
           const { data: commentsData, error: commentsError } = await supabase
             .from('checklist_comments')
-            .select(`
-              id,
-              checklist_id,
-              user_id,
-              content,
-              created_at,
-              users:user_id (name)
-            `)
+            .select(`*`)
             .eq('checklist_id', checklistId)
             .order('created_at', { ascending: false });
             
           if (commentsError) throw commentsError;
           
-          setComments(commentsData.map(item => ({
-            id: item.id,
-            checklist_id: item.checklist_id,
-            user_id: item.user_id,
-            user_name: item.users?.name || 'Usuário',
-            content: item.content,
-            created_at: item.created_at
-          })));
+          // Then, get user names separately for each comment
+          const commentsWithNames = await Promise.all(commentsData.map(async (comment) => {
+            const { data: userData } = await supabase
+              .from('users')
+              .select('name')
+              .eq('id', comment.user_id)
+              .single();
+              
+            return {
+              id: comment.id,
+              checklist_id: comment.checklist_id,
+              user_id: comment.user_id,
+              user_name: userData?.name || 'Usuário',
+              content: comment.content,
+              created_at: comment.created_at
+            };
+          }));
+          
+          setComments(commentsWithNames);
         }
         
         // Load attachments
         if (activeTab === 'attachments') {
+          // First, get attachments
           const { data: attachmentsData, error: attachmentsError } = await supabase
             .from('checklist_attachments')
-            .select(`
-              id,
-              checklist_id,
-              file_name,
-              file_url,
-              file_type,
-              uploaded_by,
-              created_at,
-              users:uploaded_by (name)
-            `)
+            .select(`*`)
             .eq('checklist_id', checklistId)
             .order('created_at', { ascending: false });
             
           if (attachmentsError) throw attachmentsError;
           
-          setAttachments(attachmentsData.map(item => ({
-            id: item.id,
-            checklist_id: item.checklist_id,
-            file_name: item.file_name,
-            file_url: item.file_url,
-            file_type: item.file_type,
-            uploaded_by: item.users?.name || 'Usuário',
-            created_at: item.created_at
-          })));
+          // Then, get user names separately for each attachment
+          const attachmentsWithNames = await Promise.all(attachmentsData.map(async (attachment) => {
+            const { data: userData } = await supabase
+              .from('users')
+              .select('name')
+              .eq('id', attachment.uploaded_by)
+              .single();
+              
+            return {
+              id: attachment.id,
+              checklist_id: attachment.checklist_id,
+              file_name: attachment.file_name,
+              file_url: attachment.file_url,
+              file_type: attachment.file_type,
+              uploaded_by: userData?.name || 'Usuário',
+              created_at: attachment.created_at
+            };
+          }));
+          
+          setAttachments(attachmentsWithNames);
         }
         
         // Load history
         if (activeTab === 'history') {
+          // First, get history entries
           const { data: historyData, error: historyError } = await supabase
             .from('checklist_history')
-            .select(`
-              id,
-              checklist_id,
-              user_id,
-              action,
-              details,
-              created_at,
-              users:user_id (name)
-            `)
+            .select(`*`)
             .eq('checklist_id', checklistId)
             .order('created_at', { ascending: false });
             
           if (historyError) throw historyError;
           
-          setHistory(historyData.map(item => ({
-            id: item.id,
-            checklist_id: item.checklist_id,
-            user_id: item.user_id,
-            user_name: item.users?.name || 'Usuário',
-            action: item.action,
-            details: item.details,
-            created_at: item.created_at
-          })));
+          // Then, get user names separately for each history entry
+          const historyWithNames = await Promise.all(historyData.map(async (entry) => {
+            const { data: userData } = await supabase
+              .from('users')
+              .select('name')
+              .eq('id', entry.user_id)
+              .single();
+              
+            return {
+              id: entry.id,
+              checklist_id: entry.checklist_id,
+              user_id: entry.user_id,
+              user_name: userData?.name || 'Usuário',
+              action: entry.action,
+              details: entry.details,
+              created_at: entry.created_at
+            };
+          }));
+          
+          setHistory(historyWithNames);
         }
       } catch (error) {
         console.error("Erro ao carregar dados extras:", error);
@@ -257,16 +270,16 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
         status: checklist.status
       });
 
-      // Add history entry
-      try {
+      // Add history entry - getting the current user ID
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
         await supabase.from('checklist_history').insert({
           checklist_id: checklistId,
-          user_id: (await supabase.auth.getUser()).data.user?.id,
+          user_id: user.id,
           action: 'update',
           details: 'Atualizou informações do checklist'
         });
-      } catch (historyError) {
-        console.warn("Erro ao registrar histórico:", historyError);
       }
 
       toast.success("Checklist salvo com sucesso.");

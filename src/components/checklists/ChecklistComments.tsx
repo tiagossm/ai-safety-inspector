@@ -28,6 +28,19 @@ export function ChecklistComments({ checklistId, comments, onAddComment }: Check
     
     setIsSubmitting(true);
     try {
+      // Get user's name from the users table first
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("name")
+        .eq("id", user.id)
+        .single();
+        
+      if (userError) {
+        console.error("Error fetching user data:", userError);
+      }
+      
+      const userName = userData?.name || user.email || 'Usuário';
+      
       const commentData = {
         checklist_id: checklistId,
         user_id: user.id,
@@ -37,7 +50,7 @@ export function ChecklistComments({ checklistId, comments, onAddComment }: Check
       const { data, error } = await supabase
         .from("checklist_comments")
         .insert(commentData)
-        .select("*, users:user_id(name)")
+        .select()
         .single();
         
       if (error) throw error;
@@ -47,7 +60,7 @@ export function ChecklistComments({ checklistId, comments, onAddComment }: Check
         id: data.id,
         checklist_id: data.checklist_id,
         user_id: data.user_id,
-        user_name: data.users?.name || user.email || 'Usuário',
+        user_name: userName,
         content: data.content,
         created_at: data.created_at,
       };

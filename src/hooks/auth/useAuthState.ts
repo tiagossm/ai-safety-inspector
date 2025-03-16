@@ -8,7 +8,7 @@ export interface AuthUser extends User {
   role?: "super_admin" | "company_admin" | "consultant" | "technician" | "user";
   tier?: string;
   company_id?: string;
-  name?: string; // Added name property
+  name?: string;
 }
 
 export function useAuthState() {

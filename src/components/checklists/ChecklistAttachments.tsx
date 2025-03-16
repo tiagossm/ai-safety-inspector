@@ -40,6 +40,19 @@ export function ChecklistAttachments({
     setIsUploading(true);
     
     try {
+      // Get user's name from the users table first
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("name")
+        .eq("id", user.id)
+        .single();
+        
+      if (userError) {
+        console.error("Error fetching user data:", userError);
+      }
+      
+      const userName = userData?.name || user.email || 'Usuário';
+      
       // Upload file to storage
       const { error: uploadError } = await supabase.storage
         .from('checklist-attachments')
@@ -75,7 +88,7 @@ export function ChecklistAttachments({
         file_name: data.file_name,
         file_url: data.file_url,
         file_type: data.file_type,
-        uploaded_by: user.email || 'Usuário',
+        uploaded_by: userName,
         created_at: data.created_at
       };
       
