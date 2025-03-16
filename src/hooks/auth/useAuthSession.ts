@@ -63,12 +63,22 @@ export function useAuthSession() {
       
       // Se temos dados do usuário, usamos eles
       if (userData) {
-        return {
-          // Garantir que role é sempre "admin" ou "user"
-          role: (userData.role === "admin") ? "admin" : "user" as "admin" | "user",
-          // Garantir que tier é um dos valores permitidos
-          tier: userData.tier as "super_admin" | "company_admin" | "consultant" | "technician" || "technician"
-        };
+        // Map role to the expected type
+        let role: AuthUser["role"] = 'user';
+        if (userData.role?.toLowerCase() === 'administrador') {
+          role = 'super_admin';
+        }
+        
+        // Ensure tier is one of the allowed values
+        let tier: AuthUser["tier"] = 'technician';
+        if (userData.tier === 'super_admin' || 
+            userData.tier === 'company_admin' || 
+            userData.tier === 'consultant' || 
+            userData.tier === 'technician') {
+          tier = userData.tier;
+        }
+        
+        return { role, tier };
       }
       
       return {};

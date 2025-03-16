@@ -12,9 +12,9 @@ export function useBulkOperationsPermissions() {
       return false;
     }
     
-    // Use type assertion to compare with string literal
-    return (user as AuthUser).role === "admin" || 
-           (user as any).role === "Administrador";
+    const typedUser = user as AuthUser;
+    return typedUser.role === "super_admin" || 
+           (typedUser as any).role === "Administrador";
   };
   
   return {

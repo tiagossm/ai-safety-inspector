@@ -5,6 +5,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { AuthUser } from "@/hooks/auth/useAuthState";
 
 interface CompanyAccessGateProps {
   children: ReactNode;
@@ -31,6 +32,7 @@ export default function CompanyAccessGate({
   const { user } = useAuth();
   const { company } = useCompanyContext();
   const navigate = useNavigate();
+  const typedUser = user as AuthUser | null;
   
   // Mapeamento de planos para níveis (para comparação)
   const planLevels = {
@@ -56,7 +58,7 @@ export default function CompanyAccessGate({
     storage: "armazenamento expandido"
   };
 
-  if (!hasAccess && user?.role !== "admin") {
+  if (!hasAccess && typedUser?.role !== "super_admin") {
     return (
       <div className="p-8 max-w-xl mx-auto">
         <Alert variant="destructive">

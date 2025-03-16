@@ -67,15 +67,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (data.user && (!user || user.id !== data.user.id)) {
           const userData = await fetchExtendedUser(data.user.id);
           
-          // Normalize role
-          const normalizedRole = userData && userData.role
-            ? (userData.role.toLowerCase() === 'administrador' ? 'admin' : 'user') as 'admin' | 'user'
-            : 'user' as const;
+          // Map the role value to the correct type
+          let normalizedRole: AuthUser["role"];
+          if (userData && userData.role) {
+            if (userData.role.toLowerCase() === 'administrador') {
+              normalizedRole = 'super_admin';
+            } else {
+              normalizedRole = 'user';
+            }
+          } else {
+            normalizedRole = 'user';
+          }
           
-          // Normalize tier
-          const normalizedTier = userData && userData.tier
-            ? userData.tier.toLowerCase() as "super_admin" | "company_admin" | "consultant" | "technician"
-            : 'technician' as const;
+          // Map the tier value to the correct type
+          let normalizedTier: AuthUser["tier"] = 'technician';
+          if (userData && userData.tier) {
+            if (userData.tier === 'super_admin' || 
+                userData.tier === 'company_admin' || 
+                userData.tier === 'consultant' || 
+                userData.tier === 'technician') {
+              normalizedTier = userData.tier;
+            }
+          }
           
           const enhancedUser: AuthUser = {
             ...data.user,
@@ -113,15 +126,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           // Tenta obter os dados completos do usuário
           const userData = await fetchExtendedUser(data.session.user.id);
           
-          // Normalizar role de acordo com a definição do tipo
-          const normalizedRole = userData && userData.role
-            ? (userData.role.toLowerCase() === 'administrador' ? 'admin' : 'user') as 'admin' | 'user'
-            : 'user' as const;
+          // Map the role value to the correct type
+          let normalizedRole: AuthUser["role"];
+          if (userData && userData.role) {
+            if (userData.role.toLowerCase() === 'administrador') {
+              normalizedRole = 'super_admin';
+            } else {
+              normalizedRole = 'user';
+            }
+          } else {
+            normalizedRole = 'user';
+          }
           
-          // Normalizar tier de acordo com a definição do tipo
-          const normalizedTier = userData && userData.tier
-            ? userData.tier.toLowerCase() as "super_admin" | "company_admin" | "consultant" | "technician"
-            : 'technician' as const;
+          // Map the tier value to the correct type
+          let normalizedTier: AuthUser["tier"] = 'technician';
+          if (userData && userData.tier) {
+            if (userData.tier === 'super_admin' || 
+                userData.tier === 'company_admin' || 
+                userData.tier === 'consultant' || 
+                userData.tier === 'technician') {
+              normalizedTier = userData.tier;
+            }
+          }
           
           const enhancedUser: AuthUser = {
             ...data.session.user,
@@ -161,15 +187,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setLoading(true);
           const userData = await fetchExtendedUser(session.user.id);
           
-          // Normalizar role de acordo com a definição do tipo
-          const normalizedRole = userData && userData.role
-            ? (userData.role.toLowerCase() === 'administrador' ? 'admin' : 'user') as 'admin' | 'user'
-            : 'user' as const;
+          // Map the role value to the correct type
+          let normalizedRole: AuthUser["role"];
+          if (userData && userData.role) {
+            if (userData.role.toLowerCase() === 'administrador') {
+              normalizedRole = 'super_admin';
+            } else {
+              normalizedRole = 'user';
+            }
+          } else {
+            normalizedRole = 'user';
+          }
           
-          // Normalizar tier de acordo com a definição do tipo
-          const normalizedTier = userData && userData.tier
-            ? userData.tier.toLowerCase() as "super_admin" | "company_admin" | "consultant" | "technician"
-            : 'technician' as const;
+          // Map the tier value to the correct type
+          let normalizedTier: AuthUser["tier"] = 'technician';
+          if (userData && userData.tier) {
+            if (userData.tier === 'super_admin' || 
+                userData.tier === 'company_admin' || 
+                userData.tier === 'consultant' || 
+                userData.tier === 'technician') {
+              normalizedTier = userData.tier;
+            }
+          }
 
           const enhancedUser: AuthUser = {
             ...session.user,
@@ -185,8 +224,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           // Fallback para dados básicos se não conseguir buscar os dados estendidos
           const basicUser: AuthUser = {
             ...session.user,
-            role: 'user' as const,
-            tier: 'technician' as const
+            role: 'user',
+            tier: 'technician'
           };
           setUser(basicUser);
           localStorage.setItem("authUser", JSON.stringify(basicUser));
