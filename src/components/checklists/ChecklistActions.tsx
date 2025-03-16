@@ -32,12 +32,16 @@ export function ChecklistActions({ checklist, onRefresh }: ChecklistActionsProps
       setIsLoading(true);
       console.log("Duplicating checklist:", checklist.id);
       await duplicateChecklistMutation.mutateAsync(checklist.id);
+      
       if (onRefresh) {
         console.log("Refreshing checklist list");
         onRefresh();
       }
     } catch (error) {
       console.error("Erro ao duplicar checklist:", error);
+      toast.error("Erro ao duplicar checklist", {
+        description: "Ocorreu um erro ao tentar duplicar o checklist. Tente novamente."
+      });
     } finally {
       setIsLoading(false);
     }

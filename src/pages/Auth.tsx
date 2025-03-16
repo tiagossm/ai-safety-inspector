@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import { toast as sonnerToast } from "sonner";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -14,12 +15,14 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [resetPasswordMode, setResetPasswordMode] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
     try {
       console.log("🔍 Tentando autenticar com:", { email, isSignUp });
@@ -75,10 +78,9 @@ const Auth = () => {
       }
     } catch (error: any) {
       console.error("❌ Erro na autenticação:", error);
-      toast({
-        title: "Erro",
-        description: error.message,
-        variant: "destructive",
+      setError(error.message);
+      sonnerToast.error("Erro de autenticação", {
+        description: error.message || "Falha na autenticação. Verifique suas credenciais."
       });
     } finally {
       setLoading(false);
@@ -107,6 +109,13 @@ const Auth = () => {
                 : "Entrar na plataforma"}
           </h2>
         </div>
+
+        {error && (
+          <div className="bg-red-500/20 border border-red-500 p-3 rounded-md text-white">
+            <p className="font-medium">Erro:</p>
+            <p>{error}</p>
+          </div>
+        )}
 
         <form className="mt-8 space-y-6" onSubmit={handleAuth}>
           <div className="rounded-md shadow-sm space-y-4">

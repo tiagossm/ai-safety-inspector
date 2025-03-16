@@ -33,7 +33,9 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
         
         if (error) {
           console.error("❌ Erro ao verificar sessão:", error);
-          toast.error("Não foi possível verificar sua sessão");
+          toast.error("Não foi possível verificar sua sessão", {
+            description: error.message
+          });
           
           if (!isPublicPath(location.pathname)) {
             navigate("/auth");
@@ -70,6 +72,9 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
         setIsInitialized(true);
       } catch (error) {
         console.error("❌ Erro inesperado:", error);
+        toast.error("Erro ao verificar sessão", {
+          description: "Ocorreu um erro inesperado. Tente novamente."
+        });
         setIsLoading(false);
         setIsInitialized(true);
         
