@@ -75,6 +75,8 @@ export function useUsers() {
       let userId = selectedUser?.id;
 
       if (!userId) {
+        console.log("Creating new user:", user.email);
+        
         // Check if email exists in users table first
         const { data: existingUser } = await supabaseAdmin
           .from("users")
@@ -86,7 +88,7 @@ export function useUsers() {
           throw new Error("Este email já está cadastrado");
         }
 
-        // Create new user using admin client
+        // Create new user with email confirmation set to true
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
           email: user.email.trim(),
           password: "temporary123",
@@ -94,16 +96,21 @@ export function useUsers() {
           user_metadata: { name: user.name }
         });
 
-        if (authError) throw authError;
+        if (authError) {
+          console.error("Error creating user auth:", authError);
+          throw authError;
+        }
         
         userId = authData.user?.id;
         if (!userId) throw new Error("Falha ao criar usuário");
 
+        console.log("User created successfully with ID:", userId);
+
         // Wait a short moment for the trigger to complete
         await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // Update the user data instead of inserting
-        await supabaseAdmin
+        // Update the user data
+        const { error: updateError } = await supabaseAdmin
           .from("users")
           .update({
             name: user.name,
@@ -112,9 +119,16 @@ export function useUsers() {
             status: user.status
           })
           .eq("id", userId);
+          
+        if (updateError) {
+          console.error("Error updating user data:", updateError);
+          throw updateError;
+        }
       } else {
-        // Update existing user using admin client
-        await supabaseAdmin
+        console.log("Updating existing user:", userId);
+        
+        // Update existing user
+        const { error: updateError } = await supabaseAdmin
           .from("users")
           .update({
             name: user.name,
@@ -122,9 +136,14 @@ export function useUsers() {
             status: user.status
           })
           .eq("id", userId);
+          
+        if (updateError) {
+          console.error("Error updating user:", updateError);
+          throw updateError;
+        }
       }
 
-      // Manage associations using admin client
+      // Manage company associations
       await supabaseAdmin
         .from("user_companies")
         .delete()
@@ -136,11 +155,17 @@ export function useUsers() {
           company_id: companyId
         }));
 
-        await supabaseAdmin
+        const { error: companyError } = await supabaseAdmin
           .from("user_companies")
           .insert(companyAssignments);
+          
+        if (companyError) {
+          console.error("Error assigning companies:", companyError);
+          throw companyError;
+        }
       }
 
+      // Manage checklist associations
       await supabaseAdmin
         .from("user_checklists")
         .delete()
@@ -152,14 +177,19 @@ export function useUsers() {
           checklist_id: checklistId
         }));
 
-        await supabaseAdmin
+        const { error: checklistError } = await supabaseAdmin
           .from("user_checklists")
           .insert(checklistAssignments);
+          
+        if (checklistError) {
+          console.error("Error assigning checklists:", checklistError);
+          throw checklistError;
+        }
       }
 
       // Handle admin role
       if (user.role === "Administrador") {
-        await supabaseAdmin
+        const { error: roleError } = await supabaseAdmin
           .from("user_roles")
           .upsert({
             user_id: userId,
@@ -167,12 +197,22 @@ export function useUsers() {
           }, {
             onConflict: "user_id"
           });
+          
+        if (roleError) {
+          console.error("Error setting admin role:", roleError);
+          throw roleError;
+        }
       } else {
         // Remove admin role if exists
-        await supabaseAdmin
+        const { error: roleDeleteError } = await supabaseAdmin
           .from("user_roles")
           .delete()
           .eq("user_id", userId);
+          
+        if (roleDeleteError) {
+          console.error("Error removing admin role:", roleDeleteError);
+          // Don't throw error here as this is not critical
+        }
       }
 
       toast({
@@ -204,11 +244,26 @@ export function useUsers() {
     }
 
     try {
-      await supabaseAdmin.auth.admin.deleteUser(userId);
-      await supabaseAdmin
+      console.log("Deleting user:", userId);
+      
+      // Delete the user using admin client
+      const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+      
+      if (error) {
+        console.error("Error deleting user auth:", error);
+        throw error;
+      }
+      
+      // Also delete from users table to be sure
+      const { error: deleteError } = await supabaseAdmin
         .from("users")
         .delete()
         .eq("id", userId);
+        
+      if (deleteError) {
+        console.error("Error deleting user record:", deleteError);
+        // Not throwing error here as the auth deletion is more important
+      }
 
       toast({
         title: "Usuário excluído",

@@ -38,14 +38,23 @@ const Auth = () => {
         
         setResetPasswordMode(false);
       } else if (isSignUp) {
+        // Set autoConfirm to true to skip email verification
         const { error } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            data: {
+              email: email
+            }
+          }
         });
+        
         if (error) throw error;
+        
         toast({
           title: "Cadastro realizado com sucesso!",
-          description: "Verifique seu email para confirmar o cadastro.",
+          description: "Verifique seu email para confirmar o cadastro ou tente fazer login diretamente.",
         });
       } else {
         console.log("🔑 Iniciando login...");
