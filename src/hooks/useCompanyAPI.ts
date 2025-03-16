@@ -119,6 +119,7 @@ export const useCompanyAPI = () => {
       // But just as a fallback check if missing
       let riskLevel = response.riskLevel;
       
+      // Se o grau de risco não estiver presente na resposta da API, busque no Supabase
       if (!riskLevel && response.cnae) {
         console.log('Buscando grau de risco localmente como fallback');
         riskLevel = await fetchRiskLevel(response.cnae); // Aqui garantimos que o grau de risco é buscado do Supabase diretamente
