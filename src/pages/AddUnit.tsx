@@ -21,17 +21,33 @@ export default function AddUnit() {
       // Calcular o dimensionamento da CIPA se houver número de funcionários e CNAE
       let cipaDimensioning = null;
       if (unitData.employee_count !== null && unitData.cnae) {
-        const { data: dimensioning } = await supabase.rpc('get_cipa_dimensioning', {
-          p_employee_count: unitData.employee_count,
-          p_cnae: unitData.cnae,
-          p_risk_level: parseInt(unitData.metadata?.risk_grade || '1')
-        });
-        
-        // Verificar se os dados retornados são válidos
-        if (dimensioning && typeof dimensioning === 'object' && 'norma' in dimensioning) {
-          cipaDimensioning = dimensioning;
-        } else if (unitData.employee_count < 20 && parseInt(unitData.metadata?.risk_grade || '1') === 4) {
-          cipaDimensioning = { message: 'Designar 1 representante da CIPA', norma: 'NR-5' };
+        try {
+          console.log("Calculando dimensionamento CIPA com:", {
+            employee_count: unitData.employee_count,
+            cnae: unitData.cnae,
+            risk_level: parseInt(unitData.metadata?.risk_grade || '1')
+          });
+          
+          const { data: dimensioning, error } = await supabase.rpc('get_cipa_dimensioning', {
+            p_employee_count: unitData.employee_count,
+            p_cnae: unitData.cnae.replace(/[^\d]/g, ''),
+            p_risk_level: parseInt(unitData.metadata?.risk_grade || '1')
+          });
+          
+          if (error) {
+            console.error("Erro ao calcular dimensionamento CIPA:", error);
+          } else {
+            console.log("Dimensionamento calculado:", dimensioning);
+            
+            // Verificar se os dados retornados são válidos
+            if (dimensioning && typeof dimensioning === 'object' && 'norma' in dimensioning) {
+              cipaDimensioning = dimensioning;
+            } else if (unitData.employee_count < 20 && parseInt(unitData.metadata?.risk_grade || '1') === 4) {
+              cipaDimensioning = { message: 'Designar 1 representante da CIPA', norma: 'NR-5' };
+            }
+          }
+        } catch (error) {
+          console.error("Erro ao calcular dimensionamento CIPA:", error);
         }
       }
 

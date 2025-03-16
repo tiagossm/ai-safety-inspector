@@ -35,9 +35,13 @@ export const useCompanyAPI = () => {
         .eq('cnae', formattedCnae)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao buscar grau de risco:', error);
+        throw error;
+      }
       
       if (data) {
+        console.log('Grau de risco encontrado:', data.grau_risco);
         return data.grau_risco.toString();
       }
       
@@ -80,7 +84,7 @@ export const useCompanyAPI = () => {
       const formattedCnae = response.cnae ? formatCNAE(response.cnae) : '';
       const riskLevel = formattedCnae ? await fetchRiskLevel(formattedCnae) : '';
 
-      // Retorna exatamente os dados que recebemos da API
+      // Retorna os dados que recebemos da API junto com o grau de risco
       const result: CNPJResponse = {
         fantasyName: response.fantasyName,
         cnae: formattedCnae,

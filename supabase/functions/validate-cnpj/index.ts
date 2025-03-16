@@ -33,12 +33,18 @@ serve(async (req) => {
     }
 
     console.log('Dados recebidos da ReceitaWS:', data)
+    
+    // Formata o endereço
+    const address = data.logradouro ? 
+      `${data.logradouro}, ${data.numero}${data.complemento ? `, ${data.complemento}` : ''}, ${data.bairro}, ${data.municipio}, ${data.uf}, ${data.cep}` : 
+      '';
 
     // Formata os dados para retornar
     const formattedData = {
       fantasyName: data.fantasia || data.nome,
       cnae: data.atividade_principal?.[0]?.code || '',
       riskLevel: '',  // Será preenchido pelo frontend
+      address: address,
       contactEmail: data.email || '',
       contactPhone: data.telefone || '',
       contactName: data.qsa?.[0]?.nome || ''
