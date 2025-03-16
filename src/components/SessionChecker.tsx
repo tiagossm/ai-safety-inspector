@@ -6,6 +6,7 @@ import { toast } from "sonner";
 const SessionChecker = ({ children }: { children: React.ReactNode }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasCheckedSession, setHasCheckedSession] = useState(false); // ✅ Evita múltiplas verificações
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -24,9 +25,10 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
     };
 
     const checkSession = async () => {
+      if (hasCheckedSession) return; // ✅ Impede verificações repetidas 🚀
+
       try {
         console.log("🔍 Verificando sessão do usuário...");
-
         const { data, error } = await supabase.auth.getSession();
 
         if (error) {
@@ -52,29 +54,24 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
 
         setIsLoading(false);
         setIsInitialized(true);
+        setHasCheckedSession(true); // ✅ Evita que a verificação rode várias vezes 🚀
       } catch (error) {
         console.error("❌ Erro inesperado:", error);
         setIsLoading(false);
         setIsInitialized(true);
-
-        if (!isPublicPath(location.pathname)) {
-          navigate("/auth");
-        }
       }
     };
 
-    // Apenas execute a verificação uma única vez ao carregar a aplicação
-    if (!isInitialized) {
+    if (!hasCheckedSession) {
       checkSession();
     }
 
-    // 🚀 Novo ajuste: Ignorar alterações na sessão quando usuário já está autenticado
+    // ✅ Mantendo o listener de mudanças na autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("🔄 Estado de autenticação alterado:", event);
 
       if (event === "SIGNED_IN") {
         console.log("✅ Usuário autenticado");
-
         if (location.pathname === "/auth") {
           navigate("/dashboard");
         }
@@ -83,18 +80,15 @@ const SessionChecker = ({ children }: { children: React.ReactNode }) => {
         navigate("/auth");
       }
 
-      // 🚀 Novo ajuste: Evita setar isLoading desnecessariamente
-      if (!isLoading) {
-        setIsLoading(false);
-        setIsInitialized(true);
-      }
+      setIsLoading(false);
+      setIsInitialized(true);
     });
 
     return () => {
       console.log("🔄 Desmontando SessionChecker");
       subscription.unsubscribe();
     };
-  }, [navigate, location.pathname]);
+  }, []);
 
   if (isLoading && !isInitialized) {
     return (
