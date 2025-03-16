@@ -1,20 +1,13 @@
 import { useAuth } from "@/components/AuthProvider";
-import { CompanyForm } from "@/components/CompanyForm";
 import { CompaniesList } from "@/components/CompaniesList";
 import { Button } from "@/components/ui/button";
 import { Upload, Download } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprZ21namp0c2xrb3poZWh3bW5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE3MjMwNDAsImV4cCI6MjA1NzI5OTA0MH0.VHL_5dontJ5Zin2cPTrQgkdx-CbnqWtRkVq-nNSnAZg"; // 🔴 Insira sua API Key correta
+const SUPABASE_ANON_KEY = "SUA_API_KEY_AQUI"; // 🔴 Insira sua API Key correta
 const SUPABASE_URL = "https://jkgmgjjtslkozhehwmng.supabase.co";
 
 const Companies = () => {
@@ -27,6 +20,8 @@ const Companies = () => {
   // 🚀 Busca as empresas do Supabase
   const fetchCompanies = async () => {
     try {
+      console.log("🔍 Buscando empresas no Supabase...");
+      
       const response = await fetch(
         `${SUPABASE_URL}/rest/v1/companies?select=*&status=eq.active`,
         {
@@ -47,7 +42,7 @@ const Companies = () => {
       setCompanies(data);
       console.log("✅ Empresas carregadas:", data);
     } catch (error: any) {
-      console.error("Erro ao buscar empresas:", error.message);
+      console.error("❌ Erro ao buscar empresas:", error.message);
       toast({
         title: "Erro ao carregar empresas",
         description: error.message || "Não foi possível carregar as empresas.",
@@ -67,14 +62,16 @@ const Companies = () => {
 
   const handleExportCompanies = async () => {
     try {
+      console.log("📤 Exportando empresas...");
+
       const { data, error } = await supabase
-        .from('companies')
-        .select('*')
-        .eq('status', 'active');
+        .from("companies")
+        .select("*")
+        .eq("status", "active");
 
       if (error) throw error;
 
-      const csvContent = "data:text/csv;charset=utf-8," + 
+      const csvContent = "data:text/csv;charset=utf-8," +
         "CNPJ,Nome Fantasia,CNAE,Email,Telefone,Contato\n" +
         data.map(company => `${company.cnpj},${company.fantasy_name || ''},${company.cnae || ''},${company.contact_email || ''},${company.contact_phone || ''},${company.contact_name || ''}`).join("\n");
 
@@ -90,7 +87,10 @@ const Companies = () => {
         title: "Exportação concluída",
         description: "O arquivo CSV foi gerado com sucesso.",
       });
+
+      console.log("✅ Exportação concluída com sucesso!");
     } catch (error: any) {
+      console.error("❌ Erro ao exportar empresas:", error.message);
       toast({
         title: "Erro na exportação",
         description: error.message || "Não foi possível exportar os dados.",
@@ -103,7 +103,7 @@ const Companies = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.type !== 'text/csv') {
+    if (file.type !== "text/csv") {
       toast({
         title: "Erro no upload",
         description: "Por favor, selecione um arquivo CSV válido.",
@@ -116,19 +116,21 @@ const Companies = () => {
     try {
       if (!user) throw new Error("Usuário não autenticado");
 
+      console.log("📤 Fazendo upload do arquivo:", file.name);
+
       const filename = `${user.id}/${Date.now()}_${file.name}`;
       const { error: uploadError } = await supabase.storage
-        .from('company-imports')
+        .from("company-imports")
         .upload(filename, file);
 
       if (uploadError) throw uploadError;
 
       const { error: importError } = await supabase
-        .from('company_imports')
+        .from("company_imports")
         .insert({
           user_id: user.id,
           filename: file.name,
-          status: 'pending'
+          status: "pending",
         });
 
       if (importError) throw importError;
@@ -138,7 +140,10 @@ const Companies = () => {
         description: "O arquivo será processado em breve.",
       });
       setRefreshTrigger(prev => prev + 1);
+
+      console.log("✅ Upload e importação concluídos!");
     } catch (error: any) {
+      console.error("❌ Erro no upload:", error.message);
       toast({
         title: "Erro no upload",
         description: error.message || "Não foi possível fazer o upload do arquivo.",
@@ -146,7 +151,7 @@ const Companies = () => {
       });
     } finally {
       setUploading(false);
-      e.target.value = '';
+      e.target.value = "";
     }
   };
 
@@ -158,15 +163,15 @@ const Companies = () => {
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              onClick={() => document.getElementById('csv-upload')?.click()}
+              onClick={() => document.getElementById("csv-upload")?.click()}
               disabled={uploading}
               className="whitespace-nowrap"
             >
               <Upload className="h-5 w-5 mr-2" />
               Importar CSV
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={handleExportCompanies}
               className="whitespace-nowrap"
             >
