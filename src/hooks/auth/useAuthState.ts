@@ -45,7 +45,7 @@ export function useAuthState() {
             // Correção da role para garantir que "Administrador" seja "super_admin"
             let role: AuthUser["role"] = "user"; // Padrão
             if (userData?.role === "Administrador") {
-              role = "super_admin"; // 🔴 Aqui forçamos "Administrador" a ser "super_admin"
+              role = "super_admin"; // 🔴 Aqui garantimos que "Administrador" seja reconhecido corretamente
             } else if (userData?.role === "Company_Admin") {
               role = "company_admin";
             } else if (userData?.role === "Consultor") {
@@ -55,7 +55,7 @@ export function useAuthState() {
             }
 
             // Ajuste para garantir que tier seja coerente
-            let tier: string = userData?.tier || role; // 🔴 Se tier não existir, assume a role
+            let tier: string = userData?.tier || role; // 🔴 Se o tier não existir, assume a role
 
             const enhancedUser: AuthUser = {
               ...data.user,
@@ -94,6 +94,4 @@ export function useAuthState() {
     loading,
     setLoading,
   };
-  console.log("🔍 Role recebida do banco:", userData?.role, "Tier:", userData?.tier);
-
 }
