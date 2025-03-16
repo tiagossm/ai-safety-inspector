@@ -13,7 +13,7 @@ import Incidents from "./pages/Incidents";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import AdminDashboard from "./pages/AdminDashboard";
-import Users from "./pages/Users";
+import { Users } from "./pages/Users";  // Changed to named import
 import ChecklistDetails from "./pages/ChecklistDetails";
 import CreateChecklist from "./pages/CreateChecklist";
 import AddUnit from "./pages/AddUnit";
