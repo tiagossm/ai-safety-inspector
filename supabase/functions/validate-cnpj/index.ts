@@ -82,7 +82,26 @@ serve(async (req) => {
         riskLevel = riskData.grau_risco.toString();
         console.log('Grau de risco encontrado:', riskLevel);
       } else {
-        console.log('Nenhum grau de risco encontrado para o CNAE:', formattedCnae);
+        // Se não encontrar com hífen, tenta sem hífen
+        const cleanCnae = formattedCnae.replace('-', '');
+        console.log('Tentando buscar grau de risco sem hífen:', cleanCnae);
+        
+        const { data: riskDataNoHyphen, error: errorNoHyphen } = await supabase
+          .from('nr4_riscos')
+          .select('grau_risco')
+          .eq('cnae', cleanCnae)
+          .maybeSingle();
+          
+        if (errorNoHyphen) {
+          console.error('Erro ao consultar grau de risco sem hífen:', errorNoHyphen);
+        }
+        
+        if (riskDataNoHyphen) {
+          riskLevel = riskDataNoHyphen.grau_risco.toString();
+          console.log('Grau de risco encontrado (sem hífen):', riskLevel);
+        } else {
+          console.log('Nenhum grau de risco encontrado para o CNAE:', formattedCnae);
+        }
       }
     }
 

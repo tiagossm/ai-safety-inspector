@@ -55,6 +55,25 @@ export const useCompanyAPI = () => {
       }
       
       console.log('CNAE não encontrado na tabela de riscos:', formattedCnae);
+      console.log('Tentando buscar sem o hífen...');
+      
+      // If not found with hyphen, try without hyphen
+      const cleanCNAE = formattedCnae.replace('-', '');
+      const { data: dataWithoutHyphen, error: errorWithoutHyphen } = await supabase
+        .from('nr4_riscos')
+        .select('grau_risco')
+        .eq('cnae', cleanCNAE)
+        .maybeSingle();
+        
+      if (errorWithoutHyphen) {
+        console.error('Error fetching risk level without hyphen:', errorWithoutHyphen);
+      }
+      
+      if (dataWithoutHyphen) {
+        console.log('Grau de risco encontrado (sem hífen):', dataWithoutHyphen.grau_risco);
+        return dataWithoutHyphen.grau_risco.toString();
+      }
+      
       toast({
         title: "CNAE não encontrado",
         description: `Não foi possível encontrar o grau de risco para o CNAE ${formattedCnae}`,

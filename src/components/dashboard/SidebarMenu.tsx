@@ -31,9 +31,7 @@ interface SidebarMenuProps {
 
 export function SidebarMenu({ user, onLogout }: SidebarMenuProps) {
   const location = useLocation();
-  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
-    companies: true
-  });
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
 
   const isSuperAdmin = user?.tier === "super_admin";
 
