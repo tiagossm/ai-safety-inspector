@@ -30,8 +30,10 @@ export function ChecklistActions({ checklist, onRefresh }: ChecklistActionsProps
   const handleDuplicate = async () => {
     try {
       setIsLoading(true);
+      console.log("Duplicating checklist:", checklist.id);
       await duplicateChecklistMutation.mutateAsync(checklist.id);
       if (onRefresh) {
+        console.log("Refreshing checklist list");
         onRefresh();
       }
     } catch (error) {
@@ -51,11 +53,13 @@ export function ChecklistActions({ checklist, onRefresh }: ChecklistActionsProps
     // navigate(`/checklists/${checklist.id}/execute`);
   };
 
+  const isProcessing = isLoading || duplicateChecklistMutation.isPending;
+
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-8 w-8 p-0" disabled={isLoading || duplicateChecklistMutation.isPending}>
+          <Button variant="ghost" className="h-8 w-8 p-0" disabled={isProcessing}>
             <span className="sr-only">Abrir menu</span>
             <MoreHorizontal className="h-4 w-4" />
           </Button>
@@ -65,9 +69,13 @@ export function ChecklistActions({ checklist, onRefresh }: ChecklistActionsProps
             <Edit className="mr-2 h-4 w-4" />
             <span>Editar</span>
           </DropdownMenuItem>
-          <DropdownMenuItem className="cursor-pointer" onClick={handleDuplicate}>
+          <DropdownMenuItem 
+            className="cursor-pointer" 
+            onClick={handleDuplicate}
+            disabled={isProcessing}
+          >
             <Copy className="mr-2 h-4 w-4" />
-            <span>Duplicar</span>
+            <span>{isProcessing ? "Duplicando..." : "Duplicar"}</span>
           </DropdownMenuItem>
           <DropdownMenuItem className="cursor-pointer" onClick={handleExecute}>
             <Play className="mr-2 h-4 w-4" />
