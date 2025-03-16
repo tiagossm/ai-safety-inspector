@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -12,9 +13,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/ui/ThemeContext";
+import { useAuth } from "@/components/AuthProvider";
 
 const menuItems = [
-  { title: "Dashboard", icon: LayoutDashboard, url: "/" },
+  { title: "Dashboard", icon: LayoutDashboard, url: "/dashboard" },
   { title: "Empresas", icon: Building2, url: "/companies" },
   { title: "Inspeções", icon: ClipboardCheck, url: "/inspections" },
   { title: "Relatórios", icon: History, url: "/reports" },
@@ -26,8 +28,9 @@ export function AppSidebar() {
   const [isOpen, setIsOpen] = useState(true);
   const navigate = useNavigate();
   const { theme } = useTheme();
+  const { logout } = useAuth();
 
-  const handleKeyDown = useCallback((e) => {
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if ((e.ctrlKey && e.key === "b") || e.key === "m") {
       e.preventDefault();
       setIsOpen((prev) => !prev);
@@ -39,9 +42,13 @@ export function AppSidebar() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("authToken");
-    navigate("/auth");
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/auth");
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
   };
 
   return (

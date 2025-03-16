@@ -200,6 +200,14 @@ export function SidebarMenu({ user, onLogout }: SidebarMenuProps) {
     );
   };
 
+  const handleLogout = async () => {
+    try {
+      await onLogout();
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
+  };
+
   return (
     <nav className="flex-1 overflow-y-auto p-4 space-y-2">
       {navigation.map(renderMenuItem)}
@@ -207,7 +215,7 @@ export function SidebarMenu({ user, onLogout }: SidebarMenuProps) {
       <Button
         variant="ghost"
         className="flex items-center justify-start space-x-3 px-3 py-2 w-full hover:bg-muted"
-        onClick={onLogout}
+        onClick={handleLogout}
       >
         <LogOut className="h-5 w-5" />
         <span>Sair</span>

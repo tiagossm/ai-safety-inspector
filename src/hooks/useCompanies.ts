@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Company, CompanyStatus } from "@/types/company";
 import { isValidCNPJ, isValidPhone, isValidDate } from "@/utils/formatters";
+import { useAuth } from "@/components/AuthProvider";
 
 export function useCompanies() {
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -13,10 +14,11 @@ export function useCompanies() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchType, setSearchType] = useState<'name' | 'cnpj'>('name');
   const { toast } = useToast();
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchCompanies();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     filterCompanies();
@@ -43,13 +45,25 @@ export function useCompanies() {
   const fetchCompanies = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      console.log("Fetching companies for user:", user?.id, "with tier:", user?.tier);
+      
+      let query = supabase
         .from('companies')
-        .select('*')
-        .eq('status', 'active')
-        .order('created_at', { ascending: false });
+        .select('*');
+        
+      // Only filter by active status for non-super_admin users
+      if (user?.tier !== "super_admin") {
+        query = query.eq('status', 'active');
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching companies:", error);
+        throw error;
+      }
+
+      console.log("Companies fetched:", data?.length || 0);
 
       const companiesWithMetadata = (data || []).map(company => ({
         ...company,
@@ -71,7 +85,7 @@ export function useCompanies() {
       console.error('Error fetching companies:', error);
       toast({
         title: "Erro ao carregar empresas",
-        description: "Não foi possível carregar a lista de empresas.",
+        description: error.message || "Não foi possível carregar a lista de empresas.",
         variant: "destructive",
       });
     } finally {

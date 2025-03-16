@@ -1,3 +1,4 @@
+
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { useToast } from "./ui/use-toast";
@@ -7,17 +8,21 @@ import { supabase } from "@/integrations/supabase/client";
 export function Navbar() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      await logout();
       navigate("/auth");
+      toast({
+        title: "Logout realizado com sucesso",
+        description: "Você foi desconectado do sistema",
+      });
     } catch (error: any) {
+      console.error("Erro ao tentar fazer logout:", error);
       toast({
         title: "Erro ao sair",
-        description: error.message,
+        description: error.message || "Ocorreu um erro ao tentar sair. Tente novamente.",
         variant: "destructive",
       });
     }
