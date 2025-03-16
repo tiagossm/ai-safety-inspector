@@ -18,32 +18,56 @@ export default function AddUnit() {
 
   const handleSubmit = async (unitData: any) => {
     try {
+      console.log("Submitting unit data:", unitData);
+      
       // Calcular o dimensionamento da CIPA se houver número de funcionários e CNAE
       let cipaDimensioning = null;
       if (unitData.employee_count !== null && unitData.cnae) {
-        const { data: dimensioning } = await supabase.rpc('get_cipa_dimensioning', {
+        console.log("Calculating CIPA dimensioning with:", {
+          employeeCount: unitData.employee_count,
+          cnae: unitData.cnae,
+          riskLevel: parseInt(unitData.metadata?.risk_grade || '1')
+        });
+        
+        const { data: dimensioning, error } = await supabase.rpc('get_cipa_dimensioning', {
           p_employee_count: unitData.employee_count,
           p_cnae: unitData.cnae,
           p_risk_level: parseInt(unitData.metadata?.risk_grade || '1')
         });
         
+        if (error) {
+          console.error("Error calculating CIPA dimensioning:", error);
+        }
+        
         // Verificar se os dados retornados são válidos
         if (dimensioning && typeof dimensioning === 'object' && 'norma' in dimensioning) {
+          console.log("CIPA dimensioning result:", dimensioning);
           cipaDimensioning = dimensioning;
         } else if (unitData.employee_count < 20 && parseInt(unitData.metadata?.risk_grade || '1') === 4) {
           cipaDimensioning = { message: 'Designar 1 representante da CIPA', norma: 'NR-5' };
         }
       }
 
+      const finalData = {
+        ...unitData,
+        company_id: companyId,
+        cipa_dimensioning: cipaDimensioning,
+        metadata: {
+          ...unitData.metadata,
+          risk_grade: unitData.metadata?.risk_grade || '1'
+        }
+      };
+      
+      console.log("Saving unit with data:", finalData);
+
       const { error } = await supabase
         .from('units')
-        .insert([{
-          ...unitData,
-          company_id: companyId,
-          cipa_dimensioning: cipaDimensioning
-        }]);
+        .insert([finalData]);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error inserting unit:", error);
+        throw error;
+      }
 
       toast({
         title: "Unidade adicionada",
@@ -52,6 +76,7 @@ export default function AddUnit() {
 
       navigate(`/companies/${companyId}`);
     } catch (error: any) {
+      console.error("Error submitting unit:", error);
       toast({
         title: "Erro ao adicionar unidade",
         description: error.message,

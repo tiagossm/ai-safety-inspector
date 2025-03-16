@@ -26,6 +26,9 @@ const unitFormSchema = z.object({
   contact_phone: z.string().optional().nullable(),
   technical_responsible: z.string().optional().nullable(),
   employee_count: z.number().min(0, 'Número de funcionários deve ser maior ou igual a 0').optional().nullable(),
+  metadata: z.object({
+    risk_grade: z.string().optional()
+  }).optional()
 });
 
 type UnitFormValues = z.infer<typeof unitFormSchema>;
@@ -55,6 +58,9 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
       contact_phone: '',
       technical_responsible: '',
       employee_count: null,
+      metadata: {
+        risk_grade: '1'
+      }
     },
   });
 
@@ -90,7 +96,7 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
           }
 
           const cnae = form.getValues('cnae');
-          const cleanCnae = cnae.replace(/[^\d]/g, '');
+          const cleanCnae = cnae ? cnae.replace(/[^\d]/g, '') : '';
           const sector = determineSector(cleanCnae);
 
           console.log('Calculando dimensionamento com:', {
@@ -187,58 +193,41 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
           form.setValue('contact_phone', response.contactPhone || '');
           form.setValue('contact_name', response.contactName || '');
           
-          if (response.cnae) {
-            const risk = await fetchRiskLevel(response.cnae);
-            setRiskLevel(risk);
-
+          if (response.riskLevel) {
+            setRiskLevel(response.riskLevel);
+            
+            // Store risk grade in metadata
+            form.setValue('metadata', {
+              ...form.getValues('metadata'),
+              risk_grade: response.riskLevel
+            });
+            
+            console.log('Risk level set to:', response.riskLevel);
+            
+            // Recalculate CIPA if we have employee count
             const employeeCount = form.getValues('employee_count');
             if (employeeCount !== null && !isNaN(employeeCount)) {
-              const riskGrade = parseInt(risk);
-              if (!isNaN(riskGrade)) {
-                // Verifica se é menos de 20 funcionários com grau de risco 4
-                if (employeeCount < 20 && riskGrade === 4) {
-                  setCipaDimensioning(null);
-                  setShowDesignateMessage(true);
-                } else {
-                  const { data } = await supabase.rpc('get_cipa_dimensioning', {
-                    p_employee_count: employeeCount,
-                    p_cnae: response.cnae,
-                    p_risk_level: riskGrade
-                  });
-                  
-                  if (data && typeof data === 'object' && data !== null) {
-                    // Verificar se o objeto tem a propriedade 'norma'
-                    const dimensioningData = data as Record<string, any>;
-                    
-                    if ('norma' in dimensioningData) {
-                      // Criar um objeto CIPADimensioning com as propriedades seguras
-                      const dimensioning: CIPADimensioning = {
-                        norma: String(dimensioningData.norma),
-                        efetivos: typeof dimensioningData.efetivos === 'number' ? dimensioningData.efetivos : undefined,
-                        suplentes: typeof dimensioningData.suplentes === 'number' ? dimensioningData.suplentes : undefined,
-                        efetivos_empregador: typeof dimensioningData.efetivos_empregador === 'number' ? dimensioningData.efetivos_empregador : undefined,
-                        suplentes_empregador: typeof dimensioningData.suplentes_empregador === 'number' ? dimensioningData.suplentes_empregador : undefined,
-                        efetivos_empregados: typeof dimensioningData.efetivos_empregados === 'number' ? dimensioningData.efetivos_empregados : undefined,
-                        suplentes_empregados: typeof dimensioningData.suplentes_empregados === 'number' ? dimensioningData.suplentes_empregados : undefined,
-                        observacao: typeof dimensioningData.observacao === 'string' ? dimensioningData.observacao : undefined,
-                        message: typeof dimensioningData.message === 'string' ? dimensioningData.message : undefined,
-                      };
-                      
-                      setCipaDimensioning(dimensioning);
-                    } else {
-                      // Criar um objeto com os valores padrão para o setor
-                      const sector = determineSector(response.cnae);
-                      setCipaDimensioning({
-                        efetivos: 0,
-                        suplentes: 0,
-                        observacao: 'Dados de dimensionamento incompletos',
-                        norma: sector === 'mining' ? 'NR-22' : sector === 'rural' ? 'NR-31' : 'NR-5'
-                      });
-                    }
-                    setShowDesignateMessage(false);
-                  }
-                }
-              }
+              const input = { target: { value: employeeCount.toString() } } as React.ChangeEvent<HTMLInputElement>;
+              handleEmployeeCountChange(input);
+            }
+          } else if (response.cnae) {
+            // If risk level not provided but we have CNAE, try to fetch risk level
+            const risk = await fetchRiskLevel(response.cnae);
+            setRiskLevel(risk);
+            
+            // Store risk grade in metadata
+            form.setValue('metadata', {
+              ...form.getValues('metadata'),
+              risk_grade: risk
+            });
+            
+            console.log('Risk level fetched separately:', risk);
+            
+            // Recalculate CIPA if needed
+            const employeeCount = form.getValues('employee_count');
+            if (employeeCount !== null && !isNaN(employeeCount)) {
+              const input = { target: { value: employeeCount.toString() } } as React.ChangeEvent<HTMLInputElement>;
+              handleEmployeeCountChange(input);
             }
           }
         }
@@ -265,21 +254,43 @@ export function UnitForm({ onSubmit }: UnitFormProps) {
     const cnae = form.getValues('cnae');
     if (cnae) {
       fetchRiskLevel(cnae).then(risk => {
-        setRiskLevel(risk);
-        
-        // Recalcula o dimensionamento se necessário
-        const employeeCount = form.getValues('employee_count');
-        if (employeeCount) {
-          const input = { target: { value: employeeCount.toString() } } as React.ChangeEvent<HTMLInputElement>;
-          handleEmployeeCountChange(input);
+        if (risk) {
+          setRiskLevel(risk);
+          
+          // Store risk grade in metadata
+          form.setValue('metadata', {
+            ...form.getValues('metadata'),
+            risk_grade: risk
+          });
+          
+          // Recalcula o dimensionamento se necessário
+          const employeeCount = form.getValues('employee_count');
+          if (employeeCount) {
+            const input = { target: { value: employeeCount.toString() } } as React.ChangeEvent<HTMLInputElement>;
+            handleEmployeeCountChange(input);
+          }
         }
       });
     }
   }, [form.watch('cnae')]);
 
+  const handleFormSubmit = async (data: UnitFormValues) => {
+    console.log("Form submitted with data:", data);
+    
+    // Ensure metadata with risk grade is included
+    if (!data.metadata) {
+      data.metadata = { risk_grade: riskLevel };
+    } else if (!data.metadata.risk_grade) {
+      data.metadata.risk_grade = riskLevel;
+    }
+    
+    console.log("Prepared data for submission:", data);
+    await onSubmit(data);
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
         <UnitBasicFields
           form={form}
           loading={loading}

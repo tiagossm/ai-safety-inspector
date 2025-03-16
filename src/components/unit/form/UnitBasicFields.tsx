@@ -43,7 +43,10 @@ export function UnitBasicFields({
               <Input 
                 placeholder="00.000.000/0000-00" 
                 {...field} 
-                onChange={handleCNPJChange}
+                onChange={(e) => {
+                  handleCNPJChange(e);
+                  field.onChange(e);
+                }}
                 onBlur={handleCNPJBlur}
                 disabled={loading}
               />
@@ -85,7 +88,6 @@ export function UnitBasicFields({
                   placeholder="CNAE" 
                   {...field} 
                   value={field.value || ''} 
-                  readOnly
                   className="bg-muted"
                 />
               </FormControl>

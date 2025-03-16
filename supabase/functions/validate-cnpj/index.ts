@@ -30,6 +30,7 @@ serve(async (req) => {
     const data = await response.json()
 
     if (data.status === 'ERROR') {
+      console.error('Erro da API ReceitaWS:', data.message)
       throw new Error(data.message || 'CNPJ não encontrado')
     }
 
@@ -96,7 +97,7 @@ serve(async (req) => {
       contactName: data.qsa?.[0]?.nome || ''
     }
 
-    console.log('Dados formatados:', formattedData)
+    console.log('Dados formatados para retorno:', formattedData)
 
     return new Response(
       JSON.stringify(formattedData),
@@ -110,7 +111,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Erro na consulta do CNPJ:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message || "Erro desconhecido" }),
       { 
         headers: { 
           ...corsHeaders, 

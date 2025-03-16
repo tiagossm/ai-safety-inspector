@@ -16,10 +16,18 @@ export const useCompanyAPI = () => {
   const { toast } = useToast();
 
   const formatCNAE = (cnae: string): string => {
+    if (!cnae) return '';
+    
+    // Remove all non-numeric characters
     const numbers = cnae.replace(/[^\d]/g, '');
-    return numbers.length >= 5 
-      ? `${numbers.slice(0, 4)}-${numbers.slice(4, 5)}` 
-      : `${numbers.padEnd(4, '0')}-0`;
+    
+    // Format as XXXX-X if possible
+    if (numbers.length >= 5) {
+      return `${numbers.slice(0, 4)}-${numbers.slice(4, 5)}`;
+    } else {
+      // If less than 5 digits, pad with zeros
+      return `${numbers.padEnd(4, '0')}-0`;
+    }
   };
 
   const fetchRiskLevel = async (cnae: string) => {
@@ -29,18 +37,24 @@ export const useCompanyAPI = () => {
       const formattedCnae = formatCNAE(cnae);
       console.log('Buscando grau de risco para CNAE:', formattedCnae);
       
+      // Make sure to use the correct table and query
       const { data, error } = await supabase
         .from('nr4_riscos')
         .select('grau_risco')
         .eq('cnae', formattedCnae)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching risk level:', error);
+        throw error;
+      }
       
       if (data) {
+        console.log('Grau de risco encontrado:', data.grau_risco);
         return data.grau_risco.toString();
       }
       
+      console.log('CNAE não encontrado na tabela de riscos:', formattedCnae);
       toast({
         title: "CNAE não encontrado",
         description: `Não foi possível encontrar o grau de risco para o CNAE ${formattedCnae}`,
@@ -71,24 +85,36 @@ export const useCompanyAPI = () => {
         body: { cnpj: cleanCNPJ }
       });
 
-      if (error) throw error;
-      if (!response) throw new Error('Sem resposta da API');
+      if (error) {
+        console.error('Error calling validate-cnpj function:', error);
+        throw error;
+      }
+      
+      if (!response) {
+        console.error('No response from validate-cnpj function');
+        throw new Error('Sem resposta da API');
+      }
 
       console.log('Dados retornados da API:', response);
 
-      // Formata o CNAE e busca o grau de risco
+      // Make sure CNAE is formatted correctly before fetching risk level
       const formattedCnae = response.cnae ? formatCNAE(response.cnae) : '';
-      const riskLevel = formattedCnae ? await fetchRiskLevel(formattedCnae) : '';
+      let riskLevel = '';
+      
+      if (formattedCnae) {
+        riskLevel = await fetchRiskLevel(formattedCnae);
+        console.log('Grau de risco obtido:', riskLevel);
+      }
 
-      // Retorna exatamente os dados que recebemos da API
+      // Return data in expected format
       const result: CNPJResponse = {
-        fantasyName: response.fantasyName,
+        fantasyName: response.fantasyName || '',
         cnae: formattedCnae,
         riskLevel,
         address: response.address || '',
-        contactEmail: response.contactEmail,
-        contactPhone: response.contactPhone,
-        contactName: response.contactName
+        contactEmail: response.contactEmail || '',
+        contactPhone: response.contactPhone || '',
+        contactName: response.contactName || ''
       };
 
       console.log('Dados formatados para retorno:', result);
@@ -131,5 +157,6 @@ export const useCompanyAPI = () => {
     fetchRiskLevel,
     fetchCNPJData,
     checkExistingCNPJ,
+    formatCNAE
   };
 };
