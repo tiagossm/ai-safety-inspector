@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+
+import { useState } from "react";
 import { useChecklistCreation } from "@/hooks/checklist/useChecklistCreation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, Upload, Bot } from "lucide-react";
@@ -6,13 +7,10 @@ import { ManualCreateForm } from "@/components/checklists/create-forms/ManualCre
 import { ImportCreateForm } from "@/components/checklists/create-forms/ImportCreateForm";
 import { AICreateForm } from "@/components/checklists/create-forms/AICreateForm";
 import { BackButton, FormActions } from "@/components/checklists/create-forms/FormActions";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
 
 export default function CreateChecklist() {
-  const [isSessionValid, setIsSessionValid] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   
   const {
     activeTab,
@@ -37,54 +35,6 @@ export default function CreateChecklist() {
     handleSubmit,
     navigate
   } = useChecklistCreation();
-  
-  const { user, refreshSession } = useAuth();
-  
-  useEffect(() => {
-    const checkAuth = async () => {
-      setIsLoading(true);
-      try {
-        await refreshSession();
-        
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error("Error checking session:", error);
-          toast.error("Erro ao verificar sessão. Tente fazer login novamente.");
-          setIsSessionValid(false);
-          navigate("/auth");
-          return;
-        }
-        
-        if (!data.session) {
-          console.warn("No active session found");
-          toast.error("Sessão expirada. Faça login novamente.");
-          setIsSessionValid(false);
-          navigate("/auth");
-          return;
-        }
-        
-        setIsSessionValid(true);
-        
-        console.log("User authentication info:", {
-          authenticated: !!data.session,
-          userId: user?.id,
-          userTier: user?.tier,
-          userRole: user?.role,
-          tokenExpiry: data.session.expires_at 
-            ? new Date(data.session.expires_at * 1000).toLocaleString() 
-            : 'unknown'
-        });
-      } catch (err) {
-        console.error("Error in auth check:", err);
-        setIsSessionValid(false);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    checkAuth();
-  }, [navigate, refreshSession, user]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,17 +49,6 @@ export default function CreateChecklist() {
 
   if (isLoading) {
     return <div className="py-20 text-center">Carregando...</div>;
-  }
-
-  if (!isSessionValid) {
-    return (
-      <div className="py-20 text-center">
-        <h2 className="text-2xl font-bold mb-4">Você precisa estar autenticado</h2>
-        <button onClick={() => navigate("/auth")}>
-          Fazer login
-        </button>
-      </div>
-    );
   }
 
   return (

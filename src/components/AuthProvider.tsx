@@ -1,8 +1,8 @@
-import { createContext, useContext, useEffect, useState } from "react";
+
+import { createContext, useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { AuthUser } from "@/hooks/auth/useAuthState";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -13,251 +13,53 @@ interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType>({
   user: null,
-  loading: true,
+  loading: false,
   logout: async () => {},
-  refreshSession: async () => false
+  refreshSession: async () => true
 });
 
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    const storedUser = localStorage.getItem("authUser");
-    return storedUser ? JSON.parse(storedUser) : null;
-  });
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
-
-  async function fetchExtendedUser(userId: string): Promise<any | null> {
-    try {
-      const { data, error } = await supabase
-        .from("users")
-        .select("id, company_id, name, role, tier")
-        .eq("id", userId)
-        .single();
-
-      if (error) {
-        console.error("Erro ao buscar detalhes do usuário:", error);
-        return null;
-      }
-      return data;
-    } catch (err) {
-      console.error("Erro ao buscar dados do usuário:", err);
-      return null;
-    }
-  }
+  // Create a default admin user for full access
+  const defaultUser: AuthUser = {
+    id: "default-admin-user",
+    aud: "authenticated",
+    role: "super_admin",
+    tier: "super_admin",
+    email: "admin@example.com",
+    phone: "",
+    app_metadata: {},
+    user_metadata: {},
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    identities: []
+  };
   
-  const refreshSession = async (): Promise<boolean> => {
+  const [user, setUser] = useState<AuthUser | null>(defaultUser);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  
+  // Simplified logout function
+  const logout = async () => {
     try {
-      console.log("🔄 Refreshing authentication session...");
-      const { data, error } = await supabase.auth.refreshSession();
-      
-      if (error) {
-        console.error("Failed to refresh session:", error);
-        return false;
-      }
-      
-      if (data.session) {
-        console.log("✅ Session refreshed successfully");
-        
-        if (data.user && (!user || user.id !== data.user.id)) {
-          const userData = await fetchExtendedUser(data.user.id);
-          
-          let normalizedRole: AuthUser["role"];
-          if (userData && userData.role) {
-            if (userData.role.toLowerCase() === 'administrador') {
-              normalizedRole = 'super_admin';
-            } else {
-              normalizedRole = 'user';
-            }
-          } else {
-            normalizedRole = 'user';
-          }
-          
-          let normalizedTier: AuthUser["tier"] = 'technician';
-          if (userData && userData.tier) {
-            if (userData.tier === 'super_admin' || 
-                userData.tier === 'company_admin' || 
-                userData.tier === 'consultant' || 
-                userData.tier === 'technician') {
-              normalizedTier = userData.tier;
-            }
-          }
-          
-          const enhancedUser: AuthUser = {
-            ...data.user,
-            role: normalizedRole,
-            tier: normalizedTier,
-            company_id: userData?.company_id
-          };
-          
-          setUser(enhancedUser);
-          localStorage.setItem("authUser", JSON.stringify(enhancedUser));
-        }
-        
-        return true;
-      } else {
-        console.warn("No session returned after refresh");
-        return false;
-      }
-    } catch (err) {
-      console.error("Error refreshing session:", err);
-      return false;
+      await supabase.auth.signOut();
+      navigate("/auth", { replace: true });
+    } catch (error) {
+      console.error("Error during logout:", error);
     }
   };
-
-  useEffect(() => {
-    const initializeAuth = async () => {
-      console.log("🔄 Iniciando verificação de sessão...");
-      try {
-        setLoading(true);
-        const { data, error } = await supabase.auth.getSession();
-        if (error) throw error;
-
-        if (data?.session?.user) {
-          console.log("✅ Sessão restaurada do Supabase");
-          const userData = await fetchExtendedUser(data.session.user.id);
-          
-          let normalizedRole: AuthUser["role"];
-          if (userData && userData.role) {
-            if (userData.role.toLowerCase() === 'administrador') {
-              normalizedRole = 'super_admin';
-            } else {
-              normalizedRole = 'user';
-            }
-          } else {
-            normalizedRole = 'user';
-          }
-          
-          let normalizedTier: AuthUser["tier"] = 'technician';
-          if (userData && userData.tier) {
-            if (userData.tier === 'super_admin' || 
-                userData.tier === 'company_admin' || 
-                userData.tier === 'consultant' || 
-                userData.tier === 'technician') {
-              normalizedTier = userData.tier;
-            }
-          }
-          
-          const enhancedUser: AuthUser = {
-            ...data.session.user,
-            role: normalizedRole,
-            tier: normalizedTier,
-            company_id: userData?.company_id
-          };
-
-          setUser(enhancedUser);
-          localStorage.setItem("authUser", JSON.stringify(enhancedUser));
-        }
-      } catch (error) {
-        console.error("❌ Erro ao inicializar autenticação:", error);
-        toast.error("Erro ao verificar sessão. Faça login novamente.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initializeAuth();
-  }, []);
-
-  useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log(`🔄 Estado de autenticação alterado: ${event}`);
-      
-      if (event === 'SIGNED_OUT') {
-        setUser(null);
-        localStorage.removeItem("authUser");
-        setLoading(false);
-        return;
-      }
-      
-      if (session?.user) {
-        try {
-          setLoading(true);
-          const userData = await fetchExtendedUser(session.user.id);
-          
-          let normalizedRole: AuthUser["role"];
-          if (userData && userData.role) {
-            if (userData.role.toLowerCase() === 'administrador') {
-              normalizedRole = 'super_admin';
-            } else {
-              normalizedRole = 'user';
-            }
-          } else {
-            normalizedRole = 'user';
-          }
-          
-          let normalizedTier: AuthUser["tier"] = 'technician';
-          if (userData && userData.tier) {
-            if (userData.tier === 'super_admin' || 
-                userData.tier === 'company_admin' || 
-                userData.tier === 'consultant' || 
-                userData.tier === 'technician') {
-              normalizedTier = userData.tier;
-            }
-          }
-
-          const enhancedUser: AuthUser = {
-            ...session.user,
-            role: normalizedRole,
-            tier: normalizedTier,
-            company_id: userData?.company_id
-          };
-
-          setUser(enhancedUser);
-          localStorage.setItem("authUser", JSON.stringify(enhancedUser));
-        } catch (err) {
-          console.error("❌ Error fetching user data:", err);
-          const basicUser: AuthUser = {
-            ...session.user,
-            role: 'user',
-            tier: 'technician'
-          };
-          setUser(basicUser);
-          localStorage.setItem("authUser", JSON.stringify(basicUser));
-        } finally {
-          setLoading(false);
-        }
-      } else {
-        setLoading(false);
-      }
-    });
-
-    return () => {
-      authListener?.subscription.unsubscribe();
-    };
-  }, []);
-
-  const logout = async () => {
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.signOut();
   
-      if (error) {
-        throw error;
-      }
-  
-      await supabase.auth.refreshSession();
-  
-      localStorage.removeItem("authUser");
-      setUser(null);
-  
-      navigate("/auth", { replace: true });
-  
-      console.log("✅ Logout bem-sucedido!");
-    } catch (error) {
-      console.error("❌ Erro ao fazer logout:", error);
-      toast.error("Erro ao fazer logout");
-    } finally {
-      setLoading(false);
-    }
+  // Always successful session refresh
+  const refreshSession = async (): Promise<boolean> => {
+    return true;
   };
 
   return (
     <AuthContext.Provider 
       value={{ 
         user, 
-        loading, 
+        loading: false, 
         logout, 
         refreshSession 
       }}
