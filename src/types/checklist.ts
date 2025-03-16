@@ -1,9 +1,10 @@
+
 export interface CollaboratorType {
   id: string;
   name: string;
   avatar: string;
   email: string;
-  initials?: string; // Adding the initials property as optional
+  initials?: string;
 }
 
 export interface Checklist {
@@ -31,7 +32,7 @@ export interface ChecklistItem {
   id: string;
   checklist_id: string;
   pergunta: string;
-  tipo_resposta: "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla";
+  tipo_resposta: "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla" | "localização" | "arquivo";
   obrigatorio: boolean;
   opcoes: string[] | null;
   ordem: number;
@@ -39,6 +40,10 @@ export interface ChecklistItem {
   permite_audio: boolean;
   permite_video: boolean;
   permite_foto: boolean;
+  condicao?: {
+    pergunta_dependente_id: string;
+    valor_para_exibir: string | boolean | number;
+  } | null;
 }
 
 export interface NewChecklist {
@@ -51,4 +56,29 @@ export interface NewChecklist {
   company_id?: string | null;
   due_date?: string | null;
   user_id?: string | null;
+}
+
+export interface ChecklistExecution {
+  id: string;
+  checklist_id: string;
+  executed_by: string;
+  start_time: string;
+  end_time?: string;
+  status: "em_andamento" | "concluido" | "cancelado";
+  location?: {
+    latitude: number;
+    longitude: number;
+    address?: string;
+  };
+  responses: ChecklistResponse[];
+}
+
+export interface ChecklistResponse {
+  id: string;
+  execution_id: string;
+  item_id: string;
+  resposta: string | number | boolean | null;
+  observacao?: string;
+  media_urls?: string[];
+  created_at: string;
 }

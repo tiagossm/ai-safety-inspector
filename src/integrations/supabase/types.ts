@@ -265,6 +265,7 @@ export type Database = {
       companies: {
         Row: {
           address: string | null
+          admin_id: string | null
           cipa_dimensioning: Json | null
           cnae: string | null
           cnpj: string
@@ -272,6 +273,7 @@ export type Database = {
           contact_name: string | null
           contact_phone: string | null
           created_at: string
+          created_by: string | null
           deactivated_at: string | null
           employee_count: number | null
           fantasy_name: string | null
@@ -285,6 +287,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          admin_id?: string | null
           cipa_dimensioning?: Json | null
           cnae?: string | null
           cnpj: string
@@ -292,6 +295,7 @@ export type Database = {
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string
+          created_by?: string | null
           deactivated_at?: string | null
           employee_count?: number | null
           fantasy_name?: string | null
@@ -305,6 +309,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          admin_id?: string | null
           cipa_dimensioning?: Json | null
           cnae?: string | null
           cnpj?: string
@@ -312,6 +317,7 @@ export type Database = {
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string
+          created_by?: string | null
           deactivated_at?: string | null
           employee_count?: number | null
           fantasy_name?: string | null
@@ -323,7 +329,22 @@ export type Database = {
           sync_status?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "companies_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "companies_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       company_imports: {
         Row: {

@@ -12,7 +12,8 @@ import ChecklistForm from "@/components/checklists/ChecklistForm";
 import ChecklistItemsList from "@/components/checklists/ChecklistItemsList";
 import AddChecklistItemForm from "@/components/checklists/AddChecklistItemForm";
 import { toast } from "sonner";
-import { Progress } from "@/components/ui/progress"; // Barra de progresso
+import { Progress } from "@/components/ui/progress";
+import { supabase } from "@/integrations/supabase/client";
 
 // Tipos de perguntas disponíveis no checklist
 const questionTypes = [
@@ -21,7 +22,9 @@ const questionTypes = [
   { value: "texto", label: "Resposta em Texto" },
   { value: "foto", label: "Foto" },
   { value: "assinatura", label: "Assinatura" },
-  { value: "seleção múltipla", label: "Seleção Múltipla" }
+  { value: "seleção múltipla", label: "Seleção Múltipla" },
+  { value: "localização", label: "Localização GPS" },
+  { value: "arquivo", label: "Arquivo/Documento" }
 ];
 
 interface ChecklistDetailsContainerProps {
@@ -99,7 +102,7 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
     
     if (newItem.opcoes) {
       if (Array.isArray(newItem.opcoes)) {
-        sanitizedOptions = newItem.opcoes.map(option => String(option));
+        sanitizedOptions = newItem.opcoes.map(option => String(option)).filter(option => option.trim() !== "");
       } else {
         sanitizedOptions = [String(newItem.opcoes)];
       }
@@ -112,7 +115,7 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
       onSuccess: (data) => {
         const addedItem: ChecklistItem = {
           ...data,
-          tipo_resposta: data.tipo_resposta as "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla",
+          tipo_resposta: data.tipo_resposta as "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla" | "localização" | "arquivo",
           opcoes: data.opcoes ? (Array.isArray(data.opcoes) ? data.opcoes.map(String) : [String(data.opcoes)]) : null
         };
         
@@ -124,6 +127,27 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
         toast.error("Falha ao adicionar item.");
       }
     });
+  };
+
+  // Função para reordenar itens
+  const handleReorderItems = async (reorderedItems: ChecklistItem[]) => {
+    try {
+      // First update local state for immediate UI feedback
+      setItems(reorderedItems);
+      
+      // Then update each item on the server
+      const updatePromises = reorderedItems.map((item, index) => {
+        return supabase
+          .from("checklist_itens")
+          .update({ ordem: index })
+          .eq("id", item.id);
+      });
+      
+      await Promise.all(updatePromises);
+    } catch (error) {
+      console.error("Erro ao reordenar itens:", error);
+      toast.error("Falha ao reordenar itens.");
+    }
   };
 
   // Função para salvar o checklist atualizado
@@ -193,12 +217,19 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
           />
 
           {/* Barra de progresso para indicar andamento */}
-          <Progress value={progressPercentage} className="mt-2" />
+          <div className="space-y-1">
+            <div className="flex justify-between text-sm">
+              <span>Progresso</span>
+              <span>{completedItems} de {totalItems} itens concluídos</span>
+            </div>
+            <Progress value={progressPercentage} className="h-2" />
+          </div>
 
           <ChecklistItemsList
             items={items}
             onItemChange={handleItemChange}
             onDeleteItem={handleDeleteItem}
+            onReorderItems={handleReorderItems}
             questionTypes={questionTypes}
           />
 
