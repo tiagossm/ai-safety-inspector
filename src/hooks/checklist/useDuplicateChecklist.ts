@@ -54,18 +54,27 @@ export function useDuplicateChecklist() {
       
       // Create duplicate items for the new checklist
       if (originalItems && originalItems.length > 0) {
-        const newItems = originalItems.map(item => ({
-          checklist_id: newChecklist.id,
-          pergunta: item.pergunta,
-          tipo_resposta: item.tipo_resposta,
-          obrigatorio: item.obrigatorio,
-          ordem: item.ordem,
-          opcoes: item.opcoes,
-          permite_foto: item.permite_foto,
-          permite_audio: item.permite_audio,
-          permite_video: item.permite_video,
-          condicao: item.condicao
-        }));
+        const newItems = originalItems.map(item => {
+          // Create a base object with required properties
+          const newItem: any = {
+            checklist_id: newChecklist.id,
+            pergunta: item.pergunta,
+            tipo_resposta: item.tipo_resposta,
+            obrigatorio: item.obrigatorio,
+            ordem: item.ordem,
+            opcoes: item.opcoes,
+            permite_foto: item.permite_foto,
+            permite_audio: item.permite_audio,
+            permite_video: item.permite_video
+          };
+          
+          // Only add condicao if it exists in the original item
+          if ('condicao' in item && item.condicao !== null) {
+            newItem.condicao = item.condicao;
+          }
+          
+          return newItem;
+        });
         
         const { error: insertError } = await supabase
           .from("checklist_itens")

@@ -13,7 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { useChecklists } from "@/hooks/useChecklists";
 import { toast } from "sonner";
 import { Checklist } from "@/types/checklist";
-import { supabase } from "@/integrations/supabase/client";
+import { useDuplicateChecklist } from "@/hooks/checklist/useDuplicateChecklist";
 
 interface ChecklistActionsProps {
   checklist: Checklist;
@@ -25,76 +25,17 @@ export function ChecklistActions({ checklist, onRefresh }: ChecklistActionsProps
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { updateChecklist } = useChecklists();
+  const duplicateChecklistMutation = useDuplicateChecklist();
 
   const handleDuplicate = async () => {
     try {
       setIsLoading(true);
-      toast.loading("Duplicando checklist...");
-      
-      // 1. First duplicate the checklist record
-      const { data: newChecklist, error: checklistError } = await supabase
-        .from("checklists")
-        .insert({
-          title: `${checklist.title} (Cópia)`,
-          description: checklist.description,
-          is_template: checklist.is_template,
-          status_checklist: checklist.status_checklist,
-          category: checklist.category,
-          responsible_id: checklist.responsible_id,
-          company_id: checklist.company_id,
-          user_id: checklist.user_id
-        })
-        .select()
-        .single();
-      
-      if (checklistError) {
-        throw checklistError;
-      }
-      
-      // 2. Now fetch all items from the original checklist
-      const { data: originalItems, error: itemsError } = await supabase
-        .from("checklist_itens")
-        .select("*")
-        .eq("checklist_id", checklist.id);
-      
-      if (itemsError) {
-        throw itemsError;
-      }
-      
-      // 3. Create duplicate items for the new checklist
-      if (originalItems && originalItems.length > 0) {
-        const newItems = originalItems.map(item => ({
-          checklist_id: newChecklist.id,
-          pergunta: item.pergunta,
-          tipo_resposta: item.tipo_resposta,
-          obrigatorio: item.obrigatorio,
-          ordem: item.ordem,
-          opcoes: item.opcoes,
-          permite_foto: item.permite_foto,
-          permite_audio: item.permite_audio,
-          permite_video: item.permite_video
-        }));
-        
-        const { error: insertError } = await supabase
-          .from("checklist_itens")
-          .insert(newItems);
-        
-        if (insertError) {
-          throw insertError;
-        }
-      }
-      
-      toast.dismiss();
-      toast.success("Checklist duplicado com sucesso!");
-      
+      await duplicateChecklistMutation.mutateAsync(checklist.id);
       if (onRefresh) {
         onRefresh();
       }
-      
     } catch (error) {
       console.error("Erro ao duplicar checklist:", error);
-      toast.dismiss();
-      toast.error("Falha ao duplicar checklist");
     } finally {
       setIsLoading(false);
     }
@@ -114,7 +55,7 @@ export function ChecklistActions({ checklist, onRefresh }: ChecklistActionsProps
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-8 w-8 p-0" disabled={isLoading}>
+          <Button variant="ghost" className="h-8 w-8 p-0" disabled={isLoading || duplicateChecklistMutation.isPending}>
             <span className="sr-only">Abrir menu</span>
             <MoreHorizontal className="h-4 w-4" />
           </Button>
