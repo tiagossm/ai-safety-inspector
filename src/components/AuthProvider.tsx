@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,7 +28,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Função para buscar dados completos do usuário
   async function fetchExtendedUser(userId: string): Promise<any | null> {
     try {
       const { data, error } = await supabase
@@ -49,7 +47,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   }
   
-  // Function to refresh the session
   const refreshSession = async (): Promise<boolean> => {
     try {
       console.log("🔄 Refreshing authentication session...");
@@ -63,11 +60,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (data.session) {
         console.log("✅ Session refreshed successfully");
         
-        // Update user data if needed
         if (data.user && (!user || user.id !== data.user.id)) {
           const userData = await fetchExtendedUser(data.user.id);
           
-          // Map the role value to the correct type
           let normalizedRole: AuthUser["role"];
           if (userData && userData.role) {
             if (userData.role.toLowerCase() === 'administrador') {
@@ -79,7 +74,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             normalizedRole = 'user';
           }
           
-          // Map the tier value to the correct type
           let normalizedTier: AuthUser["tier"] = 'technician';
           if (userData && userData.tier) {
             if (userData.tier === 'super_admin' || 
@@ -112,7 +106,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Verifica a sessão ao montar o componente
   useEffect(() => {
     const initializeAuth = async () => {
       console.log("🔄 Iniciando verificação de sessão...");
@@ -123,10 +116,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (data?.session?.user) {
           console.log("✅ Sessão restaurada do Supabase");
-          // Tenta obter os dados completos do usuário
           const userData = await fetchExtendedUser(data.session.user.id);
           
-          // Map the role value to the correct type
           let normalizedRole: AuthUser["role"];
           if (userData && userData.role) {
             if (userData.role.toLowerCase() === 'administrador') {
@@ -138,7 +129,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             normalizedRole = 'user';
           }
           
-          // Map the tier value to the correct type
           let normalizedTier: AuthUser["tier"] = 'technician';
           if (userData && userData.tier) {
             if (userData.tier === 'super_admin' || 
@@ -170,7 +160,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     initializeAuth();
   }, []);
 
-  // Configura eventos de autenticação
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log(`🔄 Estado de autenticação alterado: ${event}`);
@@ -187,7 +176,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setLoading(true);
           const userData = await fetchExtendedUser(session.user.id);
           
-          // Map the role value to the correct type
           let normalizedRole: AuthUser["role"];
           if (userData && userData.role) {
             if (userData.role.toLowerCase() === 'administrador') {
@@ -199,7 +187,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             normalizedRole = 'user';
           }
           
-          // Map the tier value to the correct type
           let normalizedTier: AuthUser["tier"] = 'technician';
           if (userData && userData.tier) {
             if (userData.tier === 'super_admin' || 
@@ -221,7 +208,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           localStorage.setItem("authUser", JSON.stringify(enhancedUser));
         } catch (err) {
           console.error("❌ Error fetching user data:", err);
-          // Fallback para dados básicos se não conseguir buscar os dados estendidos
           const basicUser: AuthUser = {
             ...session.user,
             role: 'user',
@@ -242,7 +228,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  // Função de logout
   const logout = async () => {
     setLoading(true);
     try {
@@ -252,14 +237,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         throw error;
       }
   
-      // Remover qualquer sessão persistida manualmente
       await supabase.auth.refreshSession();
   
-      // Remover usuário do estado e do localStorage
       localStorage.removeItem("authUser");
       setUser(null);
   
-      // Redirecionar para a tela de login
       navigate("/auth", { replace: true });
   
       console.log("✅ Logout bem-sucedido!");
@@ -270,4 +252,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(false);
     }
   };
-  
+
+  return (
+    <AuthContext.Provider 
+      value={{ 
+        user, 
+        loading, 
+        logout, 
+        refreshSession 
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
