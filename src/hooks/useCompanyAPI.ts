@@ -47,7 +47,7 @@ export const useCompanyAPI = () => {
       const formattedCnae = formatCNAE(cnae);
       console.log('Buscando grau de risco para CNAE:', formattedCnae);
       
-      // Tenta buscar com várias formatações do CNAE para aumentar chances de encontrar
+      // Tenta buscar com várias formatações do CNAE para aumentar as chances de encontrar
       const cnaeLookups = [
         formattedCnae,                  // XXXX-X (formato padrão)
         formattedCnae.replace('-', ''), // XXXXX (sem hífen)
