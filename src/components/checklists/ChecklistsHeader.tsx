@@ -1,83 +1,38 @@
 
-import { Button } from "@/components/ui/button";
-import { PlusCircle, Filter, RefreshCw } from "lucide-react";
-import { Link } from "react-router-dom";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
 import { useState } from "react";
-import { useChecklists } from "@/hooks/useChecklists";
-import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { Link } from "react-router-dom";
+import { CreateChecklistModal } from "./CreateChecklistModal";
 
 export function ChecklistsHeader() {
-  const { refetch, setFilterType } = useChecklists();
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    try {
-      await refetch();
-      toast.success("Lista de checklists atualizada");
-    } catch (error) {
-      console.error("Erro ao atualizar checklists:", error);
-      toast.error("Erro ao atualizar lista de checklists");
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>
-        <h1 className="text-2xl font-bold">Listas de Verificação</h1>
-        <p className="text-muted-foreground">
-          Crie e gerencie suas listas de verificação
+        <h1 className="text-3xl font-bold tracking-tight">Checklists</h1>
+        <p className="text-muted-foreground mt-1">
+          Gerencie suas listas de verificação e acompanhe seu progresso
         </p>
       </div>
       
-      <div className="flex gap-2">
-        <Button 
-          variant="outline" 
-          size="icon" 
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-        >
-          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-        </Button>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="gap-2">
-              <Filter className="h-4 w-4" />
-              Filtrar
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => setFilterType("all")}>
-              Todos os checklists
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setFilterType("my")}>
-              Meus checklists
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setFilterType("active")}>
-              Checklists ativos
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setFilterType("templates")}>
-              Templates
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
+      <div className="flex gap-2 self-end sm:self-auto">
         <Button asChild>
-          <Link to="/checklists/create" className="flex items-center gap-2">
-            <PlusCircle className="h-4 w-4" />
-            Criar Nova Lista
+          <Link to="/checklists/create">
+            <Plus className="mr-2 h-4 w-4" />
+            Criar Checklist
           </Link>
         </Button>
+        <Button variant="outline" onClick={() => setIsModalOpen(true)}>
+          Criar Rápido
+        </Button>
       </div>
+      
+      <CreateChecklistModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+      />
     </div>
   );
 }

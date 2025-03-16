@@ -1,5 +1,5 @@
 
-import { CalendarIcon, CheckSquare, MoreHorizontal, Users } from "lucide-react";
+import { CalendarIcon, CheckSquare, MoreHorizontal, Users, Building } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -11,14 +11,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Checklist } from "@/types/checklist";
+import { Progress } from "@/components/ui/progress";
 
 interface ChecklistCardProps {
   checklist: Checklist;
   onOpen: (id: string) => void;
   onDelete: (id: string, title: string) => void;
+  onAssign?: (id: string, title: string) => void;
 }
 
-export function ChecklistCard({ checklist, onOpen, onDelete }: ChecklistCardProps) {
+export function ChecklistCard({ checklist, onOpen, onDelete, onAssign }: ChecklistCardProps) {
   // Determina a cor do badge com base na categoria
   const getCategoryColor = (category: string) => {
     switch(category) {
@@ -43,6 +45,29 @@ export function ChecklistCard({ checklist, onOpen, onDelete }: ChecklistCardProp
       default: return category;
     }
   };
+  
+  // Traduz o status do checklist
+  const getStatusBadge = (status?: string) => {
+    switch(status) {
+      case "pendente":
+        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Pendente</Badge>;
+      case "em_andamento":
+        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Em andamento</Badge>;
+      case "concluido":
+        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Concluído</Badge>;
+      default:
+        return checklist.status_checklist === "ativo" ? (
+          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Ativo</Badge>
+        ) : (
+          <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">Inativo</Badge>
+        );
+    }
+  };
+  
+  // Calcula progresso
+  const totalItems = checklist.items || 0;
+  const completedItems = checklist.items_completed || 0;
+  const progressPercentage = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
 
   return (
     <Card 
@@ -71,6 +96,14 @@ export function ChecklistCard({ checklist, onOpen, onDelete }: ChecklistCardProp
             }}>
               Ver detalhes
             </DropdownMenuItem>
+            {onAssign && (
+              <DropdownMenuItem onClick={(e) => {
+                e.stopPropagation();
+                onAssign(checklist.id, checklist.title);
+              }}>
+                Atribuir usuários
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onClick={(e) => {
               e.stopPropagation();
               onDelete(checklist.id, checklist.title);
@@ -103,10 +136,20 @@ export function ChecklistCard({ checklist, onOpen, onDelete }: ChecklistCardProp
           )}
           {checklist.company_name && (
             <div className="flex items-center text-sm">
-              <Users className="mr-2 h-4 w-4 text-muted-foreground" />
-              <span>
+              <Building className="mr-2 h-4 w-4 text-muted-foreground" />
+              <span className="truncate max-w-[200px]">
                 {checklist.company_name}
               </span>
+            </div>
+          )}
+          
+          {totalItems > 0 && (
+            <div className="pt-2">
+              <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                <span>Progresso</span>
+                <span>{completedItems}/{totalItems}</span>
+              </div>
+              <Progress value={progressPercentage} className="h-1" />
             </div>
           )}
         </div>
@@ -125,15 +168,7 @@ export function ChecklistCard({ checklist, onOpen, onDelete }: ChecklistCardProp
             </span>
           </div>
           <div>
-            {checklist.status_checklist === "ativo" ? (
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                Ativo
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
-                Inativo
-              </Badge>
-            )}
+            {getStatusBadge(checklist.status)}
             {checklist.is_template && (
               <Badge variant="outline" className="ml-2 bg-blue-50 text-blue-700 border-blue-200">
                 Template

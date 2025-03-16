@@ -1,3 +1,4 @@
+
 import {
   Home,
   Building2,
@@ -7,6 +8,7 @@ import {
   User,
   Plus,
   LayoutDashboard,
+  ClipboardCheck,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -68,6 +70,19 @@ export function SidebarMenu({ user, onLogout }: SidebarMenuProps) {
             >
               <Building2 className="mr-2 h-4 w-4" />
               Empresas
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/checklists"
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "w-full justify-start",
+                location.pathname.startsWith("/checklists") && "bg-muted"
+              )}
+            >
+              <ClipboardCheck className="mr-2 h-4 w-4" />
+              Checklists
             </Link>
           </li>
           <li>

@@ -7,6 +7,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useChecklistPermissions } from "@/hooks/checklist/useChecklistPermissions";
+import { CalendarIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Company } from "@/types/company";
 
 // Checklist category options
 const CATEGORIES = [
@@ -18,6 +28,12 @@ const CATEGORIES = [
   { value: "general", label: "Geral" }
 ];
 
+const STATUS_OPTIONS = [
+  { value: "pendente", label: "Pendente" },
+  { value: "em_andamento", label: "Em andamento" },
+  { value: "concluido", label: "Concluído" }
+];
+
 interface ChecklistFormProps {
   checklist: Checklist;
   users: any[];
@@ -27,6 +43,31 @@ interface ChecklistFormProps {
 export default function ChecklistForm({ checklist, users, setChecklist }: ChecklistFormProps) {
   const { data: permissions } = useChecklistPermissions(checklist.id);
   const canEdit = permissions?.write || false;
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch companies user has access to
+  useEffect(() => {
+    async function fetchCompanies() {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('companies')
+          .select('id, fantasy_name')
+          .eq('status', 'active')
+          .order('fantasy_name');
+
+        if (error) throw error;
+        setCompanies(data || []);
+      } catch (error) {
+        console.error('Error fetching companies:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchCompanies();
+  }, []);
   
   return (
     <Card>
@@ -66,6 +107,28 @@ export default function ChecklistForm({ checklist, users, setChecklist }: Checkl
           </div>
           
           <div className="grid gap-2">
+            <Label htmlFor="company">Empresa</Label>
+            <Select 
+              value={checklist.company_id || ""} 
+              onValueChange={(value) => setChecklist({...checklist, company_id: value})}
+              disabled={!canEdit || loading}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione uma empresa" />
+              </SelectTrigger>
+              <SelectContent>
+                {companies.map((company) => (
+                  <SelectItem key={company.id} value={company.id}>
+                    {company.fantasy_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid gap-2">
             <Label htmlFor="responsible">Responsável</Label>
             <Select 
               value={checklist.responsible_id || ""} 
@@ -84,6 +147,57 @@ export default function ChecklistForm({ checklist, users, setChecklist }: Checkl
               </SelectContent>
             </Select>
           </div>
+          
+          <div className="grid gap-2">
+            <Label htmlFor="status">Status</Label>
+            <Select 
+              value={checklist.status || "pendente"} 
+              onValueChange={(value) => setChecklist({...checklist, status: value as "pendente" | "em_andamento" | "concluido"})}
+              disabled={!canEdit}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um status" />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((status) => (
+                  <SelectItem key={status.value} value={status.value}>
+                    {status.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid gap-2">
+          <Label htmlFor="dueDate">Data de Vencimento</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={cn(
+                  "w-full justify-start text-left font-normal",
+                  !checklist.due_date && "text-muted-foreground"
+                )}
+                disabled={!canEdit}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {checklist.due_date ? (
+                  format(new Date(checklist.due_date), "PPP", { locale: ptBR })
+                ) : (
+                  <span>Selecione uma data</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={checklist.due_date ? new Date(checklist.due_date) : undefined}
+                onSelect={(date) => setChecklist({...checklist, due_date: date ? date.toISOString() : null})}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
         </div>
         
         <div className="grid gap-2">

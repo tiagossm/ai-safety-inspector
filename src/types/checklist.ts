@@ -1,3 +1,4 @@
+
 export interface CollaboratorType {
   id: string;
   name: string;
@@ -25,6 +26,10 @@ export interface Checklist {
   items_completed?: number;
   collaborators?: CollaboratorType[];
   permissions?: string[];
+  status?: "pendente" | "em_andamento" | "concluido";
+  comments?: ChecklistComment[];
+  attachments?: ChecklistAttachment[];
+  history?: ChecklistHistory[];
 }
 
 export interface ChecklistItem {
@@ -51,4 +56,34 @@ export interface NewChecklist {
   company_id?: string | null;
   due_date?: string | null;
   user_id?: string | null;
+  status?: string;
+}
+
+export interface ChecklistComment {
+  id: string;
+  checklist_id: string;
+  user_id: string;
+  user_name: string;
+  content: string;
+  created_at: string;
+}
+
+export interface ChecklistAttachment {
+  id: string;
+  checklist_id: string;
+  file_name: string;
+  file_url: string;
+  file_type: string;
+  uploaded_by: string;
+  created_at: string;
+}
+
+export interface ChecklistHistory {
+  id: string;
+  checklist_id: string;
+  user_id: string;
+  user_name: string;
+  action: string;
+  details: string;
+  created_at: string;
 }

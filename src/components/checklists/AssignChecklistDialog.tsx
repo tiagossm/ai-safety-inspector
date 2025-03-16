@@ -56,147 +56,200 @@ export function AssignChecklistDialog({
       if (typedUser?.tier === "company_admin") {
         query = query.eq("company_id", typedUser.company_id);
       } 
-      // If company ID is provided, filter by that company
+      // If companyId is provided, filter by that company
       else if (companyId) {
         query = query.eq("company_id", companyId);
       }
       
       const { data, error } = await query;
-
-      if (error) throw error;
-      console.log("Users loaded successfully:", data?.length || 0, "users");
+      
+      if (error) {
+        throw error;
+      }
+      
       setUsers(data || []);
-    } catch (error) {
-      console.error("Error loading users:", error);
-      toast("Erro ao carregar usuários", {
-        description: "Tente novamente mais tarde",
-        duration: 3000
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [typedUser, companyId]);
-
-  // Load already assigned users
-  const loadAssignedUsers = useCallback(async () => {
-    if (!checklistId) return;
-    
-    try {
-      console.log("Loading assigned users for checklist:", checklistId);
-      const { data, error } = await supabase
+      console.log(`Loaded ${data?.length || 0} users for assignment`);
+      
+      // Also load existing assignments
+      const { data: assignedUsers, error: assignmentError } = await supabase
         .from("user_checklists")
         .select("user_id")
         .eq("checklist_id", checklistId);
       
-      if (error) throw error;
-      
-      if (data) {
-        console.log("Assigned users loaded:", data.length);
-        setSelectedUsers(data.map(item => item.user_id));
+      if (assignmentError) {
+        console.warn("Error loading existing assignments:", assignmentError);
+      } else {
+        const assignedIds = assignedUsers.map(a => a.user_id);
+        setSelectedUsers(assignedIds);
+        console.log(`Found ${assignedIds.length} existing assignments`);
       }
     } catch (error) {
-      console.error("Error loading assigned users:", error);
+      console.error("Error loading users:", error);
+      toast.error("Erro ao carregar usuários");
+    } finally {
+      setLoading(false);
     }
-  }, [checklistId]);
+  }, [typedUser, companyId, checklistId]);
 
-  // Load data when dialog opens
+  // Load users when dialog opens
   useEffect(() => {
     if (open) {
-      setSearch("");
-      loadAssignedUsers();
       loadAvailableUsers();
+    } else {
+      setSearch("");
+      setSelectedUsers([]);
     }
-  }, [open, loadAssignedUsers, loadAvailableUsers]);
+  }, [open, loadAvailableUsers]);
 
-  const handleAssign = async () => {
-    if (!checklistId || selectedUsers.length === 0) return;
-    
+  // Filter users based on search
+  const filteredUsers = users.filter(
+    (user) =>
+      user.name.toLowerCase().includes(search.toLowerCase()) ||
+      user.email.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const handleToggleUser = (userId: string) => {
+    setSelectedUsers((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedUsers.length === filteredUsers.length) {
+      setSelectedUsers([]);
+    } else {
+      setSelectedUsers(filteredUsers.map((user) => user.id));
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (selectedUsers.length === 0) {
+      toast.error("Selecione pelo menos um usuário");
+      return;
+    }
+
     try {
       await assignChecklist.mutateAsync({
         checklistId,
         userIds: selectedUsers,
-        companyId
+        companyId,
       });
-      
+
+      toast.success(
+        `Checklist atribuído a ${selectedUsers.length} usuário${selectedUsers.length > 1 ? "s" : ""}`
+      );
       onOpenChange(false);
     } catch (error) {
       console.error("Error assigning checklist:", error);
+      toast.error("Erro ao atribuir checklist");
     }
   };
 
-  const filteredUsers = users.filter(user =>
-    user.name?.toLowerCase().includes(search.toLowerCase()) ||
-    user.email?.toLowerCase().includes(search.toLowerCase())
-  );
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Atribuir Checklist</DialogTitle>
           <DialogDescription>
-            Selecione os usuários que terão acesso ao checklist: <strong>{checklistTitle}</strong>
+            Atribua o checklist "{checklistTitle}" aos usuários selecionados.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="relative mb-4">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
-          <Input
-            placeholder="Buscar usuários..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+        <div className="space-y-4 py-2">
+          <div className="relative">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar usuários..."
+              className="pl-8"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
 
-        <div className="max-h-[400px] overflow-y-auto space-y-2">
           {loading ? (
-            <div className="text-center p-4">
-              <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-              <p className="mt-2">Carregando usuários...</p>
-            </div>
-          ) : filteredUsers.length === 0 ? (
-            <div className="text-center p-4 text-muted-foreground">
-              {search ? "Nenhum usuário encontrado" : "Nenhum usuário disponível"}
+            <div className="py-8 flex justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : (
-            filteredUsers.map((user) => (
-              <div key={user.id} className="flex items-center space-x-2 p-2 hover:bg-accent rounded-md">
+            <>
+              <div className="flex items-center space-x-2 px-1">
                 <Checkbox
-                  id={user.id}
-                  checked={selectedUsers.includes(user.id)}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      setSelectedUsers([...selectedUsers, user.id]);
-                    } else {
-                      setSelectedUsers(selectedUsers.filter(id => id !== user.id));
-                    }
-                  }}
+                  id="select-all"
+                  checked={
+                    filteredUsers.length > 0 &&
+                    selectedUsers.length === filteredUsers.length
+                  }
+                  onCheckedChange={handleSelectAll}
                 />
                 <label
-                  htmlFor={user.id}
-                  className="flex-grow cursor-pointer"
+                  htmlFor="select-all"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
-                  <div className="font-medium">{user.name || user.email}</div>
-                  <div className="text-sm text-muted-foreground">{user.email}</div>
+                  Selecionar todos
                 </label>
               </div>
-            ))
+
+              <div className="border rounded-md overflow-hidden">
+                {filteredUsers.length > 0 ? (
+                  <div className="max-h-[300px] overflow-y-auto divide-y">
+                    {filteredUsers.map((user) => (
+                      <div
+                        key={user.id}
+                        className="flex items-center space-x-2 p-3 hover:bg-muted"
+                      >
+                        <Checkbox
+                          id={`user-${user.id}`}
+                          checked={selectedUsers.includes(user.id)}
+                          onCheckedChange={() => handleToggleUser(user.id)}
+                        />
+                        <div className="flex-1 space-y-1 overflow-hidden">
+                          <label
+                            htmlFor={`user-${user.id}`}
+                            className="text-sm font-medium leading-none cursor-pointer truncate"
+                          >
+                            {user.name}
+                          </label>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {user.email}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-10 text-center text-muted-foreground">
+                    {users.length === 0
+                      ? "Nenhum usuário disponível"
+                      : "Nenhum usuário encontrado para o termo buscado"}
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={assignChecklist.isPending}>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => onOpenChange(false)}
+          >
             Cancelar
           </Button>
-          <Button 
-            onClick={handleAssign}
+          <Button
+            onClick={handleSubmit}
             disabled={selectedUsers.length === 0 || assignChecklist.isPending}
           >
-            {assignChecklist.isPending && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            {assignChecklist.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Atribuindo...
+              </>
+            ) : (
+              "Atribuir"
             )}
-            Atribuir {selectedUsers.length > 0 ? `(${selectedUsers.length})` : ''}
           </Button>
         </DialogFooter>
       </DialogContent>

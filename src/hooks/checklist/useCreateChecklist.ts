@@ -46,7 +46,8 @@ export function useCreateChecklist() {
           responsible_id: newChecklist.responsible_id || null,
           company_id: newChecklist.company_id || extendedUser?.company_id || null,
           due_date: newChecklist.due_date || null,
-          user_id: newChecklist.user_id || extendedUser?.id // Ensure user_id is set
+          user_id: newChecklist.user_id || extendedUser?.id, // Ensure user_id is set
+          status: newChecklist.status || "pendente"
         };
         
         console.log("Checklist prepared for insertion:", checklistData);
@@ -92,6 +93,22 @@ export function useCreateChecklist() {
         } catch (syncError) {
           // Not a critical error, just log it
           console.warn("Could not save checklist for offline sync:", syncError);
+        }
+        
+        // Notify the responsible user if one was assigned
+        if (data[0].responsible_id && data[0].responsible_id !== extendedUser?.id) {
+          try {
+            await supabase.functions.invoke("notify-checklist-assignment", {
+              body: {
+                checklist_id: data[0].id,
+                checklist_title: data[0].title,
+                user_id: data[0].responsible_id
+              }
+            });
+            console.log("Notification sent to responsible user");
+          } catch (notifyError) {
+            console.warn("Failed to send notification:", notifyError);
+          }
         }
         
         return data[0];
