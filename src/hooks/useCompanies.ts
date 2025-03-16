@@ -18,7 +18,7 @@ export function useCompanies() {
 
   useEffect(() => {
     fetchCompanies();
-  }, [user]);
+  }, [user?.id]);
 
   useEffect(() => {
     filterCompanies();
@@ -45,15 +45,24 @@ export function useCompanies() {
   const fetchCompanies = async () => {
     try {
       setLoading(true);
+      if (!user) {
+        console.error("No user found");
+        setCompanies([]);
+        setFilteredCompanies([]);
+        setLoading(false);
+        return;
+      }
+      
       console.log("Fetching companies for user:", user?.id, "with tier:", user?.tier);
       
-      let query = supabase
-        .from('companies')
-        .select('*');
-        
+      let query = supabase.from('companies').select('*');
+      
       // Only filter by active status for non-super_admin users
       if (user?.tier !== "super_admin") {
+        console.log("Non-super_admin user, filtering by active status");
         query = query.eq('status', 'active');
+      } else {
+        console.log("Super_admin user, showing all companies");
       }
       
       const { data, error } = await query.order('created_at', { ascending: false });
@@ -104,7 +113,7 @@ export function useCompanies() {
       if (searchType === 'name') {
         return company.fantasy_name?.toLowerCase().includes(searchTerm.toLowerCase());
       } else {
-        return company.cnpj.includes(searchTerm.replace(/\D/g, ''));
+        return company.cnpj?.includes(searchTerm.replace(/\D/g, ''));
       }
     });
     

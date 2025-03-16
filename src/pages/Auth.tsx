@@ -47,7 +47,8 @@ const Auth = () => {
             // Skip email confirmation to make testing easier
             emailRedirectTo: `${window.location.origin}/auth/callback`,
             data: {
-              email: email
+              email: email,
+              name: email.split('@')[0] // Use part of email as initial name
             }
           }
         });
@@ -86,9 +87,18 @@ const Auth = () => {
       }
     } catch (error: any) {
       console.error("❌ Erro na autenticação:", error);
+      
+      // Handle different error cases
+      let errorMessage = error.message;
+      if (error.message.includes("Email already registered")) {
+        errorMessage = "Este email já está cadastrado. Tente fazer login.";
+      } else if (error.message.includes("Invalid login credentials")) {
+        errorMessage = "Email ou senha inválidos. Tente novamente.";
+      }
+      
       toast({
         title: "Erro",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

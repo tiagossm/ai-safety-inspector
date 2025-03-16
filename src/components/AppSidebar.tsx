@@ -14,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/ui/ThemeContext";
 import { useAuth } from "@/components/AuthProvider";
+import { supabase } from "@/integrations/supabase/client";
 
 const menuItems = [
   { title: "Dashboard", icon: LayoutDashboard, url: "/dashboard" },
@@ -44,10 +45,18 @@ export function AppSidebar() {
 
   const handleLogout = async () => {
     try {
+      console.log("AppSidebar: Initiating logout...");
+      await supabase.auth.signOut();
+      console.log("AppSidebar: Supabase signOut completed");
+      
+      // Call our own logout function to clear state
       await logout();
+      
       navigate("/auth");
     } catch (error) {
       console.error("Error during logout:", error);
+      // Still try to navigate to auth page even if there's an error
+      navigate("/auth");
     }
   };
 
@@ -65,7 +74,7 @@ export function AppSidebar() {
           className="p-2 bg-accent rounded-md transition-all duration-300 hover:scale-105 focus:outline-none"
           onClick={() => setIsOpen(!isOpen)}
         >
-          <Menu className="h-5 w-5 text-foreground" /> {/* Ícone ajustado */}
+          <Menu className="h-5 w-5 text-foreground" />
         </button>
       </div>
 
@@ -81,7 +90,7 @@ export function AppSidebar() {
                 "flex items-center gap-3 p-2 rounded-md transition-all duration-300 hover:bg-accent hover:text-accent-foreground"
               )}
             >
-              <Icon className="h-3.5 w-3.5 text-foreground" aria-hidden="true" /> {/* Ícone reduzido em 1.75x */}
+              <Icon className="h-3.5 w-3.5 text-foreground" aria-hidden="true" />
               {isOpen && <span className="text-foreground">{item.title}</span>}
             </Link>
           );
@@ -95,7 +104,7 @@ export function AppSidebar() {
           aria-label="Sair"
           className="flex items-center gap-3 p-2 w-full rounded-md transition-all duration-300 hover:bg-destructive hover:text-destructive-foreground focus:outline-none"
         >
-          <LogOut className="h-3.5 w-3.5" aria-hidden="true" /> {/* Ícone reduzido em 1.75x */}
+          <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
           {isOpen && <span>Sair</span>}
         </button>
       </div>

@@ -12,7 +12,13 @@ export function Navbar() {
 
   const handleLogout = async () => {
     try {
+      console.log("Initiating logout...");
+      await supabase.auth.signOut();
+      console.log("Supabase signOut completed");
+      
+      // Call our own logout function to clear state
       await logout();
+      
       navigate("/auth");
       toast({
         title: "Logout realizado com sucesso",

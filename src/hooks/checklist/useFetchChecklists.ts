@@ -12,7 +12,7 @@ export function useFetchChecklists() {
   const typedUser = user as AuthUser | null;
   
   return useQuery<Checklist[], Error>({
-    queryKey: ["checklists"],
+    queryKey: ["checklists", typedUser?.id, typedUser?.tier],
     queryFn: async () => {
       console.log("🔍 Buscando checklists...");
 
@@ -32,7 +32,10 @@ export function useFetchChecklists() {
 
         // Get user's company if not super_admin
         let company_id = null;
-        if (!isSuperAdmin) {
+        if (!isSuperAdmin && typedUser.company_id) {
+          company_id = typedUser.company_id;
+          console.log("✅ ID da empresa do usuário (from state):", company_id);
+        } else if (!isSuperAdmin) {
           const { data: userData, error: userError } = await supabase
             .from("users")
             .select("company_id")
@@ -44,7 +47,7 @@ export function useFetchChecklists() {
             // Don't throw error here to continue and try to fetch by user_id
           } else {
             company_id = userData?.company_id;
-            console.log("✅ ID da empresa do usuário:", company_id);
+            console.log("✅ ID da empresa do usuário (from db):", company_id);
           }
         }
 
@@ -202,5 +205,6 @@ export function useFetchChecklists() {
     staleTime: 30000, // 30 seconds
     refetchOnWindowFocus: true,
     retry: 2, // Retry failed requests twice
+    enabled: !!typedUser?.id // Only run this query if we have a user
   });
 }
