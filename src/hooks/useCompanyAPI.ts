@@ -47,59 +47,29 @@ export const useCompanyAPI = () => {
       const formattedCnae = formatCNAE(cnae);
       console.log('Buscando grau de risco para CNAE:', formattedCnae);
       
-      // Tenta buscar com várias formatações do CNAE para aumentar as chances de encontrar
-      const cnaeLookups = [
-        formattedCnae,                  // XXXX-X (formato padrão)
-        formattedCnae.replace('-', ''), // XXXXX (sem hífen)
-        formattedCnae.slice(0, 4),      // XXXX (primeiros 4 dígitos)
-        formattedCnae.slice(0, 2)       // XX (primeiros 2 dígitos - grupo econômico)
-      ];
-      
-      // Tenta cada formato em sequência até encontrar
-      for (const cnaeFormat of cnaeLookups) {
-        if (!cnaeFormat) continue;
-        
-        console.log('Tentando buscar com CNAE:', cnaeFormat);
-        
-        const { data, error } = await supabase
-          .from('nr4_riscos')
-          .select('grau_risco')
-          .eq('cnae', cnaeFormat)
-          .maybeSingle();
-        
-        if (error) {
-          console.error(`Erro ao consultar grau de risco para ${cnaeFormat}:`, error);
-          continue;
-        }
-        
-        if (data) {
-          console.log(`Grau de risco encontrado para ${cnaeFormat}:`, data.grau_risco);
-          return data.grau_risco.toString();
-        }
-      }
-      
-      // Se ainda não encontrou, tenta uma busca parcial
-      console.log('Tentando busca parcial com like');
-      const cnaeDigits = formattedCnae.replace(/\D/g, '');
-      
-      if (cnaeDigits.length >= 4) {
-        const firstFourDigits = cnaeDigits.slice(0, 4);
-        const { data, error } = await supabase
-          .from('nr4_riscos')
-          .select('grau_risco')
-          .like('cnae', `${firstFourDigits}%`)
-          .limit(1);
-          
-        if (error) {
-          console.error('Erro ao fazer busca parcial:', error);
-        } else if (data && data.length > 0) {
-          console.log('Grau de risco encontrado com busca parcial:', data[0].grau_risco);
-          return data[0].grau_risco.toString();
-        }
+      // Consulta o grau de risco diretamente no Supabase com o CNAE formatado
+      const { data, error } = await supabase
+        .from('nr4_riscos')
+        .select('grau_risco')
+        .eq('cnae', formattedCnae) // Consulta com o CNAE formatado corretamente
+        .maybeSingle();
+
+      if (error) {
+        console.error('Erro ao buscar grau de risco:', error);
+        toast({
+          title: "Erro ao buscar grau de risco",
+          description: "Erro ao consultar a tabela de riscos.",
+          variant: "destructive",
+        });
+        return "1"; // Default to level 1 risk if error
       }
 
-      console.log('CNAE não encontrado na tabela de riscos:', formattedCnae);
-      
+      if (data) {
+        console.log('Grau de risco encontrado:', data.grau_risco);
+        return data.grau_risco.toString(); // Retorna o grau de risco
+      }
+
+      console.warn('Grau de risco não encontrado para o CNAE:', formattedCnae);
       toast({
         title: "CNAE não encontrado",
         description: `Não foi possível encontrar o grau de risco para o CNAE ${formattedCnae}`,
@@ -107,7 +77,7 @@ export const useCompanyAPI = () => {
       });
       return "1"; // Default to level 1 risk if not found
     } catch (error: any) {
-      console.error("❌ Erro ao buscar grau de risco:", error);
+      console.error("Erro ao buscar grau de risco:", error);
       toast({
         title: "Erro ao buscar grau de risco",
         description: error.message || "Verifique o formato do CNAE",
