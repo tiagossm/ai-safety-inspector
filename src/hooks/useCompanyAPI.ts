@@ -20,16 +20,21 @@ export const useCompanyAPI = () => {
   const formatCNAE = (cnae: string): string => {
     if (!cnae) return '';
     
-    // Remove all non-numeric characters
+    // Remove todos os caracteres não numéricos
     const numbers = cnae.replace(/[^\d]/g, '');
-    
-    // Format as XXXX-X if possible
-    if (numbers.length >= 5) {
-      return `${numbers.slice(0, 4)}-${numbers.slice(4, 5)}`;
-    } else {
-      // If less than 5 digits, pad with zeros
-      return `${numbers.padEnd(4, '0')}-0`;
+
+    // Verifica se o CNAE tem exatamente 5 dígitos para aplicar o formato XXXX-X
+    if (numbers.length === 5) {
+      return `${numbers.slice(0, 4)}-${numbers.slice(4)}`; // Formato correto
     }
+
+    // Caso o CNAE tenha apenas 4 dígitos, adiciona o "-0" no final
+    if (numbers.length === 4) {
+      return `${numbers}-0`; // Formato correto para CNAE com 4 dígitos
+    }
+
+    // Caso contrário, preenche o número com 4 dígitos e adiciona "-0"
+    return `${numbers.padEnd(4, '0')}-0`; // Padroniza para XXXX-0 se for menor
   };
 
   /**
