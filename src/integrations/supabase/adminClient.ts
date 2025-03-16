@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
 const SUPABASE_URL = "https://jkgmgjjtslkozhehwmng.supabase.co";
-const SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprZ21namp0c2xrb3poZWh3bW5nIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MTcwNDkxNSwiZXhwIjoyMDU3MjgwOTE1fQ.4WiEt8e-j4LHUl7PHda6xvb3mXSU1xiDjZxdrqm5TqU";
+const SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprZ21namp0c2xrb3poZWh3bW5nIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MTcyMzA0MCwiZXhwIjoyMDU3Mjk5MDQwfQ.7kXi0M9bazS2j23dJm6WN6jn5tIk5N6--SAiglDgGsY";
 
 if (!SUPABASE_SERVICE_ROLE_KEY) {
   console.error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable');
