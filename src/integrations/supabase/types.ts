@@ -247,13 +247,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "checklists_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "fk_checklists_user_id"
             columns: ["user_id"]
             isOneToOne: false
@@ -1229,59 +1222,22 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          role: string
+          role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
-          role?: string
+          role?: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
           created_at?: string
-          id?: string
-          role?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_roles_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_roles_mapping: {
-        Row: {
-          created_at: string | null
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_roles_mapping_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       users: {
         Row: {
@@ -1620,13 +1576,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role:
-        | "admin"
-        | "user"
-        | "super_admin"
-        | "company_admin"
-        | "manager"
-        | "inspector"
+      app_role: "admin" | "user"
       approval_status: "pending" | "awaiting_approval" | "approved" | "rejected"
       inspection_status: "pending" | "in_progress" | "completed" | "archived"
       unit_type: "matriz" | "filial"
