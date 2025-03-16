@@ -37,16 +37,25 @@ serve(async (req) => {
 
     // Formata o CNAE para buscar o grau de risco
     const extractCnae = (cnaeString) => {
+      if (!cnaeString) return '';
+      
       // Extrai apenas os números do CNAE
       const numbers = cnaeString.replace(/[^\d]/g, '');
-      return numbers.length >= 5 
-        ? `${numbers.slice(0, 4)}-${numbers.slice(4, 5)}` 
-        : `${numbers.padEnd(4, '0')}-0`;
+      
+      // Se tiver pelo menos 5 dígitos, formata como XXXX-X
+      if (numbers.length >= 5) {
+        return `${numbers.slice(0, 4)}-${numbers.slice(4, 5)}`;
+      }
+      
+      // Se tiver menos de 5 dígitos, completa com zeros
+      return `${numbers.padEnd(4, '0')}-0`;
     };
 
     // Pega o CNAE principal
     const cnae = data.atividade_principal?.[0]?.code || '';
     const formattedCnae = extractCnae(cnae);
+    
+    console.log('CNAE formatado:', formattedCnae);
     
     // Criar cliente Supabase para consultar o grau de risco
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://jkgmgjjtslkozhehwmng.supabase.co';
@@ -56,16 +65,24 @@ serve(async (req) => {
     // Buscar grau de risco na tabela nr4_riscos
     let riskLevel = '';
     if (formattedCnae) {
+      console.log('Consultando grau de risco para CNAE:', formattedCnae);
+      
       const { data: riskData, error } = await supabase
         .from('nr4_riscos')
         .select('grau_risco')
         .eq('cnae', formattedCnae)
         .maybeSingle();
 
-      if (!error && riskData) {
-        riskLevel = riskData.grau_risco.toString();
+      if (error) {
+        console.error('Erro ao consultar grau de risco:', error);
       }
-      console.log('Grau de risco encontrado:', riskLevel, 'para CNAE:', formattedCnae);
+      
+      if (riskData) {
+        riskLevel = riskData.grau_risco.toString();
+        console.log('Grau de risco encontrado:', riskLevel);
+      } else {
+        console.log('Nenhum grau de risco encontrado para o CNAE:', formattedCnae);
+      }
     }
 
     // Formata os dados para retornar

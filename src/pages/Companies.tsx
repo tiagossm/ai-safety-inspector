@@ -177,7 +177,7 @@ const Companies = () => {
           />
         </div>
       </div>
-      <CompaniesList key={refreshTrigger} companies={companies} />
+      <CompaniesList />
     </div>
   );
 };
