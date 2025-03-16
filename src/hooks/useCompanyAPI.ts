@@ -1,4 +1,3 @@
-
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -15,6 +14,9 @@ interface CNPJResponse {
 export const useCompanyAPI = () => {
   const { toast } = useToast();
 
+  /**
+   * Formata o CNAE para o padrão correto (XXXX-X).
+   */
   const formatCNAE = (cnae: string): string => {
     if (!cnae) return '';
     
@@ -30,10 +32,13 @@ export const useCompanyAPI = () => {
     }
   };
 
+  /**
+   * Busca o grau de risco no Supabase com base no CNAE.
+   */
   const fetchRiskLevel = async (cnae: string) => {
     try {
-      if (!cnae) throw new Error('CNAE é obrigatório');
-      
+      if (!cnae) throw new Error("CNAE é obrigatório");
+
       const formattedCnae = formatCNAE(cnae);
       console.log('Buscando grau de risco para CNAE:', formattedCnae);
       
@@ -56,7 +61,7 @@ export const useCompanyAPI = () => {
           .select('grau_risco')
           .eq('cnae', cnaeFormat)
           .maybeSingle();
-
+        
         if (error) {
           console.error(`Erro ao consultar grau de risco para ${cnaeFormat}:`, error);
           continue;
@@ -87,7 +92,7 @@ export const useCompanyAPI = () => {
           return data[0].grau_risco.toString();
         }
       }
-      
+
       console.log('CNAE não encontrado na tabela de riscos:', formattedCnae);
       
       toast({
@@ -97,7 +102,7 @@ export const useCompanyAPI = () => {
       });
       return "1"; // Default to level 1 risk if not found
     } catch (error: any) {
-      console.error('Error fetching risk level:', error);
+      console.error("❌ Erro ao buscar grau de risco:", error);
       toast({
         title: "Erro ao buscar grau de risco",
         description: error.message || "Verifique o formato do CNAE",
@@ -107,17 +112,20 @@ export const useCompanyAPI = () => {
     }
   };
 
+  /**
+   * Busca os dados do CNPJ e inclui o grau de risco do CNAE associado.
+   */
   const fetchCNPJData = async (cnpj: string): Promise<CNPJResponse | null> => {
     try {
-      const cleanCNPJ = cnpj.replace(/\D/g, '');
+      const cleanCNPJ = cnpj.replace(/\D/g, "");
       if (cleanCNPJ.length !== 14) {
-        throw new Error('CNPJ deve ter 14 dígitos');
+        throw new Error("CNPJ deve ter 14 dígitos");
       }
 
-      console.log('Buscando dados do CNPJ:', cleanCNPJ);
+      console.log("📌 Buscando dados do CNPJ:", cleanCNPJ);
 
-      const { data: response, error } = await supabase.functions.invoke('validate-cnpj', {
-        body: { cnpj: cleanCNPJ }
+      const { data: response, error } = await supabase.functions.invoke("validate-cnpj", {
+        body: { cnpj: cleanCNPJ },
       });
 
       if (error) {
@@ -130,7 +138,7 @@ export const useCompanyAPI = () => {
         throw new Error('Sem resposta da API');
       }
 
-      console.log('Dados retornados da API:', response);
+      console.log("✅ Dados retornados da API:", response);
 
       // Result already has risk level from the edge function
       // But just as a fallback check if missing
@@ -152,7 +160,7 @@ export const useCompanyAPI = () => {
         contactName: response.contactName || ''
       };
 
-      console.log('Dados formatados para retorno:', result);
+      console.log("✅ Dados formatados para retorno:", result);
 
       toast({
         title: "Dados do CNPJ carregados",
@@ -161,7 +169,7 @@ export const useCompanyAPI = () => {
 
       return result;
     } catch (error: any) {
-      console.error('Error fetching CNPJ data:', error);
+      console.error("❌ Erro ao buscar dados do CNPJ:", error);
       toast({
         title: "Erro ao buscar dados do CNPJ",
         description: error.message || "Verifique o CNPJ e tente novamente",
@@ -171,19 +179,22 @@ export const useCompanyAPI = () => {
     }
   };
 
+  /**
+   * Verifica se o CNPJ já está cadastrado no sistema.
+   */
   const checkExistingCNPJ = async (cnpj: string) => {
     try {
       const { data, error } = await supabase
-        .from('companies')
-        .select('cnpj')
-        .eq('cnpj', cnpj.replace(/\D/g, ''))
-        .eq('status', 'active')
+        .from("companies")
+        .select("cnpj")
+        .eq("cnpj", cnpj.replace(/\D/g, ""))
+        .eq("status", "active")
         .maybeSingle();
-      
+
       if (error) throw error;
       return !!data;
     } catch (error) {
-      console.error('Error checking CNPJ:', error);
+      console.error("❌ Erro ao verificar CNPJ existente:", error);
       return false;
     }
   };
