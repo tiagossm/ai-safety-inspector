@@ -96,13 +96,13 @@ export const useCompanyAPI = () => {
       if (cleanCNPJ.length !== 14) {
         throw new Error("CNPJ deve ter 14 dígitos");
       }
-  
+
       console.log("📌 Buscando dados do CNPJ:", cleanCNPJ);
-  
+
       const { data: response, error } = await supabase.functions.invoke("validate-cnpj", {
         body: { cnpj: cleanCNPJ },
       });
-  
+
       if (error) {
         console.error('Error calling validate-cnpj function:', error);
         throw error;
@@ -112,9 +112,9 @@ export const useCompanyAPI = () => {
         console.error('No response from validate-cnpj function');
         throw new Error('Sem resposta da API');
       }
-  
+
       console.log("✅ Dados retornados da API:", response);
-  
+
       // Result already has risk level from the edge function
       // But just as a fallback check if missing
       let riskLevel = response.riskLevel;
@@ -123,44 +123,12 @@ export const useCompanyAPI = () => {
         console.log('Buscando grau de risco localmente como fallback');
         riskLevel = await fetchRiskLevel(response.cnae); // Aqui garantimos que o grau de risco é buscado do Supabase diretamente
       }
-  
-      // Return data in expected format with risk level
-      const result: CNPJResponse = {
-        fantasyName: response.fantasyName || '',
-        cnae: response.cnae || '',
-        riskLevel: riskLevel || '1', // Caso a API não retorne, usamos o fallback
-        address: response.address || '',
-        contactEmail: response.contactEmail || '',
-        contactPhone: response.contactPhone || '',
-        contactName: response.contactName || ''
-      };
-  
-      console.log("✅ Dados formatados para retorno:", result);
-  
-      toast({
-        title: "Dados do CNPJ carregados",
-        description: "Os dados foram preenchidos automaticamente.",
-      });
-  
-      return result;
-    } catch (error: any) {
-      console.error("❌ Erro ao buscar dados do CNPJ:", error);
-      toast({
-        title: "Erro ao buscar dados do CNPJ",
-        description: error.message || "Verifique o CNPJ e tente novamente",
-        variant: "destructive",
-      });
-      return null;
-    }
-  };
-  
-      }
 
       // Return data in expected format with risk level
       const result: CNPJResponse = {
         fantasyName: response.fantasyName || '',
         cnae: response.cnae || '',
-        riskLevel: riskLevel || '1',
+        riskLevel: riskLevel || '1', // Caso a API não retorne, usamos o fallback
         address: response.address || '',
         contactEmail: response.contactEmail || '',
         contactPhone: response.contactPhone || '',
