@@ -37,42 +37,58 @@ export const useCompanyAPI = () => {
       const formattedCnae = formatCNAE(cnae);
       console.log('Buscando grau de risco para CNAE:', formattedCnae);
       
-      // Make sure to use the correct table and query
-      const { data, error } = await supabase
-        .from('nr4_riscos')
-        .select('grau_risco')
-        .eq('cnae', formattedCnae)
-        .maybeSingle();
+      // Tenta buscar com várias formatações do CNAE para aumentar chances de encontrar
+      const cnaeLookups = [
+        formattedCnae,                  // XXXX-X (formato padrão)
+        formattedCnae.replace('-', ''), // XXXXX (sem hífen)
+        formattedCnae.slice(0, 4),      // XXXX (primeiros 4 dígitos)
+        formattedCnae.slice(0, 2)       // XX (primeiros 2 dígitos - grupo econômico)
+      ];
+      
+      // Tenta cada formato em sequência até encontrar
+      for (const cnaeFormat of cnaeLookups) {
+        if (!cnaeFormat) continue;
+        
+        console.log('Tentando buscar com CNAE:', cnaeFormat);
+        
+        const { data, error } = await supabase
+          .from('nr4_riscos')
+          .select('grau_risco')
+          .eq('cnae', cnaeFormat)
+          .maybeSingle();
 
-      if (error) {
-        console.error('Error fetching risk level:', error);
-        throw error;
+        if (error) {
+          console.error(`Erro ao consultar grau de risco para ${cnaeFormat}:`, error);
+          continue;
+        }
+        
+        if (data) {
+          console.log(`Grau de risco encontrado para ${cnaeFormat}:`, data.grau_risco);
+          return data.grau_risco.toString();
+        }
       }
       
-      if (data) {
-        console.log('Grau de risco encontrado:', data.grau_risco);
-        return data.grau_risco.toString();
+      // Se ainda não encontrou, tenta uma busca parcial
+      console.log('Tentando busca parcial com like');
+      const cnaeDigits = formattedCnae.replace(/\D/g, '');
+      
+      if (cnaeDigits.length >= 4) {
+        const firstFourDigits = cnaeDigits.slice(0, 4);
+        const { data, error } = await supabase
+          .from('nr4_riscos')
+          .select('grau_risco')
+          .like('cnae', `${firstFourDigits}%`)
+          .limit(1);
+          
+        if (error) {
+          console.error('Erro ao fazer busca parcial:', error);
+        } else if (data && data.length > 0) {
+          console.log('Grau de risco encontrado com busca parcial:', data[0].grau_risco);
+          return data[0].grau_risco.toString();
+        }
       }
       
       console.log('CNAE não encontrado na tabela de riscos:', formattedCnae);
-      console.log('Tentando buscar sem o hífen...');
-      
-      // If not found with hyphen, try without hyphen
-      const cleanCNAE = formattedCnae.replace('-', '');
-      const { data: dataWithoutHyphen, error: errorWithoutHyphen } = await supabase
-        .from('nr4_riscos')
-        .select('grau_risco')
-        .eq('cnae', cleanCNAE)
-        .maybeSingle();
-        
-      if (errorWithoutHyphen) {
-        console.error('Error fetching risk level without hyphen:', errorWithoutHyphen);
-      }
-      
-      if (dataWithoutHyphen) {
-        console.log('Grau de risco encontrado (sem hífen):', dataWithoutHyphen.grau_risco);
-        return dataWithoutHyphen.grau_risco.toString();
-      }
       
       toast({
         title: "CNAE não encontrado",
@@ -116,23 +132,20 @@ export const useCompanyAPI = () => {
 
       console.log('Dados retornados da API:', response);
 
-      // Make sure CNAE is formatted correctly before fetching risk level
-      const formattedCnae = response.cnae ? formatCNAE(response.cnae) : '';
-      let riskLevel = '';
+      // Result already has risk level from the edge function
+      // But just as a fallback check if missing
+      let riskLevel = response.riskLevel;
       
-      if (formattedCnae) {
-        riskLevel = await fetchRiskLevel(formattedCnae);
-        console.log('Grau de risco obtido:', riskLevel);
-      } else {
-        // Default to level 1 if no CNAE provided
-        riskLevel = "1";
+      if (!riskLevel && response.cnae) {
+        console.log('Buscando grau de risco localmente como fallback');
+        riskLevel = await fetchRiskLevel(response.cnae);
       }
 
-      // Return data in expected format
+      // Return data in expected format with risk level
       const result: CNPJResponse = {
         fantasyName: response.fantasyName || '',
-        cnae: formattedCnae,
-        riskLevel,
+        cnae: response.cnae || '',
+        riskLevel: riskLevel || '1',
         address: response.address || '',
         contactEmail: response.contactEmail || '',
         contactPhone: response.contactPhone || '',

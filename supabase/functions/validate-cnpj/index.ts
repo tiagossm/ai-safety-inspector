@@ -68,41 +68,70 @@ serve(async (req) => {
     if (formattedCnae) {
       console.log('Consultando grau de risco para CNAE:', formattedCnae);
       
-      const { data: riskData, error } = await supabase
-        .from('nr4_riscos')
-        .select('grau_risco')
-        .eq('cnae', formattedCnae)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Erro ao consultar grau de risco:', error);
-      }
+      // Tenta buscar com várias formatações do CNAE para aumentar chances de encontrar
+      const cnaeLookups = [
+        formattedCnae,                           // XXXX-X (formato padrão)
+        formattedCnae.replace('-', ''),          // XXXXX (sem hífen)
+        formattedCnae.slice(0, 4),               // XXXX (primeiros 4 dígitos)
+        formattedCnae.slice(0, 2)                // XX (primeiros 2 dígitos - grupo econômico)
+      ];
       
-      if (riskData) {
-        riskLevel = riskData.grau_risco.toString();
-        console.log('Grau de risco encontrado:', riskLevel);
-      } else {
-        // Se não encontrar com hífen, tenta sem hífen
-        const cleanCnae = formattedCnae.replace('-', '');
-        console.log('Tentando buscar grau de risco sem hífen:', cleanCnae);
+      console.log('Tentando buscar com as seguintes variações de CNAE:', cnaeLookups);
+      
+      // Tenta cada formato em sequência até encontrar
+      for (const cnaeFormat of cnaeLookups) {
+        if (!cnaeFormat) continue;
         
-        const { data: riskDataNoHyphen, error: errorNoHyphen } = await supabase
+        console.log('Tentando buscar com CNAE:', cnaeFormat);
+        
+        const { data: riskData, error } = await supabase
           .from('nr4_riscos')
           .select('grau_risco')
-          .eq('cnae', cleanCnae)
+          .eq('cnae', cnaeFormat)
           .maybeSingle();
-          
-        if (errorNoHyphen) {
-          console.error('Erro ao consultar grau de risco sem hífen:', errorNoHyphen);
+
+        if (error) {
+          console.error(`Erro ao consultar grau de risco para ${cnaeFormat}:`, error);
+          continue;
         }
         
-        if (riskDataNoHyphen) {
-          riskLevel = riskDataNoHyphen.grau_risco.toString();
-          console.log('Grau de risco encontrado (sem hífen):', riskLevel);
-        } else {
-          console.log('Nenhum grau de risco encontrado para o CNAE:', formattedCnae);
+        if (riskData) {
+          riskLevel = riskData.grau_risco.toString();
+          console.log(`Grau de risco encontrado para ${cnaeFormat}:`, riskLevel);
+          break;
         }
       }
+      
+      // Se ainda não encontrou, tenta uma busca parcial
+      if (!riskLevel) {
+        console.log('Tentando busca parcial com like');
+        const cnaeDigits = formattedCnae.replace(/\D/g, '');
+        
+        if (cnaeDigits.length >= 4) {
+          const firstFourDigits = cnaeDigits.slice(0, 4);
+          const { data: riskData, error } = await supabase
+            .from('nr4_riscos')
+            .select('grau_risco')
+            .like('cnae', `${firstFourDigits}%`)
+            .limit(1);
+            
+          if (error) {
+            console.error('Erro ao fazer busca parcial:', error);
+          } else if (riskData && riskData.length > 0) {
+            riskLevel = riskData[0].grau_risco.toString();
+            console.log('Grau de risco encontrado com busca parcial:', riskLevel);
+          }
+        }
+      }
+      
+      // Se ainda não temos o grau de risco, define como 1 (padrão)
+      if (!riskLevel) {
+        console.log('Nenhum grau de risco encontrado para o CNAE. Definindo como padrão (1).');
+        riskLevel = "1";
+      }
+    } else {
+      console.log('CNAE não disponível. Definindo grau de risco como padrão (1).');
+      riskLevel = "1";
     }
 
     // Formata os dados para retornar

@@ -1,213 +1,151 @@
-
-import { ReactNode, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { AuthUser } from "@/hooks/auth/useAuthState";
 import {
-  Building, ClipboardList, Home, Settings, LogOut,
-  CheckSquare, FileText, AlertTriangle, Users, Key, CreditCard,
-  ShieldAlert, BarChart
+  Home,
+  Building2,
+  Settings,
+  HelpCircle,
+  LogOut,
+  User,
+  Plus,
+  LayoutDashboard,
 } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { useState } from "react";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight } from "lucide-react";
-import { Button } from "../ui/button";
-
-export interface MenuItem {
-  icon: React.ElementType;
-  name: string;
-  path: string;
-  submenu?: MenuItem[];
-  roleRequired?: "super_admin" | "company_admin" | "consultant" | "technician";
-}
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface SidebarMenuProps {
-  user: AuthUser | null;
-  onLogout: () => Promise<void>;
+  user: any;
+  onLogout: () => void;
 }
 
 export function SidebarMenu({ user, onLogout }: SidebarMenuProps) {
   const location = useLocation();
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+  const navigate = useNavigate();
 
-  const isSuperAdmin = user?.tier === "super_admin";
-
-  const toggleMenu = (key: string) => {
-    setOpenMenus(prev => ({
-      ...prev,
-      [key]: !prev[key]
+  const toggleMenu = (menuId: string) => {
+    setOpenMenus((prevOpenMenus) => ({
+      ...prevOpenMenus,
+      [menuId]: !prevOpenMenus[menuId],
     }));
   };
 
-  // Menu structure with submenus
-  const navigation: MenuItem[] = [
-    {
-      icon: Home,
-      name: "Dashboard",
-      path: "/dashboard"
-    },
-    // Admin link only for super admins
-    ...(isSuperAdmin ? [
-      {
-        icon: ShieldAlert,
-        name: "Painel Administrativo",
-        path: "/admin/dashboard",
-        roleRequired: "super_admin"
-      } as MenuItem
-    ] : []),
-    {
-      icon: Building,
-      name: "Empresas",
-      path: "/companies"
-    },
-    {
-      icon: CheckSquare,
-      name: "Checklists",
-      path: "/checklists"
-    },
-    {
-      icon: ClipboardList,
-      name: "Inspeções",
-      path: "/inspections"
-    },
-    {
-      icon: AlertTriangle,
-      name: "Ocorrências",
-      path: "/incidents"
-    },
-    {
-      icon: FileText,
-      name: "Relatórios",
-      path: "/reports"
-    },
-    {
-      icon: Settings,
-      name: "Configurações",
-      path: "/settings",
-      submenu: [
-        {
-          icon: Users,
-          name: "Usuários",
-          path: "/users"
-        },
-        {
-          icon: Key,
-          name: "Permissões",
-          path: "/permissions"
-        },
-        {
-          icon: CreditCard,
-          name: "Assinaturas",
-          path: "/billing"
-        }
-      ]
-    }
-  ];
-
-  // Verifica se um item de menu está ativo (rota atual)
   const isActive = (path: string) => {
     return location.pathname === path;
   };
 
-  // Verifica se uma seção de submenu está ativa (qualquer subrota)
-  const isSubmenuActive = (menu: MenuItem) => {
-    if (isActive(menu.path)) return true;
-    
-    if (menu.submenu) {
-      return menu.submenu.some(subItem => isActive(subItem.path));
-    }
-    
-    return false;
-  };
-
-  // Renderiza um item de menu se o usuário tiver a permissão necessária
-  const renderMenuItem = (item: MenuItem) => {
-    // Verificar se o usuário tem permissão para ver este item
-    if (item.roleRequired && user?.tier !== item.roleRequired) {
-      return null;
-    }
-
-    const hasSubmenu = !!item.submenu?.length;
-    const isMenuActive = isSubmenuActive(item);
-
-    if (!hasSubmenu) {
-      return (
-        <Link
-          key={item.name}
-          to={item.path}
-          className={cn(
-            "flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors",
-            "hover:bg-muted",
-            isActive(item.path) && "bg-primary/10 text-primary"
-          )}
-        >
-          <item.icon className="h-5 w-5" />
-          <span>{item.name}</span>
-        </Link>
-      );
-    }
-
-    return (
-      <Collapsible
-        key={item.name}
-        open={openMenus[item.name.toLowerCase()] || isMenuActive}
-        onOpenChange={() => toggleMenu(item.name.toLowerCase())}
-        className="w-full"
-      >
-        <CollapsibleTrigger asChild>
-          <div 
-            className={cn(
-              "flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer",
-              "hover:bg-muted",
-              isMenuActive && "bg-primary/10 text-primary"
-            )}
-          >
-            <div className="flex items-center space-x-3">
-              <item.icon className="h-5 w-5" />
-              <span>{item.name}</span>
-            </div>
-            {openMenus[item.name.toLowerCase()] ? (
-              <ChevronDown className="h-4 w-4" />
-            ) : (
-              <ChevronRight className="h-4 w-4" />
-            )}
-          </div>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="pl-8 space-y-1 mt-1">
-          {item.submenu?.map(subItem => (
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-auto py-2">
+        <ul className="space-y-1 px-2">
+          <li>
             <Link
-              key={subItem.name}
-              to={subItem.path}
+              to="/dashboard"
               className={cn(
-                "flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors",
-                "hover:bg-muted",
-                isActive(subItem.path) && "bg-primary/10 text-primary"
+                buttonVariants({ variant: "ghost" }),
+                "w-full justify-start",
+                location.pathname === "/dashboard" && "bg-muted"
               )}
             >
-              <subItem.icon className="h-4 w-4" />
-              <span>{subItem.name}</span>
+              <Home className="mr-2 h-4 w-4" />
+              Dashboard
             </Link>
-          ))}
-        </CollapsibleContent>
-      </Collapsible>
-    );
-  };
-
-  return (
-    <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-      {navigation.map(renderMenuItem)}
-      
-      <Button
-        variant="ghost"
-        className="flex items-center justify-start space-x-3 px-3 py-2 w-full hover:bg-muted"
-        onClick={onLogout}
-      >
-        <LogOut className="h-5 w-5" />
-        <span>Sair</span>
-      </Button>
-    </nav>
+          </li>
+          <li>
+            <Link
+              to="/companies"
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "w-full justify-start",
+                location.pathname.startsWith("/companies") && "bg-muted"
+              )}
+            >
+              <Building2 className="mr-2 h-4 w-4" />
+              Empresas
+            </Link>
+          </li>
+          <li>
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="units">
+                <AccordionTrigger
+                  className={cn(
+                    buttonVariants({ variant: "ghost" }),
+                    "w-full justify-start",
+                    location.pathname.startsWith("/units") && "bg-muted"
+                  )}
+                >
+                  <Building2 className="mr-2 h-4 w-4" />
+                  Unidades
+                </AccordionTrigger>
+                <AccordionContent>
+                  <ul className="ml-4 space-y-1">
+                    <li>
+                      <Link
+                        to="/units/add"
+                        className={cn(
+                          buttonVariants({ variant: "ghost" }),
+                          "w-full justify-start text-sm",
+                          location.pathname === "/units/add" && "bg-muted"
+                        )}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Adicionar Unidade
+                      </Link>
+                    </li>
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </li>
+          <li>
+            <Link
+              to="/settings"
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "w-full justify-start",
+                location.pathname === "/settings" && "bg-muted"
+              )}
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              Configurações
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/help"
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "w-full justify-start",
+                location.pathname === "/help" && "bg-muted"
+              )}
+            >
+              <HelpCircle className="mr-2 h-4 w-4" />
+              Ajuda
+            </Link>
+          </li>
+        </ul>
+      </div>
+      <div className="p-4">
+        <div className="mb-4">
+          <p className="text-sm text-muted-foreground">
+            Logado como: {user?.email}
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          className="w-full justify-start"
+          onClick={onLogout}
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          Sair
+        </Button>
+      </div>
+    </div>
   );
 }
