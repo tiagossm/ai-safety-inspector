@@ -12,12 +12,12 @@ export function useFetchChecklists() {
   const typedUser = user as AuthUser | null;
   
   return useQuery<Checklist[], Error>({
-    queryKey: ["checklists", typedUser?.id, typedUser?.tier],
+    queryKey: ["checklists"],
     queryFn: async () => {
       console.log("🔍 Buscando checklists...");
 
       try {
-        // If there's no authenticated user, we can't fetch checklists
+        // Se não há usuário autenticado, não podemos buscar checklists
         if (!typedUser || !typedUser.id) {
           console.error("❌ Usuário não autenticado");
           throw new Error("Usuário não autenticado");
@@ -26,16 +26,13 @@ export function useFetchChecklists() {
         console.log("✅ Usuário autenticado:", typedUser.id);
         console.log("👤 Tipo de usuário:", typedUser.tier);
 
-        // Determine if user is super_admin
+        // Determina se o usuário é super_admin
         const isSuperAdmin = typedUser.tier === "super_admin";
         console.log("🔑 É super_admin?", isSuperAdmin);
 
-        // Get user's company if not super_admin
+        // Buscar dados da empresa do usuário se não for super_admin
         let company_id = null;
-        if (!isSuperAdmin && typedUser.company_id) {
-          company_id = typedUser.company_id;
-          console.log("✅ ID da empresa do usuário (from state):", company_id);
-        } else if (!isSuperAdmin) {
+        if (!isSuperAdmin) {
           const { data: userData, error: userError } = await supabase
             .from("users")
             .select("company_id")
@@ -44,26 +41,26 @@ export function useFetchChecklists() {
 
           if (userError) {
             console.error("❌ Erro ao buscar dados do usuário:", userError);
-            // Don't throw error here to continue and try to fetch by user_id
+            // Não lançamos erro para continuar e tentar buscar por user_id
           } else {
             company_id = userData?.company_id;
-            console.log("✅ ID da empresa do usuário (from db):", company_id);
+            console.log("✅ ID da empresa do usuário:", company_id);
           }
         }
 
-        // Build the base query to fetch checklists
+        // Constrói a query base para buscar checklists
         let query = supabase
           .from("checklists")
           .select("*");
 
-        // Super_admin sees all checklists, other users see only their own or company's
+        // Super_admin vê todos os checklists, outros usuários veem apenas os próprios ou da empresa
         if (!isSuperAdmin) {
           if (company_id) {
-            // Fetch checklists of user's company or created by the user
+            // Buscar checklists da empresa do usuário ou criados pelo próprio usuário
             query = query.or(`user_id.eq.${typedUser.id},company_id.eq.${company_id}`);
             console.log("✅ Buscando checklists da empresa ou do usuário");
           } else {
-            // If no company_id, fetch only user's checklists
+            // Se não tem company_id, busca apenas checklists criados pelo usuário
             query = query.eq("user_id", typedUser.id);
             console.log("✅ Buscando apenas checklists do usuário");
           }
@@ -71,7 +68,7 @@ export function useFetchChecklists() {
           console.log("✅ Super_admin: buscando TODOS os checklists");
         }
 
-        // Execute the query
+        // Execute a query
         const { data: checklists, error } = await query.order("created_at", { ascending: false });
 
         if (error) {
@@ -81,13 +78,13 @@ export function useFetchChecklists() {
 
         console.log("✅ Checklists recebidos do Supabase:", checklists?.length || 0);
 
-        // If no checklists, return empty array
+        // Se não há checklists, retorna array vazio
         if (!checklists || checklists.length === 0) {
           console.log("❓ Nenhum checklist encontrado para o usuário");
           return [];
         }
 
-        // Get the names of responsible persons
+        // Buscar os nomes dos responsáveis
         let usersMap: Record<string, string> = {};
         const responsibleIds = checklists
           .filter((c: any) => c.responsible_id)
@@ -111,7 +108,7 @@ export function useFetchChecklists() {
           }
         }
 
-        // Get company information
+        // Buscar informações das empresas
         let companiesMap: Record<string, string> = {};
         const companyIds = checklists
           .filter((c: any) => c.company_id)
@@ -135,11 +132,10 @@ export function useFetchChecklists() {
           }
         }
 
-        // Add complementary information to checklists
+        // Adiciona informações complementares aos checklists
         const checklistsWithItems = await Promise.all(
           checklists.map(async (checklist: any) => {
             try {
-              // Count total items
               const { count, error: itemsError } = await supabase
                 .from("checklist_itens")
                 .select("*", { count: "exact", head: true })
@@ -152,11 +148,11 @@ export function useFetchChecklists() {
                 .from("checklist_itens")
                 .select("*", { count: "exact", head: true })
                 .eq("checklist_id", checklist.id)
-                .not("tipo_resposta", "is", null);
+                .not("resposta", "is", null);
                 
               if (completedError) throw completedError;
 
-              // Enrich checklist with new fields
+              // Enriquece o checklist com novos campos
               const enrichedChecklist: Checklist = {
                 ...checklist,
                 items: count || 0,
@@ -205,6 +201,5 @@ export function useFetchChecklists() {
     staleTime: 30000, // 30 seconds
     refetchOnWindowFocus: true,
     retry: 2, // Retry failed requests twice
-    enabled: !!typedUser?.id // Only run this query if we have a user
   });
 }

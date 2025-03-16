@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Company, CompanyStatus } from "@/types/company";
 import { isValidCNPJ, isValidPhone, isValidDate } from "@/utils/formatters";
-import { useAuth } from "@/components/AuthProvider";
 
 export function useCompanies() {
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -14,11 +13,10 @@ export function useCompanies() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchType, setSearchType] = useState<'name' | 'cnpj'>('name');
   const { toast } = useToast();
-  const { user } = useAuth();
 
   useEffect(() => {
     fetchCompanies();
-  }, [user?.id]);
+  }, []);
 
   useEffect(() => {
     filterCompanies();
@@ -45,28 +43,13 @@ export function useCompanies() {
   const fetchCompanies = async () => {
     try {
       setLoading(true);
-      if (!user) {
-        console.error("No user found");
-        setCompanies([]);
-        setFilteredCompanies([]);
-        setLoading(false);
-        return;
-      }
-      
-      console.log("Fetching companies for user:", user?.id, "with tier:", user?.tier);
-      
-      // Simplify the query to avoid potential RLS issues
       const { data, error } = await supabase
         .from('companies')
         .select('*')
+        .eq('status', 'active')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error("Error fetching companies:", error);
-        throw error;
-      }
-
-      console.log("Companies fetched:", data?.length || 0);
+      if (error) throw error;
 
       const companiesWithMetadata = (data || []).map(company => ({
         ...company,
@@ -88,7 +71,7 @@ export function useCompanies() {
       console.error('Error fetching companies:', error);
       toast({
         title: "Erro ao carregar empresas",
-        description: error.message || "Não foi possível carregar a lista de empresas.",
+        description: "Não foi possível carregar a lista de empresas.",
         variant: "destructive",
       });
     } finally {
@@ -107,7 +90,7 @@ export function useCompanies() {
       if (searchType === 'name') {
         return company.fantasy_name?.toLowerCase().includes(searchTerm.toLowerCase());
       } else {
-        return company.cnpj?.includes(searchTerm.replace(/\D/g, ''));
+        return company.cnpj.includes(searchTerm.replace(/\D/g, ''));
       }
     });
     

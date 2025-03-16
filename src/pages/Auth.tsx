@@ -38,36 +38,15 @@ const Auth = () => {
         
         setResetPasswordMode(false);
       } else if (isSignUp) {
-        console.log("🔑 Iniciando signup...");
-        // Set autoConfirm to true to skip email verification
-        const { error, data } = await supabase.auth.signUp({
+        const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: {
-            // Skip email confirmation to make testing easier
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
-            data: {
-              email: email,
-              name: email.split('@')[0] // Use part of email as initial name
-            }
-          }
         });
-        
         if (error) throw error;
-        
-        if (data.user && data.session) {
-          console.log("✅ Cadastro e login realizados com sucesso!");
-          toast({
-            title: "Cadastro realizado com sucesso!",
-            description: "Você já está logado no sistema.",
-          });
-          navigate("/companies");
-        } else {
-          toast({
-            title: "Cadastro realizado com sucesso!",
-            description: "Verifique seu email para confirmar o cadastro ou tente fazer login diretamente.",
-          });
-        }
+        toast({
+          title: "Cadastro realizado com sucesso!",
+          description: "Verifique seu email para confirmar o cadastro.",
+        });
       } else {
         console.log("🔑 Iniciando login...");
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -87,18 +66,9 @@ const Auth = () => {
       }
     } catch (error: any) {
       console.error("❌ Erro na autenticação:", error);
-      
-      // Handle different error cases
-      let errorMessage = error.message;
-      if (error.message.includes("Email already registered")) {
-        errorMessage = "Este email já está cadastrado. Tente fazer login.";
-      } else if (error.message.includes("Invalid login credentials")) {
-        errorMessage = "Email ou senha inválidos. Tente novamente.";
-      }
-      
       toast({
         title: "Erro",
-        description: errorMessage,
+        description: error.message,
         variant: "destructive",
       });
     } finally {

@@ -11,13 +11,5 @@ if (!SUPABASE_SERVICE_ROLE_KEY) {
 
 export const supabaseAdmin = createClient<Database>(
   SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY, 
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  }
+  SUPABASE_SERVICE_ROLE_KEY
 );
-
-console.log("✅ Supabase Admin client initialized successfully");

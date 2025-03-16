@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -13,12 +12,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/ui/ThemeContext";
-import { useAuth } from "@/components/AuthProvider";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 const menuItems = [
-  { title: "Dashboard", icon: LayoutDashboard, url: "/dashboard" },
+  { title: "Dashboard", icon: LayoutDashboard, url: "/" },
   { title: "Empresas", icon: Building2, url: "/companies" },
   { title: "Inspeções", icon: ClipboardCheck, url: "/inspections" },
   { title: "Relatórios", icon: History, url: "/reports" },
@@ -30,9 +26,8 @@ export function AppSidebar() {
   const [isOpen, setIsOpen] = useState(true);
   const navigate = useNavigate();
   const { theme } = useTheme();
-  const { logout } = useAuth();
 
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+  const handleKeyDown = useCallback((e) => {
     if ((e.ctrlKey && e.key === "b") || e.key === "m") {
       e.preventDefault();
       setIsOpen((prev) => !prev);
@@ -44,22 +39,9 @@ export function AppSidebar() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  const handleLogout = async () => {
-    try {
-      console.log("AppSidebar: Initiating logout...");
-      await supabase.auth.signOut();
-      console.log("AppSidebar: Supabase signOut completed");
-      
-      // Use our logout function and let it handle navigation
-      logout();
-      
-      toast.success("Logout realizado com sucesso");
-    } catch (error) {
-      console.error("Error during logout:", error);
-      toast.error("Erro ao fazer logout");
-      // Still try to navigate to auth page even if there's an error
-      navigate("/auth");
-    }
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    navigate("/auth");
   };
 
   return (
@@ -76,7 +58,7 @@ export function AppSidebar() {
           className="p-2 bg-accent rounded-md transition-all duration-300 hover:scale-105 focus:outline-none"
           onClick={() => setIsOpen(!isOpen)}
         >
-          <Menu className="h-5 w-5 text-foreground" />
+          <Menu className="h-5 w-5 text-foreground" /> {/* Ícone ajustado */}
         </button>
       </div>
 
@@ -92,7 +74,7 @@ export function AppSidebar() {
                 "flex items-center gap-3 p-2 rounded-md transition-all duration-300 hover:bg-accent hover:text-accent-foreground"
               )}
             >
-              <Icon className="h-3.5 w-3.5 text-foreground" aria-hidden="true" />
+              <Icon className="h-3.5 w-3.5 text-foreground" aria-hidden="true" /> {/* Ícone reduzido em 1.75x */}
               {isOpen && <span className="text-foreground">{item.title}</span>}
             </Link>
           );
@@ -106,7 +88,7 @@ export function AppSidebar() {
           aria-label="Sair"
           className="flex items-center gap-3 p-2 w-full rounded-md transition-all duration-300 hover:bg-destructive hover:text-destructive-foreground focus:outline-none"
         >
-          <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+          <LogOut className="h-3.5 w-3.5" aria-hidden="true" /> {/* Ícone reduzido em 1.75x */}
           {isOpen && <span>Sair</span>}
         </button>
       </div>
