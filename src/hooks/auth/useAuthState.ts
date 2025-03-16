@@ -94,4 +94,6 @@ export function useAuthState() {
     loading,
     setLoading,
   };
+  console.log("🔍 Role recebida do banco:", userData?.role, "Tier:", userData?.tier);
+
 }
