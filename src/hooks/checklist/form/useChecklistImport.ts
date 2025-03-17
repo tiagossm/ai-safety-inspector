@@ -1,25 +1,25 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist"; 
+import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
 import { NewChecklist } from "@/types/checklist";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
-import * as XLSX from 'xlsx';
+import * as XLSX from "xlsx";
 
 /**
  * Valida se o arquivo tem um formato correto (CSV, XLS, XLSX)
  */
 const validateFileFormat = (file: File): { valid: boolean; message?: string } => {
-  if (!file) return { valid: false, message: 'Nenhum arquivo selecionado' };
+  if (!file) return { valid: false, message: "Nenhum arquivo selecionado" };
 
-  const fileExtension = file.name.split('.').pop()?.toLowerCase();
-  if (!['csv', 'xls', 'xlsx'].includes(fileExtension || '')) {
-    return { 
-      valid: false, 
-      message: 'Formato de arquivo inválido. Apenas arquivos CSV, XLS e XLSX são suportados.' 
+  const fileExtension = file.name.split(".").pop()?.toLowerCase();
+  if (!["csv", "xls", "xlsx"].includes(fileExtension || "")) {
+    return {
+      valid: false,
+      message: "Formato de arquivo inválido. Apenas arquivos CSV, XLS e XLSX são suportados.",
     };
   }
-  
+
   return { valid: true };
 };
 
@@ -27,7 +27,7 @@ const validateFileFormat = (file: File): { valid: boolean; message?: string } =>
 const parseExcel = (arrayBuffer: ArrayBuffer) => {
   try {
     const data = new Uint8Array(arrayBuffer);
-    const workbook = XLSX.read(data, { type: 'array' });
+    const workbook = XLSX.read(data, { type: "array" });
 
     // Obtém a primeira aba do Excel
     const firstSheetName = workbook.SheetNames[0];
@@ -60,7 +60,7 @@ export function useChecklistImport() {
         setSessionValid(false);
       }
     };
-    
+
     validateSession();
   }, [refreshSession]);
 
@@ -101,7 +101,7 @@ export function useChecklistImport() {
       console.log("🔍 Verificando usuário antes da criação do checklist:", {
         user_id: user?.id || "NÃO ENCONTRADO",
         email: user?.email || "NÃO ENCONTRADO",
-        autenticado: !!user
+        autenticado: !!user,
       });
 
       // 🚨 Impede o envio de user_id inválido
@@ -123,21 +123,21 @@ export function useChecklistImport() {
 
       // Criando FormData para envio do arquivo
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('form', JSON.stringify(checklistData));
+      formData.append("file", file);
+      formData.append("form", JSON.stringify(checklistData));
 
       console.log("📤 Enviando arquivo para processamento via Supabase Edge Function...");
 
       // Chamada para a Supabase Edge Function
-      const { data, error } = await supabase.functions.invoke('process-checklist-csv', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${jwt}` },
-        body: formData
+      const { data, error } = await supabase.functions.invoke("process-checklist-csv", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${jwt}` },
+        body: formData,
       });
 
       if (error) {
         console.error("❌ Erro na função Edge:", error);
-        toast.error(`Erro na importação: ${error.message || 'Falha desconhecida'}`);
+        toast.error(`Erro na importação: ${error.message || "Falha desconhecida"}`);
         return false;
       }
 
@@ -151,7 +151,6 @@ export function useChecklistImport() {
         toast.error(data?.error || "Erro ao importar checklist");
         return false;
       }
-
     } catch (error: any) {
       console.error("❌ Erro geral ao importar checklist:", error);
       toast.error(`Erro ao importar checklist: ${error.message}`);
@@ -162,6 +161,6 @@ export function useChecklistImport() {
   return {
     importFromFile,
     getTemplateFileUrl,
-    sessionValid
+    sessionValid,
   };
 }
