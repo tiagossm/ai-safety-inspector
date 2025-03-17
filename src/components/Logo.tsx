@@ -1,6 +1,6 @@
 
 import { Link } from "react-router-dom";
-import { useTheme } from "@/components/ui/ThemeContext";
+import { useTheme } from "@/components/theme-provider";
 
 interface LogoProps {
   className?: string;
@@ -14,9 +14,9 @@ export function Logo({ className = "", size = "small" }: LogoProps) {
   return (
     <Link to="/" className={`block ${className}`}>
       <img 
-        src={theme === 'light' 
-          ? "/lovable-uploads/LogoazulFT.png"  // Logo azul para tema claro
-          : "/lovable-uploads/logobrancoFT.png"  // Logo branco para tema escuro
+        src={theme === 'dark' || theme === 'system' 
+          ? "/lovable-uploads/logobrancoFT.png"  // Logo branco para tema escuro
+          : "/lovable-uploads/LogoazulFT.png"  // Logo azul para tema claro
         }
         alt="IA SST Logo"
         className={`${dimensions} w-auto`}

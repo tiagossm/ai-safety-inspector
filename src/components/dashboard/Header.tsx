@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Menu, Search, Bell, User, WifiOff } from "lucide-react";
-import { useTheme } from "@/components/ui/ThemeContext";
+import { useTheme } from "@/components/theme-provider";
 
 interface HeaderProps {
   setSidebarOpen: (open: boolean) => void;
