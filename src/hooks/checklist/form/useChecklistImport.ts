@@ -100,10 +100,11 @@ export function useChecklistImport() {
       // Ajustando status corretamente
       const checklistData = {
         ...form,
-        status: "active", // ✅ Substituindo "pendente" por "active"
-        status_checklist: form.status_checklist || "ativo", // ✅ Mantendo como "ativo"
+        status: form.status || "pendente", // ✅ Agora aceita "pendente"
+        status_checklist: form.status_checklist || "ativo",
         user_id: user?.id
       };
+      
 
       console.log("📝 Dados do checklist preparados para envio:", checklistData);
 
