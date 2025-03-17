@@ -27,7 +27,7 @@ export function useFilterChecklists(checklists: Checklist[]) {
         return false;
       }
       
-      // Filtragem por termo de busca (título, descrição ou categoria)
+      // Filter by search term (title, description or category)
       const searchMatch = !searchTerm || 
         checklist.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (checklist.description && checklist.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -35,7 +35,7 @@ export function useFilterChecklists(checklists: Checklist[]) {
       
       if (!searchMatch) return false;
       
-      // Filtragem por tipo
+      // Filter by type
       switch (filterType) {
         case "active":
           return checklist.status_checklist === "ativo";
@@ -44,8 +44,8 @@ export function useFilterChecklists(checklists: Checklist[]) {
         case "templates":
           return checklist.is_template;
         case "my":
-          // Na implementação real isso deveria verificar o usuário logado
-          return true; // Por enquanto mostra todos
+          // In a real implementation this would verify the logged user
+          return true; // For now show all
         case "all":
         default:
           return true;
