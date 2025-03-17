@@ -1,10 +1,9 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { 
   Save, 
-  FilePdf, 
+  FileText, 
   Printer, 
   Mail, 
   Copy, 
@@ -15,8 +14,9 @@ import { useSaveChecklist } from "@/hooks/checklist/useSaveChecklist";
 import { Checklist } from "@/types/checklist";
 import { useDeleteChecklist } from "@/hooks/checklist/useDeleteChecklist";
 import { useNavigate } from "react-router-dom";
-import { generateCompanyPDF } from "@/utils/pdfGenerator";
+import { generateChecklistPDF } from "@/utils/pdfGenerator";
 import { supabase } from "@/integrations/supabase/client";
+import { jsPDF } from "jspdf";
 
 interface ChecklistActionsProps {
   checklist: Checklist;
@@ -61,13 +61,11 @@ export function ChecklistActions({ checklist, onRefresh }: ChecklistActionsProps
   const handleDuplicate = async () => {
     try {
       toast.info("Duplicando checklist...");
-      // Get checklist items
       const { data: items } = await supabase
         .from("checklist_itens")
         .select("*")
         .eq("checklist_id", checklist.id);
 
-      // Create duplicate checklist
       const { data: newChecklist, error } = await supabase
         .from("checklists")
         .insert({
@@ -84,7 +82,6 @@ export function ChecklistActions({ checklist, onRefresh }: ChecklistActionsProps
 
       if (error) throw error;
 
-      // Duplicate items
       if (items && items.length > 0 && newChecklist) {
         const newItems = items.map(item => ({
           checklist_id: newChecklist.id,
@@ -109,32 +106,10 @@ export function ChecklistActions({ checklist, onRefresh }: ChecklistActionsProps
     }
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     try {
       setIsExporting(true);
-      // Convert checklist to PDF format
-      const doc = new jsPDF();
-      
-      // Add title
-      doc.setFontSize(16);
-      doc.text(`Checklist: ${checklist.title}`, 20, 20);
-      
-      // Add description
-      if (checklist.description) {
-        doc.setFontSize(12);
-        doc.text(`Descrição: ${checklist.description}`, 20, 30);
-      }
-      
-      // Add metadata
-      const metaY = checklist.description ? 40 : 30;
-      doc.setFontSize(10);
-      doc.text(`Categoria: ${checklist.category || 'Não especificada'}`, 20, metaY);
-      doc.text(`Status: ${checklist.status_checklist}`, 20, metaY + 6);
-      doc.text(`Modelo: ${checklist.is_template ? 'Sim' : 'Não'}`, 20, metaY + 12);
-      
-      // Save the PDF
-      doc.save(`checklist_${checklist.id}.pdf`);
-      
+      await generateChecklistPDF(checklist);
       toast.success("PDF exportado com sucesso!");
     } catch (error) {
       console.error("Error exporting PDF:", error);
@@ -158,7 +133,6 @@ export function ChecklistActions({ checklist, onRefresh }: ChecklistActionsProps
         return;
       }
       
-      // Check if email is valid
       if (!/\S+@\S+\.\S+/.test(email)) {
         toast.error("Email inválido");
         setIsSendingEmail(false);
@@ -167,8 +141,6 @@ export function ChecklistActions({ checklist, onRefresh }: ChecklistActionsProps
       
       toast.info("Enviando checklist por email...");
       
-      // In a real implementation, we would call a Supabase Edge Function here
-      // For now, just simulate success
       setTimeout(() => {
         toast.success(`Checklist enviado para ${email}`);
         setIsSendingEmail(false);
@@ -204,7 +176,7 @@ export function ChecklistActions({ checklist, onRefresh }: ChecklistActionsProps
         onClick={handleExportPDF} 
         disabled={isExporting}
       >
-        <FilePdf className="h-4 w-4 mr-1" />
+        <FileText className="h-4 w-4 mr-1" />
         {isExporting ? "Exportando..." : "Exportar PDF"}
       </Button>
       
@@ -257,3 +229,4 @@ export function ChecklistActions({ checklist, onRefresh }: ChecklistActionsProps
     </div>
   );
 }
+
