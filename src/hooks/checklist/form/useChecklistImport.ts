@@ -50,11 +50,11 @@ const parseExcel = (arrayBuffer: ArrayBuffer) => {
   try {
     const data = new Uint8Array(arrayBuffer);
     const workbook = XLSX.read(data, { type: 'array' });
-    
+
     // Obtém a primeira aba do Excel
     const firstSheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[firstSheetName];
-    
+
     // Converte para JSON
     const jsonData = XLSX.utils.sheet_to_json(worksheet);
     return jsonData;
@@ -68,7 +68,7 @@ export function useChecklistImport() {
   const createChecklist = useCreateChecklist();
   const { user, refreshSession } = useAuth();
   const [sessionValid, setSessionValid] = useState(false);
-  
+
   // Verifica se a sessão é válida ao montar o componente
   useEffect(() => {
     const validateSession = async () => {
@@ -96,13 +96,13 @@ export function useChecklistImport() {
       toast.error("Nenhum arquivo selecionado");
       return false;
     }
-    
+
     const validation = validateFileFormat(file);
     if (!validation.valid) {
       toast.error(validation.message || "Arquivo inválido");
       return false;
     }
-    
+
     try {
       console.log("📂 Importando checklist do arquivo:", file.name, "| Tamanho:", Math.round(file.size / 1024), "KB");
 
@@ -119,7 +119,7 @@ export function useChecklistImport() {
       const jwt = sessionData.session.access_token;
       console.log("🔑 Token JWT obtido. Comprimento:", jwt.length);
 
-      // Criando o checklist
+      // Criando o checklist com status corrigido
       const checklistData = {
         ...form,
         status: "active", // ✅ Garante que o status seja válido
@@ -150,7 +150,7 @@ export function useChecklistImport() {
       }
 
       console.log("✅ Resposta da função Edge:", data);
-      
+
       if (data?.success) {
         toast.success(`Checklist importado com sucesso! ${data.processed_items || 0} itens processados.`);
         return data;
