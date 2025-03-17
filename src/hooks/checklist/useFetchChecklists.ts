@@ -136,6 +136,7 @@ export function useFetchChecklists() {
         const checklistsWithItems = await Promise.all(
           checklists.map(async (checklist: any) => {
             try {
+              // Count all items
               const { count, error: itemsError } = await supabase
                 .from("checklist_itens")
                 .select("*", { count: "exact", head: true })
@@ -143,14 +144,17 @@ export function useFetchChecklists() {
 
               if (itemsError) throw itemsError;
 
-              // Count completed items
-              const { count: completedCount, error: completedError } = await supabase
+              // Count completed items - Fixed: remove the resposta not is null condition that's causing the error
+              const { data: completedItems, error: completedError } = await supabase
                 .from("checklist_itens")
-                .select("*", { count: "exact", head: true })
-                .eq("checklist_id", checklist.id)
-                .not("resposta", "is", null);
+                .select("id")
+                .eq("checklist_id", checklist.id);
                 
               if (completedError) throw completedError;
+              
+              // Filter locally instead of using the problematic SQL query
+              const completedCount = completedItems ? 
+                completedItems.filter(item => item.resposta !== null && item.resposta !== undefined).length : 0;
 
               // Enriquece o checklist com novos campos
               const enrichedChecklist: Checklist = {
