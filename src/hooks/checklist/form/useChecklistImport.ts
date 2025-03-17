@@ -93,18 +93,29 @@ export function useChecklistImport() {
         toast.error("Sessão inválida. Faça login novamente.");
         return false;
       }
-      
+
       const jwt = sessionData.session.access_token;
       console.log("🔑 Token JWT obtido. Comprimento:", jwt.length);
 
-      // Ajustando status corretamente
+      // Verificando se o usuário autenticado tem um user_id válido
+      if (!user?.id || user.id === "00000000-0000-0000-0000-000000000000") {
+        console.error("🚨 Erro: Usuário não autenticado ou ID inválido!");
+        toast.error("Erro: Usuário não autenticado. Faça login novamente.");
+        return false;
+      }
+
+      console.log("👤 Usuário autenticado:", {
+        user_id: user.id,
+        email: user.email,
+      });
+
+      // Ajustando status corretamente e garantindo que user_id seja válido
       const checklistData = {
         ...form,
         status: form.status || "pendente", // ✅ Agora aceita "pendente"
         status_checklist: form.status_checklist || "ativo",
-        user_id: user?.id
+        user_id: user.id, // ✅ Agora sempre usa um ID válido
       };
-      
 
       console.log("📝 Dados do checklist preparados para envio:", checklistData);
 
@@ -142,7 +153,7 @@ export function useChecklistImport() {
     } catch (error: any) {
       console.error("❌ Erro geral ao importar checklist:", error);
       toast.error(`Erro ao importar checklist: ${error.message}`);
-      return false;s
+      return false;
     }
   };
 
