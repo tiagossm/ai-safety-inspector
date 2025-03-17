@@ -3,6 +3,7 @@ import { Company } from "@/types/company";
 import { jsPDF } from "jspdf";
 import { formatCNPJ } from "./formatters";
 import { supabase } from "@/integrations/supabase/client";
+import { Checklist, ChecklistItem } from "@/types/checklist";
 
 export const generateCompanyPDF = (company: Company) => {
   const doc = new jsPDF();
@@ -37,6 +38,99 @@ export const generateCompanyPDF = (company: Company) => {
   }
   
   doc.save(`empresa_${company.cnpj}.pdf`);
+};
+
+export const generateChecklistPDF = async (checklist: Checklist) => {
+  try {
+    const doc = new jsPDF();
+    
+    // Get checklist items
+    const { data: items } = await supabase
+      .from("checklist_itens")
+      .select("*")
+      .eq("checklist_id", checklist.id)
+      .order("ordem", { ascending: true });
+    
+    // Header
+    doc.setFontSize(18);
+    doc.text(`Checklist: ${checklist.title}`, 20, 20);
+    
+    // Description
+    if (checklist.description) {
+      doc.setFontSize(12);
+      doc.text(`Descrição: ${checklist.description}`, 20, 30);
+    }
+    
+    // Metadata
+    const metaY = checklist.description ? 40 : 30;
+    doc.setFontSize(10);
+    doc.text(`Categoria: ${checklist.category || 'Não especificada'}`, 20, metaY);
+    doc.text(`Status: ${checklist.status_checklist}`, 20, metaY + 6);
+    doc.text(`Tipo: ${checklist.is_template ? 'Modelo' : 'Checklist'}`, 20, metaY + 12);
+    
+    // Items
+    let itemY = metaY + 24;
+    doc.setFontSize(14);
+    doc.text("Itens do Checklist:", 20, itemY);
+    itemY += 10;
+    
+    if (items && items.length > 0) {
+      doc.setFontSize(11);
+      
+      items.forEach((item, index) => {
+        // Check if we need a new page
+        if (itemY > 270) {
+          doc.addPage();
+          itemY = 20;
+        }
+        
+        doc.text(`${index + 1}. ${item.pergunta}`, 20, itemY);
+        itemY += 6;
+        
+        doc.setFontSize(9);
+        doc.text(`Tipo de resposta: ${item.tipo_resposta}`, 25, itemY);
+        itemY += 5;
+        
+        doc.text(`Obrigatório: ${item.obrigatorio ? 'Sim' : 'Não'}`, 25, itemY);
+        itemY += 5;
+        
+        if (item.opcoes) {
+          try {
+            const options = typeof item.opcoes === 'string' 
+              ? JSON.parse(item.opcoes) 
+              : item.opcoes;
+              
+            if (Array.isArray(options) && options.length > 0) {
+              doc.text(`Opções: ${options.join(', ')}`, 25, itemY);
+              itemY += 5;
+            }
+          } catch (e) {
+            console.error("Error parsing options:", e);
+          }
+        }
+        
+        doc.setFontSize(11);
+        itemY += 5;
+      });
+    } else {
+      doc.text("Nenhum item encontrado", 20, itemY);
+    }
+    
+    // Add page numbers
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.width - 30, doc.internal.pageSize.height - 10);
+    }
+    
+    // Save the PDF
+    doc.save(`checklist_${checklist.id}.pdf`);
+    return true;
+  } catch (error) {
+    console.error("Error generating checklist PDF:", error);
+    throw error;
+  }
 };
 
 export const exportAllCompaniesReport = async () => {
@@ -90,4 +184,57 @@ export const exportAllCompaniesReport = async () => {
 
   // Save the PDF
   doc.save('relatorio_empresas.pdf');
+};
+
+export const exportAllChecklistsReport = async () => {
+  // Fetch all checklists
+  const { data: checklists, error } = await supabase
+    .from('checklists')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error || !checklists) {
+    console.error("Erro ao buscar checklists:", error);
+    return;
+  }
+
+  const doc = new jsPDF();
+  let yPosition = 20;
+  const pageHeight = doc.internal.pageSize.height;
+
+  // Title
+  doc.setFontSize(16);
+  doc.text("Relatório de Listas de Verificação", 20, yPosition);
+  yPosition += 20;
+
+  // Checklists
+  doc.setFontSize(10);
+  checklists.forEach((checklist, index) => {
+    // Check if we need a new page
+    if (yPosition > pageHeight - 40) {
+      doc.addPage();
+      yPosition = 20;
+    }
+
+    // Checklist header
+    doc.setFont(undefined, 'bold');
+    doc.text(`${index + 1}. ${checklist.title}`, 20, yPosition);
+    yPosition += 10;
+
+    // Checklist details
+    doc.setFont(undefined, 'normal');
+    if (checklist.description) {
+      doc.text(`Descrição: ${checklist.description}`, 25, yPosition);
+      yPosition += 5;
+    }
+    doc.text(`Categoria: ${checklist.category || "Não especificada"}`, 25, yPosition);
+    yPosition += 5;
+    doc.text(`Status: ${checklist.status_checklist}`, 25, yPosition);
+    yPosition += 5;
+    doc.text(`Tipo: ${checklist.is_template ? 'Modelo' : 'Checklist'}`, 25, yPosition);
+    yPosition += 15; // Extra space between checklists
+  });
+
+  // Save the PDF
+  doc.save('relatorio_checklists.pdf');
 };

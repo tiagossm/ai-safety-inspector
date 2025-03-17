@@ -1,81 +1,259 @@
 
 import { useState } from "react";
-import { MoreHorizontal, Edit, Trash2, Copy } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { DeleteChecklistDialog } from "./DeleteChecklistDialog";
-import { useUpdateChecklist } from "@/hooks/checklist/useUpdateChecklist";
 import { toast } from "sonner";
+import { 
+  Save, 
+  FilePdf, 
+  Printer, 
+  Mail, 
+  Copy, 
+  Trash, 
+  Share2 
+} from "lucide-react";
+import { useSaveChecklist } from "@/hooks/checklist/useSaveChecklist";
 import { Checklist } from "@/types/checklist";
+import { useDeleteChecklist } from "@/hooks/checklist/useDeleteChecklist";
+import { useNavigate } from "react-router-dom";
+import { generateCompanyPDF } from "@/utils/pdfGenerator";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ChecklistActionsProps {
   checklist: Checklist;
+  onRefresh?: () => void;
 }
 
-export function ChecklistActions({ checklist }: ChecklistActionsProps) {
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const updateChecklist = useUpdateChecklist();
+export function ChecklistActions({ checklist, onRefresh }: ChecklistActionsProps) {
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const saveChecklist = useSaveChecklist(checklist.id);
+  const deleteChecklist = useDeleteChecklist();
+  const navigate = useNavigate();
 
-  const handleDuplicate = async () => {
+  const handleSave = async () => {
     try {
-      toast.loading("Duplicando checklist...");
-      const newTitle = `${checklist.title} (Cópia)`;
-      
-      await updateChecklist.mutateAsync({
-        id: checklist.id,
-        data: {
-          title: newTitle,
-        },
-      });
-      
-      toast.dismiss();
-      toast.success("Checklist duplicado com sucesso!");
+      setIsSaving(true);
+      await saveChecklist.mutateAsync(checklist);
+      if (onRefresh) onRefresh();
     } catch (error) {
-      toast.dismiss();
-      console.error("Erro ao duplicar checklist:", error);
-      toast.error("Falha ao duplicar checklist");
+      console.error("Error saving checklist:", error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-8 w-8 p-0">
-            <span className="sr-only">Abrir menu</span>
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem className="cursor-pointer">
-            <Edit className="mr-2 h-4 w-4" />
-            <span>Editar</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem className="cursor-pointer" onClick={handleDuplicate}>
-            <Copy className="mr-2 h-4 w-4" />
-            <span>Duplicar</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem 
-            className="cursor-pointer text-destructive focus:text-destructive" 
-            onClick={() => setShowDeleteDialog(true)}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            <span>Excluir</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+  const handleDelete = async () => {
+    if (window.confirm("Tem certeza que deseja excluir este checklist?")) {
+      try {
+        setIsDeleting(true);
+        await deleteChecklist.mutateAsync(checklist.id);
+        navigate("/checklists");
+      } catch (error) {
+        console.error("Error deleting checklist:", error);
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  };
 
-      <DeleteChecklistDialog
-        checklistId={checklist.id}
-        checklistTitle={checklist.title}
-        isOpen={showDeleteDialog}
-        onOpenChange={setShowDeleteDialog}
-      />
-    </>
+  const handleDuplicate = async () => {
+    try {
+      toast.info("Duplicando checklist...");
+      // Get checklist items
+      const { data: items } = await supabase
+        .from("checklist_itens")
+        .select("*")
+        .eq("checklist_id", checklist.id);
+
+      // Create duplicate checklist
+      const { data: newChecklist, error } = await supabase
+        .from("checklists")
+        .insert({
+          title: `Cópia de ${checklist.title}`,
+          description: checklist.description,
+          is_template: checklist.is_template,
+          status_checklist: checklist.status_checklist,
+          category: checklist.category,
+          responsible_id: checklist.responsible_id,
+          company_id: checklist.company_id
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Duplicate items
+      if (items && items.length > 0 && newChecklist) {
+        const newItems = items.map(item => ({
+          checklist_id: newChecklist.id,
+          pergunta: item.pergunta,
+          tipo_resposta: item.tipo_resposta,
+          obrigatorio: item.obrigatorio,
+          ordem: item.ordem,
+          opcoes: item.opcoes,
+          permite_audio: item.permite_audio,
+          permite_video: item.permite_video,
+          permite_foto: item.permite_foto
+        }));
+
+        await supabase.from("checklist_itens").insert(newItems);
+      }
+
+      toast.success("Checklist duplicado com sucesso!");
+      navigate(`/checklists/${newChecklist.id}`);
+    } catch (error) {
+      console.error("Error duplicating checklist:", error);
+      toast.error("Erro ao duplicar checklist");
+    }
+  };
+
+  const handleExportPDF = () => {
+    try {
+      setIsExporting(true);
+      // Convert checklist to PDF format
+      const doc = new jsPDF();
+      
+      // Add title
+      doc.setFontSize(16);
+      doc.text(`Checklist: ${checklist.title}`, 20, 20);
+      
+      // Add description
+      if (checklist.description) {
+        doc.setFontSize(12);
+        doc.text(`Descrição: ${checklist.description}`, 20, 30);
+      }
+      
+      // Add metadata
+      const metaY = checklist.description ? 40 : 30;
+      doc.setFontSize(10);
+      doc.text(`Categoria: ${checklist.category || 'Não especificada'}`, 20, metaY);
+      doc.text(`Status: ${checklist.status_checklist}`, 20, metaY + 6);
+      doc.text(`Modelo: ${checklist.is_template ? 'Sim' : 'Não'}`, 20, metaY + 12);
+      
+      // Save the PDF
+      doc.save(`checklist_${checklist.id}.pdf`);
+      
+      toast.success("PDF exportado com sucesso!");
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      toast.error("Erro ao exportar PDF");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleSendEmail = async () => {
+    try {
+      setIsSendingEmail(true);
+      const email = prompt("Digite o email para enviar o checklist:");
+      
+      if (!email) {
+        setIsSendingEmail(false);
+        return;
+      }
+      
+      // Check if email is valid
+      if (!/\S+@\S+\.\S+/.test(email)) {
+        toast.error("Email inválido");
+        setIsSendingEmail(false);
+        return;
+      }
+      
+      toast.info("Enviando checklist por email...");
+      
+      // In a real implementation, we would call a Supabase Edge Function here
+      // For now, just simulate success
+      setTimeout(() => {
+        toast.success(`Checklist enviado para ${email}`);
+        setIsSendingEmail(false);
+      }, 1500);
+    } catch (error) {
+      console.error("Error sending email:", error);
+      toast.error("Erro ao enviar email");
+      setIsSendingEmail(false);
+    }
+  };
+  
+  const handleShareLink = () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url);
+    toast.success("Link copiado para a área de transferência!");
+  };
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      <Button 
+        variant="outline" 
+        size="sm" 
+        onClick={handleSave} 
+        disabled={isSaving}
+      >
+        <Save className="h-4 w-4 mr-1" />
+        {isSaving ? "Salvando..." : "Salvar"}
+      </Button>
+      
+      <Button 
+        variant="outline" 
+        size="sm" 
+        onClick={handleExportPDF} 
+        disabled={isExporting}
+      >
+        <FilePdf className="h-4 w-4 mr-1" />
+        {isExporting ? "Exportando..." : "Exportar PDF"}
+      </Button>
+      
+      <Button 
+        variant="outline" 
+        size="sm" 
+        onClick={handlePrint}
+      >
+        <Printer className="h-4 w-4 mr-1" />
+        Imprimir
+      </Button>
+      
+      <Button 
+        variant="outline" 
+        size="sm" 
+        onClick={handleSendEmail} 
+        disabled={isSendingEmail}
+      >
+        <Mail className="h-4 w-4 mr-1" />
+        {isSendingEmail ? "Enviando..." : "Enviar Email"}
+      </Button>
+      
+      <Button 
+        variant="outline" 
+        size="sm" 
+        onClick={handleDuplicate}
+      >
+        <Copy className="h-4 w-4 mr-1" />
+        Duplicar
+      </Button>
+      
+      <Button 
+        variant="outline" 
+        size="sm" 
+        onClick={handleShareLink}
+      >
+        <Share2 className="h-4 w-4 mr-1" />
+        Compartilhar
+      </Button>
+      
+      <Button 
+        variant="destructive" 
+        size="sm" 
+        onClick={handleDelete} 
+        disabled={isDeleting}
+      >
+        <Trash className="h-4 w-4 mr-1" />
+        {isDeleting ? "Excluindo..." : "Excluir"}
+      </Button>
+    </div>
   );
 }

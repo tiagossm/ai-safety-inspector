@@ -5,6 +5,7 @@ import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
 import { NewChecklist } from "@/types/checklist";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
+import * as XLSX from 'xlsx';
 
 /**
  * Validates if the file is in correct format (CSV, XLS, XLSX)
@@ -26,7 +27,7 @@ const validateFileFormat = (file: File): { valid: boolean; message?: string } =>
   return { valid: true };
 };
 
-// Simple CSV parsing function
+// Parse CSV files
 const parseCSV = (text: string) => {
   const lines = text.split('\n');
   const headers = lines[0].split(',').map(h => h.trim());
@@ -46,6 +47,25 @@ const parseCSV = (text: string) => {
   }
   
   return results;
+};
+
+// Parse Excel files
+const parseExcel = (arrayBuffer: ArrayBuffer) => {
+  try {
+    const data = new Uint8Array(arrayBuffer);
+    const workbook = XLSX.read(data, { type: 'array' });
+    
+    // Get the first sheet
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+    
+    // Convert to JSON
+    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+    return jsonData;
+  } catch (error) {
+    console.error("Error parsing Excel file:", error);
+    throw new Error("Falha ao processar arquivo Excel.");
+  }
 };
 
 export function useChecklistImport() {
@@ -90,23 +110,18 @@ export function useChecklistImport() {
     try {
       console.log("Importing from file:", file.name, "Size:", Math.round(file.size / 1024), "KB");
       
-      // Ensure the form has user_id set
-      if (!form.user_id && user?.id) {
-        form.user_id = user.id;
-      }
-      
       // First, ensure we have a valid token
       await refreshSession();
       
       // Create the checklist first
       const result = await createChecklist.mutateAsync({
-        title: form.title,
+        title: form.title || `Importado de ${file.name}`,
         description: form.description || `Importado de ${file.name}`,
         is_template: form.is_template || false,
         category: form.category || 'general',
         responsible_id: form.responsible_id,
         company_id: form.company_id,
-        user_id: form.user_id,
+        user_id: user?.id,
         due_date: form.due_date
       });
       
@@ -125,16 +140,22 @@ export function useChecklistImport() {
         // Handle CSV files
         const text = await file.text();
         questions = parseCSV(text);
+      } else if (file.type.includes('excel') || file.type.includes('spreadsheetml')) {
+        // Handle Excel files
+        const arrayBuffer = await file.arrayBuffer();
+        questions = parseExcel(arrayBuffer);
       } else {
-        // For simplicity, we'll manually add some sample questions
-        // In a real implementation, you'd use a library like xlsx to parse Excel files
-        questions = [
-          { pergunta: "Pergunta 1 importada", tipo_resposta: "sim/não", obrigatorio: true },
-          { pergunta: "Pergunta 2 importada", tipo_resposta: "texto", obrigatorio: false },
-          { pergunta: "Pergunta 3 importada", tipo_resposta: "múltipla escolha", obrigatorio: true, opcoes: "Sim,Não,Não aplicável" }
-        ];
-        
-        toast.info("Demonstração: adicionando perguntas de exemplo");
+        toast.error("Formato de arquivo não suportado");
+        return false;
+      }
+      
+      if (!questions || questions.length === 0) {
+        toast.warning("Nenhuma pergunta encontrada no arquivo");
+        return {
+          id: checklistId,
+          success: true,
+          questions_added: 0
+        };
       }
       
       // Now add the questions to the checklist
@@ -143,24 +164,32 @@ export function useChecklistImport() {
         const q = questions[i];
         
         // Skip empty questions
-        if (!q.pergunta && !q.question) continue;
+        if (!q.pergunta && !q.question && !q.Pergunta && !q.Question) continue;
         
-        const questionData = {
-          checklist_id: checklistId,
-          pergunta: q.pergunta || q.question || `Pergunta ${i+1}`,
-          tipo_resposta: q.tipo_resposta || q.type || "sim/não",
-          obrigatorio: q.obrigatorio === "true" || q.obrigatorio === "sim" || true,
-          ordem: i + 1
-        };
-        
-        const { error } = await supabase
-          .from("checklist_itens")
-          .insert(questionData);
+        try {
+          const questionData = {
+            checklist_id: checklistId,
+            pergunta: q.pergunta || q.question || q.Pergunta || q.Question || `Pergunta ${i+1}`,
+            tipo_resposta: q.tipo_resposta || q.type || q.Tipo || q.Type || "sim/não",
+            obrigatorio: q.obrigatorio === "true" || q.obrigatorio === "sim" || true,
+            ordem: i + 1,
+            opcoes: q.opcoes ? JSON.stringify(q.opcoes.split ? q.opcoes.split(",").map(o => o.trim()) : q.opcoes) : null,
+            permite_audio: q.permite_audio === "true" || q.permite_audio === "sim" || false,
+            permite_video: q.permite_video === "true" || q.permite_video === "sim" || false,
+            permite_foto: q.permite_foto === "true" || q.permite_foto === "sim" || false
+          };
           
-        if (error) {
-          console.error("Error adding question:", error);
-        } else {
-          successCount++;
+          const { error } = await supabase
+            .from("checklist_itens")
+            .insert(questionData);
+            
+          if (error) {
+            console.error("Error adding question:", error);
+          } else {
+            successCount++;
+          }
+        } catch (itemError) {
+          console.error("Error processing question:", itemError);
         }
       }
       
