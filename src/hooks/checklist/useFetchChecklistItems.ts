@@ -25,7 +25,9 @@ export function useFetchChecklistItems(id: string, enabled: boolean = true) {
       return data.map(item => ({
         ...item,
         tipo_resposta: item.tipo_resposta,
-        opcoes: Array.isArray(item.opcoes) ? item.opcoes : null,
+        opcoes: Array.isArray(item.opcoes) 
+          ? item.opcoes.map(option => String(option)) 
+          : null,
         resposta: null // Add default null value since the column doesn't exist
       })) as ChecklistItem[];
     },

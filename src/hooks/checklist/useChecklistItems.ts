@@ -24,11 +24,13 @@ export function useChecklistItems(checklistId: string) {
 
       console.log(`Encontrados ${data?.length} itens do checklist`);
       
-      // Initialize with null resposta since the column doesn't exist
+      // Map the data to match our ChecklistItem type
       return data.map(item => ({
         ...item,
         tipo_resposta: item.tipo_resposta,
-        opcoes: Array.isArray(item.opcoes) ? item.opcoes : null,
+        opcoes: Array.isArray(item.opcoes) 
+          ? item.opcoes.map(option => String(option)) 
+          : null,
         resposta: null // Add this default value since the column doesn't exist
       })) as ChecklistItem[];
     },
