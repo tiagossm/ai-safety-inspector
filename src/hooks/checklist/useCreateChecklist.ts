@@ -14,6 +14,13 @@ export function useCreateChecklist() {
   return useMutation({
     mutationFn: async (newChecklist: NewChecklist) => {
       try {
+        console.log("Starting checklist creation process", { 
+          title: newChecklist.title,
+          company: newChecklist.company_id,
+          responsible: newChecklist.responsible_id,
+          timestamp: new Date().toISOString()
+        });
+        
         // Ensure authentication before proceeding
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         
@@ -85,6 +92,20 @@ export function useCreateChecklist() {
 
         console.log("Checklist created successfully:", data[0]);
         
+        // Add to checklist history
+        try {
+          await supabase.from('checklist_history').insert({
+            checklist_id: data[0].id,
+            user_id: extendedUser?.id,
+            action: 'create',
+            details: 'Criou o checklist'
+          });
+          
+          console.log("Creation history recorded");
+        } catch (historyError) {
+          console.warn("Failed to record creation history:", historyError);
+        }
+        
         // Also save to IndexedDB if we have offline sync functionality
         try {
           const { saveForSync } = await import('@/services/offlineSync');
@@ -98,14 +119,20 @@ export function useCreateChecklist() {
         // Notify the responsible user if one was assigned
         if (data[0].responsible_id && data[0].responsible_id !== extendedUser?.id) {
           try {
-            await supabase.functions.invoke("notify-checklist-assignment", {
+            const result = await supabase.functions.invoke("notify-checklist-assignment", {
               body: {
                 checklist_id: data[0].id,
                 checklist_title: data[0].title,
-                user_id: data[0].responsible_id
+                user_id: data[0].responsible_id,
+                company_id: data[0].company_id
               }
             });
-            console.log("Notification sent to responsible user");
+            
+            if (result.error) {
+              console.error("Error sending notification:", result.error);
+            } else {
+              console.log("Notification sent to responsible user:", result.data);
+            }
           } catch (notifyError) {
             console.warn("Failed to send notification:", notifyError);
           }

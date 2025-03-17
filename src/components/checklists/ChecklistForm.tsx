@@ -8,6 +8,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checklist } from "@/types/checklist";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
+import { useEffect as useReactEffect, useState as useReactState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Company } from "@/types/company";
 
 interface ChecklistFormProps {
   checklist: Checklist | null;
@@ -17,6 +21,37 @@ interface ChecklistFormProps {
 
 export default function ChecklistForm({ checklist, users, setChecklist }: ChecklistFormProps) {
   const [isTemplate, setIsTemplate] = useState(false);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
+  
+  // Fetch companies for dropdown
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        setIsLoadingCompanies(true);
+        const { data, error } = await supabase
+          .from('companies')
+          .select('id, fantasy_name')
+          .eq('status', 'active')
+          .order('fantasy_name', { ascending: true });
+          
+        if (error) {
+          console.error("Error fetching companies:", error);
+          toast.error("Erro ao carregar empresas");
+          throw error;
+        }
+        
+        console.log("Companies loaded:", data?.length || 0);
+        setCompanies(data || []);
+      } catch (error) {
+        console.error("Error in fetchCompanies:", error);
+      } finally {
+        setIsLoadingCompanies(false);
+      }
+    };
+    
+    fetchCompanies();
+  }, []);
   
   useEffect(() => {
     if (checklist) {
@@ -26,10 +61,21 @@ export default function ChecklistForm({ checklist, users, setChecklist }: Checkl
 
   const handleChange = (field: string, value: any) => {
     if (checklist) {
-      setChecklist({
+      // Log the change for debugging
+      console.log(`Updating checklist field ${field}:`, value);
+      
+      const updatedChecklist = {
         ...checklist,
         [field]: value
-      });
+      };
+      
+      setChecklist(updatedChecklist);
+      
+      // Log for company association
+      if (field === "company_id") {
+        const companyName = companies.find(c => c.id === value)?.fantasy_name || "Unknown";
+        console.log(`Checklist associated with company: ${companyName} (${value})`);
+      }
     }
   };
 
@@ -70,6 +116,30 @@ export default function ChecklistForm({ checklist, users, setChecklist }: Checkl
         </div>
 
         <div className="space-y-2">
+          <Label htmlFor="company_id">Empresa</Label>
+          <Select
+            value={checklist.company_id || ""}
+            onValueChange={(value) => handleChange("company_id", value)}
+          >
+            <SelectTrigger className={isLoadingCompanies ? "opacity-70" : ""}>
+              <SelectValue placeholder={isLoadingCompanies ? "Carregando empresas..." : "Selecione uma empresa"} />
+            </SelectTrigger>
+            <SelectContent>
+              {companies.map((company) => (
+                <SelectItem key={company.id} value={company.id}>
+                  {company.fantasy_name || 'Empresa sem nome'}
+                </SelectItem>
+              ))}
+              {companies.length === 0 && !isLoadingCompanies && (
+                <SelectItem value="no-companies">
+                  Nenhuma empresa disponível
+                </SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
           <Label htmlFor="responsavel">Responsável</Label>
           <Select
             value={checklist.responsible_id || ""}
@@ -84,9 +154,8 @@ export default function ChecklistForm({ checklist, users, setChecklist }: Checkl
                   {user.name || user.email || 'Usuário sem nome'}
                 </SelectItem>
               ))}
-              {/* Fix: Add a placeholder item with a non-empty value if needed */}
               {users.length === 0 && (
-                <SelectItem value="no-users">
+                <SelectItem value="no-users-placeholder">
                   Nenhum usuário disponível
                 </SelectItem>
               )}

@@ -71,3 +71,6 @@ verify_jwt = true
 
 [functions.create-checklist-rls-policies]
 verify_jwt = true
+
+[functions.notify-checklist-assignment]
+verify_jwt = true

@@ -1,13 +1,9 @@
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Link } from "react-router-dom";
-import { CreateChecklistModal } from "./CreateChecklistModal";
 
 export function ChecklistsHeader() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  
   return (
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
       <div>
@@ -24,15 +20,7 @@ export function ChecklistsHeader() {
             Criar Checklist
           </Link>
         </Button>
-        <Button variant="outline" onClick={() => setIsModalOpen(true)}>
-          Criar Rápido
-        </Button>
       </div>
-      
-      <CreateChecklistModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-      />
     </div>
   );
 }

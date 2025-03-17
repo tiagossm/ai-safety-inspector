@@ -20,7 +20,9 @@ export default function Checklists() {
     searchTerm, 
     setSearchTerm, 
     filterType, 
-    setFilterType 
+    setFilterType,
+    selectedCompanyId,
+    setSelectedCompanyId
   } = useChecklists();
   
   const [deleteDialog, setDeleteDialog] = useState<{
@@ -34,10 +36,12 @@ export default function Checklists() {
   });
 
   const handleOpenChecklist = (id: string) => {
+    console.log(`Opening checklist: ${id}`);
     navigate(`/checklists/${id}`);
   };
 
   const handleDelete = (id: string, title: string) => {
+    console.log(`Preparing to delete checklist: ${id} (${title})`);
     setDeleteDialog({
       open: true,
       checklistId: id,
@@ -54,6 +58,8 @@ export default function Checklists() {
         setSearchTerm={setSearchTerm}
         filterType={filterType}
         setFilterType={setFilterType}
+        selectedCompanyId={selectedCompanyId}
+        setSelectedCompanyId={setSelectedCompanyId}
         totalChecklists={checklists.length}
       />
 

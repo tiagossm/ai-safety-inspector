@@ -25,6 +25,8 @@ export function useChecklists() {
     setSearchTerm,
     filterType,
     setFilterType,
+    selectedCompanyId,
+    setSelectedCompanyId,
     filteredChecklists
   } = useFilterChecklists(checklists);
 
@@ -39,6 +41,8 @@ export function useChecklists() {
     searchTerm,
     setSearchTerm,
     filterType,
-    setFilterType
+    setFilterType,
+    selectedCompanyId,
+    setSelectedCompanyId
   };
 }

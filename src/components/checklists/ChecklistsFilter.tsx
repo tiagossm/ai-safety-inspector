@@ -1,14 +1,29 @@
 
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
+import { Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Search, X } from "lucide-react";
 import { FilterType } from "@/hooks/checklist/useFilterChecklists";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { Company } from "@/types/company";
 
 interface ChecklistsFilterProps {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
   filterType: FilterType;
   setFilterType: (type: FilterType) => void;
+  selectedCompanyId: string | null;
+  setSelectedCompanyId: (id: string | null) => void;
   totalChecklists: number;
 }
 
@@ -17,70 +32,98 @@ export function ChecklistsFilter({
   setSearchTerm,
   filterType,
   setFilterType,
+  selectedCompanyId,
+  setSelectedCompanyId,
   totalChecklists
 }: ChecklistsFilterProps) {
-  const clearSearch = () => {
-    setSearchTerm("");
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
+  
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        setIsLoadingCompanies(true);
+        const { data, error } = await supabase
+          .from('companies')
+          .select('id, fantasy_name')
+          .eq('status', 'active')
+          .order('fantasy_name', { ascending: true });
+          
+        if (error) {
+          console.error("Error fetching companies for filter:", error);
+          throw error;
+        }
+        
+        console.log("Companies loaded for filter:", data?.length || 0);
+        setCompanies(data || []);
+      } catch (error) {
+        console.error("Error in fetchCompanies for filter:", error);
+      } finally {
+        setIsLoadingCompanies(false);
+      }
+    };
+    
+    fetchCompanies();
+  }, []);
+  
+  const filterTypeLabels = {
+    all: "Todos",
+    active: "Ativos",
+    inactive: "Inativos",
+    templates: "Templates",
+    my: "Meus Checklists"
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+    <div className="flex flex-col sm:flex-row gap-3">
+      <div className="relative flex-1">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Buscar por título, descrição ou categoria..."
+          type="search"
+          placeholder="Buscar checklists por título, descrição ou categoria..."
+          className="pl-8"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 pr-10"
         />
-        {searchTerm && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8"
-            onClick={clearSearch}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
       </div>
-
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant={filterType === "all" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setFilterType("all")}
+      
+      <div className="flex gap-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="flex gap-2">
+              <Filter className="h-4 w-4" />
+              <span className="hidden sm:inline">{filterTypeLabels[filterType]}</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuLabel>Filtrar por status</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuRadioGroup value={filterType} onValueChange={(value) => setFilterType(value as FilterType)}>
+              <DropdownMenuRadioItem value="all">Todos</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="active">Ativos</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="inactive">Inativos</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="templates">Templates</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="my">Meus Checklists</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        
+        <Select
+          value={selectedCompanyId || ""}
+          onValueChange={(value) => setSelectedCompanyId(value === "" ? null : value)}
         >
-          Todos
-        </Button>
-        <Button
-          variant={filterType === "active" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setFilterType("active")}
-        >
-          Ativos
-        </Button>
-        <Button
-          variant={filterType === "inactive" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setFilterType("inactive")}
-        >
-          Inativos
-        </Button>
-        <Button
-          variant={filterType === "templates" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setFilterType("templates")}
-        >
-          Templates
-        </Button>
-        <Button
-          variant={filterType === "my" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setFilterType("my")}
-        >
-          Meus Checklists
-        </Button>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Todas as empresas" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Todas as empresas</SelectItem>
+            {companies.map((company) => (
+              <SelectItem key={company.id} value={company.id}>
+                {company.fantasy_name || 'Empresa sem nome'}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );

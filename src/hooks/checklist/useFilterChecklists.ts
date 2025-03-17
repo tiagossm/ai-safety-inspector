@@ -7,9 +7,22 @@ export type FilterType = "all" | "active" | "inactive" | "templates" | "my";
 export function useFilterChecklists(checklists: Checklist[]) {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [filterType, setFilterType] = useState<FilterType>("all");
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
   
   const filteredChecklists = useMemo(() => {
+    console.log("Filtering checklists:", { 
+      total: checklists.length,
+      searchTerm,
+      filterType,
+      companyFilter: selectedCompanyId
+    });
+    
     return checklists.filter(checklist => {
+      // Filter by company if a company is selected
+      if (selectedCompanyId && checklist.company_id !== selectedCompanyId) {
+        return false;
+      }
+      
       // Filtragem por termo de busca (título, descrição ou categoria)
       const searchMatch = !searchTerm || 
         checklist.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -34,13 +47,15 @@ export function useFilterChecklists(checklists: Checklist[]) {
           return true;
       }
     });
-  }, [checklists, searchTerm, filterType]);
+  }, [checklists, searchTerm, filterType, selectedCompanyId]);
   
   return {
     searchTerm,
     setSearchTerm,
     filterType,
     setFilterType,
+    selectedCompanyId,
+    setSelectedCompanyId,
     filteredChecklists
   };
 }
