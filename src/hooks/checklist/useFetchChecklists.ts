@@ -144,9 +144,13 @@ export function useFetchChecklists() {
 
               if (itemsError) throw itemsError;
 
-              // Since 'resposta' column doesn't exist, let's count completions differently
-              // We're not checking for resposta now, just counting the total items
-              const completedCount = 0; // Default to 0 for now, as we can't determine completion status
+              // Since we confirmed that 'resposta' column doesn't exist in the checklist_itens table,
+              // we'll have to handle this differently
+              
+              // For now, we'll set completedCount to 0
+              // In a real implementation, you would need to add this column to the database
+              // or use a different approach to track completed items
+              const completedCount = 0;
 
               // Enriquece o checklist com novos campos
               const enrichedChecklist: Checklist = {

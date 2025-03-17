@@ -40,7 +40,7 @@ export interface ChecklistItem {
   obrigatorio: boolean;
   opcoes: string[] | null;
   ordem: number;
-  resposta?: string | number | boolean | null;
+  resposta?: string | number | boolean | null; // Keep as optional since it's not in the database yet
   permite_audio: boolean;
   permite_video: boolean;
   permite_foto: boolean;
