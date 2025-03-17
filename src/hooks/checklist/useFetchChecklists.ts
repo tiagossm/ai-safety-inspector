@@ -144,10 +144,10 @@ export function useFetchChecklists() {
 
               if (itemsError) throw itemsError;
 
-              // Count completed items - Fixed: remove the resposta not is null condition that's causing the error
+              // Count completed items - Fixed: we need to include the resposta field in our query
               const { data: completedItems, error: completedError } = await supabase
                 .from("checklist_itens")
-                .select("id")
+                .select("id, resposta")
                 .eq("checklist_id", checklist.id);
                 
               if (completedError) throw completedError;
