@@ -55,12 +55,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             .single();
             
           if (userData) {
+            // Ensure role is one of the valid enum values
+            const validRole: AuthUser["role"] = 
+              (userData.role === "super_admin" || 
+               userData.role === "company_admin" || 
+               userData.role === "consultant" || 
+               userData.role === "technician" || 
+               userData.role === "user") ? userData.role : "user";
+            
             // Update the user with real data
             setUser({
               ...defaultUser,
               id: data.session.user.id,
               email: data.session.user.email || defaultUser.email,
-              role: userData.role || defaultUser.role,
+              role: validRole,
               tier: userData.tier || defaultUser.tier
             });
             console.log("Using authenticated user from database:", userData.id);
