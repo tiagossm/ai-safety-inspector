@@ -7,33 +7,43 @@ export function useChecklistItems(checklistId: string) {
   return useQuery({
     queryKey: ["checklist-items", checklistId],
     queryFn: async () => {
-      if (!checklistId) throw new Error("Checklist ID is required");
+      if (!checklistId) {
+        console.error("Checklist ID is required but was:", checklistId);
+        return [] as ChecklistItem[];
+      }
       
       console.log("Buscando itens do checklist:", checklistId);
       
-      const { data, error } = await supabase
-        .from("checklist_itens")
-        .select("*")
-        .eq("checklist_id", checklistId)
-        .order("ordem", { ascending: true });
+      try {
+        const { data, error } = await supabase
+          .from("checklist_itens")
+          .select("*")
+          .eq("checklist_id", checklistId)
+          .order("ordem", { ascending: true });
 
-      if (error) {
-        console.error("Erro ao buscar itens do checklist:", error);
-        throw error;
+        if (error) {
+          console.error("Erro ao buscar itens do checklist:", error);
+          return [] as ChecklistItem[];
+        }
+
+        console.log(`Encontrados ${data?.length || 0} itens do checklist`);
+        
+        // Map the data to match our ChecklistItem type
+        return (data || []).map(item => ({
+          ...item,
+          tipo_resposta: item.tipo_resposta,
+          opcoes: Array.isArray(item.opcoes) 
+            ? item.opcoes.map(option => String(option)) 
+            : null,
+          resposta: null // Add this default value since the column doesn't exist
+        })) as ChecklistItem[];
+      } catch (err) {
+        console.error("Erro ao buscar itens do checklist:", err);
+        return [] as ChecklistItem[];
       }
-
-      console.log(`Encontrados ${data?.length} itens do checklist`);
-      
-      // Map the data to match our ChecklistItem type
-      return data.map(item => ({
-        ...item,
-        tipo_resposta: item.tipo_resposta,
-        opcoes: Array.isArray(item.opcoes) 
-          ? item.opcoes.map(option => String(option)) 
-          : null,
-        resposta: null // Add this default value since the column doesn't exist
-      })) as ChecklistItem[];
     },
-    enabled: !!checklistId
+    enabled: !!checklistId,
+    staleTime: 1000 * 60 * 5, // 5 minutos
+    retry: 3
   });
 }

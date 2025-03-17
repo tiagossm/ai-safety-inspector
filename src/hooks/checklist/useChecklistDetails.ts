@@ -17,7 +17,7 @@ export function useChecklistDetails(id: string) {
     data: checklistData, 
     isLoading, 
     error,
-    isError 
+    isError
   } = useFetchChecklistData(id);
 
   // Fetch checklist items with caching
@@ -29,6 +29,17 @@ export function useChecklistDetails(id: string) {
 
   // Fetch users for responsible selection
   const users = useFetchUsers();
+
+  // Log more detailed information for debugging
+  useEffect(() => {
+    console.log(`useChecklistDetails for ID: ${id}, isLoading: ${isLoading}, hasError: ${isError || isItemsError}`);
+    if (error || itemsError) {
+      console.error("Errors loading data:", { mainError: error, itemsError });
+    }
+    
+    console.log("Checklist data loaded:", checklistData ? "yes" : "no");
+    console.log("Items data loaded:", itemsData ? `yes (${itemsData.length} items)` : "no");
+  }, [id, isLoading, isError, isItemsError, error, itemsError, checklistData, itemsData]);
 
   // Handle checklist not found or errors
   useEffect(() => {
@@ -57,11 +68,15 @@ export function useChecklistDetails(id: string) {
 
   // Update items when data is loaded - with check to prevent unnecessary updates
   useEffect(() => {
-    if (itemsData && JSON.stringify(items) !== JSON.stringify(itemsData)) {
+    if (itemsData && itemsData.length > 0) {
       console.log("Setting items data:", itemsData.length, "items");
       setItems(itemsData as ChecklistItem[]);
+    } else if (itemsData && itemsData.length === 0 && items.length > 0) {
+      // Only clear items if we got an empty response back and we previously had items
+      console.log("Clearing items as server returned empty array");
+      setItems([]);
     }
-  }, [itemsData, items]);
+  }, [itemsData, items.length]);
 
   return {
     checklist,

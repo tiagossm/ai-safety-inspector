@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
 import { NewChecklist } from "@/types/checklist";
@@ -35,7 +34,6 @@ export function useChecklistSubmit() {
   const { user, refreshSession } = useAuth();
   const typedUser = user as AuthUser | null;
 
-  // Verify session on mount
   useEffect(() => {
     const checkSession = async () => {
       try {
@@ -64,21 +62,17 @@ export function useChecklistSubmit() {
     try {
       console.log("Submitting manual form:", form);
       
-      // Ensure user_id is set
       if (!form.user_id && typedUser?.id) {
         form.user_id = typedUser.id;
         console.log("Added user_id to form:", form.user_id);
       }
       
-      // Log the user tier for debugging
       console.log("User tier:", typedUser?.tier);
       console.log("User role:", typedUser?.role);
       
-      // Add additional logs for form validation
       console.log("Form validation - has title:", !!form.title);
       console.log("Questions count:", questions.length);
       
-      // Refresh session before creating checklist
       await refreshSession();
       
       const newChecklist = await createChecklist.mutateAsync(form);
@@ -88,11 +82,9 @@ export function useChecklistSubmit() {
         throw new Error("Erro ao criar checklist: ID não foi gerado");
       }
       
-      // Add questions to the created checklist
       if (questions.length > 0) {
         console.log(`Adding ${questions.length} questions to checklist ${newChecklist.id}`);
         
-        // Get current session for questions insertion
         const { data: sessionData } = await supabase.auth.getSession();
         if (!sessionData.session) {
           console.error("No active session for questions insertion");
@@ -123,7 +115,6 @@ export function useChecklistSubmit() {
       
       toast.success("Checklist criado com sucesso!");
       
-      // Redirect to the newly created checklist details page
       navigate(`/checklists/${newChecklist.id}`);
       
       return true;
@@ -144,13 +135,11 @@ export function useChecklistSubmit() {
   ) => {
     e.preventDefault();
     
-    // Prevent multiple submissions
     if (isSubmitting) {
       console.log("Submission already in progress, ignoring duplicate submit");
       return false;
     }
     
-    // Validate form data based on active tab
     if (activeTab === "manual" && !form.title.trim()) {
       toast.error("O título é obrigatório");
       return false;
@@ -166,10 +155,8 @@ export function useChecklistSubmit() {
     setIsSubmitting(true);
     
     try {
-      // Refresh token before submission
       await refreshSession();
       
-      // Check authentication status
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) {
         console.error("No active session found");
@@ -182,7 +169,6 @@ export function useChecklistSubmit() {
       console.log(`Processing submission for ${activeTab} tab with user:`, typedUser?.id);
       console.log("Current session valid:", !!sessionData.session);
       
-      // Ensure user_id is set in the form
       if (!form.user_id && typedUser?.id) {
         form.user_id = typedUser.id;
         console.log("Added user_id to form:", form.user_id);
@@ -193,19 +179,17 @@ export function useChecklistSubmit() {
       
       if (activeTab === "manual") {
         success = await submitManualChecklist(form, questions);
-        // Navigation is handled inside submitManualChecklist
         return success;
       } 
       else if (activeTab === "import" && file) {
         console.log("Processing file import");
         console.log("File details:", file.name, file.type, `${Math.round(file.size / 1024)} KB`);
         
-        const importResult = await importFromFile(file, form) as ImportResult;
+        const importResult = await importFromFile(file, form) as any;
         
         if (importResult && typeof importResult === 'object') {
-          success = true;
+          success = importResult.success || true;
           
-          // Handle different possible response structures
           if ('id' in importResult) {
             checklistId = importResult.id;
           } else if ('checklist_id' in importResult) {
@@ -228,7 +212,6 @@ export function useChecklistSubmit() {
         if (aiResult && typeof aiResult === 'object') {
           success = true;
           
-          // Handle different possible response structures
           if ('id' in aiResult) {
             checklistId = aiResult.id;
           } else if ('data' in aiResult) {
@@ -253,7 +236,6 @@ export function useChecklistSubmit() {
       if (success) {
         toast.success("Checklist criado com sucesso!");
         
-        // Navigate to the details page if we have an ID and haven't already navigated
         if (checklistId && activeTab !== "manual") {
           console.log(`Redirecting to checklist details: /checklists/${checklistId}`);
           navigate(`/checklists/${checklistId}`);
@@ -265,7 +247,6 @@ export function useChecklistSubmit() {
         
         return true;
       } else {
-        // Only show this error if we haven't already shown a more specific one
         if (activeTab !== "manual") {
           toast.error("Erro ao criar checklist. Verifique os dados e tente novamente.");
         }
@@ -276,7 +257,6 @@ export function useChecklistSubmit() {
       let errorMessage = "Erro ao criar checklist.";
       
       if (error instanceof Error) {
-        // Check for JWT-related errors
         if (error.message.includes('JWT') || error.message.includes('token') || error.message.includes('auth')) {
           errorMessage += " Problema de autenticação. Tente fazer login novamente.";
           navigate("/auth");
@@ -298,3 +278,4 @@ export function useChecklistSubmit() {
     sessionChecked
   };
 }
+

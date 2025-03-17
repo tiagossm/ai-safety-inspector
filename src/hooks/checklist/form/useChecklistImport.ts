@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
@@ -144,8 +145,19 @@ export function useChecklistImport() {
       console.log("✅ Resposta da função Edge:", data);
 
       if (data?.success) {
+        // Adicionando log para verificar o ID do checklist retornado
+        const checklistId = data.checklist_id || data.id;
+        console.log("Opening checklist:", checklistId);
+        
         toast.success(`Checklist importado com sucesso! ${data.processed_items || 0} itens processados.`);
-        return data;
+        
+        // Retorna objeto contendo ID do checklist criado para facilitar navegação
+        return {
+          success: true,
+          checklist_id: checklistId,
+          id: checklistId,
+          processed_items: data.processed_items || 0
+        };
       } else {
         console.error("❌ Erro na importação:", data?.error || "Erro desconhecido");
         toast.error(data?.error || "Erro ao importar checklist");

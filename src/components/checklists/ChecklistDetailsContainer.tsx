@@ -19,7 +19,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClipboardList, MessageSquare, Paperclip, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
-// Tipos de perguntas disponíveis no checklist
 const questionTypes = [
   { value: "sim/não", label: "Sim/Não" },
   { value: "numérico", label: "Resposta Numérica" },
@@ -43,7 +42,6 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
   const [history, setHistory] = useState<ChecklistHistory[]>([]);
   const [loadingExtra, setLoadingExtra] = useState(false);
   
-  // Use the passed checklistId
   const {
     checklist,
     setChecklist,
@@ -59,7 +57,6 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
   const addItemMutation = useAddChecklistItem(checklistId);
   const saveChecklistMutation = useSaveChecklist(checklistId);
 
-  // Verifica se o checklist existe e trata erros
   useEffect(() => {
     if (error) {
       console.error("Erro ao carregar checklist:", error);
@@ -67,7 +64,11 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
     }
   }, [error]);
 
-  // Redireciona caso o checklist não seja encontrado
+  useEffect(() => {
+    console.log("ChecklistDetailsContainer rendered with ID:", checklistId);
+    console.log("Items loaded:", items?.length || 0);
+  }, [checklistId, items]);
+
   useEffect(() => {
     if (notFound) {
       toast.error("Checklist não encontrado ou acesso negado.");
@@ -75,16 +76,13 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
     }
   }, [notFound, navigate]);
   
-  // Load comments, attachments and history when checklist is loaded and tab changes
   useEffect(() => {
     const loadExtraData = async () => {
       if (!checklistId || !activeTab || activeTab === 'items') return;
       
       setLoadingExtra(true);
       try {
-        // Load comments
         if (activeTab === 'comments') {
-          // First, get comments
           const { data: commentsData, error: commentsError } = await supabase
             .from('checklist_comments')
             .select(`*`)
@@ -93,7 +91,6 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
             
           if (commentsError) throw commentsError;
           
-          // Then, get user names separately for each comment
           const commentsWithNames = await Promise.all(commentsData.map(async (comment) => {
             const { data: userData } = await supabase
               .from('users')
@@ -114,9 +111,7 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
           setComments(commentsWithNames);
         }
         
-        // Load attachments
         if (activeTab === 'attachments') {
-          // First, get attachments
           const { data: attachmentsData, error: attachmentsError } = await supabase
             .from('checklist_attachments')
             .select(`*`)
@@ -125,7 +120,6 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
             
           if (attachmentsError) throw attachmentsError;
           
-          // Then, get user names separately for each attachment
           const attachmentsWithNames = await Promise.all(attachmentsData.map(async (attachment) => {
             const { data: userData } = await supabase
               .from('users')
@@ -147,9 +141,7 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
           setAttachments(attachmentsWithNames);
         }
         
-        // Load history
         if (activeTab === 'history') {
-          // First, get history entries
           const { data: historyData, error: historyError } = await supabase
             .from('checklist_history')
             .select(`*`)
@@ -158,7 +150,6 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
             
           if (historyError) throw historyError;
           
-          // Then, get user names separately for each history entry
           const historyWithNames = await Promise.all(historyData.map(async (entry) => {
             const { data: userData } = await supabase
               .from('users')
@@ -203,7 +194,6 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
     });
   };
 
-  // Função para deletar um item do checklist
   const handleDeleteItem = (itemId: string) => {
     deleteItemMutation.mutate(itemId, {
       onSuccess: () => {
@@ -216,9 +206,7 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
     });
   };
 
-  // Função para adicionar um novo item ao checklist
   const handleAddItem = (newItem: Partial<ChecklistItem>) => {
-    // Ensure opcoes is always an array of strings or null
     let sanitizedOptions: string[] | null = null;
     
     if (newItem.opcoes) {
@@ -250,7 +238,6 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
     });
   };
 
-  // Função para salvar o checklist atualizado
   const handleSave = async () => {
     if (!checklist) return;
     
@@ -268,7 +255,6 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
         status: checklist.status
       });
 
-      // Add history entry - getting the current user ID
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
@@ -288,16 +274,15 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
       setSaving(false);
     }
   };
-  
-  // Handlers for comments and attachments
+
   const handleAddComment = (comment: ChecklistComment) => {
     setComments(prev => [comment, ...prev]);
   };
-  
+
   const handleAddAttachment = (attachment: ChecklistAttachment) => {
     setAttachments(prev => [attachment, ...prev]);
   };
-  
+
   const handleRemoveAttachment = (attachmentId: string) => {
     setAttachments(prev => prev.filter(a => a.id !== attachmentId));
   };
@@ -323,7 +308,6 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
     );
   }
 
-  // Calculate progress or provide defaults
   const totalItems = items.length;
   const completedItems = items.filter(item => item.resposta !== null && item.resposta !== undefined).length;
   const progressPercentage = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
@@ -344,7 +328,6 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
             setChecklist={setChecklist}
           />
 
-          {/* Progress bar */}
           <div className="space-y-2">
             <div className="flex justify-between text-sm text-muted-foreground">
               <span>Progresso</span>
@@ -353,12 +336,11 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
             <Progress value={progressPercentage} className="h-2" />
           </div>
 
-          {/* Tabs navigation */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid grid-cols-4">
               <TabsTrigger value="items" className="flex items-center gap-2">
                 <ClipboardList className="h-4 w-4" />
-                <span>Itens</span>
+                <span>Itens ({totalItems})</span>
               </TabsTrigger>
               <TabsTrigger value="comments" className="flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />
@@ -385,12 +367,22 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
             </TabsList>
             
             <TabsContent value="items" className="space-y-4 pt-4">
-              <ChecklistItemsList
-                items={items}
-                onItemChange={handleItemChange}
-                onDeleteItem={handleDeleteItem}
-                questionTypes={questionTypes}
-              />
+              {totalItems === 0 ? (
+                <div className="text-center py-8 border border-dashed rounded-md">
+                  <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-medium">Nenhum item no checklist</h3>
+                  <p className="text-muted-foreground mt-1 max-w-md mx-auto">
+                    Este checklist não possui itens. Adicione perguntas usando o formulário abaixo ou importe um novo checklist com itens.
+                  </p>
+                </div>
+              ) : (
+                <ChecklistItemsList
+                  items={items}
+                  onItemChange={handleItemChange}
+                  onDeleteItem={handleDeleteItem}
+                  questionTypes={questionTypes}
+                />
+              )}
 
               <AddChecklistItemForm
                 checklistId={checklistId}
