@@ -126,15 +126,12 @@ export function useChecklistImport() {
       formData.append('file', file);
       formData.append('form', JSON.stringify(checklistData));
 
-      console.log("📤 Enviando requisição para Edge Function com JWT:", jwt);
+      console.log("📤 Enviando arquivo para processamento via Supabase Edge Function...");
 
       // Chamada para a Supabase Edge Function
       const { data, error } = await supabase.functions.invoke('process-checklist-csv', {
         method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${jwt}`,
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY // ✅ Garante que a API Key seja enviada
-        },
+        headers: { 'Authorization': `Bearer ${jwt}` },
         body: formData
       });
 
