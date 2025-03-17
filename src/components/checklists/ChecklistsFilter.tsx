@@ -46,7 +46,7 @@ export function ChecklistsFilter({
       try {
         const { data, error } = await supabase
           .from('companies')
-          .select('id, fantasy_name, name')
+          .select('id, fantasy_name')
           .order('fantasy_name', { ascending: true });
         
         if (error) throw error;
@@ -54,7 +54,7 @@ export function ChecklistsFilter({
         // Process data to ensure we have no empty values for Select.Item
         const processedCompanies = data.map(company => ({
           id: company.id,
-          name: company.fantasy_name || company.name || "Empresa " + company.id.substring(0, 8)
+          fantasy_name: company.fantasy_name || "Empresa " + company.id.substring(0, 8)
         }));
         
         setCompanies(processedCompanies);
@@ -113,7 +113,7 @@ export function ChecklistsFilter({
                 <SelectItem value="todos">Todas as empresas</SelectItem>
                 {companies.map((company) => (
                   <SelectItem key={company.id} value={company.id}>
-                    {company.name}
+                    {company.fantasy_name || "Empresa sem nome"}
                   </SelectItem>
                 ))}
               </SelectGroup>

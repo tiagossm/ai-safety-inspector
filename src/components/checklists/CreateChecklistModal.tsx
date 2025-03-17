@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
+import { CompanyListItem } from "@/hooks/checklist/useFilterChecklists";
 
 interface CreateChecklistModalProps {
   isOpen: boolean;
@@ -25,7 +26,7 @@ export function CreateChecklistModal({ isOpen, onClose }: CreateChecklistModalPr
   const [companyId, setCompanyId] = useState("");
   const [isTemplate, setIsTemplate] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [companies, setCompanies] = useState<{ id: string; fantasy_name: string; }[]>([]);
+  const [companies, setCompanies] = useState<CompanyListItem[]>([]);
   
   const createChecklist = useCreateChecklist();
   

@@ -4,7 +4,7 @@ import { Checklist } from "@/types/checklist";
 
 export type CompanyListItem = {
   id: string;
-  name: string;
+  fantasy_name: string | null;
 };
 
 export function useFilterChecklists(checklists: Checklist[]) {
