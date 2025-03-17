@@ -141,7 +141,7 @@ export function useChecklistImport() {
     } catch (error: any) {
       console.error("❌ Erro geral ao importar checklist:", error);
       toast.error(`Erro ao importar checklist: ${error.message}`);
-      return false;
+      return false;s
     }
   };
 
