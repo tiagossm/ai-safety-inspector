@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Checklist, ChecklistItem, ChecklistComment, ChecklistAttachment, ChecklistHistory } from "@/types/checklist";
@@ -191,7 +190,6 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
     loadExtraData();
   }, [checklistId, activeTab]);
 
-  // Função para atualizar um item do checklist
   const handleItemChange = (updatedItem: ChecklistItem) => {
     setItems((prevItems) =>
       prevItems.map(item => (item.id === updatedItem.id ? updatedItem : item))
