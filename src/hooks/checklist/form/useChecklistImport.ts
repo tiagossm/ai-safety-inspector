@@ -97,24 +97,26 @@ export function useChecklistImport() {
       const jwt = sessionData.session.access_token;
       console.log("🔑 Token JWT obtido. Comprimento:", jwt.length);
 
-      // Verificando se o usuário autenticado tem um user_id válido
+      // 📌 Verificando se o usuário autenticado tem um `user_id` válido
+      console.log("🔍 Verificando usuário antes da criação do checklist:", {
+        user_id: user?.id || "NÃO ENCONTRADO",
+        email: user?.email || "NÃO ENCONTRADO",
+        autenticado: !!user
+      });
+
+      // 🚨 Impede o envio de user_id inválido
       if (!user?.id || user.id === "00000000-0000-0000-0000-000000000000") {
         console.error("🚨 Erro: Usuário não autenticado ou ID inválido!");
         toast.error("Erro: Usuário não autenticado. Faça login novamente.");
         return false;
       }
 
-      console.log("👤 Usuário autenticado:", {
-        user_id: user.id,
-        email: user.email,
-      });
-
-      // Ajustando status corretamente e garantindo que user_id seja válido
+      // ✅ Criando o checklist com user_id válido
       const checklistData = {
         ...form,
-        status: form.status || "pendente", // ✅ Agora aceita "pendente"
+        status: form.status || "active", // 🔥 Garante um status válido
         status_checklist: form.status_checklist || "ativo",
-        user_id: user.id, // ✅ Agora sempre usa um ID válido
+        user_id: user.id, // 🔥 Garante que sempre haverá um ID de usuário válido
       };
 
       console.log("📝 Dados do checklist preparados para envio:", checklistData);
