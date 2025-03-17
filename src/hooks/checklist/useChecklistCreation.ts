@@ -10,12 +10,15 @@ import { useChecklistSubmit } from "./form/useChecklistSubmit";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { CompanyListItem } from "@/types/CompanyListItem";
 
 export function useChecklistCreation() {
   const navigate = useNavigate();
   const { user, refreshSession } = useAuth();
   const [activeTab, setActiveTab] = useState("manual");
   const [tokenRefreshed, setTokenRefreshed] = useState(false);
+  const [companies, setCompanies] = useState<CompanyListItem[]>([]);
+  const [loadingCompanies, setLoadingCompanies] = useState(true);
   
   // Check and refresh JWT token on component mount
   useEffect(() => {
@@ -69,11 +72,36 @@ export function useChecklistCreation() {
     };
   }, [refreshSession, navigate]);
   
+  // Fetch companies
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        setLoadingCompanies(true);
+        const { data, error } = await supabase
+          .from('companies')
+          .select('id, fantasy_name')
+          .eq('status', 'active')
+          .order('fantasy_name', { ascending: true });
+          
+        if (error) throw error;
+        setCompanies(data || []);
+        console.log(`Loaded ${data?.length || 0} companies for checklist creation`);
+      } catch (error) {
+        console.error('Error fetching companies:', error);
+        toast.error('Erro ao carregar empresas');
+      } finally {
+        setLoadingCompanies(false);
+      }
+    };
+    
+    fetchCompanies();
+  }, []);
+  
   // Import all our smaller hooks
   const { form, setForm } = useChecklistForm();
   const { questions, handleAddQuestion, handleRemoveQuestion, handleQuestionChange } = useChecklistQuestions();
   const { file, handleFileChange, clearFile } = useChecklistFileUpload();
-  const { aiPrompt, setAiPrompt, numQuestions, setNumQuestions, aiLoading } = useChecklistAI();
+  const { aiPrompt, setAiPrompt, numQuestions, setNumQuestions, aiLoading, generateAIChecklist } = useChecklistAI();
   const { users, loadingUsers } = useChecklistUsers();
   const { isSubmitting, handleSubmit: submitChecklist } = useChecklistSubmit();
 
@@ -113,6 +141,7 @@ export function useChecklistCreation() {
       console.log("Form being submitted:", {
         activeTab,
         title: form.title,
+        company_id: form.company_id,
         user_id: form.user_id,
         user_tier: user?.tier,
         user_role: user?.role,
@@ -120,7 +149,24 @@ export function useChecklistCreation() {
         aiPromptLength: aiPrompt?.length || 0
       });
       
-      const success = await submitChecklist(e, activeTab, form, questions, file, aiPrompt);
+      let success = false;
+      
+      if (activeTab === "ai") {
+        // Handle AI-generated checklist
+        if (aiPrompt.trim()) {
+          try {
+            const result = await generateAIChecklist(form);
+            console.log("AI generation result:", result);
+            success = !!result;
+          } catch (err) {
+            console.error("Error generating AI checklist:", err);
+            toast.error("Erro ao gerar checklist com IA. Tente novamente mais tarde.");
+            return false;
+          }
+        }
+      } else {
+        success = await submitChecklist(e, activeTab, form, questions, file, aiPrompt);
+      }
       
       if (success) {
         console.log("Submission successful");
@@ -158,6 +204,8 @@ export function useChecklistCreation() {
     handleQuestionChange,
     handleSubmit: onSubmit,
     navigate,
-    tokenRefreshed
+    tokenRefreshed,
+    companies,
+    loadingCompanies
   };
 }

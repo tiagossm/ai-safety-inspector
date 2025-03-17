@@ -33,7 +33,9 @@ export default function CreateChecklist() {
     handleRemoveQuestion,
     handleQuestionChange,
     handleSubmit,
-    navigate
+    navigate,
+    companies,
+    loadingCompanies
   } = useChecklistCreation();
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -87,6 +89,8 @@ export default function CreateChecklist() {
               onAddQuestion={handleAddQuestion}
               onRemoveQuestion={handleRemoveQuestion}
               onQuestionChange={handleQuestionChange}
+              companies={companies}
+              loadingCompanies={loadingCompanies}
             />
           </TabsContent>
           
@@ -98,6 +102,8 @@ export default function CreateChecklist() {
               loadingUsers={loadingUsers}
               file={file}
               onFileChange={handleFileChange}
+              companies={companies}
+              loadingCompanies={loadingCompanies}
             />
           </TabsContent>
           
@@ -113,6 +119,8 @@ export default function CreateChecklist() {
               setNumQuestions={setNumQuestions}
               onGenerateAI={() => {}} // Este é tratado no submit
               aiLoading={aiLoading}
+              companies={companies}
+              loadingCompanies={loadingCompanies}
             />
           </TabsContent>
         </Tabs>

@@ -1,11 +1,7 @@
 
 import { useState, useMemo } from "react";
 import { Checklist } from "@/types/checklist";
-
-export type CompanyListItem = {
-  id: string;
-  fantasy_name: string | null;
-};
+import { CompanyListItem } from "@/types/CompanyListItem";
 
 export function useFilterChecklists(checklists: Checklist[]) {
   const [searchTerm, setSearchTerm] = useState("");

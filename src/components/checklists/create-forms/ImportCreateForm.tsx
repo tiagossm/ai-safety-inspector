@@ -20,6 +20,7 @@ import { FormSection } from "./FormSection";
 import { NewChecklist } from "@/types/checklist";
 import { Card, CardContent } from "@/components/ui/card";
 import { useChecklistImport } from "@/hooks/checklist/form/useChecklistImport";
+import { CompanyListItem } from "@/types/CompanyListItem";
 
 // Checklist category options
 const CATEGORIES = [
@@ -38,6 +39,8 @@ interface ImportCreateFormProps {
   loadingUsers: boolean;
   file: File | null;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  companies: CompanyListItem[];
+  loadingCompanies: boolean;
 }
 
 export function ImportCreateForm({
@@ -46,7 +49,9 @@ export function ImportCreateForm({
   users,
   loadingUsers,
   file,
-  onFileChange
+  onFileChange,
+  companies,
+  loadingCompanies
 }: ImportCreateFormProps) {
   const { getTemplateFileUrl } = useChecklistImport();
   
@@ -101,6 +106,7 @@ export function ImportCreateForm({
                 <SelectValue placeholder="Selecione um responsável" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="">Nenhum</SelectItem>
                 {loadingUsers ? (
                   <SelectItem value="loading" disabled>Carregando...</SelectItem>
                 ) : (
@@ -114,6 +120,32 @@ export function ImportCreateForm({
             </Select>
           </div>
           
+          <div className="grid gap-2">
+            <Label htmlFor="company-import">Empresa</Label>
+            <Select 
+              value={form.company_id || ""} 
+              onValueChange={(value) => setForm({ ...form, company_id: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione uma empresa" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Nenhuma</SelectItem>
+                {loadingCompanies ? (
+                  <SelectItem value="loading" disabled>Carregando empresas...</SelectItem>
+                ) : (
+                  companies.map((company) => (
+                    <SelectItem key={company.id} value={company.id}>
+                      {company.fantasy_name || 'Empresa sem nome'}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
+        <div className="grid md:grid-cols-2 gap-4">
           <div className="grid gap-2">
             <Label htmlFor="due-date-import">Data de vencimento</Label>
             <Popover>
@@ -143,17 +175,17 @@ export function ImportCreateForm({
               </PopoverContent>
             </Popover>
           </div>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="template-import"
-            checked={form.is_template}
-            onCheckedChange={(checked) => setForm({ ...form, is_template: checked })}
-          />
-          <Label htmlFor="template-import">
-            Salvar como template
-          </Label>
+          
+          <div className="flex items-center space-x-2 self-end">
+            <Switch
+              id="template-import"
+              checked={form.is_template}
+              onCheckedChange={(checked) => setForm({ ...form, is_template: checked })}
+            />
+            <Label htmlFor="template-import">
+              Salvar como template
+            </Label>
+          </div>
         </div>
       </FormSection>
 

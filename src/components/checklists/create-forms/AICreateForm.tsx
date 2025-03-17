@@ -41,6 +41,8 @@ interface AICreateFormProps {
   setNumQuestions: React.Dispatch<React.SetStateAction<number>>;
   onGenerateAI: () => void;
   aiLoading: boolean;
+  companies: CompanyListItem[];
+  loadingCompanies: boolean;
 }
 
 export function AICreateForm({
@@ -53,7 +55,9 @@ export function AICreateForm({
   numQuestions,
   setNumQuestions,
   onGenerateAI,
-  aiLoading
+  aiLoading,
+  companies,
+  loadingCompanies
 }: AICreateFormProps) {
   return (
     <div className="space-y-6">
@@ -125,6 +129,7 @@ export function AICreateForm({
                 <SelectValue placeholder="Selecione um responsável" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="">Nenhum</SelectItem>
                 {loadingUsers ? (
                   <SelectItem value="loading" disabled>Carregando...</SelectItem>
                 ) : (
@@ -138,6 +143,32 @@ export function AICreateForm({
             </Select>
           </div>
           
+          <div className="grid gap-2">
+            <Label htmlFor="company-ai">Empresa</Label>
+            <Select 
+              value={form.company_id || ""} 
+              onValueChange={(value) => setForm({ ...form, company_id: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione uma empresa" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Nenhuma</SelectItem>
+                {loadingCompanies ? (
+                  <SelectItem value="loading" disabled>Carregando empresas...</SelectItem>
+                ) : (
+                  companies.map((company) => (
+                    <SelectItem key={company.id} value={company.id}>
+                      {company.fantasy_name || 'Empresa sem nome'}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
+        <div className="grid md:grid-cols-2 gap-4">
           <div className="grid gap-2">
             <Label htmlFor="due-date-ai">Data de vencimento</Label>
             <Popover>
@@ -169,17 +200,17 @@ export function AICreateForm({
               </PopoverContent>
             </Popover>
           </div>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="template-ai"
-            checked={form.is_template}
-            onCheckedChange={(checked) => setForm({ ...form, is_template: checked })}
-          />
-          <Label htmlFor="template-ai">
-            Salvar como template
-          </Label>
+          
+          <div className="flex items-center space-x-2 self-end">
+            <Switch
+              id="template-ai"
+              checked={form.is_template}
+              onCheckedChange={(checked) => setForm({ ...form, is_template: checked })}
+            />
+            <Label htmlFor="template-ai">
+              Salvar como template
+            </Label>
+          </div>
         </div>
       </div>
     </div>

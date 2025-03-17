@@ -5,10 +5,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Trash2 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, PlusCircle, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -18,9 +17,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { FormSection } from "./FormSection";
 import { NewChecklist } from "@/types/checklist";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Card, CardContent } from "@/components/ui/card";
+import { CompanyListItem } from "@/types/CompanyListItem";
 
 // Checklist category options
 const CATEGORIES = [
@@ -32,14 +32,13 @@ const CATEGORIES = [
   { value: "general", label: "Geral" }
 ];
 
-// Question type options
 const QUESTION_TYPES = [
   { value: "sim/não", label: "Sim/Não" },
   { value: "texto", label: "Texto" },
   { value: "numérico", label: "Numérico" },
-  { value: "foto", label: "Foto" },
-  { value: "assinatura", label: "Assinatura" },
-  { value: "seleção múltipla", label: "Seleção Múltipla" }
+  { value: "múltipla escolha", label: "Múltipla Escolha" },
+  { value: "data", label: "Data" },
+  { value: "hora", label: "Hora" },
 ];
 
 interface ManualCreateFormProps {
@@ -47,14 +46,12 @@ interface ManualCreateFormProps {
   setForm: React.Dispatch<React.SetStateAction<NewChecklist>>;
   users: any[];
   loadingUsers: boolean;
-  questions: Array<{
-    text: string;
-    type: string;
-    required: boolean;
-  }>;
+  questions: Array<{ text: string; type: string; required: boolean }>;
   onAddQuestion: () => void;
   onRemoveQuestion: (index: number) => void;
   onQuestionChange: (index: number, field: string, value: any) => void;
+  companies: CompanyListItem[];
+  loadingCompanies: boolean;
 }
 
 export function ManualCreateForm({
@@ -65,14 +62,16 @@ export function ManualCreateForm({
   questions,
   onAddQuestion,
   onRemoveQuestion,
-  onQuestionChange
+  onQuestionChange,
+  companies,
+  loadingCompanies
 }: ManualCreateFormProps) {
   return (
     <div className="space-y-6">
-      <div className="grid gap-4">
+      <FormSection title="Informações Básicas">
         <div className="grid md:grid-cols-2 gap-4">
           <div className="grid gap-2">
-            <Label htmlFor="title" className="font-medium">Título *</Label>
+            <Label htmlFor="title">Título *</Label>
             <Input
               id="title"
               value={form.title}
@@ -108,10 +107,11 @@ export function ManualCreateForm({
             id="description"
             value={form.description || ""}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
-            placeholder="Descreva o propósito desta lista de verificação"
+            placeholder="Breve descrição sobre o propósito dessa lista de verificação"
+            rows={3}
           />
         </div>
-        
+
         <div className="grid md:grid-cols-2 gap-4">
           <div className="grid gap-2">
             <Label htmlFor="responsible">Responsável</Label>
@@ -123,12 +123,13 @@ export function ManualCreateForm({
                 <SelectValue placeholder="Selecione um responsável" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="">Nenhum</SelectItem>
                 {loadingUsers ? (
                   <SelectItem value="loading" disabled>Carregando...</SelectItem>
                 ) : (
                   users.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
-                      {user.name}
+                      {user.name || user.email || 'Usuário sem nome'}
                     </SelectItem>
                   ))
                 )}
@@ -136,6 +137,32 @@ export function ManualCreateForm({
             </Select>
           </div>
           
+          <div className="grid gap-2">
+            <Label htmlFor="company">Empresa</Label>
+            <Select 
+              value={form.company_id || ""} 
+              onValueChange={(value) => setForm({ ...form, company_id: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione uma empresa" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Nenhuma</SelectItem>
+                {loadingCompanies ? (
+                  <SelectItem value="loading" disabled>Carregando empresas...</SelectItem>
+                ) : (
+                  companies.map((company) => (
+                    <SelectItem key={company.id} value={company.id}>
+                      {company.fantasy_name || 'Empresa sem nome'}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
+        <div className="grid md:grid-cols-2 gap-4">
           <div className="grid gap-2">
             <Label htmlFor="due-date">Data de vencimento</Label>
             <Popover>
@@ -165,99 +192,91 @@ export function ManualCreateForm({
               </PopoverContent>
             </Popover>
           </div>
+          
+          <div className="flex items-center space-x-2 self-end">
+            <Switch
+              id="template"
+              checked={form.is_template}
+              onCheckedChange={(checked) => setForm({ ...form, is_template: checked })}
+            />
+            <Label htmlFor="template">
+              Salvar como template
+            </Label>
+          </div>
         </div>
-        
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="template"
-            checked={form.is_template}
-            onCheckedChange={(checked) => setForm({ ...form, is_template: checked })}
-          />
-          <Label htmlFor="template">
-            Salvar como template
-          </Label>
-        </div>
-      </div>
+      </FormSection>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>Perguntas da Lista</span>
-            <Button type="button" onClick={onAddQuestion} size="sm" className="flex items-center gap-1">
-              <PlusCircle className="h-4 w-4" />
-              Adicionar Pergunta
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {questions.length === 0 ? (
-              <div className="text-center py-4 text-sm text-muted-foreground">
-                Nenhuma pergunta adicionada. Clique em "Adicionar Pergunta" para começar.
-              </div>
-            ) : (
-              questions.map((question, index) => (
-                <div key={index} className="border p-4 rounded-md relative">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-2 right-2"
-                    onClick={() => onRemoveQuestion(index)}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+      <FormSection title="Perguntas">
+        <div className="space-y-4">
+          {questions.map((question, index) => (
+            <Card key={index} className="p-0 overflow-hidden">
+              <CardContent className="p-4 grid gap-4">
+                <div className="grid md:grid-cols-5 gap-4">
+                  <div className="md:col-span-3">
+                    <Label htmlFor={`question-${index}`}>Pergunta</Label>
+                    <Input
+                      id={`question-${index}`}
+                      value={question.text}
+                      onChange={(e) => onQuestionChange(index, 'text', e.target.value)}
+                      placeholder="Digite a pergunta"
+                    />
+                  </div>
                   
-                  <div className="grid gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor={`question-${index}`}>Pergunta</Label>
-                      <Input
-                        id={`question-${index}`}
-                        value={question.text}
-                        onChange={(e) => onQuestionChange(index, "text", e.target.value)}
-                        placeholder="Escreva sua pergunta aqui"
+                  <div>
+                    <Label htmlFor={`question-type-${index}`}>Tipo</Label>
+                    <Select 
+                      value={question.type} 
+                      onValueChange={(value) => onQuestionChange(index, 'type', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {QUESTION_TYPES.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            {type.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex items-center justify-between space-x-2">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id={`question-required-${index}`}
+                        checked={question.required}
+                        onCheckedChange={(checked) => onQuestionChange(index, 'required', checked)}
                       />
+                      <Label htmlFor={`question-required-${index}`}>Obrigatório</Label>
                     </div>
                     
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor={`type-${index}`}>Tipo de Resposta</Label>
-                        <Select
-                          value={question.type}
-                          onValueChange={(value) => onQuestionChange(index, "type", value)}
-                        >
-                          <SelectTrigger id={`type-${index}`}>
-                            <SelectValue placeholder="Selecione o tipo" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {QUESTION_TYPES.map((type) => (
-                              <SelectItem key={`${index}-${type.value}`} value={type.value}>
-                                {type.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`required-${index}`}
-                          checked={question.required}
-                          onCheckedChange={(checked) => 
-                            onQuestionChange(index, "required", Boolean(checked))
-                          }
-                        />
-                        <Label htmlFor={`required-${index}`}>
-                          Resposta obrigatória
-                        </Label>
-                      </div>
-                    </div>
+                    <Button 
+                      type="button" 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => onRemoveQuestion(index)}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              </CardContent>
+            </Card>
+          ))}
+          
+          <Button 
+            type="button" 
+            variant="outline" 
+            className="w-full flex items-center justify-center gap-2 py-6"
+            onClick={onAddQuestion}
+          >
+            <PlusCircle className="h-4 w-4" />
+            <span>Adicionar Nova Pergunta</span>
+          </Button>
+        </div>
+      </FormSection>
     </div>
   );
 }
