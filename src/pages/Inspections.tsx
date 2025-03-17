@@ -171,10 +171,10 @@ export default function Inspections() {
             <Card key={inspection.id} className="flex flex-col">
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-start">
-                  <Badge variant={getStatusVariant(inspection.status)}>
+                  <Badge variant={getStatusVariant(inspection.status) as "warning" | "success" | "default" | "secondary"}>
                     {inspection.status}
                   </Badge>
-                  <Badge variant={getApprovalVariant(inspection.approvalStatus)}>
+                  <Badge variant={getApprovalVariant(inspection.approvalStatus) as "success" | "warning" | "destructive" | "secondary"}>
                     {getApprovalText(inspection.approvalStatus)}
                   </Badge>
                 </div>

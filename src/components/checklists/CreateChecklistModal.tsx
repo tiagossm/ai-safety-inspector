@@ -169,7 +169,7 @@ export function CreateChecklistModal({ isOpen, onClose }: CreateChecklistModalPr
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectItem value="">Nenhuma</SelectItem>
+                  <SelectItem value="none">Nenhuma</SelectItem>
                   {companies.map((company) => (
                     <SelectItem key={company.id} value={company.id}>
                       {company.fantasy_name}
@@ -202,3 +202,4 @@ export function CreateChecklistModal({ isOpen, onClose }: CreateChecklistModalPr
     </Dialog>
   );
 }
+

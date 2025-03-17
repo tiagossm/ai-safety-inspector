@@ -15,7 +15,7 @@ export function UnitTypeField({ form }: UnitTypeFieldProps) {
       render={({ field }) => (
         <FormItem>
           <FormLabel>Tipo de Unidade</FormLabel>
-          <Select onValueChange={field.onChange} defaultValue={field.value}>
+          <Select onValueChange={field.onChange} defaultValue={field.value || "matriz"}>
             <FormControl>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o tipo" />

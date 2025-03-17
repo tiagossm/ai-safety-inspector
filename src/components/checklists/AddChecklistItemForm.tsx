@@ -66,7 +66,7 @@ export default function AddChecklistItemForm({
               }
             >
               <SelectTrigger id="new-type">
-                <SelectValue />
+                <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>
               <SelectContent>
                 {questionTypes.map(type => (

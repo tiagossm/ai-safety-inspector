@@ -101,8 +101,8 @@ export function ChecklistsFilter({
           </Select>
 
           <Select
-            value={selectedCompanyId || ""}
-            onValueChange={(value) => setSelectedCompanyId(value === "" ? null : value)}
+            value={selectedCompanyId || "todos"}
+            onValueChange={(value) => setSelectedCompanyId(value === "todos" ? null : value)}
           >
             <SelectTrigger className="h-9">
               <SelectValue placeholder="Empresa" />
@@ -156,3 +156,4 @@ export function ChecklistsFilter({
     </Card>
   );
 }
+

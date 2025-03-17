@@ -116,14 +116,14 @@ export function ManualCreateForm({
           <div className="grid gap-2">
             <Label htmlFor="responsible">Responsável</Label>
             <Select 
-              value={form.responsible_id || ""} 
-              onValueChange={(value) => setForm({ ...form, responsible_id: value })}
+              value={form.responsible_id || "none"} 
+              onValueChange={(value) => setForm({ ...form, responsible_id: value === "none" ? null : value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione um responsável" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhum</SelectItem>
+                <SelectItem value="none">Nenhum</SelectItem>
                 {loadingUsers ? (
                   <SelectItem value="loading" disabled>Carregando...</SelectItem>
                 ) : (
@@ -140,14 +140,14 @@ export function ManualCreateForm({
           <div className="grid gap-2">
             <Label htmlFor="company">Empresa</Label>
             <Select 
-              value={form.company_id || ""} 
-              onValueChange={(value) => setForm({ ...form, company_id: value })}
+              value={form.company_id || "none"} 
+              onValueChange={(value) => setForm({ ...form, company_id: value === "none" ? null : value })}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione uma empresa" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhuma</SelectItem>
+                <SelectItem value="none">Nenhuma</SelectItem>
                 {loadingCompanies ? (
                   <SelectItem value="loading" disabled>Carregando empresas...</SelectItem>
                 ) : (
@@ -188,6 +188,7 @@ export function ManualCreateForm({
                     setForm({ ...form, due_date: date ? date.toISOString() : null })
                   }
                   initialFocus
+                  className="p-3 pointer-events-auto"
                 />
               </PopoverContent>
             </Popover>

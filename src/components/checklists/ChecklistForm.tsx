@@ -52,6 +52,7 @@ function DatePicker({ date, setDate, className }: {
           selected={date}
           onSelect={setDate}
           initialFocus
+          className={cn("p-3 pointer-events-auto")}
         />
       </PopoverContent>
     </Popover>
@@ -157,13 +158,14 @@ export default function ChecklistForm({ checklist, users, setChecklist }: Checkl
         <div className="space-y-2">
           <Label htmlFor="company_id">Empresa</Label>
           <Select
-            value={checklist.company_id || ""}
-            onValueChange={(value) => handleChange("company_id", value)}
+            value={checklist.company_id || "none"}
+            onValueChange={(value) => handleChange("company_id", value === "none" ? null : value)}
           >
             <SelectTrigger className={isLoadingCompanies ? "opacity-70" : ""}>
               <SelectValue placeholder={isLoadingCompanies ? "Carregando empresas..." : "Selecione uma empresa"} />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="none">Nenhuma empresa</SelectItem>
               {companies.map((company) => (
                 <SelectItem key={company.id} value={company.id}>
                   {company.fantasy_name || 'Empresa sem nome'}
@@ -181,13 +183,14 @@ export default function ChecklistForm({ checklist, users, setChecklist }: Checkl
         <div className="space-y-2">
           <Label htmlFor="responsavel">Responsável</Label>
           <Select
-            value={checklist.responsible_id || ""}
-            onValueChange={(value) => handleChange("responsible_id", value)}
+            value={checklist.responsible_id || "none"}
+            onValueChange={(value) => handleChange("responsible_id", value === "none" ? null : value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecione um responsável" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="none">Nenhum responsável</SelectItem>
               {users.map((user) => (
                 <SelectItem key={user.id} value={user.id}>
                   {user.name || user.email || 'Usuário sem nome'}

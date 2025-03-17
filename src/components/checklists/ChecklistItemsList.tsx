@@ -64,7 +64,7 @@ export default function ChecklistItemsList({
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
                   <SelectContent>
                     {questionTypes.map(type => (
