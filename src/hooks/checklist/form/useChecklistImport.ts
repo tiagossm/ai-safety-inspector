@@ -23,28 +23,6 @@ const validateFileFormat = (file: File): { valid: boolean; message?: string } =>
   return { valid: true };
 };
 
-// Parse CSV files
-const parseCSV = (text: string) => {
-  const lines = text.split('\n');
-  const headers = lines[0].split(',').map(h => h.trim());
-  
-  const results = [];
-  for (let i = 1; i < lines.length; i++) {
-    if (!lines[i].trim()) continue;
-    
-    const values = lines[i].split(',').map(v => v.trim());
-    const row: Record<string, string> = {};
-    
-    headers.forEach((header, index) => {
-      row[header] = values[index] || '';
-    });
-    
-    results.push(row);
-  }
-  
-  return results;
-};
-
 // Parse Excel files
 const parseExcel = (arrayBuffer: ArrayBuffer) => {
   try {
@@ -119,11 +97,11 @@ export function useChecklistImport() {
       const jwt = sessionData.session.access_token;
       console.log("🔑 Token JWT obtido. Comprimento:", jwt.length);
 
-      // Criando o checklist com status corrigido
+      // Ajustando status corretamente
       const checklistData = {
         ...form,
-        status: "active", // ✅ Garante que o status seja válido
-        status_checklist: form.status_checklist || "ativo", // ✅ Evita NULL no status_checklist
+        status: "active", // ✅ Substituindo "pendente" por "active"
+        status_checklist: form.status_checklist || "ativo", // ✅ Mantendo como "ativo"
         user_id: user?.id
       };
 
