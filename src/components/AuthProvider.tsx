@@ -1,6 +1,5 @@
 
 import { createContext, useContext, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { AuthUser } from "@/hooks/auth/useAuthState";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -38,13 +37,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   
   const [user, setUser] = useState<AuthUser | null>(defaultUser);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
   
-  // Simplified logout function
+  // Simplified logout function that doesn't use navigate
   const logout = async () => {
     try {
       await supabase.auth.signOut();
-      navigate("/auth", { replace: true });
+      window.location.href = "/auth"; // Use direct location change instead of navigate
     } catch (error) {
       console.error("Error during logout:", error);
     }

@@ -1,11 +1,9 @@
 
 import { ReactNode, useState, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
-import { useTheme } from "@/components/ui/ThemeContext";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useSwipeable } from "react-swipeable";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils";
 import { Sidebar } from "../dashboard/Sidebar";
 import { Header } from "../dashboard/Header";
 
@@ -16,18 +14,12 @@ interface DashboardLayoutProps {
 export function DashboardLayout({
   children
 }: DashboardLayoutProps) {
-  const {
-    theme,
-    toggleTheme
-  } = useTheme();
-  const {
-    user,
-    logout
-  } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [theme, setTheme] = useState("light");
 
   useEffect(() => {
     const updateOnlineStatus = () => {
@@ -54,6 +46,10 @@ export function DashboardLayout({
   const handleLogout = async () => {
     await logout();
     navigate('/auth');
+  };
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === "light" ? "dark" : "light");
   };
 
   return (
