@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Checklist, ChecklistItem, ChecklistComment, ChecklistAttachment, ChecklistHistory } from "@/types/checklist";
@@ -16,7 +17,7 @@ import { ChecklistHistoryLog } from "@/components/checklists/ChecklistHistory";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClipboardList, MessageSquare, Paperclip, History } from "lucide-react";
+import { ClipboardList, MessageSquare, Paperclip, History, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const questionTypes = [
