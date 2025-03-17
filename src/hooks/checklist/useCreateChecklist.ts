@@ -32,18 +32,44 @@ export function useCreateChecklist() {
         // Validate that we have a valid user_id (must be a UUID)
         let userId = extendedUser?.id;
         
-        // Handle default user for development/testing
-        if (!userId || userId === 'default-admin-user' || !isValidUUID(userId)) {
-          // For development purposes, use a mock UUID if user isn't authenticated
-          userId = '00000000-0000-0000-0000-000000000000';
-          console.log("Using default UUID for development:", userId);
+        // Check if this is the default admin user from AuthProvider
+        const isDefaultAdmin = userId === 'default-admin-user';
+        
+        // For development, first check if the default user ID exists in the users table
+        if (isDefaultAdmin) {
+          // For development mode, try to find an existing admin user in the database
+          const { data: adminUsers } = await supabase
+            .from("users")
+            .select("id")
+            .eq("role", "super_admin")
+            .limit(1);
+            
+          if (adminUsers && adminUsers.length > 0) {
+            // Use the first admin user found
+            userId = adminUsers[0].id;
+            console.log("Using existing admin user:", userId);
+          } else {
+            // If no admin users, try to use the authenticated user from supabase
+            const authUser = sessionData?.session?.user;
+            if (authUser?.id) {
+              userId = authUser.id;
+              console.log("Using authenticated user ID:", userId);
+            } else {
+              console.error("No valid user ID available and no admin users found in database");
+              throw new Error("Usuário não encontrado. Por favor, faça login novamente ou verifique se existem usuários cadastrados.");
+            }
+          }
+        }
+        
+        if (!userId || !isValidUUID(userId)) {
+          console.error("Invalid user ID:", userId);
+          throw new Error("ID de usuário inválido. Por favor, faça login novamente.");
         }
         
         // Log what's being sent to help debug
         console.log("Creating checklist with data:", newChecklist);
         
         // Make sure status is one of the expected values
-        // The error suggests there's a check constraint on this field
         // Valid values are typically: 'pendente', 'em_andamento', 'concluido'
         const validStatus = ['pendente', 'em_andamento', 'concluido'];
         const status = newChecklist.status && validStatus.includes(newChecklist.status) 
