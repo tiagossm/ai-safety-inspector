@@ -21,6 +21,11 @@ export const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  // Define a type guard to check if a string is a valid role
+  const isValidRole = (role: string): role is AuthUser["role"] => {
+    return ['super_admin', 'company_admin', 'consultant', 'technician', 'user'].includes(role);
+  };
+
   // Create a default admin user for full access
   const defaultUser: AuthUser = {
     id: "default-admin-user",
@@ -56,12 +61,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             
           if (userData) {
             // Ensure role is one of the valid enum values
-            const validRole: AuthUser["role"] = 
-              (userData.role === "super_admin" || 
-               userData.role === "company_admin" || 
-               userData.role === "consultant" || 
-               userData.role === "technician" || 
-               userData.role === "user") ? userData.role : "user";
+            const userRole = userData.role?.toLowerCase() || "";
+            let validRole: AuthUser["role"] = "user"; // Default to user
+            
+            if (isValidRole(userRole)) {
+              validRole = userRole as AuthUser["role"];
+            } else if (userRole === "administrador") {
+              validRole = "super_admin";
+            }
             
             // Update the user with real data
             setUser({
@@ -83,10 +90,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             
           if (adminData && adminData.length > 0) {
             // Use the first admin user found
+            const validRole: AuthUser["role"] = isValidRole(adminData[0].role) 
+              ? adminData[0].role as AuthUser["role"] 
+              : "super_admin";
+              
             setUser({
               ...defaultUser,
               id: adminData[0].id,
-              email: adminData[0].email || defaultUser.email
+              email: adminData[0].email || defaultUser.email,
+              role: validRole
             });
             console.log("Using admin user from database:", adminData[0].id);
           }
