@@ -144,23 +144,15 @@ export function useFetchChecklists() {
 
               if (itemsError) throw itemsError;
 
-              // Count completed items - Fixed: we need to include the resposta field in our query
-              const { data: completedItems, error: completedError } = await supabase
-                .from("checklist_itens")
-                .select("id, resposta")
-                .eq("checklist_id", checklist.id);
-                
-              if (completedError) throw completedError;
-              
-              // Filter locally instead of using the problematic SQL query
-              const completedCount = completedItems ? 
-                completedItems.filter(item => item.resposta !== null && item.resposta !== undefined).length : 0;
+              // Since 'resposta' column doesn't exist, let's count completions differently
+              // We're not checking for resposta now, just counting the total items
+              const completedCount = 0; // Default to 0 for now, as we can't determine completion status
 
               // Enriquece o checklist com novos campos
               const enrichedChecklist: Checklist = {
                 ...checklist,
                 items: count || 0,
-                items_completed: completedCount || 0,
+                items_completed: completedCount,
                 responsible_name: usersMap[checklist.responsible_id] || "Não atribuído",
                 company_name: companiesMap[checklist.company_id] || "Não atribuída",
                 status_checklist: checklist.status_checklist === "inativo" ? "inativo" : "ativo",
