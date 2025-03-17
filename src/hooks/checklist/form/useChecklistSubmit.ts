@@ -10,6 +10,21 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { AuthUser } from "@/hooks/auth/useAuthState";
 
+interface ImportResult {
+  id?: string;
+  checklist_id?: string;
+  success?: boolean;
+  questions_added?: number;
+}
+
+interface AIResult {
+  id?: string;
+  data?: {
+    checklist_id?: string;
+  };
+  success?: boolean;
+}
+
 export function useChecklistSubmit() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sessionChecked, setSessionChecked] = useState(false);
@@ -185,16 +200,16 @@ export function useChecklistSubmit() {
         console.log("Processing file import");
         console.log("File details:", file.name, file.type, `${Math.round(file.size / 1024)} KB`);
         
-        const importResult = await importFromFile(file, form);
+        const importResult = await importFromFile(file, form) as ImportResult;
         
         if (importResult && typeof importResult === 'object') {
           success = true;
           
           // Handle different possible response structures
           if ('id' in importResult) {
-            checklistId = importResult.id as string;
+            checklistId = importResult.id;
           } else if ('checklist_id' in importResult) {
-            checklistId = importResult.checklist_id as string;
+            checklistId = importResult.checklist_id;
           }
           
           console.log("Import successful, checklist ID:", checklistId);
@@ -208,18 +223,18 @@ export function useChecklistSubmit() {
         console.log("Processing AI generation");
         console.log("AI Prompt:", aiPrompt);
         
-        const aiResult = await generateAIChecklist(form);
+        const aiResult = await generateAIChecklist(form) as AIResult;
         
         if (aiResult && typeof aiResult === 'object') {
           success = true;
           
           // Handle different possible response structures
           if ('id' in aiResult) {
-            checklistId = aiResult.id as string;
-          } else if ('data' in aiResult && typeof aiResult.data === 'object') {
-            const resultData = aiResult.data as Record<string, any>;
+            checklistId = aiResult.id;
+          } else if ('data' in aiResult) {
+            const resultData = aiResult.data;
             if (resultData && 'checklist_id' in resultData) {
-              checklistId = resultData.checklist_id as string;
+              checklistId = resultData.checklist_id;
             }
           }
           

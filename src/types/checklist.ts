@@ -36,14 +36,16 @@ export interface ChecklistItem {
   id: string;
   checklist_id: string;
   pergunta: string;
-  tipo_resposta: "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla";
+  tipo_resposta: "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla" | string;
   obrigatorio: boolean;
-  opcoes: string[] | null;
+  opcoes?: string[] | null;
   ordem: number;
-  resposta?: string | number | boolean | null; // Keep as optional since it's not in the database yet
-  permite_audio: boolean;
-  permite_video: boolean;
-  permite_foto: boolean;
+  resposta?: string | number | boolean | null;
+  permite_audio?: boolean;
+  permite_video?: boolean;
+  permite_foto?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface NewChecklist {

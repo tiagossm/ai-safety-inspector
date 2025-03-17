@@ -27,17 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-interface ChecklistItem {
-  id: string;
-  checklist_id: string;
-  pergunta: string;
-  tipo_resposta: string;
-  obrigatorio: boolean;
-  ordem: number;
-  resposta?: string | null;
-  opcoes?: string[] | null;
-}
+import { ChecklistItem } from "@/types/checklist";
 
 export default function ChecklistDetail() {
   const { id } = useParams<{ id: string }>();
@@ -73,7 +63,25 @@ export default function ChecklistDetail() {
           .order('ordem', { ascending: true });
 
         if (itemsError) throw itemsError;
-        setItems(itemsData);
+        
+        // Transform the data to match our ChecklistItem type
+        const transformedItems: ChecklistItem[] = itemsData.map(item => ({
+          id: item.id,
+          checklist_id: item.checklist_id,
+          pergunta: item.pergunta,
+          tipo_resposta: item.tipo_resposta,
+          obrigatorio: item.obrigatorio,
+          opcoes: Array.isArray(item.opcoes) ? item.opcoes : null,
+          ordem: item.ordem,
+          resposta: null,
+          permite_audio: item.permite_audio,
+          permite_video: item.permite_video,
+          permite_foto: item.permite_foto,
+          created_at: item.created_at,
+          updated_at: item.updated_at
+        }));
+        
+        setItems(transformedItems);
 
         // Fetch company if exists
         if (checklistData.company_id) {
@@ -120,7 +128,7 @@ export default function ChecklistDetail() {
     
     // Check if all required questions are answered
     const unansweredRequired = items.filter(item => 
-      item.obrigatorio && (!item.resposta || item.resposta.trim() === '')
+      item.obrigatorio && (!item.resposta || item.resposta.toString().trim() === '')
     );
     
     if (unansweredRequired.length > 0) {
@@ -368,7 +376,7 @@ export default function ChecklistDetail() {
                 <CardTitle className="text-lg">Empresa</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="font-medium">{company.fantasy_name}</p>
+                <p className="font-medium">{company.fantasy_name || 'Empresa sem nome'}</p>
                 {company.cnpj && (
                   <p className="text-sm text-muted-foreground mt-1">CNPJ: {company.cnpj}</p>
                 )}

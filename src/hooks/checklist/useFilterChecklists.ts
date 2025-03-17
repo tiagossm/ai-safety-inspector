@@ -43,3 +43,5 @@ export function useFilterChecklists(checklists: Checklist[]) {
     filteredChecklists
   };
 }
+
+export type { CompanyListItem };
