@@ -1,58 +1,42 @@
 
 import { useState, useMemo } from "react";
 import { Checklist } from "@/types/checklist";
-import { Company } from "@/types/company";
 
-export type FilterType = "all" | "active" | "inactive" | "templates" | "my";
-
-// Creating a type for simplified company data used in dropdowns
-export type CompanyListItem = Pick<Company, 'id' | 'fantasy_name'>;
+export type CompanyListItem = {
+  id: string;
+  name: string;
+};
 
 export function useFilterChecklists(checklists: Checklist[]) {
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [filterType, setFilterType] = useState<FilterType>("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState("todos");
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
-  
+
   const filteredChecklists = useMemo(() => {
-    console.log("Filtering checklists:", { 
-      total: checklists.length,
-      searchTerm,
-      filterType,
-      companyFilter: selectedCompanyId
-    });
-    
-    return checklists.filter(checklist => {
-      // Filter by company if a company is selected
-      if (selectedCompanyId && checklist.company_id !== selectedCompanyId) {
-        return false;
-      }
-      
-      // Filter by search term (title, description or category)
-      const searchMatch = !searchTerm || 
-        checklist.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (checklist.description && checklist.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (checklist.category && checklist.category.toLowerCase().includes(searchTerm.toLowerCase()));
-      
-      if (!searchMatch) return false;
-      
+    return checklists.filter((checklist) => {
+      // Filter by search term
+      const matchesSearchTerm = checklist.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (checklist.description || "").toLowerCase().includes(searchTerm.toLowerCase());
+
       // Filter by type
-      switch (filterType) {
-        case "active":
-          return checklist.status_checklist === "ativo";
-        case "inactive":
-          return checklist.status_checklist === "inativo";
-        case "templates":
-          return checklist.is_template;
-        case "my":
-          // In a real implementation this would verify the logged user
-          return true; // For now show all
-        case "all":
-        default:
-          return true;
+      let matchesType = true;
+      if (filterType === "ativos") {
+        matchesType = checklist.status_checklist === "ativo" && !checklist.is_template;
+      } else if (filterType === "inativos") {
+        matchesType = checklist.status_checklist === "inativo" && !checklist.is_template;
+      } else if (filterType === "templates") {
+        matchesType = checklist.is_template;
       }
+
+      // Filter by company
+      const matchesCompany = !selectedCompanyId || 
+        selectedCompanyId === "todos" || 
+        checklist.company_id === selectedCompanyId;
+
+      return matchesSearchTerm && matchesType && matchesCompany;
     });
   }, [checklists, searchTerm, filterType, selectedCompanyId]);
-  
+
   return {
     searchTerm,
     setSearchTerm,
@@ -60,6 +44,6 @@ export function useFilterChecklists(checklists: Checklist[]) {
     setFilterType,
     selectedCompanyId,
     setSelectedCompanyId,
-    filteredChecklists 
+    filteredChecklists
   };
 }
