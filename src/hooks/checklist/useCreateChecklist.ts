@@ -42,18 +42,26 @@ export function useCreateChecklist() {
         // Log what's being sent to help debug
         console.log("Creating checklist with data:", newChecklist);
         
+        // Make sure status is one of the expected values
+        // The error suggests there's a check constraint on this field
+        // Valid values are typically: 'pendente', 'em_andamento', 'concluido'
+        const validStatus = ['pendente', 'em_andamento', 'concluido'];
+        const status = newChecklist.status && validStatus.includes(newChecklist.status) 
+          ? newChecklist.status 
+          : 'pendente';
+          
         // Prepare checklist data with all mandatory fields
         const checklistData = {
           title: newChecklist.title || "Checklist sem título",
           description: newChecklist.description || "Sem descrição",
           is_template: newChecklist.is_template || false,
-          status_checklist: "ativo",
+          status_checklist: newChecklist.status_checklist || "ativo",
           category: newChecklist.category || "general",
           responsible_id: newChecklist.responsible_id || null,
           company_id: newChecklist.company_id || null,
           due_date: newChecklist.due_date || null,
           user_id: userId, // Use the validated user ID
-          status: newChecklist.status || "pendente"
+          status: status // Ensure we're using a valid status value
         };
         
         console.log("Checklist prepared for insertion:", checklistData);
