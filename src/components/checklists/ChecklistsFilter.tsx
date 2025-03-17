@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { FilterType } from "@/hooks/checklist/useFilterChecklists";
+import { FilterType, CompanyListItem } from "@/hooks/checklist/useFilterChecklists";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import { Company } from "@/types/company";
 
 interface ChecklistsFilterProps {
   searchTerm: string;
@@ -36,7 +35,7 @@ export function ChecklistsFilter({
   setSelectedCompanyId,
   totalChecklists
 }: ChecklistsFilterProps) {
-  const [companies, setCompanies] = useState<Company[]>([]);
+  const [companies, setCompanies] = useState<CompanyListItem[]>([]);
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
   
   useEffect(() => {

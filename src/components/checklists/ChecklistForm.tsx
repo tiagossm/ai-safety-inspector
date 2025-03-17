@@ -7,11 +7,17 @@ import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checklist } from "@/types/checklist";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DatePicker } from "@/components/ui/date-picker";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { pt } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import { useEffect as useReactEffect, useState as useReactState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Company } from "@/types/company";
+import { CompanyListItem } from "@/hooks/checklist/useFilterChecklists";
 
 interface ChecklistFormProps {
   checklist: Checklist | null;
@@ -19,9 +25,42 @@ interface ChecklistFormProps {
   setChecklist: (checklist: Checklist) => void;
 }
 
+// Create a DatePicker component to replace the missing module
+function DatePicker({ date, setDate, className }: {
+  date: Date | undefined;
+  setDate: (date: Date | null) => void;
+  className?: string;
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            "w-full justify-start text-left font-normal",
+            !date && "text-muted-foreground",
+            className
+          )}
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" />
+          {date ? format(date, "PPP", { locale: pt }) : <span>Selecione uma data</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={setDate}
+          initialFocus
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export default function ChecklistForm({ checklist, users, setChecklist }: ChecklistFormProps) {
   const [isTemplate, setIsTemplate] = useState(false);
-  const [companies, setCompanies] = useState<Company[]>([]);
+  const [companies, setCompanies] = useState<CompanyListItem[]>([]);
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
   
   // Fetch companies for dropdown
@@ -131,7 +170,7 @@ export default function ChecklistForm({ checklist, users, setChecklist }: Checkl
                 </SelectItem>
               ))}
               {companies.length === 0 && !isLoadingCompanies && (
-                <SelectItem value="no-companies">
+                <SelectItem value="no-companies" disabled>
                   Nenhuma empresa disponível
                 </SelectItem>
               )}
@@ -155,7 +194,7 @@ export default function ChecklistForm({ checklist, users, setChecklist }: Checkl
                 </SelectItem>
               ))}
               {users.length === 0 && (
-                <SelectItem value="no-users-placeholder">
+                <SelectItem value="no-users-placeholder" disabled>
                   Nenhum usuário disponível
                 </SelectItem>
               )}

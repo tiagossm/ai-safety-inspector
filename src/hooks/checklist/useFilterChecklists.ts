@@ -1,8 +1,12 @@
 
 import { useState, useMemo } from "react";
 import { Checklist } from "@/types/checklist";
+import { Company } from "@/types/company";
 
 export type FilterType = "all" | "active" | "inactive" | "templates" | "my";
+
+// Creating a type for simplified company data used in dropdowns
+export type CompanyListItem = Pick<Company, 'id' | 'fantasy_name'>;
 
 export function useFilterChecklists(checklists: Checklist[]) {
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -56,6 +60,6 @@ export function useFilterChecklists(checklists: Checklist[]) {
     setFilterType,
     selectedCompanyId,
     setSelectedCompanyId,
-    filteredChecklists
+    filteredChecklists 
   };
 }
