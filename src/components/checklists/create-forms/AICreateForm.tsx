@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { NewChecklist } from "@/types/checklist";
+import { CompanyListItem } from "@/types/CompanyListItem";
 
 // Checklist category options
 const CATEGORIES = [
