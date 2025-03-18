@@ -50,7 +50,9 @@ interface ImageCapture {
   takePhoto(): Promise<Blob>;
 }
 
-declare var ImageCapture: {
-  prototype: ImageCapture;
-  new(track: MediaStreamTrack): ImageCapture;
-};
+declare global {
+  var ImageCapture: {
+    prototype: ImageCapture;
+    new(track: MediaStreamTrack): ImageCapture;
+  };
+}

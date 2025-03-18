@@ -5,12 +5,12 @@ import { useMediaUpload } from "@/hooks/useMediaUpload";
 import { Mic, Video, StopCircle, Upload, Camera } from 'lucide-react';
 import { toast } from "sonner";
 
-// Add type declaration for ImageCapture API
-declare global {
-  interface Window {
-    ImageCapture: typeof ImageCapture;
-  }
-}
+// We don't need this anymore as we've defined it in vite-env.d.ts
+// declare global {
+//   interface Window {
+//     ImageCapture: typeof ImageCapture;
+//   }
+// }
 
 interface MediaCaptureButtonProps {
   type: 'audio' | 'video' | 'photo';
@@ -95,7 +95,7 @@ export function MediaCaptureButton({
       const videoTrack = stream.getVideoTracks()[0];
       
       // Use the ImageCapture API if available
-      if (typeof ImageCapture !== 'undefined') {
+      if ('ImageCapture' in window) {
         const imageCapture = new ImageCapture(videoTrack);
         const bitmap = await imageCapture.grabFrame();
         
