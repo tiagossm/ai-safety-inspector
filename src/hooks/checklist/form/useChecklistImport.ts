@@ -156,16 +156,20 @@ export function useChecklistImport() {
 
       // Sanitize company_id if it's in an invalid format
       let sanitizedCompanyId = null;
-      if (form.company_id && typeof form.company_id === 'object') {
-        console.warn("⚠️ company_id está em formato inválido:", form.company_id);
-        
-        if (form.company_id.hasOwnProperty('value') && 
-            typeof form.company_id.value === 'string' && 
-            form.company_id.value !== 'undefined') {
-          sanitizedCompanyId = form.company_id.value;
+      
+      if (form.company_id) {
+        if (typeof form.company_id === 'object' && form.company_id !== null) {
+          console.warn("⚠️ company_id está em formato de objeto:", form.company_id);
+          
+          // Check if it has a value property that's a string and not 'undefined'
+          if ('value' in form.company_id && 
+              typeof (form.company_id as any).value === 'string' && 
+              (form.company_id as any).value !== 'undefined') {
+            sanitizedCompanyId = (form.company_id as any).value;
+          }
+        } else if (typeof form.company_id === 'string' && form.company_id !== 'undefined') {
+          sanitizedCompanyId = form.company_id;
         }
-      } else if (typeof form.company_id === 'string' && form.company_id !== 'undefined') {
-        sanitizedCompanyId = form.company_id;
       }
 
       // ✅ Criando o checklist com user_id válido
