@@ -1,3 +1,4 @@
+
 import React from "react";
 import { NewChecklist } from "@/types/checklist";
 import { Label } from "@/components/ui/label";
@@ -135,7 +136,7 @@ export function ImportCreateForm({
                   <SelectItem value="none">Nenhuma empresa</SelectItem>
                   {companies.map((company) => (
                     <SelectItem key={company.id} value={company.id}>
-                      {company.fantasy_name || company.cnpj}
+                      {company.fantasy_name || company.id}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -206,3 +207,4 @@ export function ImportCreateForm({
     </div>
   );
 }
+
