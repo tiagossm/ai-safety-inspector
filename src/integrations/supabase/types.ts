@@ -48,6 +48,47 @@ export type Database = {
           },
         ]
       }
+      checklist_action_plans: {
+        Row: {
+          checklist_item_id: string
+          created_at: string | null
+          description: string
+          due_date: string | null
+          id: string
+          responsible_id: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          checklist_item_id: string
+          created_at?: string | null
+          description: string
+          due_date?: string | null
+          id?: string
+          responsible_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          checklist_item_id?: string
+          created_at?: string | null
+          description?: string
+          due_date?: string | null
+          id?: string
+          responsible_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_action_plans_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_itens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_assignments: {
         Row: {
           checklist_id: string
@@ -204,48 +245,142 @@ export type Database = {
           },
         ]
       }
+      checklist_item_comments: {
+        Row: {
+          checklist_item_id: string
+          content: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          checklist_item_id: string
+          content: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          checklist_item_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_item_comments_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_itens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_item_media: {
+        Row: {
+          checklist_item_id: string
+          created_at: string | null
+          file_name: string
+          file_url: string
+          id: string
+          media_type: string
+          user_id: string
+        }
+        Insert: {
+          checklist_item_id: string
+          created_at?: string | null
+          file_name: string
+          file_url: string
+          id?: string
+          media_type: string
+          user_id: string
+        }
+        Update: {
+          checklist_item_id?: string
+          created_at?: string | null
+          file_name?: string
+          file_url?: string
+          id?: string
+          media_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_item_media_checklist_item_id_fkey"
+            columns: ["checklist_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_itens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_itens: {
         Row: {
           checklist_id: string
+          condition_value: string | null
           created_at: string
+          hint: string | null
           id: string
           obrigatorio: boolean
           opcoes: Json | null
           ordem: number
+          parent_item_id: string | null
           pergunta: string
           permite_audio: boolean | null
           permite_foto: boolean | null
           permite_video: boolean | null
+          requires_action: boolean | null
+          requires_barcode: boolean | null
+          requires_location: boolean | null
+          requires_signature: boolean | null
           tipo_resposta: string
           updated_at: string
+          weight: number | null
         }
         Insert: {
           checklist_id: string
+          condition_value?: string | null
           created_at?: string
+          hint?: string | null
           id?: string
           obrigatorio?: boolean
           opcoes?: Json | null
           ordem?: number
+          parent_item_id?: string | null
           pergunta: string
           permite_audio?: boolean | null
           permite_foto?: boolean | null
           permite_video?: boolean | null
+          requires_action?: boolean | null
+          requires_barcode?: boolean | null
+          requires_location?: boolean | null
+          requires_signature?: boolean | null
           tipo_resposta: string
           updated_at?: string
+          weight?: number | null
         }
         Update: {
           checklist_id?: string
+          condition_value?: string | null
           created_at?: string
+          hint?: string | null
           id?: string
           obrigatorio?: boolean
           opcoes?: Json | null
           ordem?: number
+          parent_item_id?: string | null
           pergunta?: string
           permite_audio?: boolean | null
           permite_foto?: boolean | null
           permite_video?: boolean | null
+          requires_action?: boolean | null
+          requires_barcode?: boolean | null
+          requires_location?: boolean | null
+          requires_signature?: boolean | null
           tipo_resposta?: string
           updated_at?: string
+          weight?: number | null
         }
         Relationships: [
           {
@@ -253,6 +388,13 @@ export type Database = {
             columns: ["checklist_id"]
             isOneToOne: false
             referencedRelation: "checklists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_itens_parent_item_id_fkey"
+            columns: ["parent_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_itens"
             referencedColumns: ["id"]
           },
         ]
