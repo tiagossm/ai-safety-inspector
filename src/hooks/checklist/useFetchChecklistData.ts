@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Checklist } from "@/types/checklist";
 
-// Função para validar UUIDs
+// Função para validar se o ID é um UUID válido
 function isValidUUID(id: string): boolean {
   const uuidRegex =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -15,7 +15,7 @@ export function useFetchChecklistData(id: string) {
     queryFn: async () => {
       console.log("🔍 Buscando checklist para ID:", id);
 
-      // **✅ Valida se o ID é um UUID válido antes da requisição**
+      // **✅ Validação do ID antes da requisição**
       if (!id || !isValidUUID(id)) {
         console.error("❌ ID inválido recebido:", id);
         throw new Error("Checklist ID inválido!");
@@ -36,7 +36,7 @@ export function useFetchChecklistData(id: string) {
 
         console.log("✅ Dados brutos do checklist:", checklistData);
 
-        // **🔹 Buscar o nome do responsável**
+        // **🔹 Buscar nome do responsável, se houver**
         let responsibleName = null;
         const responsibleId = checklistData?.responsible_id || null;
 
@@ -58,7 +58,7 @@ export function useFetchChecklistData(id: string) {
           }
         }
 
-        // **✅ Retorno do checklist com segurança**
+        // **✅ Retorno seguro dos dados**
         return {
           id: checklistData.id,
           title: checklistData.title || "Sem título",
