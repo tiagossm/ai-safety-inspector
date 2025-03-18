@@ -1,3 +1,4 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.48.1';
 
 export interface ChecklistItemData {
@@ -66,7 +67,7 @@ export function parseRequiredField(value: any): boolean {
  * Analisa opções de resposta em perguntas de seleção múltipla.
  */
 export function parseOptions(rowData: any, responseType: string): string[] | null {
-  if (!rowData || responseType !== 'seleção múltipla' && !responseType.includes('select')) return null;
+  if (!rowData || (responseType !== 'seleção múltipla' && !responseType.includes('select'))) return null;
   
   try {
     if (typeof rowData === 'string') {
@@ -101,7 +102,7 @@ export async function processChecklistItem(
 ): Promise<void> {
   try {
     // Verifica se há pergunta antes de processar a linha
-    const pergunta = rowData[0]?.trim() || '';
+    const pergunta = rowData[0]?.toString().trim() || '';
 
     if (!pergunta) {
       console.log(`⚠️ Ignorando linha ${index + 1}: pergunta vazia.`);
@@ -118,7 +119,8 @@ export async function processChecklistItem(
     const permiteVideo = parseMultimediaField(rowData[6]);
     const permiteFoto = parseMultimediaField(rowData[7]);
 
-    console.log(`📌 Processando item do checklist (linha ${index + 1}):`, {
+    // Item de checklist a ser inserido
+    const checklistItem = {
       checklist_id: checklistId,
       pergunta,
       tipo_resposta: tipoResposta,
@@ -128,29 +130,32 @@ export async function processChecklistItem(
       permite_audio: permiteAudio,
       permite_video: permiteVideo,
       permite_foto: permiteFoto
-    });
+    };
+
+    console.log(`📌 Processando item do checklist (linha ${index + 1}):`, checklistItem);
 
     // Realiza a inserção no Supabase
-    const { error } = await supabaseClient
+    const { data, error } = await supabaseClient
       .from('checklist_itens')
-      .insert({
-        checklist_id: checklistId,
-        pergunta,
-        tipo_resposta: tipoResposta,
-        obrigatorio,
-        opcoes,
-        ordem,
-        permite_audio: permiteAudio,
-        permite_video: permiteVideo,
-        permite_foto: permiteFoto
-      });
+      .insert(checklistItem);
 
     if (error) {
       console.error(`❌ Erro ao inserir item na linha ${index + 1}:`, error);
-      throw error;
+      
+      // Retry with a different approach if the previous one failed
+      const { error: retryError } = await supabaseClient
+        .from('checklist_itens')
+        .insert([checklistItem]);
+      
+      if (retryError) {
+        console.error(`❌ Falha na segunda tentativa de inserção na linha ${index + 1}:`, retryError);
+        throw retryError;
+      } else {
+        console.log(`✅ Segunda tentativa bem-sucedida para linha ${index + 1}`);
+      }
+    } else {
+      console.log(`✅ Sucesso ao processar linha ${index + 1}`);
     }
-
-    console.log(`✅ Sucesso ao processar linha ${index + 1}`);
   } catch (error) {
     console.error(`🚨 Erro inesperado ao processar linha ${index + 1}:`, error);
   }

@@ -12,6 +12,7 @@ import {
 import { useDeleteChecklist } from "@/hooks/checklist/useDeleteChecklist";
 import { toast } from "sonner";
 import { useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface DeleteChecklistDialogProps {
   checklistId: string;
@@ -28,6 +29,8 @@ export function DeleteChecklistDialog({
 }: DeleteChecklistDialogProps) {
   const deleteChecklist = useDeleteChecklist();
   const [isDeleting, setIsDeleting] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleDelete = async () => {
     if (!checklistId) {
@@ -39,8 +42,20 @@ export function DeleteChecklistDialog({
     setIsDeleting(true);
     try {
       await deleteChecklist.mutateAsync(checklistId);
-      toast.success("Checklist excluído com sucesso");
+      
+      // Check if we're on the details page of the checklist being deleted
+      const isOnDetailsPage = location.pathname.includes(`/checklists/${checklistId}`);
+      
+      // Close the dialog before navigating
       onOpenChange(false);
+      
+      // If we're on the details page of the deleted checklist, navigate to the checklists page
+      if (isOnDetailsPage) {
+        console.log("Navegando para a lista de checklists após exclusão");
+        navigate("/checklists", { replace: true });
+      }
+      
+      // Success message is shown by the mutation
     } catch (error) {
       console.error("Erro ao excluir checklist:", error);
       toast.error("Erro ao excluir checklist");
