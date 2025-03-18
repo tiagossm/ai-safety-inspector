@@ -266,18 +266,31 @@ export function useChecklistImport() {
       let sanitizedCompanyId = null;
       
       if (form.company_id !== undefined && form.company_id !== null) {
-        if (typeof form.company_id === 'object') {
+        if (form.company_id === "none") {
+          sanitizedCompanyId = null;
+        } else if (typeof form.company_id === 'object') {
           console.warn("⚠️ company_id está em formato de objeto:", form.company_id);
           
           // Check if it has a value property that's a string and not 'undefined'
           const companyObj = form.company_id as any;
           if ('value' in companyObj && 
               typeof companyObj.value === 'string' && 
-              companyObj.value !== 'undefined') {
+              companyObj.value !== 'undefined' &&
+              companyObj.value !== 'none') {
             sanitizedCompanyId = companyObj.value;
           }
         } else if (typeof form.company_id === 'string' && form.company_id !== 'undefined') {
           sanitizedCompanyId = form.company_id;
+        }
+      }
+
+      // Handle responsible_id similarly
+      let sanitizedResponsibleId = null;
+      if (form.responsible_id !== undefined && form.responsible_id !== null) {
+        if (form.responsible_id === "none") {
+          sanitizedResponsibleId = null;
+        } else if (typeof form.responsible_id === 'string' && form.responsible_id !== 'undefined') {
+          sanitizedResponsibleId = form.responsible_id;
         }
       }
 
@@ -288,6 +301,7 @@ export function useChecklistImport() {
       const checklistData = {
         ...form,
         company_id: sanitizedCompanyId,
+        responsible_id: sanitizedResponsibleId,
         status: form.status || "active",
         status_checklist: form.status_checklist || "ativo",
         user_id: user.id,

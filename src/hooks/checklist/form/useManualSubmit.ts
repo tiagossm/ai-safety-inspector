@@ -41,10 +41,17 @@ export function useManualSubmit() {
       console.log("Questions count:", questions.length);
       
       await refreshSession();
+
+      // Handle 'none' values for company_id and responsible_id
+      const processedForm = { 
+        ...form,
+        company_id: form.company_id === "none" ? null : form.company_id,
+        responsible_id: form.responsible_id === "none" ? null : form.responsible_id
+      };
       
       // Instead of creating the checklist immediately, store the data for the editor
       const editorData = {
-        checklistData: { ...form },
+        checklistData: processedForm,
         questions: questions.map(q => ({
           text: q.text,
           type: q.type,

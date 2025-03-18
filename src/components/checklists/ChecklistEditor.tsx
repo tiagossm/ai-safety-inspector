@@ -160,6 +160,17 @@ export function ChecklistEditor({
         return;
       }
       
+      // Prepare the checklist data, ensuring proper handling of special values
+      let processedCompanyId = checklist.company_id;
+      if (processedCompanyId === "none") {
+        processedCompanyId = null;
+      }
+      
+      let processedResponsibleId = checklist.responsible_id;
+      if (processedResponsibleId === "none") {
+        processedResponsibleId = null;
+      }
+      
       // Create the checklist - we need to cast it to NewChecklist since we're using Partial<Checklist>
       const newChecklistData: NewChecklist = {
         title: checklist.title,
@@ -167,12 +178,14 @@ export function ChecklistEditor({
         is_template: checklist.is_template,
         status_checklist: checklist.status_checklist as string,
         category: checklist.category,
-        responsible_id: checklist.responsible_id,
-        company_id: checklist.company_id,
+        responsible_id: processedResponsibleId,
+        company_id: processedCompanyId,
         due_date: checklist.due_date,
         user_id: checklist.user_id,
         status: checklist.status as string
       };
+      
+      console.log("Creating checklist with data:", newChecklistData);
       
       const result = await createChecklistMutation.mutateAsync(newChecklistData);
       
@@ -184,6 +197,7 @@ export function ChecklistEditor({
       }
       
       const newChecklistId = result.id;
+      console.log("Checklist created successfully with ID:", newChecklistId);
       
       // Add questions if any
       if (questions.length > 0) {
@@ -210,7 +224,15 @@ export function ChecklistEditor({
           return Promise.resolve(null);
         });
         
-        await Promise.all(promises.filter(Boolean));
+        const results = await Promise.all(promises.filter(Boolean));
+        console.log(`Added ${results.length} questions to checklist ${newChecklistId}`);
+        
+        // Check for errors in question creation
+        const errors = results.filter(r => r && r.error);
+        if (errors.length > 0) {
+          console.warn(`${errors.length} questions failed to save:`, errors);
+          toast.warning(`${errors.length} perguntas não puderam ser salvas.`);
+        }
       }
       
       toast.success("Checklist salvo com sucesso!");

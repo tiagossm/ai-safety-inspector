@@ -1,9 +1,8 @@
-
-import { Button } from "@/components/ui/button";
+import React from "react";
+import { NewChecklist } from "@/types/checklist";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { NewChecklist } from "@/types/checklist";
 import {
   Select,
   SelectContent,
@@ -11,20 +10,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
-import { Upload, FileType, Download } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useChecklistImport } from "@/hooks/checklist/form/useChecklistImport";
 import { format } from "date-fns";
-import { toast } from "sonner";
+import { CompanyListItem } from "@/types/CompanyListItem";
 
 interface ImportCreateFormProps {
   form: NewChecklist;
-  setForm: (form: NewChecklist) => void;
+  setForm: React.Dispatch<React.SetStateAction<NewChecklist>>;
   users: any[];
   loadingUsers: boolean;
   file: File | null;
-  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  companies: any[];
+  onFileChange: (file: File) => void;
+  companies: CompanyListItem[];
   loadingCompanies: boolean;
 }
 
@@ -38,6 +36,8 @@ export function ImportCreateForm({
   companies,
   loadingCompanies,
 }: ImportCreateFormProps) {
+  const { getTemplateFileUrl } = useChecklistImport();
+  
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
@@ -47,12 +47,7 @@ export function ImportCreateForm({
     setForm({ ...form, [name]: value });
   };
 
-  const downloadTemplateFile = () => {
-    // The template file URL can be generated from a hook, but for now we'll just use a static example
-    const templateUrl = "https://example.com/template.xlsx";
-    window.open(templateUrl, "_blank");
-    toast.info("Download de template iniciado");
-  };
+  const templateUrl = getTemplateFileUrl();
 
   return (
     <div className="space-y-6">
@@ -176,91 +171,38 @@ export function ImportCreateForm({
         </div>
       </div>
 
-      <Card>
-        <CardContent className="p-6">
-          <div className="space-y-6">
-            <div className="flex items-center gap-3">
-              <Upload className="h-10 w-10 text-primary" />
-              <div>
-                <h3 className="text-lg font-medium">Importar Planilha</h3>
-                <p className="text-sm text-muted-foreground">
-                  Importe perguntas de uma planilha para criar rapidamente sua lista de verificação.
-                </p>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                <div className="flex flex-col items-center justify-center gap-2">
-                  <FileType className="h-10 w-10 text-gray-400" />
-                  <p className="text-sm font-medium">
-                    {file ? file.name : "Arraste ou clique para selecionar um arquivo"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Formatos suportados: CSV, XLS, XLSX
-                  </p>
-                  <Input
-                    id="file-upload"
-                    type="file"
-                    accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
-                    className="hidden"
-                    onChange={onFileChange}
-                  />
-                  <div className="flex gap-2 mt-2">
-                    <label htmlFor="file-upload" className="cursor-pointer">
-                      <Button variant="outline" type="button" size="sm">
-                        Selecionar Arquivo
-                      </Button>
-                    </label>
-                    <Button 
-                      variant="outline" 
-                      type="button" 
-                      size="sm"
-                      onClick={downloadTemplateFile}
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Baixar Template
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              
-              {file && (
-                <div className="flex justify-between items-center p-2 bg-muted rounded">
-                  <div className="flex items-center gap-2">
-                    <FileType className="h-5 w-5" />
-                    <span className="text-sm font-medium">{file.name}</span>
-                    <span className="text-xs text-muted-foreground">
-                      ({Math.round(file.size / 1024)} KB)
-                    </span>
-                  </div>
-                  <Button
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => {
-                      const input = document.getElementById('file-upload') as HTMLInputElement;
-                      if (input) input.value = '';
-                      onFileChange({ target: { files: null } } as any);
-                    }}
-                  >
-                    Remover
-                  </Button>
-                </div>
-              )}
-              
-              <div className="text-sm text-muted-foreground">
-                <p>Instruções:</p>
-                <ul className="list-disc list-inside ml-2 space-y-1">
-                  <li>Sua planilha deve ter uma coluna "pergunta" ou "question"</li>
-                  <li>Opcionalmente, inclua colunas para "tipo_resposta" e "obrigatorio"</li>
-                  <li>Para respostas de múltipla escolha, separe opções com vírgulas</li>
-                  <li>Baixe o modelo para um exemplo da estrutura correta</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div>
+        <Label htmlFor="file">
+          Arquivo para Importar <span className="text-red-500">*</span>
+        </Label>
+        <Input
+          id="file"
+          type="file"
+          onChange={(e) => {
+            const selectedFile = e.target.files?.[0];
+            if (selectedFile) {
+              onFileChange(selectedFile);
+            }
+          }}
+          required
+        />
+        {file && (
+          <p className="text-sm text-muted-foreground">
+            Arquivo selecionado: {file.name} ({Math.round(file.size / 1024)} KB)
+          </p>
+        )}
+        <p className="text-sm text-muted-foreground">
+          Formatos suportados: CSV, XLS, XLSX.
+          <a
+            href={templateUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline ml-1"
+          >
+            Baixar modelo
+          </a>
+        </p>
+      </div>
     </div>
   );
 }

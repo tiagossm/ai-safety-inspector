@@ -58,9 +58,9 @@ export function useChecklistAI() {
         status_checklist: "ativo",
         category: form.category || 'general',
         user_id: form.user_id,
-        company_id: form.company_id,
+        company_id: form.company_id === "none" ? null : form.company_id,
         due_date: form.due_date,
-        responsible_id: form.responsible_id
+        responsible_id: form.responsible_id === "none" ? null : form.responsible_id
       };
       
       // Generate questions based on the prompt and category
