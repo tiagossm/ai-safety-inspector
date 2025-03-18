@@ -121,11 +121,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
   
-  // More robust session refresh that explicitly requests a token refresh
+  // Enhanced session refresh that explicitly requests a token refresh
   const refreshSession = async (): Promise<boolean> => {
     setLoading(true);
     try {
-      console.log("🔄 Solicitando renovação de sessão...");
+      console.log("🔄 Solicitando renovação de sessão explícita...");
       
       // Explicitly try to refresh the token first
       const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
@@ -144,12 +144,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         // We have a session but couldn't refresh - might work for some operations
         console.log("⚠️ Usando sessão existente (sem renovação)");
+        setLoading(false);
         return true;
       }
       
       if (refreshData.session) {
         console.log("✅ Sessão renovada com sucesso!");
         console.log("🔒 Expiração:", new Date(refreshData.session.expires_at * 1000).toLocaleString());
+        console.log("🔑 Token JWT:", refreshData.session.access_token.substring(0, 10) + "...");
         
         // Update the user with the refreshed session data if needed
         if (refreshData.user && refreshData.user.id !== user?.id) {

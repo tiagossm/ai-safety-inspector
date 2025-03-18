@@ -52,10 +52,11 @@ export function useChecklistImport() {
   useEffect(() => {
     const validateSession = async () => {
       try {
-        await refreshSession();
+        const refreshed = await refreshSession();
         const { data } = await supabase.auth.getSession();
-        setSessionValid(!!data.session);
-        console.log("✅ Sessão validada:", !!data.session);
+        const isValid = !!data.session;
+        setSessionValid(isValid);
+        console.log("✅ Sessão validada:", isValid, "Token refreshed:", refreshed);
       } catch (error) {
         console.error("❌ Erro na validação da sessão:", error);
         setSessionValid(false);
@@ -72,25 +73,43 @@ export function useChecklistImport() {
   // Função auxiliar para renovar a sessão e obter um token JWT válido
   const getValidAuthToken = async (): Promise<string | null> => {
     try {
-      console.log("🔄 Renovando a sessão para obter um token válido...");
+      console.log("🔄 Renovando a sessão explicitamente para obter um token válido...");
       
-      // Tenta renovar a sessão explicitamente
-      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      // Tenta renovar a sessão explicitamente primeiro com refreshSession
+      const refreshSuccessful = await refreshSession();
       
-      if (refreshError) {
-        console.error("❌ Erro ao renovar sessão:", refreshError);
-        throw new Error(`Erro ao renovar sessão: ${refreshError.message}`);
+      if (!refreshSuccessful) {
+        console.error("❌ Falha ao renovar sessão via refreshSession()");
+        
+        // Tentar renovar diretamente com supabase.auth
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        
+        if (refreshError) {
+          console.error("❌ Erro ao renovar sessão via supabase.auth.refreshSession():", refreshError);
+          throw new Error(`Erro ao renovar sessão: ${refreshError.message}`);
+        }
+        
+        if (!refreshData.session) {
+          console.error("❌ Nenhuma sessão após atualização");
+          throw new Error("Sessão expirada. Faça login novamente.");
+        }
+        
+        const token = refreshData.session.access_token;
+        console.log("✅ Token JWT renovado diretamente via supabase.auth. Comprimento:", token.length);
+        return token;
       }
       
-      if (!refreshData.session) {
-        console.error("❌ Nenhuma sessão após atualização");
-        throw new Error("Sessão expirada. Faça login novamente.");
+      // Se refreshSession foi bem-sucedido, obtém o token da sessão atual
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData.session) {
+        console.error("❌ Nenhuma sessão ativa após refreshSession bem-sucedido");
+        throw new Error("Sessão inválida após renovação. Faça login novamente.");
       }
       
-      const token = refreshData.session.access_token;
-      
-      console.log("✅ Token JWT renovado com sucesso. Comprimento:", token.length);
-      console.log("🔒 Expiração:", new Date(refreshData.session.expires_at * 1000).toLocaleString());
+      const token = sessionData.session.access_token;
+      console.log("✅ Token JWT obtido após renovação bem-sucedida. Comprimento:", token.length);
+      console.log("🔒 Expiração:", new Date(sessionData.session.expires_at * 1000).toLocaleString());
       
       return token;
     } catch (error) {
@@ -116,7 +135,7 @@ export function useChecklistImport() {
     try {
       console.log("📂 Importando checklist do arquivo:", file.name, "| Tamanho:", Math.round(file.size / 1024), "KB");
 
-      // 🔑 Obter um token JWT válido usando nossa função auxiliar
+      // 🔑 Obter um token JWT válido usando nossa função auxiliar aprimorada
       const jwt = await getValidAuthToken();
       
       if (!jwt) {
@@ -125,7 +144,7 @@ export function useChecklistImport() {
         return false;
       }
 
-      // 🔍 **Verificando se o usuário está autenticado e tem um UUID válido**
+      // 🔍 Verificando se o usuário está autenticado e tem um UUID válido
       if (!user?.id || !/^[0-9a-fA-F-]{36}$/.test(user.id)) {
         console.error("🚨 Erro: Usuário não autenticado ou ID inválido!");
         toast.error("Erro: Usuário não autenticado. Faça login novamente.");
@@ -141,9 +160,9 @@ export function useChecklistImport() {
       // ✅ Criando o checklist com user_id válido
       const checklistData = {
         ...form,
-        status: form.status || "active", // 🔥 Garante um status válido
+        status: form.status || "active",
         status_checklist: form.status_checklist || "ativo",
-        user_id: user.id, // 🔥 Garante que sempre haverá um ID de usuário válido
+        user_id: user.id,
       };
 
       console.log("📝 Dados do checklist preparados para envio:", checklistData);
@@ -161,14 +180,14 @@ export function useChecklistImport() {
         method: "POST",
         headers: { 
           Authorization: `Bearer ${jwt}`,
-          // Não definimos Content-Type aqui, pois o FormData já define um boundary correto
+          // Removemos o Content-Type explícito pois o FormData já define o boundary adequado
         },
         body: formData,
       });
 
       if (error) {
         console.error("❌ Erro na função Edge:", error);
-        console.error("❌ Detalhes do erro:", error.message, error.name, error.stack);
+        console.error("❌ Detalhes do erro:", error.message, error.name);
         console.error("❌ Código de status:", error.context?.status);
         
         // Mensagem específica para erro 401
