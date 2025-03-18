@@ -11,24 +11,14 @@ import {
   CardTitle 
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { ArrowLeft, ClipboardCheck, Clock, Calendar } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ArrowLeft, ClipboardCheck, Clock, Calendar, Info, AlertCircle } from "lucide-react";
 import { ChecklistItem } from "@/types/checklist";
 import { Json } from "@/integrations/supabase/types";
+import { format } from "date-fns";
+import { ChecklistResponseItem } from "@/components/checklists/ChecklistResponseItem";
+import { ptBR } from "date-fns/locale";
 
 export default function ChecklistDetail() {
   const { id } = useParams<{ id: string }>();
@@ -80,6 +70,8 @@ export default function ChecklistDetail() {
           permite_audio: !!item.permite_audio,
           permite_video: !!item.permite_video,
           permite_foto: !!item.permite_foto,
+          hint: item.hint || null,
+          weight: item.weight || 1,
           created_at: item.created_at,
           updated_at: item.updated_at
         }));
@@ -193,84 +185,6 @@ export default function ChecklistDetail() {
     }
   };
 
-  const renderResponseInput = (item: ChecklistItem) => {
-    switch (item.tipo_resposta) {
-      case 'sim/não':
-        return (
-          <RadioGroup 
-            value={String(item.resposta || '')} 
-            onValueChange={(value) => handleResponseChange(item.id, value)}
-            className="flex space-x-4"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="sim" id={`${item.id}-sim`} />
-              <Label htmlFor={`${item.id}-sim`}>Sim</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="não" id={`${item.id}-nao`} />
-              <Label htmlFor={`${item.id}-nao`}>Não</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="n/a" id={`${item.id}-na`} />
-              <Label htmlFor={`${item.id}-na`}>N/A</Label>
-            </div>
-          </RadioGroup>
-        );
-        
-      case 'texto':
-        return (
-          <Textarea
-            value={String(item.resposta || '')}
-            onChange={(e) => handleResponseChange(item.id, e.target.value)}
-            placeholder="Digite sua resposta"
-            className="w-full"
-          />
-        );
-        
-      case 'numérico':
-        return (
-          <Input
-            type="number"
-            value={String(item.resposta || '')}
-            onChange={(e) => handleResponseChange(item.id, e.target.value)}
-            placeholder="Digite um valor numérico"
-            className="w-full"
-          />
-        );
-        
-      case 'múltipla escolha':
-      case 'seleção múltipla':
-        const options = item.opcoes || ['Opção 1', 'Opção 2', 'Opção 3'];
-        return (
-          <Select 
-            value={String(item.resposta || '')} 
-            onValueChange={(value) => handleResponseChange(item.id, value)}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Selecione uma opção" />
-            </SelectTrigger>
-            <SelectContent>
-              {options.map((option, index) => (
-                <SelectItem key={index} value={String(option)}>
-                  {option}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        );
-        
-      default:
-        return (
-          <Input
-            value={String(item.resposta || '')}
-            onChange={(e) => handleResponseChange(item.id, e.target.value)}
-            placeholder="Digite sua resposta"
-            className="w-full"
-          />
-        );
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -288,6 +202,21 @@ export default function ChecklistDetail() {
     );
   }
 
+  // Calcular o progresso
+  const totalItems = items.length;
+  const answeredItems = items.filter(item => item.resposta !== null && item.resposta !== undefined).length;
+  const progress = totalItems > 0 ? (answeredItems / totalItems) * 100 : 0;
+  const score = totalItems > 0 
+    ? items.reduce((acc, item) => {
+        if (item.resposta === "sim" || item.resposta === "bom") {
+          return acc + (item.weight || 1);
+        }
+        return acc;
+      }, 0) 
+    : 0;
+  const maxScore = items.reduce((acc, item) => acc + (item.weight || 1), 0);
+  const scorePercentage = maxScore > 0 ? (score / maxScore) * 100 : 0;
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center gap-4">
@@ -301,87 +230,102 @@ export default function ChecklistDetail() {
         <h1 className="text-2xl font-bold">{checklist.title}</h1>
       </div>
       
+      <Card className={`bg-gradient-to-r ${progress >= 70 ? 'from-green-500/20 to-green-400/10' : progress >= 30 ? 'from-amber-500/20 to-amber-400/10' : 'from-red-500/20 to-red-400/10'}`}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-xl flex items-center gap-2">
+            <ClipboardCheck className="h-5 w-5" />
+            {checklist.description || "Inspeção"}
+          </CardTitle>
+          <CardDescription>
+            Criado em {format(new Date(checklist.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row justify-between gap-4">
+            <div className="space-y-1 flex-1">
+              <div className="flex justify-between text-sm text-muted-foreground mb-1">
+                <span>Progresso</span>
+                <span>{answeredItems} de {totalItems} ({Math.round(progress)}%)</span>
+              </div>
+              <Progress value={progress} className="h-2" />
+            </div>
+            
+            <div className="space-y-1 flex-1">
+              <div className="flex justify-between text-sm text-muted-foreground mb-1">
+                <span>Pontuação</span>
+                <span>{score} de {maxScore} ({Math.round(scorePercentage)}%)</span>
+              </div>
+              <Progress value={scorePercentage} className="h-2" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      
       <div className="grid md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Detalhes do Checklist</CardTitle>
-              <CardDescription>
-                {checklist.description || "Este checklist não possui uma descrição."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Status</h3>
-                  <p className="mt-1">{checklist.status === 'concluido' ? 'Concluído' : 'Pendente'}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Categoria</h3>
-                  <p className="mt-1">{checklist.category || 'Geral'}</p>
-                </div>
-                {checklist.due_date && (
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground">Data de Vencimento</h3>
-                    <p className="mt-1 flex items-center gap-1">
-                      <Calendar className="h-4 w-4" />
-                      {format(new Date(checklist.due_date), 'dd/MM/yyyy')}
-                    </p>
-                  </div>
-                )}
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Criado em</h3>
-                  <p className="mt-1 flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    {format(new Date(checklist.created_at), 'dd/MM/yyyy')}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="space-y-4">
+            {items.map((item, index) => (
+              <ChecklistResponseItem
+                key={item.id}
+                item={item}
+                onResponseChange={handleResponseChange}
+                index={index}
+              />
+            ))}
+          </div>
           
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ClipboardCheck className="h-5 w-5" />
-                <span>Perguntas</span>
-              </CardTitle>
-              <CardDescription>
-                Total de {items.length} {items.length === 1 ? 'pergunta' : 'perguntas'} para preencher
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              {items.map((item, index) => (
-                <div key={item.id} className="border-b last:border-b-0">
-                  <div className="p-4 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{index + 1}.</span>
-                      <h3 className="font-medium">{item.pergunta}</h3>
-                      {item.obrigatorio && (
-                        <span className="text-red-500 text-sm">*</span>
-                      )}
-                    </div>
-                    <div className="pl-6">
-                      {renderResponseInput(item)}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-            <CardFooter className="border-t bg-muted/20 p-4">
-              <div className="flex justify-end w-full">
-                <Button 
-                  onClick={handleSaveResponses} 
-                  disabled={submitting}
-                >
-                  {submitting ? 'Salvando...' : 'Salvar Respostas'}
-                </Button>
-              </div>
+            <CardFooter className="p-4">
+              <Button 
+                onClick={handleSaveResponses} 
+                disabled={submitting}
+                className="w-full"
+              >
+                {submitting ? 'Salvando...' : 'Salvar Respostas'}
+              </Button>
             </CardFooter>
           </Card>
         </div>
         
         <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Informações</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground">Status</h3>
+                <p className="mt-1 flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${checklist.status === 'concluido' ? 'bg-green-500' : 'bg-amber-500'}`}></span>
+                  {checklist.status === 'concluido' ? 'Concluído' : 'Pendente'}
+                </p>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground">Categoria</h3>
+                <p className="mt-1">{checklist.category || 'Geral'}</p>
+              </div>
+              
+              {checklist.due_date && (
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Data de Vencimento</h3>
+                  <p className="mt-1 flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    {format(new Date(checklist.due_date), 'dd/MM/yyyy')}
+                  </p>
+                </div>
+              )}
+              
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground">Criado em</h3>
+                <p className="mt-1 flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  {format(new Date(checklist.created_at), 'dd/MM/yyyy')}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+          
           {company && (
             <Card>
               <CardHeader>
@@ -413,13 +357,30 @@ export default function ChecklistDetail() {
             </Card>
           )}
           
-          {checklist.is_template && (
-            <Card className="bg-blue-50">
-              <CardContent className="p-4">
-                <p className="text-sm">Este é um checklist template. Pode ser usado como base para criar novos checklists.</p>
-              </CardContent>
-            </Card>
-          )}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Info className="h-4 w-4" />
+                <span>Dicas</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2 text-sm">
+                <li className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 text-red-500 mt-0.5" />
+                  <span>Itens obrigatórios estão marcados com <span className="text-red-500">*</span></span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Info className="h-4 w-4 text-blue-500 mt-0.5" />
+                  <span>Clique no ícone de informação para ver instruções adicionais</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Clock className="h-4 w-4 text-amber-500 mt-0.5" />
+                  <span>Certifique-se de completar o checklist antes da data de vencimento</span>
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

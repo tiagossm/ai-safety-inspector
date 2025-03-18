@@ -22,6 +22,11 @@ export function useManualSubmit() {
       allowPhoto?: boolean;
       allowVideo?: boolean;
       allowAudio?: boolean;
+      options?: string[];
+      hint?: string;
+      weight?: number;
+      parentId?: string;
+      conditionValue?: string;
     }>
   ) => {
     try {
@@ -68,7 +73,12 @@ export function useManualSubmit() {
                 ordem: i,
                 permite_audio: q.allowAudio || false,
                 permite_video: q.allowVideo || false,
-                permite_foto: q.allowPhoto || false
+                permite_foto: q.allowPhoto || false,
+                opcoes: q.options || null,
+                hint: q.hint || null,
+                weight: q.weight || 1,
+                parent_item_id: q.parentId ? questions[parseInt(q.parentId)].text : null,
+                condition_value: q.conditionValue || null
               });
           }
           return Promise.resolve(null);
