@@ -11,6 +11,7 @@ export function useMediaUpload() {
 
   const uploadFile = async (file: File) => {
     try {
+      console.log("📤 Starting file upload:", file.name, file.type);
       setIsUploading(true);
       setProgress(0);
       
@@ -46,14 +47,21 @@ export function useMediaUpload() {
         });
 
       clearInterval(progressInterval);
+      
+      if (error) {
+        console.error("Upload error:", error);
+        throw error;
+      }
+      
+      console.log("✅ File uploaded successfully:", filePath);
       setProgress(100);
-
-      if (error) throw error;
 
       // Get the public URL
       const { data: urlData } = supabase.storage
         .from(bucketName)
         .getPublicUrl(filePath);
+
+      console.log("📊 File URL generated:", urlData.publicUrl);
 
       return {
         path: filePath,
@@ -71,5 +79,30 @@ export function useMediaUpload() {
     }
   };
 
-  return { uploadFile, isUploading, progress };
+  const uploadMedia = async (mediaBlob: Blob, fileType: string, fileName?: string) => {
+    try {
+      setIsUploading(true);
+      setProgress(0);
+      
+      const mediaType = fileType.split('/')[0]; // 'audio', 'video', or 'image'
+      const extension = fileType.split('/')[1]; // 'mp3', 'mp4', 'jpeg', etc.
+      
+      // Create a file from the blob
+      const file = new File(
+        [mediaBlob], 
+        fileName || `${mediaType}_${Date.now()}.${extension}`, 
+        { type: fileType }
+      );
+      
+      console.log(`📤 Uploading ${mediaType} file:`, file.name);
+      
+      return await uploadFile(file);
+    } catch (error) {
+      console.error(`Error uploading ${fileType.split('/')[0]}:`, error);
+      toast.error(`Erro ao enviar mídia: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
+      throw error;
+    }
+  };
+
+  return { uploadFile, uploadMedia, isUploading, progress };
 }

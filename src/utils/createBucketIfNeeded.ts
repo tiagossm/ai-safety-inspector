@@ -37,7 +37,9 @@ export const createBucketIfNeeded = async (bucketName: string): Promise<boolean>
     console.log(`Successfully created bucket ${bucketName}`);
     
     // The getPublicUrl method doesn't return an error property
+    // Instead, use a try/catch block to verify it works
     try {
+      // Simply test if we can get a public URL
       supabase.storage.from(bucketName).getPublicUrl('test');
       return true;
     } catch (policyError) {

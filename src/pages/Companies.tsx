@@ -2,16 +2,18 @@
 import { useAuth } from "@/components/AuthProvider";
 import { CompaniesList } from "@/components/CompaniesList";
 import { Button } from "@/components/ui/button";
-import { Upload, Download } from "lucide-react";
+import { Upload, Download, Image } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { MediaUpload } from "@/components/media/MediaUpload";
 
 const Companies = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [uploading, setUploading] = useState(false);
-  const { toast } = useToast();
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const { user } = useAuth();
   const [companies, setCompanies] = useState([]);
 
@@ -31,10 +33,8 @@ const Companies = () => {
       console.log("✅ Empresas carregadas:", data);
     } catch (error: any) {
       console.error("❌ Erro ao buscar empresas:", error.message);
-      toast({
-        title: "Erro ao carregar empresas",
-        description: error.message || "Não foi possível carregar as empresas.",
-        variant: "destructive",
+      toast.error("Erro ao carregar empresas", {
+        description: error.message || "Não foi possível carregar as empresas."
       });
     }
   };
@@ -46,6 +46,12 @@ const Companies = () => {
 
   const handleCompanyCreated = () => {
     setRefreshTrigger(prev => prev + 1);
+  };
+
+  const handleMediaUploaded = (mediaData: any) => {
+    console.log("📁 Mídia enviada:", mediaData);
+    toast.success("Arquivo enviado com sucesso!");
+    setUploadDialogOpen(false);
   };
 
   const handleExportCompanies = async () => {
@@ -71,18 +77,15 @@ const Companies = () => {
       link.click();
       document.body.removeChild(link);
 
-      toast({
-        title: "Exportação concluída",
-        description: "O arquivo CSV foi gerado com sucesso.",
+      toast.success("Exportação concluída", {
+        description: "O arquivo CSV foi gerado com sucesso."
       });
 
       console.log("✅ Exportação concluída com sucesso!");
     } catch (error: any) {
       console.error("❌ Erro ao exportar empresas:", error.message);
-      toast({
-        title: "Erro na exportação",
-        description: error.message || "Não foi possível exportar os dados.",
-        variant: "destructive",
+      toast.error("Erro na exportação", {
+        description: error.message || "Não foi possível exportar os dados."
       });
     }
   };
@@ -92,10 +95,8 @@ const Companies = () => {
     if (!file) return;
 
     if (file.type !== "text/csv") {
-      toast({
-        title: "Erro no upload",
-        description: "Por favor, selecione um arquivo CSV válido.",
-        variant: "destructive",
+      toast.error("Erro no upload", {
+        description: "Por favor, selecione um arquivo CSV válido."
       });
       return;
     }
@@ -109,7 +110,7 @@ const Companies = () => {
       const filename = `${user.id}/${Date.now()}_${file.name}`;
       const { error: uploadError } = await supabase.storage
         .from("company-imports")
-        .upload(filename, file);
+        .upload(filename, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
@@ -123,19 +124,16 @@ const Companies = () => {
 
       if (importError) throw importError;
 
-      toast({
-        title: "Upload realizado com sucesso",
-        description: "O arquivo será processado em breve.",
+      toast.success("Upload realizado com sucesso", {
+        description: "O arquivo será processado em breve."
       });
       setRefreshTrigger(prev => prev + 1);
 
       console.log("✅ Upload e importação concluídos!");
     } catch (error: any) {
       console.error("❌ Erro no upload:", error.message);
-      toast({
-        title: "Erro no upload",
-        description: error.message || "Não foi possível fazer o upload do arquivo.",
-        variant: "destructive",
+      toast.error("Erro no upload", {
+        description: error.message || "Não foi possível fazer o upload do arquivo."
       });
     } finally {
       setUploading(false);
@@ -166,6 +164,23 @@ const Companies = () => {
               <Download className="h-5 w-5 mr-2" />
               Exportar CSV
             </Button>
+            <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="whitespace-nowrap"
+                >
+                  <Image className="h-5 w-5 mr-2" />
+                  Upload Mídia
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Enviar Arquivo de Mídia</DialogTitle>
+                </DialogHeader>
+                <MediaUpload onMediaUploaded={handleMediaUploaded} />
+              </DialogContent>
+            </Dialog>
           </div>
           <Input
             type="file"
