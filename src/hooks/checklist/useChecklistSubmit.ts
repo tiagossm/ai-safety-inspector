@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
 import { NewChecklist } from "@/types/checklist";
@@ -10,6 +9,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { AuthUser } from "@/hooks/auth/useAuthState";
 
+// This file is being replaced by the modular version in src/hooks/checklist/form/useChecklistSubmit.ts
+// Keeping this file for backward compatibility until all imports are updated
 export function useChecklistSubmit() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sessionChecked, setSessionChecked] = useState(false);
