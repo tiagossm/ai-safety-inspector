@@ -31,6 +31,21 @@ interface ChecklistEditorProps {
   onCancel?: () => void;
 }
 
+// Define the question type to avoid type errors
+type Question = {
+  text: string;
+  type: string;
+  required: boolean;
+  allowPhoto: boolean;
+  allowVideo: boolean;
+  allowAudio: boolean;
+  options?: string[];
+  hint?: string;
+  weight?: number;
+  parentId?: string;
+  conditionValue?: string;
+};
+
 export function ChecklistEditor({
   initialChecklist,
   initialQuestions = [],
@@ -39,10 +54,25 @@ export function ChecklistEditor({
   onCancel
 }: ChecklistEditorProps) {
   const [checklist, setChecklist] = useState<NewChecklist>(initialChecklist);
-  const [questions, setQuestions] = useState(initialQuestions);
+  // Ensure all questions have required properties
+  const [questions, setQuestions] = useState<Question[]>(
+    initialQuestions.map(q => ({
+      text: q.text,
+      type: q.type,
+      required: q.required,
+      allowPhoto: q.allowPhoto || false,
+      allowVideo: q.allowVideo || false,
+      allowAudio: q.allowAudio || false,
+      options: q.options,
+      hint: q.hint,
+      weight: q.weight,
+      parentId: q.parentId,
+      conditionValue: q.conditionValue
+    }))
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
-  const createChecklist = useCreateChecklist();
+  const createChecklistMutation = useCreateChecklist();
   const [users, setUsers] = useState<any[]>([]);
   
   // Fetch users for the form
@@ -120,14 +150,16 @@ export function ChecklistEditor({
       }
       
       // Create the checklist
-      const { data: newChecklist, error } = await createChecklist.mutateAsync(checklist);
+      const result = await createChecklistMutation.mutateAsync(checklist);
       
-      if (error || !newChecklist?.id) {
-        console.error("Error creating checklist:", error);
+      if (!result || !result.id) {
+        console.error("Error creating checklist: No valid result returned");
         toast.error("Erro ao criar checklist");
         setIsSubmitting(false);
         return;
       }
+      
+      const newChecklistId = result.id;
       
       // Add questions if any
       if (questions.length > 0) {
@@ -136,7 +168,7 @@ export function ChecklistEditor({
             return supabase
               .from("checklist_itens")
               .insert({
-                checklist_id: newChecklist.id,
+                checklist_id: newChecklistId,
                 pergunta: q.text,
                 tipo_resposta: q.type,
                 obrigatorio: q.required,
@@ -160,9 +192,9 @@ export function ChecklistEditor({
       toast.success("Checklist salvo com sucesso!");
       
       if (onSave) {
-        onSave(newChecklist.id);
+        onSave(newChecklistId);
       } else {
-        navigate(`/checklists/${newChecklist.id}`);
+        navigate(`/checklists/${newChecklistId}`);
       }
     } catch (error) {
       console.error("Error submitting checklist:", error);

@@ -1,7 +1,7 @@
 
 import { Suspense, lazy } from "react";
 import { Route, Routes } from "react-router-dom";
-import RequireAuth from "@/components/RequireAuth";
+import { RequireAuth } from "@/components/RequireAuth";
 
 const ChecklistEditorPage = lazy(() => import("@/pages/ChecklistEditorPage"));
 

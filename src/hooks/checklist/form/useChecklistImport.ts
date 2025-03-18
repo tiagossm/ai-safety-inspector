@@ -7,6 +7,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import * as XLSX from "xlsx";
 
+// Create an interface for the parsed data
+interface ParsedData {
+  questions: Array<{
+    text: string;
+    type: string;
+    required: boolean;
+    allowPhoto: boolean;
+    allowVideo: boolean;
+    allowAudio: boolean;
+    options?: string[];
+    hint?: string;
+    weight?: number;
+  }>;
+}
+
 /**
  * Valida se o arquivo tem um formato correto (CSV, XLS, XLSX)
  */
@@ -115,7 +130,7 @@ export function useChecklistImport() {
     return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/templates/checklist_import_template.xlsx`;
   };
 
-  const parseFile = async (file: File) => {
+  const parseFile = async (file: File): Promise<ParsedData> => {
     try {
       const fileExtension = file.name.split('.').pop()?.toLowerCase();
       
