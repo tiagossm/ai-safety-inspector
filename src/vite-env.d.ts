@@ -20,6 +20,11 @@ interface Window {
     type: string;
     version: string;
   };
+  // Add ImageCapture to Window interface
+  ImageCapture?: {
+    prototype: ImageCapture;
+    new(track: MediaStreamTrack): ImageCapture;
+  }
 }
 
 // Add Connection API type definitions
@@ -47,14 +52,4 @@ interface ServiceWorkerRegistration {
 interface ImageCapture {
   grabFrame(): Promise<ImageBitmap>;
   takePhoto(): Promise<Blob>;
-}
-
-// Define the ImageCapture constructor globally
-declare global {
-  interface Window {
-    ImageCapture: {
-      prototype: ImageCapture;
-      new(track: MediaStreamTrack): ImageCapture;
-    }
-  }
 }

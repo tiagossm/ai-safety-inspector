@@ -1,7 +1,8 @@
+
 import { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
-import { Mic, Video, StopCircle, Upload, Camera } from 'lucide-react';
+import { Mic, Video, StopCircle, Camera } from 'lucide-react';
 import { toast } from "sonner";
 
 interface MediaCaptureButtonProps {
@@ -86,7 +87,9 @@ export function MediaCaptureButton({
     try {
       const videoTrack = stream.getVideoTracks()[0];
       
-      if (window.ImageCapture) {
+      // Check if ImageCapture API is available in browser
+      if (typeof window.ImageCapture !== 'undefined') {
+        // Using ImageCapture API
         const imageCapture = new window.ImageCapture(videoTrack);
         const bitmap = await imageCapture.grabFrame();
         
@@ -110,6 +113,7 @@ export function MediaCaptureButton({
           stopMediaStream();
         }, 'image/jpeg');
       } else {
+        // Fallback for browsers without ImageCapture support
         const video = document.createElement('video');
         video.srcObject = stream;
         
