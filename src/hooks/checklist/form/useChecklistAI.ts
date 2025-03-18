@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -76,7 +77,7 @@ export function useChecklistAI() {
         .select()
         .single();
 
-      if (checklistError) {
+      if (checklistError || !checklist) {
         console.error("❌ Erro ao criar checklist:", checklistError);
         toast.error(`Erro ao criar checklist: ${checklistError.message}`);
         setAiLoading(false);
@@ -179,9 +180,29 @@ export function useChecklistAI() {
       }
 
       toast.success(`Checklist gerado com sucesso! Revise antes de salvar.`);
+      
+      // Prepare the data for the editor - CORRECTED
+      const checklistData = {
+        ...form,
+        id: checklist.id,
+        title: checklist.title,
+        description: checklist.description,
+        category: checklist.category,
+        is_template: checklist.is_template,
+        status_checklist: checklist.status_checklist,
+      };
+      
+      const formattedQuestions = questions.map(q => ({
+        text: q.pergunta,
+        type: q.tipo_resposta,
+        required: q.obrigatorio,
+      }));
+      
       return {
         success: true,
         checklistId: checklist.id,
+        checklistData: checklistData,
+        questions: formattedQuestions,
         mode: "ai-review",
       };
     } catch (err) {

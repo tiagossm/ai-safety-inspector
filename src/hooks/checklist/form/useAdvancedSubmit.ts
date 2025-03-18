@@ -29,6 +29,8 @@ export function useAdvancedSubmit() {
         mode: importResult.mode
       };
       
+      console.log("Storing import data for editor:", editorData);
+      
       // Store the data in sessionStorage
       sessionStorage.setItem('checklistEditorData', JSON.stringify(editorData));
       
@@ -60,6 +62,8 @@ export function useAdvancedSubmit() {
         questions: aiResult.questions,
         mode: aiResult.mode
       };
+      
+      console.log("Storing AI data for editor:", editorData);
       
       // Store the data in sessionStorage
       sessionStorage.setItem('checklistEditorData', JSON.stringify(editorData));

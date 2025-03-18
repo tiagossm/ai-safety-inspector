@@ -14,6 +14,7 @@ export default function ChecklistEditorPage() {
     const storedData = sessionStorage.getItem('checklistEditorData');
     
     if (!storedData) {
+      console.error("No checklist editor data found in session storage");
       toast.error("Nenhum dado de checklist encontrado");
       navigate('/checklists');
       return;
@@ -21,6 +22,15 @@ export default function ChecklistEditorPage() {
     
     try {
       const parsedData = JSON.parse(storedData);
+      console.log("Loaded editor data from session storage:", parsedData);
+      
+      if (!parsedData.checklistData) {
+        console.error("Invalid editor data: missing checklistData");
+        toast.error("Dados do checklist inválidos");
+        navigate('/checklists');
+        return;
+      }
+      
       setEditorData(parsedData);
     } catch (error) {
       console.error("Error parsing editor data:", error);
@@ -33,6 +43,7 @@ export default function ChecklistEditorPage() {
 
   const handleSave = (checklistId: string) => {
     // Clear the stored data
+    console.log("Checklist saved successfully with ID:", checklistId);
     sessionStorage.removeItem('checklistEditorData');
     
     // Redirect to the checklist details
@@ -41,6 +52,7 @@ export default function ChecklistEditorPage() {
 
   const handleCancel = () => {
     // Clear the stored data
+    console.log("Checklist editing cancelled");
     sessionStorage.removeItem('checklistEditorData');
     
     // Redirect to the checklists page

@@ -1,12 +1,16 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Checklist } from "@/types/checklist";
 
 // ✅ Função para validar se o ID é um UUID válido
 function isValidUUID(id: string | null | undefined): boolean {
+  if (typeof id !== "string") return false;
+  if (id === "editor") return false; // Explicitly check for the "editor" string
+
   const uuidRegex =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return typeof id === "string" && uuidRegex.test(id);
+  return uuidRegex.test(id);
 }
 
 export function useFetchChecklistData(id: string) {
@@ -82,9 +86,9 @@ export function useFetchChecklistData(id: string) {
     enabled: isValidUUID(id), // 🔹 Apenas busca se o ID for válido
     staleTime: 5 * 60 * 1000, // 🔹 Cache válido por 5 minutos
     gcTime: 10 * 60 * 1000, // 🔹 Coleta de lixo após 10 minutos
-    retry: (failureCount) => {
+    retry: (failureCount, error) => {
+      console.log(`🔄 Erro na consulta (tentativa ${failureCount + 1}):`, error);
       if (failureCount < 3) {
-        console.log(`🔄 Tentativa de nova consulta ${failureCount + 1}`);
         return true;
       }
       return false;
