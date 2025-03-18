@@ -24,22 +24,18 @@ const validateFileFormat = (file: File): { valid: boolean; message?: string } =>
   return { valid: true };
 };
 
-// Parse Excel files
-const parseExcel = (arrayBuffer: ArrayBuffer) => {
+/**
+ * Lê um arquivo CSV e converte para JSON
+ */
+const parseCSV = async (file: File) => {
   try {
-    const data = new Uint8Array(arrayBuffer);
-    const workbook = XLSX.read(data, { type: "array" });
-
-    // Obtém a primeira aba do Excel
-    const firstSheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[firstSheetName];
-
-    // Converte para JSON
-    const jsonData = XLSX.utils.sheet_to_json(worksheet);
-    return jsonData;
+    const text = await file.text();
+    const workbook = XLSX.read(text, { type: "string" });
+    const sheetName = workbook.SheetNames[0];
+    return XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
   } catch (error) {
-    console.error("❌ Erro ao processar arquivo Excel:", error);
-    throw new Error("Falha ao processar arquivo Excel.");
+    console.error("❌ Erro ao processar arquivo CSV:", error);
+    throw new Error("Falha ao processar arquivo CSV.");
   }
 };
 
@@ -70,54 +66,44 @@ export function useChecklistImport() {
   };
 
   const importFromFile = async (file: File, form: NewChecklist) => {
-    // Validação inicial do arquivo
     if (!file) {
-      toast.error("Nenhum arquivo selecionado");
+      toast.error("Nenhum arquivo selecionado.");
       return false;
     }
 
     const validation = validateFileFormat(file);
     if (!validation.valid) {
-      toast.error(validation.message || "Arquivo inválido");
+      toast.error(validation.message || "Arquivo inválido.");
       return false;
     }
 
     try {
-      console.log("📂 Importando checklist do arquivo:", file.name, "| Tamanho:", Math.round(file.size / 1024), "KB");
+      console.log("📂 Lendo arquivo CSV antes do envio...");
+      const csvData = await parseCSV(file);
+      console.log("📌 Conteúdo do CSV:", csvData);
 
-      // Atualiza a sessão antes de continuar
+      if (!csvData || csvData.length === 0) {
+        toast.error("O arquivo CSV está vazio ou inválido.");
+        return false;
+      }
+
       await refreshSession();
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
 
       if (sessionError || !sessionData.session) {
-        console.error("❌ Erro na autenticação:", sessionError || "Nenhuma sessão ativa");
         toast.error("Sessão inválida. Faça login novamente.");
         return false;
       }
 
       const jwt = sessionData.session.access_token;
-      console.log("🔑 Token JWT obtido. Comprimento:", jwt.length);
 
-      // 📌 Verificando se o usuário autenticado tem um `user_id` válido
-      console.log("🔍 Verificando usuário antes da criação do checklist:", {
-        user_id: user?.id || "NÃO ENCONTRADO",
-        email: user?.email || "NÃO ENCONTRADO",
-        autenticado: !!user,
-      });
-
-      // 🚨 Impede o envio de user_id inválido
-      if (!user?.id || user.id === "00000000-0000-0000-0000-000000000000") {
-        console.error("🚨 Erro: Usuário não autenticado ou ID inválido!");
-        toast.error("Erro: Usuário não autenticado. Faça login novamente.");
-        return false;
-      }
-
-      // ✅ Criando o checklist com user_id válido
+      // ✅ Criando checklist com perguntas associadas
       const checklistData = {
         ...form,
-        status: form.status || "active", // 🔥 Garante um status válido
+        status: form.status || "active",
         status_checklist: form.status_checklist || "ativo",
-        user_id: user.id, // 🔥 Garante que sempre haverá um ID de usuário válido
+        user_id: user?.id,
+        questions: csvData, // 🔥 Adicionando as perguntas diretamente
       };
 
       console.log("📝 Dados do checklist preparados para envio:", checklistData);
@@ -129,7 +115,6 @@ export function useChecklistImport() {
 
       console.log("📤 Enviando arquivo para processamento via Supabase Edge Function...");
 
-      // Chamada para a Supabase Edge Function
       const { data, error } = await supabase.functions.invoke("process-checklist-csv", {
         method: "POST",
         headers: { Authorization: `Bearer ${jwt}` },
