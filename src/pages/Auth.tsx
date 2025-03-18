@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,8 +14,36 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [resetPasswordMode, setResetPasswordMode] = useState(false);
+  const [initialCheckDone, setInitialCheckDone] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Check if user is already logged in on page load
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error("Session check error:", error);
+          setInitialCheckDone(true);
+          return;
+        }
+        
+        if (data.session) {
+          console.log("User already logged in, redirecting...");
+          navigate("/companies");
+        }
+        
+        setInitialCheckDone(true);
+      } catch (err) {
+        console.error("Unexpected error in session check:", err);
+        setInitialCheckDone(true);
+      }
+    };
+    
+    checkSession();
+  }, [navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,6 +103,15 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
+  // Show loading spinner while initial check is running
+  if (!initialCheckDone) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <Loader2 className="w-8 h-8 text-white animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">

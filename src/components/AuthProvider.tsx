@@ -1,5 +1,5 @@
 
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { AuthUser } from "@/hooks/auth/useAuthState";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -121,8 +121,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
   
-  // Enhanced session refresh that explicitly requests a token refresh
-  const refreshSession = async (): Promise<boolean> => {
+  // Improved session refresh with better error handling and reporting
+  const refreshSession = useCallback(async (): Promise<boolean> => {
     setLoading(true);
     try {
       console.log("🔄 Solicitando renovação de sessão explícita...");
@@ -136,8 +136,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Try to get the current session as a fallback
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         
-        if (sessionError || !sessionData.session) {
-          console.error("❌ Sessão inválida ou expirada:", sessionError);
+        if (sessionError) {
+          console.error("❌ Erro ao obter sessão atual:", sessionError);
+          setLoading(false);
+          return false;
+        }
+        
+        if (!sessionData.session) {
+          console.error("❌ Sessão inválida ou expirada");
           setLoading(false);
           return false;
         }
@@ -151,7 +157,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (refreshData.session) {
         console.log("✅ Sessão renovada com sucesso!");
         console.log("🔒 Expiração:", new Date(refreshData.session.expires_at * 1000).toLocaleString());
-        console.log("🔑 Token JWT:", refreshData.session.access_token.substring(0, 10) + "...");
         
         // Update the user with the refreshed session data if needed
         if (refreshData.user && refreshData.user.id !== user?.id) {
@@ -174,7 +179,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(false);
       return false;
     }
-  };
+  }, [user]);
 
   return (
     <AuthContext.Provider 
