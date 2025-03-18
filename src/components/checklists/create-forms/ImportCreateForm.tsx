@@ -130,14 +130,14 @@ export function ImportCreateForm({
               <Skeleton className="h-9 w-full" />
             ) : (
               <Select
-                value={form.company_id?.toString() || ""}
+                value={form.company_id?.toString() || undefined}
                 onValueChange={(value) => handleSelectChange("company_id", value)}
               >
                 <SelectTrigger id="company_id">
                   <SelectValue placeholder="Selecione uma empresa (opcional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhuma empresa</SelectItem>
+                  <SelectItem value="none">Nenhuma empresa</SelectItem>
                   {companies.map((company) => (
                     <SelectItem key={company.id} value={company.id}>
                       {company.fantasy_name || company.cnpj}
@@ -156,14 +156,14 @@ export function ImportCreateForm({
               <Skeleton className="h-9 w-full" />
             ) : (
               <Select
-                value={form.responsible_id?.toString() || ""}
+                value={form.responsible_id?.toString() || undefined}
                 onValueChange={(value) => handleSelectChange("responsible_id", value)}
               >
                 <SelectTrigger id="responsible_id">
                   <SelectValue placeholder="Selecione um responsável (opcional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhum responsável</SelectItem>
+                  <SelectItem value="none">Nenhum responsável</SelectItem>
                   {users.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.name || user.email}
