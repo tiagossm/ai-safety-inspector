@@ -1,3 +1,4 @@
+
 export interface CollaboratorType {
   id: string;
   name: string;
