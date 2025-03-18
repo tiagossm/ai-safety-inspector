@@ -53,11 +53,13 @@ export function ChecklistEditor({
   onSave,
   onCancel
 }: ChecklistEditorProps) {
-  // Transform the initialChecklist to ensure status_checklist is properly typed
+  // Transform the initialChecklist to ensure both status_checklist and status are properly typed
   const transformedInitialChecklist: Partial<Checklist> = {
     ...initialChecklist,
     // Cast status_checklist to the specific union type expected by Checklist
     status_checklist: (initialChecklist.status_checklist as "ativo" | "inativo") || "ativo",
+    // Cast status to the specific union type expected by Checklist
+    status: (initialChecklist.status as "pendente" | "em_andamento" | "concluido") || "pendente"
   };
   
   // Now use the transformed object with useState
@@ -169,7 +171,7 @@ export function ChecklistEditor({
         company_id: checklist.company_id,
         due_date: checklist.due_date,
         user_id: checklist.user_id,
-        status: checklist.status
+        status: checklist.status as string
       };
       
       const result = await createChecklistMutation.mutateAsync(newChecklistData);
