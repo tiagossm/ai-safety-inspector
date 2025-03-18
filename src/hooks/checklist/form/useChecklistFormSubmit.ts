@@ -2,9 +2,10 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { NewChecklist } from "@/types/checklist";
-import { useAdvancedSubmit } from "../useAdvancedSubmit";
+import { useAdvancedSubmit } from "./useAdvancedSubmit";
 import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
 import { useNavigate } from "react-router-dom";
+import { useManualSubmit } from "./useManualSubmit";
 
 export function useChecklistFormSubmit() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -87,6 +88,3 @@ export function useChecklistFormSubmit() {
     handleFormSubmit
   };
 }
-
-// Import at the top
-import { useManualSubmit } from "./useManualSubmit";
