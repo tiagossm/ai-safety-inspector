@@ -24,12 +24,18 @@ serve(async (req) => {
       throw new Error("Missing Supabase environment variables");
     }
     
-    // Extract JWT from Authorization header
+    // Extract JWT from Authorization header with better error handling
     const authHeader = req.headers.get('Authorization');
+    console.log("Authorization header present:", !!authHeader);
+    
     if (!authHeader) {
       console.error("Missing Authorization header");
       return new Response(
-        JSON.stringify({ success: false, error: "Missing authentication" }),
+        JSON.stringify({ 
+          success: false, 
+          error: "Cabeçalho de autorização ausente. Verifique se você está autenticado e tente novamente.",
+          code: 401 
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
       );
     }
@@ -52,7 +58,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            error: `Autenticação falhou: ${authError.message}`,
+            error: `Falha na autenticação: ${authError.message}. Tente fazer login novamente.`,
             code: 401
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
@@ -64,7 +70,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            error: "Autenticação inválida - nenhum usuário encontrado",
+            error: "Autenticação inválida - nenhum usuário encontrado para o token fornecido. Sua sessão pode ter expirado.",
             code: 401
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
@@ -73,7 +79,7 @@ serve(async (req) => {
       
       console.log("User authenticated:", user.id);
 
-      // Check for the expected Content-Type header
+      // Log Content-Type for debugging form data issues
       const contentType = req.headers.get('Content-Type') || '';
       console.log("Request Content-Type:", contentType);
       
@@ -86,7 +92,7 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             success: false, 
-            error: "Erro ao processar dados do formulário. Verifique se está enviando um FormData válido." 
+            error: "Erro ao processar dados do formulário. Verifique se você está enviando um FormData válido." 
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
         );
@@ -188,7 +194,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: "Autenticação inválida. Talvez sua sessão tenha expirado. Faça login novamente.",
+          error: "Autenticação inválida. Sua sessão pode ter expirado. Faça login novamente e tente novamente.",
           details: authError.message,
           code: 401
         }),

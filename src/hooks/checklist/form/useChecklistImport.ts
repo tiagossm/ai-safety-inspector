@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
@@ -68,6 +69,37 @@ export function useChecklistImport() {
     return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/templates/checklist_import_template.xlsx`;
   };
 
+  // Função auxiliar para renovar a sessão e obter um token JWT válido
+  const getValidAuthToken = async (): Promise<string | null> => {
+    try {
+      console.log("🔄 Renovando a sessão para obter um token válido...");
+      
+      // Tenta renovar a sessão explicitamente
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError) {
+        console.error("❌ Erro ao renovar sessão:", refreshError);
+        throw new Error(`Erro ao renovar sessão: ${refreshError.message}`);
+      }
+      
+      if (!refreshData.session) {
+        console.error("❌ Nenhuma sessão após atualização");
+        throw new Error("Sessão expirada. Faça login novamente.");
+      }
+      
+      const token = refreshData.session.access_token;
+      
+      console.log("✅ Token JWT renovado com sucesso. Comprimento:", token.length);
+      console.log("🔒 Expiração:", new Date(refreshData.session.expires_at * 1000).toLocaleString());
+      
+      return token;
+    } catch (error) {
+      console.error("❌ Falha ao obter token de autenticação:", error);
+      toast.error("Erro de autenticação. Tente fazer login novamente.");
+      return null;
+    }
+  };
+
   const importFromFile = async (file: File, form: NewChecklist) => {
     // Validação inicial do arquivo
     if (!file) {
@@ -84,18 +116,14 @@ export function useChecklistImport() {
     try {
       console.log("📂 Importando checklist do arquivo:", file.name, "| Tamanho:", Math.round(file.size / 1024), "KB");
 
-      // 🔄 Atualiza a sessão antes de continuar
-      await refreshSession();
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-
-      if (sessionError || !sessionData.session) {
-        console.error("❌ Erro na autenticação:", sessionError || "Nenhuma sessão ativa");
-        toast.error("Sessão inválida. Faça login novamente.");
+      // 🔑 Obter um token JWT válido usando nossa função auxiliar
+      const jwt = await getValidAuthToken();
+      
+      if (!jwt) {
+        console.error("❌ Não foi possível obter um token JWT válido");
+        toast.error("Falha na autenticação. Faça login novamente.");
         return false;
       }
-
-      const jwt = sessionData.session.access_token;
-      console.log("🔑 Token JWT obtido. Comprimento:", jwt.length);
 
       // 🔍 **Verificando se o usuário está autenticado e tem um UUID válido**
       if (!user?.id || !/^[0-9a-fA-F-]{36}$/.test(user.id)) {
@@ -126,17 +154,29 @@ export function useChecklistImport() {
       formData.append("form", JSON.stringify(checklistData));
 
       console.log("📤 Enviando arquivo para processamento via Supabase Edge Function...");
+      console.log("🔑 Usando token no cabeçalho Authorization: Bearer [token]");
 
-      // Chamada para a Supabase Edge Function
+      // Chamada para a Supabase Edge Function com o token renovado
       const { data, error } = await supabase.functions.invoke("process-checklist-csv", {
         method: "POST",
-        headers: { Authorization: `Bearer ${jwt}` },
+        headers: { 
+          Authorization: `Bearer ${jwt}`,
+          // Não definimos Content-Type aqui, pois o FormData já define um boundary correto
+        },
         body: formData,
       });
 
       if (error) {
         console.error("❌ Erro na função Edge:", error);
-        toast.error(`Erro na importação: ${error.message || "Falha desconhecida"}`);
+        console.error("❌ Detalhes do erro:", error.message, error.name, error.stack);
+        console.error("❌ Código de status:", error.context?.status);
+        
+        // Mensagem específica para erro 401
+        if (error.context?.status === 401) {
+          toast.error("Erro de autenticação. Sua sessão pode ter expirado. Faça login novamente.");
+        } else {
+          toast.error(`Erro na importação: ${error.message || "Falha desconhecida"}`);
+        }
         return false;
       }
 

@@ -121,34 +121,55 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
   
-  // More robust session refresh
+  // More robust session refresh that explicitly requests a token refresh
   const refreshSession = async (): Promise<boolean> => {
+    setLoading(true);
     try {
-      const { data, error } = await supabase.auth.getSession();
+      console.log("🔄 Solicitando renovação de sessão...");
       
-      if (error) {
-        console.error("Error refreshing session:", error);
-        return false;
-      }
+      // Explicitly try to refresh the token first
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
       
-      if (data?.session) {
+      if (refreshError) {
+        console.error("❌ Erro ao renovar sessão:", refreshError);
+        
+        // Try to get the current session as a fallback
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError || !sessionData.session) {
+          console.error("❌ Sessão inválida ou expirada:", sessionError);
+          setLoading(false);
+          return false;
+        }
+        
+        // We have a session but couldn't refresh - might work for some operations
+        console.log("⚠️ Usando sessão existente (sem renovação)");
         return true;
       }
       
-      // If no session, check if we have a valid user in the database
-      if (user && user.id !== "default-admin-user") {
-        const { data: userData } = await supabase
-          .from("users")
-          .select("id")
-          .eq("id", user.id)
-          .single();
-          
-        return !!userData;
+      if (refreshData.session) {
+        console.log("✅ Sessão renovada com sucesso!");
+        console.log("🔒 Expiração:", new Date(refreshData.session.expires_at * 1000).toLocaleString());
+        
+        // Update the user with the refreshed session data if needed
+        if (refreshData.user && refreshData.user.id !== user?.id) {
+          setUser({
+            ...refreshData.user as AuthUser,
+            role: user?.role || "user",
+            tier: user?.tier || "technician"
+          });
+        }
+        
+        setLoading(false);
+        return true;
       }
       
+      console.log("⚠️ Sem sessão após tentativa de renovação");
+      setLoading(false);
       return false;
     } catch (error) {
-      console.error("Error in refreshSession:", error);
+      console.error("❌ Erro ao renovar sessão:", error);
+      setLoading(false);
       return false;
     }
   };
