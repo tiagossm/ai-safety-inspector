@@ -20,6 +20,21 @@ export function useChecklistAI() {
   const { user, refreshSession } = useAuth();
   const typedUser = user as AuthUser | null;
 
+  // Function to normalize response types according to the database constraints
+  const normalizeResponseType = (type: string): string => {
+    // Map of user-friendly types to database-compatible types
+    const typeMap: Record<string, string> = {
+      'sim/não': 'yes_no',
+      'múltipla escolha': 'multiple_choice',
+      'numérico': 'numeric',
+      'texto': 'text',
+      'foto': 'photo',
+      'assinatura': 'signature'
+    };
+
+    return typeMap[type] || 'text'; // Default to 'text' if not matched
+  };
+
   const generateAIChecklist = async (form: NewChecklist) => {
     try {
       setAiLoading(true);
@@ -79,7 +94,7 @@ export function useChecklistAI() {
 
       if (checklistError || !checklist) {
         console.error("❌ Erro ao criar checklist:", checklistError);
-        toast.error(`Erro ao criar checklist: ${checklistError.message}`);
+        toast.error(`Erro ao criar checklist: ${checklistError?.message}`);
         setAiLoading(false);
         return false;
       }
@@ -94,7 +109,9 @@ export function useChecklistAI() {
       console.log("✅ Checklist criado com sucesso:", checklist.id);
 
       // 🔹 Criar perguntas do checklist com base na categoria
-      const questionTypes = ["sim/não", "texto", "numérico", "sim/não", "múltipla escolha"];
+      // Using the valid response types that match the database constraints
+      const questionTypes = ["yes_no", "text", "numeric", "yes_no", "multiple_choice"];
+      
       const questions = [];
       const baseQuestions = {
         safety: [
@@ -138,20 +155,21 @@ export function useChecklistAI() {
       const category = form.category as keyof typeof baseQuestions || "general";
       const categoryQuestions = baseQuestions[category] || baseQuestions.general;
 
-      // Adicionar perguntas básicas
+      // Adicionar perguntas básicas - USANDO TIPOS VÁLIDOS
       for (let i = 0; i < Math.min(categoryQuestions.length, numQuestions); i++) {
         questions.push({
           checklist_id: checklist.id,
           pergunta: categoryQuestions[i],
-          tipo_resposta: "sim/não",
+          tipo_resposta: "yes_no", // Utilizando o tipo válido aceito pelo banco
           obrigatorio: true,
           ordem: i + 1,
         });
       }
 
-      // Gerar perguntas adicionais
+      // Gerar perguntas adicionais - USANDO TIPOS VÁLIDOS
       const keywords = aiPrompt.toLowerCase().split(" ");
       for (let i = categoryQuestions.length; i < numQuestions; i++) {
+        // Use a valid response type from the database accepted types
         const questionType = questionTypes[i % questionTypes.length];
         const keyword = keywords[i % keywords.length] || "segurança";
 
@@ -163,11 +181,14 @@ export function useChecklistAI() {
         questions.push({
           checklist_id: checklist.id,
           pergunta,
-          tipo_resposta: questionType,
+          tipo_resposta: questionType, // Utilizando tipos válidos aceitos pelo banco
           obrigatorio: i % 3 === 0,
           ordem: i + 1,
         });
       }
+
+      // Log the questions being created to help with debugging
+      console.log("Inserting questions with these types:", questions.map(q => q.tipo_resposta));
 
       // 📌 Inserir perguntas no banco
       const { error: questionError } = await supabase
@@ -181,7 +202,7 @@ export function useChecklistAI() {
 
       toast.success(`Checklist gerado com sucesso! Revise antes de salvar.`);
       
-      // Prepare the data for the editor - CORRECTED
+      // Prepare the data for the editor - with UI-friendly response types
       const checklistData = {
         ...form,
         id: checklist.id,
@@ -192,9 +213,19 @@ export function useChecklistAI() {
         status_checklist: checklist.status_checklist,
       };
       
+      // Map the DB response types back to UI-friendly types for display
+      const typeMapReverse: Record<string, string> = {
+        'yes_no': 'sim/não',
+        'multiple_choice': 'múltipla escolha',
+        'numeric': 'numérico',
+        'text': 'texto',
+        'photo': 'foto',
+        'signature': 'assinatura'
+      };
+      
       const formattedQuestions = questions.map(q => ({
         text: q.pergunta,
-        type: q.tipo_resposta,
+        type: typeMapReverse[q.tipo_resposta] || q.tipo_resposta, // Convert back to UI-friendly type
         required: q.obrigatorio,
       }));
       

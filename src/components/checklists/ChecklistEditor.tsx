@@ -46,6 +46,21 @@ type Question = {
   conditionValue?: string;
 };
 
+// Helper function to convert UI-friendly type to database type
+const normalizeResponseType = (type: string): string => {
+  // Map of user-friendly types to database-compatible types
+  const typeMap: Record<string, string> = {
+    'sim/não': 'yes_no',
+    'múltipla escolha': 'multiple_choice',
+    'numérico': 'numeric',
+    'texto': 'text',
+    'foto': 'photo',
+    'assinatura': 'signature'
+  };
+
+  return typeMap[type] || type; // Return original if no mapping found
+};
+
 export function ChecklistEditor({
   initialChecklist,
   initialQuestions = [],
@@ -201,14 +216,19 @@ export function ChecklistEditor({
       
       // Add questions if any
       if (questions.length > 0) {
+        console.log("Inserting questions with types:", questions.map(q => q.type));
+        
         const promises = questions.map((q, i) => {
           if (q.text.trim()) {
+            // Convert UI-friendly type to database-compatible type
+            const dbType = normalizeResponseType(q.type);
+            
             return supabase
               .from("checklist_itens")
               .insert({
                 checklist_id: newChecklistId,
                 pergunta: q.text,
-                tipo_resposta: q.type,
+                tipo_resposta: dbType, // Use the normalized type for database
                 obrigatorio: q.required,
                 ordem: i,
                 permite_audio: q.allowAudio || false,
