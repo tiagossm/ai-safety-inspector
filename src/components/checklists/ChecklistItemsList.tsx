@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ClipboardCheck, FileText, Trash2, Video, Image, Mic, Info, Scale, Calendar, Settings } from "lucide-react";
+import { ClipboardCheck, FileText, Trash2, Video, Image, Mic, Info, Scale, Calendar, Settings, Plus } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";

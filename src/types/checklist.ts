@@ -46,6 +46,10 @@ export interface ChecklistItem {
   permite_foto?: boolean;
   created_at?: string;
   updated_at?: string;
+  hint?: string;  // Adding hint field
+  weight?: number; // Adding weight field
+  parent_item_id?: string | null; // Adding parent_item_id
+  condition_value?: string | null; // Adding condition_value
 }
 
 export interface NewChecklist {

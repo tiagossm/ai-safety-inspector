@@ -24,7 +24,8 @@ export function useChecklistQuestions() {
       allowPhoto: true, 
       allowVideo: false, 
       allowAudio: false,
-      weight: 1
+      weight: 1,
+      hint: ""
     }
   ]);
 
@@ -38,7 +39,8 @@ export function useChecklistQuestions() {
         allowPhoto: true, 
         allowVideo: false, 
         allowAudio: false,
-        weight: 1
+        weight: 1,
+        hint: ""
       }
     ]);
   };

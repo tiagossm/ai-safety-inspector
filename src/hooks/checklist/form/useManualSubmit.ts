@@ -77,7 +77,7 @@ export function useManualSubmit() {
                 opcoes: q.options || null,
                 hint: q.hint || null,
                 weight: q.weight || 1,
-                parent_item_id: q.parentId ? questions[parseInt(q.parentId)].text : null,
+                parent_item_id: q.parentId ? parseInt(q.parentId) : null,
                 condition_value: q.conditionValue || null
               });
           }

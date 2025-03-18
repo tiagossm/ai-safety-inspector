@@ -18,6 +18,7 @@ import {
   HelpCircle
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { toast } from "sonner";
 
 interface ChecklistResponseItemProps {
   item: ChecklistItem;
@@ -102,7 +103,7 @@ export function ChecklistResponseItem({ item, onResponseChange, index }: Checkli
     return (
       <div className="mt-2">
         <Textarea
-          value={item.resposta || ""}
+          value={item.resposta as string || ""}
           onChange={(e) => onResponseChange(item.id, e.target.value)}
           placeholder="Digite sua resposta..."
           rows={3}
@@ -116,7 +117,7 @@ export function ChecklistResponseItem({ item, onResponseChange, index }: Checkli
       <div className="mt-2">
         <Input
           type="number"
-          value={item.resposta || ""}
+          value={item.resposta as string || ""}
           onChange={(e) => onResponseChange(item.id, e.target.value)}
           placeholder="Digite um valor numérico..."
         />
@@ -251,6 +252,3 @@ export function ChecklistResponseItem({ item, onResponseChange, index }: Checkli
     </Card>
   );
 }
-
-// Adicione o Toast faltante
-import { toast } from "sonner";
