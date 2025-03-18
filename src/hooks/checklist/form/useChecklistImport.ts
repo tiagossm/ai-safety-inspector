@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
@@ -24,22 +23,32 @@ const validateFileFormat = (file: File): { valid: boolean; message?: string } =>
   return { valid: true };
 };
 
-// Parse Excel files
-const parseExcel = (arrayBuffer: ArrayBuffer) => {
+// Obtém um token de autenticação válido do Supabase
+const getValidAuthToken = async (): Promise<string | null> => {
   try {
-    const data = new Uint8Array(arrayBuffer);
-    const workbook = XLSX.read(data, { type: "array" });
+    console.log("🔄 Renovando a sessão para obter um token válido...");
+    const refreshSuccessful = await supabase.auth.refreshSession();
+    
+    if (!refreshSuccessful.data?.session) {
+      console.error("❌ Falha ao renovar sessão. Tentando novamente...");
+      const { data: newSession, error } = await supabase.auth.getSession();
 
-    // Obtém a primeira aba do Excel
-    const firstSheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[firstSheetName];
+      if (error || !newSession?.session) {
+        console.error("❌ Falha ao recuperar a sessão ativa:", error?.message);
+        toast.error("Erro de autenticação. Faça login novamente.");
+        return null;
+      }
+      
+      console.log("✅ Nova sessão ativa encontrada.");
+      return newSession.session.access_token;
+    }
 
-    // Converte para JSON
-    const jsonData = XLSX.utils.sheet_to_json(worksheet);
-    return jsonData;
+    console.log("✅ Token JWT renovado com sucesso.");
+    return refreshSuccessful.data.session.access_token;
   } catch (error) {
-    console.error("❌ Erro ao processar arquivo Excel:", error);
-    throw new Error("Falha ao processar arquivo Excel.");
+    console.error("❌ Erro ao obter token JWT:", error);
+    toast.error("Erro de autenticação. Faça login novamente.");
+    return null;
   }
 };
 
@@ -52,11 +61,10 @@ export function useChecklistImport() {
   useEffect(() => {
     const validateSession = async () => {
       try {
-        const refreshed = await refreshSession();
+        await refreshSession();
         const { data } = await supabase.auth.getSession();
-        const isValid = !!data.session;
-        setSessionValid(isValid);
-        console.log("✅ Sessão validada:", isValid, "Token refreshed:", refreshed);
+        setSessionValid(!!data.session);
+        console.log("✅ Sessão validada:", !!data.session);
       } catch (error) {
         console.error("❌ Erro na validação da sessão:", error);
         setSessionValid(false);
@@ -68,55 +76,6 @@ export function useChecklistImport() {
 
   const getTemplateFileUrl = () => {
     return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/templates/checklist_import_template.xlsx`;
-  };
-
-  // Função auxiliar para renovar a sessão e obter um token JWT válido
-  const getValidAuthToken = async (): Promise<string | null> => {
-    try {
-      console.log("🔄 Renovando a sessão explicitamente para obter um token válido...");
-      
-      // Tenta renovar a sessão explicitamente primeiro com refreshSession
-      const refreshSuccessful = await refreshSession();
-      
-      if (!refreshSuccessful) {
-        console.error("❌ Falha ao renovar sessão via refreshSession()");
-        
-        // Tentar renovar diretamente com supabase.auth
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-        
-        if (refreshError) {
-          console.error("❌ Erro ao renovar sessão via supabase.auth.refreshSession():", refreshError);
-          throw new Error(`Erro ao renovar sessão: ${refreshError.message}`);
-        }
-        
-        if (!refreshData.session) {
-          console.error("❌ Nenhuma sessão após atualização");
-          throw new Error("Sessão expirada. Faça login novamente.");
-        }
-        
-        const token = refreshData.session.access_token;
-        console.log("✅ Token JWT renovado diretamente via supabase.auth. Comprimento:", token.length);
-        return token;
-      }
-      
-      // Se refreshSession foi bem-sucedido, obtém o token da sessão atual
-      const { data: sessionData } = await supabase.auth.getSession();
-      
-      if (!sessionData.session) {
-        console.error("❌ Nenhuma sessão ativa após refreshSession bem-sucedido");
-        throw new Error("Sessão inválida após renovação. Faça login novamente.");
-      }
-      
-      const token = sessionData.session.access_token;
-      console.log("✅ Token JWT obtido após renovação bem-sucedida. Comprimento:", token.length);
-      console.log("🔒 Expiração:", new Date(sessionData.session.expires_at * 1000).toLocaleString());
-      
-      return token;
-    } catch (error) {
-      console.error("❌ Falha ao obter token de autenticação:", error);
-      toast.error("Erro de autenticação. Tente fazer login novamente.");
-      return null;
-    }
   };
 
   const importFromFile = async (file: File, form: NewChecklist) => {
@@ -135,12 +94,10 @@ export function useChecklistImport() {
     try {
       console.log("📂 Importando checklist do arquivo:", file.name, "| Tamanho:", Math.round(file.size / 1024), "KB");
 
-      // 🔑 Obter um token JWT válido usando nossa função auxiliar aprimorada
+      // 🔑 Obtém um token JWT válido
       const jwt = await getValidAuthToken();
-      
       if (!jwt) {
-        console.error("❌ Não foi possível obter um token JWT válido");
-        toast.error("Falha na autenticação. Faça login novamente.");
+        console.error("❌ Falha ao obter token JWT");
         return false;
       }
 
@@ -173,24 +130,18 @@ export function useChecklistImport() {
       formData.append("form", JSON.stringify(checklistData));
 
       console.log("📤 Enviando arquivo para processamento via Supabase Edge Function...");
-      console.log("🔑 Usando token no cabeçalho Authorization: Bearer [token]");
 
       // Chamada para a Supabase Edge Function com o token renovado
       const { data, error } = await supabase.functions.invoke("process-checklist-csv", {
         method: "POST",
-        headers: { 
-          Authorization: `Bearer ${jwt}`,
-          // Removemos o Content-Type explícito pois o FormData já define o boundary adequado
-        },
+        headers: { Authorization: `Bearer ${jwt}` },
         body: formData,
       });
 
       if (error) {
         console.error("❌ Erro na função Edge:", error);
-        console.error("❌ Detalhes do erro:", error.message, error.name);
         console.error("❌ Código de status:", error.context?.status);
-        
-        // Mensagem específica para erro 401
+
         if (error.context?.status === 401) {
           toast.error("Erro de autenticação. Sua sessão pode ter expirado. Faça login novamente.");
         } else {
