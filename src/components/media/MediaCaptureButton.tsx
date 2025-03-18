@@ -5,6 +5,13 @@ import { useMediaUpload } from "@/hooks/useMediaUpload";
 import { Mic, Video, StopCircle, Upload, Camera } from 'lucide-react';
 import { toast } from "sonner";
 
+// Add type declaration for ImageCapture API
+declare global {
+  interface Window {
+    ImageCapture: typeof ImageCapture;
+  }
+}
+
 interface MediaCaptureButtonProps {
   type: 'audio' | 'video' | 'photo';
   onMediaCaptured: (mediaData: any) => void;
@@ -86,29 +93,65 @@ export function MediaCaptureButton({
   const takePhoto = async (stream: MediaStream) => {
     try {
       const videoTrack = stream.getVideoTracks()[0];
-      const imageCapture = new ImageCapture(videoTrack);
-      const bitmap = await imageCapture.grabFrame();
       
-      const canvas = document.createElement('canvas');
-      canvas.width = bitmap.width;
-      canvas.height = bitmap.height;
-      
-      const ctx = canvas.getContext('2d');
-      ctx?.drawImage(bitmap, 0, 0);
-      
-      canvas.toBlob(async (blob) => {
-        if (blob) {
-          try {
-            const result = await uploadMedia(blob, 'image/jpeg', 'photo.jpg');
-            onMediaCaptured(result);
-            toast.success('Foto capturada com sucesso!');
-          } catch (error) {
-            toast.error('Erro ao processar foto');
+      // Use the ImageCapture API if available
+      if (typeof ImageCapture !== 'undefined') {
+        const imageCapture = new ImageCapture(videoTrack);
+        const bitmap = await imageCapture.grabFrame();
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = bitmap.width;
+        canvas.height = bitmap.height;
+        
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(bitmap, 0, 0);
+        
+        canvas.toBlob(async (blob) => {
+          if (blob) {
+            try {
+              const result = await uploadMedia(blob, 'image/jpeg', 'photo.jpg');
+              onMediaCaptured(result);
+              toast.success('Foto capturada com sucesso!');
+            } catch (error) {
+              toast.error('Erro ao processar foto');
+            }
           }
-        }
-        stopMediaStream();
-      }, 'image/jpeg');
-      
+          stopMediaStream();
+        }, 'image/jpeg');
+      } else {
+        // Fallback method using video element and canvas when ImageCapture is not supported
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        
+        // Wait for video to be ready
+        await new Promise<void>((resolve) => {
+          video.onloadedmetadata = () => {
+            video.play();
+            resolve();
+          };
+        });
+        
+        // Capture frame from video
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(video, 0, 0);
+        
+        canvas.toBlob(async (blob) => {
+          if (blob) {
+            try {
+              const result = await uploadMedia(blob, 'image/jpeg', 'photo.jpg');
+              onMediaCaptured(result);
+              toast.success('Foto capturada com sucesso!');
+            } catch (error) {
+              toast.error('Erro ao processar foto');
+            }
+          }
+          stopMediaStream();
+          video.srcObject = null;
+        }, 'image/jpeg');
+      }
     } catch (error) {
       console.error('Error taking photo:', error);
       toast.error('Não foi possível capturar a foto');

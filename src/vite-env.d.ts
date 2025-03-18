@@ -43,3 +43,14 @@ interface SyncManager {
 interface ServiceWorkerRegistration {
   sync?: SyncManager;
 }
+
+// Add ImageCapture API type definitions
+interface ImageCapture {
+  grabFrame(): Promise<ImageBitmap>;
+  takePhoto(): Promise<Blob>;
+}
+
+declare var ImageCapture: {
+  prototype: ImageCapture;
+  new(track: MediaStreamTrack): ImageCapture;
+};
