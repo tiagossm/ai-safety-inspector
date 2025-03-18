@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { NewChecklist } from "@/types/checklist";
+import { NewChecklist, Checklist } from "@/types/checklist";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -53,7 +53,10 @@ export function ChecklistEditor({
   onSave,
   onCancel
 }: ChecklistEditorProps) {
-  const [checklist, setChecklist] = useState<NewChecklist>(initialChecklist);
+  // Cast the initialChecklist as a partial Checklist to fix the id type error
+  // For new checklists, we don't have an id yet
+  const [checklist, setChecklist] = useState<Partial<Checklist>>(initialChecklist);
+  
   // Ensure all questions have required properties
   const [questions, setQuestions] = useState<Question[]>(
     initialQuestions.map(q => ({
@@ -79,18 +82,18 @@ export function ChecklistEditor({
   React.useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const { data, error } = await supabase
+        const response = await supabase
           .from('users')
           .select('id, name, email')
           .eq('status', 'active')
           .order('name', { ascending: true });
           
-        if (error) {
-          console.error("Error fetching users:", error);
-          throw error;
+        if (response.error) {
+          console.error("Error fetching users:", response.error);
+          throw response.error;
         }
         
-        setUsers(data || []);
+        setUsers(response.data || []);
       } catch (error) {
         console.error("Error in fetchUsers:", error);
       }
@@ -149,8 +152,21 @@ export function ChecklistEditor({
         return;
       }
       
-      // Create the checklist
-      const result = await createChecklistMutation.mutateAsync(checklist);
+      // Create the checklist - we need to cast it to NewChecklist since we're using Partial<Checklist>
+      const newChecklistData: NewChecklist = {
+        title: checklist.title,
+        description: checklist.description,
+        is_template: checklist.is_template,
+        status_checklist: checklist.status_checklist as string,
+        category: checklist.category,
+        responsible_id: checklist.responsible_id,
+        company_id: checklist.company_id,
+        due_date: checklist.due_date,
+        user_id: checklist.user_id,
+        status: checklist.status
+      };
+      
+      const result = await createChecklistMutation.mutateAsync(newChecklistData);
       
       if (!result || !result.id) {
         console.error("Error creating checklist: No valid result returned");
@@ -224,8 +240,8 @@ export function ChecklistEditor({
       <Card>
         <CardContent className="p-6">
           <ChecklistForm 
-            checklist={checklist} 
-            setChecklist={setChecklist} 
+            checklist={checklist as Checklist} 
+            setChecklist={setChecklist as (checklist: Checklist) => void} 
             users={users} 
           />
         </CardContent>
