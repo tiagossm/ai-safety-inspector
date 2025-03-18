@@ -2,11 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Checklist } from "@/types/checklist";
 
-// Função para validar se o ID é um UUID válido
-function isValidUUID(id: string): boolean {
+// ✅ Função para validar se o ID é um UUID válido
+function isValidUUID(id: string | null | undefined): boolean {
   const uuidRegex =
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(id);
+  return typeof id === "string" && uuidRegex.test(id);
 }
 
 export function useFetchChecklistData(id: string) {
@@ -16,7 +16,7 @@ export function useFetchChecklistData(id: string) {
       console.log("🔍 Buscando checklist para ID:", id);
 
       // **✅ Validação do ID antes da requisição**
-      if (!id || !isValidUUID(id)) {
+      if (!isValidUUID(id)) {
         console.error("❌ ID inválido recebido:", id);
         throw new Error("Checklist ID inválido!");
       }
@@ -29,18 +29,18 @@ export function useFetchChecklistData(id: string) {
           .eq("id", id)
           .single();
 
-        if (checklistError) {
+        if (checklistError || !checklistData) {
           console.error("❌ Erro ao buscar checklist:", checklistError);
-          throw checklistError;
+          throw new Error("Checklist não encontrado.");
         }
 
         console.log("✅ Dados brutos do checklist:", checklistData);
 
         // **🔹 Buscar nome do responsável, se houver**
-        let responsibleName = null;
+        let responsibleName = "Não atribuído";
         const responsibleId = checklistData?.responsible_id || null;
 
-        if (responsibleId) {
+        if (isValidUUID(responsibleId)) {
           try {
             const { data: userData, error: userError } = await supabase
               .from("users")
@@ -79,10 +79,10 @@ export function useFetchChecklistData(id: string) {
         throw new Error("Erro ao buscar checklist. Tente novamente.");
       }
     },
-    enabled: !!id && isValidUUID(id), // 🔹 Apenas busca se o ID for válido
+    enabled: isValidUUID(id), // 🔹 Apenas busca se o ID for válido
     staleTime: 5 * 60 * 1000, // 🔹 Cache válido por 5 minutos
     gcTime: 10 * 60 * 1000, // 🔹 Coleta de lixo após 10 minutos
-    retry: (failureCount, error) => {
+    retry: (failureCount) => {
       if (failureCount < 3) {
         console.log(`🔄 Tentativa de nova consulta ${failureCount + 1}`);
         return true;
