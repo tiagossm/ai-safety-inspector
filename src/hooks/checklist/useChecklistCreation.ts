@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useChecklistForm } from "./form/useChecklistForm";
 import { useChecklistQuestions } from "./form/useChecklistQuestions";
@@ -7,97 +7,18 @@ import { useChecklistFileUpload } from "./form/useChecklistFileUpload";
 import { useChecklistAI } from "./form/useChecklistAI";
 import { useChecklistUsers } from "./form/useChecklistUsers";
 import { useChecklistSubmit } from "./form/useChecklistSubmit";
-import { useAuth } from "@/components/AuthProvider";
+import { useChecklistAuth } from "./form/useChecklistAuth";
+import { useChecklistTabs } from "./form/useChecklistTabs";
+import { useChecklistCompanies } from "./form/useChecklistCompanies";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { CompanyListItem } from "@/types/CompanyListItem";
 
 export function useChecklistCreation() {
   const navigate = useNavigate();
-  const { user, refreshSession } = useAuth();
-  const [activeTab, setActiveTab] = useState("manual");
-  const [tokenRefreshed, setTokenRefreshed] = useState(false);
-  const [companies, setCompanies] = useState<CompanyListItem[]>([]);
-  const [loadingCompanies, setLoadingCompanies] = useState(true);
-  
-  // Check and refresh JWT token on component mount
-  useEffect(() => {
-    const refreshToken = async () => {
-      try {
-        await refreshSession();
-        
-        const { data, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error("Failed to refresh token:", error);
-          toast.error("Erro ao atualizar sua sessão");
-          return false;
-        } else if (data?.session) {
-          console.log("Session token refreshed successfully");
-          setTokenRefreshed(true);
-          
-          // Log session details for debugging
-          console.log("Session details:", {
-            expiresAt: data.session.expires_at,
-            expiryFormatted: data.session.expires_at 
-              ? new Date(data.session.expires_at * 1000).toLocaleString() 
-              : 'unknown',
-            userId: data.session.user?.id,
-            tokenLength: data.session.access_token.length
-          });
-          
-          return true;
-        } else {
-          console.warn("No active session found");
-          toast.error("Você não está autenticado");
-          navigate("/auth");
-          return false;
-        }
-      } catch (err) {
-        console.error("Token refresh error:", err);
-        return false;
-      }
-    };
-    
-    refreshToken();
-    
-    // Setup a timer to refresh the token every 10 minutes
-    const intervalId = setInterval(() => {
-      console.log("Refreshing token (scheduled)");
-      refreshToken();
-    }, 10 * 60 * 1000);
-    
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [refreshSession, navigate]);
-  
-  // Fetch companies
-  useEffect(() => {
-    const fetchCompanies = async () => {
-      try {
-        setLoadingCompanies(true);
-        const { data, error } = await supabase
-          .from('companies')
-          .select('id, fantasy_name')
-          .eq('status', 'active')
-          .order('fantasy_name', { ascending: true });
-          
-        if (error) throw error;
-        setCompanies(data || []);
-        console.log(`Loaded ${data?.length || 0} companies for checklist creation`);
-      } catch (error) {
-        console.error('Error fetching companies:', error);
-        toast.error('Erro ao carregar empresas');
-      } finally {
-        setLoadingCompanies(false);
-      }
-    };
-    
-    fetchCompanies();
-  }, []);
   
   // Import all our smaller hooks
+  const { user, refreshSession, tokenRefreshed } = useChecklistAuth();
+  const { activeTab, setActiveTab } = useChecklistTabs();
+  const { companies, loadingCompanies } = useChecklistCompanies();
   const { form, setForm } = useChecklistForm();
   const { questions, handleAddQuestion, handleRemoveQuestion, handleQuestionChange } = useChecklistQuestions();
   const { file, handleFileChange, clearFile } = useChecklistFileUpload();
