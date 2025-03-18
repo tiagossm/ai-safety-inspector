@@ -115,6 +115,99 @@ export function useChecklistImport() {
     return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/templates/checklist_import_template.xlsx`;
   };
 
+  const parseFile = async (file: File) => {
+    try {
+      const fileExtension = file.name.split('.').pop()?.toLowerCase();
+      
+      if (fileExtension === 'csv') {
+        // Parse CSV
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            if (!e.target?.result) {
+              reject(new Error('Failed to read file'));
+              return;
+            }
+            
+            // Parse CSV content
+            const content = e.target.result as string;
+            const rows = content.split('\n');
+            const headers = rows[0].split(',').map(h => h.trim());
+            
+            const questions = [];
+            for (let i = 1; i < rows.length; i++) {
+              if (!rows[i].trim()) continue;
+              
+              const values = rows[i].split(',').map(v => v.trim());
+              const question = {
+                text: values[0] || '',
+                type: values[1] || 'sim/não',
+                required: values[2]?.toLowerCase() === 'sim' || values[2]?.toLowerCase() === 'true',
+                allowPhoto: values[3]?.toLowerCase() === 'sim' || values[3]?.toLowerCase() === 'true',
+                allowVideo: values[4]?.toLowerCase() === 'sim' || values[4]?.toLowerCase() === 'true',
+                allowAudio: values[5]?.toLowerCase() === 'sim' || values[5]?.toLowerCase() === 'true',
+              };
+              
+              if (question.text) {
+                questions.push(question);
+              }
+            }
+            
+            resolve({ questions });
+          };
+          
+          reader.onerror = (error) => {
+            reject(error);
+          };
+          
+          reader.readAsText(file);
+        });
+      } else if (['xlsx', 'xls'].includes(fileExtension || '')) {
+        // Parse Excel
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            if (!e.target?.result) {
+              reject(new Error('Failed to read file'));
+              return;
+            }
+            
+            try {
+              const data = new Uint8Array(e.target.result as ArrayBuffer);
+              const workbook = XLSX.read(data, { type: 'array' });
+              const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+              const rows = XLSX.utils.sheet_to_json(firstSheet);
+              
+              const questions = rows.map((row: any) => ({
+                text: row.Pergunta || row.Question || row.pergunta || row.question || '',
+                type: row.Tipo || row.Type || row.tipo || row.type || 'sim/não',
+                required: row.Obrigatório === 'Sim' || row.Required === 'Yes' || row.Obrigatório === true || row.Required === true,
+                allowPhoto: row.PermiteFoto === 'Sim' || row.AllowPhoto === 'Yes' || row.PermiteFoto === true || row.AllowPhoto === true,
+                allowVideo: row.PermiteVideo === 'Sim' || row.AllowVideo === 'Yes' || row.PermiteVideo === true || row.AllowVideo === true,
+                allowAudio: row.PermiteAudio === 'Sim' || row.AllowAudio === 'Yes' || row.PermiteAudio === true || row.AllowAudio === true,
+              })).filter((q: any) => q.text);
+              
+              resolve({ questions });
+            } catch (error) {
+              reject(error);
+            }
+          };
+          
+          reader.onerror = (error) => {
+            reject(error);
+          };
+          
+          reader.readAsArrayBuffer(file);
+        });
+      }
+      
+      throw new Error('Unsupported file format');
+    } catch (error) {
+      console.error("Error parsing file:", error);
+      throw error;
+    }
+  };
+
   const importFromFile = async (file: File, form: NewChecklist) => {
     // Validação inicial do arquivo
     if (!file) {
@@ -173,57 +266,28 @@ export function useChecklistImport() {
         }
       }
 
-      // ✅ Criando o checklist com user_id válido
+      // Parse the file to get the questions
+      const parsedData = await parseFile(file);
+      
+      // Create a temporary checklist data object
       const checklistData = {
         ...form,
         company_id: sanitizedCompanyId,
         status: form.status || "active",
         status_checklist: form.status_checklist || "ativo",
         user_id: user.id,
+        title: form.title || `Checklist importado: ${file.name}`,
+        description: form.description || `Checklist importado do arquivo ${file.name}`
       };
-
-      console.log("📝 Dados do checklist preparados para envio:", checklistData);
-
-      // Criando FormData para envio do arquivo
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("form", JSON.stringify(checklistData));
-
-      console.log("📤 Enviando arquivo para processamento via Supabase Edge Function...");
-
-      // Chamada para a Supabase Edge Function com o token renovado
-      const { data, error } = await supabase.functions.invoke("process-checklist-csv", {
-        method: "POST",
-        headers: { 
-          Authorization: `Bearer ${jwt}`,
-        },
-        body: formData,
-      });
-
-      if (error) {
-        console.error("❌ Erro na função Edge:", error);
-        console.error("❌ Código de status:", error.context?.status);
-
-        if (error.context?.status === 401) {
-          toast.error("Erro de autenticação", { 
-            description: "Sua sessão pode ter expirado. Faça login novamente." 
-          });
-        } else {
-          toast.error(`Erro na importação: ${error.message || "Falha desconhecida"}`);
-        }
-        return false;
-      }
-
-      console.log("✅ Resposta da função Edge:", data);
-
-      if (data?.success) {
-        toast.success(`Checklist importado com sucesso! ${data.processed_items || 0} itens processados.`);
-        return data;
-      } else {
-        console.error("❌ Erro na importação:", data?.error || "Erro desconhecido");
-        toast.error(data?.error || "Erro ao importar checklist");
-        return false;
-      }
+      
+      toast.success("Arquivo importado com sucesso! Revise o checklist antes de salvar.");
+      
+      return {
+        success: true,
+        checklistData,
+        questions: parsedData.questions,
+        mode: "import-review"
+      };
     } catch (error: any) {
       console.error("❌ Erro geral ao importar checklist:", error);
       toast.error(`Erro ao importar checklist: ${error.message}`);

@@ -58,7 +58,7 @@ export default function CreateChecklist() {
       const success = await handleSubmit(e);
       
       if (success) {
-        toast.success("Checklist criado com sucesso!");
+        toast.success("Redirecionando para o editor...");
       }
     } catch (error) {
       console.error("Erro ao criar checklist:", error);
@@ -169,7 +169,7 @@ export default function CreateChecklist() {
           isSubmitting={isSubmitting}
           onCancel={() => navigate("/checklists")}
           canSubmit={!isSubmitting}
-          submitText={isSubmitting ? "Criando..." : "Criar Lista de Verificação"}
+          submitText={isSubmitting ? "Processando..." : "Avançar para Edição"}
         />
       </form>
     </div>

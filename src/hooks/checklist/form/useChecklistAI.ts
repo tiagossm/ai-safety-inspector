@@ -37,8 +37,6 @@ export function useChecklistAI() {
         return false;
       }
       
-      const jwt = sessionData.session.access_token;
-      
       console.log("Preparing AI request: ", {
         prompt: aiPrompt,
         num_questions: numQuestions,
@@ -52,37 +50,18 @@ export function useChecklistAI() {
         form.user_id = typedUser.id;
       }
       
-      // Create checklist directly with manual process since the edge function may be having issues
-      const { data: checklist, error: checklistError } = await supabase
-        .from("checklists")
-        .insert({
-          title: form.title || `Checklist de ${form.category || 'Segurança'}: ${aiPrompt.substring(0, 50)}${aiPrompt.length > 50 ? '...' : ''}`,
-          description: `Checklist gerado automaticamente com base em: ${aiPrompt}`,
-          is_template: form.is_template || false,
-          status_checklist: "ativo",
-          category: form.category || 'general',
-          user_id: form.user_id,
-          company_id: form.company_id,
-          due_date: form.due_date,
-          responsible_id: form.responsible_id
-        })
-        .select();
-      
-      if (checklistError) {
-        console.error("Error creating AI checklist:", checklistError);
-        toast.error(`Erro ao criar checklist: ${checklistError.message}`);
-        setAiLoading(false);
-        return false;
-      }
-      
-      if (!checklist || checklist.length === 0) {
-        console.error("No checklist created");
-        toast.error("Erro ao criar checklist");
-        setAiLoading(false);
-        return false;
-      }
-      
-      const checklistId = checklist[0].id;
+      // Prepare the checklist data
+      const checklistData = {
+        title: form.title || `Checklist de ${form.category || 'Segurança'}: ${aiPrompt.substring(0, 50)}${aiPrompt.length > 50 ? '...' : ''}`,
+        description: `Checklist gerado automaticamente com base em: ${aiPrompt}`,
+        is_template: form.is_template || false,
+        status_checklist: "ativo",
+        category: form.category || 'general',
+        user_id: form.user_id,
+        company_id: form.company_id,
+        due_date: form.due_date,
+        responsible_id: form.responsible_id
+      };
       
       // Generate questions based on the prompt and category
       const questionTypes = ["sim/não", "texto", "numérico", "sim/não", "múltipla escolha"];
@@ -135,13 +114,12 @@ export function useChecklistAI() {
       // Add the base questions
       for (let i = 0; i < Math.min(categoryQuestions.length, numQuestions); i++) {
         questions.push({
-          pergunta: categoryQuestions[i],
-          tipo_resposta: "sim/não",
-          obrigatorio: true,
-          ordem: i + 1,
-          permite_audio: true,
-          permite_video: true,
-          permite_foto: true
+          text: categoryQuestions[i],
+          type: "sim/não",
+          required: true,
+          allowAudio: true,
+          allowVideo: true,
+          allowPhoto: true
         });
       }
       
@@ -151,53 +129,28 @@ export function useChecklistAI() {
         const questionType = questionTypes[i % questionTypes.length];
         const keyword = keywords[i % keywords.length] || 'segurança';
         
-        let pergunta = `Verificar condições de ${keyword}`;
-        if (i % 3 === 0) pergunta += " conforme normas aplicáveis";
-        else if (i % 3 === 1) pergunta += " durante a operação";
-        else pergunta += " no ambiente de trabalho";
+        let text = `Verificar condições de ${keyword}`;
+        if (i % 3 === 0) text += " conforme normas aplicáveis";
+        else if (i % 3 === 1) text += " durante a operação";
+        else text += " no ambiente de trabalho";
         
         questions.push({
-          pergunta,
-          tipo_resposta: questionType,
-          obrigatorio: i % 3 === 0, // Every third question is required
-          ordem: i + 1,
-          permite_audio: true,
-          permite_video: true,
-          permite_foto: true
+          text,
+          type: questionType,
+          required: i % 3 === 0, // Every third question is required
+          allowAudio: true,
+          allowVideo: true,
+          allowPhoto: true
         });
       }
       
-      // Insert the questions
-      let successCount = 0;
-      for (const question of questions) {
-        const { error: itemError } = await supabase
-          .from("checklist_itens")
-          .insert({
-            checklist_id: checklistId,
-            pergunta: question.pergunta,
-            tipo_resposta: question.tipo_resposta,
-            obrigatorio: question.obrigatorio,
-            ordem: question.ordem,
-            permite_audio: question.permite_audio,
-            permite_video: question.permite_video,
-            permite_foto: question.permite_foto
-          });
-          
-        if (itemError) {
-          console.error("Error adding question:", itemError);
-        } else {
-          successCount++;
-        }
-      }
-      
-      console.log(`Successfully added ${successCount} of ${questions.length} questions`);
-      
-      toast.success(`Checklist criado com sucesso com ${successCount} perguntas!`);
+      toast.success(`Checklist gerado com sucesso! Revise antes de salvar.`);
       
       return {
-        id: checklistId,
         success: true,
-        questions_added: successCount
+        checklistData,
+        questions,
+        mode: "ai-review"
       };
     } catch (err: any) {
       console.error("Error generating AI checklist:", err);

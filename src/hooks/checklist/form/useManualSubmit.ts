@@ -1,14 +1,11 @@
 
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { NewChecklist } from "@/types/checklist";
-import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { AuthUser } from "@/hooks/auth/useAuthState";
 
 export function useManualSubmit() {
-  const createChecklist = useCreateChecklist();
   const navigate = useNavigate();
   const { user, refreshSession } = useAuth();
   const typedUser = user as AuthUser | null;
@@ -45,52 +42,30 @@ export function useManualSubmit() {
       
       await refreshSession();
       
-      const newChecklist = await createChecklist.mutateAsync(form);
+      // Instead of creating the checklist immediately, store the data for the editor
+      const editorData = {
+        checklistData: { ...form },
+        questions: questions.map(q => ({
+          text: q.text,
+          type: q.type,
+          required: q.required,
+          allowPhoto: q.allowPhoto || false,
+          allowVideo: q.allowVideo || false,
+          allowAudio: q.allowAudio || false,
+          options: q.options || [],
+          hint: q.hint || '',
+          weight: q.weight || 1,
+          parentId: q.parentId || null,
+          conditionValue: q.conditionValue || null
+        })),
+        mode: "create"
+      };
       
-      if (!newChecklist?.id) {
-        console.error("No checklist ID was returned");
-        throw new Error("Erro ao criar checklist: ID não foi gerado");
-      }
+      // Store the data in sessionStorage
+      sessionStorage.setItem('checklistEditorData', JSON.stringify(editorData));
       
-      if (questions.length > 0) {
-        console.log(`Adding ${questions.length} questions to checklist ${newChecklist.id}`);
-        
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (!sessionData.session) {
-          console.error("No active session for questions insertion");
-          throw new Error("Sessão expirada. Faça login novamente.");
-        }
-        
-        const promises = questions.map((q, i) => {
-          if (q.text.trim()) {
-            return supabase
-              .from("checklist_itens")
-              .insert({
-                checklist_id: newChecklist.id,
-                pergunta: q.text,
-                tipo_resposta: q.type,
-                obrigatorio: q.required,
-                ordem: i,
-                permite_audio: q.allowAudio || false,
-                permite_video: q.allowVideo || false,
-                permite_foto: q.allowPhoto || false,
-                opcoes: q.options || null,
-                hint: q.hint || null,
-                weight: q.weight || 1,
-                parent_item_id: q.parentId || null,
-                condition_value: q.conditionValue || null
-              });
-          }
-          return Promise.resolve(null);
-        });
-        
-        const results = await Promise.all(promises.filter(Boolean));
-        console.log("Questions insertion results:", results);
-      }
-      
-      toast.success("Checklist criado com sucesso!");
-      
-      navigate(`/checklists/${newChecklist.id}`);
+      // Redirect to editor
+      navigate('/checklists/editor');
       
       return true;
     } catch (error) {
