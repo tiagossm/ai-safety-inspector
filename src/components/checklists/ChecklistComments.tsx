@@ -28,6 +28,8 @@ export function ChecklistComments({ checklistId, comments, onAddComment }: Check
     
     setIsSubmitting(true);
     try {
+      console.log("Saving comment:", newComment);
+      
       // Get user's name from the users table first
       const { data: userData, error: userError } = await supabase
         .from("users")
@@ -65,6 +67,7 @@ export function ChecklistComments({ checklistId, comments, onAddComment }: Check
         created_at: data.created_at,
       };
       
+      // Add the new comment to the list (this will update the UI)
       onAddComment(formattedComment);
       setNewComment("");
       toast.success("Comentário adicionado com sucesso!");
@@ -92,33 +95,7 @@ export function ChecklistComments({ checklistId, comments, onAddComment }: Check
         <CardTitle>Comentários</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {comments.length > 0 ? (
-          <div className="space-y-4 max-h-96 overflow-y-auto p-2">
-            {comments.map((comment) => (
-              <div key={comment.id} className="flex gap-3 p-3 bg-muted/50 rounded-lg">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback>{getInitials(comment.user_name)}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <div className="flex justify-between items-start">
-                    <p className="font-medium text-sm">{comment.user_name}</p>
-                    <span className="text-xs text-muted-foreground">
-                      {format(new Date(comment.created_at), "Pp", { locale: ptBR })}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-sm">{comment.content}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>Nenhum comentário ainda.</p>
-            <p className="text-sm">Seja o primeiro a comentar!</p>
-          </div>
-        )}
-        
-        <div className="flex gap-2 items-start pt-4 border-t">
+        <div className="flex gap-2 items-start border-b pb-4">
           <Avatar className="h-8 w-8">
             <AvatarFallback>
               {user ? getInitials(user.email || 'U') : 'U'}
@@ -144,6 +121,32 @@ export function ChecklistComments({ checklistId, comments, onAddComment }: Check
             </div>
           </div>
         </div>
+        
+        {comments.length > 0 ? (
+          <div className="space-y-4 max-h-96 overflow-y-auto p-2">
+            {comments.map((comment) => (
+              <div key={comment.id} className="flex gap-3 p-3 bg-muted/50 rounded-lg">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback>{getInitials(comment.user_name)}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <div className="flex justify-between items-start">
+                    <p className="font-medium text-sm">{comment.user_name}</p>
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(comment.created_at), "Pp", { locale: ptBR })}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm">{comment.content}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>Nenhum comentário ainda.</p>
+            <p className="text-sm">Seja o primeiro a comentar!</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

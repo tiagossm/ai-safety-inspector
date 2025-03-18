@@ -1,13 +1,16 @@
-import React from "react";
+
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormDescription,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon, Upload, Download } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import {
   Select,
   SelectContent,
@@ -15,30 +18,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FormSection } from "./FormSection";
+import { FileUp, X } from "lucide-react";
 import { NewChecklist } from "@/types/checklist";
-import { Card, CardContent } from "@/components/ui/card";
-import { useChecklistImport } from "@/hooks/checklist/form/useChecklistImport";
-import { CompanyListItem } from "@/types/CompanyListItem";
-
-// Checklist category options
-const CATEGORIES = [
-  { value: "safety", label: "Segurança" },
-  { value: "quality", label: "Qualidade" },
-  { value: "maintenance", label: "Manutenção" },
-  { value: "environment", label: "Meio Ambiente" },
-  { value: "operational", label: "Operacional" },
-  { value: "general", label: "Geral" }
-];
+import { Skeleton } from "@/components/ui/skeleton";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { useState, useEffect } from "react";
+import * as XLSX from "xlsx";
+import { toast } from "sonner";
 
 interface ImportCreateFormProps {
   form: NewChecklist;
-  setForm: React.Dispatch<React.SetStateAction<NewChecklist>>;
+  setForm: (form: NewChecklist) => void;
   users: any[];
   loadingUsers: boolean;
   file: File | null;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  companies: CompanyListItem[];
+  onFileProcess?: (questions: any[]) => void;
+  companies: any[];
   loadingCompanies: boolean;
 }
 
@@ -49,206 +46,365 @@ export function ImportCreateForm({
   loadingUsers,
   file,
   onFileChange,
+  onFileProcess,
   companies,
-  loadingCompanies
+  loadingCompanies,
 }: ImportCreateFormProps) {
-  const { getTemplateFileUrl } = useChecklistImport();
-  
-  const downloadTemplateFile = () => {
-    const templateUrl = getTemplateFileUrl();
-    window.open(templateUrl, '_blank');
+  const [parsedQuestions, setParsedQuestions] = useState<any[]>([]);
+  const [isParsing, setIsParsing] = useState(false);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setForm({ ...form, [name]: value });
+  };
+
+  const handleClearFile = () => {
+    // Reset file input
+    if (document.getElementById("file-upload") instanceof HTMLInputElement) {
+      (document.getElementById("file-upload") as HTMLInputElement).value = "";
+    }
+    // Clear file state
+    onFileChange({ target: { files: null } } as unknown as React.ChangeEvent<HTMLInputElement>);
+    setParsedQuestions([]);
+  };
+
+  useEffect(() => {
+    if (file) {
+      parseFile(file);
+    }
+  }, [file]);
+
+  const parseFile = async (file: File) => {
+    setIsParsing(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet);
+          
+          // Map the Excel data to our question format
+          const questions = jsonData.map((row: any, index) => {
+            return {
+              pergunta: row.Pergunta || row.pergunta || `Pergunta ${index + 1}`,
+              tipo_resposta: mapQuestionType(row.Tipo || row.tipo || "sim/não"),
+              obrigatorio: typeof row.Obrigatório === 'boolean' ? row.Obrigatório : 
+                           typeof row.obrigatorio === 'boolean' ? row.obrigatorio : true,
+              ordem: index,
+              opcoes: row.Opcoes || row.opcoes || null,
+            };
+          });
+          
+          setParsedQuestions(questions);
+          if (onFileProcess) {
+            onFileProcess(questions);
+          }
+          
+          // Try to extract checklist title from filename
+          if (!form.title || form.title === "") {
+            const fileNameWithoutExt = file.name.split('.').slice(0, -1).join('.');
+            setForm({
+              ...form,
+              title: fileNameWithoutExt || "Checklist Importado"
+            });
+          }
+          
+          toast.success(`${questions.length} perguntas encontradas no arquivo`);
+        } catch (error) {
+          console.error("Error parsing Excel:", error);
+          toast.error("Erro ao processar o arquivo. Verifique o formato.");
+        } finally {
+          setIsParsing(false);
+        }
+      };
+      
+      reader.onerror = () => {
+        toast.error("Erro ao ler o arquivo");
+        setIsParsing(false);
+      };
+      
+      reader.readAsArrayBuffer(file);
+    } catch (error) {
+      console.error("Error reading file:", error);
+      toast.error("Erro ao ler o arquivo");
+      setIsParsing(false);
+    }
+  };
+
+  const mapQuestionType = (type: string): string => {
+    type = type.toLowerCase();
+    
+    if (type.includes("sim") || type.includes("não") || type.includes("nao")) {
+      return "sim/não";
+    } else if (type.includes("texto")) {
+      return "texto";
+    } else if (type.includes("numerico") || type.includes("numérico") || type.includes("numero") || type.includes("número")) {
+      return "numérico";
+    } else if (type.includes("seleção") || type.includes("selecao") || type.includes("multipla") || type.includes("múltipla")) {
+      return "seleção múltipla";
+    } else if (type.includes("foto") || type.includes("imagem")) {
+      return "foto";
+    } else if (type.includes("assinatura")) {
+      return "assinatura";
+    }
+    
+    return "sim/não"; // Default type
   };
 
   return (
     <div className="space-y-6">
-      <FormSection title="Informações Básicas">
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="title-import">Título *</Label>
-            <Input
-              id="title-import"
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="Nome da lista de verificação"
-              required
-            />
-          </div>
-          
-          <div className="grid gap-2">
-            <Label htmlFor="category-import">Categoria</Label>
-            <Select 
-              value={form.category} 
-              onValueChange={(value) => setForm({ ...form, category: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione uma categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map((category) => (
-                  <SelectItem key={category.value} value={category.value}>
-                    {category.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+      <div className="grid gap-6 md:grid-cols-2">
+        <div>
+          <FormField
+            name="title"
+            render={() => (
+              <FormItem>
+                <FormLabel>Título <span className="text-red-500">*</span></FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Título da lista de verificação"
+                    name="title"
+                    value={form.title || ""}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="responsible-import">Responsável</Label>
-            <Select 
-              value={form.responsible_id || "none"} 
-              onValueChange={(value) => setForm({ ...form, responsible_id: value === "none" ? null : value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um responsável" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nenhum</SelectItem>
-                {loadingUsers ? (
-                  <SelectItem value="loading" disabled>Carregando...</SelectItem>
-                ) : (
-                  users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="grid gap-2">
-            <Label htmlFor="company-import">Empresa</Label>
-            <Select 
-              value={form.company_id || "none"} 
-              onValueChange={(value) => setForm({ ...form, company_id: value === "none" ? null : value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione uma empresa" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nenhuma</SelectItem>
-                {loadingCompanies ? (
-                  <SelectItem value="loading" disabled>Carregando empresas...</SelectItem>
-                ) : (
-                  companies.map((company) => (
-                    <SelectItem key={company.id} value={company.id}>
-                      {company.fantasy_name || 'Empresa sem nome'}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
+        <div>
+          <FormField
+            name="category"
+            render={() => (
+              <FormItem>
+                <FormLabel>Categoria</FormLabel>
+                <FormControl>
+                  <Select
+                    value={form.category || "general"}
+                    onValueChange={(value) => handleSelectChange("category", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="general">Geral</SelectItem>
+                      <SelectItem value="safety">Segurança</SelectItem>
+                      <SelectItem value="maintenance">Manutenção</SelectItem>
+                      <SelectItem value="operational">Operacional</SelectItem>
+                      <SelectItem value="quality">Qualidade</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
-        
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="due-date-import">Data de vencimento</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  id="due-date-import"
-                  variant="outline"
-                  className="w-full justify-start text-left font-normal"
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {form.due_date ? (
-                    format(new Date(form.due_date), "PPP", { locale: ptBR })
+
+        <div>
+          <FormField
+            name="description"
+            render={() => (
+              <FormItem>
+                <FormLabel>Descrição</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Descreva o propósito desta lista de verificação"
+                    name="description"
+                    value={form.description || ""}
+                    onChange={handleInputChange}
+                    rows={3}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div>
+          <FormField
+            name="due_date"
+            render={() => (
+              <FormItem>
+                <FormLabel>Data de Vencimento</FormLabel>
+                <FormControl>
+                  <Input
+                    type="date"
+                    name="due_date"
+                    value={form.due_date ? format(new Date(form.due_date), "yyyy-MM-dd") : ""}
+                    onChange={handleInputChange}
+                    min={format(new Date(), "yyyy-MM-dd")}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Opcional. Se definida, indica quando esta lista deve ser concluída.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div>
+          <FormField
+            name="company_id"
+            render={() => (
+              <FormItem>
+                <FormLabel>Empresa</FormLabel>
+                <FormControl>
+                  {loadingCompanies ? (
+                    <Skeleton className="h-9 w-full" />
                   ) : (
-                    "Escolha uma data"
+                    <Select
+                      value={form.company_id?.toString() || ""}
+                      onValueChange={(value) => handleSelectChange("company_id", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma empresa (opcional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Nenhuma empresa</SelectItem>
+                        {companies.map((company) => (
+                          <SelectItem key={company.id} value={company.id}>
+                            {company.fantasy_name || company.cnpj}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={form.due_date ? new Date(form.due_date) : undefined}
-                  onSelect={(date) => 
-                    setForm({ ...form, due_date: date ? date.toISOString() : null })
-                  }
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-          
-          <div className="flex items-center space-x-2 self-end">
-            <Switch
-              id="template-import"
-              checked={form.is_template}
-              onCheckedChange={(checked) => setForm({ ...form, is_template: checked })}
-            />
-            <Label htmlFor="template-import">
-              Salvar como template
-            </Label>
-          </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
-      </FormSection>
 
-      <Card className="overflow-hidden">
+        <div>
+          <FormField
+            name="responsible_id"
+            render={() => (
+              <FormItem>
+                <FormLabel>Responsável</FormLabel>
+                <FormControl>
+                  {loadingUsers ? (
+                    <Skeleton className="h-9 w-full" />
+                  ) : (
+                    <Select
+                      value={form.responsible_id?.toString() || ""}
+                      onValueChange={(value) => handleSelectChange("responsible_id", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um responsável (opcional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Nenhum responsável</SelectItem>
+                        {users.map((user) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            {user.name || user.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+      </div>
+
+      <Card>
         <CardContent className="p-6">
-          <div className="grid gap-4">
-            <Label htmlFor="file-upload">Upload de Arquivo</Label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center">
-              <Upload className="h-10 w-10 text-gray-400 mb-4" />
-              <p className="text-sm text-gray-600 mb-2">
-                Arraste e solte seu arquivo CSV ou XLSX aqui, ou clique para selecionar
-              </p>
-              <p className="text-xs text-gray-500 mb-4">
-                (Tamanho máximo: 5MB)
-              </p>
-              <Input
-                id="file-upload"
+          <div className="space-y-4">
+            <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-md p-6">
+              <input
                 type="file"
-                accept=".csv,.xlsx,.xls"
-                onChange={onFileChange}
+                id="file-upload"
                 className="hidden"
+                accept=".xlsx,.xls,.csv"
+                onChange={onFileChange}
+                disabled={isParsing}
               />
-              <div className="flex gap-2">
-                <Button 
-                  type="button" 
-                  variant="outline"
-                  onClick={() => document.getElementById('file-upload')?.click()}
-                >
-                  Selecionar Arquivo
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={downloadTemplateFile}
-                  className="flex items-center gap-2"
-                >
-                  <Download className="h-4 w-4" />
-                  Baixar Modelo
-                </Button>
-              </div>
-              {file && (
-                <p className="mt-4 text-sm font-medium text-green-600">
-                  Arquivo selecionado: {file.name}
-                </p>
+              
+              {!file ? (
+                <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center">
+                  <FileUp className="h-12 w-12 text-muted-foreground mb-4" />
+                  <span className="text-lg font-medium">Upload de Planilha</span>
+                  <span className="text-sm text-muted-foreground mt-1 text-center">
+                    Arraste e solte ou clique para escolher um arquivo Excel ou CSV
+                  </span>
+                  <span className="text-xs text-muted-foreground mt-4">
+                    Formatos suportados: .xlsx, .xls, .csv
+                  </span>
+                </label>
+              ) : (
+                <div className="w-full space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-md">
+                    <div className="flex items-center space-x-3">
+                      <FileUp className="h-6 w-6 text-primary" />
+                      <div>
+                        <p className="font-medium">{file.name}</p>
+                        <p className="text-xs text-muted-foreground">{Math.round(file.size / 1024)} KB</p>
+                      </div>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={handleClearFile}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  {isParsing ? (
+                    <div className="text-center py-4">
+                      <p className="text-sm text-muted-foreground">Processando arquivo...</p>
+                    </div>
+                  ) : parsedQuestions.length > 0 ? (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Perguntas encontradas: {parsedQuestions.length}</p>
+                      <div className="max-h-60 overflow-y-auto border rounded-md p-2">
+                        {parsedQuestions.map((q, index) => (
+                          <div key={index} className="p-2 border-b last:border-b-0">
+                            <p className="font-medium">{index + 1}. {q.pergunta}</p>
+                            <div className="flex gap-2 text-xs text-muted-foreground mt-1">
+                              <span>Tipo: {q.tipo_resposta}</span>
+                              <span>• Obrigatório: {q.obrigatorio ? "Sim" : "Não"}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-center text-sm text-muted-foreground">
+                      Nenhuma pergunta encontrada. Verifique se o formato do arquivo está correto.
+                    </p>
+                  )}
+                </div>
               )}
             </div>
-            <div className="text-sm text-gray-500">
-              <p>O arquivo deve seguir o formato padrão com as colunas:</p>
-              <ul className="list-disc pl-5 mt-1">
-                <li><strong>Pergunta</strong> (obrigatório) - Texto da pergunta</li>
-                <li><strong>Tipo de Resposta</strong> (obrigatório) - Formato de resposta</li>
-                <li><strong>Obrigatório</strong> (sim/não) - Se a resposta é obrigatória</li>
-                <li><strong>Ordem</strong> - Ordem de exibição da pergunta</li>
-                <li><strong>Opções</strong> - Para múltipla escolha, separadas por vírgula</li>
-                <li><strong>Permite Áudio</strong> (sim/não) - Se permite anexar áudio</li>
-                <li><strong>Permite Vídeo</strong> (sim/não) - Se permite anexar vídeo</li>
-                <li><strong>Permite Foto</strong> (sim/não) - Se permite anexar foto</li>
-              </ul>
-              <p className="mt-2 text-blue-600">
-                <strong>Tipos de resposta aceitos:</strong> Texto, Numérico, Múltipla Escolha, Data, Sim/Não, Foto, Assinatura
+            
+            <div className="text-sm text-muted-foreground">
+              <p className="font-medium">Modelo de Planilha</p>
+              <p>
+                A planilha deve conter as colunas: Pergunta, Tipo, Obrigatório, Opcoes (para seleção múltipla).
               </p>
-              <p className="mt-1 text-blue-600">
-                <strong>Colunas de multimídia:</strong> As últimas três colunas permitem que o usuário anexe evidências em formato de áudio, vídeo ou foto à resposta
+              <p className="mt-1">
+                <a 
+                  href="/templates/checklist_template.xlsx" 
+                  download 
+                  className="text-primary underline"
+                >
+                  Baixar modelo de planilha
+                </a>
               </p>
             </div>
           </div>

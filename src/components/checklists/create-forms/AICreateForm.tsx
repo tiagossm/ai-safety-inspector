@@ -1,15 +1,16 @@
 
-import React from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormDescription,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Slider } from "@/components/ui/slider";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -17,31 +18,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Bot } from "lucide-react";
 import { NewChecklist } from "@/types/checklist";
-import { CompanyListItem } from "@/types/CompanyListItem";
-
-// Checklist category options
-const CATEGORIES = [
-  { value: "safety", label: "Segurança" },
-  { value: "quality", label: "Qualidade" },
-  { value: "maintenance", label: "Manutenção" },
-  { value: "environment", label: "Meio Ambiente" },
-  { value: "operational", label: "Operacional" },
-  { value: "general", label: "Geral" }
-];
+import { Skeleton } from "@/components/ui/skeleton";
+import { format } from "date-fns";
 
 interface AICreateFormProps {
   form: NewChecklist;
-  setForm: React.Dispatch<React.SetStateAction<NewChecklist>>;
+  setForm: (form: NewChecklist) => void;
   users: any[];
   loadingUsers: boolean;
   aiPrompt: string;
-  setAiPrompt: React.Dispatch<React.SetStateAction<string>>;
+  setAiPrompt: (prompt: string) => void;
   numQuestions: number;
-  setNumQuestions: React.Dispatch<React.SetStateAction<number>>;
+  setNumQuestions: (num: number) => void;
   onGenerateAI: () => void;
   aiLoading: boolean;
-  companies: CompanyListItem[];
+  companies: any[];
   loadingCompanies: boolean;
 }
 
@@ -57,163 +51,253 @@ export function AICreateForm({
   onGenerateAI,
   aiLoading,
   companies,
-  loadingCompanies
+  loadingCompanies,
 }: AICreateFormProps) {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setForm({ ...form, [name]: value });
+  };
+
   return (
     <div className="space-y-6">
-      <div className="grid gap-4">
-        <div className="grid gap-2">
-          <Label htmlFor="ai-prompt">Descreva o checklist que você quer criar</Label>
-          <Textarea
-            id="ai-prompt"
-            placeholder="Ex: Checklist de inspeção de segurança para construção civil com foco em trabalho em altura"
-            className="min-h-[100px]"
-            value={aiPrompt}
-            onChange={(e) => setAiPrompt(e.target.value)}
+      <div className="grid gap-6 md:grid-cols-2">
+        <div>
+          <FormField
+            name="title"
+            render={() => (
+              <FormItem>
+                <FormLabel>Título <span className="text-red-500">*</span></FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Título da lista de verificação"
+                    name="title"
+                    value={form.title || ""}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
         </div>
-        
-        <div className="grid gap-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="num-questions">Número de perguntas: {numQuestions}</Label>
-          </div>
-          <Slider
-            id="num-questions"
-            min={5}
-            max={30}
-            step={1}
-            value={[numQuestions]}
-            onValueChange={(value) => setNumQuestions(value[0])}
+
+        <div>
+          <FormField
+            name="category"
+            render={() => (
+              <FormItem>
+                <FormLabel>Categoria</FormLabel>
+                <FormControl>
+                  <Select
+                    value={form.category || "general"}
+                    onValueChange={(value) => handleSelectChange("category", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="general">Geral</SelectItem>
+                      <SelectItem value="safety">Segurança</SelectItem>
+                      <SelectItem value="maintenance">Manutenção</SelectItem>
+                      <SelectItem value="operational">Operacional</SelectItem>
+                      <SelectItem value="quality">Qualidade</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
         </div>
-        
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="title-ai">Título (opcional)</Label>
-            <Input
-              id="title-ai"
-              value={form.title}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="Gerado automaticamente se não preenchido"
-            />
-          </div>
-          
-          <div className="grid gap-2">
-            <Label htmlFor="category-ai">Categoria</Label>
-            <Select 
-              value={form.category} 
-              onValueChange={(value) => setForm({ ...form, category: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione uma categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map((category) => (
-                  <SelectItem key={category.value} value={category.value}>
-                    {category.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+
+        <div>
+          <FormField
+            name="description"
+            render={() => (
+              <FormItem>
+                <FormLabel>Descrição</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="Descreva o propósito desta lista de verificação"
+                    name="description"
+                    value={form.description || ""}
+                    onChange={handleInputChange}
+                    rows={3}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
-        
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="responsible-ai">Responsável</Label>
-            <Select 
-              value={form.responsible_id || "none"} 
-              onValueChange={(value) => setForm({ ...form, responsible_id: value === "none" ? null : value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione um responsável" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nenhum</SelectItem>
-                {loadingUsers ? (
-                  <SelectItem value="loading" disabled>Carregando...</SelectItem>
-                ) : (
-                  users.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="grid gap-2">
-            <Label htmlFor="company-ai">Empresa</Label>
-            <Select 
-              value={form.company_id || "none"} 
-              onValueChange={(value) => setForm({ ...form, company_id: value === "none" ? null : value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione uma empresa" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nenhuma</SelectItem>
-                {loadingCompanies ? (
-                  <SelectItem value="loading" disabled>Carregando empresas...</SelectItem>
-                ) : (
-                  companies.map((company) => (
-                    <SelectItem key={company.id} value={company.id}>
-                      {company.fantasy_name || 'Empresa sem nome'}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
+
+        <div>
+          <FormField
+            name="due_date"
+            render={() => (
+              <FormItem>
+                <FormLabel>Data de Vencimento</FormLabel>
+                <FormControl>
+                  <Input
+                    type="date"
+                    name="due_date"
+                    value={form.due_date ? format(new Date(form.due_date), "yyyy-MM-dd") : ""}
+                    onChange={handleInputChange}
+                    min={format(new Date(), "yyyy-MM-dd")}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Opcional. Se definida, indica quando esta lista deve ser concluída.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
-        
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="due-date-ai">Data de vencimento</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <button
-                  id="due-date-ai"
-                  type="button"
-                  className="w-full flex items-center justify-between rounded px-3 py-2 text-sm border border-input bg-background"
-                >
-                  <span>
-                    {form.due_date ? (
-                      format(new Date(form.due_date), "PPP", { locale: ptBR })
-                    ) : (
-                      "Escolha uma data"
-                    )}
-                  </span>
-                  <CalendarIcon className="h-4 w-4 opacity-50" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={form.due_date ? new Date(form.due_date) : undefined}
-                  onSelect={(date) => 
-                    setForm({ ...form, due_date: date ? date.toISOString() : null })
-                  }
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-          
-          <div className="flex items-center space-x-2 self-end">
-            <Switch
-              id="template-ai"
-              checked={form.is_template}
-              onCheckedChange={(checked) => setForm({ ...form, is_template: checked })}
-            />
-            <Label htmlFor="template-ai">
-              Salvar como template
-            </Label>
-          </div>
+
+        <div>
+          <FormField
+            name="company_id"
+            render={() => (
+              <FormItem>
+                <FormLabel>Empresa</FormLabel>
+                <FormControl>
+                  {loadingCompanies ? (
+                    <Skeleton className="h-9 w-full" />
+                  ) : (
+                    <Select
+                      value={form.company_id?.toString() || ""}
+                      onValueChange={(value) => handleSelectChange("company_id", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma empresa (opcional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Nenhuma empresa</SelectItem>
+                        {companies.map((company) => (
+                          <SelectItem key={company.id} value={company.id}>
+                            {company.fantasy_name || company.cnpj}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div>
+          <FormField
+            name="responsible_id"
+            render={() => (
+              <FormItem>
+                <FormLabel>Responsável</FormLabel>
+                <FormControl>
+                  {loadingUsers ? (
+                    <Skeleton className="h-9 w-full" />
+                  ) : (
+                    <Select
+                      value={form.responsible_id?.toString() || ""}
+                      onValueChange={(value) => handleSelectChange("responsible_id", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione um responsável (opcional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Nenhum responsável</SelectItem>
+                        {users.map((user) => (
+                          <SelectItem key={user.id} value={user.id}>
+                            {user.name || user.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
       </div>
+
+      <Card>
+        <CardContent className="p-6">
+          <div className="space-y-6">
+            <div className="flex items-center gap-3">
+              <Bot className="h-10 w-10 text-primary" />
+              <div>
+                <h3 className="text-lg font-medium">Geração de Checklist com IA</h3>
+                <p className="text-sm text-muted-foreground">
+                  Digite uma descrição do checklist que você precisa e nossa IA irá gerá-lo para você.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <FormLabel htmlFor="ai-prompt">Prompt para IA <span className="text-red-500">*</span></FormLabel>
+                <Textarea
+                  id="ai-prompt"
+                  placeholder="Ex: Crie um checklist de inspeção de segurança para um canteiro de obras com foco em prevenção de acidentes."
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  rows={4}
+                  className="mt-1"
+                />
+                <FormDescription>
+                  Seja específico sobre o tipo de checklist, área de aplicação e objetivo.
+                </FormDescription>
+              </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <FormLabel htmlFor="num-questions">Número de Perguntas</FormLabel>
+                  <span className="text-sm font-medium">{numQuestions}</span>
+                </div>
+                <Slider
+                  id="num-questions"
+                  value={[numQuestions]}
+                  onValueChange={(value) => setNumQuestions(value[0])}
+                  min={5}
+                  max={50}
+                  step={1}
+                  className="w-full"
+                />
+                <FormDescription>
+                  Quantidade aproximada de perguntas a serem geradas.
+                </FormDescription>
+              </div>
+
+              <Button
+                type="button"
+                onClick={onGenerateAI}
+                disabled={!aiPrompt.trim() || aiLoading}
+                className="w-full"
+              >
+                {aiLoading ? "Gerando..." : "Gerar Checklist com IA"}
+              </Button>
+
+              <div className="text-sm text-muted-foreground">
+                <p>Dicas:</p>
+                <ul className="list-disc list-inside ml-2 space-y-1">
+                  <li>Especifique a área técnica (ex: segurança, manutenção, qualidade)</li>
+                  <li>Mencione normas específicas se aplicável (ex: NR-10, ISO 9001)</li>
+                  <li>Indique se é para um ambiente ou equipamento específico</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

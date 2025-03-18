@@ -1,8 +1,10 @@
-import { useState } from "react";
+
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Upload, Camera, Mic, X, Image, AudioLines, Video } from "lucide-react";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
+import { toast } from "sonner";
 
 interface ChecklistMediaUploadProps {
   checklistId: string;
@@ -22,13 +24,16 @@ export function ChecklistMediaUpload({
   const [activeTab, setActiveTab] = useState<"upload" | "capture">("upload");
   const [mediaType, setMediaType] = useState<"image" | "audio" | "video">("image");
   const { uploadFile, isUploading, progress } = useMediaUpload();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     
     const file = e.target.files[0];
     
-    // Determina o tipo do arquivo
+    // Determine file type
     let type: "image" | "audio" | "video";
     if (file.type.startsWith("image/")) {
       type = "image";
@@ -37,7 +42,7 @@ export function ChecklistMediaUpload({
     } else if (file.type.startsWith("video/")) {
       type = "video";
     } else {
-      // Tipo não suportado
+      toast.error("Tipo de arquivo não suportado");
       return;
     }
     
@@ -45,30 +50,100 @@ export function ChecklistMediaUpload({
       const result = await uploadFile(file);
       if (result && result.url) {
         onMediaUploaded(result.url, type);
+        toast.success("Arquivo enviado com sucesso!");
       }
     } catch (error) {
       console.error("Erro ao fazer upload:", error);
+      toast.error("Falha ao enviar arquivo");
     }
   };
   
   const startCapture = async () => {
     try {
       if (mediaType === "image") {
-        // Abrir a câmera para tirar uma foto
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        // Aqui você implementaria a lógica para tirar a foto
-        // Por simplicidade, usaremos o input file normal
+        // Get camera access
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: "environment" } 
+        });
+        
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          streamRef.current = stream;
+        }
       } else if (mediaType === "audio") {
-        // Abrir o microfone para gravar áudio
+        // Show audio recording UI
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        // Aqui você implementaria a lógica para gravar áudio
+        // Here you would implement audio recording logic
+        toast.info("Gravação de áudio iniciada");
+        streamRef.current = stream;
       } else if (mediaType === "video") {
-        // Abrir a câmera para gravar vídeo
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        // Aqui você implementaria a lógica para gravar vídeo
+        // Show video recording UI
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: true, 
+          audio: true 
+        });
+        
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          streamRef.current = stream;
+        }
+        toast.info("Gravação de vídeo iniciada");
       }
     } catch (error) {
       console.error("Erro ao acessar dispositivos de mídia:", error);
+      toast.error("Não foi possível acessar sua câmera ou microfone");
+    }
+  };
+  
+  const capturePhoto = async () => {
+    if (!videoRef.current || !canvasRef.current || !streamRef.current) return;
+    
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    
+    // Set canvas dimensions to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Draw current video frame to canvas
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Convert canvas to blob
+    canvas.toBlob(async (blob) => {
+      if (!blob) {
+        toast.error("Erro ao capturar imagem");
+        return;
+      }
+      
+      // Create a File object from the blob
+      const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      
+      try {
+        const result = await uploadFile(file);
+        if (result && result.url) {
+          onMediaUploaded(result.url, "image");
+          toast.success("Foto capturada com sucesso!");
+        }
+      } catch (error) {
+        console.error("Erro ao fazer upload da foto:", error);
+      } finally {
+        // Stop the stream
+        stopCapture();
+      }
+    }, 'image/jpeg', 0.9);
+  };
+  
+  const stopCapture = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
     }
   };
   
@@ -95,7 +170,10 @@ export function ChecklistMediaUpload({
         <Button 
           variant={activeTab === "upload" ? "default" : "outline"} 
           size="sm" 
-          onClick={() => setActiveTab("upload")}
+          onClick={() => {
+            stopCapture();
+            setActiveTab("upload");
+          }}
         >
           <Upload className="h-4 w-4 mr-2" />
           Upload
@@ -173,16 +251,46 @@ export function ChecklistMediaUpload({
             </Button>
           </div>
           
-          <Button 
-            onClick={startCapture}
-            className="w-full"
-            disabled={isUploading}
-          >
-            {isUploading ? "Enviando..." : `Capturar ${
-              mediaType === "image" ? "Foto" : 
-              mediaType === "audio" ? "Áudio" : "Vídeo"
-            }`}
-          </Button>
+          {streamRef.current ? (
+            <div className="space-y-4">
+              {mediaType === "image" && (
+                <div className="relative">
+                  <video 
+                    ref={videoRef} 
+                    autoPlay 
+                    playsInline 
+                    className="w-full h-48 object-cover rounded-md"
+                  />
+                  <Button 
+                    onClick={capturePhoto}
+                    className="absolute bottom-2 left-1/2 transform -translate-x-1/2"
+                  >
+                    Tirar Foto
+                  </Button>
+                  <canvas ref={canvasRef} className="hidden" />
+                </div>
+              )}
+              
+              <Button 
+                variant="outline"
+                onClick={stopCapture}
+                className="w-full"
+              >
+                Cancelar
+              </Button>
+            </div>
+          ) : (
+            <Button 
+              onClick={startCapture}
+              className="w-full"
+              disabled={isUploading}
+            >
+              {isUploading ? "Enviando..." : `Iniciar Captura de ${
+                mediaType === "image" ? "Foto" : 
+                mediaType === "audio" ? "Áudio" : "Vídeo"
+              }`}
+            </Button>
+          )}
         </div>
       )}
       
