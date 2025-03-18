@@ -15,10 +15,15 @@ import {
   Meh,
   CheckCircle,
   XCircle,
-  HelpCircle
+  HelpCircle,
+  Image,
+  Video,
+  Mic
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
+import { MediaCaptureButton } from "@/components/media/MediaCaptureButton";
+import { FileUploadButton } from "@/components/media/FileUploadButton";
 
 interface ChecklistResponseItemProps {
   item: ChecklistItem;
@@ -29,12 +34,23 @@ interface ChecklistResponseItemProps {
 export function ChecklistResponseItem({ item, onResponseChange, index }: ChecklistResponseItemProps) {
   const [comment, setComment] = useState("");
   const [showCommentDialog, setShowCommentDialog] = useState(false);
+  const [attachments, setAttachments] = useState<string[]>([]);
+  const [showMediaDialog, setShowMediaDialog] = useState(false);
   
   const handleSaveComment = () => {
     // Aqui você pode implementar a lógica para salvar o comentário
     console.log("Saving comment:", comment);
     setShowCommentDialog(false);
     toast.success("Comentário salvo com sucesso!");
+  };
+
+  const handleMediaCaptured = (mediaData: any) => {
+    console.log("Media captured:", mediaData);
+    if (mediaData && mediaData.url) {
+      setAttachments([...attachments, mediaData.url]);
+      setShowMediaDialog(false);
+      toast.success("Mídia anexada com sucesso!");
+    }
   };
   
   const renderYesNoOptions = () => {
@@ -174,6 +190,43 @@ export function ChecklistResponseItem({ item, onResponseChange, index }: Checkli
     
     return "";
   };
+
+  const renderMediaAttachments = () => {
+    if (attachments.length === 0) return null;
+    
+    return (
+      <div className="mt-4 border-t pt-2">
+        <h4 className="text-sm font-medium mb-2">Arquivos anexados</h4>
+        <div className="flex flex-wrap gap-2">
+          {attachments.map((url, i) => {
+            const isImage = url.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i);
+            const isVideo = url.match(/\.(mp4|webm|avi|mov|wmv|mkv)$/i);
+            const isAudio = url.match(/\.(mp3|wav|ogg|m4a)$/i);
+            
+            return (
+              <div key={i} className="w-16 h-16 relative border rounded-md overflow-hidden">
+                {isImage ? (
+                  <img src={url} alt="Anexo" className="w-full h-full object-cover" />
+                ) : isVideo ? (
+                  <div className="w-full h-full flex items-center justify-center bg-black/10">
+                    <Video className="h-8 w-8" />
+                  </div>
+                ) : isAudio ? (
+                  <div className="w-full h-full flex items-center justify-center bg-black/10">
+                    <Mic className="h-8 w-8" />
+                  </div>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-black/10">
+                    <Image className="h-8 w-8" />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
   
   return (
     <Card className={`overflow-hidden border border-l-4 ${getCardColor()} mb-4`}>
@@ -241,13 +294,53 @@ export function ChecklistResponseItem({ item, onResponseChange, index }: Checkli
             </DialogContent>
           </Dialog>
           
-          {item.permite_foto && (
-            <Button variant="outline" size="sm" className="flex items-center gap-1">
-              <Camera className="h-4 w-4" />
-              <span>Foto</span>
-            </Button>
-          )}
+          <Dialog open={showMediaDialog} onOpenChange={setShowMediaDialog}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="flex items-center gap-1">
+                <Camera className="h-4 w-4" />
+                <span>Foto</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Adicionar Mídia</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Capturar Mídia</h3>
+                  <div className="grid grid-cols-3 gap-2">
+                    <MediaCaptureButton 
+                      type="photo" 
+                      onMediaCaptured={handleMediaCaptured} 
+                      className="col-span-1"
+                    />
+                    <MediaCaptureButton 
+                      type="video" 
+                      onMediaCaptured={handleMediaCaptured} 
+                      className="col-span-1"
+                    />
+                    <MediaCaptureButton 
+                      type="audio" 
+                      onMediaCaptured={handleMediaCaptured} 
+                      className="col-span-1"
+                    />
+                  </div>
+                </div>
+                
+                <div className="pt-2 border-t">
+                  <h3 className="text-sm font-medium mb-2">Enviar Arquivo</h3>
+                  <FileUploadButton 
+                    onFileUploaded={handleMediaCaptured}
+                    acceptTypes="image/*,video/*,audio/*"
+                    buttonText="Enviar Arquivo"
+                  />
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
+        
+        {renderMediaAttachments()}
       </div>
     </Card>
   );
