@@ -53,9 +53,15 @@ export function ChecklistEditor({
   onSave,
   onCancel
 }: ChecklistEditorProps) {
-  // Cast the initialChecklist as a partial Checklist to fix the id type error
-  // For new checklists, we don't have an id yet
-  const [checklist, setChecklist] = useState<Partial<Checklist>>(initialChecklist);
+  // Transform the initialChecklist to ensure status_checklist is properly typed
+  const transformedInitialChecklist: Partial<Checklist> = {
+    ...initialChecklist,
+    // Cast status_checklist to the specific union type expected by Checklist
+    status_checklist: (initialChecklist.status_checklist as "ativo" | "inativo") || "ativo",
+  };
+  
+  // Now use the transformed object with useState
+  const [checklist, setChecklist] = useState<Partial<Checklist>>(transformedInitialChecklist);
   
   // Ensure all questions have required properties
   const [questions, setQuestions] = useState<Question[]>(
