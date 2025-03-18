@@ -17,7 +17,14 @@ export function useUpdateChecklistItem() {
           tipo_resposta: item.tipo_resposta,
           obrigatorio: item.obrigatorio,
           ordem: item.ordem,
-          opcoes: opcoesFinal
+          opcoes: opcoesFinal,
+          permite_audio: item.permite_audio,
+          permite_video: item.permite_video,
+          permite_foto: item.permite_foto,
+          hint: item.hint,
+          weight: item.weight,
+          parent_item_id: item.parent_item_id,
+          condition_value: item.condition_value
         })
         .eq("id", item.id);
 

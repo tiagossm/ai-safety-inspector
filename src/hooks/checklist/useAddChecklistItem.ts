@@ -18,7 +18,14 @@ export function useAddChecklistItem(checklistId: string) {
           tipo_resposta: newItem.tipo_resposta,
           obrigatorio: newItem.obrigatorio,
           ordem: newItem.ordem,
-          opcoes: opcoesFinal
+          opcoes: opcoesFinal,
+          permite_audio: newItem.permite_audio || false,
+          permite_video: newItem.permite_video || false,
+          permite_foto: newItem.permite_foto || false,
+          hint: newItem.hint || null,
+          weight: newItem.weight || 1,
+          parent_item_id: newItem.parent_item_id || null,
+          condition_value: newItem.condition_value || null
         })
         .select();
 
