@@ -157,15 +157,16 @@ export function useChecklistImport() {
       // Sanitize company_id if it's in an invalid format
       let sanitizedCompanyId = null;
       
-      if (form.company_id) {
-        if (typeof form.company_id === 'object' && form.company_id !== null) {
+      if (form.company_id !== undefined && form.company_id !== null) {
+        if (typeof form.company_id === 'object') {
           console.warn("⚠️ company_id está em formato de objeto:", form.company_id);
           
           // Check if it has a value property that's a string and not 'undefined'
-          if ('value' in form.company_id && 
-              typeof (form.company_id as any).value === 'string' && 
-              (form.company_id as any).value !== 'undefined') {
-            sanitizedCompanyId = (form.company_id as any).value;
+          const companyObj = form.company_id as any;
+          if ('value' in companyObj && 
+              typeof companyObj.value === 'string' && 
+              companyObj.value !== 'undefined') {
+            sanitizedCompanyId = companyObj.value;
           }
         } else if (typeof form.company_id === 'string' && form.company_id !== 'undefined') {
           sanitizedCompanyId = form.company_id;
