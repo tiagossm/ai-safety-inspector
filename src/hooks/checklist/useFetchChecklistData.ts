@@ -17,58 +17,67 @@ export function useFetchChecklistData(id: string) {
 
       // **✅ Valida se o ID é um UUID válido antes da requisição**
       if (!id || !isValidUUID(id)) {
-        console.error("❌ ID inválido:", id);
+        console.error("❌ ID inválido recebido:", id);
         throw new Error("Checklist ID inválido!");
       }
 
-      // **🔹 Buscar checklist no banco**
-      const { data: checklistData, error } = await supabase
-        .from("checklists")
-        .select("*")
-        .eq("id", id)
-        .single();
-
-      if (error) {
-        console.error("❌ Erro ao buscar checklist:", error);
-        throw error;
-      }
-
-      console.log("✅ Dados brutos do checklist:", checklistData);
-
-      // **🔹 Buscar o nome do responsável**
-      let responsibleName = null;
-      const responsibleId = checklistData?.responsible_id || null;
-
-      if (responsibleId) {
-        const { data: userData, error: userError } = await supabase
-          .from("users")
-          .select("name")
-          .eq("id", responsibleId)
+      try {
+        // **🔹 Buscar checklist no banco**
+        const { data: checklistData, error: checklistError } = await supabase
+          .from("checklists")
+          .select("*")
+          .eq("id", id)
           .single();
 
-        if (userError) {
-          console.error("❌ Erro ao buscar usuário responsável:", userError);
-        } else {
-          responsibleName = userData?.name || "Usuário desconhecido";
+        if (checklistError) {
+          console.error("❌ Erro ao buscar checklist:", checklistError);
+          throw checklistError;
         }
-      }
 
-      // **✅ Retorno do checklist com segurança**
-      return {
-        id: checklistData.id,
-        title: checklistData.title || "Sem título",
-        description: checklistData.description || "Sem descrição",
-        created_at: checklistData.created_at || null,
-        updated_at: checklistData.updated_at || null,
-        status_checklist: checklistData.status_checklist as "ativo" | "inativo",
-        is_template: Boolean(checklistData.is_template),
-        user_id: checklistData.user_id || null,
-        company_id: checklistData.company_id || null,
-        status: checklistData.status || "pendente",
-        category: checklistData.category || "general",
-        responsible_id: responsibleId,
-        responsible_name: responsibleName,
-      } as Checklist;
+        console.log("✅ Dados brutos do checklist:", checklistData);
+
+        // **🔹 Buscar o nome do responsável**
+        let responsibleName = null;
+        const responsibleId = checklistData?.responsible_id || null;
+
+        if (responsibleId) {
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from("users")
+              .select("name")
+              .eq("id", responsibleId)
+              .single();
+
+            if (userError) {
+              console.warn("⚠️ Erro ao buscar usuário responsável:", userError);
+            } else {
+              responsibleName = userData?.name || "Usuário desconhecido";
+            }
+          } catch (userFetchError) {
+            console.warn("⚠️ Erro inesperado ao buscar responsável:", userFetchError);
+          }
+        }
+
+        // **✅ Retorno do checklist com segurança**
+        return {
+          id: checklistData.id,
+          title: checklistData.title || "Sem título",
+          description: checklistData.description || "Sem descrição",
+          created_at: checklistData.created_at || null,
+          updated_at: checklistData.updated_at || null,
+          status_checklist: checklistData.status_checklist as "ativo" | "inativo",
+          is_template: Boolean(checklistData.is_template),
+          user_id: checklistData.user_id || null,
+          company_id: checklistData.company_id || null,
+          status: checklistData.status || "pendente",
+          category: checklistData.category || "general",
+          responsible_id: responsibleId,
+          responsible_name: responsibleName,
+        } as Checklist;
+      } catch (fetchError) {
+        console.error("❌ Erro geral ao buscar checklist:", fetchError);
+        throw new Error("Erro ao buscar checklist. Tente novamente.");
+      }
     },
     enabled: !!id && isValidUUID(id), // 🔹 Apenas busca se o ID for válido
     staleTime: 5 * 60 * 1000, // 🔹 Cache válido por 5 minutos
