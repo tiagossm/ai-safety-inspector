@@ -1,16 +1,8 @@
-
 import { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
 import { Mic, Video, StopCircle, Upload, Camera } from 'lucide-react';
 import { toast } from "sonner";
-
-// We don't need this anymore as we've defined it in vite-env.d.ts
-// declare global {
-//   interface Window {
-//     ImageCapture: typeof ImageCapture;
-//   }
-// }
 
 interface MediaCaptureButtonProps {
   type: 'audio' | 'video' | 'photo';
@@ -94,9 +86,8 @@ export function MediaCaptureButton({
     try {
       const videoTrack = stream.getVideoTracks()[0];
       
-      // Use the ImageCapture API if available
-      if ('ImageCapture' in window) {
-        const imageCapture = new ImageCapture(videoTrack);
+      if (window.ImageCapture) {
+        const imageCapture = new window.ImageCapture(videoTrack);
         const bitmap = await imageCapture.grabFrame();
         
         const canvas = document.createElement('canvas');
@@ -119,11 +110,9 @@ export function MediaCaptureButton({
           stopMediaStream();
         }, 'image/jpeg');
       } else {
-        // Fallback method using video element and canvas when ImageCapture is not supported
         const video = document.createElement('video');
         video.srcObject = stream;
         
-        // Wait for video to be ready
         await new Promise<void>((resolve) => {
           video.onloadedmetadata = () => {
             video.play();
@@ -131,7 +120,6 @@ export function MediaCaptureButton({
           };
         });
         
-        // Capture frame from video
         const canvas = document.createElement('canvas');
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;

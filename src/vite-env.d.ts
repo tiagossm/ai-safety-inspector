@@ -1,4 +1,3 @@
-
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
@@ -50,9 +49,12 @@ interface ImageCapture {
   takePhoto(): Promise<Blob>;
 }
 
+// Define the ImageCapture constructor globally
 declare global {
-  var ImageCapture: {
-    prototype: ImageCapture;
-    new(track: MediaStreamTrack): ImageCapture;
-  };
+  interface Window {
+    ImageCapture: {
+      prototype: ImageCapture;
+      new(track: MediaStreamTrack): ImageCapture;
+    }
+  }
 }
