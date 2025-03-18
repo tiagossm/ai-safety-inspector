@@ -42,11 +42,51 @@ export default function CreateChecklist() {
     e.preventDefault();
     if (isSubmitting) return;
     
-    const success = await handleSubmit(e);
-    
-    if (success) {
-      toast.success("Checklist criado com sucesso!");
+    try {
+      // Add some basic validation based on the active tab
+      if (activeTab === "manual" && !form.title?.trim()) {
+        toast.error("O título é obrigatório");
+        return;
+      } else if (activeTab === "import" && !file) {
+        toast.error("Por favor, selecione um arquivo para importar");
+        return;
+      } else if (activeTab === "ai" && !aiPrompt?.trim()) {
+        toast.error("Por favor, forneça um prompt para gerar o checklist");
+        return;
+      }
+      
+      const success = await handleSubmit(e);
+      
+      if (success) {
+        toast.success("Checklist criado com sucesso!");
+      }
+    } catch (error) {
+      console.error("Erro ao criar checklist:", error);
+      toast.error("Ocorreu um erro ao criar o checklist");
     }
+  };
+
+  const handleGenerateAI = () => {
+    if (!aiPrompt.trim()) {
+      toast.error("Por favor, forneça um prompt para gerar o checklist");
+      return;
+    }
+    
+    // Set a title based on the AI prompt if not already set
+    if (!form.title) {
+      const shortPrompt = aiPrompt.length > 40 ? 
+        aiPrompt.substring(0, 40) + "..." : 
+        aiPrompt;
+      setForm({
+        ...form,
+        title: `Checklist: ${shortPrompt}`,
+        description: `Checklist gerado automaticamente com base em: ${aiPrompt}`
+      });
+    }
+    
+    onSubmit({
+      preventDefault: () => {},
+    } as React.FormEvent);
   };
 
   if (isLoading) {
@@ -117,7 +157,7 @@ export default function CreateChecklist() {
               setAiPrompt={setAiPrompt}
               numQuestions={numQuestions}
               setNumQuestions={setNumQuestions}
-              onGenerateAI={() => {}} // Este é tratado no submit
+              onGenerateAI={handleGenerateAI}
               aiLoading={aiLoading}
               companies={companies}
               loadingCompanies={loadingCompanies}

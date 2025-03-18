@@ -1,84 +1,83 @@
 
-import { useNavigate } from "react-router-dom";
-import { useChecklistSubmit } from "./useChecklistSubmit";
-import { useChecklistAuth } from "./useChecklistAuth";
+import { useState } from "react";
 import { toast } from "sonner";
 import { NewChecklist } from "@/types/checklist";
+import { useAdvancedSubmit } from "../useAdvancedSubmit";
+import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
+import { useNavigate } from "react-router-dom";
 
 export function useChecklistFormSubmit() {
-  const { isSubmitting, handleSubmit: submitChecklist } = useChecklistSubmit();
-  const { user, refreshSession } = useChecklistAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { submitManualChecklist } = useManualSubmit();
+  const { submitImportChecklist, submitAIChecklist } = useAdvancedSubmit();
+  const createChecklist = useCreateChecklist();
   const navigate = useNavigate();
 
   const handleFormSubmit = async (
     e: React.FormEvent,
     activeTab: string,
     form: NewChecklist,
-    questions: Array<{ text: string; type: string; required: boolean }>,
+    questions: any[],
     file: File | null,
     aiPrompt: string,
     generateAIChecklist: (form: NewChecklist) => Promise<any>
   ) => {
-    console.log("Form submit handler triggered");
+    e.preventDefault();
     
-    // Refresh token before submission to ensure we have a valid JWT
-    const tokenValid = await refreshSession();
-    
-    if (!tokenValid) {
-      console.error("Failed to refresh token before submission");
-      toast.error("Erro de autenticação. Faça login novamente.");
-      navigate("/auth");
+    if (isSubmitting) {
+      console.warn("Já existe uma submissão em andamento...");
       return false;
     }
     
+    setIsSubmitting(true);
+    
     try {
-      // Ensure user_id is set
-      if (!form.user_id && user?.id) {
-        form.user_id = user.id;
-        console.log("Setting user_id in form:", user.id);
-      }
+      console.log("Processando formulário...", { activeTab, form });
       
-      // Log debugging information
-      console.log("Form being submitted:", {
-        activeTab,
-        title: form.title,
-        company_id: form.company_id,
-        user_id: form.user_id,
-        user_tier: user?.tier,
-        user_role: user?.role,
-        fileIncluded: !!file,
-        aiPromptLength: aiPrompt?.length || 0
-      });
-      
-      let success = false;
-      
-      if (activeTab === "ai") {
-        // Handle AI-generated checklist
-        if (aiPrompt.trim()) {
-          try {
-            const result = await generateAIChecklist(form);
-            console.log("AI generation result:", result);
-            success = !!result;
-          } catch (err) {
-            console.error("Error generating AI checklist:", err);
-            toast.error("Erro ao gerar checklist com IA. Tente novamente mais tarde.");
-            return false;
-          }
+      // Baseado na aba ativa, execute a função apropriada
+      if (activeTab === "manual") {
+        // Criação manual
+        const success = await submitManualChecklist(form, questions);
+        console.log("Resultado da criação manual:", success);
+        setIsSubmitting(false);
+        return success;
+      } 
+      else if (activeTab === "import") {
+        // Importação de planilha
+        if (!file) {
+          toast.error("Por favor, selecione um arquivo para importar");
+          setIsSubmitting(false);
+          return false;
         }
-      } else {
-        success = await submitChecklist(e, activeTab, form, questions, file, aiPrompt);
+        
+        const success = await submitImportChecklist(file, form);
+        console.log("Resultado da importação:", success);
+        setIsSubmitting(false);
+        return success;
+      } 
+      else if (activeTab === "ai") {
+        // Geração por IA
+        if (!aiPrompt.trim()) {
+          toast.error("Por favor, forneça um prompt para gerar o checklist");
+          setIsSubmitting(false);
+          return false;
+        }
+        
+        const success = await submitAIChecklist(form, aiPrompt);
+        console.log("Resultado da geração por IA:", success);
+        setIsSubmitting(false);
+        return success;
       }
       
-      if (success) {
-        console.log("Submission successful");
-        return true;
-      } else {
-        console.error("Submission failed but no exception thrown");
-        return false;
-      }
+      // Se chegou aqui, algo deu errado...
+      console.error("Tab não reconhecida ou não implementada:", activeTab);
+      toast.error("Operação não suportada");
+      setIsSubmitting(false);
+      return false;
     } catch (error) {
-      console.error("Error in form submission:", error);
-      toast.error(`Erro ao criar checklist: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      console.error("Erro ao processar formulário:", error);
+      toast.error(`Erro ao criar checklist: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
+      setIsSubmitting(false);
       return false;
     }
   };
@@ -88,3 +87,6 @@ export function useChecklistFormSubmit() {
     handleFormSubmit
   };
 }
+
+// Import at the top
+import { useManualSubmit } from "./useManualSubmit";

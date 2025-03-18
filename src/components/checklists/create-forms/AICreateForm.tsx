@@ -1,11 +1,6 @@
 
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  FormLabel,
-  FormControl,
-  FormDescription,
-  FormMessage,
-} from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -65,7 +60,7 @@ export function AICreateForm({
       <div className="grid gap-6 md:grid-cols-2">
         <div>
           <div className="space-y-2">
-            <FormLabel htmlFor="title">Título <span className="text-red-500">*</span></FormLabel>
+            <Label htmlFor="title">Título <span className="text-red-500">*</span></Label>
             <Input
               id="title"
               placeholder="Título da lista de verificação"
@@ -74,13 +69,12 @@ export function AICreateForm({
               onChange={handleInputChange}
               required
             />
-            <FormMessage />
           </div>
         </div>
 
         <div>
           <div className="space-y-2">
-            <FormLabel htmlFor="category">Categoria</FormLabel>
+            <Label htmlFor="category">Categoria</Label>
             <Select
               value={form.category || "general"}
               onValueChange={(value) => handleSelectChange("category", value)}
@@ -96,13 +90,12 @@ export function AICreateForm({
                 <SelectItem value="quality">Qualidade</SelectItem>
               </SelectContent>
             </Select>
-            <FormMessage />
           </div>
         </div>
 
         <div>
           <div className="space-y-2">
-            <FormLabel htmlFor="description">Descrição</FormLabel>
+            <Label htmlFor="description">Descrição</Label>
             <Textarea
               id="description"
               placeholder="Descreva o propósito desta lista de verificação"
@@ -111,13 +104,12 @@ export function AICreateForm({
               onChange={handleInputChange}
               rows={3}
             />
-            <FormMessage />
           </div>
         </div>
 
         <div>
           <div className="space-y-2">
-            <FormLabel htmlFor="due_date">Data de Vencimento</FormLabel>
+            <Label htmlFor="due_date">Data de Vencimento</Label>
             <Input
               id="due_date"
               type="date"
@@ -126,16 +118,15 @@ export function AICreateForm({
               onChange={handleInputChange}
               min={format(new Date(), "yyyy-MM-dd")}
             />
-            <FormDescription>
+            <p className="text-sm text-muted-foreground">
               Opcional. Se definida, indica quando esta lista deve ser concluída.
-            </FormDescription>
-            <FormMessage />
+            </p>
           </div>
         </div>
 
         <div>
           <div className="space-y-2">
-            <FormLabel htmlFor="company_id">Empresa</FormLabel>
+            <Label htmlFor="company_id">Empresa</Label>
             {loadingCompanies ? (
               <Skeleton className="h-9 w-full" />
             ) : (
@@ -156,13 +147,12 @@ export function AICreateForm({
                 </SelectContent>
               </Select>
             )}
-            <FormMessage />
           </div>
         </div>
 
         <div>
           <div className="space-y-2">
-            <FormLabel htmlFor="responsible_id">Responsável</FormLabel>
+            <Label htmlFor="responsible_id">Responsável</Label>
             {loadingUsers ? (
               <Skeleton className="h-9 w-full" />
             ) : (
@@ -183,7 +173,6 @@ export function AICreateForm({
                 </SelectContent>
               </Select>
             )}
-            <FormMessage />
           </div>
         </div>
       </div>
@@ -203,7 +192,7 @@ export function AICreateForm({
 
             <div className="space-y-4">
               <div>
-                <FormLabel htmlFor="ai-prompt">Prompt para IA <span className="text-red-500">*</span></FormLabel>
+                <Label htmlFor="ai-prompt">Prompt para IA <span className="text-red-500">*</span></Label>
                 <Textarea
                   id="ai-prompt"
                   placeholder="Ex: Crie um checklist de inspeção de segurança para um canteiro de obras com foco em prevenção de acidentes."
@@ -212,14 +201,14 @@ export function AICreateForm({
                   rows={4}
                   className="mt-1"
                 />
-                <FormDescription>
+                <p className="text-sm text-muted-foreground">
                   Seja específico sobre o tipo de checklist, área de aplicação e objetivo.
-                </FormDescription>
+                </p>
               </div>
 
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <FormLabel htmlFor="num-questions">Número de Perguntas</FormLabel>
+                  <Label htmlFor="num-questions">Número de Perguntas</Label>
                   <span className="text-sm font-medium">{numQuestions}</span>
                 </div>
                 <Slider
@@ -231,9 +220,9 @@ export function AICreateForm({
                   step={1}
                   className="w-full"
                 />
-                <FormDescription>
+                <p className="text-sm text-muted-foreground">
                   Quantidade aproximada de perguntas a serem geradas.
-                </FormDescription>
+                </p>
               </div>
 
               <Button

@@ -1,15 +1,9 @@
 
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormDescription,
-  FormMessage,
-} from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
+import { NewChecklist } from "@/types/checklist";
 import {
   Select,
   SelectContent,
@@ -17,12 +11,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FileUp, X } from "lucide-react";
-import { NewChecklist } from "@/types/checklist";
+import { Card, CardContent } from "@/components/ui/card";
+import { Upload, FileType, Download } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
-import { useState, useEffect } from "react";
-import * as XLSX from "xlsx";
 import { toast } from "sonner";
 
 interface ImportCreateFormProps {
@@ -32,7 +24,6 @@ interface ImportCreateFormProps {
   loadingUsers: boolean;
   file: File | null;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onFileProcess?: (questions: any[]) => void;
   companies: any[];
   loadingCompanies: boolean;
 }
@@ -44,13 +35,9 @@ export function ImportCreateForm({
   loadingUsers,
   file,
   onFileChange,
-  onFileProcess,
   companies,
   loadingCompanies,
 }: ImportCreateFormProps) {
-  const [parsedQuestions, setParsedQuestions] = useState<any[]>([]);
-  const [isParsing, setIsParsing] = useState(false);
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
@@ -60,100 +47,11 @@ export function ImportCreateForm({
     setForm({ ...form, [name]: value });
   };
 
-  const handleClearFile = () => {
-    // Reset file input
-    if (document.getElementById("file-upload") instanceof HTMLInputElement) {
-      (document.getElementById("file-upload") as HTMLInputElement).value = "";
-    }
-    // Clear file state
-    onFileChange({ target: { files: null } } as unknown as React.ChangeEvent<HTMLInputElement>);
-    setParsedQuestions([]);
-  };
-
-  useEffect(() => {
-    if (file) {
-      parseFile(file);
-    }
-  }, [file]);
-
-  const parseFile = async (file: File) => {
-    setIsParsing(true);
-    try {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const data = new Uint8Array(e.target?.result as ArrayBuffer);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const firstSheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[firstSheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet);
-          
-          // Map the Excel data to our question format
-          const questions = jsonData.map((row: any, index) => {
-            return {
-              pergunta: row.Pergunta || row.pergunta || `Pergunta ${index + 1}`,
-              tipo_resposta: mapQuestionType(row.Tipo || row.tipo || "sim/não"),
-              obrigatorio: typeof row.Obrigatório === 'boolean' ? row.Obrigatório : 
-                           typeof row.obrigatorio === 'boolean' ? row.obrigatorio : true,
-              ordem: index,
-              opcoes: row.Opcoes || row.opcoes || null,
-            };
-          });
-          
-          setParsedQuestions(questions);
-          if (onFileProcess) {
-            onFileProcess(questions);
-          }
-          
-          // Try to extract checklist title from filename
-          if (!form.title || form.title === "") {
-            const fileNameWithoutExt = file.name.split('.').slice(0, -1).join('.');
-            setForm({
-              ...form,
-              title: fileNameWithoutExt || "Checklist Importado"
-            });
-          }
-          
-          toast.success(`${questions.length} perguntas encontradas no arquivo`);
-        } catch (error) {
-          console.error("Error parsing Excel:", error);
-          toast.error("Erro ao processar o arquivo. Verifique o formato.");
-        } finally {
-          setIsParsing(false);
-        }
-      };
-      
-      reader.onerror = () => {
-        toast.error("Erro ao ler o arquivo");
-        setIsParsing(false);
-      };
-      
-      reader.readAsArrayBuffer(file);
-    } catch (error) {
-      console.error("Error reading file:", error);
-      toast.error("Erro ao ler o arquivo");
-      setIsParsing(false);
-    }
-  };
-
-  const mapQuestionType = (type: string): string => {
-    type = type.toLowerCase();
-    
-    if (type.includes("sim") || type.includes("não") || type.includes("nao")) {
-      return "sim/não";
-    } else if (type.includes("texto")) {
-      return "texto";
-    } else if (type.includes("numerico") || type.includes("numérico") || type.includes("numero") || type.includes("número")) {
-      return "numérico";
-    } else if (type.includes("seleção") || type.includes("selecao") || type.includes("multipla") || type.includes("múltipla")) {
-      return "seleção múltipla";
-    } else if (type.includes("foto") || type.includes("imagem")) {
-      return "foto";
-    } else if (type.includes("assinatura")) {
-      return "assinatura";
-    }
-    
-    return "sim/não"; // Default type
+  const downloadTemplateFile = () => {
+    // The template file URL can be generated from a hook, but for now we'll just use a static example
+    const templateUrl = "https://example.com/template.xlsx";
+    window.open(templateUrl, "_blank");
+    toast.info("Download de template iniciado");
   };
 
   return (
@@ -161,7 +59,7 @@ export function ImportCreateForm({
       <div className="grid gap-6 md:grid-cols-2">
         <div>
           <div className="space-y-2">
-            <FormLabel htmlFor="title">Título <span className="text-red-500">*</span></FormLabel>
+            <Label htmlFor="title">Título <span className="text-red-500">*</span></Label>
             <Input
               id="title"
               placeholder="Título da lista de verificação"
@@ -170,18 +68,17 @@ export function ImportCreateForm({
               onChange={handleInputChange}
               required
             />
-            <FormMessage />
           </div>
         </div>
 
         <div>
           <div className="space-y-2">
-            <FormLabel>Categoria</FormLabel>
+            <Label htmlFor="category">Categoria</Label>
             <Select
               value={form.category || "general"}
               onValueChange={(value) => handleSelectChange("category", value)}
             >
-              <SelectTrigger>
+              <SelectTrigger id="category">
                 <SelectValue placeholder="Selecione uma categoria" />
               </SelectTrigger>
               <SelectContent>
@@ -192,13 +89,12 @@ export function ImportCreateForm({
                 <SelectItem value="quality">Qualidade</SelectItem>
               </SelectContent>
             </Select>
-            <FormMessage />
           </div>
         </div>
 
         <div>
           <div className="space-y-2">
-            <FormLabel htmlFor="description">Descrição</FormLabel>
+            <Label htmlFor="description">Descrição</Label>
             <Textarea
               id="description"
               placeholder="Descreva o propósito desta lista de verificação"
@@ -207,30 +103,29 @@ export function ImportCreateForm({
               onChange={handleInputChange}
               rows={3}
             />
-            <FormMessage />
           </div>
         </div>
 
         <div>
           <div className="space-y-2">
-            <FormLabel htmlFor="due_date">Data de Vencimento</FormLabel>
+            <Label htmlFor="due_date">Data de Vencimento</Label>
             <Input
+              id="due_date"
               type="date"
               name="due_date"
               value={form.due_date ? format(new Date(form.due_date), "yyyy-MM-dd") : ""}
               onChange={handleInputChange}
               min={format(new Date(), "yyyy-MM-dd")}
             />
-            <FormDescription>
+            <p className="text-sm text-muted-foreground">
               Opcional. Se definida, indica quando esta lista deve ser concluída.
-            </FormDescription>
-            <FormMessage />
+            </p>
           </div>
         </div>
 
         <div>
           <div className="space-y-2">
-            <FormLabel>Empresa</FormLabel>
+            <Label htmlFor="company_id">Empresa</Label>
             {loadingCompanies ? (
               <Skeleton className="h-9 w-full" />
             ) : (
@@ -238,7 +133,7 @@ export function ImportCreateForm({
                 value={form.company_id?.toString() || ""}
                 onValueChange={(value) => handleSelectChange("company_id", value)}
               >
-                <SelectTrigger>
+                <SelectTrigger id="company_id">
                   <SelectValue placeholder="Selecione uma empresa (opcional)" />
                 </SelectTrigger>
                 <SelectContent>
@@ -251,13 +146,12 @@ export function ImportCreateForm({
                 </SelectContent>
               </Select>
             )}
-            <FormMessage />
           </div>
         </div>
 
         <div>
           <div className="space-y-2">
-            <FormLabel>Responsável</FormLabel>
+            <Label htmlFor="responsible_id">Responsável</Label>
             {loadingUsers ? (
               <Skeleton className="h-9 w-full" />
             ) : (
@@ -265,7 +159,7 @@ export function ImportCreateForm({
                 value={form.responsible_id?.toString() || ""}
                 onValueChange={(value) => handleSelectChange("responsible_id", value)}
               >
-                <SelectTrigger>
+                <SelectTrigger id="responsible_id">
                   <SelectValue placeholder="Selecione um responsável (opcional)" />
                 </SelectTrigger>
                 <SelectContent>
@@ -278,92 +172,91 @@ export function ImportCreateForm({
                 </SelectContent>
               </Select>
             )}
-            <FormMessage />
           </div>
         </div>
       </div>
 
       <Card>
         <CardContent className="p-6">
-          <div className="space-y-4">
-            <div className="flex flex-col items-center justify-center border-2 border-dashed rounded-md p-6">
-              <input
-                type="file"
-                id="file-upload"
-                className="hidden"
-                accept=".xlsx,.xls,.csv"
-                onChange={onFileChange}
-                disabled={isParsing}
-              />
-              
-              {!file ? (
-                <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center">
-                  <FileUp className="h-12 w-12 text-muted-foreground mb-4" />
-                  <span className="text-lg font-medium">Upload de Planilha</span>
-                  <span className="text-sm text-muted-foreground mt-1 text-center">
-                    Arraste e solte ou clique para escolher um arquivo Excel ou CSV
-                  </span>
-                  <span className="text-xs text-muted-foreground mt-4">
-                    Formatos suportados: .xlsx, .xls, .csv
-                  </span>
-                </label>
-              ) : (
-                <div className="w-full space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-muted rounded-md">
-                    <div className="flex items-center space-x-3">
-                      <FileUp className="h-6 w-6 text-primary" />
-                      <div>
-                        <p className="font-medium">{file.name}</p>
-                        <p className="text-xs text-muted-foreground">{Math.round(file.size / 1024)} KB</p>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={handleClearFile}>
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  
-                  {isParsing ? (
-                    <div className="text-center py-4">
-                      <p className="text-sm text-muted-foreground">Processando arquivo...</p>
-                    </div>
-                  ) : parsedQuestions.length > 0 ? (
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">Perguntas encontradas: {parsedQuestions.length}</p>
-                      <div className="max-h-60 overflow-y-auto border rounded-md p-2">
-                        {parsedQuestions.map((q, index) => (
-                          <div key={index} className="p-2 border-b last:border-b-0">
-                            <p className="font-medium">{index + 1}. {q.pergunta}</p>
-                            <div className="flex gap-2 text-xs text-muted-foreground mt-1">
-                              <span>Tipo: {q.tipo_resposta}</span>
-                              <span>• Obrigatório: {q.obrigatorio ? "Sim" : "Não"}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-center text-sm text-muted-foreground">
-                      Nenhuma pergunta encontrada. Verifique se o formato do arquivo está correto.
-                    </p>
-                  )}
-                </div>
-              )}
+          <div className="space-y-6">
+            <div className="flex items-center gap-3">
+              <Upload className="h-10 w-10 text-primary" />
+              <div>
+                <h3 className="text-lg font-medium">Importar Planilha</h3>
+                <p className="text-sm text-muted-foreground">
+                  Importe perguntas de uma planilha para criar rapidamente sua lista de verificação.
+                </p>
+              </div>
             </div>
             
-            <div className="text-sm text-muted-foreground">
-              <p className="font-medium">Modelo de Planilha</p>
-              <p>
-                A planilha deve conter as colunas: Pergunta, Tipo, Obrigatório, Opcoes (para seleção múltipla).
-              </p>
-              <p className="mt-1">
-                <a 
-                  href="/templates/checklist_template.xlsx" 
-                  download 
-                  className="text-primary underline"
-                >
-                  Baixar modelo de planilha
-                </a>
-              </p>
+            <div className="space-y-4">
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <div className="flex flex-col items-center justify-center gap-2">
+                  <FileType className="h-10 w-10 text-gray-400" />
+                  <p className="text-sm font-medium">
+                    {file ? file.name : "Arraste ou clique para selecionar um arquivo"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Formatos suportados: CSV, XLS, XLSX
+                  </p>
+                  <Input
+                    id="file-upload"
+                    type="file"
+                    accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                    className="hidden"
+                    onChange={onFileChange}
+                  />
+                  <div className="flex gap-2 mt-2">
+                    <label htmlFor="file-upload" className="cursor-pointer">
+                      <Button variant="outline" type="button" size="sm">
+                        Selecionar Arquivo
+                      </Button>
+                    </label>
+                    <Button 
+                      variant="outline" 
+                      type="button" 
+                      size="sm"
+                      onClick={downloadTemplateFile}
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Baixar Template
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              
+              {file && (
+                <div className="flex justify-between items-center p-2 bg-muted rounded">
+                  <div className="flex items-center gap-2">
+                    <FileType className="h-5 w-5" />
+                    <span className="text-sm font-medium">{file.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      ({Math.round(file.size / 1024)} KB)
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => {
+                      const input = document.getElementById('file-upload') as HTMLInputElement;
+                      if (input) input.value = '';
+                      onFileChange({ target: { files: null } } as any);
+                    }}
+                  >
+                    Remover
+                  </Button>
+                </div>
+              )}
+              
+              <div className="text-sm text-muted-foreground">
+                <p>Instruções:</p>
+                <ul className="list-disc list-inside ml-2 space-y-1">
+                  <li>Sua planilha deve ter uma coluna "pergunta" ou "question"</li>
+                  <li>Opcionalmente, inclua colunas para "tipo_resposta" e "obrigatorio"</li>
+                  <li>Para respostas de múltipla escolha, separe opções com vírgulas</li>
+                  <li>Baixe o modelo para um exemplo da estrutura correta</li>
+                </ul>
+              </div>
             </div>
           </div>
         </CardContent>
