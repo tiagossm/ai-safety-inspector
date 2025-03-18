@@ -1,7 +1,6 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  FormField,
   FormItem,
   FormLabel,
   FormControl,
@@ -66,166 +65,127 @@ export function AICreateForm({
     <div className="space-y-6">
       <div className="grid gap-6 md:grid-cols-2">
         <div>
-          <FormField
-            name="title"
-            render={() => (
-              <FormItem>
-                <FormLabel>Título <span className="text-red-500">*</span></FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="Título da lista de verificação"
-                    name="title"
-                    value={form.title || ""}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="space-y-2">
+            <FormLabel htmlFor="title">Título <span className="text-red-500">*</span></FormLabel>
+            <Input
+              id="title"
+              placeholder="Título da lista de verificação"
+              name="title"
+              value={form.title || ""}
+              onChange={handleInputChange}
+              required
+            />
+            <FormMessage />
+          </div>
         </div>
 
         <div>
-          <FormField
-            name="category"
-            render={() => (
-              <FormItem>
-                <FormLabel>Categoria</FormLabel>
-                <FormControl>
-                  <Select
-                    value={form.category || "general"}
-                    onValueChange={(value) => handleSelectChange("category", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="general">Geral</SelectItem>
-                      <SelectItem value="safety">Segurança</SelectItem>
-                      <SelectItem value="maintenance">Manutenção</SelectItem>
-                      <SelectItem value="operational">Operacional</SelectItem>
-                      <SelectItem value="quality">Qualidade</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="space-y-2">
+            <FormLabel htmlFor="category">Categoria</FormLabel>
+            <Select
+              value={form.category || "general"}
+              onValueChange={(value) => handleSelectChange("category", value)}
+            >
+              <SelectTrigger id="category">
+                <SelectValue placeholder="Selecione uma categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="general">Geral</SelectItem>
+                <SelectItem value="safety">Segurança</SelectItem>
+                <SelectItem value="maintenance">Manutenção</SelectItem>
+                <SelectItem value="operational">Operacional</SelectItem>
+                <SelectItem value="quality">Qualidade</SelectItem>
+              </SelectContent>
+            </Select>
+            <FormMessage />
+          </div>
         </div>
 
         <div>
-          <FormField
-            name="description"
-            render={() => (
-              <FormItem>
-                <FormLabel>Descrição</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Descreva o propósito desta lista de verificação"
-                    name="description"
-                    value={form.description || ""}
-                    onChange={handleInputChange}
-                    rows={3}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="space-y-2">
+            <FormLabel htmlFor="description">Descrição</FormLabel>
+            <Textarea
+              id="description"
+              placeholder="Descreva o propósito desta lista de verificação"
+              name="description"
+              value={form.description || ""}
+              onChange={handleInputChange}
+              rows={3}
+            />
+            <FormMessage />
+          </div>
         </div>
 
         <div>
-          <FormField
-            name="due_date"
-            render={() => (
-              <FormItem>
-                <FormLabel>Data de Vencimento</FormLabel>
-                <FormControl>
-                  <Input
-                    type="date"
-                    name="due_date"
-                    value={form.due_date ? format(new Date(form.due_date), "yyyy-MM-dd") : ""}
-                    onChange={handleInputChange}
-                    min={format(new Date(), "yyyy-MM-dd")}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Opcional. Se definida, indica quando esta lista deve ser concluída.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="space-y-2">
+            <FormLabel htmlFor="due_date">Data de Vencimento</FormLabel>
+            <Input
+              id="due_date"
+              type="date"
+              name="due_date"
+              value={form.due_date ? format(new Date(form.due_date), "yyyy-MM-dd") : ""}
+              onChange={handleInputChange}
+              min={format(new Date(), "yyyy-MM-dd")}
+            />
+            <FormDescription>
+              Opcional. Se definida, indica quando esta lista deve ser concluída.
+            </FormDescription>
+            <FormMessage />
+          </div>
         </div>
 
         <div>
-          <FormField
-            name="company_id"
-            render={() => (
-              <FormItem>
-                <FormLabel>Empresa</FormLabel>
-                <FormControl>
-                  {loadingCompanies ? (
-                    <Skeleton className="h-9 w-full" />
-                  ) : (
-                    <Select
-                      value={form.company_id?.toString() || ""}
-                      onValueChange={(value) => handleSelectChange("company_id", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione uma empresa (opcional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">Nenhuma empresa</SelectItem>
-                        {companies.map((company) => (
-                          <SelectItem key={company.id} value={company.id}>
-                            {company.fantasy_name || company.cnpj}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+          <div className="space-y-2">
+            <FormLabel htmlFor="company_id">Empresa</FormLabel>
+            {loadingCompanies ? (
+              <Skeleton className="h-9 w-full" />
+            ) : (
+              <Select
+                value={form.company_id?.toString() || ""}
+                onValueChange={(value) => handleSelectChange("company_id", value)}
+              >
+                <SelectTrigger id="company_id">
+                  <SelectValue placeholder="Selecione uma empresa (opcional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Nenhuma empresa</SelectItem>
+                  {companies.map((company) => (
+                    <SelectItem key={company.id} value={company.id}>
+                      {company.fantasy_name || company.cnpj}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
-          />
+            <FormMessage />
+          </div>
         </div>
 
         <div>
-          <FormField
-            name="responsible_id"
-            render={() => (
-              <FormItem>
-                <FormLabel>Responsável</FormLabel>
-                <FormControl>
-                  {loadingUsers ? (
-                    <Skeleton className="h-9 w-full" />
-                  ) : (
-                    <Select
-                      value={form.responsible_id?.toString() || ""}
-                      onValueChange={(value) => handleSelectChange("responsible_id", value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um responsável (opcional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="">Nenhum responsável</SelectItem>
-                        {users.map((user) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.name || user.email}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+          <div className="space-y-2">
+            <FormLabel htmlFor="responsible_id">Responsável</FormLabel>
+            {loadingUsers ? (
+              <Skeleton className="h-9 w-full" />
+            ) : (
+              <Select
+                value={form.responsible_id?.toString() || ""}
+                onValueChange={(value) => handleSelectChange("responsible_id", value)}
+              >
+                <SelectTrigger id="responsible_id">
+                  <SelectValue placeholder="Selecione um responsável (opcional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Nenhum responsável</SelectItem>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.name || user.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
-          />
+            <FormMessage />
+          </div>
         </div>
       </div>
 

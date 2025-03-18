@@ -36,11 +36,9 @@ export const createBucketIfNeeded = async (bucketName: string): Promise<boolean>
     
     console.log(`Successfully created bucket ${bucketName}`);
     
-    // Update bucket policies to allow public access
-    // The getPublicUrl method doesn't return an error property, so we should just check
-    // if we can get a public URL without checking for an error
+    // The getPublicUrl method doesn't return an error property
     try {
-      await supabase.storage.from(bucketName).getPublicUrl('test');
+      supabase.storage.from(bucketName).getPublicUrl('test');
       return true;
     } catch (policyError) {
       console.warn(`Bucket created but could not verify public access: ${policyError instanceof Error ? policyError.message : String(policyError)}`);

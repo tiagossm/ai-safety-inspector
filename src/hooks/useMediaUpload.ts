@@ -42,7 +42,7 @@ export function useMediaUpload() {
         .from(bucketName)
         .upload(filePath, file, {
           cacheControl: "3600",
-          upsert: false
+          upsert: true
         });
 
       clearInterval(progressInterval);

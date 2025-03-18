@@ -27,6 +27,9 @@ export function ChecklistMediaUpload({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
   
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
@@ -73,9 +76,24 @@ export function ChecklistMediaUpload({
       } else if (mediaType === "audio") {
         // Show audio recording UI
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        // Here you would implement audio recording logic
-        toast.info("Gravação de áudio iniciada");
         streamRef.current = stream;
+        
+        // Create media recorder for audio
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        recordedChunksRef.current = [];
+        
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            recordedChunksRef.current.push(e.data);
+          }
+        };
+        
+        mediaRecorder.onstop = handleStopRecording;
+        
+        mediaRecorder.start();
+        setIsRecording(true);
+        toast.info("Gravação de áudio iniciada");
       } else if (mediaType === "video") {
         // Show video recording UI
         const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -87,11 +105,56 @@ export function ChecklistMediaUpload({
           videoRef.current.srcObject = stream;
           streamRef.current = stream;
         }
+        
+        // Create media recorder for video
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        recordedChunksRef.current = [];
+        
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            recordedChunksRef.current.push(e.data);
+          }
+        };
+        
+        mediaRecorder.onstop = handleStopRecording;
+        
+        mediaRecorder.start();
+        setIsRecording(true);
         toast.info("Gravação de vídeo iniciada");
       }
     } catch (error) {
       console.error("Erro ao acessar dispositivos de mídia:", error);
       toast.error("Não foi possível acessar sua câmera ou microfone");
+    }
+  };
+  
+  const handleStopRecording = async () => {
+    if (recordedChunksRef.current.length === 0) return;
+    
+    try {
+      const blob = new Blob(recordedChunksRef.current, {
+        type: mediaType === "audio" ? "audio/webm" : "video/webm"
+      });
+      
+      // Create a File from the blob
+      const file = new File(
+        [blob], 
+        `recorded_${mediaType}_${Date.now()}.webm`, 
+        { type: mediaType === "audio" ? "audio/webm" : "video/webm" }
+      );
+      
+      const result = await uploadFile(file);
+      if (result && result.url) {
+        onMediaUploaded(result.url, mediaType);
+        toast.success(`${mediaType === "audio" ? "Áudio" : "Vídeo"} enviado com sucesso!`);
+      }
+    } catch (error) {
+      console.error(`Erro ao fazer upload do ${mediaType}:`, error);
+      toast.error(`Falha ao enviar ${mediaType}`);
+    } finally {
+      recordedChunksRef.current = [];
+      setIsRecording(false);
     }
   };
   
@@ -137,6 +200,10 @@ export function ChecklistMediaUpload({
   };
   
   const stopCapture = () => {
+    if (isRecording && mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+    }
+    
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
@@ -145,6 +212,8 @@ export function ChecklistMediaUpload({
         videoRef.current.srcObject = null;
       }
     }
+    
+    setIsRecording(false);
   };
   
   const handleRemoveMedia = (url: string) => {
@@ -228,7 +297,10 @@ export function ChecklistMediaUpload({
             <Button 
               variant={mediaType === "image" ? "default" : "outline"} 
               size="sm" 
-              onClick={() => setMediaType("image")}
+              onClick={() => {
+                stopCapture();
+                setMediaType("image");
+              }}
             >
               <Camera className="h-4 w-4 mr-2" />
               Foto
@@ -236,7 +308,10 @@ export function ChecklistMediaUpload({
             <Button 
               variant={mediaType === "audio" ? "default" : "outline"} 
               size="sm" 
-              onClick={() => setMediaType("audio")}
+              onClick={() => {
+                stopCapture();
+                setMediaType("audio");
+              }}
             >
               <Mic className="h-4 w-4 mr-2" />
               Áudio
@@ -244,7 +319,10 @@ export function ChecklistMediaUpload({
             <Button 
               variant={mediaType === "video" ? "default" : "outline"} 
               size="sm" 
-              onClick={() => setMediaType("video")}
+              onClick={() => {
+                stopCapture();
+                setMediaType("video");
+              }}
             >
               <Video className="h-4 w-4 mr-2" />
               Vídeo
@@ -271,13 +349,50 @@ export function ChecklistMediaUpload({
                 </div>
               )}
               
-              <Button 
-                variant="outline"
-                onClick={stopCapture}
-                className="w-full"
-              >
-                Cancelar
-              </Button>
+              {(mediaType === "audio" || mediaType === "video") && (
+                <div className="relative">
+                  {mediaType === "video" && (
+                    <video 
+                      ref={videoRef} 
+                      autoPlay 
+                      playsInline 
+                      className="w-full h-48 object-cover rounded-md"
+                    />
+                  )}
+                  {mediaType === "audio" && (
+                    <div className="w-full h-24 flex items-center justify-center bg-muted rounded-md">
+                      <AudioLines className="h-12 w-12 animate-pulse text-primary" />
+                    </div>
+                  )}
+                  <div className="flex justify-center mt-2">
+                    {isRecording ? (
+                      <Button 
+                        variant="destructive"
+                        onClick={stopCapture}
+                      >
+                        Parar Gravação
+                      </Button>
+                    ) : (
+                      <Button 
+                        variant="default"
+                        onClick={startCapture}
+                      >
+                        Iniciar Gravação
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {!isRecording && (
+                <Button 
+                  variant="outline"
+                  onClick={stopCapture}
+                  className="w-full"
+                >
+                  Cancelar
+                </Button>
+              )}
             </div>
           ) : (
             <Button 
