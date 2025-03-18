@@ -138,7 +138,10 @@ export function useChecklistAI() {
           pergunta: categoryQuestions[i],
           tipo_resposta: "sim/não",
           obrigatorio: true,
-          ordem: i + 1
+          ordem: i + 1,
+          permite_audio: true,
+          permite_video: true,
+          permite_foto: true
         });
       }
       
@@ -157,7 +160,10 @@ export function useChecklistAI() {
           pergunta,
           tipo_resposta: questionType,
           obrigatorio: i % 3 === 0, // Every third question is required
-          ordem: i + 1
+          ordem: i + 1,
+          permite_audio: true,
+          permite_video: true,
+          permite_foto: true
         });
       }
       
@@ -171,7 +177,10 @@ export function useChecklistAI() {
             pergunta: question.pergunta,
             tipo_resposta: question.tipo_resposta,
             obrigatorio: question.obrigatorio,
-            ordem: question.ordem
+            ordem: question.ordem,
+            permite_audio: question.permite_audio,
+            permite_video: question.permite_video,
+            permite_foto: question.permite_foto
           });
           
         if (itemError) {

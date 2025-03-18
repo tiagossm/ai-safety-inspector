@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Image, Video, Mic } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface AddChecklistItemFormProps {
@@ -25,7 +25,10 @@ export default function AddChecklistItemForm({
     pergunta: "",
     tipo_resposta: "sim/não",
     obrigatorio: true,
-    ordem: lastOrder
+    ordem: lastOrder,
+    permite_audio: false,
+    permite_video: false,
+    permite_foto: true
   });
 
   const handleAddItem = () => {
@@ -37,7 +40,10 @@ export default function AddChecklistItemForm({
       pergunta: "",
       tipo_resposta: "sim/não",
       obrigatorio: true,
-      ordem: lastOrder + 1
+      ordem: lastOrder + 1,
+      permite_audio: false,
+      permite_video: false,
+      permite_foto: true
     });
   };
 
@@ -78,13 +84,57 @@ export default function AddChecklistItemForm({
             </Select>
           </div>
           
-          <div className="flex items-center space-x-2 md:justify-end md:h-10">
-            <Switch
-              id="new-required"
-              checked={newItem.obrigatorio}
-              onCheckedChange={(checked) => setNewItem({...newItem, obrigatorio: checked})}
-            />
-            <Label htmlFor="new-required">Obrigatório</Label>
+          <div className="flex flex-col space-y-2">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="new-required"
+                checked={newItem.obrigatorio}
+                onCheckedChange={(checked) => setNewItem({...newItem, obrigatorio: checked})}
+              />
+              <Label htmlFor="new-required">Obrigatório</Label>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="new-permite-foto"
+                checked={newItem.permite_foto}
+                onCheckedChange={(checked) => setNewItem({...newItem, permite_foto: checked})}
+              />
+              <Label htmlFor="new-permite-foto">
+                <div className="flex items-center">
+                  <Image className="h-4 w-4 mr-1" />
+                  Permitir Foto
+                </div>
+              </Label>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="new-permite-video"
+                checked={newItem.permite_video}
+                onCheckedChange={(checked) => setNewItem({...newItem, permite_video: checked})}
+              />
+              <Label htmlFor="new-permite-video">
+                <div className="flex items-center">
+                  <Video className="h-4 w-4 mr-1" />
+                  Permitir Vídeo
+                </div>
+              </Label>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="new-permite-audio"
+                checked={newItem.permite_audio}
+                onCheckedChange={(checked) => setNewItem({...newItem, permite_audio: checked})}
+              />
+              <Label htmlFor="new-permite-audio">
+                <div className="flex items-center">
+                  <Mic className="h-4 w-4 mr-1" />
+                  Permitir Áudio
+                </div>
+              </Label>
+            </div>
           </div>
         </div>
       </div>

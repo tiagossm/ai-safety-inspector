@@ -1,15 +1,25 @@
 
 import { useState } from "react";
 
+interface ChecklistQuestion {
+  text: string;
+  type: string;
+  required: boolean;
+  allowPhoto: boolean;
+  allowVideo: boolean;
+  allowAudio: boolean;
+}
+
 export function useChecklistQuestions() {
-  const [questions, setQuestions] = useState<Array<{
-    text: string,
-    type: string,
-    required: boolean
-  }>>([{ text: "", type: "texto", required: true }]);
+  const [questions, setQuestions] = useState<ChecklistQuestion[]>([
+    { text: "", type: "sim/não", required: true, allowPhoto: true, allowVideo: false, allowAudio: false }
+  ]);
 
   const handleAddQuestion = () => {
-    setQuestions([...questions, { text: "", type: "texto", required: true }]);
+    setQuestions([
+      ...questions,
+      { text: "", type: "sim/não", required: true, allowPhoto: true, allowVideo: false, allowAudio: false }
+    ]);
   };
 
   const handleRemoveQuestion = (index: number) => {
@@ -18,9 +28,16 @@ export function useChecklistQuestions() {
     setQuestions(newQuestions);
   };
 
-  const handleQuestionChange = (index: number, field: string, value: any) => {
+  const handleQuestionChange = (
+    index: number,
+    field: keyof ChecklistQuestion,
+    value: string | boolean
+  ) => {
     const newQuestions = [...questions];
-    newQuestions[index] = { ...newQuestions[index], [field]: value };
+    newQuestions[index] = {
+      ...newQuestions[index],
+      [field]: value
+    };
     setQuestions(newQuestions);
   };
 

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ClipboardCheck, FileText, Trash2 } from "lucide-react";
+import { ClipboardCheck, FileText, Trash2, Video, Image, Mic } from "lucide-react";
 
 interface ChecklistItemsListProps {
   items: ChecklistItem[];
@@ -76,16 +76,69 @@ export default function ChecklistItemsList({
                 </Select>
               </div>
               
-              <div className="flex items-center space-x-2 md:justify-end md:h-10">
-                <Switch
-                  id={`required-${item.id}`}
-                  checked={item.obrigatorio}
-                  onCheckedChange={(checked) => onItemChange({
-                    ...item,
-                    obrigatorio: checked
-                  })}
-                />
-                <Label htmlFor={`required-${item.id}`}>Obrigatório</Label>
+              <div className="flex flex-col space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id={`required-${item.id}`}
+                    checked={item.obrigatorio}
+                    onCheckedChange={(checked) => onItemChange({
+                      ...item,
+                      obrigatorio: checked
+                    })}
+                  />
+                  <Label htmlFor={`required-${item.id}`}>Obrigatório</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id={`permite-foto-${item.id}`}
+                    checked={item.permite_foto}
+                    onCheckedChange={(checked) => onItemChange({
+                      ...item,
+                      permite_foto: checked
+                    })}
+                  />
+                  <Label htmlFor={`permite-foto-${item.id}`}>
+                    <div className="flex items-center">
+                      <Image className="h-4 w-4 mr-1" />
+                      Permitir Foto
+                    </div>
+                  </Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id={`permite-video-${item.id}`}
+                    checked={item.permite_video}
+                    onCheckedChange={(checked) => onItemChange({
+                      ...item,
+                      permite_video: checked
+                    })}
+                  />
+                  <Label htmlFor={`permite-video-${item.id}`}>
+                    <div className="flex items-center">
+                      <Video className="h-4 w-4 mr-1" />
+                      Permitir Vídeo
+                    </div>
+                  </Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id={`permite-audio-${item.id}`}
+                    checked={item.permite_audio}
+                    onCheckedChange={(checked) => onItemChange({
+                      ...item,
+                      permite_audio: checked
+                    })}
+                  />
+                  <Label htmlFor={`permite-audio-${item.id}`}>
+                    <div className="flex items-center">
+                      <Mic className="h-4 w-4 mr-1" />
+                      Permitir Áudio
+                    </div>
+                  </Label>
+                </div>
               </div>
             </div>
           </div>

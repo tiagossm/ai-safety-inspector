@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -236,17 +235,20 @@ export function ImportCreateForm({
             <div className="text-sm text-gray-500">
               <p>O arquivo deve seguir o formato padrão com as colunas:</p>
               <ul className="list-disc pl-5 mt-1">
-                <li><strong>Pergunta</strong> (obrigatório)</li>
-                <li><strong>Tipo de Resposta</strong> (obrigatório)</li>
-                <li><strong>Obrigatório</strong> (sim/não)</li>
-                <li><strong>Ordem</strong></li>
-                <li><strong>Opções</strong> (separadas por vírgula)</li>
-                <li><strong>Permite Áudio</strong> (sim/não)</li>
-                <li><strong>Permite Vídeo</strong> (sim/não)</li>
-                <li><strong>Permite Foto</strong> (sim/não)</li>
+                <li><strong>Pergunta</strong> (obrigatório) - Texto da pergunta</li>
+                <li><strong>Tipo de Resposta</strong> (obrigatório) - Formato de resposta</li>
+                <li><strong>Obrigatório</strong> (sim/não) - Se a resposta é obrigatória</li>
+                <li><strong>Ordem</strong> - Ordem de exibição da pergunta</li>
+                <li><strong>Opções</strong> - Para múltipla escolha, separadas por vírgula</li>
+                <li><strong>Permite Áudio</strong> (sim/não) - Se permite anexar áudio</li>
+                <li><strong>Permite Vídeo</strong> (sim/não) - Se permite anexar vídeo</li>
+                <li><strong>Permite Foto</strong> (sim/não) - Se permite anexar foto</li>
               </ul>
               <p className="mt-2 text-blue-600">
-                <strong>Tipos de resposta aceitos:</strong> Texto, Numérico, Múltipla Escolha, Data, Sim/Não
+                <strong>Tipos de resposta aceitos:</strong> Texto, Numérico, Múltipla Escolha, Data, Sim/Não, Foto, Assinatura
+              </p>
+              <p className="mt-1 text-blue-600">
+                <strong>Colunas de multimídia:</strong> As últimas três colunas permitem que o usuário anexe evidências em formato de áudio, vídeo ou foto à resposta
               </p>
             </div>
           </div>

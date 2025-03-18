@@ -15,7 +15,14 @@ export function useManualSubmit() {
 
   const submitManualChecklist = async (
     form: NewChecklist, 
-    questions: Array<{ text: string; type: string; required: boolean }>
+    questions: Array<{ 
+      text: string; 
+      type: string; 
+      required: boolean;
+      allowPhoto?: boolean;
+      allowVideo?: boolean;
+      allowAudio?: boolean;
+    }>
   ) => {
     try {
       console.log("Submitting manual form:", form);
@@ -59,9 +66,9 @@ export function useManualSubmit() {
                 tipo_resposta: q.type,
                 obrigatorio: q.required,
                 ordem: i,
-                permite_audio: true,
-                permite_video: true,
-                permite_foto: true
+                permite_audio: q.allowAudio || false,
+                permite_video: q.allowVideo || false,
+                permite_foto: q.allowPhoto || false
               });
           }
           return Promise.resolve(null);
