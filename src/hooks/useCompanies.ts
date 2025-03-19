@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -60,28 +61,37 @@ export function useCompanies() {
       // Se sua tabela NÃO tem fantasy_name, remova do select ou substitua por outra coluna real:
       const { data, error } = await supabase
         .from("companies")
-        .select("id, name, cnpj, status, contact_phone, created_at, metadata") 
+        .select("id, fantasy_name, cnpj, status, contact_phone, created_at, metadata") 
         .eq("status", "active")
         .order("created_at", { ascending: false });
 
       if (error) throw error;
 
       // Mapeia as empresas para a tipagem que o front espera
-      const companiesWithMetadata = (data || []).map((company) => ({
-        ...company,
-        // Força o cast para CompanyStatus, caso no BD esteja como string
-        status: company.status as CompanyStatus,
-        // Se metadata vier como objeto JSON, tipamos como Company['metadata']
-        metadata: company.metadata ? (company.metadata as Company["metadata"]) : null,
-      }));
+      const companiesWithMetadata = (data || []).map((company) => {
+        // Criamos um objeto fortemente tipado
+        const typedCompany: Company = {
+          id: company.id,
+          fantasy_name: company.fantasy_name,
+          cnpj: company.cnpj,
+          // Força o cast para CompanyStatus, caso no BD esteja como string
+          status: company.status as CompanyStatus,
+          contact_phone: company.contact_phone,
+          created_at: company.created_at,
+          // Se metadata vier como objeto JSON, tipamos como Company['metadata']
+          metadata: company.metadata ? (company.metadata as Company["metadata"]) : null,
+        };
+
+        return typedCompany;
+      });
 
       // Valida cada empresa e mostra warnings no console
       companiesWithMetadata.forEach((company) => {
         const errors = validateCompanyData(company);
         if (errors.length > 0) {
           console.warn(
-            // Substituir por company.name, caso fantasy_name não exista:
-            `Problemas encontrados na empresa ${company.name}:`,
+            // Substituir por company.fantasy_name, caso fantasy_name não exista:
+            `Problemas encontrados na empresa ${company.fantasy_name || "Sem nome"}:`,
             errors
           );
         }
@@ -103,7 +113,6 @@ export function useCompanies() {
 
   /**
    * Filtra a lista de empresas pelo termo de busca e tipo de busca.
-   * Substituímos 'fantasy_name' por 'name' (ou outra coluna que você tenha).
    */
   const filterCompanies = () => {
     if (!searchTerm) {
@@ -115,8 +124,8 @@ export function useCompanies() {
 
     const filtered = companies.filter((company) => {
       if (searchType === "name") {
-        // Se não existe 'fantasy_name', use 'name' ou outra coluna:
-        return company.name?.toLowerCase().includes(searchTerm.toLowerCase());
+        // Use fantasy_name para a busca por nome
+        return company.fantasy_name?.toLowerCase().includes(searchTerm.toLowerCase());
       } else {
         // Busca por CNPJ
         return company.cnpj.includes(searchTerm.replace(/\D/g, ""));
