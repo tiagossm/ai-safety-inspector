@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -230,6 +229,7 @@ export function useChecklistAI() {
         return false;
       }
 
+      // Log form details for debugging
       console.log("🔹 Preparando requisição para IA:", {
         prompt: aiPrompt,
         num_questions: numQuestions,
@@ -250,9 +250,26 @@ export function useChecklistAI() {
         return false;
       }
 
-      if (form.company_id && !isValidUUID(form.company_id)) {
-        console.warn("⚠️ ID da empresa inválido ou indefinido. Continuando sem empresa...");
-        form.company_id = null;
+      // Validate company_id if present
+      if (form.company_id) {
+        if (!isValidUUID(form.company_id)) {
+          console.warn("⚠️ ID da empresa inválido:", form.company_id);
+          form.company_id = null;
+        } else {
+          // Verify the company exists before continuing
+          const { data: companyData, error: companyError } = await supabase
+            .from('companies')
+            .select('id')
+            .eq('id', form.company_id)
+            .single();
+            
+          if (companyError || !companyData) {
+            console.warn("⚠️ Empresa não encontrada. Continuando sem empresa...");
+            form.company_id = null;
+          } else {
+            console.log("✅ Empresa validada:", companyData.id);
+          }
+        }
       }
 
       // 📌 Criar checklist na base de dados
@@ -306,26 +323,56 @@ export function useChecklistAI() {
       });
       
       // 🔹 Inserir perguntas no banco
-      const dbQuestions = questions.map((q, idx) => ({
-        checklist_id: checklist.id,
-        pergunta: q.text,
-        tipo_resposta: normalizeResponseType(q.type), // se precisar converter
-        obrigatorio: q.required,
-        ordem: idx + 1,
-        opcoes: q.options,
-      }));
+      const dbQuestions = questions.map((q, idx) => {
+        // Validate and structure the question for database insertion
+        if (!q.text || !q.type) {
+          console.warn(`⚠️ Pulando pergunta ${idx + 1} pois está incompleta:`, q);
+          return null;
+        }
+        
+        // Ensure proper type mapping
+        const dbType = normalizeResponseType(q.type);
+        
+        // For multiple choice, ensure options exist
+        if (dbType === 'multiple_choice' && (!q.options || !Array.isArray(q.options) || q.options.length === 0)) {
+          console.warn(`⚠️ Adicionando opções padrão para pergunta de múltipla escolha ${idx + 1}:`, q.text);
+          q.options = ["Opção 1", "Opção 2", "Opção 3"];
+        }
+        
+        return {
+          checklist_id: checklist.id,
+          pergunta: q.text,
+          tipo_resposta: dbType,
+          obrigatorio: q.required,
+          ordem: idx + 1,
+          opcoes: q.options,
+          // Store group info in the hint field as JSON
+          hint: JSON.stringify({
+            groupId: q.groupId,
+            groupTitle: defaultGroups.find(g => g.id === q.groupId)?.title || 'Geral',
+            groupIndex: defaultGroups.findIndex(g => g.id === q.groupId)
+          })
+        };
+      }).filter(Boolean); // Remove any null entries
 
       // Log the questions being created to help with debugging
       console.log("Inserting questions with these types:", dbQuestions.map(q => q.tipo_resposta));
 
-      // 📌 Inserir perguntas no banco
-      const { error: questionError } = await supabase
-        .from("checklist_itens")
-        .insert(dbQuestions);
+      if (dbQuestions.length === 0) {
+        console.warn("⚠️ Nenhuma pergunta válida para inserir");
+        toast.warning("Não foi possível gerar perguntas válidas. Verifique o prompt.");
+      } else {
+        // 📌 Inserir perguntas no banco
+        const { error: questionError } = await supabase
+          .from("checklist_itens")
+          .insert(dbQuestions);
 
-      if (questionError) {
-        console.error("❌ Erro ao inserir perguntas:", questionError);
-        toast.error(`Erro ao adicionar perguntas: ${questionError.message}`);
+        if (questionError) {
+          console.error("❌ Erro ao inserir perguntas:", questionError);
+          toast.error(`Erro ao adicionar perguntas: ${questionError.message}`);
+        } else {
+          console.log("✅ Perguntas inseridas com sucesso:", dbQuestions.length);
+        }
       }
 
       toast.success(`Checklist gerado com sucesso! Revise antes de salvar.`);

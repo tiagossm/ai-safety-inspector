@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { ChecklistEditor } from "@/components/checklists/ChecklistEditor";
 import { useNavigate, useParams } from "react-router-dom";
@@ -9,11 +10,12 @@ export default function ChecklistEditorPage() {
   const [editorData, setEditorData] = useState<any>(null);
   const navigate = useNavigate();
   const { id } = useParams<{ id?: string }>();
-  const checklistQuery = useChecklistById(id !== "editor" ? id || "" : "");
+  const isEditorMode = id === "editor";
+  const checklistQuery = useChecklistById(isEditorMode ? "" : id || "");
 
   useEffect(() => {
     // Special case for the editor route
-    if (id === "editor") {
+    if (isEditorMode) {
       // Get the editor data from sessionStorage
       const storedData = sessionStorage.getItem('checklistEditorData');
       
@@ -65,7 +67,36 @@ export default function ChecklistEditorPage() {
               title: groupId === "default" ? "Geral" : `Grupo ${groupId.split('-')[1] || ''}`,
               questions
             }));
+          } else {
+            // If no groupIds, create a default group with all questions
+            questionGroups = [{
+              id: "group-default",
+              title: "Geral",
+              questions: parsedData.questions
+            }];
           }
+        }
+        
+        // Validate and normalize questions to ensure they have all required fields
+        if (questionGroups.length > 0) {
+          questionGroups = questionGroups.map(group => ({
+            ...group,
+            questions: group.questions.map((q: any) => ({
+              text: q.text || "",
+              type: q.type || "sim/não",
+              required: q.required !== undefined ? q.required : true,
+              allowPhoto: q.allowPhoto || false,
+              allowVideo: q.allowVideo || false,
+              allowAudio: q.allowAudio || false,
+              options: Array.isArray(q.options) ? q.options : 
+                      (q.type === "múltipla escolha" ? ["Opção 1", "Opção 2"] : undefined),
+              hint: q.hint || "",
+              weight: q.weight || 1,
+              parentId: q.parentId || null,
+              conditionValue: q.conditionValue || null,
+              groupId: group.id
+            }))
+          }));
         }
         
         // Update the editorData with groups

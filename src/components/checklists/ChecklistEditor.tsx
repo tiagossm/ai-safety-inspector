@@ -290,17 +290,41 @@ export function ChecklistEditor({
         
         const promises = questionsToSave.map((q, i) => {
           if (q.text.trim()) {
+            if (!q.text || !q.type) {
+              console.error("Invalid question data:", q);
+              return Promise.resolve(null);
+            }
+            
             const dbType = normalizeResponseType(q.type);
+            
+            if (dbType === "multiple_choice" && (!q.options || !Array.isArray(q.options) || q.options.length === 0)) {
+              console.error("Multiple choice question without valid options:", q);
+              toast.warning(`Pergunta de múltipla escolha sem opções válidas: "${q.text}"`);
+            }
+            
+            let groupTitle = "";
+            let groupIndex = -1;
+            
+            if (q.groupId) {
+              const group = groups.find(g => g.id === q.groupId);
+              if (group) {
+                groupTitle = group.title;
+                groupIndex = groups.findIndex(g => g.id === q.groupId);
+              }
+            }
             
             const groupMetadata = q.groupId 
               ? JSON.stringify({
                   groupId: q.groupId,
-                  groupTitle: groups.find(g => g.id === q.groupId)?.title || '',
-                  groupIndex: groups.findIndex(g => g.id === q.groupId)
+                  groupTitle: groupTitle,
+                  groupIndex: groupIndex
                 })
               : null;
             
             const finalHint = q.hint || groupMetadata;
+            
+            console.log(`Saving question ${i}: "${q.text}" (${dbType})`, 
+              q.options ? `with options: ${JSON.stringify(q.options)}` : "without options");
             
             return supabase
               .from("checklist_itens")
@@ -328,7 +352,7 @@ export function ChecklistEditor({
         
         const errors = results.filter(r => r && r.error);
         if (errors.length > 0) {
-          console.warn(`${errors.length} questions failed to save:`, errors);
+          console.error(`${errors.length} questions failed to save:`, errors);
           toast.warning(`${errors.length} perguntas não puderam ser salvas.`);
         }
       }
