@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { NewChecklist, Checklist } from "@/types/checklist";
@@ -39,7 +38,6 @@ interface ChecklistEditorProps {
   onCancel?: () => void;
 }
 
-// Define the question type to avoid type errors
 type Question = {
   text: string;
   type: string;
@@ -55,16 +53,13 @@ type Question = {
   groupId?: string;
 };
 
-// Define the group type
 type QuestionGroup = {
   id: string;
   title: string;
   questions: Question[];
 };
 
-// Helper function to convert UI-friendly type to database type
 const normalizeResponseType = (type: string): string => {
-  // Map of user-friendly types to database-compatible types
   const typeMap: Record<string, string> = {
     'sim/não': 'yes_no',
     'múltipla escolha': 'multiple_choice',
@@ -74,7 +69,7 @@ const normalizeResponseType = (type: string): string => {
     'assinatura': 'signature'
   };
 
-  return typeMap[type] || type; // Return original if no mapping found
+  return typeMap[type] || type;
 };
 
 export function ChecklistEditor({
@@ -85,19 +80,13 @@ export function ChecklistEditor({
   onSave,
   onCancel
 }: ChecklistEditorProps) {
-  // Transform the initialChecklist to ensure both status_checklist and status are properly typed
   const transformedInitialChecklist: Partial<Checklist> = {
     ...initialChecklist,
-    // Cast status_checklist to the specific union type expected by Checklist
     status_checklist: (initialChecklist.status_checklist as "ativo" | "inativo") || "ativo",
-    // Cast status to the specific union type expected by Checklist
     status: (initialChecklist.status as "pendente" | "em_andamento" | "concluido") || "pendente"
   };
-  
-  // Now use the transformed object with useState
+
   const [checklist, setChecklist] = useState<Partial<Checklist>>(transformedInitialChecklist);
-  
-  // Ensure all questions have required properties
   const [questions, setQuestions] = useState<Question[]>(
     initialQuestions.map(q => ({
       text: q.text,
@@ -114,8 +103,6 @@ export function ChecklistEditor({
       groupId: q.groupId
     }))
   );
-  
-  // State for question groups
   const [groups, setGroups] = useState<QuestionGroup[]>(
     initialGroups.length > 0 
       ? initialGroups.map(g => ({
@@ -137,21 +124,16 @@ export function ChecklistEditor({
         }))
       : []
   );
-  
-  // State for view mode (flat list or grouped)
   const [viewMode, setViewMode] = useState<"flat" | "grouped">(
     initialGroups.length > 0 ? "grouped" : "flat"
   );
-  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const createChecklistMutation = useCreateChecklist();
   const [users, setUsers] = useState<any[]>([]);
-  
-  // Sync between flat list and groups
+
   useEffect(() => {
     if (viewMode === "grouped" && groups.length === 0 && questions.length > 0) {
-      // If switching to grouped mode and no groups exist, create a default group
       const defaultGroup: QuestionGroup = {
         id: `group-default`,
         title: "Geral",
@@ -159,7 +141,6 @@ export function ChecklistEditor({
       };
       setGroups([defaultGroup]);
     } else if (viewMode === "flat" && questions.length === 0 && groups.length > 0) {
-      // If switching to flat mode, flatten all questions from groups
       const allQuestions = groups.flatMap(group => 
         group.questions.map(q => ({
           ...q,
@@ -169,8 +150,7 @@ export function ChecklistEditor({
       setQuestions(allQuestions);
     }
   }, [viewMode]);
-  
-  // Fetch users for the form
+
   React.useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -194,7 +174,6 @@ export function ChecklistEditor({
     fetchUsers();
   }, []);
 
-  // Handlers for flat question list
   const handleAddQuestion = () => {
     setQuestions([
       ...questions,
@@ -225,12 +204,10 @@ export function ChecklistEditor({
     (newQuestions[index] as any)[field] = value;
     setQuestions(newQuestions);
   };
-  
-  // Handlers for groups
+
   const handleGroupsChange = (newGroups: QuestionGroup[]) => {
     setGroups(newGroups);
     
-    // Update flat list if in that mode
     if (viewMode === "flat") {
       const allQuestions = newGroups.flatMap(group => 
         group.questions.map(q => ({
@@ -262,7 +239,6 @@ export function ChecklistEditor({
         return;
       }
       
-      // Prepare the checklist data, ensuring proper handling of special values
       let processedCompanyId = checklist.company_id;
       if (processedCompanyId === "none") {
         processedCompanyId = null;
@@ -273,7 +249,6 @@ export function ChecklistEditor({
         processedResponsibleId = null;
       }
       
-      // Create the checklist - we need to cast it to NewChecklist since we're using Partial<Checklist>
       const newChecklistData: NewChecklist = {
         title: checklist.title,
         description: checklist.description,
@@ -301,37 +276,30 @@ export function ChecklistEditor({
       const newChecklistId = result.id;
       console.log("Checklist created successfully with ID:", newChecklistId);
       
-      // Determine which questions to save based on view mode
       const questionsToSave = viewMode === "grouped" 
         ? groups.flatMap(group => 
-            group.questions.map((q, groupIndex) => ({
+            group.questions.map((q, index) => ({
               ...q,
-              groupId: group.id,
-              groupTitle: group.title,
-              groupIndex
+              groupId: group.id
             }))
           )
         : questions;
       
-      // Add questions if any
       if (questionsToSave.length > 0) {
         console.log("Inserting questions with types:", questionsToSave.map(q => q.type));
         
         const promises = questionsToSave.map((q, i) => {
           if (q.text.trim()) {
-            // Convert UI-friendly type to database-compatible type
             const dbType = normalizeResponseType(q.type);
             
-            // Add metadata about group in the hint field if it exists
             const groupMetadata = q.groupId 
               ? JSON.stringify({
                   groupId: q.groupId,
-                  groupTitle: q.groupTitle || '',
-                  groupIndex: q.groupIndex || 0
+                  groupTitle: groups.find(g => g.id === q.groupId)?.title || '',
+                  groupIndex: groups.findIndex(g => g.id === q.groupId)
                 })
               : null;
             
-            // If hint already exists, don't override it with group metadata
             const finalHint = q.hint || groupMetadata;
             
             return supabase
@@ -339,7 +307,7 @@ export function ChecklistEditor({
               .insert({
                 checklist_id: newChecklistId,
                 pergunta: q.text,
-                tipo_resposta: dbType, // Use the normalized type for database
+                tipo_resposta: dbType,
                 obrigatorio: q.required,
                 ordem: i,
                 permite_audio: q.allowAudio || false,
@@ -358,7 +326,6 @@ export function ChecklistEditor({
         const results = await Promise.all(promises.filter(Boolean));
         console.log(`Added ${results.length} questions to checklist ${newChecklistId}`);
         
-        // Check for errors in question creation
         const errors = results.filter(r => r && r.error);
         if (errors.length > 0) {
           console.warn(`${errors.length} questions failed to save:`, errors);

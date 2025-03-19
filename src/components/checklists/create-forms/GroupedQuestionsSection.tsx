@@ -235,8 +235,8 @@ export function GroupedQuestionsSection({
                         droppableId={group.id} 
                         type="QUESTION"
                       >
-                        {(provided) => (
-                          <div ref={provided.innerRef} {...provided.droppableProps}>
+                        {(dropProvided) => (
+                          <div ref={dropProvided.innerRef} {...dropProvided.droppableProps}>
                             <QuestionGroup
                               id={group.id}
                               title={group.title}
@@ -249,7 +249,7 @@ export function GroupedQuestionsSection({
                               isDragging={snapshot.isDragging}
                               dragHandleProps={provided.dragHandleProps}
                             />
-                            {provided.placeholder}
+                            {dropProvided.placeholder}
                           </div>
                         )}
                       </Droppable>
