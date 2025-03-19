@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { NewChecklist, Checklist } from "@/types/checklist";
 import { toast } from "sonner";
@@ -10,6 +10,8 @@ import { BackButton } from "./create-forms/FormActions";
 import ChecklistForm from "./ChecklistForm";
 import { supabase } from "@/integrations/supabase/client";
 import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
+import { GroupedQuestionsSection } from "./create-forms/GroupedQuestionsSection";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ChecklistEditorProps {
   initialChecklist: NewChecklist;
@@ -25,6 +27,12 @@ interface ChecklistEditorProps {
     weight?: number;
     parentId?: string;
     conditionValue?: string;
+    groupId?: string;
+  }>;
+  initialGroups?: Array<{
+    id: string;
+    title: string;
+    questions: any[];
   }>;
   mode: "create" | "edit" | "ai-review" | "import-review";
   onSave?: (checklistId: string) => void;
@@ -44,6 +52,14 @@ type Question = {
   weight?: number;
   parentId?: string;
   conditionValue?: string;
+  groupId?: string;
+};
+
+// Define the group type
+type QuestionGroup = {
+  id: string;
+  title: string;
+  questions: Question[];
 };
 
 // Helper function to convert UI-friendly type to database type
@@ -64,6 +80,7 @@ const normalizeResponseType = (type: string): string => {
 export function ChecklistEditor({
   initialChecklist,
   initialQuestions = [],
+  initialGroups = [],
   mode,
   onSave,
   onCancel
@@ -93,13 +110,65 @@ export function ChecklistEditor({
       hint: q.hint,
       weight: q.weight,
       parentId: q.parentId,
-      conditionValue: q.conditionValue
+      conditionValue: q.conditionValue,
+      groupId: q.groupId
     }))
   );
+  
+  // State for question groups
+  const [groups, setGroups] = useState<QuestionGroup[]>(
+    initialGroups.length > 0 
+      ? initialGroups.map(g => ({
+          ...g,
+          questions: g.questions.map(q => ({
+            text: q.text,
+            type: q.type,
+            required: q.required,
+            allowPhoto: q.allowPhoto || false,
+            allowVideo: q.allowVideo || false,
+            allowAudio: q.allowAudio || false,
+            options: q.options,
+            hint: q.hint,
+            weight: q.weight,
+            parentId: q.parentId,
+            conditionValue: q.conditionValue,
+            groupId: g.id
+          }))
+        }))
+      : []
+  );
+  
+  // State for view mode (flat list or grouped)
+  const [viewMode, setViewMode] = useState<"flat" | "grouped">(
+    initialGroups.length > 0 ? "grouped" : "flat"
+  );
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const createChecklistMutation = useCreateChecklist();
   const [users, setUsers] = useState<any[]>([]);
+  
+  // Sync between flat list and groups
+  useEffect(() => {
+    if (viewMode === "grouped" && groups.length === 0 && questions.length > 0) {
+      // If switching to grouped mode and no groups exist, create a default group
+      const defaultGroup: QuestionGroup = {
+        id: `group-default`,
+        title: "Geral",
+        questions: [...questions]
+      };
+      setGroups([defaultGroup]);
+    } else if (viewMode === "flat" && questions.length === 0 && groups.length > 0) {
+      // If switching to flat mode, flatten all questions from groups
+      const allQuestions = groups.flatMap(group => 
+        group.questions.map(q => ({
+          ...q,
+          groupId: group.id
+        }))
+      );
+      setQuestions(allQuestions);
+    }
+  }, [viewMode]);
   
   // Fetch users for the form
   React.useEffect(() => {
@@ -125,6 +194,7 @@ export function ChecklistEditor({
     fetchUsers();
   }, []);
 
+  // Handlers for flat question list
   const handleAddQuestion = () => {
     setQuestions([
       ...questions,
@@ -134,7 +204,8 @@ export function ChecklistEditor({
         required: true,
         allowPhoto: false,
         allowVideo: false,
-        allowAudio: false
+        allowAudio: false,
+        groupId: viewMode === "grouped" && groups.length > 0 ? groups[0].id : undefined
       }
     ]);
   };
@@ -153,6 +224,22 @@ export function ChecklistEditor({
     const newQuestions = [...questions];
     (newQuestions[index] as any)[field] = value;
     setQuestions(newQuestions);
+  };
+  
+  // Handlers for groups
+  const handleGroupsChange = (newGroups: QuestionGroup[]) => {
+    setGroups(newGroups);
+    
+    // Update flat list if in that mode
+    if (viewMode === "flat") {
+      const allQuestions = newGroups.flatMap(group => 
+        group.questions.map(q => ({
+          ...q,
+          groupId: group.id
+        }))
+      );
+      setQuestions(allQuestions);
+    }
   };
 
   const handleCancel = () => {
@@ -214,14 +301,38 @@ export function ChecklistEditor({
       const newChecklistId = result.id;
       console.log("Checklist created successfully with ID:", newChecklistId);
       
+      // Determine which questions to save based on view mode
+      const questionsToSave = viewMode === "grouped" 
+        ? groups.flatMap(group => 
+            group.questions.map((q, groupIndex) => ({
+              ...q,
+              groupId: group.id,
+              groupTitle: group.title,
+              groupIndex
+            }))
+          )
+        : questions;
+      
       // Add questions if any
-      if (questions.length > 0) {
-        console.log("Inserting questions with types:", questions.map(q => q.type));
+      if (questionsToSave.length > 0) {
+        console.log("Inserting questions with types:", questionsToSave.map(q => q.type));
         
-        const promises = questions.map((q, i) => {
+        const promises = questionsToSave.map((q, i) => {
           if (q.text.trim()) {
             // Convert UI-friendly type to database-compatible type
             const dbType = normalizeResponseType(q.type);
+            
+            // Add metadata about group in the hint field if it exists
+            const groupMetadata = q.groupId 
+              ? JSON.stringify({
+                  groupId: q.groupId,
+                  groupTitle: q.groupTitle || '',
+                  groupIndex: q.groupIndex || 0
+                })
+              : null;
+            
+            // If hint already exists, don't override it with group metadata
+            const finalHint = q.hint || groupMetadata;
             
             return supabase
               .from("checklist_itens")
@@ -235,7 +346,7 @@ export function ChecklistEditor({
                 permite_video: q.allowVideo || false,
                 permite_foto: q.allowPhoto || false,
                 opcoes: q.options || null,
-                hint: q.hint || null,
+                hint: finalHint,
                 weight: q.weight || 1,
                 parent_item_id: q.parentId || null,
                 condition_value: q.conditionValue || null
@@ -299,13 +410,30 @@ export function ChecklistEditor({
 
       <Card>
         <CardContent className="p-6">
-          <h2 className="text-xl font-semibold mb-4">Itens do Checklist</h2>
-          <QuestionsSection
-            questions={questions}
-            onAddQuestion={handleAddQuestion}
-            onRemoveQuestion={handleRemoveQuestion}
-            onQuestionChange={handleQuestionChange}
-          />
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">Itens do Checklist</h2>
+            
+            <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as "flat" | "grouped")}>
+              <TabsList>
+                <TabsTrigger value="flat">Lista Simples</TabsTrigger>
+                <TabsTrigger value="grouped">Agrupados</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+          
+          {viewMode === "flat" ? (
+            <QuestionsSection
+              questions={questions}
+              onAddQuestion={handleAddQuestion}
+              onRemoveQuestion={handleRemoveQuestion}
+              onQuestionChange={handleQuestionChange}
+            />
+          ) : (
+            <GroupedQuestionsSection
+              groups={groups}
+              onGroupsChange={handleGroupsChange}
+            />
+          )}
         </CardContent>
       </Card>
 

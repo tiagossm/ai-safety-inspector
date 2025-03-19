@@ -13,10 +13,22 @@ function isValidUUID(id: string | null | undefined): boolean {
   return typeof id === "string" && uuidRegex.test(id);
 }
 
+// Tipos de assistentes de IA disponíveis
+export type AIAssistantType = "workplace-safety" | "compliance" | "quality" | "general";
+
+// Interface para grupos de perguntas
+interface QuestionGroup {
+  id: string;
+  title: string;
+  questions: any[];
+}
+
 export function useChecklistAI() {
   const [aiPrompt, setAiPrompt] = useState<string>("");
   const [numQuestions, setNumQuestions] = useState<number>(5);
   const [aiLoading, setAiLoading] = useState<boolean>(false);
+  const [selectedAssistant, setSelectedAssistant] = useState<AIAssistantType>("general");
+  const [questionGroups, setQuestionGroups] = useState<QuestionGroup[]>([]);
   const { user, refreshSession } = useAuth();
   const typedUser = user as AuthUser | null;
 
@@ -33,6 +45,172 @@ export function useChecklistAI() {
     };
 
     return typeMap[type] || 'text'; // Default to 'text' if not matched
+  };
+
+  // Get default category groups based on the selected assistant
+  const getDefaultGroups = (assistantType: AIAssistantType): QuestionGroup[] => {
+    let categories: string[] = [];
+    
+    switch (assistantType) {
+      case "workplace-safety":
+        categories = ["EPIs", "Ambiente de Trabalho", "Procedimentos", "Treinamentos"];
+        break;
+      case "compliance":
+        categories = ["Documentação", "Processos", "Registros", "Auditorias"];
+        break;
+      case "quality":
+        categories = ["Controle de Processo", "Inspeção", "Não-conformidades", "Melhorias"];
+        break;
+      default:
+        categories = ["Geral", "Específico", "Opcional"];
+    }
+    
+    return categories.map((title, index) => ({
+      id: `group-${index + 1}`,
+      title,
+      questions: []
+    }));
+  };
+
+  // Generate better questions based on assistant type
+  const generateQuestionsForAssistant = (
+    assistantType: AIAssistantType, 
+    prompt: string, 
+    numQuestions: number
+  ): any[] => {
+    const questions = [];
+    const questionTypes = ["yes_no", "text", "numeric", "multiple_choice"];
+    
+    // Define templates based on assistant type
+    const templates: Record<AIAssistantType, string[]> = {
+      "workplace-safety": [
+        "Os EPIs são utilizados corretamente por todos os colaboradores?",
+        "A sinalização de segurança está em conformidade com a NR-26?",
+        "Os equipamentos de combate a incêndio estão devidamente sinalizados?",
+        "As rotas de fuga estão desobstruídas?",
+        "Os colaboradores receberam treinamento adequado para os riscos da atividade?",
+        "As instalações elétricas seguem as normas da NR-10?",
+        "Os registros de acidentes estão atualizados?",
+        "As áreas de risco possuem acesso controlado?",
+        "Os equipamentos possuem proteções conforme NR-12?",
+        "É realizada a análise preliminar de risco (APR) antes das atividades?"
+      ],
+      "compliance": [
+        "A documentação legal está atualizada?",
+        "Os registros obrigatórios estão sendo mantidos pelo período mínimo exigido?",
+        "As licenças operacionais estão vigentes?",
+        "As obrigações trabalhistas estão sendo cumpridas?",
+        "Existem desvios em relação aos procedimentos internos?",
+        "As auditorias são realizadas conforme cronograma?",
+        "Os planos de ação das não-conformidades estão sendo executados?",
+        "Os processos estão devidamente documentados?",
+        "As políticas internas são divulgadas aos colaboradores?",
+        "O canal de denúncias está acessível a todos?"
+      ],
+      "quality": [
+        "Os equipamentos de medição estão calibrados?",
+        "As amostras são coletadas conforme procedimento?",
+        "O controle estatístico de processo é realizado?",
+        "As não-conformidades são registradas e tratadas?",
+        "Os indicadores de qualidade estão sendo monitorados?",
+        "Os insumos são verificados no recebimento?",
+        "O produto final atende às especificações?",
+        "As melhorias propostas são implementadas?",
+        "A rastreabilidade é mantida ao longo do processo?",
+        "Os colaboradores recebem treinamento contínuo?"
+      ],
+      "general": [
+        "A documentação está atualizada e organizada?",
+        "O ambiente de trabalho está limpo e organizado?",
+        "Os colaboradores possuem as ferramentas necessárias?",
+        "Os processos estão documentados e acessíveis?",
+        "As reuniões de acompanhamento são realizadas periodicamente?",
+        "Os recursos estão sendo utilizados de forma eficiente?",
+        "Os prazos estão sendo cumpridos?",
+        "A comunicação entre as equipes é eficaz?",
+        "O feedback dos clientes é coletado e analisado?",
+        "Os objetivos e metas estão claros para todos?"
+      ]
+    };
+    
+    // Get templates for the selected assistant
+    const assistantTemplates = templates[assistantType] || templates.general;
+    
+    // Create questions based on the templates
+    for (let i = 0; i < Math.min(assistantTemplates.length, numQuestions); i++) {
+      const questionType = i % 3 === 0 ? "yes_no" : 
+                          i % 3 === 1 ? "text" : 
+                          "multiple_choice";
+                          
+      // Determine which group this question should go in
+      const groupId = `group-${(i % 4) + 1}`;
+      
+      let options = null;
+      if (questionType === "multiple_choice") {
+        if (assistantType === "workplace-safety") {
+          options = ["Conforme", "Não conforme", "Parcialmente conforme", "Não aplicável"];
+        } else if (assistantType === "compliance") {
+          options = ["Atendido", "Não atendido", "Parcialmente atendido", "Não aplicável"];
+        } else if (assistantType === "quality") {
+          options = ["Aprovado", "Reprovado", "Necessita ajustes", "Não verificado"];
+        } else {
+          options = ["Sim", "Não", "Parcialmente", "Não aplicável"];
+        }
+      }
+      
+      questions.push({
+        text: assistantTemplates[i],
+        type: questionType === "yes_no" ? "sim/não" : 
+              questionType === "text" ? "texto" : 
+              "múltipla escolha",
+        required: i < (numQuestions / 2),
+        options: options,
+        groupId: groupId
+      });
+    }
+    
+    // Generate additional questions based on the prompt
+    if (numQuestions > assistantTemplates.length) {
+      const keywords = prompt.toLowerCase().split(" ");
+      for (let i = assistantTemplates.length; i < numQuestions; i++) {
+        const questionType = questionTypes[i % questionTypes.length];
+        const keyword = keywords[i % keywords.length] || "processo";
+        
+        let text = "";
+        
+        // Generate question text based on assistant type and keywords
+        if (assistantType === "workplace-safety") {
+          text = `Verificar condições de segurança relacionadas a ${keyword}`;
+        } else if (assistantType === "compliance") {
+          text = `A documentação relativa a ${keyword} está em conformidade?`;
+        } else if (assistantType === "quality") {
+          text = `O processo de ${keyword} atende aos padrões de qualidade?`;
+        } else {
+          text = `Verificar ${keyword} conforme procedimento`;
+        }
+        
+        // Determine which group this question should go in
+        const groupId = `group-${(i % 4) + 1}`;
+        
+        let options = null;
+        if (questionType === "multiple_choice") {
+          options = ["Sim", "Não", "Parcialmente", "Não aplicável"];
+        }
+        
+        questions.push({
+          text,
+          type: questionType === "yes_no" ? "sim/não" : 
+                questionType === "text" ? "texto" : 
+                questionType === "multiple_choice" ? "múltipla escolha" : 
+                "numérico",
+          required: i % 2 === 0,
+          options,
+          groupId
+        });
+      }
+    }
+    
+    return questions;
   };
 
   const generateAIChecklist = async (form: NewChecklist) => {
@@ -108,92 +286,42 @@ export function useChecklistAI() {
 
       console.log("✅ Checklist criado com sucesso:", checklist.id);
 
-      // 🔹 Criar perguntas do checklist com base na categoria
-      // Using the valid response types that match the database constraints
-      const questionTypes = ["yes_no", "text", "numeric", "yes_no", "multiple_choice"];
+      // Generate questions based on the assistant type
+      const questions = generateQuestionsForAssistant(
+        selectedAssistant,
+        aiPrompt,
+        numQuestions
+      );
       
-      const questions = [];
-      const baseQuestions = {
-        safety: [
-          "Os EPIs estão sendo utilizados corretamente?",
-          "Existem extintores de incêndio em todos os locais necessários?",
-          "As rotas de evacuação estão devidamente sinalizadas?",
-          "Os funcionários receberam treinamento adequado para emergências?",
-        ],
-        quality: [
-          "Os produtos atendem às especificações técnicas?",
-          "Existe um sistema de controle de qualidade implementado?",
-          "Os instrumentos de medição estão calibrados?",
-          "São realizadas inspeções periódicas nos produtos finais?",
-        ],
-        maintenance: [
-          "Os equipamentos receberam manutenção preventiva conforme cronograma?",
-          "Há registro de manutenções corretivas recentes?",
-          "As peças de reposição estão disponíveis em estoque?",
-          "Os manuais técnicos estão acessíveis aos técnicos?",
-        ],
-        environment: [
-          "Os resíduos são separados corretamente?",
-          "Existe um sistema de tratamento de efluentes?",
-          "As licenças ambientais estão em dia?",
-          "Há medidas para redução de consumo de água?",
-        ],
-        operational: [
-          "Os procedimentos operacionais padrão (POPs) estão disponíveis?",
-          "Os funcionários seguem as instruções de trabalho?",
-          "A produtividade está dentro das metas estabelecidas?",
-          "Há registros de paradas não programadas?",
-        ],
-        general: [
-          "A documentação está atualizada e organizada?",
-          "O ambiente de trabalho está limpo e organizado?",
-          "Os colaboradores possuem as ferramentas necessárias?",
-          "Os processos estão documentados e acessíveis?",
-        ],
-      };
-
-      const category = form.category as keyof typeof baseQuestions || "general";
-      const categoryQuestions = baseQuestions[category] || baseQuestions.general;
-
-      // Adicionar perguntas básicas - USANDO TIPOS VÁLIDOS
-      for (let i = 0; i < Math.min(categoryQuestions.length, numQuestions); i++) {
-        questions.push({
-          checklist_id: checklist.id,
-          pergunta: categoryQuestions[i],
-          tipo_resposta: "yes_no", // Utilizando o tipo válido aceito pelo banco
-          obrigatorio: true,
-          ordem: i + 1,
-        });
-      }
-
-      // Gerar perguntas adicionais - USANDO TIPOS VÁLIDOS
-      const keywords = aiPrompt.toLowerCase().split(" ");
-      for (let i = categoryQuestions.length; i < numQuestions; i++) {
-        // Use a valid response type from the database accepted types
-        const questionType = questionTypes[i % questionTypes.length];
-        const keyword = keywords[i % keywords.length] || "segurança";
-
-        let pergunta = `Verificar condições de ${keyword}`;
-        if (i % 3 === 0) pergunta += " conforme normas aplicáveis";
-        else if (i % 3 === 1) pergunta += " durante a operação";
-        else pergunta += " no ambiente de trabalho";
-
-        questions.push({
-          checklist_id: checklist.id,
-          pergunta,
-          tipo_resposta: questionType, // Utilizando tipos válidos aceitos pelo banco
-          obrigatorio: i % 3 === 0,
-          ordem: i + 1,
-        });
-      }
+      // Create default question groups
+      const defaultGroups = getDefaultGroups(selectedAssistant);
+      
+      // Organize questions into their groups
+      const groupedQuestions = defaultGroups.map(group => {
+        const groupQuestions = questions.filter(q => q.groupId === group.id);
+        return {
+          ...group,
+          questions: groupQuestions
+        };
+      });
+      
+      // 🔹 Inserir perguntas no banco
+      const dbQuestions = questions.map((q, idx) => ({
+        checklist_id: checklist.id,
+        pergunta: q.text,
+        tipo_resposta: normalizeResponseType(q.type), // se precisar converter
+        obrigatorio: q.required,
+        ordem: idx + 1,
+        opcoes: q.options,
+      }));
 
       // Log the questions being created to help with debugging
-      console.log("Inserting questions with these types:", questions.map(q => q.tipo_resposta));
+      console.log("Inserting questions with these types:", dbQuestions.map(q => q.tipo_resposta));
 
       // 📌 Inserir perguntas no banco
       const { error: questionError } = await supabase
         .from("checklist_itens")
-        .insert(questions);
+        .insert(dbQuestions);
 
       if (questionError) {
         console.error("❌ Erro ao inserir perguntas:", questionError);
@@ -213,27 +341,15 @@ export function useChecklistAI() {
         status_checklist: checklist.status_checklist,
       };
       
-      // Map the DB response types back to UI-friendly types for display
-      const typeMapReverse: Record<string, string> = {
-        'yes_no': 'sim/não',
-        'multiple_choice': 'múltipla escolha',
-        'numeric': 'numérico',
-        'text': 'texto',
-        'photo': 'foto',
-        'signature': 'assinatura'
-      };
-      
-      const formattedQuestions = questions.map(q => ({
-        text: q.pergunta,
-        type: typeMapReverse[q.tipo_resposta] || q.tipo_resposta, // Convert back to UI-friendly type
-        required: q.obrigatorio,
-      }));
+      // Update the state of groups
+      setQuestionGroups(groupedQuestions);
       
       return {
         success: true,
         checklistId: checklist.id,
         checklistData: checklistData,
-        questions: formattedQuestions,
+        questions: questions,
+        groups: groupedQuestions,
         mode: "ai-review",
       };
     } catch (err) {
@@ -251,6 +367,11 @@ export function useChecklistAI() {
     numQuestions,
     setNumQuestions,
     aiLoading,
+    selectedAssistant,
+    setSelectedAssistant,
+    questionGroups,
+    setQuestionGroups,
     generateAIChecklist,
+    getDefaultGroups
   };
 }

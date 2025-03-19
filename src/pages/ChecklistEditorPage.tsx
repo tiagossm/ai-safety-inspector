@@ -1,14 +1,15 @@
-
 import React, { useEffect, useState } from "react";
 import { ChecklistEditor } from "@/components/checklists/ChecklistEditor";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { useChecklistById } from "@/hooks/checklist/useChecklistById";
 
 export default function ChecklistEditorPage() {
   const [loading, setLoading] = useState(true);
   const [editorData, setEditorData] = useState<any>(null);
   const navigate = useNavigate();
   const { id } = useParams<{ id?: string }>();
+  const checklistQuery = useChecklistById(id !== "editor" ? id || "" : "");
 
   useEffect(() => {
     // Special case for the editor route
@@ -34,7 +35,44 @@ export default function ChecklistEditorPage() {
           return;
         }
         
-        setEditorData(parsedData);
+        // Process the data to create groups if they exist
+        let questionGroups: any[] = [];
+        
+        // If groups came from AI, use them
+        if (parsedData.groups && Array.isArray(parsedData.groups)) {
+          questionGroups = parsedData.groups;
+        } 
+        // Otherwise, if we have questions with groupIds, organize them into groups
+        else if (parsedData.questions && Array.isArray(parsedData.questions)) {
+          // Check if questions have groupIds
+          const hasGroupIds = parsedData.questions.some((q: any) => q.groupId);
+          
+          if (hasGroupIds) {
+            // Group the questions by groupId
+            const groupMap = new Map<string, any[]>();
+            
+            parsedData.questions.forEach((question: any) => {
+              const groupId = question.groupId || "default";
+              if (!groupMap.has(groupId)) {
+                groupMap.set(groupId, []);
+              }
+              groupMap.get(groupId)!.push(question);
+            });
+            
+            // Convert the map to an array of group objects
+            questionGroups = Array.from(groupMap.entries()).map(([groupId, questions]) => ({
+              id: groupId,
+              title: groupId === "default" ? "Geral" : `Grupo ${groupId.split('-')[1] || ''}`,
+              questions
+            }));
+          }
+        }
+        
+        // Update the editorData with groups
+        setEditorData({
+          ...parsedData,
+          groups: questionGroups
+        });
       } catch (error) {
         console.error("Error parsing editor data:", error);
         toast.error("Erro ao carregar dados do checklist");
@@ -43,14 +81,31 @@ export default function ChecklistEditorPage() {
         setLoading(false);
       }
     } else {
-      // For non-editor routes, we should use a different approach
-      // This would be for editing existing checklists
-      // For now, redirect to checklists page if not the special "editor" route
-      if (id !== "editor") {
+      // For editing existing checklists
+      if (checklistQuery.isLoading) {
+        setLoading(true);
+        return;
+      }
+      
+      if (checklistQuery.error) {
+        console.error("Error fetching checklist:", checklistQuery.error);
+        toast.error("Erro ao carregar checklist");
         navigate('/checklists');
+        return;
+      }
+      
+      if (checklistQuery.data) {
+        // TODO: Fetch checklist items and organize them into groups
+        setEditorData({
+          checklistData: checklistQuery.data,
+          questions: [],
+          groups: [],
+          mode: "edit"
+        });
+        setLoading(false);
       }
     }
-  }, [navigate, id]);
+  }, [navigate, id, checklistQuery.isLoading, checklistQuery.error, checklistQuery.data]);
 
   const handleSave = (checklistId: string) => {
     // Clear the stored data
@@ -82,6 +137,7 @@ export default function ChecklistEditorPage() {
     <ChecklistEditor
       initialChecklist={editorData.checklistData}
       initialQuestions={editorData.questions}
+      initialGroups={editorData.groups}
       mode={editorData.mode}
       onSave={handleSave}
       onCancel={handleCancel}
