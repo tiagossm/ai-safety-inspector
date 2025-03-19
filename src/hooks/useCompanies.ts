@@ -61,7 +61,7 @@ export function useCompanies() {
       // Se sua tabela NÃO tem fantasy_name, remova do select ou substitua por outra coluna real:
       const { data, error } = await supabase
         .from("companies")
-        .select("id, fantasy_name, cnpj, status, contact_phone, created_at, metadata") 
+        .select("id, fantasy_name, cnpj, status, contact_phone, cnae, contact_email, contact_name, employee_count, created_at, metadata, address") 
         .eq("status", "active")
         .order("created_at", { ascending: false });
 
@@ -78,6 +78,12 @@ export function useCompanies() {
           status: company.status as CompanyStatus,
           contact_phone: company.contact_phone,
           created_at: company.created_at,
+          // Adicionamos as propriedades que estavam faltando
+          cnae: company.cnae,
+          contact_email: company.contact_email,
+          contact_name: company.contact_name,
+          employee_count: company.employee_count,
+          address: company.address,
           // Se metadata vier como objeto JSON, tipamos como Company['metadata']
           metadata: company.metadata ? (company.metadata as Company["metadata"]) : null,
         };
