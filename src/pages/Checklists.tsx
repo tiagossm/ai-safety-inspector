@@ -35,6 +35,16 @@ export default function Checklists() {
     checklistTitle: "",
   });
 
+  // Wrapper function to safely handle filter type changes
+  const handleFilterTypeChange = (value: string) => {
+    if (value === "all" || value === "active" || value === "template") {
+      setFilterType(value);
+    } else {
+      console.warn(`Invalid filter type: ${value}`);
+      setFilterType("all");
+    }
+  };
+
   const handleOpenChecklist = (id: string) => {
     console.log(`Opening checklist: ${id}`);
     navigate(`/checklists/${id}`);
@@ -57,7 +67,7 @@ export default function Checklists() {
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
         filterType={filterType}
-        setFilterType={setFilterType}
+        setFilterType={handleFilterTypeChange}
         selectedCompanyId={selectedCompanyId}
         setSelectedCompanyId={setSelectedCompanyId}
         totalChecklists={checklists.length}

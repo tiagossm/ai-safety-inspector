@@ -59,7 +59,7 @@ export function useFilterChecklists(checklists: Checklist[]) {
         // Build the query filter with the in operator
         const { data, error } = await supabase
           .from("companies")
-          .select("id, fantasy_name, name")
+          .select("id, fantasy_name")  // Removed 'name' since it doesn't exist in the schema
           .in("id", validCompanyIds)
           .order("fantasy_name", { ascending: true });
           
@@ -69,7 +69,14 @@ export function useFilterChecklists(checklists: Checklist[]) {
         }
         
         console.log(`Fetched ${data?.length || 0} companies`);
-        setCompanies(data || []);
+        
+        // Type assertion to ensure data matches CompanyListItem structure
+        const validData = Array.isArray(data) ? data.map(company => ({
+          id: company.id,
+          fantasy_name: company.fantasy_name
+        })) : [];
+        
+        setCompanies(validData);
         
       } catch (error) {
         console.error("Error in fetchCompanies:", error);
