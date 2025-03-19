@@ -1,6 +1,13 @@
-
 import { useState } from "react";
 import { NewChecklist } from "@/types/checklist";
+// import { supabase } from "@/integrations/supabase/client"; // para gravar no BD
+
+interface AiQuestion {
+  text: string;
+  type: string;
+  required: boolean;
+  // etc...
+}
 
 export function useChecklistForm() {
   const [form, setForm] = useState<NewChecklist>({
@@ -13,8 +20,37 @@ export function useChecklistForm() {
     due_date: null
   });
 
+  // Aqui podemos armazenar as perguntas geradas pela IA
+  const [questions, setQuestions] = useState<AiQuestion[]>([]);
+
+  // Depois, podemos ter uma função para “finalizar” (salvar) no Supabase:
+  // Exemplo (comentado): 
+  // async function saveChecklist() {
+  //   const { data: checklistData, error: checklistError } = await supabase
+  //     .from("checklists")
+  //     .insert({ ...form })
+  //     .select("*")
+  //     .single();
+  //   if (checklistError) throw checklistError;
+  //
+  //   if (questions.length > 0) {
+  //     const preparedItems = questions.map((q, idx) => ({
+  //       checklist_id: checklistData.id,
+  //       pergunta: q.text,
+  //       tipo_resposta: converterTipo(q.type), // se precisar converter
+  //       obrigatorio: q.required,
+  //       ordem: idx + 1
+  //     }));
+  //     await supabase.from("checklist_itens").insert(preparedItems);
+  //   }
+  //   // etc.
+  // }
+
   return {
     form,
-    setForm
+    setForm,
+    questions,
+    setQuestions,
+    // saveChecklist
   };
 }
