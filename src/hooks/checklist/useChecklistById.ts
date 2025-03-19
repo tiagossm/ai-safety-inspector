@@ -41,9 +41,8 @@ export function useChecklistById(id: string) {
     },
     enabled: !!id && id !== "editor", // Only run query if ID exists and isn't "editor"
     retry: 1,
-    // Use onSettled instead of onError for @tanstack/react-query v5
-    onSettled: (data, error) => {
-      if (error) {
+    meta: {
+      onError: (error: Error) => {
         console.error("Error in useChecklistById:", error);
         toast.error("Erro ao carregar checklist");
       }
