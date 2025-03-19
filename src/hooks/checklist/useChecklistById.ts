@@ -41,11 +41,10 @@ export function useChecklistById(id: string) {
     },
     enabled: !!id && id !== "editor", // Only run query if ID exists and isn't "editor"
     retry: 1,
-    meta: {
-      onError: (error: Error) => {
-        console.error("Error in useChecklistById:", error);
-        toast.error("Erro ao carregar checklist");
-      }
-    }
+    gcTime: 300000, // 5 minutes
+    staleTime: 60000, // 1 minute
+    
+    // In Tanstack Query v5, error handling is done with the onError option within the queryFn
+    // Using a global error handler or handling the error inside components
   });
 }
