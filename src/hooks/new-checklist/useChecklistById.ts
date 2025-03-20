@@ -67,7 +67,7 @@ type ChecklistItemDBResponse = {
   text: string;
   tipo_resposta: string;
   isRequired: boolean;
-  options: string[] | null;
+  options: any[] | null; // Updated to handle any JSON array type
   hint: string | null;
   weight: number | null;
   parentQuestionId: string | null;
@@ -172,12 +172,12 @@ export function useChecklistById(id: string) {
       const processedQuestions: ChecklistQuestion[] = [];
 
       // Transform questions from database format to our type
-      const items: ChecklistItemDBResponse[] = (questionsData || []).map(item => ({
+      const items = (questionsData || []).map(item => ({
         id: item.id,
         text: item.pergunta,
         tipo_resposta: item.tipo_resposta,
         isRequired: item.obrigatorio,
-        options: Array.isArray(item.opcoes) ? item.opcoes : null,
+        options: item.opcoes, // This can be any JSON array type
         hint: item.hint,
         weight: item.weight,
         parentQuestionId: item.parent_item_id,
@@ -207,7 +207,7 @@ export function useChecklistById(id: string) {
           text: q.text,
           responseType: mapResponseType(q.tipo_resposta),
           isRequired: q.isRequired,
-          options: q.options || undefined,
+          options: Array.isArray(q.options) ? q.options.map(opt => String(opt)) : undefined, // Convert all options to strings
           hint: q.hint || undefined,
           weight: q.weight || 1,
           groupId: groupId,

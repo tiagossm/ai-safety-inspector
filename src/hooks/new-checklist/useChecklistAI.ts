@@ -55,10 +55,16 @@ export function useChecklistAI() {
       // Generate group structure based on assistant type
       const groups: ChecklistGroup[] = getDefaultGroups(selectedAssistant);
       
-      // Check if data.questions exists, if not create default questions
-      const generatedQuestions = data.questions || [];
+      // Check if data.questions exists, if not use data directly or create default questions
+      let generatedQuestions: any[] = [];
       
-      // If no questions were returned, create some default ones
+      if (data.questions && Array.isArray(data.questions)) {
+        generatedQuestions = data.questions;
+      } else if (Array.isArray(data)) {
+        generatedQuestions = data;
+      }
+      
+      // If no questions were returned or not in expected format, create default ones
       if (!generatedQuestions || generatedQuestions.length === 0) {
         console.warn("No questions returned from AI, using defaults");
         // Create some default questions based on the prompt
@@ -82,7 +88,8 @@ export function useChecklistAI() {
           text: q.text || `Question ${index + 1}`,
           responseType: mapResponseType(q.type || 'yes_no'),
           isRequired: q.required !== undefined ? q.required : true,
-          options: q.options || (q.type === 'multiple_choice' ? ["Opção 1", "Opção 2"] : undefined),
+          options: q.options ? (Array.isArray(q.options) ? q.options.map(String) : []) : 
+                  (q.type === 'multiple_choice' ? ["Opção 1", "Opção 2"] : undefined),
           hint: q.hint || "",
           weight: q.weight || 1,
           groupId,
