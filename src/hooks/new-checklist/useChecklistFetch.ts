@@ -57,9 +57,25 @@ export function useChecklistFetch() {
         return [];
       }
 
+      // Type-safe transformation of the response data
+      const checklistItems: ChecklistDBResponse[] = data.map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        isTemplate: item.isTemplate,
+        status: item.status,
+        category: item.category,
+        responsibleId: item.responsibleId,
+        companyId: item.companyId,
+        userId: item.userId,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+        dueDate: item.dueDate
+      }));
+
       // Transform the data to our new format
       const checklists: ChecklistWithStats[] = await Promise.all(
-        (data as any[]).map(async (checklistItem: ChecklistDBResponse) => {
+        checklistItems.map(async (checklistItem) => {
           // Get count of questions for each checklist
           const { count: totalQuestions, error: countError } = await supabase
             .from("checklist_itens")

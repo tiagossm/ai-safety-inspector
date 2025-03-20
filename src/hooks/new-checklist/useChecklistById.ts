@@ -125,7 +125,21 @@ export function useChecklistById(id: string) {
         throw new Error("Checklist não encontrado");
       }
 
-      const checklist = checklistData as ChecklistDBResponse;
+      // Explicitly type and create a checklist object from the response data
+      const checklist: ChecklistDBResponse = {
+        id: checklistData.id,
+        title: checklistData.title,
+        description: checklistData.description,
+        isTemplate: checklistData.isTemplate,
+        status: checklistData.status,
+        category: checklistData.category,
+        responsibleId: checklistData.responsibleId,
+        companyId: checklistData.companyId,
+        userId: checklistData.userId,
+        createdAt: checklistData.createdAt,
+        updatedAt: checklistData.updatedAt,
+        dueDate: checklistData.dueDate
+      };
 
       // Fetch checklist questions
       const { data: questionsData, error: questionsError } = await supabase
@@ -157,7 +171,23 @@ export function useChecklistById(id: string) {
       const groupsMap = new Map<string, ChecklistGroup>();
       const processedQuestions: ChecklistQuestion[] = [];
 
-      const items = questionsData as ChecklistItemDBResponse[] || [];
+      // Type-safe handling of questionsData
+      const items: ChecklistItemDBResponse[] = questionsData ? 
+        questionsData.map((item: any) => ({
+          id: item.id,
+          text: item.text,
+          tipo_resposta: item.tipo_resposta,
+          isRequired: item.isRequired,
+          options: item.options,
+          hint: item.hint,
+          weight: item.weight,
+          parentQuestionId: item.parentQuestionId,
+          conditionValue: item.conditionValue,
+          allowsPhoto: item.allowsPhoto,
+          allowsVideo: item.allowsVideo,
+          allowsAudio: item.allowsAudio,
+          order: item.order,
+        })) : [];
 
       items.forEach((q) => {
         // Parse group info from hint field
