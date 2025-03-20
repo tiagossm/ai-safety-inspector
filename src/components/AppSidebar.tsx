@@ -1,5 +1,6 @@
+
 import { useState, useEffect, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Building2,
@@ -9,6 +10,7 @@ import {
   Settings,
   LogOut,
   Menu,
+  FileCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/ui/ThemeContext";
@@ -17,6 +19,8 @@ const menuItems = [
   { title: "Dashboard", icon: LayoutDashboard, url: "/" },
   { title: "Empresas", icon: Building2, url: "/companies" },
   { title: "Inspeções", icon: ClipboardCheck, url: "/inspections" },
+  { title: "Checklists", icon: ClipboardCheck, url: "/checklists" },
+  { title: "Novos Checklists", icon: FileCheck, url: "/new-checklists" },
   { title: "Relatórios", icon: History, url: "/reports" },
   { title: "Configurações", icon: Settings, url: "/settings" },
   { title: "Perfil", icon: User, url: "/profile" },
@@ -25,6 +29,7 @@ const menuItems = [
 export function AppSidebar() {
   const [isOpen, setIsOpen] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
   const { theme } = useTheme();
 
   const handleKeyDown = useCallback((e) => {
@@ -58,7 +63,7 @@ export function AppSidebar() {
           className="p-2 bg-accent rounded-md transition-all duration-300 hover:scale-105 focus:outline-none"
           onClick={() => setIsOpen(!isOpen)}
         >
-          <Menu className="h-5 w-5 text-foreground" /> {/* Ícone ajustado */}
+          <Menu className="h-5 w-5 text-foreground" />
         </button>
       </div>
 
@@ -71,10 +76,11 @@ export function AppSidebar() {
               key={item.title}
               to={item.url}
               className={cn(
-                "flex items-center gap-3 p-2 rounded-md transition-all duration-300 hover:bg-accent hover:text-accent-foreground"
+                "flex items-center gap-3 p-2 rounded-md transition-all duration-300 hover:bg-accent hover:text-accent-foreground",
+                location.pathname === item.url && "bg-primary/10 text-primary"
               )}
             >
-              <Icon className="h-3.5 w-3.5 text-foreground" aria-hidden="true" /> {/* Ícone reduzido em 1.75x */}
+              <Icon className="h-3.5 w-3.5 text-foreground" aria-hidden="true" />
               {isOpen && <span className="text-foreground">{item.title}</span>}
             </Link>
           );

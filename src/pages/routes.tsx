@@ -1,3 +1,4 @@
+
 import { Suspense, lazy } from "react";
 import { Route, Routes } from "react-router-dom";
 import { RequireAuth } from "@/components/RequireAuth";
@@ -30,16 +31,18 @@ export function ChecklistEditorRoute() {
 export default function Router() {
   return (
     <Routes>
-      <Route path="/checklists" element={<Checklists />} />
-      <Route path="/checklists/:id" element={<ChecklistDetails />} />
-      <Route path="/checklists/editor" element={<ChecklistEditorPage />} />
-      <Route path="/checklists/editor/:id" element={<ChecklistEditorPage />} />
-      <Route path="/create-checklist" element={<CreateChecklist />} />
+      {/* Original checklist routes */}
+      <Route path="/checklists" element={<RequireAuth><Checklists /></RequireAuth>} />
+      <Route path="/checklists/:id" element={<RequireAuth><ChecklistDetails /></RequireAuth>} />
+      <Route path="/checklists/editor" element={<RequireAuth><ChecklistEditorPage /></RequireAuth>} />
+      <Route path="/checklists/editor/:id" element={<RequireAuth><ChecklistEditorPage /></RequireAuth>} />
+      <Route path="/create-checklist" element={<RequireAuth><CreateChecklist /></RequireAuth>} />
       
-      <Route path="/new-checklists" element={<NewChecklists />} />
-      <Route path="/new-checklists/create" element={<NewChecklistCreate />} />
-      <Route path="/new-checklists/edit/:id" element={<NewChecklistEdit />} />
-      <Route path="/new-checklists/:id" element={<NewChecklistDetails />} />
+      {/* New checklist routes with auth protection */}
+      <Route path="/new-checklists" element={<RequireAuth><NewChecklists /></RequireAuth>} />
+      <Route path="/new-checklists/create" element={<RequireAuth><NewChecklistCreate /></RequireAuth>} />
+      <Route path="/new-checklists/edit/:id" element={<RequireAuth><NewChecklistEdit /></RequireAuth>} />
+      <Route path="/new-checklists/:id" element={<RequireAuth><NewChecklistDetails /></RequireAuth>} />
     </Routes>
   );
 }

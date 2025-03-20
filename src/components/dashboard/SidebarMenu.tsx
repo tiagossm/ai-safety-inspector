@@ -9,6 +9,7 @@ import {
   Plus,
   LayoutDashboard,
   ClipboardCheck,
+  FileCheck,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -85,6 +86,22 @@ export function SidebarMenu({ user, onLogout }: SidebarMenuProps) {
               Checklists
             </Link>
           </li>
+          
+          {/* New Checklists Link */}
+          <li>
+            <Link
+              to="/new-checklists"
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "w-full justify-start",
+                location.pathname.startsWith("/new-checklists") && "bg-muted"
+              )}
+            >
+              <FileCheck className="mr-2 h-4 w-4" />
+              Novos Checklists
+            </Link>
+          </li>
+          
           <li>
             <Accordion type="single" collapsible className="w-full">
               <AccordionItem value="units">
