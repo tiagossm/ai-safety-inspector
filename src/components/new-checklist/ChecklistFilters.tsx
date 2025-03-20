@@ -53,15 +53,15 @@ export function ChecklistFilters({
         
         <div className="flex gap-2">
           <Select
-            value={selectedCompanyId || ""}
-            onValueChange={(value) => setSelectedCompanyId(value === "" ? null : value)}
+            value={selectedCompanyId || "all"}
+            onValueChange={(value) => setSelectedCompanyId(value === "all" ? null : value)}
             disabled={isLoadingCompanies || companies.length === 0}
           >
             <SelectTrigger className="w-[200px]">
               <SelectValue placeholder="Todas empresas" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas empresas</SelectItem>
+              <SelectItem value="all">Todas empresas</SelectItem>
               {companies.map((company) => (
                 <SelectItem key={company.id} value={company.id}>
                   {company.name}

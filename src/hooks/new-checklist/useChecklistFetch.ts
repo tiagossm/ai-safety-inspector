@@ -35,15 +35,15 @@ export function useChecklistFetch() {
           id,
           title,
           description,
-          is_template as isTemplate,
-          status_checklist as status,
+          is_template,
+          status_checklist,
           category,
-          responsible_id as responsibleId,
-          company_id as companyId,
-          user_id as userId,
-          created_at as createdAt,
-          updated_at as updatedAt,
-          due_date as dueDate
+          responsible_id,
+          company_id,
+          user_id,
+          created_at,
+          updated_at,
+          due_date
         `)
         .order("created_at", { ascending: false });
 
@@ -57,21 +57,20 @@ export function useChecklistFetch() {
         return [];
       }
 
-      // Type-safe transformation of the response data by first casting to any
-      const rawData = data as any[];
-      const checklistItems: ChecklistDBResponse[] = rawData.map(item => ({
+      // Transform the database results to match our types
+      const checklistItems: ChecklistDBResponse[] = data.map(item => ({
         id: item.id,
         title: item.title,
         description: item.description,
-        isTemplate: item.isTemplate,
-        status: item.status,
+        isTemplate: item.is_template,
+        status: item.status_checklist,
         category: item.category,
-        responsibleId: item.responsibleId,
-        companyId: item.companyId,
-        userId: item.userId,
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
-        dueDate: item.dueDate
+        responsibleId: item.responsible_id,
+        companyId: item.company_id,
+        userId: item.user_id,
+        createdAt: item.created_at,
+        updatedAt: item.updated_at,
+        dueDate: item.due_date
       }));
 
       // Transform the data to our new format

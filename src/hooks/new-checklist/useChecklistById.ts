@@ -102,15 +102,15 @@ export function useChecklistById(id: string) {
           id,
           title,
           description,
-          is_template as isTemplate,
-          status_checklist as status,
+          is_template,
+          status_checklist,
           category,
-          responsible_id as responsibleId,
-          company_id as companyId,
-          user_id as userId,
-          created_at as createdAt,
-          updated_at as updatedAt,
-          due_date as dueDate
+          responsible_id,
+          company_id,
+          user_id,
+          created_at,
+          updated_at,
+          due_date
         `)
         .eq("id", id)
         .single();
@@ -125,22 +125,20 @@ export function useChecklistById(id: string) {
         throw new Error("Checklist não encontrado");
       }
 
-      // Explicitly type and create a checklist object from the response data
-      // Cast checklistData to any to bypass TypeScript's type checking
-      const rawData = checklistData as any;
+      // Transform data from database format to our type
       const checklist: ChecklistDBResponse = {
-        id: rawData.id,
-        title: rawData.title,
-        description: rawData.description,
-        isTemplate: rawData.isTemplate,
-        status: rawData.status,
-        category: rawData.category,
-        responsibleId: rawData.responsibleId,
-        companyId: rawData.companyId,
-        userId: rawData.userId,
-        createdAt: rawData.createdAt,
-        updatedAt: rawData.updatedAt,
-        dueDate: rawData.dueDate
+        id: checklistData.id,
+        title: checklistData.title,
+        description: checklistData.description,
+        isTemplate: checklistData.is_template,
+        status: checklistData.status_checklist,
+        category: checklistData.category,
+        responsibleId: checklistData.responsible_id,
+        companyId: checklistData.company_id,
+        userId: checklistData.user_id,
+        createdAt: checklistData.created_at,
+        updatedAt: checklistData.updated_at,
+        dueDate: checklistData.due_date
       };
 
       // Fetch checklist questions
@@ -148,18 +146,18 @@ export function useChecklistById(id: string) {
         .from("checklist_itens")
         .select(`
           id,
-          pergunta as text,
+          pergunta,
           tipo_resposta,
-          obrigatorio as isRequired,
-          opcoes as options,
+          obrigatorio,
+          opcoes,
           hint,
           weight,
-          parent_item_id as parentQuestionId,
-          condition_value as conditionValue,
-          permite_foto as allowsPhoto,
-          permite_video as allowsVideo,
-          permite_audio as allowsAudio,
-          ordem as order
+          parent_item_id,
+          condition_value,
+          permite_foto,
+          permite_video,
+          permite_audio,
+          ordem
         `)
         .eq("checklist_id", id)
         .order("ordem", { ascending: true });
@@ -173,22 +171,21 @@ export function useChecklistById(id: string) {
       const groupsMap = new Map<string, ChecklistGroup>();
       const processedQuestions: ChecklistQuestion[] = [];
 
-      // Type-safe handling of questionsData by first casting to any
-      const rawQuestions = questionsData as any[] || [];
-      const items: ChecklistItemDBResponse[] = rawQuestions.map(item => ({
+      // Transform questions from database format to our type
+      const items: ChecklistItemDBResponse[] = (questionsData || []).map(item => ({
         id: item.id,
-        text: item.text,
+        text: item.pergunta,
         tipo_resposta: item.tipo_resposta,
-        isRequired: item.isRequired,
-        options: item.options,
+        isRequired: item.obrigatorio,
+        options: item.opcoes,
         hint: item.hint,
         weight: item.weight,
-        parentQuestionId: item.parentQuestionId,
-        conditionValue: item.conditionValue,
-        allowsPhoto: item.allowsPhoto,
-        allowsVideo: item.allowsVideo,
-        allowsAudio: item.allowsAudio,
-        order: item.order,
+        parentQuestionId: item.parent_item_id,
+        conditionValue: item.condition_value,
+        allowsPhoto: item.permite_foto,
+        allowsVideo: item.permite_video,
+        allowsAudio: item.permite_audio,
+        order: item.ordem,
       }));
 
       items.forEach((q) => {
