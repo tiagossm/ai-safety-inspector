@@ -89,7 +89,7 @@ export function useChecklistById(id: string) {
       }
 
       // Fetch checklist questions
-      const { data: questions, error: questionsError } = await supabase
+      const { data: questionsData, error: questionsError } = await supabase
         .from("checklist_itens")
         .select(`
           id,
@@ -118,7 +118,7 @@ export function useChecklistById(id: string) {
       const groupsMap = new Map<string, ChecklistGroup>();
       const processedQuestions: ChecklistQuestion[] = [];
 
-      questions.forEach((q) => {
+      questionsData.forEach((q) => {
         // Parse group info from hint
         const { groupId, groupTitle } = parseGroupInfo(q.hint);
         
@@ -158,7 +158,7 @@ export function useChecklistById(id: string) {
         ...checklist,
         groups,
         questions: processedQuestions,
-        totalQuestions: questions.length,
+        totalQuestions: questionsData.length,
         completedQuestions: 0 // In a real app, we'd calculate this
       };
     },

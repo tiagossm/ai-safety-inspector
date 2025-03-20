@@ -37,21 +37,25 @@ export function useChecklistFetch() {
         throw error;
       }
 
+      if (!data) {
+        return [];
+      }
+
       // Transform the data to our new format
       const checklists: ChecklistWithStats[] = await Promise.all(
-        data.map(async (checklist) => {
+        data.map(async (checklistItem) => {
           // Get count of questions for each checklist
           const { count: totalQuestions, error: countError } = await supabase
             .from("checklist_itens")
             .select("*", { count: "exact", head: true })
-            .eq("checklist_id", checklist.id);
+            .eq("checklist_id", checklistItem.id);
 
           if (countError) {
-            console.error(`Error counting questions for checklist ${checklist.id}:`, countError);
+            console.error(`Error counting questions for checklist ${checklistItem.id}:`, countError);
           }
 
           return {
-            ...checklist,
+            ...checklistItem,
             totalQuestions: totalQuestions || 0,
             completedQuestions: 0 // We'll need another query for this in a real app
           };
