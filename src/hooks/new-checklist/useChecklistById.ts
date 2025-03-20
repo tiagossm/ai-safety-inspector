@@ -172,7 +172,7 @@ export function useChecklistById(id: string) {
       const processedQuestions: ChecklistQuestion[] = [];
 
       // Transform questions from database format to our type
-      const items = (questionsData || []).map(item => ({
+      const items: ChecklistItemDBResponse[] = (questionsData || []).map(item => ({
         id: item.id,
         text: item.pergunta,
         tipo_resposta: item.tipo_resposta,

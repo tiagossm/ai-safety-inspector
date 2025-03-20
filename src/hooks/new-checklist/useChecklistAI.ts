@@ -58,23 +58,20 @@ export function useChecklistAI() {
       // Check if data.questions exists, if not use data directly or create default questions
       let generatedQuestions: any[] = [];
       
-      if (data.questions && Array.isArray(data.questions)) {
+      if (data && data.questions && Array.isArray(data.questions)) {
         generatedQuestions = data.questions;
-      } else if (Array.isArray(data)) {
+      } else if (data && Array.isArray(data)) {
         generatedQuestions = data;
+      } else if (data && data.success && data.checklist_id) {
+        // Edge function created checklist in database but didn't return questions
+        // Create placeholder questions based on the assistant type
+        generatedQuestions = getDefaultQuestions(selectedAssistant, questionCount);
       }
       
       // If no questions were returned or not in expected format, create default ones
       if (!generatedQuestions || generatedQuestions.length === 0) {
         console.warn("No questions returned from AI, using defaults");
-        // Create some default questions based on the prompt
-        for (let i = 0; i < questionCount; i++) {
-          generatedQuestions.push({
-            text: `Question ${i + 1} related to ${prompt}`,
-            type: 'yes_no',
-            required: true
-          });
-        }
+        generatedQuestions = getDefaultQuestions(selectedAssistant, questionCount);
       }
       
       // Process generated questions
@@ -88,7 +85,8 @@ export function useChecklistAI() {
           text: q.text || `Question ${index + 1}`,
           responseType: mapResponseType(q.type || 'yes_no'),
           isRequired: q.required !== undefined ? q.required : true,
-          options: q.options ? (Array.isArray(q.options) ? q.options.map(String) : []) : 
+          options: q.options ? 
+                  (Array.isArray(q.options) ? q.options.map(String) : []) : 
                   (q.type === 'multiple_choice' ? ["Opção 1", "Opção 2"] : undefined),
           hint: q.hint || "",
           weight: q.weight || 1,
@@ -126,6 +124,58 @@ export function useChecklistAI() {
   };
   
   // Helper functions
+  
+  // Get default questions based on the assistant type
+  const getDefaultQuestions = (assistantType: AIAssistantType, count: number): any[] => {
+    const questions: any[] = [];
+    
+    const defaultQuestions = {
+      "workplace-safety": [
+        { text: "Os equipamentos de proteção individual (EPI) estão sendo utilizados corretamente?", type: "yes_no" },
+        { text: "Existem extintores de incêndio em todos os locais necessários?", type: "yes_no" },
+        { text: "As rotas de evacuação estão devidamente sinalizadas?", type: "yes_no" },
+        { text: "Os funcionários receberam treinamento adequado para emergências?", type: "yes_no" },
+        { text: "As áreas de risco estão devidamente sinalizadas?", type: "yes_no" }
+      ],
+      "compliance": [
+        { text: "Os documentos legais estão atualizados e disponíveis?", type: "yes_no" },
+        { text: "Os registros obrigatórios estão sendo mantidos pelo período exigido?", type: "yes_no" },
+        { text: "As licenças operacionais estão vigentes?", type: "yes_no" },
+        { text: "As obrigações trabalhistas estão sendo cumpridas?", type: "yes_no" },
+        { text: "Existem desvios em relação aos procedimentos internos?", type: "yes_no" }
+      ],
+      "quality": [
+        { text: "Os equipamentos de medição estão calibrados?", type: "yes_no" },
+        { text: "As amostras são coletadas conforme procedimento?", type: "yes_no" },
+        { text: "O controle estatístico de processo é realizado?", type: "yes_no" },
+        { text: "As não-conformidades são registradas e tratadas?", type: "yes_no" },
+        { text: "Os indicadores de qualidade estão sendo monitorados?", type: "yes_no" }
+      ],
+      "general": [
+        { text: "A documentação está atualizada e organizada?", type: "yes_no" },
+        { text: "O ambiente de trabalho está limpo e organizado?", type: "yes_no" },
+        { text: "Os colaboradores possuem as ferramentas necessárias?", type: "yes_no" },
+        { text: "Os processos estão documentados e acessíveis?", type: "yes_no" },
+        { text: "Os prazos estão sendo cumpridos?", type: "yes_no" }
+      ]
+    };
+    
+    // Get the questions for the selected type or use general
+    const typeQuestions = defaultQuestions[assistantType] || defaultQuestions["general"];
+    
+    // Add as many questions as requested, repeating if necessary
+    for (let i = 0; i < count; i++) {
+      questions.push({
+        ...typeQuestions[i % typeQuestions.length],
+        required: true,
+        allowPhoto: false,
+        allowVideo: false,
+        allowAudio: false
+      });
+    }
+    
+    return questions;
+  };
   
   // Get default group structure based on assistant type
   const getDefaultGroups = (assistantType: AIAssistantType): ChecklistGroup[] => {
@@ -169,7 +219,7 @@ export function useChecklistAI() {
       'assinatura': 'signature'
     };
     
-    return typeMap[type.toLowerCase()] || 'text';
+    return typeMap[type?.toLowerCase()] || 'text';
   };
 
   return {

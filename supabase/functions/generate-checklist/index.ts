@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.1";
 
@@ -90,7 +91,7 @@ serve(async (req) => {
         success: true,
         prompt,
         category,
-        questions,
+        questions: questions, // Always include the questions in the response
         questionCount: questions.length,
         checklist_id: checklistResult?.id || null
       }),
@@ -98,17 +99,32 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error('Error:', error);
+    
+    // Generate fallback questions even in case of error
+    const fallbackQuestions = generateFallbackQuestions();
+    
     return new Response(
       JSON.stringify({ 
         success: false, 
         error: error.message, 
         details: typeof error === 'object' ? JSON.stringify(error) : null,
-        questions: []
+        questions: fallbackQuestions
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
 });
+
+// Generate fallback questions in case of error
+function generateFallbackQuestions() {
+  return [
+    { text: "Todos os equipamentos de segurança estão disponíveis?", type: "yes_no", required: true },
+    { text: "A área de trabalho está limpa e organizada?", type: "yes_no", required: true },
+    { text: "Os procedimentos de emergência estão acessíveis?", type: "yes_no", required: true },
+    { text: "A sinalização de segurança está visível?", type: "yes_no", required: true },
+    { text: "Todos os funcionários receberam treinamento adequado?", type: "yes_no", required: true }
+  ];
+}
 
 // Normalize response types according to the database constraints
 function normalizeResponseType(type: string): string {
