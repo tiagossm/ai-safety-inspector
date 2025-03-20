@@ -96,7 +96,7 @@ export function useChecklistById(id: string) {
       console.log(`Fetching checklist with ID: ${id}`);
       
       // Fetch the checklist
-      const { data: checklist, error: checklistError } = await supabase
+      const { data: checklistData, error: checklistError } = await supabase
         .from("checklists")
         .select(`
           id,
@@ -119,6 +119,13 @@ export function useChecklistById(id: string) {
         console.error("Error fetching checklist:", checklistError);
         throw checklistError;
       }
+
+      if (!checklistData) {
+        console.error("No checklist found with ID:", id);
+        throw new Error("Checklist não encontrado");
+      }
+
+      const checklist = checklistData as ChecklistDBResponse;
 
       // Fetch checklist questions
       const { data: questionsData, error: questionsError } = await supabase
@@ -146,17 +153,14 @@ export function useChecklistById(id: string) {
         throw questionsError;
       }
 
-      if (!questionsData) {
-        console.warn(`No questions found for checklist ${id}`);
-        questionsData = [];
-      }
-
       // Process questions and extract group information
       const groupsMap = new Map<string, ChecklistGroup>();
       const processedQuestions: ChecklistQuestion[] = [];
 
-      questionsData.forEach((q: ChecklistItemDBResponse) => {
-        // Parse group info from hint
+      const items = questionsData as ChecklistItemDBResponse[] || [];
+
+      items.forEach((q) => {
+        // Parse group info from hint field
         const { groupId, groupTitle } = parseGroupInfo(q.hint || undefined);
         
         // If there's a group ID and we haven't seen it before, add it to our groups map
@@ -192,10 +196,21 @@ export function useChecklistById(id: string) {
         .sort((a, b) => a.order - b.order);
 
       const checklistWithStats: ChecklistWithStats = {
-        ...checklist as ChecklistDBResponse,
+        id: checklist.id,
+        title: checklist.title,
+        description: checklist.description || undefined,
+        isTemplate: checklist.isTemplate,
+        status: checklist.status as 'active' | 'inactive',
+        category: checklist.category || undefined,
+        responsibleId: checklist.responsibleId || undefined,
+        companyId: checklist.companyId || undefined,
+        userId: checklist.userId || undefined,
+        createdAt: checklist.createdAt,
+        updatedAt: checklist.updatedAt,
+        dueDate: checklist.dueDate || undefined,
         groups,
         questions: processedQuestions,
-        totalQuestions: questionsData.length,
+        totalQuestions: items.length,
         completedQuestions: 0 // In a real app, we'd calculate this
       };
 

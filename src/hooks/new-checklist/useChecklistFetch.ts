@@ -59,7 +59,7 @@ export function useChecklistFetch() {
 
       // Transform the data to our new format
       const checklists: ChecklistWithStats[] = await Promise.all(
-        (data as ChecklistDBResponse[]).map(async (checklistItem) => {
+        (data as any[]).map(async (checklistItem: ChecklistDBResponse) => {
           // Get count of questions for each checklist
           const { count: totalQuestions, error: countError } = await supabase
             .from("checklist_itens")
@@ -71,7 +71,18 @@ export function useChecklistFetch() {
           }
 
           const checklistWithStats: ChecklistWithStats = {
-            ...checklistItem,
+            id: checklistItem.id,
+            title: checklistItem.title,
+            description: checklistItem.description || undefined,
+            isTemplate: checklistItem.isTemplate,
+            status: checklistItem.status as 'active' | 'inactive',
+            category: checklistItem.category || undefined,
+            responsibleId: checklistItem.responsibleId || undefined,
+            companyId: checklistItem.companyId || undefined,
+            userId: checklistItem.userId || undefined,
+            createdAt: checklistItem.createdAt,
+            updatedAt: checklistItem.updatedAt,
+            dueDate: checklistItem.dueDate || undefined,
             totalQuestions: totalQuestions || 0,
             completedQuestions: 0 // We'll need another query for this in a real app
           };
