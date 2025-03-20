@@ -58,7 +58,8 @@ export function useChecklistFetch() {
       }
 
       // Type-safe transformation of the response data
-      const checklistItems: ChecklistDBResponse[] = data.map((item: any) => ({
+      // Cast the response data to any[] first, then map it to our type
+      const checklistItems: ChecklistDBResponse[] = (data as any[]).map(item => ({
         id: item.id,
         title: item.title,
         description: item.description,

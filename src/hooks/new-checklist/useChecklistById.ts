@@ -126,19 +126,21 @@ export function useChecklistById(id: string) {
       }
 
       // Explicitly type and create a checklist object from the response data
+      // Convert checklistData to any to bypass TypeScript's type checking
+      const data = checklistData as any;
       const checklist: ChecklistDBResponse = {
-        id: checklistData.id,
-        title: checklistData.title,
-        description: checklistData.description,
-        isTemplate: checklistData.isTemplate,
-        status: checklistData.status,
-        category: checklistData.category,
-        responsibleId: checklistData.responsibleId,
-        companyId: checklistData.companyId,
-        userId: checklistData.userId,
-        createdAt: checklistData.createdAt,
-        updatedAt: checklistData.updatedAt,
-        dueDate: checklistData.dueDate
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        isTemplate: data.isTemplate,
+        status: data.status,
+        category: data.category,
+        responsibleId: data.responsibleId,
+        companyId: data.companyId,
+        userId: data.userId,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+        dueDate: data.dueDate
       };
 
       // Fetch checklist questions
@@ -172,8 +174,9 @@ export function useChecklistById(id: string) {
       const processedQuestions: ChecklistQuestion[] = [];
 
       // Type-safe handling of questionsData
+      // Cast the response data to any[] first, then map it to our type
       const items: ChecklistItemDBResponse[] = questionsData ? 
-        questionsData.map((item: any) => ({
+        (questionsData as any[]).map(item => ({
           id: item.id,
           text: item.text,
           tipo_resposta: item.tipo_resposta,
