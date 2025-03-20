@@ -34,13 +34,66 @@ serve(async (req) => {
     // Generate questions based on the category
     const questions = generateQuestions(prompt, num_questions, category);
 
+    // Insert checklist into the database
+    let checklistResult;
+    try {
+      const { data: checklistData, error: checklistError } = await supabaseClient
+        .from("checklists")
+        .insert({
+          title: `Checklist de ${category}: ${prompt.substring(0, 50)}${prompt.length > 50 ? '...' : ''}`,
+          description: `Checklist gerado automaticamente com base em: ${prompt}`,
+          category: category,
+          company_id: company_id,
+          status_checklist: "ativo",
+          is_template: false,
+        })
+        .select('id')
+        .single();
+
+      if (checklistError) {
+        console.error("Error creating checklist:", checklistError);
+        throw checklistError;
+      }
+      
+      checklistResult = checklistData;
+      
+      // Insert questions into the database
+      if (checklistData && questions.length > 0) {
+        const questionsToInsert = questions.map((q, idx) => {
+          const dbQuestion: any = {
+            checklist_id: checklistData.id,
+            pergunta: q.text,
+            tipo_resposta: normalizeResponseType(q.type),
+            obrigatorio: q.required !== undefined ? q.required : true,
+            opcoes: q.options,
+            ordem: idx + 1,
+          };
+          
+          return dbQuestion;
+        });
+        
+        const { error: questionsError } = await supabaseClient
+          .from("checklist_itens")
+          .insert(questionsToInsert);
+          
+        if (questionsError) {
+          console.error("Error inserting questions:", questionsError);
+          // Continue execution even if questions fail to insert
+        }
+      }
+    } catch (dbError) {
+      console.error("Database operation failed:", dbError);
+      // Continue execution even if database operations fail
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         prompt,
         category,
         questions,
-        questionCount: questions.length
+        questionCount: questions.length,
+        checklist_id: checklistResult?.id || null
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -56,6 +109,27 @@ serve(async (req) => {
     );
   }
 });
+
+// Normalize response types according to the database constraints
+function normalizeResponseType(type: string): string {
+  // Map of user-friendly types to database-compatible types
+  const typeMap: Record<string, string> = {
+    'yes_no': 'yes_no',
+    'sim/não': 'yes_no',
+    'multiple_choice': 'multiple_choice',
+    'múltipla escolha': 'multiple_choice',
+    'numeric': 'numeric',
+    'numérico': 'numeric',
+    'text': 'text',
+    'texto': 'text',
+    'photo': 'photo',
+    'foto': 'photo',
+    'signature': 'signature',
+    'assinatura': 'signature'
+  };
+
+  return typeMap[type?.toLowerCase()] || 'yes_no'; // Default to 'yes_no' if not matched
+}
 
 // Generate questions based on prompt and category
 function generateQuestions(prompt: string, numQuestions: number, category: string) {

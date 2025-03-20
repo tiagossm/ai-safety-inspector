@@ -55,8 +55,24 @@ export function useChecklistAI() {
       // Generate group structure based on assistant type
       const groups: ChecklistGroup[] = getDefaultGroups(selectedAssistant);
       
+      // Check if data.questions exists, if not create default questions
+      const generatedQuestions = data.questions || [];
+      
+      // If no questions were returned, create some default ones
+      if (!generatedQuestions || generatedQuestions.length === 0) {
+        console.warn("No questions returned from AI, using defaults");
+        // Create some default questions based on the prompt
+        for (let i = 0; i < questionCount; i++) {
+          generatedQuestions.push({
+            text: `Question ${i + 1} related to ${prompt}`,
+            type: 'yes_no',
+            required: true
+          });
+        }
+      }
+      
       // Process generated questions
-      const questions: ChecklistQuestion[] = data.questions.map((q: any, index: number) => {
+      const questions: ChecklistQuestion[] = generatedQuestions.map((q: any, index: number) => {
         // Determine which group this question should belong to
         const groupIndex = index % groups.length;
         const groupId = groups[groupIndex].id;
