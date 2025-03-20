@@ -126,21 +126,21 @@ export function useChecklistById(id: string) {
       }
 
       // Explicitly type and create a checklist object from the response data
-      // Convert checklistData to any to bypass TypeScript's type checking
-      const data = checklistData as any;
+      // Cast checklistData to any to bypass TypeScript's type checking
+      const rawData = checklistData as any;
       const checklist: ChecklistDBResponse = {
-        id: data.id,
-        title: data.title,
-        description: data.description,
-        isTemplate: data.isTemplate,
-        status: data.status,
-        category: data.category,
-        responsibleId: data.responsibleId,
-        companyId: data.companyId,
-        userId: data.userId,
-        createdAt: data.createdAt,
-        updatedAt: data.updatedAt,
-        dueDate: data.dueDate
+        id: rawData.id,
+        title: rawData.title,
+        description: rawData.description,
+        isTemplate: rawData.isTemplate,
+        status: rawData.status,
+        category: rawData.category,
+        responsibleId: rawData.responsibleId,
+        companyId: rawData.companyId,
+        userId: rawData.userId,
+        createdAt: rawData.createdAt,
+        updatedAt: rawData.updatedAt,
+        dueDate: rawData.dueDate
       };
 
       // Fetch checklist questions
@@ -173,24 +173,23 @@ export function useChecklistById(id: string) {
       const groupsMap = new Map<string, ChecklistGroup>();
       const processedQuestions: ChecklistQuestion[] = [];
 
-      // Type-safe handling of questionsData
-      // Cast the response data to any[] first, then map it to our type
-      const items: ChecklistItemDBResponse[] = questionsData ? 
-        (questionsData as any[]).map(item => ({
-          id: item.id,
-          text: item.text,
-          tipo_resposta: item.tipo_resposta,
-          isRequired: item.isRequired,
-          options: item.options,
-          hint: item.hint,
-          weight: item.weight,
-          parentQuestionId: item.parentQuestionId,
-          conditionValue: item.conditionValue,
-          allowsPhoto: item.allowsPhoto,
-          allowsVideo: item.allowsVideo,
-          allowsAudio: item.allowsAudio,
-          order: item.order,
-        })) : [];
+      // Type-safe handling of questionsData by first casting to any
+      const rawQuestions = questionsData as any[] || [];
+      const items: ChecklistItemDBResponse[] = rawQuestions.map(item => ({
+        id: item.id,
+        text: item.text,
+        tipo_resposta: item.tipo_resposta,
+        isRequired: item.isRequired,
+        options: item.options,
+        hint: item.hint,
+        weight: item.weight,
+        parentQuestionId: item.parentQuestionId,
+        conditionValue: item.conditionValue,
+        allowsPhoto: item.allowsPhoto,
+        allowsVideo: item.allowsVideo,
+        allowsAudio: item.allowsAudio,
+        order: item.order,
+      }));
 
       items.forEach((q) => {
         // Parse group info from hint field
@@ -233,7 +232,7 @@ export function useChecklistById(id: string) {
         title: checklist.title,
         description: checklist.description || undefined,
         isTemplate: checklist.isTemplate,
-        status: checklist.status as 'active' | 'inactive',
+        status: (checklist.status || 'inactive') as 'active' | 'inactive',
         category: checklist.category || undefined,
         responsibleId: checklist.responsibleId || undefined,
         companyId: checklist.companyId || undefined,

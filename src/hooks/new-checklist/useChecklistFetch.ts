@@ -57,9 +57,9 @@ export function useChecklistFetch() {
         return [];
       }
 
-      // Type-safe transformation of the response data
-      // Cast the response data to any[] first, then map it to our type
-      const checklistItems: ChecklistDBResponse[] = (data as any[]).map(item => ({
+      // Type-safe transformation of the response data by first casting to any
+      const rawData = data as any[];
+      const checklistItems: ChecklistDBResponse[] = rawData.map(item => ({
         id: item.id,
         title: item.title,
         description: item.description,
@@ -92,7 +92,7 @@ export function useChecklistFetch() {
             title: checklistItem.title,
             description: checklistItem.description || undefined,
             isTemplate: checklistItem.isTemplate,
-            status: checklistItem.status as 'active' | 'inactive',
+            status: (checklistItem.status || 'inactive') as 'active' | 'inactive',
             category: checklistItem.category || undefined,
             responsibleId: checklistItem.responsibleId || undefined,
             companyId: checklistItem.companyId || undefined,
