@@ -46,6 +46,38 @@ const mapResponseType = (dbType: string): ChecklistQuestion['responseType'] => {
   return typeMap[dbType] || 'text';
 };
 
+// Define types for database responses to avoid TypeScript errors
+type ChecklistDBResponse = {
+  id: string;
+  title: string;
+  description: string | null;
+  isTemplate: boolean;
+  status: string;
+  category: string | null;
+  responsibleId: string | null;
+  companyId: string | null;
+  userId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  dueDate: string | null;
+};
+
+type ChecklistItemDBResponse = {
+  id: string;
+  text: string;
+  tipo_resposta: string;
+  isRequired: boolean;
+  options: string[] | null;
+  hint: string | null;
+  weight: number | null;
+  parentQuestionId: string | null;
+  conditionValue: string | null;
+  allowsPhoto: boolean;
+  allowsVideo: boolean;
+  allowsAudio: boolean;
+  order: number;
+};
+
 export function useChecklistById(id: string) {
   return useQuery({
     queryKey: ["new-checklist", id],
@@ -114,13 +146,18 @@ export function useChecklistById(id: string) {
         throw questionsError;
       }
 
+      if (!questionsData) {
+        console.warn(`No questions found for checklist ${id}`);
+        questionsData = [];
+      }
+
       // Process questions and extract group information
       const groupsMap = new Map<string, ChecklistGroup>();
       const processedQuestions: ChecklistQuestion[] = [];
 
-      questionsData.forEach((q) => {
+      questionsData.forEach((q: ChecklistItemDBResponse) => {
         // Parse group info from hint
-        const { groupId, groupTitle } = parseGroupInfo(q.hint);
+        const { groupId, groupTitle } = parseGroupInfo(q.hint || undefined);
         
         // If there's a group ID and we haven't seen it before, add it to our groups map
         if (groupId && !groupsMap.has(groupId) && groupTitle) {
@@ -138,11 +175,11 @@ export function useChecklistById(id: string) {
           responseType: mapResponseType(q.tipo_resposta),
           isRequired: q.isRequired,
           options: Array.isArray(q.options) ? q.options : undefined,
-          hint: q.hint,
+          hint: q.hint || undefined,
           weight: q.weight || 1,
           groupId: groupId,
-          parentQuestionId: q.parentQuestionId,
-          conditionValue: q.conditionValue,
+          parentQuestionId: q.parentQuestionId || undefined,
+          conditionValue: q.conditionValue || undefined,
           allowsPhoto: q.allowsPhoto,
           allowsVideo: q.allowsVideo,
           allowsAudio: q.allowsAudio,
@@ -154,13 +191,15 @@ export function useChecklistById(id: string) {
       const groups = Array.from(groupsMap.values())
         .sort((a, b) => a.order - b.order);
 
-      return {
-        ...checklist,
+      const checklistWithStats: ChecklistWithStats = {
+        ...checklist as ChecklistDBResponse,
         groups,
         questions: processedQuestions,
         totalQuestions: questionsData.length,
         completedQuestions: 0 // In a real app, we'd calculate this
       };
+
+      return checklistWithStats;
     },
     enabled: !!id && id !== "new",
     staleTime: 60000, // 1 minute

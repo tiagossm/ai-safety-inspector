@@ -4,6 +4,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { Checklist, ChecklistWithStats } from "@/types/newChecklist";
 import { toast } from "sonner";
 
+// Define types for database responses to avoid TypeScript errors
+type ChecklistDBResponse = {
+  id: string;
+  title: string;
+  description: string | null;
+  isTemplate: boolean;
+  status: string;
+  category: string | null;
+  responsibleId: string | null;
+  companyId: string | null;
+  userId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  dueDate: string | null;
+};
+
 /**
  * Hook to fetch all checklists with optional stats
  */
@@ -37,13 +53,13 @@ export function useChecklistFetch() {
         throw error;
       }
 
-      if (!data) {
+      if (!data || data.length === 0) {
         return [];
       }
 
       // Transform the data to our new format
       const checklists: ChecklistWithStats[] = await Promise.all(
-        data.map(async (checklistItem) => {
+        (data as ChecklistDBResponse[]).map(async (checklistItem) => {
           // Get count of questions for each checklist
           const { count: totalQuestions, error: countError } = await supabase
             .from("checklist_itens")
@@ -54,11 +70,13 @@ export function useChecklistFetch() {
             console.error(`Error counting questions for checklist ${checklistItem.id}:`, countError);
           }
 
-          return {
+          const checklistWithStats: ChecklistWithStats = {
             ...checklistItem,
             totalQuestions: totalQuestions || 0,
             completedQuestions: 0 // We'll need another query for this in a real app
           };
+
+          return checklistWithStats;
         })
       );
 
