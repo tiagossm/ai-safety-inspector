@@ -14,6 +14,11 @@ import ChecklistDetail from "@/pages/ChecklistDetail";
 import Settings from "@/pages/Settings";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
+import NotFound from "@/pages/NotFound";
+import NewChecklists from "@/pages/NewChecklists";
+import NewChecklistCreate from "@/pages/NewChecklistCreate";
+import NewChecklistEdit from "@/pages/NewChecklistEdit";
+import NewChecklistDetails from "@/pages/NewChecklistDetails";
 
 function App() {
   return (
@@ -29,7 +34,15 @@ function App() {
             <Route path="checklists" element={<Checklists />} />
             <Route path="checklists/create" element={<CreateChecklist />} />
             <Route path="checklists/:id" element={<ChecklistDetail />} />
+            
+            {/* New checklist routes */}
+            <Route path="new-checklists" element={<NewChecklists />} />
+            <Route path="new-checklists/create" element={<NewChecklistCreate />} />
+            <Route path="new-checklists/edit/:id" element={<NewChecklistEdit />} />
+            <Route path="new-checklists/:id" element={<NewChecklistDetails />} />
+            
             <Route path="settings" element={<Settings />} />
+            <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
         <Toaster />

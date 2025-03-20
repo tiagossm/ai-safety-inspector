@@ -20,7 +20,7 @@ const menuItems = [
   { title: "Empresas", icon: Building2, url: "/companies" },
   { title: "Inspeções", icon: ClipboardCheck, url: "/inspections" },
   { title: "Checklists", icon: ClipboardCheck, url: "/checklists" },
-  { title: "Novos Checklists", icon: FileCheck, url: "/new-checklists" },
+  { title: "Novos Checklists", icon: FileCheck, url: "/new-checklists" }, // Make sure this URL is correct
   { title: "Relatórios", icon: History, url: "/reports" },
   { title: "Configurações", icon: Settings, url: "/settings" },
   { title: "Perfil", icon: User, url: "/profile" },
