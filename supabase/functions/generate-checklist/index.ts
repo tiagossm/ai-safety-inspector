@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.1";
 
@@ -24,7 +23,11 @@ serve(async (req) => {
 
     if (!prompt) {
       return new Response(
-        JSON.stringify({ error: 'Prompt is required' }),
+        JSON.stringify({ 
+          error: 'Prompt is required',
+          success: false,
+          questions: generateFallbackQuestions() // Include fallback questions even on error
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
@@ -60,12 +63,22 @@ serve(async (req) => {
       // Insert questions into the database
       if (checklistData && questions.length > 0) {
         const questionsToInsert = questions.map((q, idx) => {
+          // Ensure options is properly formatted for database
+          let formattedOptions = q.options;
+          if (formattedOptions && !Array.isArray(formattedOptions)) {
+            // Convert single option to array
+            formattedOptions = [String(formattedOptions)];
+          } else if (Array.isArray(formattedOptions)) {
+            // Convert all array items to strings
+            formattedOptions = formattedOptions.map(String);
+          }
+          
           const dbQuestion: any = {
             checklist_id: checklistData.id,
             pergunta: q.text,
             tipo_resposta: normalizeResponseType(q.type),
             obrigatorio: q.required !== undefined ? q.required : true,
-            opcoes: q.options,
+            opcoes: formattedOptions,
             ordem: idx + 1,
           };
           
@@ -128,7 +141,6 @@ function generateFallbackQuestions() {
 
 // Normalize response types according to the database constraints
 function normalizeResponseType(type: string): string {
-  // Map of user-friendly types to database-compatible types
   const typeMap: Record<string, string> = {
     'yes_no': 'yes_no',
     'sim/não': 'yes_no',
@@ -144,14 +156,13 @@ function normalizeResponseType(type: string): string {
     'assinatura': 'signature'
   };
 
-  return typeMap[type?.toLowerCase()] || 'yes_no'; // Default to 'yes_no' if not matched
+  return typeMap[type?.toLowerCase()] || 'yes_no';
 }
 
 // Generate questions based on prompt and category
 function generateQuestions(prompt: string, numQuestions: number, category: string) {
   const questions = [];
   
-  // Define question templates by category
   const questionTemplates: Record<string, { text: string, type: string }[]> = {
     'workplace-safety': [
       { text: "Os equipamentos de proteção individual (EPI) estão sendo utilizados corretamente?", type: "yes_no" },
@@ -203,19 +214,15 @@ function generateQuestions(prompt: string, numQuestions: number, category: strin
     ]
   };
   
-  // Get templates for the selected category or use general
   const templates = questionTemplates[category] || questionTemplates.general;
   
-  // Use templates up to the number we have
   for (let i = 0; i < Math.min(templates.length, numQuestions); i++) {
     questions.push(templates[i]);
   }
   
-  // If we need more questions than templates, generate additional ones based on prompt
   if (numQuestions > templates.length) {
     const keywords = prompt.toLowerCase().split(" ");
     
-    // Question types to cycle through
     const questionTypes = ["yes_no", "text", "multiple_choice", "numeric"];
     
     for (let i = templates.length; i < numQuestions; i++) {
@@ -225,10 +232,9 @@ function generateQuestions(prompt: string, numQuestions: number, category: strin
       let question: any = {
         text: generateQuestionText(category, keyword),
         type: type,
-        required: Math.random() > 0.3, // 70% chance of being required
+        required: Math.random() > 0.3,
       };
       
-      // Add options for multiple choice
       if (type === "multiple_choice") {
         if (category === "workplace-safety") {
           question.options = ["Conforme", "Não conforme", "Parcialmente conforme", "Não aplicável"];
@@ -245,10 +251,16 @@ function generateQuestions(prompt: string, numQuestions: number, category: strin
     }
   }
   
-  return questions;
+  return questions.map(q => {
+    if (q.options && !Array.isArray(q.options)) {
+      q.options = [String(q.options)];
+    } else if (Array.isArray(q.options)) {
+      q.options = q.options.map(String);
+    }
+    return q;
+  });
 }
 
-// Helper function to generate question text based on category and keyword
 function generateQuestionText(category: string, keyword: string): string {
   switch (category) {
     case "workplace-safety":

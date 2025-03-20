@@ -62,12 +62,13 @@ type ChecklistDBResponse = {
   dueDate: string | null;
 };
 
+// Updated to accept any valid JSON value for options, not just array
 type ChecklistItemDBResponse = {
   id: string;
   text: string;
   tipo_resposta: string;
   isRequired: boolean;
-  options: any[] | null; // Updated to handle any JSON array type
+  options: any; // Changed from any[] | null to any to accommodate any JSON value
   hint: string | null;
   weight: number | null;
   parentQuestionId: string | null;
@@ -177,7 +178,7 @@ export function useChecklistById(id: string) {
         text: item.pergunta,
         tipo_resposta: item.tipo_resposta,
         isRequired: item.obrigatorio,
-        options: item.opcoes, // This can be any JSON array type
+        options: item.opcoes, // Now accepts any JSON value
         hint: item.hint,
         weight: item.weight,
         parentQuestionId: item.parent_item_id,
@@ -207,7 +208,16 @@ export function useChecklistById(id: string) {
           text: q.text,
           responseType: mapResponseType(q.tipo_resposta),
           isRequired: q.isRequired,
-          options: Array.isArray(q.options) ? q.options.map(opt => String(opt)) : undefined, // Convert all options to strings
+          // Properly handle options based on their type
+          options: Array.isArray(q.options) 
+            ? q.options.map(opt => String(opt)) 
+            : q.options 
+              ? (typeof q.options === 'string' 
+                ? [q.options] 
+                : Array.isArray(q.options) 
+                  ? q.options.map(String) 
+                  : undefined)
+              : undefined,
           hint: q.hint || undefined,
           weight: q.weight || 1,
           groupId: groupId,

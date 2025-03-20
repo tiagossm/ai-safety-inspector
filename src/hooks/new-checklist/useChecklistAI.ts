@@ -55,7 +55,7 @@ export function useChecklistAI() {
       // Generate group structure based on assistant type
       const groups: ChecklistGroup[] = getDefaultGroups(selectedAssistant);
       
-      // Check if data.questions exists, if not use data directly or create default questions
+      // Determine the source of questions based on the response structure
       let generatedQuestions: any[] = [];
       
       if (data && data.questions && Array.isArray(data.questions)) {
@@ -63,12 +63,16 @@ export function useChecklistAI() {
       } else if (data && Array.isArray(data)) {
         generatedQuestions = data;
       } else if (data && data.success && data.checklist_id) {
-        // Edge function created checklist in database but didn't return questions
-        // Create placeholder questions based on the assistant type
+        // If we have a successful response with a checklist_id but no questions array
+        console.log("Checklist created in database but no questions returned - using default questions");
+        generatedQuestions = getDefaultQuestions(selectedAssistant, questionCount);
+      } else {
+        // Fallback to default questions if the response is in an unexpected format
+        console.warn("Unexpected response format from AI, using default questions");
         generatedQuestions = getDefaultQuestions(selectedAssistant, questionCount);
       }
       
-      // If no questions were returned or not in expected format, create default ones
+      // Ensure we have at least some questions
       if (!generatedQuestions || generatedQuestions.length === 0) {
         console.warn("No questions returned from AI, using defaults");
         generatedQuestions = getDefaultQuestions(selectedAssistant, questionCount);
@@ -80,14 +84,28 @@ export function useChecklistAI() {
         const groupIndex = index % groups.length;
         const groupId = groups[groupIndex].id;
         
+        // Safely handle options of different types
+        let optionsArray: string[] | undefined;
+        
+        if (q.options) {
+          if (Array.isArray(q.options)) {
+            optionsArray = q.options.map(String);
+          } else if (typeof q.options === 'string') {
+            optionsArray = [q.options];
+          } else {
+            // For multiple_choice type without options, provide defaults
+            optionsArray = q.type === 'multiple_choice' ? ["Opção 1", "Opção 2"] : undefined;
+          }
+        } else if (q.type === 'multiple_choice' || q.responseType === 'multiple_choice') {
+          optionsArray = ["Opção 1", "Opção 2"];
+        }
+        
         return {
           id: `new-${Date.now()}-${index}`,
           text: q.text || `Question ${index + 1}`,
           responseType: mapResponseType(q.type || 'yes_no'),
           isRequired: q.required !== undefined ? q.required : true,
-          options: q.options ? 
-                  (Array.isArray(q.options) ? q.options.map(String) : []) : 
-                  (q.type === 'multiple_choice' ? ["Opção 1", "Opção 2"] : undefined),
+          options: optionsArray,
           hint: q.hint || "",
           weight: q.weight || 1,
           groupId,
