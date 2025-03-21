@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Radio, RadioGroup, RadioIndicator, RadioItem, RadioLabel } from "@/components/ui/radio-group";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AIAssistantType } from "@/hooks/new-checklist/useChecklistAI";
@@ -32,59 +32,43 @@ export function AIAssistantSelector({
           className="grid grid-cols-1 md:grid-cols-4 gap-4"
         >
           <div>
-            <RadioItem value="general" id="general" className="sr-only peer" />
-            <RadioLabel
-              htmlFor="general"
-              className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-            >
-              <RadioIndicator className="mb-3" />
-              <span className="text-center font-medium">Geral</span>
+            <div className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+              <RadioGroupItem value="general" id="general" className="mb-3" />
+              <Label htmlFor="general" className="text-center font-medium">Geral</Label>
               <span className="text-center text-sm text-muted-foreground mt-1">
                 Checklists para uso geral e diversos propósitos
               </span>
-            </RadioLabel>
+            </div>
           </div>
 
           <div>
-            <RadioItem value="workplace-safety" id="workplace-safety" className="sr-only peer" />
-            <RadioLabel
-              htmlFor="workplace-safety"
-              className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-            >
-              <RadioIndicator className="mb-3" />
-              <span className="text-center font-medium">Segurança</span>
+            <div className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+              <RadioGroupItem value="workplace-safety" id="workplace-safety" className="mb-3" />
+              <Label htmlFor="workplace-safety" className="text-center font-medium">Segurança</Label>
               <span className="text-center text-sm text-muted-foreground mt-1">
                 Segurança do trabalho, prevenção de acidentes
               </span>
-            </RadioLabel>
+            </div>
           </div>
 
           <div>
-            <RadioItem value="compliance" id="compliance" className="sr-only peer" />
-            <RadioLabel
-              htmlFor="compliance"
-              className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-            >
-              <RadioIndicator className="mb-3" />
-              <span className="text-center font-medium">Conformidade</span>
+            <div className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+              <RadioGroupItem value="compliance" id="compliance" className="mb-3" />
+              <Label htmlFor="compliance" className="text-center font-medium">Conformidade</Label>
               <span className="text-center text-sm text-muted-foreground mt-1">
                 Auditorias, normas e requisitos regulatórios
               </span>
-            </RadioLabel>
+            </div>
           </div>
 
           <div>
-            <RadioItem value="quality" id="quality" className="sr-only peer" />
-            <RadioLabel
-              htmlFor="quality"
-              className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-            >
-              <RadioIndicator className="mb-3" />
-              <span className="text-center font-medium">Qualidade</span>
+            <div className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+              <RadioGroupItem value="quality" id="quality" className="mb-3" />
+              <Label htmlFor="quality" className="text-center font-medium">Qualidade</Label>
               <span className="text-center text-sm text-muted-foreground mt-1">
                 Controle de qualidade e processos
               </span>
-            </RadioLabel>
+            </div>
           </div>
         </RadioGroup>
       </div>

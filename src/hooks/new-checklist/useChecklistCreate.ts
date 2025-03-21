@@ -90,7 +90,7 @@ export function useChecklistCreate() {
             pergunta: question.text,
             tipo_resposta: getDatabaseType(question.responseType),
             obrigatorio: question.isRequired,
-            opcoes: question.options,
+            opcoes: question.options || [],
             hint: questionHint,
             weight: question.weight || 1,
             parent_item_id: question.parentQuestionId,

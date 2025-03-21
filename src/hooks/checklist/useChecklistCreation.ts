@@ -174,7 +174,6 @@ export function useChecklistCreation() {
         const result = await generateChecklist({
           ...form,
           status: "active", // Ensure proper status value for database constraint
-          status_checklist: "ativo" // Fix for database constraint
         });
         
         if (result.success && result.checklistData && result.questions) {
