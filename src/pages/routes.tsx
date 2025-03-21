@@ -13,24 +13,9 @@ import NewChecklistCreate from "./NewChecklistCreate";
 import NewChecklistEdit from "./NewChecklistEdit";
 import NewChecklistDetails from "./NewChecklistDetails";
 
-export function ChecklistEditorRoute() {
+export function ChecklistRoutes() {
   return (
-    <Route 
-      path="/checklists/editor" 
-      element={
-        <RequireAuth>
-          <Suspense fallback={<div className="py-20 text-center">Carregando editor...</div>}>
-            <ChecklistEditorPage />
-          </Suspense>
-        </RequireAuth>
-      } 
-    />
-  );
-}
-
-export default function Router() {
-  return (
-    <Routes>
+    <>
       {/* Original checklist routes */}
       <Route path="/checklists" element={<RequireAuth><Checklists /></RequireAuth>} />
       <Route path="/checklists/:id" element={<RequireAuth><ChecklistDetails /></RequireAuth>} />
@@ -43,6 +28,14 @@ export default function Router() {
       <Route path="/new-checklists/create" element={<RequireAuth><NewChecklistCreate /></RequireAuth>} />
       <Route path="/new-checklists/edit/:id" element={<RequireAuth><NewChecklistEdit /></RequireAuth>} />
       <Route path="/new-checklists/:id" element={<RequireAuth><NewChecklistDetails /></RequireAuth>} />
+    </>
+  );
+}
+
+export default function AppRoutes() {
+  return (
+    <Routes>
+      <ChecklistRoutes />
     </Routes>
   );
 }

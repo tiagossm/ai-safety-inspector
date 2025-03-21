@@ -16,10 +16,10 @@ declare module 'jspdf' {
  * @param checklist The checklist to export
  * @returns Promise that resolves when PDF is generated and downloaded
  */
-export const exportChecklistToPDF = async (checklist: ChecklistWithStats): Promise<boolean> => {
+export const exportChecklistToPDF = async (checklist: ChecklistWithStats): Promise<void> => {
   try {
     // Use the existing PDF generator that's already in the codebase
-    return await generateChecklistPDF(checklist);
+    await generateChecklistPDF(checklist);
   } catch (error) {
     console.error("Error exporting checklist to PDF:", error);
     throw error;
@@ -70,7 +70,6 @@ export const exportChecklistsTableToPDF = (checklists: ChecklistWithStats[], tit
     
     // Save the PDF file
     doc.save(`${title.toLowerCase().replace(/\s+/g, '_')}.pdf`);
-    return true;
   } catch (error) {
     console.error("Error exporting checklists table to PDF:", error);
     throw error;

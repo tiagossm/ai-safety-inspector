@@ -43,7 +43,7 @@ export function ChecklistCard({
   
   // Handle inspection start
   const handleStartInspection = () => {
-    // Navigate to start a new inspection with this checklist
+    // Navigate to inspections page (adjusted to match the existing route)
     navigate(`/inspections`);
     toast.info(`Inspeção iniciada com o checklist: ${checklist.title}`);
   };
