@@ -94,10 +94,13 @@ export function useChecklistCreate() {
               questionOptions = question.options;
             } else if (typeof question.options === 'string') {
               // If it's a string, attempt to parse it if it looks like JSON
-              const optionsString = question.options;
+              const optionsString: string = question.options;
               if (optionsString.startsWith('[') && optionsString.endsWith(']')) {
                 try {
-                  questionOptions = JSON.parse(optionsString);
+                  const parsedOptions = JSON.parse(optionsString);
+                  if (Array.isArray(parsedOptions)) {
+                    questionOptions = parsedOptions;
+                  }
                 } catch (e) {
                   // If parsing fails, split by commas
                   questionOptions = optionsString.split(',').map(o => o.trim());
