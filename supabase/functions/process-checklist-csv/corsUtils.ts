@@ -1,23 +1,21 @@
 
-// CORS headers to allow requests from any origin
+// Configurações de CORS para as Edge Functions
 export const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, Authorization',
-  'Access-Control-Allow-Credentials': 'true',
 };
 
-// Handle CORS preflight requests
-export function handleCors(req: Request): Response | null {
+// Função utilitária para lidar com requisições CORS preflight
+export function handleCors(req: Request) {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    console.log("Handling CORS preflight request");
     return new Response(null, {
-      headers: corsHeaders,
       status: 204,
+      headers: corsHeaders
     });
   }
   
-  // For other requests, continue processing
+  // Para outras requisições, apenas retorne null para continuar o processamento
   return null;
 }

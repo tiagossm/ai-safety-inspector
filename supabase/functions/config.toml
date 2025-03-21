@@ -1,0 +1,6 @@
+
+project_id = "jkgmgjjtslkozhehwmng"
+app_version = "v0.0.2"
+
+[[import_map.imports]]
+path = "list-assistants/"

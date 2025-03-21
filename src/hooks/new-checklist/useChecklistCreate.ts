@@ -85,12 +85,33 @@ export function useChecklistCreate() {
             }
           }
           
+          // Ensure options is an array when storing in the database
+          let questionOptions = question.options;
+          if (question.responseType === 'multiple_choice' && !Array.isArray(questionOptions)) {
+            if (typeof questionOptions === 'string') {
+              // If it's a string, attempt to parse it if it looks like JSON
+              try {
+                if (questionOptions.startsWith('[') && questionOptions.endsWith(']')) {
+                  questionOptions = JSON.parse(questionOptions);
+                } else {
+                  // If not JSON format, split by commas
+                  questionOptions = questionOptions.split(',').map(o => o.trim());
+                }
+              } catch (e) {
+                console.warn("Failed to parse options string, defaulting to empty array:", e);
+                questionOptions = [];
+              }
+            } else {
+              questionOptions = [];
+            }
+          }
+          
           return {
             checklist_id: checklistId,
             pergunta: question.text,
             tipo_resposta: getDatabaseType(question.responseType),
             obrigatorio: question.isRequired,
-            opcoes: question.options || [],
+            opcoes: questionOptions,
             hint: questionHint,
             weight: question.weight || 1,
             parent_item_id: question.parentQuestionId,

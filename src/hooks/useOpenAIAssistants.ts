@@ -1,7 +1,7 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from './use-toast';
+import { toast } from 'sonner';
 
 interface Assistant {
   id: string;
@@ -11,7 +11,10 @@ interface Assistant {
 export const useOpenAIAssistants = () => {
   const [assistants, setAssistants] = useState<Assistant[]>([]);
   const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
+
+  useEffect(() => {
+    loadAssistants();
+  }, []);
 
   const loadAssistants = async () => {
     setLoading(true);
@@ -46,11 +49,7 @@ export const useOpenAIAssistants = () => {
 
     } catch (error: any) {
       console.error('Error loading assistants:', error);
-      toast({
-        title: "Erro ao carregar assistentes",
-        description: error.message || "Verifique se a chave da API da OpenAI está configurada corretamente.",
-        variant: "destructive"
-      });
+      toast.error("Erro ao carregar assistentes. Verifique se a chave da API da OpenAI está configurada corretamente.");
       setAssistants([]);
     } finally {
       setLoading(false);

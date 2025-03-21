@@ -1,398 +1,278 @@
 
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
-import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
-import { NewChecklist } from "@/types/checklist";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/components/AuthProvider";
-import * as XLSX from "xlsx";
+import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
+import Papa from 'papaparse';
+import { NewChecklist } from '@/types/checklist';
 
-// Create an interface for the parsed data
-interface ParsedData {
-  questions: Array<{
-    text: string;
-    type: string;
-    required: boolean;
-    allowPhoto: boolean;
-    allowVideo: boolean;
-    allowAudio: boolean;
-    options?: string[];
-    hint?: string;
-    weight?: number;
-  }>;
-}
-
-/**
- * Valida se o arquivo tem um formato correto (CSV, XLS, XLSX)
- */
-const validateFileFormat = (file: File): { valid: boolean; message?: string } => {
-  if (!file) return { valid: false, message: "Nenhum arquivo selecionado" };
-
-  const fileExtension = file.name.split(".").pop()?.toLowerCase();
-  if (!["csv", "xls", "xlsx"].includes(fileExtension || "")) {
-    return {
-      valid: false,
-      message: "Formato de arquivo inválido. Apenas arquivos CSV, XLS e XLSX são suportados.",
-    };
-  }
-
-  return { valid: true };
-};
-
-// Obtém um token de autenticação válido do Supabase
-const getValidAuthToken = async (): Promise<string | null> => {
-  try {
-    console.log("🔄 Renovando a sessão para obter um token válido...");
-    
-    // Get current session
-    const { data: sessionData } = await supabase.auth.getSession();
-    
-    if (!sessionData?.session) {
-      console.log("❌ Sem sessão ativa, forçando refresh...");
-      const { data, error } = await supabase.auth.refreshSession();
-      
-      if (error || !data?.session) {
-        console.error("❌ Falha ao renovar sessão:", error?.message);
-        toast.error("Erro de autenticação. Faça login novamente.");
-        return null;
-      }
-      
-      console.log("✅ Token JWT renovado com sucesso após refresh.");
-      return data.session.access_token;
-    }
-    
-    // If session exists but might be close to expiry, refresh it anyway
-    if (sessionData.session) {
-      const expiresAt = sessionData.session.expires_at;
-      const currentTime = Math.floor(Date.now() / 1000);
-      const timeUntilExpiry = expiresAt ? expiresAt - currentTime : 0;
-      
-      // If less than 5 minutes until expiry, refresh the token
-      if (timeUntilExpiry < 300) {
-        console.log("🔄 Token próximo da expiração, renovando...");
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-        
-        if (refreshError || !refreshData?.session) {
-          console.error("❌ Falha ao renovar sessão próxima da expiração:", refreshError?.message);
-          // Still return the current token as it's valid
-          return sessionData.session.access_token;
-        }
-        
-        console.log("✅ Token JWT renovado com sucesso.");
-        return refreshData.session.access_token;
-      }
-      
-      console.log("✅ Usando token JWT existente (válido).");
-      console.log("🔑 Token JWT obtido. Comprimento:", sessionData.session.access_token.length);
-      return sessionData.session.access_token;
-    }
-    
-    console.error("❌ Situação inesperada na verificação do token.");
-    return null;
-  } catch (error) {
-    console.error("❌ Erro crítico ao obter token JWT:", error);
-    toast.error("Erro de autenticação. Faça login novamente.");
-    return null;
-  }
+type ImportResult = {
+  success: boolean;
+  message?: string;
+  checklistData?: any;
+  questions?: any[];
+  groups?: any[];
+  mode?: string;
 };
 
 export function useChecklistImport() {
-  const createChecklist = useCreateChecklist();
-  const { user, refreshSession } = useAuth();
-  const [sessionValid, setSessionValid] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
-  // Verifica se a sessão é válida ao montar o componente
-  useEffect(() => {
-    const validateSession = async () => {
-      try {
-        await refreshSession();
-        const { data } = await supabase.auth.getSession();
-        const isValid = !!data.session;
-        setSessionValid(isValid);
-        console.log("✅ Sessão validada:", isValid);
-        
-        if (!isValid) {
-          console.warn("⚠️ Sessão inválida em useChecklistImport");
-          toast.error("Sessão expirada", {
-            description: "Sua sessão expirou. Faça login novamente."
+  // Função para importar de arquivo
+  const importFromFile = async (file: File, formData: NewChecklist): Promise<ImportResult> => {
+    setIsImporting(true);
+
+    try {
+      if (!file) {
+        toast.error("Selecione um arquivo para importar");
+        return { success: false, message: "Nenhum arquivo selecionado" };
+      }
+
+      if (!formData.title) {
+        toast.error("O título do checklist é obrigatório");
+        return { success: false, message: "Título é obrigatório" };
+      }
+
+      let parsedData: any[] = [];
+
+      // Determinar o tipo de arquivo e processar de acordo
+      if (file.name.endsWith('.csv')) {
+        // Processar CSV
+        parsedData = await parseCSV(file);
+      } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        // Processar Excel
+        parsedData = await parseExcel(file);
+      } else {
+        toast.error("Formato de arquivo não suportado. Use CSV ou Excel (.xlsx/.xls)");
+        return { success: false, message: "Formato não suportado" };
+      }
+
+      if (parsedData.length === 0) {
+        toast.error("Nenhum dado encontrado no arquivo");
+        return { success: false, message: "Arquivo vazio" };
+      }
+
+      console.log("Dados importados:", parsedData);
+
+      // Converter dados para o formato de perguntas e grupos
+      const { questions, groups } = convertImportDataToQuestions(parsedData);
+
+      // Se usar a API do Supabase estiver disponível, tente processar o arquivo diretamente
+      if (supabase.functions) {
+        try {
+          // Preparar FormData para envio
+          const formPayload = new FormData();
+          formPayload.append('file', file);
+          formPayload.append('form', JSON.stringify({
+            title: formData.title,
+            description: formData.description,
+            is_template: formData.is_template,
+            status: formData.status || 'active',
+            category: formData.category,
+            responsible_id: formData.responsible_id,
+            company_id: formData.company_id,
+            due_date: formData.due_date
+          }));
+
+          // Enviar para processamento no Edge Function
+          const { data, error } = await supabase.functions.invoke('process-checklist-csv', {
+            body: formPayload
           });
-        }
-      } catch (error) {
-        console.error("❌ Erro na validação da sessão:", error);
-        setSessionValid(false);
-      }
-    };
 
-    validateSession();
-  }, [refreshSession]);
-
-  const getTemplateFileUrl = () => {
-    return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/templates/checklist_import_template.xlsx`;
-  };
-
-  const parseFile = async (file: File): Promise<ParsedData> => {
-    try {
-      const fileExtension = file.name.split('.').pop()?.toLowerCase();
-      
-      if (fileExtension === 'csv') {
-        // Parse CSV
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            if (!e.target?.result) {
-              reject(new Error('Failed to read file'));
-              return;
-            }
-            
-            // Parse CSV content
-            const content = e.target.result as string;
-            const rows = content.split('\n');
-            const headers = rows[0].split(',').map(h => h.trim());
-            
-            const questions = [];
-            for (let i = 1; i < rows.length; i++) {
-              if (!rows[i].trim()) continue;
-              
-              const values = rows[i].split(',').map(v => v.trim());
-              const question = {
-                text: values[0] || '',
-                type: values[1] || 'sim/não',
-                required: values[2]?.toLowerCase() === 'sim' || values[2]?.toLowerCase() === 'true',
-                allowPhoto: values[3]?.toLowerCase() === 'sim' || values[3]?.toLowerCase() === 'true',
-                allowVideo: values[4]?.toLowerCase() === 'sim' || values[4]?.toLowerCase() === 'true',
-                allowAudio: values[5]?.toLowerCase() === 'sim' || values[5]?.toLowerCase() === 'true',
-              };
-              
-              if (question.text) {
-                questions.push(question);
-              }
-            }
-            
-            resolve({ questions });
-          };
-          
-          reader.onerror = (error) => {
-            reject(error);
-          };
-          
-          reader.readAsText(file);
-        });
-      } else if (['xlsx', 'xls'].includes(fileExtension || '')) {
-        // Parse Excel
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            if (!e.target?.result) {
-              reject(new Error('Failed to read file'));
-              return;
-            }
-            
-            try {
-              const data = new Uint8Array(e.target.result as ArrayBuffer);
-              const workbook = XLSX.read(data, { type: 'array' });
-              const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-              const rows = XLSX.utils.sheet_to_json(firstSheet);
-              
-              const questions = rows.map((row: any) => ({
-                text: row.Pergunta || row.Question || row.pergunta || row.question || '',
-                type: row.Tipo || row.Type || row.tipo || row.type || 'sim/não',
-                required: row.Obrigatório === 'Sim' || row.Required === 'Yes' || row.Obrigatório === true || row.Required === true,
-                allowPhoto: row.PermiteFoto === 'Sim' || row.AllowPhoto === 'Yes' || row.PermiteFoto === true || row.AllowPhoto === true,
-                allowVideo: row.PermiteVideo === 'Sim' || row.AllowVideo === 'Yes' || row.PermiteVideo === true || row.AllowVideo === true,
-                allowAudio: row.PermiteAudio === 'Sim' || row.AllowAudio === 'Yes' || row.PermiteAudio === true || row.AllowAudio === true,
-              })).filter((q: any) => q.text);
-              
-              resolve({ questions });
-            } catch (error) {
-              reject(error);
-            }
-          };
-          
-          reader.onerror = (error) => {
-            reject(error);
-          };
-          
-          reader.readAsArrayBuffer(file);
-        });
-      }
-      
-      throw new Error('Unsupported file format');
-    } catch (error) {
-      console.error("Error parsing file:", error);
-      throw error;
-    }
-  };
-
-  const importFromFile = async (file: File, form: NewChecklist) => {
-    // Validação inicial do arquivo
-    if (!file) {
-      toast.error("Nenhum arquivo selecionado");
-      return false;
-    }
-
-    const validation = validateFileFormat(file);
-    if (!validation.valid) {
-      toast.error(validation.message || "Arquivo inválido");
-      return false;
-    }
-
-    try {
-      console.log("📂 Importando checklist do arquivo:", file.name, "| Tamanho:", Math.round(file.size / 1024), "KB");
-
-      // 🔑 Obtém um token JWT válido
-      const jwt = await getValidAuthToken();
-      if (!jwt) {
-        console.error("❌ Falha ao obter token JWT");
-        toast.error("Erro de autenticação", { 
-          description: "Não foi possível obter um token de autenticação. Tente fazer login novamente." 
-        });
-        return false;
-      }
-
-      // 🔍 Verificando se o usuário está autenticado e tem um UUID válido
-      if (!user?.id || !/^[0-9a-fA-F-]{36}$/.test(user.id)) {
-        console.error("🚨 Erro: Usuário não autenticado ou ID inválido!");
-        toast.error("Erro: Usuário não autenticado. Faça login novamente.");
-        return false;
-      }
-
-      console.log("👤 Usuário autenticado:", {
-        user_id: user.id,
-        email: user.email || "NÃO ENCONTRADO",
-        autenticado: !!user,
-      });
-
-      // Sanitize company_id if it's in an invalid format
-      let sanitizedCompanyId = null;
-      
-      if (form.company_id !== undefined && form.company_id !== null) {
-        if (form.company_id === "none") {
-          sanitizedCompanyId = null;
-        } else if (typeof form.company_id === 'object') {
-          console.warn("⚠️ company_id está em formato de objeto:", form.company_id);
-          
-          // Check if it has a value property that's a string and not 'undefined'
-          const companyObj = form.company_id as any;
-          if ('value' in companyObj && 
-              typeof companyObj.value === 'string' && 
-              companyObj.value !== 'undefined' &&
-              companyObj.value !== 'none') {
-            sanitizedCompanyId = companyObj.value;
+          if (error) {
+            console.error("Erro ao processar arquivo via edge function:", error);
+            // Continuar com o processamento local em caso de erro
+          } else if (data && data.id) {
+            toast.success(`Checklist importado com sucesso! ${data.processed_items} itens processados.`);
+            return { 
+              success: true, 
+              message: "Checklist criado via API", 
+              checklistData: { 
+                ...formData,
+                id: data.id 
+              } 
+            };
           }
-        } else if (typeof form.company_id === 'string' && form.company_id !== 'undefined') {
-          sanitizedCompanyId = form.company_id;
+        } catch (apiError) {
+          console.error("Erro ao chamar a API de processamento:", apiError);
+          // Continuar com o processamento local em caso de erro
         }
       }
 
-      // Handle responsible_id similarly
-      let sanitizedResponsibleId = null;
-      if (form.responsible_id !== undefined && form.responsible_id !== null) {
-        if (form.responsible_id === "none") {
-          sanitizedResponsibleId = null;
-        } else if (typeof form.responsible_id === 'string' && form.responsible_id !== 'undefined') {
-          sanitizedResponsibleId = form.responsible_id;
-        }
-      }
-
-      // Parse the file to get the questions
-      const parsedData = await parseFile(file);
-      
-      if (!parsedData.questions || parsedData.questions.length === 0) {
-        toast.error("Nenhuma pergunta encontrada no arquivo. Verifique o formato.");
-        return false;
-      }
-      
-      console.log(`✅ Arquivo analisado com sucesso: ${parsedData.questions.length} perguntas extraídas`);
-      
-      // Process the questions - convert to the expected format for questions
-      const processedQuestions = parsedData.questions.map((q, index) => {
-        // Map question types to match internal format
-        const typeMap: Record<string, string> = {
-          'sim/não': 'yes_no',
-          'yes/no': 'yes_no',
-          'sim_não': 'yes_no',
-          'yes_no': 'yes_no',
-          'múltipla escolha': 'multiple_choice',
-          'multiple_choice': 'multiple_choice',
-          'múltipla_escolha': 'multiple_choice',
-          'numérico': 'numeric',
-          'numeric': 'numeric',
-          'número': 'numeric',
-          'number': 'numeric',
-          'texto': 'text',
-          'text': 'text',
-          'foto': 'photo',
-          'photo': 'photo',
-          'assinatura': 'signature',
-          'signature': 'signature'
-        };
-        
-        const normalizedType = (q.type?.toLowerCase() || 'yes_no') in typeMap 
-          ? typeMap[q.type?.toLowerCase() || 'yes_no'] 
-          : 'yes_no';
-        
-        const groupId = `group-${index % 3}`; // Assign to one of 3 default groups
-        
-        return {
-          text: q.text,
-          type: normalizedType,
-          required: q.required,
-          options: normalizedType === 'multiple_choice' ? ["Opção 1", "Opção 2", "Opção 3"] : undefined,
-          allowPhoto: q.allowPhoto || false,
-          allowVideo: q.allowVideo || false,
-          allowAudio: q.allowAudio || false,
-          groupId
-        };
-      });
-      
-      // Create default groups
-      const groups = [
-        { id: 'group-0', title: 'Grupo 1', questions: [] },
-        { id: 'group-1', title: 'Grupo 2', questions: [] },
-        { id: 'group-2', title: 'Grupo 3', questions: [] }
-      ];
-      
-      // Organize questions into groups
-      processedQuestions.forEach(q => {
-        const groupIndex = parseInt(q.groupId.split('-')[1]);
-        if (groups[groupIndex]) {
-          groups[groupIndex].questions.push(q);
-        } else {
-          groups[0].questions.push(q);
-        }
-      });
-      
-      // Create a temporary checklist data object
-      const checklistData = {
-        ...form,
-        company_id: sanitizedCompanyId,
-        responsible_id: sanitizedResponsibleId,
-        status: "active",
-        status_checklist: "ativo",
-        user_id: user.id,
-        title: form.title || `Checklist importado: ${file.name}`,
-        description: form.description || `Checklist importado do arquivo ${file.name}`
-      };
-      
-      toast.success("Arquivo importado com sucesso! Revise o checklist antes de salvar.");
-      
+      // Retornar dados para revisão na interface
       return {
         success: true,
-        checklistData,
-        questions: processedQuestions,
+        checklistData: formData,
+        questions,
         groups,
         mode: "import-review"
       };
-    } catch (error: any) {
-      console.error("❌ Erro geral ao importar checklist:", error);
-      toast.error(`Erro ao importar checklist: ${error.message}`);
-      return false;
+    } catch (error) {
+      console.error("Erro ao importar arquivo:", error);
+      toast.error(`Erro ao importar: ${error.message || "Erro desconhecido"}`);
+      return { success: false, message: error.message || "Erro ao importar arquivo" };
+    } finally {
+      setIsImporting(false);
     }
   };
 
+  // Analisar arquivo CSV
+  const parseCSV = async (file: File): Promise<any[]> => {
+    return new Promise((resolve, reject) => {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          if (results.errors && results.errors.length > 0) {
+            console.warn("Avisos ao analisar CSV:", results.errors);
+          }
+          resolve(results.data);
+        },
+        error: (error) => {
+          reject(error);
+        }
+      });
+    });
+  };
+
+  // Analisar arquivo Excel
+  const parseExcel = async (file: File): Promise<any[]> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        try {
+          const data = e.target?.result;
+          const workbook = XLSX.read(data, { type: 'binary' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(worksheet);
+          resolve(jsonData);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      reader.onerror = (error) => {
+        reject(error);
+      };
+      
+      reader.readAsBinaryString(file);
+    });
+  };
+
+  // Converter dados importados para o formato de perguntas
+  const convertImportDataToQuestions = (data: any[]): { questions: any[], groups: any[] } => {
+    const questions: any[] = [];
+    const groupsMap = new Map<string, { id: string, title: string, questions: any[] }>();
+    
+    data.forEach((row, index) => {
+      // Extrair campos básicos
+      const questionText = row['Pergunta'] || row['Question'] || row['Text'] || '';
+      const responseType = mapResponseType(row['Tipo'] || row['Type'] || row['ResponseType'] || 'yes_no');
+      const required = mapBooleanValue(row['Obrigatório'] || row['Required'] || 'sim');
+      
+      // Extrair opções para múltipla escolha
+      let options: string[] = [];
+      const optionsText = row['Opções'] || row['Options'] || '';
+      if (optionsText && responseType === 'multiple_choice') {
+        options = optionsText.split(/[,;|]/).map((opt: string) => opt.trim()).filter(Boolean);
+      }
+      
+      // Extrair grupo
+      const groupName = row['Grupo'] || row['Group'] || '';
+      let groupId = '';
+      
+      if (groupName) {
+        groupId = `group-${groupName.replace(/\W+/g, '-').toLowerCase()}`;
+        
+        if (!groupsMap.has(groupId)) {
+          groupsMap.set(groupId, {
+            id: groupId,
+            title: groupName,
+            questions: []
+          });
+        }
+      }
+      
+      // Criar objeto de pergunta
+      const question = {
+        id: `import-${Date.now()}-${index}`,
+        text: questionText,
+        responseType: responseType,
+        isRequired: required,
+        options: options,
+        hint: row['Dica'] || row['Hint'] || '',
+        weight: parseFloat(row['Peso'] || row['Weight'] || '1') || 1,
+        groupId: groupId || undefined,
+        parentQuestionId: undefined,
+        conditionValue: undefined,
+        allowsPhoto: mapBooleanValue(row['PermiteFoto'] || row['AllowsPhoto'] || 'não'),
+        allowsVideo: mapBooleanValue(row['PermiteVideo'] || row['AllowsVideo'] || 'não'),
+        allowsAudio: mapBooleanValue(row['PermiteAudio'] || row['AllowsAudio'] || 'não'),
+        order: index
+      };
+      
+      // Adicionar à lista de perguntas
+      questions.push(question);
+      
+      // Adicionar ao grupo, se aplicável
+      if (groupId && groupsMap.has(groupId)) {
+        groupsMap.get(groupId)?.questions.push(question);
+      }
+    });
+    
+    // Converter o mapa de grupos em um array
+    const groups = Array.from(groupsMap.values()).map((group, index) => ({
+      ...group,
+      order: index
+    }));
+    
+    return { questions, groups };
+  };
+
+  // Mapeamento de tipo de resposta para valores internos
+  const mapResponseType = (type: string): 'yes_no' | 'multiple_choice' | 'text' | 'numeric' | 'photo' | 'signature' => {
+    const typeMap: Record<string, any> = {
+      'sim/não': 'yes_no',
+      'yes/no': 'yes_no',
+      'sim/nao': 'yes_no',
+      'yes_no': 'yes_no',
+      'múltipla escolha': 'multiple_choice',
+      'multipla escolha': 'multiple_choice',
+      'multiple_choice': 'multiple_choice',
+      'multiple choice': 'multiple_choice',
+      'texto': 'text',
+      'text': 'text',
+      'numérico': 'numeric',
+      'numerico': 'numeric',
+      'numeric': 'numeric',
+      'number': 'numeric',
+      'foto': 'photo',
+      'photo': 'photo',
+      'assinatura': 'signature',
+      'signature': 'signature'
+    };
+    
+    return typeMap[type.toLowerCase()] || 'yes_no';
+  };
+
+  // Mapear valores de texto para booleanos
+  const mapBooleanValue = (value: string): boolean => {
+    const trueValues = ['sim', 'yes', 'true', '1', 's', 'y', 'verdadeiro'];
+    return trueValues.includes(value.toLowerCase());
+  };
+
+  // URL para template de arquivo
+  const getTemplateFileUrl = (): string => {
+    // Você poderia ter um template armazenado no Storage do Supabase
+    // ou fornecer um link estático para um arquivo hospedado em outro lugar
+    return '/templates/checklist_template.xlsx';
+  };
+
   return {
+    isImporting,
     importFromFile,
-    getTemplateFileUrl,
-    sessionValid,
+    getTemplateFileUrl
   };
 }

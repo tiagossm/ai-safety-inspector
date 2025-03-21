@@ -1,9 +1,11 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.1";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 serve(async (req) => {
@@ -13,263 +15,240 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    );
+    // Get OpenAI API key from environment variables
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+    if (!openAIApiKey) {
+      throw new Error('OPENAI_API_KEY is not set in environment variables');
+    }
 
-    // Get request params
-    const { prompt, num_questions = 10, category = 'general', company_id } = await req.json();
+    // Parse request body
+    const { prompt, questionCount = 5, assistant = 'general', checklistData = {}, assistantId } = await req.json();
 
     if (!prompt) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Prompt is required',
-          success: false,
-          questions: generateFallbackQuestions() // Include fallback questions even on error
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      );
+      throw new Error('Prompt is required');
     }
 
-    console.log(`Generating checklist for prompt: ${prompt}, questions: ${num_questions}, category: ${category}`);
+    // Define system message based on assistant type
+    let systemMessage = '';
+    switch (assistant) {
+      case 'workplace-safety':
+        systemMessage = 'Você é um especialista em segurança do trabalho. Crie um checklist para inspeções e auditorias de segurança.';
+        break;
+      case 'compliance':
+        systemMessage = 'Você é um especialista em conformidade e regulamentações. Crie um checklist para auditorias de conformidade.';
+        break;
+      case 'quality':
+        systemMessage = 'Você é um especialista em controle de qualidade. Crie um checklist para inspeções e auditorias de qualidade.';
+        break;
+      default:
+        systemMessage = 'Você é um especialista em criação de checklists para diversos fins. Crie um checklist detalhado e abrangente.';
+    }
 
-    // Generate questions based on the category
-    const questions = generateQuestions(prompt, num_questions, category);
+    // Append instructions for output format
+    systemMessage += `
+Crie um checklist com ${questionCount} perguntas com base no prompt do usuário.
+Responda APENAS no formato JSON abaixo, sem texto adicional:
 
-    // Insert checklist into the database
-    let checklistResult;
+{
+  "title": "Título do checklist (extraído do prompt)",
+  "description": "Breve descrição do propósito do checklist",
+  "questions": [
+    {
+      "text": "Texto da pergunta 1",
+      "type": "yes_no | multiple_choice | text | numeric | photo | signature",
+      "required": true | false,
+      "options": ["Opção 1", "Opção 2"] (apenas para multiple_choice),
+      "group": "Nome do grupo a que esta pergunta pertence (opcional)"
+    },
+    ...mais perguntas
+  ],
+  "groups": [
+    {
+      "name": "Nome do grupo 1",
+      "description": "Descrição do grupo (opcional)"
+    },
+    ...mais grupos
+  ]
+}
+
+IMPORTANTE:
+1. Para perguntas do tipo "multiple_choice", sempre inclua um array de opções.
+2. Agrupe as perguntas em categorias lógicas para facilitar a organização.
+3. Crie exatamente ${questionCount} perguntas.
+4. Não inclua nada além do JSON válido na sua resposta.
+`;
+
+    console.log("System message:", systemMessage);
+    console.log("User prompt:", prompt);
+
+    let response;
+    
+    // Use specific assistant if provided
+    if (assistantId) {
+      // This is a placeholder for using a specific OpenAI Assistant
+      // We'd need to implement the actual Assistants API calls here
+      console.log("Using custom assistant:", assistantId);
+      
+      // For now, fall back to chat completion
+      response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemMessage },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.7,
+        }),
+      });
+    } else {
+      // Standard chat completion
+      response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemMessage },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.7,
+        }),
+      });
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("OpenAI API error:", errorText);
+      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    let generatedContent;
+
     try {
-      const { data: checklistData, error: checklistError } = await supabaseClient
-        .from("checklists")
-        .insert({
-          title: `Checklist de ${category}: ${prompt.substring(0, 50)}${prompt.length > 50 ? '...' : ''}`,
-          description: `Checklist gerado automaticamente com base em: ${prompt}`,
-          category: category,
-          company_id: company_id,
-          status_checklist: "ativo",
-          is_template: false,
-        })
-        .select('id')
-        .single();
+      // Extract the content from the AI response
+      const content = data.choices[0].message.content;
+      console.log("Raw AI response:", content);
+      
+      // Parse the JSON response
+      generatedContent = JSON.parse(content);
+    } catch (parseError) {
+      console.error("Error parsing AI response:", parseError);
+      console.log("Raw response content:", data.choices[0].message.content);
+      
+      // Return a structured error with empty arrays for questions/groups to prevent client errors
+      return new Response(JSON.stringify({
+        success: false,
+        error: "Failed to parse AI response as JSON. The AI did not return a valid JSON format.",
+        checklistData: {
+          title: checklistData.title || "Checklist gerado por IA",
+          description: "Houve um erro ao gerar o conteúdo."
+        },
+        questions: [],
+        groups: []
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200 // Return 200 even on parse error to allow client to handle it
+      });
+    }
 
-      if (checklistError) {
-        console.error("Error creating checklist:", checklistError);
-        throw checklistError;
+    // Process the generated content
+    const title = generatedContent.title || checklistData.title || "Checklist gerado por IA";
+    const description = generatedContent.description || `Checklist gerado com base no prompt: ${prompt}`;
+    
+    // Ensure questions is always an array, even if the AI fails to provide it
+    const questions = generatedContent.questions || [];
+    
+    // Process groups
+    const groupsFromResponse = generatedContent.groups || [];
+    const groupMap = new Map();
+    
+    // Create unique IDs for groups and build a lookup map
+    const groups = groupsFromResponse.map((group: any, index: number) => {
+      const groupId = `group-${index + 1}`;
+      groupMap.set(group.name, groupId);
+      
+      return {
+        id: groupId,
+        title: group.name,
+        description: group.description || "",
+        order: index
+      };
+    });
+    
+    // Transform questions to our format, ensuring required fields and correct types
+    const processedQuestions = questions.map((q: any, index: number) => {
+      // Find or create a group ID for this question
+      let groupId = undefined;
+      
+      if (q.group && groupMap.has(q.group)) {
+        groupId = groupMap.get(q.group);
       }
       
-      checklistResult = checklistData;
-      
-      // Insert questions into the database
-      if (checklistData && questions.length > 0) {
-        const questionsToInsert = questions.map((q, idx) => {
-          // Ensure options is properly formatted for database
-          let formattedOptions = q.options;
-          if (formattedOptions && !Array.isArray(formattedOptions)) {
-            // Convert single option to array
-            formattedOptions = [String(formattedOptions)];
-          } else if (Array.isArray(formattedOptions)) {
-            // Convert all array items to strings
-            formattedOptions = formattedOptions.map(String);
-          }
-          
-          const dbQuestion: any = {
-            checklist_id: checklistData.id,
-            pergunta: q.text,
-            tipo_resposta: normalizeResponseType(q.type),
-            obrigatorio: q.required !== undefined ? q.required : true,
-            opcoes: formattedOptions,
-            ordem: idx + 1,
-          };
-          
-          return dbQuestion;
-        });
-        
-        const { error: questionsError } = await supabaseClient
-          .from("checklist_itens")
-          .insert(questionsToInsert);
-          
-        if (questionsError) {
-          console.error("Error inserting questions:", questionsError);
-          // Continue execution even if questions fail to insert
+      // Initialize an empty options array if it's a multiple choice question
+      let options: string[] = [];
+      if (q.type === 'multiple_choice') {
+        // Ensure options is an array
+        if (Array.isArray(q.options) && q.options.length > 0) {
+          options = q.options;
+        } else {
+          // Fallback options if none were provided
+          options = ["Opção 1", "Opção 2", "Opção 3"];
         }
       }
-    } catch (dbError) {
-      console.error("Database operation failed:", dbError);
-      // Continue execution even if database operations fail
-    }
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        prompt,
-        category,
-        questions: questions, // Always include the questions in the response
-        questionCount: questions.length,
-        checklist_id: checklistResult?.id || null
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+      
+      return {
+        id: `ai-${Date.now()}-${index}`,
+        text: q.text,
+        responseType: q.type || 'yes_no',
+        isRequired: q.required !== undefined ? q.required : true,
+        options: options,
+        groupId: groupId,
+        weight: 1,
+        allowsPhoto: false,
+        allowsVideo: false,
+        allowsAudio: false,
+        order: index
+      };
+    });
+    
+    // Return the structured response
+    return new Response(JSON.stringify({
+      success: true,
+      checklistData: {
+        ...checklistData,
+        title,
+        description,
+      },
+      questions: processedQuestions,
+      groups
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   } catch (error) {
-    console.error('Error:', error);
+    console.error("Error generating checklist:", error);
     
-    // Generate fallback questions even in case of error
-    const fallbackQuestions = generateFallbackQuestions();
-    
-    return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message, 
-        details: typeof error === 'object' ? JSON.stringify(error) : null,
-        questions: fallbackQuestions
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    );
+    // Return a structured error with empty arrays
+    return new Response(JSON.stringify({
+      success: false,
+      error: error.message || "Unknown error occurred",
+      checklistData: {
+        title: "Erro na geração",
+        description: "Houve um erro ao gerar o conteúdo."
+      },
+      questions: [],
+      groups: []
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500
+    });
   }
 });
-
-// Generate fallback questions in case of error
-function generateFallbackQuestions() {
-  return [
-    { text: "Todos os equipamentos de segurança estão disponíveis?", type: "yes_no", required: true },
-    { text: "A área de trabalho está limpa e organizada?", type: "yes_no", required: true },
-    { text: "Os procedimentos de emergência estão acessíveis?", type: "yes_no", required: true },
-    { text: "A sinalização de segurança está visível?", type: "yes_no", required: true },
-    { text: "Todos os funcionários receberam treinamento adequado?", type: "yes_no", required: true }
-  ];
-}
-
-// Normalize response types according to the database constraints
-function normalizeResponseType(type: string): string {
-  const typeMap: Record<string, string> = {
-    'yes_no': 'yes_no',
-    'sim/não': 'yes_no',
-    'multiple_choice': 'multiple_choice',
-    'múltipla escolha': 'multiple_choice',
-    'numeric': 'numeric',
-    'numérico': 'numeric',
-    'text': 'text',
-    'texto': 'text',
-    'photo': 'photo',
-    'foto': 'photo',
-    'signature': 'signature',
-    'assinatura': 'signature'
-  };
-
-  return typeMap[type?.toLowerCase()] || 'yes_no';
-}
-
-// Generate questions based on prompt and category
-function generateQuestions(prompt: string, numQuestions: number, category: string) {
-  const questions = [];
-  
-  const questionTemplates: Record<string, { text: string, type: string }[]> = {
-    'workplace-safety': [
-      { text: "Os equipamentos de proteção individual (EPI) estão sendo utilizados corretamente?", type: "yes_no" },
-      { text: "Existem extintores de incêndio em todos os locais necessários?", type: "yes_no" },
-      { text: "As rotas de evacuação estão devidamente sinalizadas?", type: "yes_no" },
-      { text: "Os funcionários receberam treinamento adequado para emergências?", type: "yes_no" },
-      { text: "Os equipamentos elétricos possuem aterramento adequado?", type: "yes_no" },
-      { text: "As áreas de risco estão devidamente sinalizadas?", type: "yes_no" },
-      { text: "Há procedimentos claros para trabalho em altura?", type: "yes_no" },
-      { text: "Os produtos químicos estão armazenados conforme normas de segurança?", type: "yes_no" },
-      { text: "As instalações estão livres de vazamentos ou danos estruturais?", type: "yes_no" },
-      { text: "Há kit de primeiros socorros disponível e bem abastecido?", type: "yes_no" },
-    ],
-    'compliance': [
-      { text: "Os documentos legais estão atualizados e disponíveis?", type: "yes_no" },
-      { text: "Os registros obrigatórios estão sendo mantidos pelo período exigido?", type: "yes_no" },
-      { text: "As licenças operacionais estão vigentes?", type: "yes_no" },
-      { text: "As obrigações trabalhistas estão sendo cumpridas?", type: "yes_no" },
-      { text: "Existem desvios em relação aos procedimentos internos?", type: "yes_no" },
-      { text: "As auditorias são realizadas conforme cronograma?", type: "yes_no" },
-      { text: "Os planos de ação das não-conformidades estão sendo executados?", type: "yes_no" },
-      { text: "Como está a documentação dos processos?", type: "text" },
-      { text: "As políticas internas são divulgadas aos colaboradores?", type: "yes_no" },
-      { text: "O canal de denúncias está acessível a todos?", type: "yes_no" },
-    ],
-    'quality': [
-      { text: "Os equipamentos de medição estão calibrados?", type: "yes_no" },
-      { text: "As amostras são coletadas conforme procedimento?", type: "yes_no" },
-      { text: "O controle estatístico de processo é realizado?", type: "yes_no" },
-      { text: "As não-conformidades são registradas e tratadas?", type: "yes_no" },
-      { text: "Os indicadores de qualidade estão sendo monitorados?", type: "yes_no" },
-      { text: "Os insumos são verificados no recebimento?", type: "yes_no" },
-      { text: "O produto final atende às especificações?", type: "multiple_choice", options: ["Sim", "Não", "Parcialmente"] },
-      { text: "Quais melhorias foram implementadas recentemente?", type: "text" },
-      { text: "A rastreabilidade é mantida ao longo do processo?", type: "yes_no" },
-      { text: "Os colaboradores recebem treinamento contínuo?", type: "yes_no" },
-    ],
-    'general': [
-      { text: "A documentação está atualizada e organizada?", type: "yes_no" },
-      { text: "O ambiente de trabalho está limpo e organizado?", type: "yes_no" },
-      { text: "Os colaboradores possuem as ferramentas necessárias?", type: "yes_no" },
-      { text: "Os processos estão documentados e acessíveis?", type: "yes_no" },
-      { text: "As reuniões de acompanhamento são realizadas periodicamente?", type: "yes_no" },
-      { text: "Os recursos estão sendo utilizados de forma eficiente?", type: "multiple_choice", options: ["Sim", "Não", "Parcialmente"] },
-      { text: "Os prazos estão sendo cumpridos?", type: "yes_no" },
-      { text: "A comunicação entre as equipes é eficaz?", type: "yes_no" },
-      { text: "O feedback dos clientes é coletado e analisado?", type: "yes_no" },
-      { text: "Os objetivos e metas estão claros para todos?", type: "yes_no" },
-    ]
-  };
-  
-  const templates = questionTemplates[category] || questionTemplates.general;
-  
-  for (let i = 0; i < Math.min(templates.length, numQuestions); i++) {
-    questions.push(templates[i]);
-  }
-  
-  if (numQuestions > templates.length) {
-    const keywords = prompt.toLowerCase().split(" ");
-    
-    const questionTypes = ["yes_no", "text", "multiple_choice", "numeric"];
-    
-    for (let i = templates.length; i < numQuestions; i++) {
-      const type = questionTypes[i % questionTypes.length];
-      const keyword = keywords[i % keywords.length] || "process";
-      
-      let question: any = {
-        text: generateQuestionText(category, keyword),
-        type: type,
-        required: Math.random() > 0.3,
-      };
-      
-      if (type === "multiple_choice") {
-        if (category === "workplace-safety") {
-          question.options = ["Conforme", "Não conforme", "Parcialmente conforme", "Não aplicável"];
-        } else if (category === "compliance") {
-          question.options = ["Atendido", "Não atendido", "Parcialmente atendido", "Não aplicável"];
-        } else if (category === "quality") {
-          question.options = ["Aprovado", "Reprovado", "Necessita ajustes", "Não verificado"];
-        } else {
-          question.options = ["Sim", "Não", "Parcialmente", "Não aplicável"];
-        }
-      }
-      
-      questions.push(question);
-    }
-  }
-  
-  return questions.map(q => {
-    if (q.options && !Array.isArray(q.options)) {
-      q.options = [String(q.options)];
-    } else if (Array.isArray(q.options)) {
-      q.options = q.options.map(String);
-    }
-    return q;
-  });
-}
-
-function generateQuestionText(category: string, keyword: string): string {
-  switch (category) {
-    case "workplace-safety":
-      return `Verificar condições de segurança relacionadas a ${keyword}`;
-    case "compliance":
-      return `A documentação relativa a ${keyword} está em conformidade?`;
-    case "quality":
-      return `O processo de ${keyword} atende aos padrões de qualidade?`;
-    default:
-      return `Verificar ${keyword} conforme procedimento estabelecido`;
-  }
-}
