@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Clipboard, Edit2, Trash2, Copy, FileCheck, Send, Printer, Download } from "lucide-react";
@@ -13,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { exportChecklistToPDF, exportChecklistToCSV, shareChecklistViaWhatsApp, printChecklist } from "@/utils/pdfExport";
 
 interface ChecklistCardProps {
   checklist: ChecklistWithStats;
@@ -44,35 +44,48 @@ export function ChecklistCard({
   // Handle inspection start
   const handleStartInspection = () => {
     // Navigate to start a new inspection with this checklist
-    navigate(`/inspections/new/${checklist.id}`);
+    navigate(`/inspections`);
+    toast.info(`Inspeção iniciada com o checklist: ${checklist.title}`);
   };
 
   // Handle export options
-  const handleExportPDF = () => {
-    toast.info("Exportando para PDF...");
-    // Implement PDF export logic
+  const handleExportPDF = async () => {
+    try {
+      toast.info("Exportando para PDF...");
+      await exportChecklistToPDF(checklist);
+      toast.success("PDF exportado com sucesso!");
+    } catch (error) {
+      toast.error("Erro ao exportar PDF");
+      console.error("PDF export error:", error);
+    }
   };
 
   const handleExportCSV = () => {
-    toast.info("Exportando para CSV...");
-    // Implement CSV export logic
+    try {
+      toast.info("Exportando para CSV...");
+      exportChecklistToCSV(checklist);
+      toast.success("CSV exportado com sucesso!");
+    } catch (error) {
+      toast.error("Erro ao exportar CSV");
+      console.error("CSV export error:", error);
+    }
   };
 
   const handlePrint = () => {
     toast.info("Preparando impressão...");
-    window.print();
+    printChecklist();
   };
 
   const handleShareEmail = () => {
+    const subject = encodeURIComponent(`Checklist: ${checklist.title}`);
+    const body = encodeURIComponent(`Confira este checklist: ${checklist.title}\n\n${window.location.origin}/checklists/${checklist.id}`);
+    window.location.href = `mailto:?subject=${subject}&body=${body}`;
     toast.info("Preparando para compartilhar por email...");
-    // Implement email sharing logic
   };
 
   const handleShareWhatsapp = () => {
-    const url = window.location.origin + `/checklists/${checklist.id}`;
-    const text = `Confira este checklist: ${checklist.title}`;
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`;
-    window.open(whatsappUrl, '_blank');
+    shareChecklistViaWhatsApp(checklist);
+    toast.info("Compartilhando via WhatsApp...");
   };
   
   return (
