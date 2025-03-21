@@ -27,7 +27,9 @@ export default function NewInspectionPage() {
     
     setIsStarting(true);
     try {
-      // Create a new inspection record
+      console.log("Starting inspection for checklist:", checklist.id);
+      
+      // Create a new inspection record with all required fields
       const { data, error } = await supabase
         .from("inspections")
         .insert({
@@ -39,15 +41,18 @@ export default function NewInspectionPage() {
             description: checklist.description,
             total_questions: checklist.totalQuestions || 0
           },
-          cnae: "",  // Adding required field
-          approval_status: "pending",  // Adding required field
-          location: "",  // Adding required field if required
-          company_id: checklist.companyId || null  // Adding company_id
+          // Add required fields with default values
+          cnae: "",
+          approval_status: "pending",
+          // Only add location if the column exists in the table
+          location_name: "", // Using a different field name to avoid conflict
+          company_id: checklist.companyId || null
         })
         .select("id")
         .single();
 
       if (error) {
+        console.error("Detailed error from Supabase:", error);
         throw error;
       }
 

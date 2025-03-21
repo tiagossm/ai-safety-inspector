@@ -8,9 +8,6 @@ import Auth from "@/pages/Auth";
 import Companies from "@/pages/Companies";
 import CompanyDetail from "@/pages/CompanyDetail";
 import Employees from "@/pages/Employees";
-import Checklists from "@/pages/Checklists";
-import CreateChecklist from "@/pages/CreateChecklist";
-import ChecklistDetail from "@/pages/ChecklistDetail";
 import Settings from "@/pages/Settings";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -32,16 +29,18 @@ function App() {
             <Route path="companies" element={<Companies />} />
             <Route path="companies/:id" element={<CompanyDetail />} />
             <Route path="employees" element={<Employees />} />
-            <Route path="checklists" element={<Checklists />} />
-            <Route path="checklists/create" element={<CreateChecklist />} />
-            <Route path="checklists/:id" element={<ChecklistDetail />} />
             
-            {/* New checklist routes */}
+            {/* New checklist routes - these are the active ones */}
             <Route path="new-checklists" element={<NewChecklists />} />
             <Route path="new-checklists/create" element={<NewChecklistCreate />} />
             <Route path="new-checklists/edit/:id" element={<NewChecklistEdit />} />
             <Route path="new-checklists/:id" element={<NewChecklistDetails />} />
             <Route path="inspections/new/:id" element={<NewInspectionPage />} />
+            
+            {/* Redirect old routes to new ones */}
+            <Route path="checklists" element={<NewChecklists />} />
+            <Route path="checklists/create" element={<NewChecklistCreate />} />
+            <Route path="checklists/:id" element={<NewChecklistDetails />} />
             
             <Route path="settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
