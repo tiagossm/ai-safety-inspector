@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -58,6 +57,10 @@ export default function NewChecklistDetails() {
   
   const handleEdit = () => {
     navigate(`/new-checklists/edit/${checklist.id}`);
+  };
+
+  const handleStartInspection = () => {
+    navigate(`/inspections/new/${checklist.id}`);
   };
   
   // Group questions by group
@@ -274,7 +277,11 @@ export default function NewChecklistDetails() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <Button variant="default" className="w-full">
+                <Button 
+                  variant="default" 
+                  className="w-full"
+                  onClick={handleStartInspection}
+                >
                   Iniciar inspeção
                 </Button>
                 

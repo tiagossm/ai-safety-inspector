@@ -15,7 +15,7 @@ const getDatabaseType = (type: ChecklistQuestion['responseType']): string => {
     'signature': 'signature'
   };
   
-  return typeMap[type] || 'text';
+  return typeMap[type] || type;
 };
 
 // Fix database status mapping
