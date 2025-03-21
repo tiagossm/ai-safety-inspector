@@ -38,7 +38,11 @@ export default function NewInspectionPage() {
             title: checklist.title,
             description: checklist.description,
             total_questions: checklist.totalQuestions || 0
-          }
+          },
+          cnae: "",  // Adding required field
+          approval_status: "pending",  // Adding required field
+          location: "",  // Adding required field if required
+          company_id: checklist.companyId || null  // Adding company_id
         })
         .select("id")
         .single();

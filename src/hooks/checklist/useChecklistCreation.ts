@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useChecklistSubmit } from "./form/useChecklistSubmit";
 import { useOpenAIAssistants } from "@/hooks/useOpenAIAssistants";
-import { CompanyListItem } from "./useFilterChecklists";
+import { CompanyListItem } from "@/types/CompanyListItem";
 
 export type AIAssistantType = 'general' | 'workplace-safety' | 'compliance' | 'quality';
 
@@ -42,8 +42,8 @@ export function useChecklistCreation() {
   const { assistants, loading: loadingAssistants } = useOpenAIAssistants();
   
   // Question management
-  const [questions, setQuestions] = useState<Array<{ text: string; type: string; required: boolean }>>([
-    { text: "", type: "sim/não", required: true }
+  const [questions, setQuestions] = useState<Array<{ text: string; type: string; required: boolean; allowPhoto: boolean; allowVideo: boolean; allowAudio: boolean; options?: string[]; hint?: string; weight?: number; parentId?: string; conditionValue?: string }>>([
+    { text: "", type: "sim/não", required: true, allowPhoto: true, allowVideo: false, allowAudio: false }
   ]);
   
   // Submission handling
@@ -121,7 +121,7 @@ export function useChecklistCreation() {
   
   // Add a question
   const handleAddQuestion = () => {
-    setQuestions([...questions, { text: "", type: "sim/não", required: true }]);
+    setQuestions([...questions, { text: "", type: "sim/não", required: true, allowPhoto: true, allowVideo: false, allowAudio: false }]);
   };
   
   // Remove a question

@@ -5,19 +5,14 @@ import { toast } from "sonner";
 export function useChecklistFileUpload() {
   const [file, setFile] = useState<File | null>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement> | File) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
-      if (e instanceof File) {
-        setFile(e);
-        console.log("File set directly:", e.name);
-      } else if (e?.target?.files && e.target.files.length > 0) {
+      if (e?.target?.files && e.target.files.length > 0) {
         setFile(e.target.files[0]);
         console.log("File set from event:", e.target.files[0].name);
       } else {
         console.warn("No file found in event:", e);
-        if (e instanceof Event) {
-          toast.error("Falha ao selecionar arquivo. Tente novamente.");
-        }
+        toast.error("Falha ao selecionar arquivo. Tente novamente.");
       }
     } catch (error) {
       console.error("Error in handleFileChange:", error);
