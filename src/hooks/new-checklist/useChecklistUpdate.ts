@@ -24,6 +24,13 @@ const getStatusChecklist = (status: string): string => {
   return status === 'active' ? 'ativo' : 'inativo';
 };
 
+// Convert UI status to database status for the 'status' field (pendente, em_andamento, concluido)
+const getDatabaseStatus = (status: string): string => {
+  if (status === 'active') return 'pendente';
+  if (status === 'inactive') return 'inativo';
+  return status; // If it's already a valid database status, return as is
+};
+
 export function useChecklistUpdate() {
   const queryClient = useQueryClient();
   
@@ -48,6 +55,13 @@ export function useChecklistUpdate() {
       
       // Fix the status value to match database constraints
       const status_checklist = getStatusChecklist(checklist.status);
+      const database_status = getDatabaseStatus(checklist.status);
+      
+      console.log("Converted status values:", {
+        original: checklist.status,
+        status_checklist,
+        database_status
+      });
       
       // Update the checklist
       const { error: updateError } = await supabase
@@ -57,7 +71,7 @@ export function useChecklistUpdate() {
           description: checklist.description,
           is_template: checklist.isTemplate,
           status_checklist: status_checklist, // Fixed value for database constraint
-          status: checklist.status, // Keep the UI status value
+          status: database_status, // Properly formatted status value
           category: checklist.category,
           responsible_id: checklist.responsibleId,
           company_id: checklist.companyId,

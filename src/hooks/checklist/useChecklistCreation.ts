@@ -1,209 +1,151 @@
 
-import { useState, useCallback, ChangeEvent } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useChecklistFormSubmit } from "./form/useChecklistFormSubmit";
-import { useChecklistAI } from "../new-checklist/useChecklistAI";
-import { useChecklistImport } from "./form/useChecklistImport";
-import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
 import { NewChecklist } from "@/types/checklist";
-import { CompanyListItem } from "@/types/CompanyListItem";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useChecklistSubmit } from "./form/useChecklistSubmit";
+import { useOpenAIAssistants } from "@/hooks/useOpenAIAssistants";
+import { CompanyListItem } from "./useFilterChecklists";
+
+export type AIAssistantType = 'general' | 'workplace-safety' | 'compliance' | 'quality';
 
 export function useChecklistCreation() {
-  // Form state
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<string>("manual");
   const [form, setForm] = useState<NewChecklist>({
     title: "",
+    description: "",
+    is_template: false,
+    status_checklist: "ativo",
+    category: "",
+    status: "active"
   });
   
-  // Tab state
-  const [activeTab, setActiveTab] = useState("manual");
+  // Form data
+  const [users, setUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState<boolean>(true);
+  const [companies, setCompanies] = useState<CompanyListItem[]>([]);
+  const [loadingCompanies, setLoadingCompanies] = useState<boolean>(true);
   
-  // Manual questions
-  const [questions, setQuestions] = useState<any[]>([]);
-  
-  // File import state
+  // Import related state
   const [file, setFile] = useState<File | null>(null);
   
-  // AI generation state
-  const {
-    prompt: aiPrompt,
-    setPrompt: setAiPrompt,
-    questionCount: numQuestions,
-    setQuestionCount: setNumQuestions,
-    isGenerating: aiLoading,
-    selectedAssistant,
-    setSelectedAssistant,
-    openAIAssistant,
-    setOpenAIAssistant,
-    assistants,
-    loadingAssistants,
-    generateChecklist
-  } = useChecklistAI();
+  // AI related state
+  const [aiPrompt, setAiPrompt] = useState<string>("");
+  const [numQuestions, setNumQuestions] = useState<number>(10);
+  const [aiLoading, setAiLoading] = useState<boolean>(false);
+  const [selectedAssistant, setSelectedAssistant] = useState<AIAssistantType>("general");
+  const [openAIAssistant, setOpenAIAssistant] = useState<string>("");
   
-  // Import functionality
-  const { importFromFile } = useChecklistImport();
+  // Get OpenAI assistants
+  const { assistants, loading: loadingAssistants } = useOpenAIAssistants();
   
-  // Form submission
-  const { isSubmitting, handleFormSubmit } = useChecklistFormSubmit();
+  // Question management
+  const [questions, setQuestions] = useState<Array<{ text: string; type: string; required: boolean }>>([
+    { text: "", type: "sim/não", required: true }
+  ]);
   
-  // Navigation
-  const navigate = useNavigate();
+  // Submission handling
+  const { isSubmitting, handleSubmit: submitForm } = useChecklistSubmit();
   
-  // Fetch users for assignment
-  const { data: users = [], isLoading: loadingUsers } = useQuery({
-    queryKey: ["users"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("users")
-        .select("id, name, email")
-        .eq("status", "active")
-        .order("name", { ascending: true });
-      
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Fetch users
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoadingUsers(true);
+        
+        const { data, error } = await supabase
+          .from('users')
+          .select('id, name, email')
+          .eq('status', 'active')
+          .order('name', { ascending: true });
+          
+        if (error) {
+          console.error("Error fetching users:", error);
+          toast.error("Erro ao carregar usuários");
+          throw error;
+        }
+        
+        setUsers(data || []);
+      } catch (error) {
+        console.error("Error in fetchUsers:", error);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+    
+    fetchUsers();
+  }, []);
   
   // Fetch companies
-  const { data: companies = [], isLoading: loadingCompanies } = useQuery({
-    queryKey: ["companies"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("companies")
-        .select("id, fantasy_name, cnpj")
-        .eq("status", "active")
-        .order("fantasy_name", { ascending: true });
-      
-      if (error) throw error;
-      return (data || []) as CompanyListItem[];
-    }
-  });
-  
-  // Handle adding a question
-  const handleAddQuestion = useCallback(() => {
-    setQuestions((prev) => [
-      ...prev,
-      {
-        text: "",
-        type: "yes_no",
-        required: true,
-        allowPhoto: false,
-        allowVideo: false,
-        allowAudio: false
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        setLoadingCompanies(true);
+        
+        const { data, error } = await supabase
+          .from('companies')
+          .select('id, fantasy_name')
+          .eq('status', 'active')
+          .order('fantasy_name', { ascending: true });
+          
+        if (error) {
+          console.error("Error fetching companies:", error);
+          toast.error("Erro ao carregar empresas");
+          throw error;
+        }
+        
+        setCompanies(data || []);
+      } catch (error) {
+        console.error("Error in fetchCompanies:", error);
+      } finally {
+        setLoadingCompanies(false);
       }
-    ]);
+    };
+    
+    fetchCompanies();
   }, []);
-  
-  // Handle removing a question
-  const handleRemoveQuestion = useCallback((index: number) => {
-    setQuestions((prev) => prev.filter((_, i) => i !== index));
-  }, []);
-  
-  // Handle changing a question
-  const handleQuestionChange = useCallback(
-    (index: number, field: string, value: any) => {
-      setQuestions((prev) => {
-        const updated = [...prev];
-        updated[index] = {
-          ...updated[index],
-          [field]: value
-        };
-        return updated;
-      });
-    },
-    []
-  );
   
   // Handle file selection for import
-  const handleFileChange = useCallback((selectedFile: File) => {
-    setFile(selectedFile);
-  }, []);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setFile(e.target.files[0]);
+    }
+  };
   
   // Clear selected file
-  const clearFile = useCallback(() => {
+  const clearFile = () => {
     setFile(null);
-  }, []);
+  };
+  
+  // Add a question
+  const handleAddQuestion = () => {
+    setQuestions([...questions, { text: "", type: "sim/não", required: true }]);
+  };
+  
+  // Remove a question
+  const handleRemoveQuestion = (index: number) => {
+    const newQuestions = [...questions];
+    newQuestions.splice(index, 1);
+    setQuestions(newQuestions);
+  };
+  
+  // Update a question
+  const handleQuestionChange = (
+    index: number,
+    field: string,
+    value: string | boolean
+  ) => {
+    const newQuestions = [...questions];
+    (newQuestions[index] as any)[field] = value;
+    setQuestions(newQuestions);
+  };
   
   // Handle form submission
-  const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      
-      if (activeTab === "manual") {
-        // Manual submission
-        const success = await handleFormSubmit(
-          e,
-          activeTab,
-          form,
-          questions,
-          null,
-          "",
-          async () => ({ success: false })
-        );
-        
-        if (success) {
-          navigate("/checklists");
-          return true;
-        }
-      } else if (activeTab === "import") {
-        // Import submission
-        if (!file) {
-          return false;
-        }
-        
-        const result = await importFromFile(file, form);
-        
-        if (result && result.success) {
-          // Navigate to review page or directly create
-          navigate("/checklist-editor", {
-            state: {
-              checklistData: result.checklistData,
-              questions: result.questions,
-              groups: result.groups,
-              mode: result.mode
-            }
-          });
-          return true;
-        }
-      } else if (activeTab === "ai") {
-        // AI generation
-        if (!aiPrompt) {
-          return false;
-        }
-        
-        const result = await generateChecklist({
-          ...form,
-          status: "active", // Ensure proper status value for database constraint
-        });
-        
-        if (result.success && result.checklistData && result.questions) {
-          // Navigate to review page
-          navigate("/checklist-editor", {
-            state: {
-              checklistData: result.checklistData,
-              questions: result.questions,
-              groups: result.groups,
-              mode: "ai-review"
-            }
-          });
-          return true;
-        }
-      }
-      
-      return false;
-    },
-    [
-      activeTab,
-      form,
-      questions,
-      file,
-      aiPrompt,
-      handleFormSubmit,
-      navigate,
-      importFromFile,
-      generateChecklist
-    ]
-  );
+  const handleSubmit = async (e: React.FormEvent) => {
+    return await submitForm(e, activeTab, form, questions, file, aiPrompt);
+  };
   
   return {
     activeTab,
@@ -211,10 +153,8 @@ export function useChecklistCreation() {
     form,
     setForm,
     users,
-    loadingUsers,
-    companies,
-    loadingCompanies,
     isSubmitting,
+    loadingUsers,
     file,
     handleFileChange,
     clearFile,
@@ -234,6 +174,8 @@ export function useChecklistCreation() {
     handleRemoveQuestion,
     handleQuestionChange,
     handleSubmit,
-    navigate
+    navigate,
+    companies,
+    loadingCompanies
   };
 }

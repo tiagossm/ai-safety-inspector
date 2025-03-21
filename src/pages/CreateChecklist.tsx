@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useChecklistCreation } from "@/hooks/checklist/useChecklistCreation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
