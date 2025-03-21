@@ -1,8 +1,9 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChecklistGroup, ChecklistQuestion, NewChecklistPayload } from "@/types/newChecklist";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useOpenAIAssistants } from "@/hooks/useOpenAIAssistants";
 
 // Type for AI assistant specializations
 export type AIAssistantType = "workplace-safety" | "compliance" | "quality" | "general";
@@ -12,6 +13,13 @@ export function useChecklistAI() {
   const [questionCount, setQuestionCount] = useState(5);
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedAssistant, setSelectedAssistant] = useState<AIAssistantType>("general");
+  const [openAIAssistant, setOpenAIAssistant] = useState<string>("");
+  const { assistants, loading: loadingAssistants, loadAssistants } = useOpenAIAssistants();
+
+  // Load OpenAI assistants on component mount
+  useEffect(() => {
+    loadAssistants();
+  }, []);
 
   // Generate checklist using AI
   const generateChecklist = async (checklistData: NewChecklistPayload): Promise<{
@@ -31,7 +39,8 @@ export function useChecklistAI() {
       console.log("Generating checklist with AI:", {
         prompt,
         questionCount,
-        assistant: selectedAssistant
+        assistant: selectedAssistant,
+        openAIAssistant: openAIAssistant || "default"
       });
 
       // Call Supabase Edge Function for AI generation
@@ -40,7 +49,8 @@ export function useChecklistAI() {
           prompt,
           num_questions: questionCount,
           category: selectedAssistant,
-          company_id: checklistData.companyId
+          company_id: checklistData.companyId,
+          assistant_id: openAIAssistant || undefined
         }
       });
       
@@ -123,7 +133,8 @@ export function useChecklistAI() {
         ...checklistData,
         title: checklistData.title || `Checklist: ${prompt.substring(0, 40)}${prompt.length > 40 ? '...' : ''}`,
         description: checklistData.description || `Checklist gerado automaticamente com base em: ${prompt}`,
-        category: checklistData.category || selectedAssistant
+        category: checklistData.category || selectedAssistant,
+        status: "active" // Ensure proper status value
       };
       
       return {
@@ -248,6 +259,10 @@ export function useChecklistAI() {
     isGenerating,
     selectedAssistant,
     setSelectedAssistant,
+    openAIAssistant,
+    setOpenAIAssistant,
+    assistants,
+    loadingAssistants,
     generateChecklist
   };
 }

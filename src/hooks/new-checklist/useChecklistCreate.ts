@@ -38,6 +38,10 @@ export function useChecklistCreate() {
         throw new Error("Checklist title is required");
       }
       
+      // Fix the status_checklist value to match the database constraint
+      // The database requires 'ativo' or 'inativo', not 'active' or 'inactive'
+      const status_checklist = checklist.status === 'active' ? 'ativo' : 'inativo';
+      
       // Insert the checklist
       const { data: newChecklist, error: createError } = await supabase
         .from("checklists")
@@ -45,7 +49,8 @@ export function useChecklistCreate() {
           title: checklist.title,
           description: checklist.description,
           is_template: checklist.isTemplate || false,
-          status_checklist: checklist.status || 'active',
+          status_checklist: status_checklist, // Fixed value
+          status: checklist.status || 'active', // Keep status field as is
           category: checklist.category,
           responsible_id: checklist.responsibleId,
           company_id: checklist.companyId,

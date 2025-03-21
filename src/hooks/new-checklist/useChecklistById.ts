@@ -62,13 +62,13 @@ type ChecklistDBResponse = {
   dueDate: string | null;
 };
 
-// Updated to accept any valid JSON value for options, not just array
+// Updated type definition to match actual data
 type ChecklistItemDBResponse = {
   id: string;
   text: string;
   tipo_resposta: string;
   isRequired: boolean;
-  options: any; // Changed from any[] | null to any to accommodate any JSON value
+  options: any; // Changed from string[] | null to any to accommodate different JSON value types
   hint: string | null;
   weight: number | null;
   parentQuestionId: string | null;
@@ -172,13 +172,13 @@ export function useChecklistById(id: string) {
       const groupsMap = new Map<string, ChecklistGroup>();
       const processedQuestions: ChecklistQuestion[] = [];
 
-      // Transform questions from database format to our type
-      const items: ChecklistItemDBResponse[] = (questionsData || []).map(item => ({
+      // Transform questions from database format to our type - fix the type casting
+      const items = (questionsData || []).map(item => ({
         id: item.id,
         text: item.pergunta,
         tipo_resposta: item.tipo_resposta,
         isRequired: item.obrigatorio,
-        options: item.opcoes, // Now accepts any JSON value
+        options: item.opcoes, // Accept any valid JSON value
         hint: item.hint,
         weight: item.weight,
         parentQuestionId: item.parent_item_id,
@@ -187,7 +187,7 @@ export function useChecklistById(id: string) {
         allowsVideo: item.permite_video,
         allowsAudio: item.permite_audio,
         order: item.ordem,
-      }));
+      })) as ChecklistItemDBResponse[];
 
       items.forEach((q) => {
         // Parse group info from hint field

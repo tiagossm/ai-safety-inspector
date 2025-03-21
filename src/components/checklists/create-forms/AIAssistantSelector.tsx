@@ -1,88 +1,120 @@
 
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Radio, RadioGroup, RadioIndicator, RadioItem, RadioLabel } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { HardHat, ClipboardCheck, Shield, FileCheck } from "lucide-react";
-
-export type AIAssistantType = "workplace-safety" | "compliance" | "quality" | "general";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AIAssistantType } from "@/hooks/new-checklist/useChecklistAI";
+import { useOpenAIAssistants } from "@/hooks/useOpenAIAssistants";
 
 interface AIAssistantSelectorProps {
   selectedAssistant: AIAssistantType;
   onChange: (assistant: AIAssistantType) => void;
+  openAIAssistant?: string;
+  onOpenAIAssistantChange?: (id: string) => void;
 }
 
-interface Assistant {
-  id: AIAssistantType;
-  name: string;
-  description: string;
-  icon: React.ReactNode;
-}
+export function AIAssistantSelector({
+  selectedAssistant,
+  onChange,
+  openAIAssistant,
+  onOpenAIAssistantChange
+}: AIAssistantSelectorProps) {
+  const { assistants, loading: loadingAssistants } = useOpenAIAssistants();
 
-const assistants: Assistant[] = [
-  {
-    id: "workplace-safety",
-    name: "Segurança do Trabalho",
-    description: "Especialista em normas de segurança, EPIs e prevenção de acidentes",
-    icon: <HardHat className="h-8 w-8 text-amber-500" />,
-  },
-  {
-    id: "compliance",
-    name: "Conformidade",
-    description: "Especialista em regulamentações e conformidade legal para empresas",
-    icon: <Shield className="h-8 w-8 text-blue-500" />,
-  },
-  {
-    id: "quality",
-    name: "Qualidade",
-    description: "Especialista em controle de qualidade e processos de melhoria contínua",
-    icon: <ClipboardCheck className="h-8 w-8 text-green-500" />,
-  },
-  {
-    id: "general",
-    name: "Geral",
-    description: "Assistente geral para diversos tipos de checklists",
-    icon: <FileCheck className="h-8 w-8 text-purple-500" />,
-  },
-];
-
-export function AIAssistantSelector({ selectedAssistant, onChange }: AIAssistantSelectorProps) {
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-medium mb-2">Selecione um Assistente IA</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Escolha um assistente especializado para gerar perguntas mais relevantes
-        </p>
-      </div>
-      
-      <RadioGroup 
-        value={selectedAssistant} 
-        onValueChange={(value) => onChange(value as AIAssistantType)}
-        className="grid grid-cols-1 md:grid-cols-2 gap-4"
-      >
-        {assistants.map((assistant) => (
-          <div key={assistant.id} className="relative">
-            <RadioGroupItem
-              value={assistant.id}
-              id={`assistant-${assistant.id}`}
-              className="peer sr-only"
-            />
-            <Label
-              htmlFor={`assistant-${assistant.id}`}
-              className="flex items-start gap-4 rounded-lg border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
+        <h3 className="text-lg font-medium mb-2">Selecione o tipo de assistente</h3>
+        <RadioGroup
+          value={selectedAssistant}
+          onValueChange={(value) => onChange(value as AIAssistantType)}
+          className="grid grid-cols-1 md:grid-cols-4 gap-4"
+        >
+          <div>
+            <RadioItem value="general" id="general" className="sr-only peer" />
+            <RadioLabel
+              htmlFor="general"
+              className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
             >
-              <div className="mt-1">{assistant.icon}</div>
-              <div className="space-y-1">
-                <p className="font-medium leading-none">{assistant.name}</p>
-                <p className="text-sm text-muted-foreground">
-                  {assistant.description}
-                </p>
-              </div>
-            </Label>
+              <RadioIndicator className="mb-3" />
+              <span className="text-center font-medium">Geral</span>
+              <span className="text-center text-sm text-muted-foreground mt-1">
+                Checklists para uso geral e diversos propósitos
+              </span>
+            </RadioLabel>
           </div>
-        ))}
-      </RadioGroup>
+
+          <div>
+            <RadioItem value="workplace-safety" id="workplace-safety" className="sr-only peer" />
+            <RadioLabel
+              htmlFor="workplace-safety"
+              className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+            >
+              <RadioIndicator className="mb-3" />
+              <span className="text-center font-medium">Segurança</span>
+              <span className="text-center text-sm text-muted-foreground mt-1">
+                Segurança do trabalho, prevenção de acidentes
+              </span>
+            </RadioLabel>
+          </div>
+
+          <div>
+            <RadioItem value="compliance" id="compliance" className="sr-only peer" />
+            <RadioLabel
+              htmlFor="compliance"
+              className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+            >
+              <RadioIndicator className="mb-3" />
+              <span className="text-center font-medium">Conformidade</span>
+              <span className="text-center text-sm text-muted-foreground mt-1">
+                Auditorias, normas e requisitos regulatórios
+              </span>
+            </RadioLabel>
+          </div>
+
+          <div>
+            <RadioItem value="quality" id="quality" className="sr-only peer" />
+            <RadioLabel
+              htmlFor="quality"
+              className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+            >
+              <RadioIndicator className="mb-3" />
+              <span className="text-center font-medium">Qualidade</span>
+              <span className="text-center text-sm text-muted-foreground mt-1">
+                Controle de qualidade e processos
+              </span>
+            </RadioLabel>
+          </div>
+        </RadioGroup>
+      </div>
+
+      {onOpenAIAssistantChange && assistants.length > 0 && (
+        <div className="mt-4">
+          <Label htmlFor="openai-assistant" className="mb-2 block">
+            Assistente OpenAI (Opcional)
+          </Label>
+          <Select
+            value={openAIAssistant || ""}
+            onValueChange={onOpenAIAssistantChange}
+          >
+            <SelectTrigger id="openai-assistant" className="w-full">
+              <SelectValue placeholder="Selecione um assistente especializado (opcional)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Nenhum assistente específico</SelectItem>
+              {assistants.map((assistant) => (
+                <SelectItem key={assistant.id} value={assistant.id}>
+                  {assistant.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-sm text-muted-foreground mt-1">
+            Assistentes OpenAI podem gerar checklists mais específicos para sua área
+          </p>
+        </div>
+      )}
     </div>
   );
 }

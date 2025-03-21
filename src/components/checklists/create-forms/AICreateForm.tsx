@@ -1,5 +1,5 @@
 
-import { useState, ChangeEvent } from "react";
+import React, { useState, ChangeEvent } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -17,29 +17,9 @@ import { Bot, RefreshCw } from "lucide-react";
 import { NewChecklist } from "@/types/checklist";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
-import { AIAssistantSelector, AIAssistantType } from "./AIAssistantSelector";
+import { AIAssistantSelector } from "./AIAssistantSelector";
+import { AIAssistantType } from "@/hooks/new-checklist/useChecklistAI";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-// Question type definition
-interface AIQuestion {
-  text: string;
-  type: string;
-  required: boolean;
-  allowPhoto?: boolean;
-  allowVideo?: boolean;
-  allowAudio?: boolean;
-  options?: string[];
-  hint?: string;
-  weight?: number;
-  groupId?: string;
-}
-
-// Question group definition
-interface QuestionGroup {
-  id: string;
-  title: string;
-  questions: AIQuestion[];
-}
 
 interface AICreateFormProps {
   form: NewChecklist;
@@ -54,12 +34,14 @@ interface AICreateFormProps {
   aiLoading: boolean;
   companies: any[];
   loadingCompanies: boolean;
-  onSaveChecklist?: (questions: AIQuestion[]) => void;
+  selectedAssistant?: AIAssistantType;
+  setSelectedAssistant?: (assistant: AIAssistantType) => void;
+  openAIAssistant?: string;
+  setOpenAIAssistant?: (id: string) => void;
+  assistants?: any[];
+  loadingAssistants?: boolean;
 }
 
-/**
- * Enhanced AICreateForm with assistant selection and question grouping
- */
 export function AICreateForm({
   form,
   setForm,
@@ -73,18 +55,14 @@ export function AICreateForm({
   aiLoading,
   companies,
   loadingCompanies,
-  onSaveChecklist,
+  selectedAssistant = "general",
+  setSelectedAssistant,
+  openAIAssistant = "",
+  setOpenAIAssistant,
+  assistants = [],
+  loadingAssistants = false,
 }: AICreateFormProps) {
-  // AI assistant selection
-  const [selectedAssistant, setSelectedAssistant] = useState<AIAssistantType>("general");
-  
-  // Tab selection for prompt vs structured input
-  const [promptTab, setPromptTab] = useState<string>("free-text");
-  
-  // Generated questions and groups
-  const [questionGroups, setQuestionGroups] = useState<QuestionGroup[]>([]);
-  
-  // For structured input
+  const [promptTab, setPromptTab] = useState("free-text");
   const [structuredContext, setStructuredContext] = useState({
     industry: "",
     companySize: "",
@@ -92,21 +70,24 @@ export function AICreateForm({
     specificArea: "",
   });
 
-  // Generate categories based on assistant type
-  const getDefaultCategories = (assistantType: AIAssistantType): string[] => {
-    switch (assistantType) {
-      case "workplace-safety":
-        return ["Equipamentos de Proteção", "Ambiente de Trabalho", "Procedimentos", "Treinamentos"];
-      case "compliance":
-        return ["Documentação", "Processos", "Registros", "Auditorias"];
-      case "quality":
-        return ["Controle de Processo", "Inspeção", "Não-conformidades", "Melhorias"];
-      default:
-        return ["Geral", "Específico", "Opcional"];
-    }
+  const handleInputChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
   };
 
-  // Handle AI generation with structured data
+  const handleSelectChange = (name: string, value: string) => {
+    setForm({ ...form, [name]: value });
+  };
+
+  const handleStructuredInputChange = (field: string, value: string) => {
+    setStructuredContext(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
   const generateStructuredPrompt = (): string => {
     const { industry, companySize, goal, specificArea } = structuredContext;
     
@@ -127,7 +108,6 @@ export function AICreateForm({
     return prompt;
   };
 
-  // Handle AI generation
   const handleGenerate = () => {
     // If using structured input, generate the prompt
     if (promptTab === "structured" && !aiPrompt) {
@@ -135,67 +115,7 @@ export function AICreateForm({
       setAiPrompt(structuredPrompt);
     }
     
-    // Update form with assistant type
-    setForm({
-      ...form,
-      category: mapAssistantToCategory(selectedAssistant),
-    });
-    
-    // Call parent generate function
     onGenerateAI();
-    
-    // Create default question groups based on assistant type
-    const categories = getDefaultCategories(selectedAssistant);
-    const defaultGroups: QuestionGroup[] = categories.map((category, index) => ({
-      id: `group-${index}`,
-      title: category,
-      questions: [],
-    }));
-    
-    setQuestionGroups(defaultGroups);
-  };
-
-  // Map assistant type to category
-  const mapAssistantToCategory = (assistant: AIAssistantType): string => {
-    switch (assistant) {
-      case "workplace-safety": return "safety";
-      case "compliance": return "compliance";
-      case "quality": return "quality";
-      default: return "general";
-    }
-  };
-
-  // Handle form input changes
-  const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-  };
-
-  // Handle select changes
-  const handleSelectChange = (name: string, value: string) => {
-    setForm({ ...form, [name]: value });
-  };
-
-  // Handle structured input changes
-  const handleStructuredInputChange = (field: string, value: string) => {
-    setStructuredContext(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  // Allow for regeneration of questions
-  const handleRegenerateQuestions = () => {
-    // Prompt user to confirm regeneration
-    if (questionGroups.some(group => group.questions.length > 0)) {
-      if (!window.confirm("Isso irá substituir todas as perguntas geradas. Continuar?")) {
-        return;
-      }
-    }
-    
-    handleGenerate();
   };
 
   return (
@@ -334,9 +254,11 @@ export function AICreateForm({
       {/* -- AI Assistant Selection -- */}
       <Card>
         <CardContent className="p-6">
-          <AIAssistantSelector
+          <AIAssistantSelector 
             selectedAssistant={selectedAssistant}
-            onChange={setSelectedAssistant}
+            onChange={setSelectedAssistant || (() => {})}
+            openAIAssistant={openAIAssistant}
+            onOpenAIAssistantChange={setOpenAIAssistant}
           />
         </CardContent>
       </Card>
@@ -427,7 +349,7 @@ export function AICreateForm({
                   <p>Preencha as informações acima para gerar um prompt estruturado.</p>
                   {structuredContext.industry && (
                     <div className="mt-2 p-2 bg-muted rounded-md">
-                      <p className="font-medium">Preview do prompt:</p>
+                      <p className="font-medium">Prompt que será gerado:</p>
                       <p>{generateStructuredPrompt()}</p>
                     </div>
                   )}
@@ -435,55 +357,47 @@ export function AICreateForm({
               </TabsContent>
             </Tabs>
 
-            {/* Slider de número de perguntas */}
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <Label htmlFor="num-questions">Número de Perguntas</Label>
-                <span className="text-sm font-medium">{numQuestions}</span>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="num-questions">
+                  Número de Perguntas: <span className="font-medium">{numQuestions}</span>
+                </Label>
+                <Slider
+                  id="num-questions"
+                  min={3}
+                  max={30}
+                  step={1}
+                  value={[numQuestions]}
+                  onValueChange={(value) => setNumQuestions(value[0])}
+                  className="mt-2"
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Selecione quantas perguntas você deseja que a IA gere.
+                </p>
               </div>
-              <Slider
-                id="num-questions"
-                value={[numQuestions]}
-                onValueChange={(value) => setNumQuestions(value[0])}
-                min={5}
-                max={50}
-                step={5}
-              />
-            </div>
 
-            {/* Botão para gerar perguntas via IA */}
-            <div className="flex justify-end gap-2">
-              {questionGroups.some(group => group.questions.length > 0) && (
-                <Button 
-                  variant="outline" 
-                  onClick={handleRegenerateQuestions} 
-                  disabled={aiLoading}
-                >
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Regenerar
-                </Button>
-              )}
-              
-              <Button 
-                variant="secondary" 
-                onClick={handleGenerate} 
-                disabled={aiLoading}
+              <Button
+                type="button"
+                onClick={handleGenerate}
+                disabled={aiLoading || (!aiPrompt && promptTab === "free-text")}
+                className="w-full"
               >
-                {aiLoading ? "Gerando..." : "Gerar via IA"}
+                {aiLoading ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Gerando...
+                  </>
+                ) : (
+                  <>
+                    <Bot className="h-4 w-4 mr-2" />
+                    Gerar Checklist com IA
+                  </>
+                )}
               </Button>
             </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* -- Exibir e editar perguntas geradas (IA) em grupos -- */}
-      {questionGroups.length > 0 && (
-        <Card>
-          <CardContent className="p-6">
-            {/* Later, we'll implement the GroupedQuestionsSection component here */}
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

@@ -297,13 +297,78 @@ export function useChecklistImport() {
       // Parse the file to get the questions
       const parsedData = await parseFile(file);
       
+      if (!parsedData.questions || parsedData.questions.length === 0) {
+        toast.error("Nenhuma pergunta encontrada no arquivo. Verifique o formato.");
+        return false;
+      }
+      
+      console.log(`✅ Arquivo analisado com sucesso: ${parsedData.questions.length} perguntas extraídas`);
+      
+      // Process the questions - convert to the expected format for questions
+      const processedQuestions = parsedData.questions.map((q, index) => {
+        // Map question types to match internal format
+        const typeMap: Record<string, string> = {
+          'sim/não': 'yes_no',
+          'yes/no': 'yes_no',
+          'sim_não': 'yes_no',
+          'yes_no': 'yes_no',
+          'múltipla escolha': 'multiple_choice',
+          'multiple_choice': 'multiple_choice',
+          'múltipla_escolha': 'multiple_choice',
+          'numérico': 'numeric',
+          'numeric': 'numeric',
+          'número': 'numeric',
+          'number': 'numeric',
+          'texto': 'text',
+          'text': 'text',
+          'foto': 'photo',
+          'photo': 'photo',
+          'assinatura': 'signature',
+          'signature': 'signature'
+        };
+        
+        const normalizedType = (q.type?.toLowerCase() || 'yes_no') in typeMap 
+          ? typeMap[q.type?.toLowerCase() || 'yes_no'] 
+          : 'yes_no';
+        
+        const groupId = `group-${index % 3}`; // Assign to one of 3 default groups
+        
+        return {
+          text: q.text,
+          type: normalizedType,
+          required: q.required,
+          options: normalizedType === 'multiple_choice' ? ["Opção 1", "Opção 2", "Opção 3"] : undefined,
+          allowPhoto: q.allowPhoto || false,
+          allowVideo: q.allowVideo || false,
+          allowAudio: q.allowAudio || false,
+          groupId
+        };
+      });
+      
+      // Create default groups
+      const groups = [
+        { id: 'group-0', title: 'Grupo 1', questions: [] },
+        { id: 'group-1', title: 'Grupo 2', questions: [] },
+        { id: 'group-2', title: 'Grupo 3', questions: [] }
+      ];
+      
+      // Organize questions into groups
+      processedQuestions.forEach(q => {
+        const groupIndex = parseInt(q.groupId.split('-')[1]);
+        if (groups[groupIndex]) {
+          groups[groupIndex].questions.push(q);
+        } else {
+          groups[0].questions.push(q);
+        }
+      });
+      
       // Create a temporary checklist data object
       const checklistData = {
         ...form,
         company_id: sanitizedCompanyId,
         responsible_id: sanitizedResponsibleId,
-        status: form.status || "active",
-        status_checklist: form.status_checklist || "ativo",
+        status: "active",
+        status_checklist: "ativo",
         user_id: user.id,
         title: form.title || `Checklist importado: ${file.name}`,
         description: form.description || `Checklist importado do arquivo ${file.name}`
@@ -314,7 +379,8 @@ export function useChecklistImport() {
       return {
         success: true,
         checklistData,
-        questions: parsedData.questions,
+        questions: processedQuestions,
+        groups,
         mode: "import-review"
       };
     } catch (error: any) {

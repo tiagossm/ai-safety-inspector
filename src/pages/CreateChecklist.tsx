@@ -28,6 +28,12 @@ export default function CreateChecklist() {
     numQuestions,
     setNumQuestions,
     aiLoading,
+    selectedAssistant,
+    setSelectedAssistant,
+    openAIAssistant,
+    setOpenAIAssistant,
+    assistants,
+    loadingAssistants,
     questions,
     handleAddQuestion,
     handleRemoveQuestion,
@@ -80,7 +86,9 @@ export default function CreateChecklist() {
       setForm({
         ...form,
         title: `Checklist: ${shortPrompt}`,
-        description: `Checklist gerado automaticamente com base em: ${aiPrompt}`
+        description: `Checklist gerado automaticamente com base em: ${aiPrompt}`,
+        status: "active", // Ensure proper status value for database constraint
+        status_checklist: "ativo" // Fix for database constraint
       });
     }
     
@@ -161,6 +169,12 @@ export default function CreateChecklist() {
               aiLoading={aiLoading}
               companies={companies}
               loadingCompanies={loadingCompanies}
+              selectedAssistant={selectedAssistant}
+              setSelectedAssistant={setSelectedAssistant}
+              openAIAssistant={openAIAssistant}
+              setOpenAIAssistant={setOpenAIAssistant}
+              assistants={assistants}
+              loadingAssistants={loadingAssistants}
             />
           </TabsContent>
         </Tabs>
