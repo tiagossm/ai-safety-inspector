@@ -22,7 +22,7 @@ interface ImportCreateFormProps {
   users: any[];
   loadingUsers: boolean;
   file: File | null;
-  onFileChange: (file: File) => void;
+  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   companies: CompanyListItem[];
   loadingCompanies: boolean;
 }
@@ -179,12 +179,7 @@ export function ImportCreateForm({
         <Input
           id="file"
           type="file"
-          onChange={(e) => {
-            const selectedFile = e.target.files?.[0];
-            if (selectedFile) {
-              onFileChange(selectedFile);
-            }
-          }}
+          onChange={onFileChange}
           required
         />
         {file && (
@@ -207,4 +202,3 @@ export function ImportCreateForm({
     </div>
   );
 }
-
