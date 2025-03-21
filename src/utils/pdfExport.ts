@@ -2,6 +2,7 @@
 import { jsPDF } from "jspdf";
 import 'jspdf-autotable';
 import { ChecklistWithStats } from "@/types/newChecklist";
+import { Checklist } from "@/types/checklist";
 import { generateChecklistPDF } from "./pdfGenerator";
 
 // Add type declaration for the autotable plugin
@@ -18,8 +19,26 @@ declare module 'jspdf' {
  */
 export const exportChecklistToPDF = async (checklist: ChecklistWithStats): Promise<void> => {
   try {
+    // Convert ChecklistWithStats to Checklist type for compatibility with generateChecklistPDF
+    const compatibleChecklist: Checklist = {
+      id: checklist.id,
+      title: checklist.title,
+      description: checklist.description || "",
+      is_template: checklist.isTemplate,
+      status_checklist: checklist.status === "active" ? "ativo" : "inativo",
+      category: checklist.category || "general",
+      responsible_id: checklist.responsibleId || null,
+      company_id: checklist.companyId || null,
+      user_id: checklist.userId || null,
+      created_at: checklist.createdAt,
+      updated_at: checklist.updatedAt,
+      due_date: checklist.dueDate || null,
+      items: checklist.totalQuestions,
+      items_completed: checklist.completedQuestions
+    };
+    
     // Use the existing PDF generator that's already in the codebase
-    await generateChecklistPDF(checklist);
+    await generateChecklistPDF(compatibleChecklist);
   } catch (error) {
     console.error("Error exporting checklist to PDF:", error);
     throw error;
