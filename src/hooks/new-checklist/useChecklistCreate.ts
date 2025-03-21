@@ -18,6 +18,11 @@ const getDatabaseType = (type: ChecklistQuestion['responseType']): string => {
   return typeMap[type] || 'text';
 };
 
+// Get the correct status value for database constraint
+const getStatusChecklist = (status: string): string => {
+  return status === 'active' ? 'ativo' : 'inativo';
+};
+
 export function useChecklistCreate() {
   const queryClient = useQueryClient();
   
@@ -39,8 +44,7 @@ export function useChecklistCreate() {
       }
       
       // Fix the status_checklist value to match the database constraint
-      // The database requires 'ativo' or 'inativo', not 'active' or 'inactive'
-      const status_checklist = checklist.status === 'active' ? 'ativo' : 'inativo';
+      const status_checklist = getStatusChecklist(checklist.status || 'active');
       
       // Insert the checklist
       const { data: newChecklist, error: createError } = await supabase

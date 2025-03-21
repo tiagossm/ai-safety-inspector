@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AIAssistantType } from "@/hooks/new-checklist/useChecklistAI";
 import { useOpenAIAssistants } from "@/hooks/useOpenAIAssistants";
+import { Button } from "@/components/ui/button";
+import { Loader2, RefreshCw } from "lucide-react";
 
 interface AIAssistantSelectorProps {
   selectedAssistant: AIAssistantType;
@@ -20,7 +22,7 @@ export function AIAssistantSelector({
   openAIAssistant,
   onOpenAIAssistantChange
 }: AIAssistantSelectorProps) {
-  const { assistants, loading: loadingAssistants } = useOpenAIAssistants();
+  const { assistants, loading: loadingAssistants, loadAssistants, error } = useOpenAIAssistants();
 
   return (
     <div className="space-y-4">
@@ -73,30 +75,60 @@ export function AIAssistantSelector({
         </RadioGroup>
       </div>
 
-      {onOpenAIAssistantChange && assistants.length > 0 && (
-        <div className="mt-4">
-          <Label htmlFor="openai-assistant" className="mb-2 block">
-            Assistente OpenAI (Opcional)
-          </Label>
+      {onOpenAIAssistantChange && (
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-2">
+            <Label htmlFor="openai-assistant" className="text-lg font-medium">
+              Assistentes OpenAI
+            </Label>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => loadAssistants()}
+              disabled={loadingAssistants}
+            >
+              {loadingAssistants ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              <span className="ml-1">Atualizar lista</span>
+            </Button>
+          </div>
+          
+          {error && (
+            <div className="text-sm text-red-500 mb-2">
+              {error}
+            </div>
+          )}
+          
           <Select
             value={openAIAssistant || ""}
             onValueChange={onOpenAIAssistantChange}
+            disabled={loadingAssistants}
           >
             <SelectTrigger id="openai-assistant" className="w-full">
-              <SelectValue placeholder="Selecione um assistente especializado (opcional)" />
+              <SelectValue placeholder={loadingAssistants ? "Carregando assistentes..." : "Selecione um assistente especializado (opcional)"} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="">Nenhum assistente específico</SelectItem>
               {assistants.map((assistant) => (
                 <SelectItem key={assistant.id} value={assistant.id}>
-                  {assistant.name}
+                  {assistant.name}{assistant.model ? ` (${assistant.model})` : ''}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <p className="text-sm text-muted-foreground mt-1">
-            Assistentes OpenAI podem gerar checklists mais específicos para sua área
-          </p>
+          
+          {assistants.length > 0 ? (
+            <p className="text-sm text-muted-foreground mt-1">
+              {assistants.length} assistentes encontrados. Selecione um para gerar checklists mais específicos.
+            </p>
+          ) : !loadingAssistants && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Nenhum assistente encontrado. Crie assistentes em platform.openai.com/assistants
+            </p>
+          )}
         </div>
       )}
     </div>

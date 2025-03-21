@@ -6,11 +6,15 @@ import { toast } from 'sonner';
 interface Assistant {
   id: string;
   name: string;
+  description?: string;
+  model?: string;
+  created_at?: string;
 }
 
 export const useOpenAIAssistants = () => {
   const [assistants, setAssistants] = useState<Assistant[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadAssistants();
@@ -18,15 +22,18 @@ export const useOpenAIAssistants = () => {
 
   const loadAssistants = async () => {
     setLoading(true);
+    setError(null);
+    
     try {
+      // Call the edge function to list assistants
       const response = await supabase.functions.invoke('list-assistants');
-      console.log('Raw response from list-assistants:', response);
+      console.log('Response from list-assistants:', response);
 
       if (response.error) {
         throw new Error(response.error.message || 'Failed to load assistants');
       }
 
-      // Simplificando o acesso aos dados
+      // Process and format the assistants data
       const assistantsList = response.data?.data || [];
       console.log('Assistants list:', assistantsList);
 
@@ -40,7 +47,10 @@ export const useOpenAIAssistants = () => {
         .filter(assistant => assistant && typeof assistant === 'object')
         .map(assistant => ({
           id: assistant.id || '',
-          name: assistant.name || 'Untitled Assistant'
+          name: assistant.name || 'Assistente sem nome',
+          description: assistant.description || '',
+          model: assistant.model || '',
+          created_at: assistant.created_at ? new Date(assistant.created_at * 1000).toLocaleDateString() : ''
         }))
         .filter(assistant => assistant.id);
 
@@ -49,6 +59,7 @@ export const useOpenAIAssistants = () => {
 
     } catch (error: any) {
       console.error('Error loading assistants:', error);
+      setError(error.message || 'Erro ao carregar assistentes');
       toast.error("Erro ao carregar assistentes. Verifique se a chave da API da OpenAI está configurada corretamente.");
       setAssistants([]);
     } finally {
@@ -59,6 +70,7 @@ export const useOpenAIAssistants = () => {
   return {
     assistants,
     loading,
+    error,
     loadAssistants
   };
 };

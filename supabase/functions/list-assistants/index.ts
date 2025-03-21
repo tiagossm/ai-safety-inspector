@@ -19,7 +19,9 @@ serve(async (req) => {
       throw new Error('OpenAI API key is not configured');
     }
 
-    const response = await fetch('https://api.openai.com/v1/assistants', {
+    console.log("Fetching assistants from OpenAI API...");
+    
+    const response = await fetch('https://api.openai.com/v1/assistants?limit=100', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -35,10 +37,15 @@ serve(async (req) => {
     }
 
     const assistantsData = await response.json();
-    console.log('Assistants fetched successfully');
+    console.log(`Assistants fetched successfully. Found ${assistantsData.data?.length || 0} assistants.`);
 
+    // Return the data with proper headers
     return new Response(
-      JSON.stringify({ data: assistantsData.data || [] }),
+      JSON.stringify({ 
+        data: assistantsData.data || [],
+        count: assistantsData.data?.length || 0,
+        has_more: assistantsData.has_more || false 
+      }),
       { 
         headers: { 
           ...corsHeaders, 

@@ -18,6 +18,12 @@ const getDatabaseType = (type: ChecklistQuestion['responseType']): string => {
   return typeMap[type] || 'text';
 };
 
+// Fix database status mapping
+const getStatusChecklist = (status: string): string => {
+  // The database requires 'ativo' or 'inativo', not 'active' or 'inactive'
+  return status === 'active' ? 'ativo' : 'inativo';
+};
+
 export function useChecklistUpdate() {
   const queryClient = useQueryClient();
   
@@ -40,6 +46,9 @@ export function useChecklistUpdate() {
         throw new Error("Checklist ID is required for updates");
       }
       
+      // Fix the status value to match database constraints
+      const status_checklist = getStatusChecklist(checklist.status);
+      
       // Update the checklist
       const { error: updateError } = await supabase
         .from("checklists")
@@ -47,7 +56,8 @@ export function useChecklistUpdate() {
           title: checklist.title,
           description: checklist.description,
           is_template: checklist.isTemplate,
-          status_checklist: checklist.status,
+          status_checklist: status_checklist, // Fixed value for database constraint
+          status: checklist.status, // Keep the UI status value
           category: checklist.category,
           responsible_id: checklist.responsibleId,
           company_id: checklist.companyId,
