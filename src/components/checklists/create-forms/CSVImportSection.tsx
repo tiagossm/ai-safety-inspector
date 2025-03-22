@@ -1,241 +1,223 @@
 
 import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Upload, FileCode, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { FileUpload, Upload, FileText } from "lucide-react";
 import { toast } from "sonner";
+import Papa from "papaparse";
 
-interface CSVImportSectionProps {
-  file: File | null;
-  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onTextImport?: (text: string) => void;
-  clearFile: () => void;
-  getTemplateFileUrl: () => string;
+interface CSVImportProps {
+  onDataParsed: (data: any[]) => void;
 }
 
-export function CSVImportSection({
-  file,
-  onFileChange,
-  onTextImport,
-  clearFile,
-  getTemplateFileUrl
-}: CSVImportSectionProps) {
-  const [dragActive, setDragActive] = useState(false);
-  const [importTab, setImportTab] = useState<string>("upload");
+export function CSVImportSection({ onDataParsed }: CSVImportProps) {
+  const [activeTab, setActiveTab] = useState<"upload" | "paste">("upload");
+  const [file, setFile] = useState<File | null>(null);
   const [csvText, setCsvText] = useState<string>("");
-  const templateUrl = getTemplateFileUrl();
-  
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
-  
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const fileInput = document.getElementById('file') as HTMLInputElement;
-      fileInput.files = e.dataTransfer.files;
-      
-      // Create a synthetic event to pass to the original handler
-      const event = {
-        target: fileInput,
-        currentTarget: fileInput,
-        preventDefault: () => {}
-      } as unknown as React.ChangeEvent<HTMLInputElement>;
-      
-      onFileChange(event);
+  const [isParsing, setIsParsing] = useState(false);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const selectedFile = e.target.files[0];
+      setFile(selectedFile);
     }
   };
 
-  const handleTextImport = () => {
-    if (!csvText.trim()) {
-      toast.error("Por favor, insira algum texto para importar");
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const droppedFile = e.dataTransfer.files[0];
+      setFile(droppedFile);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const parseCSV = async (source: "file" | "text") => {
+    setIsParsing(true);
+
+    try {
+      if (source === "file" && file) {
+        Papa.parse(file, {
+          header: true,
+          complete: (results) => {
+            handleParseComplete(results.data);
+          },
+          error: (error) => {
+            toast.error(`Erro ao processar arquivo: ${error.message}`);
+            setIsParsing(false);
+          }
+        });
+      } else if (source === "text" && csvText.trim()) {
+        Papa.parse(csvText, {
+          header: true,
+          complete: (results) => {
+            handleParseComplete(results.data);
+          },
+          error: (error) => {
+            toast.error(`Erro ao processar texto: ${error.message}`);
+            setIsParsing(false);
+          }
+        });
+      } else {
+        toast.error(source === "file" ? "Nenhum arquivo selecionado" : "Texto vazio");
+        setIsParsing(false);
+      }
+    } catch (error) {
+      console.error("Error parsing CSV:", error);
+      toast.error("Erro ao processar dados");
+      setIsParsing(false);
+    }
+  };
+
+  const handleParseComplete = (data: any[]) => {
+    // Filter out empty rows
+    const validData = data.filter(row => {
+      // Check if all values in the row are empty
+      const values = Object.values(row);
+      return values.some(value => value !== "" && value !== undefined && value !== null);
+    });
+
+    if (validData.length === 0) {
+      toast.error("Nenhum dado válido encontrado");
+      setIsParsing(false);
       return;
     }
 
-    if (onTextImport) {
-      onTextImport(csvText);
-    } else {
-      // Fallback: convert text to file and use file handler
-      const blob = new Blob([csvText], { type: 'text/csv' });
-      const file = new File([blob], 'imported-text.csv', { type: 'text/csv' });
-      
-      const fileInput = document.getElementById('file') as HTMLInputElement;
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(file);
-      fileInput.files = dataTransfer.files;
-      
-      const event = {
-        target: fileInput,
-        currentTarget: fileInput,
-        preventDefault: () => {}
-      } as unknown as React.ChangeEvent<HTMLInputElement>;
-      
-      onFileChange(event);
-    }
-    
-    toast.success("Texto importado com sucesso!");
-    setCsvText("");
-    setImportTab("upload"); // Switch back to upload tab
+    onDataParsed(validData);
+    toast.success(`${validData.length} perguntas importadas com sucesso`);
+    setIsParsing(false);
   };
 
   return (
-    <Card className="p-4">
-      <Tabs value={importTab} onValueChange={setImportTab}>
-        <TabsList className="grid w-full grid-cols-2 mb-4">
+    <div className="space-y-6">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "upload" | "paste")}>
+        <TabsList className="grid grid-cols-2 mb-4">
           <TabsTrigger value="upload" className="flex items-center gap-2">
-            <Upload className="h-4 w-4" />
-            <span>Upload de Arquivo</span>
+            <FileUpload className="h-4 w-4" />
+            <span>Upload de arquivo</span>
           </TabsTrigger>
           <TabsTrigger value="paste" className="flex items-center gap-2">
-            <FileCode className="h-4 w-4" />
-            <span>Colar Texto</span>
+            <FileText className="h-4 w-4" />
+            <span>Colar texto</span>
           </TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="upload" className="mt-2">
+
+        <TabsContent value="upload">
           <div className="space-y-4">
-            <div>
-              <Label htmlFor="file">
-                Arquivo para Importar <span className="text-red-500">*</span>
-              </Label>
+            <div
+              className="border-2 border-dashed rounded-md p-8 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              onClick={() => document.getElementById("file-upload")?.click()}
+            >
+              <input
+                id="file-upload"
+                type="file"
+                accept=".csv,.tsv,.txt"
+                className="hidden"
+                onChange={handleFileChange}
+              />
               
-              <div 
-                className={`mt-2 border-2 border-dashed rounded-lg p-6 flex flex-col items-center ${
-                  dragActive ? 'border-primary bg-primary/5' : 'border-gray-300'
-                }`}
-                onDragEnter={handleDrag}
-                onDragOver={handleDrag}
-                onDragLeave={handleDrag}
-                onDrop={handleDrop}
-              >
-                {file ? (
-                  <div className="w-full">
-                    <div className="flex items-center justify-between bg-muted/50 p-3 rounded">
-                      <div className="flex items-center space-x-3">
-                        <FileText className="h-8 w-8 text-blue-500" />
-                        <div>
-                          <p className="font-medium">{file.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {(file.size / 1024).toFixed(1)} KB
-                          </p>
-                        </div>
-                      </div>
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={clearFile}
-                      >
-                        <X className="h-5 w-5" />
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <Upload className="h-12 w-12 text-gray-400 mb-2" />
-                    <p className="text-center font-medium mb-1">
-                      Arraste e solte seu arquivo aqui ou
-                    </p>
-                    <Input
-                      id="file"
-                      type="file"
-                      className="hidden"
-                      onChange={onFileChange}
-                      accept=".csv,.xls,.xlsx"
-                    />
-                    <Button 
-                      variant="outline" 
-                      onClick={() => document.getElementById('file')?.click()}
-                      className="mt-2"
-                    >
-                      Selecionar arquivo
-                    </Button>
-                    <p className="text-sm text-muted-foreground mt-4 text-center">
-                      Formatos suportados: CSV, XLS, XLSX.
-                    </p>
-                  </>
-                )}
-              </div>
+              <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              
+              {file ? (
+                <div>
+                  <p className="font-medium">{file.name}</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {(file.size / 1024).toFixed(2)} KB
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setFile(null);
+                    }}
+                  >
+                    Remover
+                  </Button>
+                </div>
+              ) : (
+                <div>
+                  <p className="font-medium">Arraste e solte seu arquivo aqui</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    ou clique para escolher um arquivo
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-4">
+                    Formatos aceitos: CSV, TSV, TXT
+                  </p>
+                </div>
+              )}
             </div>
+            
+            <div className="bg-muted rounded-md p-4">
+              <h3 className="font-medium mb-2">Formato esperado</h3>
+              <p className="text-sm text-muted-foreground">
+                O arquivo deve conter cabeçalhos na primeira linha com: pergunta, tipo_resposta, obrigatorio, opcoes (opcional)
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Tipos de resposta aceitos: sim/não, múltipla escolha, texto, numérico, foto, assinatura
+              </p>
+            </div>
+            
+            <Button
+              onClick={() => parseCSV("file")}
+              disabled={!file || isParsing}
+              className="w-full"
+            >
+              {isParsing ? "Processando..." : "Importar perguntas"}
+            </Button>
           </div>
         </TabsContent>
         
-        <TabsContent value="paste" className="mt-2">
+        <TabsContent value="paste">
           <div className="space-y-4">
-            <div>
-              <Label htmlFor="csv-text">
-                Cole o conteúdo da planilha aqui <span className="text-red-500">*</span>
-              </Label>
+            <div className="space-y-2">
+              <Label htmlFor="csv-text">Cole o conteúdo do CSV abaixo</Label>
               <Textarea
                 id="csv-text"
-                placeholder="Cole o conteúdo CSV aqui... (ex: Pergunta,Tipo,Obrigatório&#10;Verificar equip. de segurança,sim/não,sim)"
+                placeholder="pergunta,tipo_resposta,obrigatorio,opcoes&#10;Exemplo de pergunta?,sim/não,true,&#10;Outra pergunta?,múltipla escolha,true,Opção 1|Opção 2|Opção 3"
                 value={csvText}
                 onChange={(e) => setCsvText(e.target.value)}
-                rows={10}
-                className="font-mono text-sm mt-2"
+                className="min-h-[200px] font-mono text-sm"
               />
-              <p className="text-sm text-muted-foreground mt-1">
-                Cole o conteúdo do CSV diretamente aqui. A primeira linha deve conter os cabeçalhos.
-              </p>
-              
-              <Button 
-                onClick={handleTextImport}
-                disabled={!csvText.trim()}
-                className="mt-3"
-              >
-                Importar Texto
-              </Button>
             </div>
+            
+            <div className="bg-muted rounded-md p-4">
+              <h3 className="font-medium mb-2">Formato esperado</h3>
+              <p className="text-sm text-muted-foreground">
+                Digite ou cole os dados no formato CSV com cabeçalhos. Cada linha deve representar uma pergunta.
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                Exemplo:
+              </p>
+              <pre className="text-xs bg-muted-foreground/10 p-2 rounded mt-1 overflow-x-auto">
+                pergunta,tipo_resposta,obrigatorio,opcoes<br/>
+                Equipamento está limpo?,sim/não,true,<br/>
+                Qual o nível de risco?,múltipla escolha,true,Baixo|Médio|Alto
+              </pre>
+            </div>
+            
+            <Button
+              onClick={() => parseCSV("text")}
+              disabled={!csvText.trim() || isParsing}
+              className="w-full"
+            >
+              {isParsing ? "Processando..." : "Importar perguntas"}
+            </Button>
           </div>
         </TabsContent>
       </Tabs>
-      
-      <div className="mt-3 flex justify-between items-center">
-        <p className="text-sm text-muted-foreground">
-          Não tem um modelo? 
-          <a
-            href={templateUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-primary ml-1 hover:underline"
-          >
-            Baixar modelo
-          </a>
-        </p>
-        
-        {file && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-destructive hover:text-destructive/90"
-            onClick={clearFile}
-          >
-            Remover arquivo
-          </Button>
-        )}
-      </div>
-      
-      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-        <h4 className="font-medium text-blue-700 mb-1">Dicas para importação</h4>
-        <ul className="text-sm text-blue-600 space-y-1 list-disc list-inside">
-          <li>Certifique-se de usar o formato correto (conforme o modelo)</li>
-          <li>A primeira linha deve conter os cabeçalhos</li>
-          <li>Campos obrigatórios: Pergunta e Tipo</li>
-          <li>Para perguntas com múltipla escolha, separe as opções com vírgulas</li>
-        </ul>
-      </div>
-    </Card>
+    </div>
   );
 }

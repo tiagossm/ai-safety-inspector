@@ -12,6 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useChecklistCreate } from "@/hooks/new-checklist/useChecklistCreate";
 import { useChecklistAI } from "@/hooks/new-checklist/useChecklistAI";
+import { AIAssistantSelector } from "@/components/checklists/create-forms/AIAssistantSelector";
+import { CSVImportSection } from "@/components/checklists/create-forms/CSVImportSection";
 import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 
 export default function NewChecklistCreate() {
@@ -25,6 +27,8 @@ export default function NewChecklistCreate() {
     isGenerating, 
     selectedAssistant, 
     setSelectedAssistant,
+    openAIAssistant,
+    setOpenAIAssistant,
     generateChecklist 
   } = useChecklistAI();
   
@@ -122,6 +126,7 @@ export default function NewChecklistCreate() {
       // Validate basic info
       if (!checklist.title) {
         toast.error("O título do checklist é obrigatório.");
+        setIsSubmitting(false);
         return;
       }
       
@@ -129,6 +134,7 @@ export default function NewChecklistCreate() {
       const validQuestions = questions.filter(q => q.text.trim() !== "");
       if (validQuestions.length === 0) {
         toast.error("Adicione pelo menos uma pergunta válida.");
+        setIsSubmitting(false);
         return;
       }
       
@@ -179,6 +185,69 @@ export default function NewChecklistCreate() {
       toast.error("Erro ao gerar checklist. Tente novamente.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+  
+  const handleCsvDataParsed = (data: any[]) => {
+    try {
+      // Convert CSV data to questions
+      const importedQuestions: ChecklistQuestion[] = data.map((row, index) => {
+        const responseTypeMap: { [key: string]: any } = {
+          'sim/não': 'yes_no',
+          'múltipla escolha': 'multiple_choice',
+          'texto': 'text',
+          'numérico': 'numeric',
+          'foto': 'photo',
+          'assinatura': 'signature'
+        };
+        
+        // Try to match the response type
+        let responseType = 'yes_no'; // Default
+        const rawType = row.tipo_resposta || row.type || '';
+        
+        if (responseTypeMap[rawType.toLowerCase()]) {
+          responseType = responseTypeMap[rawType.toLowerCase()];
+        }
+        
+        // Parse options if present and responseType is multiple_choice
+        let options: string[] | undefined = undefined;
+        if (responseType === 'multiple_choice' && row.opcoes) {
+          options = row.opcoes.split('|').map((opt: string) => opt.trim());
+        }
+        
+        return {
+          id: `imported-${Date.now()}-${index}`,
+          text: row.pergunta || row.question || `Pergunta ${index + 1}`,
+          responseType: responseType,
+          isRequired: row.obrigatorio === 'true' || row.required === 'true' || true,
+          weight: 1,
+          allowsPhoto: false,
+          allowsVideo: false,
+          allowsAudio: false,
+          order: index,
+          options: options,
+          groupId: groups[0]?.id // Assign to first group by default
+        };
+      });
+      
+      if (importedQuestions.length > 0) {
+        setQuestions(importedQuestions);
+        
+        // Switch to manual tab to review
+        setActiveTab("manual");
+        
+        // Update title if not set
+        if (!checklist.title) {
+          setChecklist({
+            ...checklist,
+            title: `Checklist importado (${new Date().toLocaleDateString()})`,
+            description: `Checklist importado com ${importedQuestions.length} perguntas`
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error processing CSV data:", error);
+      toast.error("Erro ao processar dados importados");
     }
   };
   
@@ -357,20 +426,12 @@ export default function NewChecklistCreate() {
                       />
                     </div>
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="assistant">Tipo de assistente</Label>
-                      <select
-                        id="assistant"
-                        value={selectedAssistant}
-                        onChange={(e) => setSelectedAssistant(e.target.value as any)}
-                        className="w-full border rounded p-2"
-                      >
-                        <option value="general">Geral</option>
-                        <option value="workplace-safety">Segurança do Trabalho</option>
-                        <option value="compliance">Conformidade</option>
-                        <option value="quality">Qualidade</option>
-                      </select>
-                    </div>
+                    <AIAssistantSelector
+                      selectedAssistant={selectedAssistant}
+                      onChange={setSelectedAssistant}
+                      openAIAssistant={openAIAssistant}
+                      onOpenAIAssistantChange={setOpenAIAssistant}
+                    />
                     
                     <Button
                       type="button"
@@ -419,20 +480,7 @@ export default function NewChecklistCreate() {
           <TabsContent value="import">
             <Card>
               <CardContent className="pt-6">
-                <div className="text-center py-16">
-                  <h3 className="font-medium mb-2">Importação de Planilha</h3>
-                  <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-                    Essa funcionalidade será implementada em breve. Por enquanto, utilize a criação manual ou geração por IA.
-                  </p>
-                  
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setActiveTab("manual")}
-                  >
-                    Voltar para criação manual
-                  </Button>
-                </div>
+                <CSVImportSection onDataParsed={handleCsvDataParsed} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -449,7 +497,7 @@ export default function NewChecklistCreate() {
           
           <Button
             type="submit"
-            disabled={isSubmitting || activeTab === "import"}
+            disabled={isSubmitting || (activeTab === "import" && questions.length <= 1)}
           >
             {isSubmitting ? (
               "Salvando..."

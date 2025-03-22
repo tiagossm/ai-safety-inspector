@@ -41,8 +41,8 @@ export default function NewInspectionPage() {
             description: checklist.description,
             total_questions: checklist.totalQuestions || 0
           },
-          // Add required fields with default values
-          cnae: "",
+          // Add cnae field to fix the constraint violation
+          cnae: "0000-0", // Default value to satisfy the constraint
           approval_status: "pending",
           company_id: checklist.companyId || null
         })
@@ -56,7 +56,7 @@ export default function NewInspectionPage() {
 
       if (data) {
         toast.success("Inspeção iniciada com sucesso!");
-        // For now, navigate back to checklists since the inspection UI is not ready
+        // Navigate back to checklists since the inspection UI is not ready
         navigate("/new-checklists");
       }
     } catch (error: any) {
