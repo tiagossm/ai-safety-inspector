@@ -1,13 +1,14 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface Assistant {
   id: string;
   name: string;
-  model?: string;
   description?: string;
-  created_at: number;
+  model?: string;
+  created_at?: string;
 }
 
 export function useOpenAIAssistants() {
@@ -28,14 +29,14 @@ export function useOpenAIAssistants() {
           name: "Assistente de Segurança do Trabalho",
           model: "gpt-4",
           description: "Especializado em normas de segurança",
-          created_at: Date.now()
+          created_at: Date.now().toString()
         },
         {
           id: "asst_mock_2",
           name: "Assistente de Qualidade",
           model: "gpt-4",
           description: "Especializado em ISO 9001",
-          created_at: Date.now()
+          created_at: Date.now().toString()
         }
       ];
       

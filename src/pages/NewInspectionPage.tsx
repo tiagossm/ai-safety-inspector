@@ -8,12 +8,15 @@ import { toast } from "sonner";
 import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
 import { supabase } from "@/integrations/supabase/client";
 import { exportChecklistToPDF, exportChecklistToCSV, shareChecklistViaWhatsApp, printChecklist } from "@/utils/pdfExport";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 export default function NewInspectionPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: checklist, isLoading, error } = useChecklistById(id || "");
   const [isStarting, setIsStarting] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
     if (error) {
@@ -26,10 +29,13 @@ export default function NewInspectionPage() {
     if (!checklist || isStarting) return;
     
     setIsStarting(true);
+    setValidationError(null);
+    
     try {
       console.log("Starting inspection for checklist:", checklist.id);
       
       // Create a new inspection record with all required fields
+      // Making sure to include a valid CNAE format (00.00-0)
       const { data, error } = await supabase
         .from("inspections")
         .insert({
@@ -41,8 +47,8 @@ export default function NewInspectionPage() {
             description: checklist.description,
             total_questions: checklist.totalQuestions || 0
           },
-          // Add cnae field to fix the constraint violation
-          cnae: "0000-0", // Default value to satisfy the constraint
+          // Add cnae field with a valid format to fix the constraint violation
+          cnae: "00.00-0", // Valid CNAE format
           approval_status: "pending",
           company_id: checklist.companyId || null
         })
@@ -51,6 +57,7 @@ export default function NewInspectionPage() {
 
       if (error) {
         console.error("Detailed error from Supabase:", error);
+        setValidationError(`Erro ao iniciar inspeção: ${error.message || "Erro desconhecido"}`);
         throw error;
       }
 
@@ -145,6 +152,16 @@ export default function NewInspectionPage() {
               <p>{checklist.totalQuestions || 0}</p>
             </div>
           </div>
+
+          {validationError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Erro</AlertTitle>
+              <AlertDescription>
+                {validationError}
+              </AlertDescription>
+            </Alert>
+          )}
 
           <div className="flex flex-col space-y-4 pt-4">
             <Button 

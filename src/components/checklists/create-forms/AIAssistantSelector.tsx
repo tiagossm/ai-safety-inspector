@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AIAssistantType } from "@/hooks/new-checklist/useChecklistAI";
 import { useOpenAIAssistants } from "@/hooks/new-checklist/useOpenAIAssistants";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw } from "lucide-react";
+import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface AIAssistantSelectorProps {
   selectedAssistant: AIAssistantType;
@@ -97,14 +98,20 @@ export function AIAssistantSelector({
           </div>
           
           {error && (
-            <div className="text-sm text-red-500 mb-2">
-              {error}
-            </div>
+            <Alert variant="destructive" className="mb-2">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                {error} <br />
+                Você pode continuar usando o assistente padrão ou tente novamente mais tarde.
+              </AlertDescription>
+            </Alert>
           )}
           
           <Select
             value={openAIAssistant || "none"}
-            onValueChange={onOpenAIAssistantChange}
+            onValueChange={(value) => {
+              onOpenAIAssistantChange(value === "none" ? "" : value);
+            }}
             disabled={loadingAssistants}
           >
             <SelectTrigger id="openai-assistant" className="w-full">
