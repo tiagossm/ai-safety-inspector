@@ -44,7 +44,6 @@ export default function NewInspectionPage() {
           // Add required fields with default values
           cnae: "",
           approval_status: "pending",
-          // REMOVE location_name field which doesn't exist in the schema
           company_id: checklist.companyId || null
         })
         .select("id")

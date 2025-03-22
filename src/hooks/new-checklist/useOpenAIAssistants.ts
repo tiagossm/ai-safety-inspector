@@ -1,47 +1,37 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
-type OpenAIAssistant = {
+interface Assistant {
   id: string;
   name: string;
+  model?: string;
   description?: string;
-  model: string;
   created_at: number;
-};
+}
 
 export function useOpenAIAssistants() {
-  const [assistants, setAssistants] = useState<OpenAIAssistant[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [assistants, setAssistants] = useState<Assistant[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchAssistants = async () => {
     setIsLoading(true);
     setError(null);
-
+    
     try {
       const { data, error } = await supabase.functions.invoke('list-openai-assistants');
-
+      
       if (error) {
         console.error('Error fetching OpenAI assistants:', error);
-        setError(error.message || 'Failed to fetch assistants');
-        toast.error('Erro ao carregar assistentes da OpenAI');
+        setError('Erro ao buscar assistentes da OpenAI: ' + error.message);
         return;
       }
-
-      if (data && data.data) {
-        const assistantsList = data.data as OpenAIAssistant[];
-        setAssistants(assistantsList);
-        console.log(`Loaded ${assistantsList.length} OpenAI assistants`);
-      } else {
-        setAssistants([]);
-        console.log('No assistants found or empty response');
-      }
-    } catch (err) {
-      console.error('Exception while fetching OpenAI assistants:', err);
-      setError(err instanceof Error ? err.message : 'Unknown error');
-      toast.error('Erro ao carregar assistentes da OpenAI');
+      
+      setAssistants(data.assistants || []);
+    } catch (err: any) {
+      console.error('Error in useOpenAIAssistants:', err);
+      setError('Erro ao buscar assistentes: ' + (err.message || 'Erro desconhecido'));
     } finally {
       setIsLoading(false);
     }

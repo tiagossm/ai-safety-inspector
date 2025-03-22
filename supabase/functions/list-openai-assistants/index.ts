@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,60 +14,47 @@ serve(async (req) => {
   }
 
   try {
-    const apiKey = Deno.env.get('OPENAI_API_KEY');
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
     
-    if (!apiKey) {
-      throw new Error('OpenAI API key is not configured');
+    if (!OPENAI_API_KEY) {
+      throw new Error("OPENAI_API_KEY is not set");
     }
 
-    console.log("Fetching assistants from OpenAI API...");
-    
-    const response = await fetch('https://api.openai.com/v1/assistants?limit=100', {
+    // Get assistants from OpenAI
+    const response = await fetch('https://api.openai.com/v1/assistants?limit=100&order=desc', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'OpenAI-Beta': 'assistants=v1'
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'OpenAI-Beta': 'assistants=v1',
+        'Content-Type': 'application/json'
       }
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Error from OpenAI API:', errorText);
-      throw new Error(`Error fetching assistants: ${response.status} ${response.statusText}`);
+      const errorData = await response.json();
+      console.error('OpenAI API error:', errorData);
+      throw new Error(`OpenAI API returned error: ${response.status} ${response.statusText}`);
     }
 
-    const assistantsData = await response.json();
-    console.log(`Assistants fetched successfully. Found ${assistantsData.data?.length || 0} assistants.`);
+    const data = await response.json();
+    
+    // Map to simplified structure
+    const assistants = data.data.map((assistant: any) => ({
+      id: assistant.id,
+      name: assistant.name || 'Untitled Assistant',
+      model: assistant.model,
+      description: assistant.description,
+      created_at: assistant.created_at
+    }));
 
-    // Return the data with proper headers
-    return new Response(
-      JSON.stringify({ 
-        data: assistantsData.data || [],
-        count: assistantsData.data?.length || 0,
-        has_more: assistantsData.has_more || false 
-      }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
-    );
+    return new Response(JSON.stringify({ assistants }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   } catch (error) {
     console.error('Error in list-openai-assistants function:', error);
-    
-    return new Response(
-      JSON.stringify({ 
-        error: error.message || 'Failed to fetch assistants' 
-      }),
-      { 
-        status: 500, 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
-    );
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });
