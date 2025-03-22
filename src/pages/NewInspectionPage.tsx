@@ -44,8 +44,7 @@ export default function NewInspectionPage() {
           // Add required fields with default values
           cnae: "",
           approval_status: "pending",
-          // Only add location if the column exists in the table
-          location_name: "", // Using a different field name to avoid conflict
+          // REMOVE location_name field which doesn't exist in the schema
           company_id: checklist.companyId || null
         })
         .select("id")

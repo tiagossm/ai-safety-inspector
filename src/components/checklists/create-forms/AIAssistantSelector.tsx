@@ -5,7 +5,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AIAssistantType } from "@/hooks/new-checklist/useChecklistAI";
-import { useOpenAIAssistants } from "@/hooks/useOpenAIAssistants";
+import { useOpenAIAssistants } from "@/hooks/new-checklist/useOpenAIAssistants";
 import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw } from "lucide-react";
 
@@ -22,7 +22,7 @@ export function AIAssistantSelector({
   openAIAssistant,
   onOpenAIAssistantChange
 }: AIAssistantSelectorProps) {
-  const { assistants, loading: loadingAssistants, loadAssistants, error } = useOpenAIAssistants();
+  const { assistants, isLoading: loadingAssistants, refetch: loadAssistants, error } = useOpenAIAssistants();
 
   return (
     <div className="space-y-4">

@@ -1,5 +1,5 @@
 
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { AuthProvider } from "@/components/AuthProvider";
 import { RequireAuth } from "@/components/RequireAuth";
@@ -38,9 +38,10 @@ function App() {
             <Route path="inspections/new/:id" element={<NewInspectionPage />} />
             
             {/* Redirect old routes to new ones */}
-            <Route path="checklists" element={<NewChecklists />} />
-            <Route path="checklists/create" element={<NewChecklistCreate />} />
-            <Route path="checklists/:id" element={<NewChecklistDetails />} />
+            <Route path="checklists" element={<Navigate to="/new-checklists" replace />} />
+            <Route path="checklists/create" element={<Navigate to="/new-checklists/create" replace />} />
+            <Route path="checklists/:id" element={<Navigate to="/new-checklists/:id" replace />} />
+            <Route path="inspections" element={<Navigate to="/new-checklists" replace />} />
             
             <Route path="settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
