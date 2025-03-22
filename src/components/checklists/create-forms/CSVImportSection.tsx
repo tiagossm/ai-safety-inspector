@@ -5,24 +5,44 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { FileUpload, Upload, FileText } from "lucide-react";
+import { Upload, FileText } from "lucide-react";
 import { toast } from "sonner";
 import Papa from "papaparse";
 
 interface CSVImportProps {
   onDataParsed: (data: any[]) => void;
+  file?: File | null;
+  onFileChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onTextImport?: (text: string) => void;
+  clearFile?: () => void;
+  getTemplateFileUrl?: () => string;
 }
 
-export function CSVImportSection({ onDataParsed }: CSVImportProps) {
+export function CSVImportSection({ 
+  onDataParsed, 
+  file, 
+  onFileChange, 
+  onTextImport,
+  clearFile,
+  getTemplateFileUrl 
+}: CSVImportProps) {
   const [activeTab, setActiveTab] = useState<"upload" | "paste">("upload");
-  const [file, setFile] = useState<File | null>(null);
+  const [internalFile, setInternalFile] = useState<File | null>(null);
   const [csvText, setCsvText] = useState<string>("");
   const [isParsing, setIsParsing] = useState(false);
+
+  // If file is provided externally, use it, otherwise use internal state
+  const currentFile = file !== undefined ? file : internalFile;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const selectedFile = e.target.files[0];
-      setFile(selectedFile);
+      
+      if (onFileChange) {
+        onFileChange(e);
+      } else {
+        setInternalFile(selectedFile);
+      }
     }
   };
 
@@ -32,7 +52,25 @@ export function CSVImportSection({ onDataParsed }: CSVImportProps) {
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const droppedFile = e.dataTransfer.files[0];
-      setFile(droppedFile);
+      
+      if (onFileChange) {
+        // Create a synthetic event to pass to onFileChange
+        const input = document.createElement('input');
+        input.type = 'file';
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(droppedFile);
+        input.files = dataTransfer.files;
+        
+        const event = {
+          target: input,
+          currentTarget: input,
+          preventDefault: () => {}
+        } as unknown as React.ChangeEvent<HTMLInputElement>;
+        
+        onFileChange(event);
+      } else {
+        setInternalFile(droppedFile);
+      }
     }
   };
 
@@ -41,12 +79,20 @@ export function CSVImportSection({ onDataParsed }: CSVImportProps) {
     e.stopPropagation();
   };
 
+  const handleClearFile = () => {
+    if (clearFile) {
+      clearFile();
+    } else {
+      setInternalFile(null);
+    }
+  };
+
   const parseCSV = async (source: "file" | "text") => {
     setIsParsing(true);
 
     try {
-      if (source === "file" && file) {
-        Papa.parse(file, {
+      if (source === "file" && currentFile) {
+        Papa.parse(currentFile, {
           header: true,
           complete: (results) => {
             handleParseComplete(results.data);
@@ -57,6 +103,13 @@ export function CSVImportSection({ onDataParsed }: CSVImportProps) {
           }
         });
       } else if (source === "text" && csvText.trim()) {
+        // If onTextImport is provided, call it
+        if (onTextImport && source === "text") {
+          onTextImport(csvText);
+          setIsParsing(false);
+          return;
+        }
+        
         Papa.parse(csvText, {
           header: true,
           complete: (results) => {
@@ -102,7 +155,7 @@ export function CSVImportSection({ onDataParsed }: CSVImportProps) {
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "upload" | "paste")}>
         <TabsList className="grid grid-cols-2 mb-4">
           <TabsTrigger value="upload" className="flex items-center gap-2">
-            <FileUpload className="h-4 w-4" />
+            <Upload className="h-4 w-4" />
             <span>Upload de arquivo</span>
           </TabsTrigger>
           <TabsTrigger value="paste" className="flex items-center gap-2">
@@ -129,11 +182,11 @@ export function CSVImportSection({ onDataParsed }: CSVImportProps) {
               
               <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               
-              {file ? (
+              {currentFile ? (
                 <div>
-                  <p className="font-medium">{file.name}</p>
+                  <p className="font-medium">{currentFile.name}</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {(file.size / 1024).toFixed(2)} KB
+                    {(currentFile.size / 1024).toFixed(2)} KB
                   </p>
                   <Button
                     variant="outline"
@@ -141,7 +194,7 @@ export function CSVImportSection({ onDataParsed }: CSVImportProps) {
                     className="mt-2"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setFile(null);
+                      handleClearFile();
                     }}
                   >
                     Remover
@@ -168,11 +221,23 @@ export function CSVImportSection({ onDataParsed }: CSVImportProps) {
               <p className="text-sm text-muted-foreground mt-2">
                 Tipos de resposta aceitos: sim/não, múltipla escolha, texto, numérico, foto, assinatura
               </p>
+              {getTemplateFileUrl && (
+                <Button
+                  variant="link"
+                  className="px-0 text-sm h-auto mt-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.open(getTemplateFileUrl(), '_blank');
+                  }}
+                >
+                  Baixar modelo de planilha
+                </Button>
+              )}
             </div>
             
             <Button
               onClick={() => parseCSV("file")}
-              disabled={!file || isParsing}
+              disabled={!currentFile || isParsing}
               className="w-full"
             >
               {isParsing ? "Processando..." : "Importar perguntas"}

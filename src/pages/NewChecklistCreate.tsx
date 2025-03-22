@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,7 +34,6 @@ export default function NewChecklistCreate() {
   const [activeTab, setActiveTab] = useState<"manual" | "ai" | "import">("manual");
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Checklist data state
   const [checklist, setChecklist] = useState<NewChecklistPayload>({
     title: "",
     description: "",
@@ -44,7 +42,6 @@ export default function NewChecklistCreate() {
     category: "general"
   });
   
-  // Questions state
   const [questions, setQuestions] = useState<ChecklistQuestion[]>([
     {
       id: `new-${Date.now()}-0`,
@@ -59,7 +56,6 @@ export default function NewChecklistCreate() {
     }
   ]);
   
-  // Groups state
   const [groups, setGroups] = useState<ChecklistGroup[]>([
     {
       id: "group-1",
@@ -68,7 +64,6 @@ export default function NewChecklistCreate() {
     }
   ]);
   
-  // Assign the first question to the first group
   React.useEffect(() => {
     if (questions.length > 0 && groups.length > 0 && !questions[0].groupId) {
       const updatedQuestions = [...questions];
@@ -91,7 +86,7 @@ export default function NewChecklistCreate() {
       allowsVideo: false,
       allowsAudio: false,
       order: questions.length,
-      groupId: groups[0]?.id // Assign to first group by default
+      groupId: groups[0]?.id
     };
     
     setQuestions([...questions, newQuestion]);
@@ -123,14 +118,12 @@ export default function NewChecklistCreate() {
     setIsSubmitting(true);
     
     try {
-      // Validate basic info
       if (!checklist.title) {
         toast.error("O título do checklist é obrigatório.");
         setIsSubmitting(false);
         return;
       }
       
-      // Validate questions
       const validQuestions = questions.filter(q => q.text.trim() !== "");
       if (validQuestions.length === 0) {
         toast.error("Adicione pelo menos uma pergunta válida.");
@@ -138,7 +131,6 @@ export default function NewChecklistCreate() {
         return;
       }
       
-      // Create checklist
       const result = await createChecklist.mutateAsync({
         checklist,
         questions: validQuestions,
@@ -147,7 +139,6 @@ export default function NewChecklistCreate() {
       
       toast.success("Checklist criado com sucesso!");
       
-      // Navigate to the new checklist
       navigate(`/new-checklists/${result.id}`);
     } catch (error) {
       console.error("Error submitting checklist:", error);
@@ -166,16 +157,13 @@ export default function NewChecklistCreate() {
     try {
       setIsSubmitting(true);
       
-      // Generate checklist using AI
       const result = await generateChecklist(checklist);
       
       if (result.success && result.questions && result.groups) {
-        // Update form state with AI results
         setChecklist(result.checklistData || checklist);
         setQuestions(result.questions);
         setGroups(result.groups);
         
-        // Switch to manual tab to review
         setActiveTab("manual");
         
         toast.success("Checklist gerado com sucesso! Revise antes de salvar.");
@@ -190,9 +178,8 @@ export default function NewChecklistCreate() {
   
   const handleCsvDataParsed = (data: any[]) => {
     try {
-      // Convert CSV data to questions
       const importedQuestions: ChecklistQuestion[] = data.map((row, index) => {
-        const responseTypeMap: { [key: string]: any } = {
+        const responseTypeMap: Record<string, ChecklistQuestion["responseType"]> = {
           'sim/não': 'yes_no',
           'múltipla escolha': 'multiple_choice',
           'texto': 'text',
@@ -201,15 +188,13 @@ export default function NewChecklistCreate() {
           'assinatura': 'signature'
         };
         
-        // Try to match the response type
-        let responseType = 'yes_no'; // Default
-        const rawType = row.tipo_resposta || row.type || '';
+        let responseType: ChecklistQuestion["responseType"] = 'yes_no';
+        const rawType = (row.tipo_resposta || row.type || '').toLowerCase();
         
-        if (responseTypeMap[rawType.toLowerCase()]) {
-          responseType = responseTypeMap[rawType.toLowerCase()];
+        if (responseTypeMap[rawType]) {
+          responseType = responseTypeMap[rawType];
         }
         
-        // Parse options if present and responseType is multiple_choice
         let options: string[] | undefined = undefined;
         if (responseType === 'multiple_choice' && row.opcoes) {
           options = row.opcoes.split('|').map((opt: string) => opt.trim());
@@ -226,17 +211,15 @@ export default function NewChecklistCreate() {
           allowsAudio: false,
           order: index,
           options: options,
-          groupId: groups[0]?.id // Assign to first group by default
+          groupId: questions[0]?.groupId
         };
       });
       
       if (importedQuestions.length > 0) {
         setQuestions(importedQuestions);
         
-        // Switch to manual tab to review
         setActiveTab("manual");
         
-        // Update title if not set
         if (!checklist.title) {
           setChecklist({
             ...checklist,

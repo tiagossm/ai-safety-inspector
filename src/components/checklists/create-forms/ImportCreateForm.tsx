@@ -223,6 +223,11 @@ export function ImportCreateForm(props: ImportCreateFormProps) {
         onTextImport={handleTextImport}
         clearFile={clearFile}
         getTemplateFileUrl={getTemplateFileUrl}
+        onDataParsed={(data) => {
+          // Handle parsed data - this would typically be used to update form state
+          console.log("CSV data parsed:", data);
+          // For example, you might want to set questions based on the parsed data
+        }}
       />
     </div>
   );
