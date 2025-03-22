@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { CompanyListItem } from "@/types/CompanyListItem";
 import { AIAssistantType } from "@/hooks/checklist/useChecklistCreation";
-import { useOpenAIAssistants } from "@/hooks/new-checklist/useOpenAIAssistants";
+import { AIAssistantSelector } from "@/components/checklists/create-forms/AIAssistantSelector";
 import { Bot, Sparkles, BrainCircuit } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
@@ -81,7 +81,7 @@ const BasicInfoFields = ({
         <div className="space-y-2">
           <Label htmlFor="category">Categoria</Label>
           <Select
-            value={form.category || ""}
+            value={form.category || "general"}
             onValueChange={(value) => handleSelectChange("category", value)}
           >
             <SelectTrigger id="category">
@@ -108,8 +108,8 @@ const BasicInfoFields = ({
             <Skeleton className="h-9 w-full" />
           ) : (
             <Select
-              value={form.company_id?.toString() || undefined}
-              onValueChange={(value) => handleSelectChange("company_id", value)}
+              value={form.company_id?.toString() || "none"}
+              onValueChange={(value) => handleSelectChange("company_id", value === "none" ? "" : value)}
             >
               <SelectTrigger id="company_id">
                 <SelectValue placeholder="Selecione uma empresa (opcional)" />
@@ -137,8 +137,8 @@ const BasicInfoFields = ({
             <Skeleton className="h-9 w-full" />
           ) : (
             <Select
-              value={form.responsible_id?.toString() || undefined}
-              onValueChange={(value) => handleSelectChange("responsible_id", value)}
+              value={form.responsible_id?.toString() || "none"}
+              onValueChange={(value) => handleSelectChange("responsible_id", value === "none" ? "" : value)}
             >
               <SelectTrigger id="responsible_id">
                 <SelectValue placeholder="Selecione um responsável (opcional)" />
@@ -162,142 +162,6 @@ const BasicInfoFields = ({
   );
 };
 
-// AI Configuration component
-const AIConfiguration = ({
-  aiPrompt,
-  setAiPrompt,
-  numQuestions,
-  setNumQuestions,
-  onGenerateAI,
-  aiLoading,
-  selectedAssistant,
-  setSelectedAssistant,
-  openAIAssistant,
-  setOpenAIAssistant,
-}: Pick<AICreateFormProps, 
-  'aiPrompt' | 'setAiPrompt' | 'numQuestions' | 'setNumQuestions' | 
-  'onGenerateAI' | 'aiLoading' | 'selectedAssistant' | 'setSelectedAssistant' |
-  'openAIAssistant' | 'setOpenAIAssistant'
->) => {
-  // Fetch OpenAI assistants using our new hook
-  const { assistants, isLoading: loadingUserAssistants } = useOpenAIAssistants();
-
-  return (
-    <Card className="border rounded-md p-4 bg-slate-50">
-      <div className="flex items-center gap-2 mb-4">
-        <BrainCircuit className="h-6 w-6 text-indigo-600" />
-        <h3 className="text-lg font-medium">Configurações de Geração por IA</h3>
-      </div>
-      
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="ai-type">Tipo de Assistente</Label>
-          <Select 
-            value={selectedAssistant} 
-            onValueChange={(value) => setSelectedAssistant(value as AIAssistantType)}
-          >
-            <SelectTrigger id="ai-type">
-              <SelectValue placeholder="Selecione o tipo de assistente" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="general">Assistente Geral</SelectItem>
-              <SelectItem value="workplace-safety">Segurança do Trabalho</SelectItem>
-              <SelectItem value="compliance">Conformidade</SelectItem>
-              <SelectItem value="quality">Qualidade</SelectItem>
-            </SelectContent>
-          </Select>
-          <p className="text-sm text-muted-foreground mt-1">
-            Selecione um tipo para gerar perguntas específicas para cada área.
-          </p>
-        </div>
-        
-        <div>
-          <Label htmlFor="openai-assistant">Seus Assistentes OpenAI</Label>
-          {loadingUserAssistants ? (
-            <Skeleton className="h-9 w-full" />
-          ) : (
-            <Select 
-              value={openAIAssistant} 
-              onValueChange={setOpenAIAssistant}
-            >
-              <SelectTrigger id="openai-assistant">
-                <SelectValue placeholder="Selecione um assistente" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Nenhum (usar assistente padrão)</SelectItem>
-                {assistants && assistants.length > 0 ? (
-                  assistants.map((assistant) => (
-                    <SelectItem key={assistant.id} value={assistant.id}>
-                      {assistant.name} ({assistant.model})
-                    </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem value="none" disabled>
-                    Nenhum assistente encontrado na sua conta
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-          )}
-          <p className="text-sm text-muted-foreground mt-1">
-            Utilize um assistente personalizado da sua conta OpenAI.
-          </p>
-        </div>
-        
-        <div>
-          <Label htmlFor="num-questions">Número de Perguntas: {numQuestions}</Label>
-          <Slider 
-            id="num-questions"
-            defaultValue={[numQuestions]} 
-            min={5} 
-            max={50} 
-            step={1}
-            onValueChange={(values) => setNumQuestions(values[0])}
-            className="my-4"
-          />
-          <p className="text-sm text-muted-foreground">
-            Defina quantas perguntas você deseja que a IA gere.
-          </p>
-        </div>
-        
-        <div>
-          <Label htmlFor="prompt">Descreva o que você deseja verificar</Label>
-          <Textarea
-            id="prompt"
-            placeholder="Ex: Crie um checklist para inspeção de segurança em um canteiro de obras"
-            value={aiPrompt}
-            onChange={(e) => setAiPrompt(e.target.value)}
-            rows={5}
-            className="w-full"
-          />
-          <p className="text-sm text-muted-foreground mt-1">
-            Seja específico e inclua detalhes relevantes para obter melhores resultados.
-          </p>
-        </div>
-        
-        <Button
-          type="button"
-          onClick={onGenerateAI}
-          disabled={aiLoading || !aiPrompt.trim()}
-          className="w-full bg-indigo-600 hover:bg-indigo-700"
-        >
-          {aiLoading ? (
-            <>
-              <Sparkles className="mr-2 h-4 w-4 animate-spin" />
-              Gerando...
-            </>
-          ) : (
-            <>
-              <Bot className="mr-2 h-4 w-4" />
-              Gerar Checklist com IA
-            </>
-          )}
-        </Button>
-      </div>
-    </Card>
-  );
-};
-
 export function AICreateForm(props: AICreateFormProps) {
   return (
     <div className="space-y-6">
@@ -310,18 +174,71 @@ export function AICreateForm(props: AICreateFormProps) {
         loadingCompanies={props.loadingCompanies}
       />
 
-      <AIConfiguration 
-        aiPrompt={props.aiPrompt}
-        setAiPrompt={props.setAiPrompt}
-        numQuestions={props.numQuestions}
-        setNumQuestions={props.setNumQuestions}
-        onGenerateAI={props.onGenerateAI}
-        aiLoading={props.aiLoading}
-        selectedAssistant={props.selectedAssistant}
-        setSelectedAssistant={props.setSelectedAssistant}
-        openAIAssistant={props.openAIAssistant}
-        setOpenAIAssistant={props.setOpenAIAssistant}
-      />
+      <Card className="border rounded-md p-4 bg-slate-50">
+        <div className="flex items-center gap-2 mb-4">
+          <BrainCircuit className="h-6 w-6 text-indigo-600" />
+          <h3 className="text-lg font-medium">Configurações de Geração por IA</h3>
+        </div>
+        
+        <div className="space-y-4">
+          <AIAssistantSelector
+            selectedAssistant={props.selectedAssistant}
+            onChange={props.setSelectedAssistant}
+            openAIAssistant={props.openAIAssistant}
+            onOpenAIAssistantChange={props.setOpenAIAssistant}
+          />
+          
+          <div>
+            <Label htmlFor="num-questions">Número de Perguntas: {props.numQuestions}</Label>
+            <Slider 
+              id="num-questions"
+              defaultValue={[props.numQuestions]} 
+              min={5} 
+              max={50} 
+              step={1}
+              onValueChange={(values) => props.setNumQuestions(values[0])}
+              className="my-4"
+            />
+            <p className="text-sm text-muted-foreground">
+              Defina quantas perguntas você deseja que a IA gere.
+            </p>
+          </div>
+          
+          <div>
+            <Label htmlFor="prompt">Descreva o que você deseja verificar</Label>
+            <Textarea
+              id="prompt"
+              placeholder="Ex: Crie um checklist para inspeção de segurança em um canteiro de obras"
+              value={props.aiPrompt}
+              onChange={(e) => props.setAiPrompt(e.target.value)}
+              rows={5}
+              className="w-full"
+            />
+            <p className="text-sm text-muted-foreground mt-1">
+              Seja específico e inclua detalhes relevantes para obter melhores resultados.
+            </p>
+          </div>
+          
+          <Button
+            type="button"
+            onClick={props.onGenerateAI}
+            disabled={props.aiLoading || !props.aiPrompt.trim()}
+            className="w-full bg-indigo-600 hover:bg-indigo-700"
+          >
+            {props.aiLoading ? (
+              <>
+                <Sparkles className="mr-2 h-4 w-4 animate-spin" />
+                Gerando...
+              </>
+            ) : (
+              <>
+                <Bot className="mr-2 h-4 w-4" />
+                Gerar Checklist com IA
+              </>
+            )}
+          </Button>
+        </div>
+      </Card>
     </div>
   );
 }

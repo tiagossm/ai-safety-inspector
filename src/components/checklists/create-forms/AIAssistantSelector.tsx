@@ -103,7 +103,7 @@ export function AIAssistantSelector({
           )}
           
           <Select
-            value={openAIAssistant || ""}
+            value={openAIAssistant || "none"}
             onValueChange={onOpenAIAssistantChange}
             disabled={loadingAssistants}
           >
@@ -111,7 +111,7 @@ export function AIAssistantSelector({
               <SelectValue placeholder={loadingAssistants ? "Carregando assistentes..." : "Selecione um assistente especializado (opcional)"} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Nenhum assistente específico</SelectItem>
+              <SelectItem value="none">Nenhum assistente específico</SelectItem>
               {assistants.map((assistant) => (
                 <SelectItem key={assistant.id} value={assistant.id}>
                   {assistant.name}{assistant.model ? ` (${assistant.model})` : ''}
