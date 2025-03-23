@@ -151,6 +151,19 @@ const NewInspectionPage = () => {
     return companyId && companyData?.cnae && /^\d{2}\.\d{2}-\d$/.test(companyData.cnae);
   };
   
+  // Format CNAE to expected format
+  const formatCNAE = (cnae: string) => {
+    // Remove non-numeric characters
+    const numericOnly = cnae.replace(/[^\d]/g, '');
+    
+    // Format to XX.XX-X
+    if (numericOnly.length >= 5) {
+      return `${numericOnly.substring(0, 2)}.${numericOnly.substring(2, 4)}-${numericOnly.substring(4, 5)}`;
+    }
+    
+    return cnae; // Return original if cannot format
+  };
+  
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -168,35 +181,47 @@ const NewInspectionPage = () => {
     try {
       setSubmitting(true);
       
+      // Format CNAE properly
+      const formattedCNAE = formatCNAE(companyData.cnae);
+      console.log("Using formatted CNAE:", formattedCNAE);
+      
+      // Prepare the inspection data
+      const inspectionData = {
+        checklist_id: checklistId,
+        user_id: user.id,
+        company_id: companyId,
+        cnae: formattedCNAE,
+        status: "Pendente",
+        approval_status: "pending" as ApprovalStatus,
+        responsible_id: responsibleId || null,
+        scheduled_date: scheduledDate ? scheduledDate.toISOString() : null,
+        location: location || null,
+        inspection_type: inspectionType || null,
+        priority: priority || null,
+        metadata: {
+          notes: notes || null,
+          responsible_data: responsibleId ? null : responsibleData,
+        },
+        checklist: {
+          title: checklist.title,
+          description: checklist.description,
+          total_questions: checklist?.checklist_itens?.length || 0,
+        }
+      };
+      
+      console.log("Sending inspection data:", inspectionData);
+      
       // Create inspection
       const { data: inspection, error } = await supabase
         .from("inspections")
-        .insert({
-          checklist_id: checklistId,
-          user_id: user.id,
-          company_id: companyId,
-          cnae: companyData.cnae,
-          status: "Pendente",
-          approval_status: "pending" as ApprovalStatus,
-          responsible_id: responsibleId || null,
-          scheduled_date: scheduledDate ? scheduledDate.toISOString() : null,
-          location: location || null,
-          inspection_type: inspectionType || null,
-          priority: priority || null,
-          metadata: {
-            notes: notes || null,
-            responsible_data: responsibleId ? null : responsibleData,
-          },
-          checklist: {
-            title: checklist.title,
-            description: checklist.description,
-            total_questions: checklist?.checklist_itens?.length || 0,
-          }
-        })
+        .insert(inspectionData)
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
       
       toast.success("Inspeção criada com sucesso!");
       navigate(`/inspections/${inspection.id}`);
