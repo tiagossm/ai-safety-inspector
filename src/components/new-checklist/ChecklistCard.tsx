@@ -134,15 +134,28 @@ export function ChecklistCard({
       
       <CardFooter className="pt-2 flex flex-col gap-3 border-t">
         <div className="w-full">
-          <Button 
-            variant="default" 
-            size="sm"
-            className="w-full bg-teal-600 hover:bg-teal-700" 
-            onClick={handleStartInspection}
-          >
-            <FileCheck className="h-4 w-4 mr-1" />
-            Iniciar inspeção
-          </Button>
+        {checklist.id ? (
+  <Button 
+    variant="default" 
+    size="sm"
+    className="w-full bg-teal-600 hover:bg-teal-700" 
+    onClick={handleStartInspection}
+  >
+    <FileCheck className="h-4 w-4 mr-1" />
+    Iniciar inspeção
+  </Button>
+) : (
+  <Button 
+    variant="destructive" 
+    size="sm"
+    className="w-full"
+    disabled
+  >
+    <FileCheck className="h-4 w-4 mr-1" />
+    ID do checklist não fornecido
+  </Button>
+)}
+
         </div>
         
         <div className="w-full">
