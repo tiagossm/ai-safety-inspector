@@ -10,6 +10,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { exportChecklistToPDF, exportChecklistToCSV, shareChecklistViaWhatsApp, printChecklist } from "@/utils/pdfExport";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { Database } from "@/integrations/supabase/types";
+
+// Define the type for approval_status to match what's expected in the database
+type ApprovalStatus = Database["public"]["Enums"]["approval_status"];
 
 export default function NewInspectionPage() {
   const { id } = useParams<{ id: string }>();
@@ -46,7 +50,7 @@ export default function NewInspectionPage() {
       }
       
       // Create a new inspection record with all required fields
-      // Making sure to include a valid CNAE format (00.00-0)
+      // Making sure to include a valid CNAE format (00.00-0) and using the correct enum type for approval_status
       const inspectionData = {
         checklist_id: checklist.id,
         user_id: userData.user.id,
@@ -58,7 +62,7 @@ export default function NewInspectionPage() {
         },
         // Add cnae field with a valid format to fix the constraint violation
         cnae: "00.00-0", // Valid CNAE format as default
-        approval_status: "pending",
+        approval_status: "pending" as ApprovalStatus, // Explicitly cast to the enum type
         company_id: checklist.companyId || null
       };
       
