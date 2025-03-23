@@ -850,11 +850,18 @@ export type Database = {
           company_id: string | null
           created_at: string
           id: string
+          inspection_type: string | null
+          location: string | null
+          metadata: Json | null
           photos: string[] | null
+          priority: string | null
           report_url: string | null
+          responsible_id: string | null
           risks: Json | null
+          scheduled_date: string | null
           status: string | null
           sync_status: string | null
+          unit_id: string | null
           user_id: string
         }
         Insert: {
@@ -870,11 +877,18 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           id?: string
+          inspection_type?: string | null
+          location?: string | null
+          metadata?: Json | null
           photos?: string[] | null
+          priority?: string | null
           report_url?: string | null
+          responsible_id?: string | null
           risks?: Json | null
+          scheduled_date?: string | null
           status?: string | null
           sync_status?: string | null
+          unit_id?: string | null
           user_id: string
         }
         Update: {
@@ -890,11 +904,18 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           id?: string
+          inspection_type?: string | null
+          location?: string | null
+          metadata?: Json | null
           photos?: string[] | null
+          priority?: string | null
           report_url?: string | null
+          responsible_id?: string | null
           risks?: Json | null
+          scheduled_date?: string | null
           status?: string | null
           sync_status?: string | null
+          unit_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -917,6 +938,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspections_unit_id_fkey"
+            columns: ["unit_id"]
+            isOneToOne: false
+            referencedRelation: "units"
             referencedColumns: ["id"]
           },
         ]

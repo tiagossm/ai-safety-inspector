@@ -1,797 +1,457 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, ClipboardCheck, Plus, CalendarIcon, MapPin, User, Building, FileText } from "lucide-react";
-import { toast } from "sonner";
-import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
 import { supabase } from "@/integrations/supabase/client";
-import { exportChecklistToPDF, exportChecklistToCSV } from "@/utils/pdfExport";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
-import { Database } from "@/integrations/supabase/types";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import { useAuth } from "@/components/AuthProvider";
 import { CompanySelector } from "@/components/inspection/CompanySelector";
 import { ResponsibleSelector } from "@/components/inspection/ResponsibleSelector";
 import { DateTimePicker } from "@/components/inspection/DateTimePicker";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import { 
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { 
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
-import { pt } from "date-fns/locale";
-import { cn } from "@/lib/utils";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import { ArrowLeft, CalendarIcon, Building, User, MapPin, ClipboardList, AlertTriangle } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Database } from "@/integrations/supabase/types";
 
-// Define the type for approval_status to match what's expected in the database
+// Define ApprovalStatus type from Database Enums
 type ApprovalStatus = Database["public"]["Enums"]["approval_status"];
 
-// Define the form schema for inspection creation
-const inspectionFormSchema = z.object({
-  company_id: z.string().uuid().optional(),
-  unit_id: z.string().uuid().optional(),
-  cnae: z.string().min(1, { message: "CNAE é obrigatório" }),
-  responsible_id: z.string().optional(),
-  responsible_name: z.string().optional(),
-  responsible_role: z.string().optional(),
-  responsible_company: z.string().optional(),
-  responsible_document: z.string().optional(),
-  scheduled_date: z.date().optional(),
-  location: z.string().optional(),
-  notes: z.string().optional(),
-  inspection_type: z.enum(["internal", "external", "recurring"]).default("internal"),
-  priority: z.enum(["low", "medium", "high"]).default("medium"),
-}).refine(data => data.company_id || data.unit_id, {
-  message: "Selecione uma empresa ou unidade",
-  path: ["company_id"]
-}).refine(data => data.responsible_id || data.responsible_name, {
-  message: "Informe um responsável",
-  path: ["responsible_name"]
-});
-
-type InspectionFormValues = z.infer<typeof inspectionFormSchema>;
-
-export default function NewInspectionPage() {
-  const { id } = useParams<{ id: string }>();
+const NewInspectionPage = () => {
+  const { checklistId } = useParams<{ checklistId: string }>();
   const navigate = useNavigate();
-  const { data: checklist, isLoading, error } = useChecklistById(id || "");
-  const [isStarting, setIsStarting] = useState(false);
-  const [validationError, setValidationError] = useState<string | null>(null);
-  const [units, setUnits] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState<string>("basic");
-
-  // Initialize the form with default values
-  const form = useForm<InspectionFormValues>({
-    resolver: zodResolver(inspectionFormSchema),
-    defaultValues: {
-      inspection_type: "internal",
-      priority: "medium"
-    }
-  });
-
-  // Get form state for validation and disabling the submit button
-  const { formState: { errors, isValid }, watch } = form;
-  const formValues = watch();
-
+  const { user } = useAuth();
+  
+  const [checklist, setChecklist] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  
+  // Form state
+  const [companyId, setCompanyId] = useState<string>("");
+  const [companyData, setCompanyData] = useState<any>(null);
+  const [responsibleId, setResponsibleId] = useState<string>("");
+  const [responsibleData, setResponsibleData] = useState<any>(null);
+  const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
+  const [location, setLocation] = useState<string>("");
+  const [notes, setNotes] = useState<string>("");
+  const [inspectionType, setInspectionType] = useState<string>("internal");
+  const [priority, setPriority] = useState<string>("medium");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  
   useEffect(() => {
-    if (error) {
-      toast.error("Erro ao carregar checklist. Verifique o ID ou tente novamente.");
-      navigate("/new-checklists");
+    if (!checklistId) {
+      toast.error("ID do checklist não fornecido");
+      navigate("/inspections");
+      return;
     }
-  }, [error, navigate]);
-
-  // Load units when company is selected
+    
+    const fetchChecklist = async () => {
+      try {
+        setLoading(true);
+        console.log("Fetching checklist with ID:", checklistId);
+        
+        const { data, error } = await supabase
+          .from("checklists")
+          .select("*, checklist_itens(*)")
+          .eq("id", checklistId)
+          .single();
+        
+        if (error) throw error;
+        
+        if (!data) {
+          toast.error("Checklist não encontrado");
+          navigate("/inspections");
+          return;
+        }
+        
+        setChecklist(data);
+        
+        // If checklist already has a company_id, pre-select it
+        if (data.company_id) {
+          // Fetch company data to populate fields
+          const { data: companyData, error: companyError } = await supabase
+            .from("companies")
+            .select("*")
+            .eq("id", data.company_id)
+            .single();
+          
+          if (!companyError && companyData) {
+            setCompanyId(companyData.id);
+            setCompanyData(companyData);
+            setLocation(companyData.address || "");
+          }
+        }
+        
+      } catch (error) {
+        console.error("Error fetching checklist:", error);
+        toast.error("Erro ao carregar o checklist");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchChecklist();
+  }, [checklistId, navigate]);
+  
+  // Update location when company is selected
   useEffect(() => {
-    if (formValues.company_id) {
-      fetchUnits(formValues.company_id);
+    if (companyData && companyData.address) {
+      setLocation(companyData.address);
     }
-  }, [formValues.company_id]);
-
-  // Fetch units for the selected company
-  const fetchUnits = async (companyId: string) => {
+  }, [companyData]);
+  
+  // Validate form fields
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!companyId) {
+      newErrors.company = "Selecione uma empresa";
+    }
+    
+    if (!companyData?.cnae) {
+      newErrors.cnae = "CNAE é obrigatório";
+    } else if (!/^\d{2}\.\d{2}-\d$/.test(companyData.cnae)) {
+      newErrors.cnae = "CNAE deve estar no formato 00.00-0";
+    }
+    
+    if (!responsibleId && !responsibleData) {
+      newErrors.responsible = "Selecione um responsável";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+  
+  // Handle company selection
+  const handleCompanySelect = (id: string, data: any) => {
+    setCompanyId(id);
+    setCompanyData(data);
+    if (data.address) {
+      setLocation(data.address);
+    }
+    
+    // Clear CNAE error if valid
+    if (data.cnae && /^\d{2}\.\d{2}-\d$/.test(data.cnae)) {
+      setErrors(prev => ({...prev, cnae: ""}));
+    }
+  };
+  
+  // Handle responsible selection
+  const handleResponsibleSelect = (id: string, data: any) => {
+    setResponsibleId(id);
+    setResponsibleData(data);
+    setErrors(prev => ({...prev, responsible: ""}));
+  };
+  
+  // Check if form is valid
+  const isFormValid = () => {
+    return companyId && companyData?.cnae && /^\d{2}\.\d{2}-\d$/.test(companyData.cnae);
+  };
+  
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      toast.error("Preencha todos os campos obrigatórios");
+      return;
+    }
+    
+    if (!user?.id) {
+      toast.error("Usuário não autenticado");
+      return;
+    }
+    
     try {
-      const { data, error } = await supabase
-        .from("units")
-        .select("*")
-        .eq("company_id", companyId);
+      setSubmitting(true);
+      
+      // Create inspection
+      const { data: inspection, error } = await supabase
+        .from("inspections")
+        .insert({
+          checklist_id: checklistId,
+          user_id: user.id,
+          company_id: companyId,
+          cnae: companyData.cnae,
+          status: "Pendente",
+          approval_status: "pending" as ApprovalStatus,
+          responsible_id: responsibleId || null,
+          scheduled_date: scheduledDate || null,
+          location: location || null,
+          inspection_type: inspectionType || null,
+          priority: priority || null,
+          metadata: {
+            notes: notes || null,
+            responsible_data: responsibleId ? null : responsibleData,
+          },
+          checklist: {
+            title: checklist.title,
+            description: checklist.description,
+            total_questions: checklist?.checklist_itens?.length || 0,
+          }
+        })
+        .select()
+        .single();
       
       if (error) throw error;
-      setUnits(data || []);
-    } catch (error) {
-      console.error("Error fetching units:", error);
-      toast.error("Erro ao carregar unidades da empresa");
-    }
-  };
-
-  // Handle company selection and auto-populate fields
-  const handleCompanyChange = async (companyId: string, companyData: any) => {
-    form.setValue("company_id", companyId);
-    
-    // Auto-populate CNAE
-    if (companyData?.cnae) {
-      form.setValue("cnae", companyData.cnae);
-    }
-    
-    // Auto-populate location from address
-    if (companyData?.address) {
-      form.setValue("location", companyData.address);
-    }
-    
-    // Fetch units for this company
-    await fetchUnits(companyId);
-  };
-
-  // Handle unit selection
-  const handleUnitChange = (unitId: string, unitData: any) => {
-    form.setValue("unit_id", unitId);
-    
-    // Auto-populate CNAE from unit
-    if (unitData?.cnae) {
-      form.setValue("cnae", unitData.cnae);
-    }
-    
-    // Auto-populate location from unit address
-    if (unitData?.address) {
-      form.setValue("location", unitData.address);
-    }
-  };
-
-  // Handle responsible person selection
-  const handleResponsibleChange = (userId: string, userData: any) => {
-    form.setValue("responsible_id", userId);
-    form.setValue("responsible_name", userData?.name || "");
-    form.setValue("responsible_role", userData?.position || "");
-  };
-
-  const handleStartInspection = async (values: InspectionFormValues) => {
-    if (!checklist || isStarting) return;
-    
-    setIsStarting(true);
-    setValidationError(null);
-    
-    try {
-      console.log("Starting inspection for checklist:", checklist.id);
-      console.log("Form values:", values);
       
-      // Get the current user to ensure we have a valid user_id
-      const { data: userData, error: userError } = await supabase.auth.getUser();
+      toast.success("Inspeção criada com sucesso!");
+      navigate(`/inspections/${inspection.id}`);
       
-      if (userError) {
-        throw new Error(`Erro ao obter dados do usuário: ${userError.message}`);
-      }
-      
-      if (!userData.user) {
-        throw new Error("Usuário não autenticado. Faça login para iniciar uma inspeção.");
-      }
-      
-      // Create inspection metadata object
-      const inspectionMetadata = {
-        responsible_name: values.responsible_name,
-        responsible_role: values.responsible_role,
-        responsible_company: values.responsible_company,
-        responsible_document: values.responsible_document,
-        inspection_type: values.inspection_type,
-        priority: values.priority,
-        scheduled_date: values.scheduled_date ? values.scheduled_date.toISOString() : null,
-        location: values.location,
-        notes: values.notes
-      };
-      
-      // Create a new inspection record with all required fields
-      const inspectionData = {
-        checklist_id: checklist.id,
-        user_id: userData.user.id,
-        status: "Pendente",
-        checklist: {
-          title: checklist.title,
-          description: checklist.description,
-          total_questions: checklist.totalQuestions || 0
-        },
-        cnae: values.cnae, // Use the validated CNAE from form
-        approval_status: "pending" as ApprovalStatus, // Explicitly cast to the enum type
-        company_id: values.company_id || null,
-        unit_id: values.unit_id || null,
-        responsible_id: values.responsible_id || null,
-        metadata: inspectionMetadata
-      };
-      
-      console.log("Creating inspection with data:", inspectionData);
-      
-      const { data, error } = await supabase
-        .from("inspections")
-        .insert(inspectionData)
-        .select("id")
-        .single();
-
-      if (error) {
-        console.error("Detailed error from Supabase:", error);
-        setValidationError(`Erro ao iniciar inspeção: ${error.message || "Erro desconhecido"}`);
-        throw error;
-      }
-
-      if (data) {
-        console.log("Inspection created successfully:", data);
-        toast.success("Inspeção iniciada com sucesso!");
-        // Navigate to the inspection details page or back to checklists
-        navigate("/new-checklists");
-      }
     } catch (error: any) {
-      console.error("Error starting inspection:", error);
-      toast.error(`Erro ao iniciar inspeção: ${error.message || "Erro desconhecido"}`);
+      console.error("Error creating inspection:", error);
+      toast.error(`Erro ao criar inspeção: ${error.message}`);
     } finally {
-      setIsStarting(false);
+      setSubmitting(false);
     }
   };
-
-  const handleExportPDF = async () => {
-    if (!checklist) return;
-    try {
-      toast.info("Exportando para PDF...");
-      await exportChecklistToPDF(checklist);
-      toast.success("PDF exportado com sucesso!");
-    } catch (error) {
-      toast.error("Erro ao exportar PDF");
-      console.error("PDF export error:", error);
-    }
-  };
-
-  const handleExportCSV = () => {
-    if (!checklist) return;
-    try {
-      toast.info("Exportando para CSV...");
-      exportChecklistToCSV(checklist);
-      toast.success("CSV exportado com sucesso!");
-    } catch (error) {
-      toast.error("Erro ao exportar CSV");
-      console.error("CSV export error:", error);
-    }
-  };
-
-  // Calculate if the form is valid enough to enable the submit button
-  const isFormValid = () => {
-    const hasCNAE = !!formValues.cnae;
-    const hasCompany = !!formValues.company_id;
-    const hasResponsible = !!formValues.responsible_id || !!formValues.responsible_name;
-    
-    return hasCNAE && hasCompany && hasResponsible && !isStarting;
-  };
-
-  if (isLoading) {
+  
+  if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[50vh]">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+      <div className="container py-8">
+        <div className="flex justify-center items-center h-64">
+          <p>Carregando...</p>
+        </div>
       </div>
     );
   }
-
-  if (!checklist) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh]">
-        <h2 className="text-2xl font-bold mb-4">Checklist não encontrado</h2>
-        <Button variant="outline" onClick={() => navigate("/new-checklists")}>
-          Voltar para Checklists
-        </Button>
-      </div>
-    );
-  }
-
+  
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => navigate("/new-checklists")}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-2xl font-bold">Iniciar Nova Inspeção</h1>
-        </div>
+    <div className="container py-8">
+      <div className="flex items-center mb-6">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => navigate("/inspections")}
+          className="mr-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar
+        </Button>
+        <h1 className="text-2xl font-bold">Nova Inspeção</h1>
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Configurar Inspeção</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid grid-cols-3 mb-4">
-                  <TabsTrigger value="basic">Informações Básicas</TabsTrigger>
-                  <TabsTrigger value="company">Empresa e Local</TabsTrigger>
-                  <TabsTrigger value="advanced">Configurações Avançadas</TabsTrigger>
-                </TabsList>
-                
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(handleStartInspection)} className="space-y-6">
-                    <TabsContent value="basic" className="space-y-4">
-                      {/* Responsible for inspection */}
-                      <FormField
-                        control={form.control}
-                        name="responsible_id"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Responsável pela Inspeção</FormLabel>
-                            <FormControl>
-                              <ResponsibleSelector 
-                                onSelect={handleResponsibleChange}
-                                value={field.value}
-                              />
-                            </FormControl>
-                            <FormDescription>
-                              Selecione um usuário do sistema ou informe um responsável externo
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      {/* If no responsible_id selected, show manual fields */}
-                      {!formValues.responsible_id && (
-                        <div className="space-y-4 p-4 border rounded-md bg-slate-50">
-                          <FormField
-                            control={form.control}
-                            name="responsible_name"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Nome do Responsável</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Nome completo" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          
-                          <div className="grid grid-cols-2 gap-4">
-                            <FormField
-                              control={form.control}
-                              name="responsible_role"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Cargo/Função</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="Cargo ou função" {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            
-                            <FormField
-                              control={form.control}
-                              name="responsible_company"
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Empresa/Organização</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="Empresa ou organização" {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
-                          
-                          <FormField
-                            control={form.control}
-                            name="responsible_document"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Documento (opcional)</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="CPF, registro profissional, etc." {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      )}
-                      
-                      {/* Scheduled date */}
-                      <FormField
-                        control={form.control}
-                        name="scheduled_date"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-col">
-                            <FormLabel>Data e Hora Planejada</FormLabel>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                      "w-full pl-3 text-left font-normal",
-                                      !field.value && "text-muted-foreground"
-                                    )}
-                                  >
-                                    {field.value ? (
-                                      format(field.value, "PPP 'às' HH:mm", {
-                                        locale: pt,
-                                      })
-                                    ) : (
-                                      <span>Selecione a data e hora</span>
-                                    )}
-                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                  </Button>
-                                </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                  mode="single"
-                                  selected={field.value}
-                                  onSelect={field.onChange}
-                                  initialFocus
-                                />
-                              </PopoverContent>
-                            </Popover>
-                            <FormDescription>
-                              Data e hora para realização da inspeção
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      {/* Inspection type */}
-                      <FormField
-                        control={form.control}
-                        name="inspection_type"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Tipo de Inspeção</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione o tipo de inspeção" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="internal">Inspeção Interna</SelectItem>
-                                <SelectItem value="external">Auditoria Externa</SelectItem>
-                                <SelectItem value="recurring">Inspeção Recorrente</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormDescription>
-                              Define o propósito e contexto da inspeção
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      {/* Priority */}
-                      <FormField
-                        control={form.control}
-                        name="priority"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Prioridade</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione a prioridade" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="low">Baixa</SelectItem>
-                                <SelectItem value="medium">Média</SelectItem>
-                                <SelectItem value="high">Alta</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormDescription>
-                              Define a prioridade desta inspeção
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      {/* Notes */}
-                      <FormField
-                        control={form.control}
-                        name="notes"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Observações</FormLabel>
-                            <FormControl>
-                              <Textarea
-                                placeholder="Instruções ou contexto da inspeção"
-                                className="resize-none"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormDescription>
-                              Informações adicionais sobre esta inspeção
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </TabsContent>
-                    
-                    <TabsContent value="company" className="space-y-4">
-                      {/* Company selection */}
-                      <FormField
-                        control={form.control}
-                        name="company_id"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Empresa</FormLabel>
-                            <FormControl>
-                              <CompanySelector
-                                value={field.value}
-                                onSelect={handleCompanyChange}
-                              />
-                            </FormControl>
-                            <FormDescription>
-                              Selecione a empresa onde será realizada a inspeção
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      {/* Unit selection, only show if company is selected */}
-                      {formValues.company_id && units.length > 0 && (
-                        <FormField
-                          control={form.control}
-                          name="unit_id"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Unidade</FormLabel>
-                              <Select 
-                                onValueChange={(value) => {
-                                  const unitData = units.find(u => u.id === value);
-                                  handleUnitChange(value, unitData);
-                                }} 
-                                value={field.value || ""}
-                              >
-                                <FormControl>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Selecione a unidade" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {units.map(unit => (
-                                    <SelectItem key={unit.id} value={unit.id}>
-                                      {unit.fantasy_name || `Unidade ${unit.unit_type}`}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <FormDescription>
-                                Selecione a unidade específica para esta inspeção
-                              </FormDescription>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      )}
-                      
-                      {/* CNAE field */}
-                      <FormField
-                        control={form.control}
-                        name="cnae"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>CNAE</FormLabel>
-                            <FormControl>
-                              <Input {...field} placeholder="00.00-0" />
-                            </FormControl>
-                            <FormDescription>
-                              Código CNAE da atividade (formato: 00.00-0)
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      {/* Location field */}
-                      <FormField
-                        control={form.control}
-                        name="location"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Localização</FormLabel>
-                            <FormControl>
-                              <div className="flex">
-                                <Input {...field} placeholder="Endereço completo" className="flex-1" />
-                                <Button 
-                                  type="button" 
-                                  variant="outline" 
-                                  size="icon" 
-                                  className="ml-2"
-                                  onClick={() => {
-                                    // Placeholder for GPS capture
-                                    toast.info("Captura de GPS não implementada");
-                                  }}
-                                >
-                                  <MapPin className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </FormControl>
-                            <FormDescription>
-                              Local onde será realizada a inspeção
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </TabsContent>
-                    
-                    <TabsContent value="advanced" className="space-y-4">
-                      <div className="border rounded-md p-4 bg-slate-50">
-                        <h3 className="text-sm font-medium mb-2">Informações do Checklist</h3>
-                        <div className="space-y-2">
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <p className="text-xs text-muted-foreground">Título:</p>
-                              <p className="text-sm font-medium">{checklist.title}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-muted-foreground">Categoria:</p>
-                              <p className="text-sm font-medium">{checklist.category || "Não especificada"}</p>
-                            </div>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Descrição:</p>
-                            <p className="text-sm">{checklist.description || "Sem descrição"}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Total de perguntas:</p>
-                            <p className="text-sm font-medium">{checklist.totalQuestions || 0}</p>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Display validation errors */}
-                      {validationError && (
-                        <Alert variant="destructive">
-                          <AlertCircle className="h-4 w-4" />
-                          <AlertTitle>Erro</AlertTitle>
-                          <AlertDescription>
-                            {validationError}
-                          </AlertDescription>
-                        </Alert>
-                      )}
-                      
-                      <div className="grid grid-cols-2 gap-4 pt-4">
-                        <Button variant="outline" onClick={handleExportPDF}>
-                          Exportar como PDF
-                        </Button>
-                        <Button variant="outline" onClick={handleExportCSV}>
-                          Exportar como CSV
-                        </Button>
-                      </div>
-                    </TabsContent>
-                    
-                    <div className="pt-6">
-                      <Button 
-                        type="submit"
-                        disabled={!isFormValid()}
-                        className="bg-teal-600 hover:bg-teal-700 w-full"
-                      >
-                        <ClipboardCheck className="h-5 w-5 mr-2" />
-                        {isStarting ? "Iniciando..." : "Iniciar Inspeção Agora"}
-                      </Button>
+      
+      <form onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Left column - Checklist info */}
+          <div className="md:col-span-1">
+            <Card>
+              <CardHeader>
+                <CardTitle>Checklist Selecionado</CardTitle>
+                <CardDescription>
+                  Detalhes do checklist a ser utilizado na inspeção
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <Label>Título</Label>
+                    <div className="font-medium mt-1">{checklist?.title}</div>
+                  </div>
+                  
+                  <div>
+                    <Label>Descrição</Label>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      {checklist?.description || "Sem descrição"}
                     </div>
-                  </form>
-                </Form>
-              </Tabs>
-            </CardContent>
-          </Card>
-        </div>
-        
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>Resumo da Inspeção</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center text-sm">
-                  <FileText className="h-4 w-4 mr-2 text-gray-500" />
-                  <span className="text-gray-600">Checklist:</span>
-                  <span className="ml-1 font-medium">{checklist.title}</span>
+                  </div>
+                  
+                  <div>
+                    <Label>Número de Perguntas</Label>
+                    <div className="font-medium mt-1">
+                      {checklist?.checklist_itens?.length || 0}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          {/* Right column - Form fields */}
+          <div className="md:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Detalhes da Inspeção</CardTitle>
+                <CardDescription>
+                  Preencha os dados para iniciar a inspeção
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Company selection */}
+                <div>
+                  <Label htmlFor="company" className="flex items-center">
+                    <Building className="h-4 w-4 mr-1" />
+                    Empresa <span className="text-destructive ml-1">*</span>
+                  </Label>
+                  <div className="mt-1.5">
+                    <CompanySelector
+                      value={companyId}
+                      onSelect={handleCompanySelect}
+                    />
+                    {errors.company && (
+                      <span className="text-sm text-destructive">{errors.company}</span>
+                    )}
+                  </div>
                 </div>
                 
-                <div className="flex items-center text-sm">
-                  <Building className="h-4 w-4 mr-2 text-gray-500" />
-                  <span className="text-gray-600">Empresa:</span>
-                  <span className="ml-1 font-medium">
-                    {formValues.company_id ? "Selecionada" : "Não selecionada"}
-                  </span>
-                </div>
-                
-                <div className="flex items-center text-sm">
-                  <User className="h-4 w-4 mr-2 text-gray-500" />
-                  <span className="text-gray-600">Responsável:</span>
-                  <span className="ml-1 font-medium">
-                    {formValues.responsible_id || formValues.responsible_name ? "Definido" : "Não definido"}
-                  </span>
-                </div>
-                
-                <div className="flex items-center text-sm">
-                  <CalendarIcon className="h-4 w-4 mr-2 text-gray-500" />
-                  <span className="text-gray-600">Data:</span>
-                  <span className="ml-1 font-medium">
-                    {formValues.scheduled_date ? 
-                      format(formValues.scheduled_date, "dd/MM/yyyy", { locale: pt }) : 
-                      "Não agendada"}
-                  </span>
-                </div>
-                
-                {formValues.inspection_type && (
-                  <div className="flex items-center text-sm">
-                    <span className="text-gray-600">Tipo:</span>
-                    <span className="ml-1 font-medium">
-                      {formValues.inspection_type === "internal" ? "Inspeção Interna" :
-                       formValues.inspection_type === "external" ? "Auditoria Externa" : 
-                       "Inspeção Recorrente"}
-                    </span>
+                {/* CNAE display */}
+                {companyData && (
+                  <div>
+                    <Label htmlFor="cnae">
+                      CNAE <span className="text-destructive">*</span>
+                    </Label>
+                    <div className="flex mt-1.5">
+                      <Input
+                        id="cnae"
+                        value={companyData.cnae || ""}
+                        onChange={(e) => {
+                          setCompanyData({ ...companyData, cnae: e.target.value });
+                        }}
+                        placeholder="00.00-0"
+                        className={errors.cnae ? "border-destructive" : ""}
+                      />
+                    </div>
+                    {errors.cnae && (
+                      <span className="text-sm text-destructive">{errors.cnae}</span>
+                    )}
+                    {companyData.cnae && !/^\d{2}\.\d{2}-\d$/.test(companyData.cnae) && (
+                      <span className="text-sm text-amber-500 flex items-center mt-1">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        O CNAE deve estar no formato 00.00-0
+                      </span>
+                    )}
                   </div>
                 )}
                 
-                {formValues.priority && (
-                  <div className="flex items-center text-sm">
-                    <span className="text-gray-600">Prioridade:</span>
-                    <span className="ml-1 font-medium">
-                      {formValues.priority === "low" ? "Baixa" :
-                       formValues.priority === "medium" ? "Média" : "Alta"}
-                    </span>
+                <Separator />
+                
+                {/* Responsible */}
+                <div>
+                  <Label htmlFor="responsible" className="flex items-center">
+                    <User className="h-4 w-4 mr-1" />
+                    Responsável <span className="text-destructive ml-1">*</span>
+                  </Label>
+                  <div className="mt-1.5">
+                    <ResponsibleSelector
+                      value={responsibleId}
+                      onSelect={handleResponsibleSelect}
+                    />
+                    {errors.responsible && (
+                      <span className="text-sm text-destructive">{errors.responsible}</span>
+                    )}
                   </div>
-                )}
-              </div>
-              
-              {/* Validation summary */}
-              <div className="border-t pt-4 mt-4">
-                <h3 className="text-sm font-medium mb-2">Validação</h3>
-                <ul className="space-y-1">
-                  <li className="flex items-center text-sm">
-                    <div className={`w-2 h-2 rounded-full mr-2 ${formValues.company_id ? "bg-green-500" : "bg-red-500"}`} />
-                    <span>Empresa selecionada</span>
-                  </li>
-                  <li className="flex items-center text-sm">
-                    <div className={`w-2 h-2 rounded-full mr-2 ${formValues.cnae ? "bg-green-500" : "bg-red-500"}`} />
-                    <span>CNAE informado</span>
-                  </li>
-                  <li className="flex items-center text-sm">
-                    <div className={`w-2 h-2 rounded-full mr-2 ${formValues.responsible_id || formValues.responsible_name ? "bg-green-500" : "bg-red-500"}`} />
-                    <span>Responsável definido</span>
-                  </li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+                
+                {/* Scheduled date */}
+                <div>
+                  <Label htmlFor="scheduled_date" className="flex items-center">
+                    <CalendarIcon className="h-4 w-4 mr-1" />
+                    Data Agendada
+                  </Label>
+                  <div className="mt-1.5">
+                    <DateTimePicker
+                      date={scheduledDate}
+                      setDate={setScheduledDate}
+                    />
+                  </div>
+                </div>
+                
+                {/* Location */}
+                <div>
+                  <Label htmlFor="location" className="flex items-center">
+                    <MapPin className="h-4 w-4 mr-1" />
+                    Localização
+                  </Label>
+                  <div className="mt-1.5">
+                    <Textarea
+                      id="location"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      placeholder="Endereço completo do local da inspeção"
+                      rows={2}
+                    />
+                  </div>
+                </div>
+                
+                {/* Notes */}
+                <div>
+                  <Label htmlFor="notes" className="flex items-center">
+                    <ClipboardList className="h-4 w-4 mr-1" />
+                    Anotações
+                  </Label>
+                  <div className="mt-1.5">
+                    <Textarea
+                      id="notes"
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Observações adicionais sobre a inspeção"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+                
+                {/* Inspection type and priority */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="type">Tipo de Inspeção</Label>
+                    <Select
+                      value={inspectionType}
+                      onValueChange={setInspectionType}
+                    >
+                      <SelectTrigger className="mt-1.5">
+                        <SelectValue placeholder="Selecione o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="internal">Interna</SelectItem>
+                        <SelectItem value="external">Externa</SelectItem>
+                        <SelectItem value="audit">Auditoria</SelectItem>
+                        <SelectItem value="routine">Rotina</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="priority">Prioridade</Label>
+                    <Select
+                      value={priority}
+                      onValueChange={setPriority}
+                    >
+                      <SelectTrigger className="mt-1.5">
+                        <SelectValue placeholder="Selecione a prioridade" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Baixa</SelectItem>
+                        <SelectItem value="medium">Média</SelectItem>
+                        <SelectItem value="high">Alta</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-between border-t p-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate("/inspections")}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={submitting || !isFormValid()}
+                >
+                  {submitting ? "Processando..." : "Iniciar Inspeção"}
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
         </div>
-      </div>
+      </form>
     </div>
   );
-}
+};
+
+export default NewInspectionPage;

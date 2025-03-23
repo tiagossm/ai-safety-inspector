@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAuth } from "@/components/AuthProvider";
 
 interface CompanySelectorProps {
   value?: string;
@@ -44,6 +45,7 @@ export function CompanySelector({ value, onSelect }: CompanySelectorProps) {
     contact_email: "",
     contact_phone: ""
   });
+  const { user } = useAuth();
 
   // Fetch companies when the component mounts
   useEffect(() => {
@@ -78,6 +80,11 @@ export function CompanySelector({ value, onSelect }: CompanySelectorProps) {
   // Handle the creation of a new company
   const handleCreateCompany = async () => {
     try {
+      if (!user || !user.id) {
+        toast.error("Usuário não autenticado");
+        return;
+      }
+      
       if (!newCompany.fantasy_name || !newCompany.cnpj) {
         toast.error("Nome e CNPJ são obrigatórios");
         return;
@@ -99,6 +106,7 @@ export function CompanySelector({ value, onSelect }: CompanySelectorProps) {
           ...newCompany,
           cnpj: formattedCNPJ,
           status: "active",
+          user_id: user.id  // Adding the required user_id field from the authenticated user
         })
         .select("*")
         .single();
