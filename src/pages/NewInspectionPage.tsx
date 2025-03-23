@@ -179,7 +179,7 @@ const NewInspectionPage = () => {
           status: "Pendente",
           approval_status: "pending" as ApprovalStatus,
           responsible_id: responsibleId || null,
-          scheduled_date: scheduledDate || null,
+          scheduled_date: scheduledDate ? scheduledDate.toISOString() : null, // Convert Date to ISO string
           location: location || null,
           inspection_type: inspectionType || null,
           priority: priority || null,
