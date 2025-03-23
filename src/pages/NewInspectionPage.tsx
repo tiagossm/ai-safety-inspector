@@ -121,6 +121,16 @@ const NewInspectionPage = () => {
       newErrors.responsible = "Selecione um responsável";
     }
     
+    // Validate checklist_id is a valid UUID
+    if (!checklistId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(checklistId)) {
+      newErrors.checklist = "ID do checklist inválido";
+    }
+    
+    // Validate company_id is a valid UUID
+    if (companyId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(companyId)) {
+      newErrors.company = "ID da empresa inválido";
+    }
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -185,6 +195,10 @@ const NewInspectionPage = () => {
       const formattedCNAE = formatCNAE(companyData.cnae);
       console.log("Using formatted CNAE:", formattedCNAE);
       
+      // Convert date to ISO string if it exists
+      const formattedDate = scheduledDate ? scheduledDate.toISOString() : null;
+      console.log("Using formatted date:", formattedDate);
+      
       // Prepare the inspection data
       const inspectionData = {
         checklist_id: checklistId,
@@ -194,17 +208,17 @@ const NewInspectionPage = () => {
         status: "Pendente",
         approval_status: "pending" as ApprovalStatus,
         responsible_id: responsibleId || null,
-        scheduled_date: scheduledDate ? scheduledDate.toISOString() : null,
-        location: location || null,
-        inspection_type: inspectionType || null,
-        priority: priority || null,
+        scheduled_date: formattedDate,
+        location: location || "",
+        inspection_type: inspectionType || "internal",
+        priority: priority || "medium",
         metadata: {
-          notes: notes || null,
+          notes: notes || "",
           responsible_data: responsibleId ? null : responsibleData,
         },
         checklist: {
           title: checklist.title,
-          description: checklist.description,
+          description: checklist.description || "",
           total_questions: checklist?.checklist_itens?.length || 0,
         }
       };
@@ -223,6 +237,7 @@ const NewInspectionPage = () => {
         throw error;
       }
       
+      console.log("Inspection created successfully:", inspection);
       toast.success("Inspeção criada com sucesso!");
       navigate(`/inspections/${inspection.id}`);
       
