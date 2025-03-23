@@ -46,45 +46,13 @@ const mapResponseType = (dbType: string): ChecklistQuestion['responseType'] => {
   return typeMap[dbType] || 'text';
 };
 
-// Define types for database responses to avoid TypeScript errors
-type ChecklistDBResponse = {
-  id: string;
-  title: string;
-  description: string | null;
-  isTemplate: boolean;
-  status: string;
-  category: string | null;
-  responsibleId: string | null;
-  companyId: string | null;
-  userId: string | null;
-  createdAt: string;
-  updatedAt: string;
-  dueDate: string | null;
-};
-
-// Updated type definition to match actual data
-type ChecklistItemDBResponse = {
-  id: string;
-  text: string;
-  tipo_resposta: string;
-  isRequired: boolean;
-  options: any; // Changed from string[] | null to any to accommodate different JSON value types
-  hint: string | null;
-  weight: number | null;
-  parentQuestionId: string | null;
-  conditionValue: string | null;
-  allowsPhoto: boolean;
-  allowsVideo: boolean;
-  allowsAudio: boolean;
-  order: number;
-};
-
 export function useChecklistById(id: string) {
   return useQuery({
     queryKey: ["new-checklist", id],
     queryFn: async (): Promise<ChecklistWithStats | null> => {
-      // Skip query if ID is empty or "new"
-      if (!id || id === "new") {
+      // Skip query if ID is empty or "new" or "editor"
+      if (!id || id === "new" || id === "editor") {
+        console.log("Skipping query for special ID:", id);
         return null;
       }
 
@@ -126,22 +94,6 @@ export function useChecklistById(id: string) {
         throw new Error("Checklist não encontrado");
       }
 
-      // Transform data from database format to our type
-      const checklist: ChecklistDBResponse = {
-        id: checklistData.id,
-        title: checklistData.title,
-        description: checklistData.description,
-        isTemplate: checklistData.is_template,
-        status: checklistData.status_checklist,
-        category: checklistData.category,
-        responsibleId: checklistData.responsible_id,
-        companyId: checklistData.company_id,
-        userId: checklistData.user_id,
-        createdAt: checklistData.created_at,
-        updatedAt: checklistData.updated_at,
-        dueDate: checklistData.due_date
-      };
-
       // Fetch checklist questions
       const { data: questionsData, error: questionsError } = await supabase
         .from("checklist_itens")
@@ -168,28 +120,13 @@ export function useChecklistById(id: string) {
         throw questionsError;
       }
 
+      console.log(`Retrieved ${questionsData?.length || 0} questions for checklist ${id}`);
+
       // Process questions and extract group information
       const groupsMap = new Map<string, ChecklistGroup>();
       const processedQuestions: ChecklistQuestion[] = [];
 
-      // Transform questions from database format to our type - fix the type casting
-      const items = (questionsData || []).map(item => ({
-        id: item.id,
-        text: item.pergunta,
-        tipo_resposta: item.tipo_resposta,
-        isRequired: item.obrigatorio,
-        options: item.opcoes, // Accept any valid JSON value
-        hint: item.hint,
-        weight: item.weight,
-        parentQuestionId: item.parent_item_id,
-        conditionValue: item.condition_value,
-        allowsPhoto: item.permite_foto,
-        allowsVideo: item.permite_video,
-        allowsAudio: item.permite_audio,
-        order: item.ordem,
-      })) as ChecklistItemDBResponse[];
-
-      items.forEach((q) => {
+      (questionsData || []).forEach((q) => {
         // Parse group info from hint field
         const { groupId, groupTitle } = parseGroupInfo(q.hint || undefined);
         
@@ -202,31 +139,31 @@ export function useChecklistById(id: string) {
           });
         }
 
-        // Convert database question to our format
+        // Convert database question to our format, ensuring proper handling of all fields
         processedQuestions.push({
           id: q.id,
-          text: q.text,
+          text: q.pergunta,
           responseType: mapResponseType(q.tipo_resposta),
-          isRequired: q.isRequired,
+          isRequired: q.obrigatorio,
           // Properly handle options based on their type
-          options: Array.isArray(q.options) 
-            ? q.options.map(opt => String(opt)) 
-            : q.options 
-              ? (typeof q.options === 'string' 
-                ? [q.options] 
-                : Array.isArray(q.options) 
-                  ? q.options.map(String) 
-                  : undefined)
-              : undefined,
+          options: Array.isArray(q.opcoes) 
+            ? q.opcoes.map(opt => String(opt)) 
+            : (q.opcoes ? 
+                (typeof q.opcoes === 'string' 
+                  ? [q.opcoes] 
+                  : Array.isArray(q.opcoes) 
+                    ? q.opcoes.map(String) 
+                    : undefined)
+                : undefined),
           hint: q.hint || undefined,
           weight: q.weight || 1,
           groupId: groupId,
-          parentQuestionId: q.parentQuestionId || undefined,
-          conditionValue: q.conditionValue || undefined,
-          allowsPhoto: q.allowsPhoto,
-          allowsVideo: q.allowsVideo,
-          allowsAudio: q.allowsAudio,
-          order: q.order
+          parentQuestionId: q.parent_item_id || undefined,
+          conditionValue: q.condition_value || undefined,
+          allowsPhoto: q.permite_foto || false,
+          allowsVideo: q.permite_video || false,
+          allowsAudio: q.permite_audio || false,
+          order: q.ordem
         });
       });
 
@@ -235,27 +172,27 @@ export function useChecklistById(id: string) {
         .sort((a, b) => a.order - b.order);
 
       const checklistWithStats: ChecklistWithStats = {
-        id: checklist.id,
-        title: checklist.title,
-        description: checklist.description || undefined,
-        isTemplate: checklist.isTemplate,
-        status: (checklist.status || 'inactive') as 'active' | 'inactive',
-        category: checklist.category || undefined,
-        responsibleId: checklist.responsibleId || undefined,
-        companyId: checklist.companyId || undefined,
-        userId: checklist.userId || undefined,
-        createdAt: checklist.createdAt,
-        updatedAt: checklist.updatedAt,
-        dueDate: checklist.dueDate || undefined,
+        id: checklistData.id,
+        title: checklistData.title,
+        description: checklistData.description || undefined,
+        isTemplate: checklistData.is_template,
+        status: (checklistData.status_checklist === 'ativo' ? 'active' : 'inactive') as 'active' | 'inactive',
+        category: checklistData.category || undefined,
+        responsibleId: checklistData.responsible_id || undefined,
+        companyId: checklistData.company_id || undefined,
+        userId: checklistData.user_id || undefined,
+        createdAt: checklistData.created_at,
+        updatedAt: checklistData.updated_at,
+        dueDate: checklistData.due_date || undefined,
         groups,
         questions: processedQuestions,
-        totalQuestions: items.length,
+        totalQuestions: questionsData?.length || 0,
         completedQuestions: 0 // In a real app, we'd calculate this
       };
 
       return checklistWithStats;
     },
-    enabled: !!id && id !== "new",
+    enabled: !!id && id !== "new" && id !== "editor",
     staleTime: 60000, // 1 minute
     gcTime: 300000, // 5 minutes
   });

@@ -43,6 +43,8 @@ serve(async (req) => {
       });
     }
 
+    console.log("Fetching assistants from OpenAI API...");
+    
     // Get assistants from OpenAI
     const response = await fetch('https://api.openai.com/v1/assistants?limit=100&order=desc', {
       method: 'GET',
@@ -55,7 +57,7 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('OpenAI API error:', errorText);
+      console.error('OpenAI API error:', errorText, 'Status:', response.status);
       
       // Return mock data on API error
       const mockAssistants = {
@@ -83,6 +85,7 @@ serve(async (req) => {
     }
 
     const data = await response.json();
+    console.log(`Retrieved ${data.data?.length || 0} assistants from OpenAI`);
     
     // Map to simplified structure
     const assistants = data.data.map((assistant: any) => ({
@@ -121,6 +124,7 @@ serve(async (req) => {
     
     return new Response(JSON.stringify(mockAssistants), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200, // Always return 200 to prevent frontend errors
     });
   }
 });

@@ -34,24 +34,39 @@ export default function NewInspectionPage() {
     try {
       console.log("Starting inspection for checklist:", checklist.id);
       
+      // Get the current user to ensure we have a valid user_id
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        throw new Error(`Erro ao obter dados do usuário: ${userError.message}`);
+      }
+      
+      if (!userData.user) {
+        throw new Error("Usuário não autenticado. Faça login para iniciar uma inspeção.");
+      }
+      
       // Create a new inspection record with all required fields
       // Making sure to include a valid CNAE format (00.00-0)
+      const inspectionData = {
+        checklist_id: checklist.id,
+        user_id: userData.user.id,
+        status: "Pendente",
+        checklist: {
+          title: checklist.title,
+          description: checklist.description,
+          total_questions: checklist.totalQuestions || 0
+        },
+        // Add cnae field with a valid format to fix the constraint violation
+        cnae: "00.00-0", // Valid CNAE format as default
+        approval_status: "pending",
+        company_id: checklist.companyId || null
+      };
+      
+      console.log("Creating inspection with data:", inspectionData);
+      
       const { data, error } = await supabase
         .from("inspections")
-        .insert({
-          checklist_id: checklist.id,
-          user_id: (await supabase.auth.getUser()).data.user?.id,
-          status: "Pendente",
-          checklist: {
-            title: checklist.title,
-            description: checklist.description,
-            total_questions: checklist.totalQuestions || 0
-          },
-          // Add cnae field with a valid format to fix the constraint violation
-          cnae: "00.00-0", // Valid CNAE format
-          approval_status: "pending",
-          company_id: checklist.companyId || null
-        })
+        .insert(inspectionData)
         .select("id")
         .single();
 
@@ -62,8 +77,9 @@ export default function NewInspectionPage() {
       }
 
       if (data) {
+        console.log("Inspection created successfully:", data);
         toast.success("Inspeção iniciada com sucesso!");
-        // Navigate back to checklists since the inspection UI is not ready
+        // Navigate to the inspection details page or back to checklists
         navigate("/new-checklists");
       }
     } catch (error: any) {

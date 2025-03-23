@@ -21,8 +21,7 @@ export function useOpenAIAssistants() {
     setError(null);
     
     try {
-      // Mock data for assistants if the API call fails
-      // This ensures the UI works even when the OpenAI API is unavailable
+      // Define mock data to use as fallback
       const mockAssistants: Assistant[] = [
         {
           id: "asst_mock_1",
@@ -41,21 +40,38 @@ export function useOpenAIAssistants() {
       ];
       
       try {
-        const { data, error } = await supabase.functions.invoke('list-openai-assistants');
+        console.log("Fetching OpenAI assistants...");
+        
+        // Call the Supabase Edge Function with proper error handling
+        const { data, error } = await supabase.functions.invoke('list-openai-assistants', {
+          method: 'GET'
+        });
         
         if (error) {
-          console.error('Error fetching OpenAI assistants:', error);
+          console.error('Error calling list-openai-assistants function:', error);
           setError('Erro ao buscar assistentes da OpenAI: ' + error.message);
-          // Fall back to mock data
+          // Fall back to mock data on error
+          console.log("Falling back to mock assistants data");
           setAssistants(mockAssistants);
           return;
         }
         
-        setAssistants(data.assistants || []);
+        if (!data || !Array.isArray(data.assistants)) {
+          console.error('Invalid response from list-openai-assistants:', data);
+          setError('Resposta inválida ao buscar assistentes');
+          // Fall back to mock data on invalid response
+          console.log("Falling back to mock assistants data due to invalid response");
+          setAssistants(mockAssistants);
+          return;
+        }
+        
+        console.log(`Retrieved ${data.assistants.length} OpenAI assistants`);
+        setAssistants(data.assistants);
       } catch (err: any) {
         console.error('Error in useOpenAIAssistants:', err);
         setError('Erro ao buscar assistentes: ' + (err.message || 'Erro desconhecido'));
-        // Fall back to mock data
+        // Fall back to mock data on any error
+        console.log("Falling back to mock assistants data due to exception");
         setAssistants(mockAssistants);
       }
     } finally {

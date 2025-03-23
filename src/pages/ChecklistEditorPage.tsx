@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { ChecklistEditor } from "@/components/checklists/ChecklistEditor";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { useChecklistById } from "@/hooks/checklist/useChecklistById";
+import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
 
 export default function ChecklistEditorPage() {
   const [loading, setLoading] = useState(true);
@@ -62,15 +62,15 @@ export default function ChecklistEditorPage() {
             });
             
             // Convert the map to an array of group objects
-            questionGroups = Array.from(groupMap.entries()).map(([groupId, questions]) => ({
-              id: groupId,
-              title: groupId === "default" ? "Geral" : `Grupo ${groupId.split('-')[1] || ''}`,
+            questionGroups = Array.from(groupMap.entries()).map(([groupId, questions], index) => ({
+              id: groupId === "default" ? `group-default-${Date.now()}` : groupId,
+              title: groupId === "default" ? "Geral" : `Grupo ${index + 1}`,
               questions
             }));
           } else {
             // If no groupIds, create a default group with all questions
             questionGroups = [{
-              id: "group-default",
+              id: `group-default-${Date.now()}`,
               title: "Geral",
               questions: parsedData.questions
             }];
@@ -89,7 +89,7 @@ export default function ChecklistEditorPage() {
               allowVideo: q.allowVideo || false,
               allowAudio: q.allowAudio || false,
               options: Array.isArray(q.options) ? q.options : 
-                      (q.type === "múltipla escolha" ? ["Opção 1", "Opção 2"] : undefined),
+                      (q.type === "múltipla escolha" ? ["Opção 1", "Opção 2"] : []),
               hint: q.hint || "",
               weight: q.weight || 1,
               parentId: q.parentId || null,
@@ -126,11 +126,56 @@ export default function ChecklistEditorPage() {
       }
       
       if (checklistQuery.data) {
-        // TODO: Fetch checklist items and organize them into groups
+        console.log("Loaded existing checklist data:", checklistQuery.data);
+        
+        const checklist = checklistQuery.data;
+        
+        // Organize questions into groups if they exist
+        let groups = [];
+        
+        if (checklist.groups && checklist.groups.length > 0) {
+          groups = checklist.groups.map(group => {
+            const groupQuestions = checklist.questions.filter(q => q.groupId === group.id);
+            return {
+              ...group,
+              questions: groupQuestions.map(q => ({
+                text: q.text,
+                type: q.responseType,
+                required: q.isRequired,
+                allowPhoto: q.allowsPhoto,
+                allowVideo: q.allowsVideo,
+                allowAudio: q.allowsAudio,
+                options: q.options,
+                hint: q.hint,
+                weight: q.weight,
+                parentId: q.parentQuestionId,
+                conditionValue: q.conditionValue,
+                groupId: q.groupId
+              }))
+            };
+          });
+        }
+        
+        // Convert questions to the editor format
+        const questions = checklist.questions.map(q => ({
+          text: q.text,
+          type: q.responseType,
+          required: q.isRequired,
+          allowPhoto: q.allowsPhoto,
+          allowVideo: q.allowsVideo,
+          allowAudio: q.allowsAudio,
+          options: q.options,
+          hint: q.hint,
+          weight: q.weight,
+          parentId: q.parentQuestionId,
+          conditionValue: q.conditionValue,
+          groupId: q.groupId
+        }));
+        
         setEditorData({
-          checklistData: checklistQuery.data,
-          questions: [],
-          groups: [],
+          checklistData: checklist,
+          questions,
+          groups,
           mode: "edit"
         });
         setLoading(false);
@@ -167,9 +212,9 @@ export default function ChecklistEditorPage() {
   return (
     <ChecklistEditor
       initialChecklist={editorData.checklistData}
-      initialQuestions={editorData.questions}
-      initialGroups={editorData.groups}
-      mode={editorData.mode}
+      initialQuestions={editorData.questions || []}
+      initialGroups={editorData.groups || []}
+      mode={editorData.mode || "create"}
       onSave={handleSave}
       onCancel={handleCancel}
     />

@@ -66,10 +66,16 @@ const normalizeResponseType = (type: string): string => {
     'numérico': 'numeric',
     'texto': 'text',
     'foto': 'photo',
-    'assinatura': 'signature'
+    'assinatura': 'signature',
+    'yes_no': 'yes_no',
+    'multiple_choice': 'multiple_choice',
+    'numeric': 'numeric',
+    'text': 'text',
+    'photo': 'photo',
+    'signature': 'signature'
   };
 
-  return typeMap[type] || type;
+  return typeMap[type] || 'text';
 };
 
 export function ChecklistEditor({
@@ -89,17 +95,17 @@ export function ChecklistEditor({
   const [checklist, setChecklist] = useState<Partial<Checklist>>(transformedInitialChecklist);
   const [questions, setQuestions] = useState<Question[]>(
     initialQuestions.map(q => ({
-      text: q.text,
-      type: q.type,
-      required: q.required,
+      text: q.text || "",
+      type: q.type || "sim/não",
+      required: q.required !== undefined ? q.required : true,
       allowPhoto: q.allowPhoto || false,
       allowVideo: q.allowVideo || false,
       allowAudio: q.allowAudio || false,
-      options: q.options,
-      hint: q.hint,
-      weight: q.weight,
-      parentId: q.parentId,
-      conditionValue: q.conditionValue,
+      options: Array.isArray(q.options) ? q.options : [],
+      hint: q.hint || "",
+      weight: q.weight || 1,
+      parentId: q.parentId || null,
+      conditionValue: q.conditionValue || null,
       groupId: q.groupId
     }))
   );
@@ -108,17 +114,17 @@ export function ChecklistEditor({
       ? initialGroups.map(g => ({
           ...g,
           questions: g.questions.map(q => ({
-            text: q.text,
-            type: q.type,
-            required: q.required,
+            text: q.text || "",
+            type: q.type || "sim/não",
+            required: q.required !== undefined ? q.required : true,
             allowPhoto: q.allowPhoto || false,
             allowVideo: q.allowVideo || false,
             allowAudio: q.allowAudio || false,
-            options: q.options,
-            hint: q.hint,
-            weight: q.weight,
-            parentId: q.parentId,
-            conditionValue: q.conditionValue,
+            options: Array.isArray(q.options) ? q.options : [],
+            hint: q.hint || "",
+            weight: q.weight || 1,
+            parentId: q.parentId || null,
+            conditionValue: q.conditionValue || null,
             groupId: g.id
           }))
         }))
@@ -135,7 +141,7 @@ export function ChecklistEditor({
   useEffect(() => {
     if (viewMode === "grouped" && groups.length === 0 && questions.length > 0) {
       const defaultGroup: QuestionGroup = {
-        id: `group-default`,
+        id: `group-default-${Date.now()}`,
         title: "Geral",
         questions: [...questions]
       };
@@ -296,10 +302,12 @@ export function ChecklistEditor({
             }
             
             const dbType = normalizeResponseType(q.type);
+            console.log(`Question ${i} type: ${q.type} mapped to DB type: ${dbType}`);
             
             if (dbType === "multiple_choice" && (!q.options || !Array.isArray(q.options) || q.options.length === 0)) {
               console.error("Multiple choice question without valid options:", q);
               toast.warning(`Pergunta de múltipla escolha sem opções válidas: "${q.text}"`);
+              q.options = ["Opção 1", "Opção 2"];
             }
             
             let groupTitle = "";
@@ -337,7 +345,7 @@ export function ChecklistEditor({
                 permite_audio: q.allowAudio || false,
                 permite_video: q.allowVideo || false,
                 permite_foto: q.allowPhoto || false,
-                opcoes: q.options || null,
+                opcoes: q.options && q.options.length > 0 ? q.options : null,
                 hint: finalHint,
                 weight: q.weight || 1,
                 parent_item_id: q.parentId || null,
