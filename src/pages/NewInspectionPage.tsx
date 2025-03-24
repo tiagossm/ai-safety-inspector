@@ -115,12 +115,6 @@ export default function NewInspectionPage() {
         cnae = companyData?.cnae || "";
       }
       
-      // Ensure cnae is not empty - this is required by the database constraint
-      if (!cnae) {
-        // Set a default CNAE code if none is provided
-        cnae = "00.00-0"; // Using a generic placeholder CNAE code
-      }
-      
       // Create the inspection
       const { data, error } = await supabase
         .from("inspections")
@@ -130,7 +124,7 @@ export default function NewInspectionPage() {
           company_id: checklist.company_id,
           responsible_id: checklist.responsible_id,
           status: "Pendente",
-          cnae: cnae, // Now we ensure this is not empty
+          cnae: cnae,
           checklist: {
             id: checklist.id,
             title: checklist.title,
