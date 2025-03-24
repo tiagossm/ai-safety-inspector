@@ -129,6 +129,9 @@ export default function ChecklistEditorPage() {
         console.log("Loaded existing checklist data:", checklistQuery.data);
         
         const checklist = checklistQuery.data;
+
+        // Debug log to inspect questions data
+        console.log("Checklist questions from API:", checklist.questions ? checklist.questions.length : 0, "questions");
         
         // Organize questions into groups if they exist
         let groups = [];
@@ -136,6 +139,8 @@ export default function ChecklistEditorPage() {
         if (checklist.groups && checklist.groups.length > 0) {
           groups = checklist.groups.map(group => {
             const groupQuestions = checklist.questions.filter(q => q.groupId === group.id);
+            console.log(`Group ${group.title} has ${groupQuestions.length} questions`);
+            
             return {
               ...group,
               questions: groupQuestions.map(q => ({
@@ -171,6 +176,9 @@ export default function ChecklistEditorPage() {
           conditionValue: q.conditionValue,
           groupId: q.groupId
         }));
+
+        console.log(`Transformed ${questions.length} questions for editor`);
+        console.log(`Created ${groups.length} groups with questions`);
         
         setEditorData({
           checklistData: checklist,

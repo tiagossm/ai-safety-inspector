@@ -298,7 +298,7 @@ export function ChecklistEditor({
       if (questionsToSave.length > 0) {
         console.log("Total questions to save:", questionsToSave.length);
         
-        // Create an array to hold all the question data objects
+        // Filter valid questions and prepare them for insertion
         const questionDataArray = questionsToSave
           .filter(q => q.text.trim()) // Only process questions with text
           .map((q, i) => {
@@ -358,41 +358,68 @@ export function ChecklistEditor({
         
         console.log(`Prepared ${questionDataArray.length} questions for insertion`);
         
-        // Insert all questions at once using a single batch operation
-        try {
-          const { data, error } = await supabase
-            .from("checklist_itens")
-            .insert(questionDataArray);
-          
-          if (error) {
-            console.error("Error inserting questions batch:", error);
-            toast.warning("Algumas perguntas não puderam ser salvas.");
-          } else {
-            console.log(`Successfully inserted ${questionDataArray.length} questions`);
-          }
-        } catch (batchError) {
-          console.error("Exception during batch insert:", batchError);
-          toast.error("Erro ao salvar perguntas em lote");
-          
-          // Fallback: Try to insert questions one by one if batch fails
-          console.log("Attempting individual inserts as fallback...");
-          
-          let insertedCount = 0;
-          for (const questionData of questionDataArray) {
-            try {
-              const { error: indivError } = await supabase
-                .from("checklist_itens")
-                .insert(questionData);
+        // Breaking down large batches into smaller chunks to prevent payload size issues
+        const CHUNK_SIZE = 50; // Adjust this based on your database limits
+        const chunks = [];
+        
+        for (let i = 0; i < questionDataArray.length; i += CHUNK_SIZE) {
+          chunks.push(questionDataArray.slice(i, i + CHUNK_SIZE));
+        }
+        
+        console.log(`Split questions into ${chunks.length} chunks of max ${CHUNK_SIZE} questions each`);
+        
+        let successCount = 0;
+        let failureCount = 0;
+        
+        // Process each chunk
+        for (let i = 0; i < chunks.length; i++) {
+          const chunk = chunks[i];
+          try {
+            console.log(`Processing chunk ${i+1}/${chunks.length} with ${chunk.length} questions...`);
+            
+            const { data, error } = await supabase
+              .from("checklist_itens")
+              .insert(chunk)
+              .select();
+            
+            if (error) {
+              console.error(`Error inserting chunk ${i+1}:`, error);
+              failureCount += chunk.length;
               
-              if (!indivError) {
-                insertedCount++;
+              // Fallback: Try to insert questions one by one if batch fails
+              console.log(`Attempting individual inserts for chunk ${i+1} as fallback...`);
+              
+              for (const questionData of chunk) {
+                try {
+                  const { error: indivError } = await supabase
+                    .from("checklist_itens")
+                    .insert(questionData);
+                  
+                  if (!indivError) {
+                    successCount++;
+                  } else {
+                    failureCount++;
+                    console.error(`Error inserting individual question: ${questionData.pergunta}`, indivError);
+                  }
+                } catch (indivInsertError) {
+                  failureCount++;
+                  console.error(`Exception inserting question: ${questionData.pergunta}`, indivInsertError);
+                }
               }
-            } catch (indivInsertError) {
-              console.error(`Error inserting question: ${questionData.pergunta}`, indivInsertError);
+            } else {
+              successCount += chunk.length;
+              console.log(`Successfully inserted chunk ${i+1}`);
             }
+          } catch (chunkError) {
+            console.error(`Exception processing chunk ${i+1}:`, chunkError);
+            failureCount += chunk.length;
           }
-          
-          console.log(`Individual insert fallback completed: ${insertedCount}/${questionDataArray.length} questions saved`);
+        }
+        
+        console.log(`Question insertion complete: ${successCount} succeeded, ${failureCount} failed`);
+        
+        if (failureCount > 0) {
+          toast.warning(`${failureCount} perguntas não puderam ser salvas.`);
         }
       }
       

@@ -36,8 +36,9 @@ function App() {
             <Route path="new-checklists/edit/:id" element={<NewChecklistEdit />} />
             <Route path="new-checklists/:id" element={<NewChecklistDetails />} />
             
-            {/* Inspection routes - note the corrected path */}
+            {/* Inspection routes */}
             <Route path="inspections/new/:id" element={<NewInspectionPage />} />
+            <Route path="inspections/:id" element={<div>Inspection Details (To be implemented)</div>} />
             
             {/* Redirect old routes to new ones */}
             <Route path="checklists" element={<Navigate to="/new-checklists" replace />} />
