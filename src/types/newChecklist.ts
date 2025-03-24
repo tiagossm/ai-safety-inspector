@@ -20,6 +20,8 @@ export interface ChecklistQuestion {
   allowsVideo: boolean;
   allowsAudio: boolean;
   order: number;
+  hasSubChecklist?: boolean;
+  subChecklistId?: string;
 }
 
 export interface Checklist {
@@ -53,4 +55,32 @@ export interface NewChecklistPayload {
   responsibleId?: string | null;
   companyId?: string | null;
   dueDate?: string | null;
+}
+
+export interface InspectionDetails {
+  id: string;
+  title: string;
+  description?: string;
+  checklistId: string;
+  companyId?: string;
+  locationName?: string;
+  responsibleId?: string;
+  scheduledDate?: string;
+  priority?: 'low' | 'medium' | 'high';
+  status: 'pending' | 'in_progress' | 'completed';
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface InspectionResponse {
+  id: string;
+  inspectionId: string;
+  questionId: string;
+  response?: string;
+  comment?: string;
+  actionPlan?: string;
+  attachments?: string[];
+  completedAt?: string;
+  createdAt: string;
+  updatedAt?: string;
 }

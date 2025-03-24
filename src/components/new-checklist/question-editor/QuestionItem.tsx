@@ -1,10 +1,10 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Trash2, GripVertical, Image, Video, Mic } from "lucide-react";
+import { Trash2, GripVertical, Image, Video, Mic, List, Bot } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -15,6 +15,17 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { SubChecklistEditor } from "./SubChecklistEditor";
+import { SubChecklistAIGenerator } from "./SubChecklistAIGenerator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
 
 interface QuestionItemProps {
   question: ChecklistQuestion;
@@ -29,6 +40,9 @@ export function QuestionItem({
   onDelete,
   dragHandleProps
 }: QuestionItemProps) {
+  const [subChecklistDialogOpen, setSubChecklistDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("manual");
+  
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onUpdate({
       ...question,
@@ -120,6 +134,36 @@ export function QuestionItem({
       options: newOptions
     });
   };
+
+  const handleSubChecklistToggle = (checked: boolean) => {
+    onUpdate({
+      ...question,
+      hasSubChecklist: checked,
+      // If toggling off, remove the subChecklistId
+      subChecklistId: checked ? question.subChecklistId : undefined
+    });
+    
+    // If enabling sub-checklist, open the dialog
+    if (checked && !question.subChecklistId) {
+      setSubChecklistDialogOpen(true);
+    }
+  };
+  
+  const handleSubChecklistCreated = (subChecklistId: string) => {
+    onUpdate({
+      ...question,
+      hasSubChecklist: true,
+      subChecklistId: subChecklistId
+    });
+    
+    setSubChecklistDialogOpen(false);
+    toast.success("Sub-checklist created and linked to question");
+  };
+  
+  const handleGenerateAISubChecklist = () => {
+    setActiveTab("ai");
+    setSubChecklistDialogOpen(true);
+  };
   
   return (
     <Card className="border border-gray-200">
@@ -137,6 +181,16 @@ export function QuestionItem({
             placeholder="Digite a pergunta..."
             className="flex-grow"
           />
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleGenerateAISubChecklist}
+            className="flex items-center gap-1"
+            title="Generate sub-checklist with AI"
+          >
+            <Bot className="h-4 w-4" />
+          </Button>
           
           <Button
             variant="ghost"
@@ -189,6 +243,31 @@ export function QuestionItem({
                 className="w-20 text-right"
               />
             </div>
+            
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Uses sub-checklist?</label>
+              <Switch
+                checked={!!question.hasSubChecklist}
+                onCheckedChange={handleSubChecklistToggle}
+              />
+            </div>
+            
+            {question.hasSubChecklist && question.subChecklistId && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-green-600">
+                  Sub-checklist linked
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setSubChecklistDialogOpen(true)}
+                  className="flex items-center gap-1"
+                >
+                  <List className="h-4 w-4" />
+                  <span>Edit</span>
+                </Button>
+              </div>
+            )}
           </div>
           
           <div className="space-y-4">
@@ -260,6 +339,41 @@ export function QuestionItem({
             </div>
           </div>
         )}
+        
+        {/* Sub-checklist dialog */}
+        <Dialog open={subChecklistDialogOpen} onOpenChange={setSubChecklistDialogOpen}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>
+                {question.subChecklistId ? 
+                  "Edit Sub-Checklist" : 
+                  "Create Sub-Checklist for Question"}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="mb-4">
+                <TabsTrigger value="manual">Create Manually</TabsTrigger>
+                <TabsTrigger value="ai">Generate with AI</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="manual" className="min-h-[400px]">
+                <SubChecklistEditor 
+                  parentQuestionId={question.id}
+                  existingSubChecklistId={question.subChecklistId}
+                  onSubChecklistCreated={handleSubChecklistCreated}
+                />
+              </TabsContent>
+              
+              <TabsContent value="ai" className="min-h-[400px]">
+                <SubChecklistAIGenerator 
+                  parentQuestion={question}
+                  onSubChecklistCreated={handleSubChecklistCreated}
+                />
+              </TabsContent>
+            </Tabs>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );

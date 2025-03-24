@@ -40,7 +40,13 @@ const mapResponseType = (dbType: string): ChecklistQuestion['responseType'] => {
     'text': 'text',
     'numeric': 'numeric',
     'photo': 'photo',
-    'signature': 'signature'
+    'signature': 'signature',
+    'sim/não': 'yes_no',
+    'seleção múltipla': 'multiple_choice',
+    'texto': 'text',
+    'numérico': 'numeric',
+    'foto': 'photo',
+    'assinatura': 'signature'
   };
   
   return typeMap[dbType] || 'text';
@@ -110,7 +116,8 @@ export function useChecklistById(id: string) {
           permite_foto,
           permite_video,
           permite_audio,
-          ordem
+          ordem,
+          sub_checklist_id
         `)
         .eq("checklist_id", id)
         .order("ordem", { ascending: true });
@@ -163,7 +170,9 @@ export function useChecklistById(id: string) {
           allowsPhoto: q.permite_foto || false,
           allowsVideo: q.permite_video || false,
           allowsAudio: q.permite_audio || false,
-          order: q.ordem
+          order: q.ordem,
+          hasSubChecklist: !!q.sub_checklist_id,
+          subChecklistId: q.sub_checklist_id || undefined
         });
       });
 
