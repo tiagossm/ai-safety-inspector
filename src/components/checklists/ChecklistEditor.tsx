@@ -366,14 +366,11 @@ export function ChecklistEditor({
               .insert(questionData)
               .then(response => {
                 if (response.error) {
-                  throw response.error;
+                  console.error(`Error inserting question ${i}: "${q.text}"`, response.error);
+                  toast.warning(`Erro ao salvar pergunta: "${q.text}"`);
+                  return null;
                 }
                 return response;
-              })
-              .catch(error => {
-                console.error(`Error inserting question ${i}: "${q.text}"`, error);
-                toast.warning(`Erro ao salvar pergunta: "${q.text}"`);
-                return null;
               });
           }
           return Promise.resolve(null);
