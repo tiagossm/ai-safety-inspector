@@ -4,6 +4,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ChecklistWithStats } from "@/types/newChecklist";
 
+// Helper function to ensure responseType is correctly typed
+const mapResponseType = (type: string): "yes_no" | "multiple_choice" | "text" | "numeric" | "photo" | "signature" => {
+  switch (type) {
+    case "yes_no": return "yes_no";
+    case "multiple_choice": return "multiple_choice";
+    case "text": return "text";
+    case "numeric": return "numeric";
+    case "photo": return "photo";
+    case "signature": return "signature";
+    default: return "yes_no"; // Default to yes_no if type is unrecognized
+  }
+};
+
 export const useChecklistById = (id: string) => {
   return useQuery({
     queryKey: ["checklist", id],
@@ -47,7 +60,7 @@ export const useChecklistById = (id: string) => {
       
       console.log(`Fetched ${questionsData?.length || 0} questions for checklist ID ${id}`);
       
-      // Transform questions data into the expected format
+      // Transform questions data into the expected format with proper types
       const transformedQuestions = questionsData?.map(item => {
         // Extract group information from hint if it exists
         let groupId = null;
@@ -63,7 +76,7 @@ export const useChecklistById = (id: string) => {
         return {
           id: item.id,
           text: item.pergunta,
-          responseType: item.tipo_resposta,
+          responseType: mapResponseType(item.tipo_resposta), // Convert to expected enum value
           isRequired: item.obrigatorio,
           options: item.opcoes,
           allowsPhoto: item.permite_foto,
@@ -123,12 +136,15 @@ export const useChecklistById = (id: string) => {
       console.log(`Created ${groups.length} groups from questions data`);
       
       // Map database fields (snake_case) to frontend properties (camelCase)
+      // Ensure status field is properly typed as "active" | "inactive"
+      const status = checklistData.status === "inactive" ? "inactive" : "active";
+      
       const result: ChecklistWithStats = {
         id: checklistData.id,
         title: checklistData.title,
         description: checklistData.description,
         isTemplate: checklistData.is_template,
-        status: checklistData.status || 'active',
+        status: status, // Now properly typed
         category: checklistData.category,
         responsibleId: checklistData.responsible_id,
         companyId: checklistData.company_id,
@@ -136,7 +152,7 @@ export const useChecklistById = (id: string) => {
         createdAt: checklistData.created_at,
         updatedAt: checklistData.updated_at,
         dueDate: checklistData.due_date,
-        questions: transformedQuestions || [],
+        questions: transformedQuestions || [], // Now properly typed
         groups: groups,
         totalQuestions: transformedQuestions?.length || 0
       };
