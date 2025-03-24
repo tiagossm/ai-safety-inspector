@@ -73,12 +73,32 @@ export const useChecklistById = (id: string) => {
           console.warn("Failed to parse group info from hint:", item.hint);
         }
         
+        // Handle options conversion from JSON to string array
+        let options: string[] = [];
+        if (item.opcoes) {
+          // If opcoes is already an array, use it
+          if (Array.isArray(item.opcoes)) {
+            options = item.opcoes;
+          } 
+          // If it's a string, try to parse it as JSON
+          else if (typeof item.opcoes === 'string') {
+            try {
+              const parsedOptions = JSON.parse(item.opcoes);
+              if (Array.isArray(parsedOptions)) {
+                options = parsedOptions;
+              }
+            } catch (e) {
+              console.warn("Failed to parse options:", e);
+            }
+          }
+        }
+        
         return {
           id: item.id,
           text: item.pergunta,
           responseType: mapResponseType(item.tipo_resposta), // Convert to expected enum value
           isRequired: item.obrigatorio,
-          options: item.opcoes,
+          options: options, // Now correctly typed as string[]
           allowsPhoto: item.permite_foto,
           allowsVideo: item.permite_video,
           allowsAudio: item.permite_audio,
