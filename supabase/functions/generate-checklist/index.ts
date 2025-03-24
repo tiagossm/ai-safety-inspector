@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
@@ -49,9 +50,9 @@ Responda APENAS no formato JSON abaixo, sem texto adicional:
   "questions": [
     {
       "text": "Texto da pergunta 1",
-      "type": "yes_no | multiple_choice | text | numeric | photo | signature",
+      "type": "sim/não | seleção múltipla | texto | numérico | foto | assinatura",
       "required": true | false,
-      "options": ["Opção 1", "Opção 2"] (apenas para multiple_choice),
+      "options": ["Opção 1", "Opção 2"] (apenas para seleção múltipla),
       "group": "Nome do grupo a que esta pergunta pertence (opcional)"
     }
   ],
@@ -132,9 +133,11 @@ Responda APENAS no formato JSON abaixo, sem texto adicional:
     });
 
     function mapTipoResposta(tipo: string): string {
+      // Updated to ensure the exact DB-compatible values are used
       const map: Record<string, string> = {
         "yes_no": "sim/não",
         "sim_nao": "sim/não",
+        "sim/não": "sim/não",
         "text": "texto",
         "texto": "texto",
         "multiple_choice": "seleção múltipla",
@@ -142,9 +145,14 @@ Responda APENAS no formato JSON abaixo, sem texto adicional:
         "numeric": "numérico",
         "numérico": "numérico",
         "photo": "foto",
-        "signature": "assinatura"
+        "foto": "foto",
+        "signature": "assinatura",
+        "assinatura": "assinatura"
       };
-      return map[tipo] || "texto";
+      
+      // Log the mapping for debugging
+      console.log(`Mapping response type: ${tipo} -> ${map[tipo.toLowerCase()] || "texto"}`);
+      return map[tipo.toLowerCase()] || "texto"; // Default to texto if unknown
     }
 
     const processedQuestions = questions.map((q: any, index: number) => {
@@ -154,16 +162,18 @@ Responda APENAS no formato JSON abaixo, sem texto adicional:
       }
 
       let options: string[] = [];
-      if (q.type === 'multiple_choice') {
+      if (q.type === 'multiple_choice' || q.type === 'seleção múltipla') {
         options = Array.isArray(q.options) && q.options.length > 0
           ? q.options
           : ["Opção 1", "Opção 2", "Opção 3"];
       }
 
+      const responseType = mapTipoResposta(q.type);
+
       return {
         id: `ai-${Date.now()}-${index}`,
         text: q.text,
-        responseType: mapTipoResposta(q.type),
+        responseType: responseType,
         isRequired: q.required !== undefined ? q.required : true,
         options: options,
         groupId: groupId,

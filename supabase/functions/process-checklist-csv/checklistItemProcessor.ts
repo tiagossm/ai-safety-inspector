@@ -3,24 +3,25 @@ import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.48.1';
 
 // Mapeia tipos de resposta de texto para valores da base de dados
 const responseTypeMap: Record<string, string> = {
-  'sim/não': 'yes_no',
-  'yes/no': 'yes_no',
-  'sim/nao': 'yes_no',
-  'yes_no': 'yes_no',
-  'múltipla escolha': 'multiple_choice',
-  'multipla escolha': 'multiple_choice',
-  'multiple_choice': 'multiple_choice',
-  'multiple choice': 'multiple_choice',
-  'texto': 'text',
-  'text': 'text',
-  'numérico': 'numeric',
-  'numerico': 'numeric',
-  'numeric': 'numeric',
-  'number': 'numeric',
-  'foto': 'photo',
-  'photo': 'photo',
-  'assinatura': 'signature',
-  'signature': 'signature'
+  'sim/não': 'sim/não',
+  'yes/no': 'sim/não',
+  'sim/nao': 'sim/não',
+  'yes_no': 'sim/não',
+  'múltipla escolha': 'seleção múltipla',
+  'multipla escolha': 'seleção múltipla',
+  'multiple_choice': 'seleção múltipla',
+  'multiple choice': 'seleção múltipla',
+  'seleção múltipla': 'seleção múltipla',
+  'texto': 'texto',
+  'text': 'texto',
+  'numérico': 'numérico',
+  'numerico': 'numérico',
+  'numeric': 'numérico',
+  'number': 'numérico',
+  'foto': 'foto',
+  'photo': 'foto',
+  'assinatura': 'assinatura',
+  'signature': 'assinatura'
 };
 
 // Processa um item (linha) do CSV e insere no banco de dados
@@ -39,10 +40,11 @@ export async function processChecklistItem(
   const questionText = rowData[0].trim();
   
   // Determinar o tipo de resposta (coluna 1)
-  let responseType = 'yes_no'; // Padrão
+  let responseType = 'sim/não'; // Padrão
   if (rowData.length > 1 && rowData[1]) {
     const rawType = rowData[1].trim().toLowerCase();
-    responseType = responseTypeMap[rawType] || 'yes_no';
+    responseType = responseTypeMap[rawType] || 'sim/não';
+    console.log(`Mapped response type from "${rawType}" to "${responseType}"`);
   }
   
   // Determinar se é obrigatório (coluna 2)
@@ -54,7 +56,7 @@ export async function processChecklistItem(
   
   // Extrair opções para perguntas de múltipla escolha (coluna 3)
   let options: string[] = [];
-  if (responseType === 'multiple_choice' && rowData.length > 3 && rowData[3]) {
+  if (responseType === 'seleção múltipla' && rowData.length > 3 && rowData[3]) {
     // As opções podem estar separadas por vírgulas, ponto e vírgulas, ou barras verticais
     options = rowData[3].split(/[,;|]/).map(opt => opt.trim()).filter(opt => opt !== '');
     

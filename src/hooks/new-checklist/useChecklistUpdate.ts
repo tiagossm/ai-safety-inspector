@@ -6,16 +6,25 @@ import { toast } from "sonner";
 
 // Convert UI friendly type to database type
 const getDatabaseType = (type: ChecklistQuestion['responseType']): string => {
+  // This is the critical fix - map the frontend types to the exact values allowed by the database constraint
   const typeMap: Record<string, string> = {
-    'yes_no': 'yes_no',
-    'multiple_choice': 'multiple_choice',
-    'text': 'text',
-    'numeric': 'numeric',
-    'photo': 'photo',
-    'signature': 'signature'
+    'yes_no': 'sim/não',
+    'multiple_choice': 'seleção múltipla',
+    'text': 'texto',
+    'numeric': 'numérico',
+    'photo': 'foto',
+    'signature': 'assinatura',
+    // Also handle already-converted values
+    'sim/não': 'sim/não',
+    'seleção múltipla': 'seleção múltipla',
+    'texto': 'texto',
+    'numérico': 'numérico',
+    'foto': 'foto',
+    'assinatura': 'assinatura'
   };
   
-  return typeMap[type] || type;
+  console.log("Converting response type:", type, "to:", typeMap[type] || 'texto');
+  return typeMap[type] || 'texto'; // Default to 'texto' if unknown type
 };
 
 // Get database status mapping
@@ -131,6 +140,13 @@ export function useChecklistUpdate() {
             permite_audio: question.allowsAudio || false,
             ordem: question.order
           };
+          
+          console.log("Saving question with data:", {
+            id: question.id,
+            text: question.text,
+            responseType: question.responseType,
+            convertedType: getDatabaseType(question.responseType)
+          });
           
           // Check if question has an ID (existing) or needs to be created
           if (question.id && question.id.startsWith("new-")) {
