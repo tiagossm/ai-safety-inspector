@@ -12,6 +12,28 @@ import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
 import { GroupedQuestionsSection } from "./create-forms/GroupedQuestionsSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+const ALLOWED_RESPONSE_TYPES = ['sim/não', 'texto', 'seleção múltipla', 'numérico', 'foto', 'assinatura'];
+
+const normalizeResponseType = (type: string): string => {
+  const typeMap: Record<string, string> = {
+    'sim/não': 'sim/não',
+    'múltipla escolha': 'seleção múltipla',
+    'numérico': 'numérico',
+    'texto': 'texto',
+    'foto': 'foto',
+    'assinatura': 'assinatura',
+    'yes_no': 'sim/não',
+    'multiple_choice': 'seleção múltipla',
+    'numeric': 'numérico',
+    'text': 'texto',
+    'photo': 'foto',
+    'signature': 'assinatura'
+  };
+
+  console.log(`Normalizing response type from "${type}" to "${typeMap[type] || 'texto'}"`);
+  return typeMap[type] || 'texto';
+};
+
 interface ChecklistEditorProps {
   initialChecklist: NewChecklist;
   initialQuestions?: Array<{
@@ -57,25 +79,6 @@ type QuestionGroup = {
   id: string;
   title: string;
   questions: Question[];
-};
-
-const normalizeResponseType = (type: string): string => {
-  const typeMap: Record<string, string> = {
-    'sim/não': 'yes_no',
-    'múltipla escolha': 'multiple_choice',
-    'numérico': 'numeric',
-    'texto': 'text',
-    'foto': 'photo',
-    'assinatura': 'signature',
-    'yes_no': 'yes_no',
-    'multiple_choice': 'multiple_choice',
-    'numeric': 'numeric',
-    'text': 'text',
-    'photo': 'photo',
-    'signature': 'signature'
-  };
-
-  return typeMap[type] || 'text';
 };
 
 export function ChecklistEditor({
@@ -304,7 +307,13 @@ export function ChecklistEditor({
             const dbType = normalizeResponseType(q.type);
             console.log(`Question ${i} type: ${q.type} mapped to DB type: ${dbType}`);
             
-            if (dbType === "multiple_choice" && (!q.options || !Array.isArray(q.options) || q.options.length === 0)) {
+            if (!ALLOWED_RESPONSE_TYPES.includes(dbType)) {
+              console.error(`Invalid question type after normalization: ${dbType}`);
+              toast.warning(`Tipo de pergunta inválido após normalização: "${dbType}" para pergunta "${q.text}"`);
+              q.type = 'texto';
+            }
+            
+            if (dbType === "seleção múltipla" && (!q.options || !Array.isArray(q.options) || q.options.length === 0)) {
               console.error("Multiple choice question without valid options:", q);
               toast.warning(`Pergunta de múltipla escolha sem opções válidas: "${q.text}"`);
               q.options = ["Opção 1", "Opção 2"];
@@ -334,34 +343,54 @@ export function ChecklistEditor({
             console.log(`Saving question ${i}: "${q.text}" (${dbType})`, 
               q.options ? `with options: ${JSON.stringify(q.options)}` : "without options");
             
+            const questionData = {
+              checklist_id: newChecklistId,
+              pergunta: q.text,
+              tipo_resposta: dbType,
+              obrigatorio: q.required,
+              ordem: i,
+              permite_audio: q.allowAudio || false,
+              permite_video: q.allowVideo || false,
+              permite_foto: q.allowPhoto || false,
+              opcoes: q.options && q.options.length > 0 ? q.options : null,
+              hint: finalHint,
+              weight: q.weight || 1,
+              parent_item_id: q.parentId || null,
+              condition_value: q.conditionValue || null
+            };
+            
+            console.log("Inserting question with data:", questionData);
+            
             return supabase
               .from("checklist_itens")
-              .insert({
-                checklist_id: newChecklistId,
-                pergunta: q.text,
-                tipo_resposta: dbType,
-                obrigatorio: q.required,
-                ordem: i,
-                permite_audio: q.allowAudio || false,
-                permite_video: q.allowVideo || false,
-                permite_foto: q.allowPhoto || false,
-                opcoes: q.options && q.options.length > 0 ? q.options : null,
-                hint: finalHint,
-                weight: q.weight || 1,
-                parent_item_id: q.parentId || null,
-                condition_value: q.conditionValue || null
+              .insert(questionData)
+              .then(response => {
+                if (response.error) {
+                  throw response.error;
+                }
+                return response;
+              })
+              .catch(error => {
+                console.error(`Error inserting question ${i}: "${q.text}"`, error);
+                toast.warning(`Erro ao salvar pergunta: "${q.text}"`);
+                return null;
               });
           }
           return Promise.resolve(null);
         });
         
-        const results = await Promise.all(promises.filter(Boolean));
-        console.log(`Added ${results.length} questions to checklist ${newChecklistId}`);
-        
-        const errors = results.filter(r => r && r.error);
-        if (errors.length > 0) {
-          console.error(`${errors.length} questions failed to save:`, errors);
-          toast.warning(`${errors.length} perguntas não puderam ser salvas.`);
+        try {
+          const results = await Promise.all(promises.filter(Boolean));
+          console.log(`Added ${results.filter(r => r).length} questions to checklist ${newChecklistId}`);
+          
+          const errors = results.filter(r => r && r.error);
+          if (errors.length > 0) {
+            console.error(`${errors.length} questions failed to save:`, errors);
+            toast.warning(`${errors.length} perguntas não puderam ser salvas.`);
+          }
+        } catch (questionError) {
+          console.error("Error saving questions:", questionError);
+          toast.error("Erro ao salvar algumas perguntas");
         }
       }
       
@@ -370,7 +399,7 @@ export function ChecklistEditor({
       if (onSave) {
         onSave(newChecklistId);
       } else {
-        navigate(`/checklists/${newChecklistId}`);
+        navigate(`/new-checklists/${newChecklistId}`);
       }
     } catch (error) {
       console.error("Error submitting checklist:", error);

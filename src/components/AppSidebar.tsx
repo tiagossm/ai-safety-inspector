@@ -10,7 +10,6 @@ import {
   Settings,
   LogOut,
   Menu,
-  FileCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/ui/ThemeContext";
@@ -18,9 +17,7 @@ import { useTheme } from "@/components/ui/ThemeContext";
 const menuItems = [
   { title: "Dashboard", icon: LayoutDashboard, url: "/" },
   { title: "Empresas", icon: Building2, url: "/companies" },
-  { title: "Inspeções", icon: ClipboardCheck, url: "/inspections" },
-  { title: "Checklists", icon: ClipboardCheck, url: "/checklists" },
-  { title: "Novos Checklists", icon: FileCheck, url: "/new-checklists" }, // Make sure this URL is correct
+  { title: "Checklists", icon: ClipboardCheck, url: "/new-checklists" },
   { title: "Relatórios", icon: History, url: "/reports" },
   { title: "Configurações", icon: Settings, url: "/settings" },
   { title: "Perfil", icon: User, url: "/profile" },
@@ -94,7 +91,7 @@ export function AppSidebar() {
           aria-label="Sair"
           className="flex items-center gap-3 p-2 w-full rounded-md transition-all duration-300 hover:bg-destructive hover:text-destructive-foreground focus:outline-none"
         >
-          <LogOut className="h-3.5 w-3.5" aria-hidden="true" /> {/* Ícone reduzido em 1.75x */}
+          <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
           {isOpen && <span>Sair</span>}
         </button>
       </div>

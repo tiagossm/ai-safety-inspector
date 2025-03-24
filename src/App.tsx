@@ -30,7 +30,7 @@ function App() {
             <Route path="companies/:id" element={<CompanyDetail />} />
             <Route path="employees" element={<Employees />} />
             
-            {/* New checklist routes - these are the active ones */}
+            {/* Checklist routes */}
             <Route path="new-checklists" element={<NewChecklists />} />
             <Route path="new-checklists/create" element={<NewChecklistCreate />} />
             <Route path="new-checklists/edit/:id" element={<NewChecklistEdit />} />

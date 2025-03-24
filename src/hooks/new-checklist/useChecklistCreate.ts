@@ -6,16 +6,25 @@ import { toast } from "sonner";
 
 // Convert UI friendly type to database type
 const getDatabaseType = (type: ChecklistQuestion['responseType']): string => {
+  // This is the critical fix - map the frontend types to the exact values allowed by the database constraint
   const typeMap: Record<string, string> = {
-    'yes_no': 'yes_no',
-    'multiple_choice': 'multiple_choice',
-    'text': 'text',
-    'numeric': 'numeric',
-    'photo': 'photo',
-    'signature': 'signature'
+    'yes_no': 'sim/não',
+    'multiple_choice': 'seleção múltipla',
+    'text': 'texto',
+    'numeric': 'numérico',
+    'photo': 'foto',
+    'signature': 'assinatura',
+    // Also handle already-converted values
+    'sim/não': 'sim/não',
+    'seleção múltipla': 'seleção múltipla',
+    'texto': 'texto',
+    'numérico': 'numérico',
+    'foto': 'foto',
+    'assinatura': 'assinatura'
   };
   
-  return typeMap[type] || 'text';
+  console.log("Converting response type:", type, "to:", typeMap[type] || 'texto');
+  return typeMap[type] || 'texto'; // Default to 'texto' if unknown type
 };
 
 // Get the correct status value for database constraint
@@ -116,6 +125,8 @@ export function useChecklistCreate() {
             }
           }
           
+          console.log(`Preparing question ${index} for checklist ${checklistId}: ${question.text}, type: ${question.responseType} -> ${getDatabaseType(question.responseType)}`);
+          
           return {
             checklist_id: checklistId,
             pergunta: question.text,
@@ -132,6 +143,9 @@ export function useChecklistCreate() {
             ordem: question.order || index
           };
         });
+        
+        // Log the first few questions for debugging
+        console.log("Sample question data:", questionInserts.slice(0, 2));
         
         const { error: questionsError } = await supabase
           .from("checklist_itens")
