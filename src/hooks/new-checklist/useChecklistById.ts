@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ChecklistWithStats } from "@/types/newChecklist";
 
 export const useChecklistById = (id: string) => {
   return useQuery({
@@ -121,12 +122,26 @@ export const useChecklistById = (id: string) => {
       
       console.log(`Created ${groups.length} groups from questions data`);
       
-      // Return the complete checklist data
-      return {
-        ...checklistData,
+      // Map database fields (snake_case) to frontend properties (camelCase)
+      const result: ChecklistWithStats = {
+        id: checklistData.id,
+        title: checklistData.title,
+        description: checklistData.description,
+        isTemplate: checklistData.is_template,
+        status: checklistData.status || 'active',
+        category: checklistData.category,
+        responsibleId: checklistData.responsible_id,
+        companyId: checklistData.company_id,
+        userId: checklistData.user_id,
+        createdAt: checklistData.created_at,
+        updatedAt: checklistData.updated_at,
+        dueDate: checklistData.due_date,
         questions: transformedQuestions || [],
-        groups: groups
+        groups: groups,
+        totalQuestions: transformedQuestions?.length || 0
       };
+      
+      return result;
     },
     enabled: !!id,
     staleTime: 30000, // 30 seconds

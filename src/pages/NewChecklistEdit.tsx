@@ -16,6 +16,19 @@ import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import { QuestionGroup } from "@/components/new-checklist/question-editor/QuestionGroup";
 
+// Helper function to map responseType to expected value
+const mapResponseType = (type: string): "yes_no" | "multiple_choice" | "text" | "numeric" | "photo" | "signature" => {
+  switch (type) {
+    case "yes_no": return "yes_no";
+    case "multiple_choice": return "multiple_choice";
+    case "text": return "text";
+    case "numeric": return "numeric";
+    case "photo": return "photo";
+    case "signature": return "signature";
+    default: return "yes_no"; // Default to yes_no if type is unrecognized
+  }
+};
+
 export default function NewChecklistEdit() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
@@ -41,8 +54,16 @@ export default function NewChecklistEdit() {
       setDescription(checklist.description || "");
       setCategory(checklist.category || "");
       setIsTemplate(checklist.isTemplate);
-      setStatus(checklist.status);
-      setQuestions(checklist.questions || []);
+      setStatus(checklist.status as "active" | "inactive");
+      
+      // Map the questions to ensure responseType is correctly typed
+      const typedQuestions: ChecklistQuestion[] = checklist.questions ? 
+        checklist.questions.map(q => ({
+          ...q,
+          responseType: mapResponseType(q.responseType)
+        })) : [];
+        
+      setQuestions(typedQuestions);
       setGroups(checklist.groups || []);
       
       // Default to grouped view if there are groups
