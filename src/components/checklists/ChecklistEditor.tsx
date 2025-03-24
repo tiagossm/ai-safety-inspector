@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { NewChecklist, Checklist } from "@/types/checklist";
@@ -295,17 +296,13 @@ export function ChecklistEditor({
         : questions;
       
       if (questionsToSave.length > 0) {
-        console.log("Inserting questions with types:", questionsToSave.map(q => q.type));
+        console.log("Total questions to save:", questionsToSave.length);
         
-        const promises = questionsToSave.map((q, i) => {
-          if (q.text.trim()) {
-            if (!q.text || !q.type) {
-              console.error("Invalid question data:", q);
-              return Promise.resolve(null);
-            }
-            
+        // Create an array to hold all the question data objects
+        const questionDataArray = questionsToSave
+          .filter(q => q.text.trim()) // Only process questions with text
+          .map((q, i) => {
             const dbType = normalizeResponseType(q.type);
-            console.log(`Question ${i} type: ${q.type} mapped to DB type: ${dbType}`);
             
             if (!ALLOWED_RESPONSE_TYPES.includes(dbType)) {
               console.error(`Invalid question type after normalization: ${dbType}`);
@@ -340,10 +337,9 @@ export function ChecklistEditor({
             
             const finalHint = q.hint || groupMetadata;
             
-            console.log(`Saving question ${i}: "${q.text}" (${dbType})`, 
-              q.options ? `with options: ${JSON.stringify(q.options)}` : "without options");
+            console.log(`Preparing question ${i}: "${q.text}" (${dbType})`);
             
-            const questionData = {
+            return {
               checklist_id: newChecklistId,
               pergunta: q.text,
               tipo_resposta: dbType,
@@ -358,36 +354,45 @@ export function ChecklistEditor({
               parent_item_id: q.parentId || null,
               condition_value: q.conditionValue || null
             };
-            
-            console.log("Inserting question with data:", questionData);
-            
-            return supabase
-              .from("checklist_itens")
-              .insert(questionData)
-              .then(response => {
-                if (response.error) {
-                  console.error(`Error inserting question ${i}: "${q.text}"`, response.error);
-                  toast.warning(`Erro ao salvar pergunta: "${q.text}"`);
-                  return null;
-                }
-                return response;
-              });
-          }
-          return Promise.resolve(null);
-        });
+          });
         
+        console.log(`Prepared ${questionDataArray.length} questions for insertion`);
+        
+        // Insert all questions at once using a single batch operation
         try {
-          const results = await Promise.all(promises.filter(Boolean));
-          console.log(`Added ${results.filter(r => r).length} questions to checklist ${newChecklistId}`);
+          const { data, error } = await supabase
+            .from("checklist_itens")
+            .insert(questionDataArray);
           
-          const errors = results.filter(r => r && r.error);
-          if (errors.length > 0) {
-            console.error(`${errors.length} questions failed to save:`, errors);
-            toast.warning(`${errors.length} perguntas não puderam ser salvas.`);
+          if (error) {
+            console.error("Error inserting questions batch:", error);
+            toast.warning("Algumas perguntas não puderam ser salvas.");
+          } else {
+            console.log(`Successfully inserted ${questionDataArray.length} questions`);
           }
-        } catch (questionError) {
-          console.error("Error saving questions:", questionError);
-          toast.error("Erro ao salvar algumas perguntas");
+        } catch (batchError) {
+          console.error("Exception during batch insert:", batchError);
+          toast.error("Erro ao salvar perguntas em lote");
+          
+          // Fallback: Try to insert questions one by one if batch fails
+          console.log("Attempting individual inserts as fallback...");
+          
+          let insertedCount = 0;
+          for (const questionData of questionDataArray) {
+            try {
+              const { error: indivError } = await supabase
+                .from("checklist_itens")
+                .insert(questionData);
+              
+              if (!indivError) {
+                insertedCount++;
+              }
+            } catch (indivInsertError) {
+              console.error(`Error inserting question: ${questionData.pergunta}`, indivInsertError);
+            }
+          }
+          
+          console.log(`Individual insert fallback completed: ${insertedCount}/${questionDataArray.length} questions saved`);
         }
       }
       

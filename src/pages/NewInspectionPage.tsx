@@ -21,7 +21,7 @@ import { Database } from "@/integrations/supabase/types";
 type ApprovalStatus = Database["public"]["Enums"]["approval_status"];
 
 const NewInspectionPage = () => {
-  const { checklistId } = useParams<{ checklistId: string }>();
+  const { id: checklistId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   
@@ -191,6 +191,14 @@ const NewInspectionPage = () => {
     try {
       setSubmitting(true);
       
+      // Ensure checklistId is provided and valid
+      if (!checklistId) {
+        console.error("Missing checklist ID");
+        toast.error("ID do checklist não fornecido");
+        setSubmitting(false);
+        return;
+      }
+      
       // Format CNAE properly
       const formattedCNAE = formatCNAE(companyData.cnae);
       console.log("Using formatted CNAE:", formattedCNAE);
@@ -303,6 +311,13 @@ const NewInspectionPage = () => {
                     <Label>Número de Perguntas</Label>
                     <div className="font-medium mt-1">
                       {checklist?.checklist_itens?.length || 0}
+                    </div>
+                  </div>
+                  
+                  <div className="pt-2">
+                    <Label className="text-xs text-muted-foreground">ID do Checklist</Label>
+                    <div className="text-xs font-mono text-muted-foreground mt-1 break-all">
+                      {checklistId}
                     </div>
                   </div>
                 </div>
