@@ -76,16 +76,16 @@ export const useChecklistById = (id: string) => {
         // Handle options conversion from JSON to string array
         let options: string[] = [];
         if (item.opcoes) {
-          // If opcoes is already an array, use it
+          // If opcoes is already an array, convert all items to strings
           if (Array.isArray(item.opcoes)) {
-            options = item.opcoes;
+            options = item.opcoes.map(opt => String(opt));
           } 
           // If it's a string, try to parse it as JSON
           else if (typeof item.opcoes === 'string') {
             try {
               const parsedOptions = JSON.parse(item.opcoes);
               if (Array.isArray(parsedOptions)) {
-                options = parsedOptions;
+                options = parsedOptions.map(opt => String(opt));
               }
             } catch (e) {
               console.warn("Failed to parse options:", e);
