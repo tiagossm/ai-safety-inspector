@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -65,13 +64,31 @@ export default function InspectionExecutionPage() {
       if (inspectionError) throw inspectionError;
       if (!inspectionData) throw new Error("Inspection not found");
       
+      // Parse the checklist JSON data if it exists and is a string
+      let checklistData = null;
+      if (inspectionData.checklist) {
+        try {
+          // If it's a string, try to parse it
+          if (typeof inspectionData.checklist === 'string') {
+            checklistData = JSON.parse(inspectionData.checklist);
+          } else {
+            // Otherwise, assume it's already an object
+            checklistData = inspectionData.checklist;
+          }
+        } catch (e) {
+          console.error("Error parsing checklist JSON:", e);
+        }
+      }
+      
       // Map the inspection data to our type
       const inspectionDetails: InspectionDetails = {
         id: inspectionData.id,
-        // Use the title from checklist.title in the metadata or from the related checklists record
-        title: inspectionData.checklist?.title || (inspectionData.checklists?.title || "Untitled Inspection"),
+        // Use the title from parsed checklist data, checklists relation, or default
+        title: checklistData?.title || 
+               (inspectionData.checklists ? inspectionData.checklists.title : "Untitled Inspection"),
         // Similarly for description
-        description: inspectionData.checklist?.description || inspectionData.checklists?.description,
+        description: checklistData?.description || 
+                    (inspectionData.checklists ? inspectionData.checklists.description : undefined),
         checklistId: inspectionData.checklist_id,
         companyId: inspectionData.company_id,
         locationName: inspectionData.location || "",
