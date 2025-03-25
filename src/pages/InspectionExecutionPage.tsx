@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -110,7 +109,7 @@ export default function InspectionExecutionPage() {
         status = "completed";
       }
       
-      // Create inspection details object
+      // Create inspection details object with proper type handling
       const inspectionDetails: InspectionDetails = {
         id: inspectionData.id,
         title: checklistTitle,
@@ -134,10 +133,10 @@ export default function InspectionExecutionPage() {
         approval_status: inspectionData.approval_status,
         approved_by: inspectionData.approved_by,
         audio_url: inspectionData.audio_url,
-        photos: inspectionData.photos,
+        photos: inspectionData.photos || [],
         report_url: inspectionData.report_url,
         unit_id: inspectionData.unit_id,
-        metadata: inspectionData.metadata,
+        metadata: typeof inspectionData.metadata === 'object' ? inspectionData.metadata : {},
         cnae: inspectionData.cnae,
         inspection_type: inspectionData.inspection_type,
         sync_status: inspectionData.sync_status

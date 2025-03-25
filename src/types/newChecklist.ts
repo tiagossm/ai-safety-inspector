@@ -74,7 +74,7 @@ export interface InspectionDetails {
     title?: string;
     description?: string;
     total_questions?: number;
-  };
+  } | Record<string, any>;
   // Additional fields to match database schema
   approval_notes?: string | null;
   approval_status?: string;
