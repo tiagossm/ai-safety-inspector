@@ -43,7 +43,6 @@ export default function InspectionExecutionPage() {
   const [responsible, setResponsible] = useState<any>(null);
   
   useEffect(() => {
-    // Initialize the schema first to ensure all tables and columns exist
     initializeInspectionsSchema().then(() => {
       if (id) {
         fetchInspectionData();
@@ -54,7 +53,6 @@ export default function InspectionExecutionPage() {
   const fetchInspectionData = async () => {
     setLoading(true);
     try {
-      // Fetch inspection details
       const { data: inspectionData, error: inspectionError } = await supabase
         .from("inspections")
         .select("*, checklists(*)")
@@ -64,20 +62,16 @@ export default function InspectionExecutionPage() {
       if (inspectionError) throw inspectionError;
       if (!inspectionData) throw new Error("Inspection not found");
       
-      // Extract and parse checklist data safely
       let checklistTitle = "Untitled Inspection";
       let checklistDescription: string | undefined = undefined;
       let totalQuestions = 0;
       
-      // Safely handle the checklist JSON object or string
       if (inspectionData.checklist) {
         try {
-          // If it's a string, try to parse it
           const checklistData = typeof inspectionData.checklist === 'string' 
             ? JSON.parse(inspectionData.checklist) 
             : inspectionData.checklist;
           
-          // Extract values if we have valid data
           if (checklistData && typeof checklistData === 'object' && !Array.isArray(checklistData)) {
             checklistTitle = checklistData.title || "Untitled Inspection";
             checklistDescription = checklistData.description;
@@ -90,7 +84,6 @@ export default function InspectionExecutionPage() {
         }
       }
       
-      // Try to get data from checklists relation as fallback
       if (inspectionData.checklists) {
         if (!checklistTitle && inspectionData.checklists.title) {
           checklistTitle = inspectionData.checklists.title;
@@ -101,7 +94,6 @@ export default function InspectionExecutionPage() {
         }
       }
       
-      // Map status values consistently
       let status: StatusType = "pending";
       if (inspectionData.status === "Em Andamento") {
         status = "in_progress";
@@ -109,7 +101,6 @@ export default function InspectionExecutionPage() {
         status = "completed";
       }
       
-      // Create inspection details object with proper type handling
       const inspectionDetails: InspectionDetails = {
         id: inspectionData.id,
         title: checklistTitle,
@@ -128,7 +119,6 @@ export default function InspectionExecutionPage() {
           description: checklistDescription,
           total_questions: totalQuestions
         },
-        // Include all other fields from the database
         approval_notes: inspectionData.approval_notes,
         approval_status: inspectionData.approval_status,
         approved_by: inspectionData.approved_by,
@@ -144,7 +134,6 @@ export default function InspectionExecutionPage() {
       
       setInspection(inspectionDetails);
       
-      // Fetch related company
       if (inspectionData.company_id) {
         const { data: companyData } = await supabase
           .from("companies")
@@ -155,7 +144,6 @@ export default function InspectionExecutionPage() {
         setCompany(companyData);
       }
       
-      // Fetch responsible user
       if (inspectionData.responsible_id) {
         const { data: userData } = await supabase
           .from("users")
@@ -166,7 +154,6 @@ export default function InspectionExecutionPage() {
         setResponsible(userData);
       }
       
-      // Fetch checklist questions
       const { data: questionsData, error: questionsError } = await supabase
         .from("checklist_itens")
         .select(`
@@ -190,13 +177,11 @@ export default function InspectionExecutionPage() {
       
       if (questionsError) throw questionsError;
       
-      // Process questions and extract groups
       const groupsMap = new Map();
       const processedQuestions = questionsData.map((q: any) => {
         let groupId = null;
         let groupTitle = null;
         
-        // Try to extract group info from hint
         if (q.hint) {
           try {
             if (q.hint.includes('groupId')) {
@@ -213,7 +198,6 @@ export default function InspectionExecutionPage() {
               }
             }
           } catch (e) {
-            // Not a JSON with group info
             console.warn("Error parsing group info:", e);
           }
         }
@@ -240,16 +224,13 @@ export default function InspectionExecutionPage() {
       
       setQuestions(processedQuestions);
       
-      // Convert groups map to array
       const groupsArray = Array.from(groupsMap.values());
       setGroups(groupsArray);
       
-      // Set default active group
       if (groupsArray.length > 0) {
         setCurrentGroupId(groupsArray[0].id);
       }
       
-      // Fetch existing responses
       const { data: responsesData, error: responsesError } = await supabase
         .from("inspection_responses")
         .select("*")
@@ -289,7 +270,6 @@ export default function InspectionExecutionPage() {
     setSaving(true);
     
     try {
-      // Prepare the responses for insertion/update
       const responseEntries = Object.entries(responses).map(([questionId, data]) => ({
         inspection_id: id,
         question_id: questionId,
@@ -299,7 +279,6 @@ export default function InspectionExecutionPage() {
         media_urls: data.attachments
       }));
       
-      // Check if any required questions are missing answers
       const requiredQuestions = questions.filter(q => q.isRequired);
       const unansweredRequired = requiredQuestions.filter(q => 
         !responses[q.id] || responses[q.id].value === undefined || responses[q.id].value === null || responses[q.id].value === ""
@@ -307,10 +286,8 @@ export default function InspectionExecutionPage() {
       
       if (unansweredRequired.length > 0) {
         toast.warning(`There are ${unansweredRequired.length} required questions without answers.`);
-        // Continue saving anyway
       }
       
-      // Delete existing responses
       const { error: deleteError } = await supabase
         .from("inspection_responses")
         .delete()
@@ -318,7 +295,6 @@ export default function InspectionExecutionPage() {
       
       if (deleteError) throw deleteError;
       
-      // Insert new responses (if any)
       if (responseEntries.length > 0) {
         const { error: insertError } = await supabase
           .from("inspection_responses")
@@ -327,7 +303,6 @@ export default function InspectionExecutionPage() {
         if (insertError) throw insertError;
       }
       
-      // Update inspection status based on completion
       const totalRequired = requiredQuestions.length;
       const answeredRequired = requiredQuestions.filter(q => 
         responses[q.id] && responses[q.id].value !== undefined && responses[q.id].value !== null && responses[q.id].value !== ""
@@ -356,7 +331,6 @@ export default function InspectionExecutionPage() {
       
       toast.success("Inspection saved successfully");
       
-      // Update the local inspection status
       setInspection(prev => prev ? {
         ...prev,
         status: newStatus,
@@ -372,7 +346,6 @@ export default function InspectionExecutionPage() {
   
   const getFilteredQuestions = () => {
     if (!currentGroupId) {
-      // Show questions without a group
       return questions.filter(q => !q.groupId);
     }
     
@@ -562,7 +535,6 @@ export default function InspectionExecutionPage() {
                     </Button>
                   ))}
                   
-                  {/* Option to view ungrouped questions */}
                   <Button
                     variant={currentGroupId === null ? "default" : "ghost"}
                     className="w-full justify-start"
