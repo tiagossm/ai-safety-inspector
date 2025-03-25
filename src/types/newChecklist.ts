@@ -1,4 +1,5 @@
 
+
 export interface ChecklistGroup {
   id: string;
   title: string;
@@ -76,11 +77,12 @@ export interface InspectionResponse {
   id: string;
   inspectionId: string;
   questionId: string;
-  response?: string;
-  comment?: string;
+  answer?: string;
+  notes?: string;
   actionPlan?: string;
-  attachments?: string[];
+  mediaUrls?: string[];
   completedAt?: string;
   createdAt: string;
   updatedAt?: string;
 }
+

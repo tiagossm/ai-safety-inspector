@@ -25,6 +25,10 @@ import { InspectionDetails } from "@/types/newChecklist";
 import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { initializeInspectionsSchema } from "@/utils/initializeDatabase";
+
+type PriorityType = "low" | "medium" | "high";
+type StatusType = "pending" | "in_progress" | "completed";
 
 export default function InspectionExecutionPage() {
   const { id } = useParams<{ id: string }>();
@@ -40,9 +44,12 @@ export default function InspectionExecutionPage() {
   const [responsible, setResponsible] = useState<any>(null);
   
   useEffect(() => {
-    if (id) {
-      fetchInspectionData();
-    }
+    // Initialize the schema first to ensure all tables and columns exist
+    initializeInspectionsSchema().then(() => {
+      if (id) {
+        fetchInspectionData();
+      }
+    });
   }, [id]);
   
   const fetchInspectionData = async () => {
@@ -58,20 +65,23 @@ export default function InspectionExecutionPage() {
       if (inspectionError) throw inspectionError;
       if (!inspectionData) throw new Error("Inspection not found");
       
-      setInspection({
+      // Map the inspection data to our type
+      const inspectionDetails: InspectionDetails = {
         id: inspectionData.id,
-        title: inspectionData.title || inspectionData.checklists?.title || "Untitled Inspection",
+        title: inspectionData.title || (inspectionData.checklists?.title || "Untitled Inspection"),
         description: inspectionData.description || inspectionData.checklists?.description,
         checklistId: inspectionData.checklist_id,
         companyId: inspectionData.company_id,
-        locationName: inspectionData.location_name,
+        locationName: inspectionData.location_name || "",
         responsibleId: inspectionData.responsible_id,
         scheduledDate: inspectionData.scheduled_date,
-        priority: inspectionData.priority,
-        status: inspectionData.status,
+        priority: (inspectionData.priority || "medium") as PriorityType,
+        status: (inspectionData.status || "pending") as StatusType,
         createdAt: inspectionData.created_at,
-        updatedAt: inspectionData.updated_at
-      });
+        updatedAt: inspectionData.updated_at || inspectionData.created_at
+      };
+      
+      setInspection(inspectionDetails);
       
       // Fetch related company
       if (inspectionData.company_id) {
@@ -112,8 +122,7 @@ export default function InspectionExecutionPage() {
           permite_video,
           permite_audio,
           ordem,
-          sub_checklist_id,
-          group_info:hint
+          sub_checklist_id
         `)
         .eq("checklist_id", inspectionData.checklist_id)
         .order("ordem", { ascending: true });
@@ -144,6 +153,7 @@ export default function InspectionExecutionPage() {
             }
           } catch (e) {
             // Not a JSON with group info
+            console.warn("Error parsing group info:", e);
           }
         }
         
@@ -188,10 +198,10 @@ export default function InspectionExecutionPage() {
         const responsesMap: Record<string, any> = {};
         responsesData.forEach((response: any) => {
           responsesMap[response.question_id] = {
-            value: response.response,
-            comment: response.comment,
+            value: response.answer,
+            comment: response.notes,
             actionPlan: response.action_plan,
-            attachments: response.attachments || []
+            attachments: response.media_urls || []
           };
         });
         setResponses(responsesMap);
@@ -222,10 +232,10 @@ export default function InspectionExecutionPage() {
       const responseEntries = Object.entries(responses).map(([questionId, data]) => ({
         inspection_id: id,
         question_id: questionId,
-        response: data.value,
-        comment: data.comment,
+        answer: data.value || "",
+        notes: data.comment,
         action_plan: data.actionPlan,
-        attachments: data.attachments
+        media_urls: data.attachments
       }));
       
       // Check if any required questions are missing answers
@@ -262,7 +272,7 @@ export default function InspectionExecutionPage() {
         responses[q.id] && responses[q.id].value !== undefined && responses[q.id].value !== null && responses[q.id].value !== ""
       ).length;
       
-      let newStatus: "pending" | "in_progress" | "completed" = "pending";
+      let newStatus: StatusType = "pending";
       
       if (answeredRequired === totalRequired) {
         newStatus = "completed";

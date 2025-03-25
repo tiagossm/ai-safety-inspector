@@ -1,6 +1,8 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats, ChecklistGroup, ChecklistQuestion } from "@/types/newChecklist";
+import { initializeInspectionsSchema } from "@/utils/initializeDatabase";
 
 // Utility function to validate UUID format
 const isValidUUID = (id: string): boolean => {
@@ -60,6 +62,9 @@ export function useChecklistById(id: string) {
         throw new Error("ID de checklist inválido");
       }
 
+      // Initialize the database schema to ensure required columns exist
+      await initializeInspectionsSchema();
+
       console.log(`Fetching checklist with ID: ${id}`);
 
       const { data: checklistData, error: checklistError } = await supabase
@@ -91,96 +96,103 @@ export function useChecklistById(id: string) {
         throw new Error("Checklist não encontrado");
       }
 
-      const { data: questionsData, error: questionsError } = await supabase
-        .from("checklist_itens")
-        .select(`
-          id,
-          pergunta,
-          tipo_resposta,
-          obrigatorio,
-          opcoes,
-          hint,
-          weight,
-          parent_item_id,
-          condition_value,
-          permite_foto,
-          permite_video,
-          permite_audio,
-          ordem,
-          sub_checklist_id
-        `)
-        .eq("checklist_id", id)
-        .order("ordem", { ascending: true });
+      try {
+        const { data: questionsData, error: questionsError } = await supabase
+          .from("checklist_itens")
+          .select(`
+            id,
+            pergunta,
+            tipo_resposta,
+            obrigatorio,
+            opcoes,
+            hint,
+            weight,
+            parent_item_id,
+            condition_value,
+            permite_foto,
+            permite_video,
+            permite_audio,
+            ordem,
+            sub_checklist_id
+          `)
+          .eq("checklist_id", id)
+          .order("ordem", { ascending: true });
 
-      if (questionsError) {
-        console.error("Error fetching questions for checklist:", questionsError);
-        throw questionsError;
-      }
-
-      console.log(`Retrieved ${questionsData?.length || 0} questions for checklist ${id}`);
-
-      const groupsMap = new Map<string, ChecklistGroup>();
-      const processedQuestions: ChecklistQuestion[] = [];
-
-      (questionsData || []).forEach((q) => {
-        const { groupId, groupTitle } = parseGroupInfo(q.hint || undefined);
-
-        if (groupId && !groupsMap.has(groupId) && groupTitle) {
-          groupsMap.set(groupId, {
-            id: groupId,
-            title: groupTitle,
-            order: groupsMap.size
-          });
+        if (questionsError) {
+          console.error("Error fetching questions for checklist:", questionsError);
+          throw questionsError;
         }
 
-        const options = Array.isArray(q.opcoes)
-          ? q.opcoes.map(String)
-          : typeof q.opcoes === "string"
-          ? [q.opcoes]
-          : undefined;
+        console.log(`Retrieved ${questionsData?.length || 0} questions for checklist ${id}`);
 
-        processedQuestions.push({
-          id: q.id,
-          text: q.pergunta,
-          responseType: mapResponseType(q.tipo_resposta),
-          isRequired: q.obrigatorio,
-          options,
-          hint: q.hint || undefined,
-          weight: q.weight || 1,
-          groupId: groupId,
-          parentQuestionId: q.parent_item_id || undefined,
-          conditionValue: q.condition_value || undefined,
-          allowsPhoto: q.permite_foto || false,
-          allowsVideo: q.permite_video || false,
-          allowsAudio: q.permite_audio || false,
-          order: q.ordem,
-          hasSubChecklist: !!q.sub_checklist_id,
-          subChecklistId: q.sub_checklist_id || undefined
+        const groupsMap = new Map<string, ChecklistGroup>();
+        const processedQuestions: ChecklistQuestion[] = [];
+
+        (questionsData || []).forEach((q) => {
+          const { groupId, groupTitle } = parseGroupInfo(q.hint || undefined);
+
+          if (groupId && !groupsMap.has(groupId) && groupTitle) {
+            groupsMap.set(groupId, {
+              id: groupId,
+              title: groupTitle,
+              order: groupsMap.size
+            });
+          }
+
+          const options = Array.isArray(q.opcoes)
+            ? q.opcoes.map(String)
+            : typeof q.opcoes === "string"
+            ? [q.opcoes]
+            : undefined;
+
+          processedQuestions.push({
+            id: q.id,
+            text: q.pergunta,
+            responseType: mapResponseType(q.tipo_resposta),
+            isRequired: q.obrigatorio,
+            options,
+            hint: q.hint || undefined,
+            weight: q.weight || 1,
+            groupId: groupId,
+            parentQuestionId: q.parent_item_id || undefined,
+            conditionValue: q.condition_value || undefined,
+            allowsPhoto: q.permite_foto || false,
+            allowsVideo: q.permite_video || false,
+            allowsAudio: q.permite_audio || false,
+            order: q.ordem,
+            hasSubChecklist: !!q.sub_checklist_id,
+            subChecklistId: q.sub_checklist_id || undefined
+          });
         });
-      });
 
-      const groups = Array.from(groupsMap.values()).sort((a, b) => a.order - b.order);
+        const groups = Array.from(groupsMap.values()).sort((a, b) => a.order - b.order);
 
-      const checklistWithStats: ChecklistWithStats = {
-        id: checklistData.id,
-        title: checklistData.title,
-        description: checklistData.description || undefined,
-        isTemplate: checklistData.is_template,
-        status: checklistData.status_checklist === "ativo" ? "active" : "inactive",
-        category: checklistData.category || undefined,
-        responsibleId: checklistData.responsible_id || undefined,
-        companyId: checklistData.company_id || undefined,
-        userId: checklistData.user_id || undefined,
-        createdAt: checklistData.created_at,
-        updatedAt: checklistData.updated_at,
-        dueDate: checklistData.due_date || undefined,
-        groups,
-        questions: processedQuestions,
-        totalQuestions: questionsData?.length || 0,
-        completedQuestions: 0
-      };
+        const checklistWithStats: ChecklistWithStats = {
+          id: checklistData.id,
+          title: checklistData.title,
+          description: checklistData.description || undefined,
+          isTemplate: checklistData.is_template,
+          status: checklistData.status_checklist === "ativo" ? "active" : "inactive",
+          category: checklistData.category || undefined,
+          responsibleId: checklistData.responsible_id || undefined,
+          companyId: checklistData.company_id || undefined,
+          userId: checklistData.user_id || undefined,
+          createdAt: checklistData.created_at,
+          updatedAt: checklistData.updated_at,
+          dueDate: checklistData.due_date || undefined,
+          groups,
+          questions: processedQuestions,
+          totalQuestions: questionsData?.length || 0,
+          completedQuestions: 0
+        };
 
-      return checklistWithStats;
+        return checklistWithStats;
+      } catch (err) {
+        // If there's an error related to missing columns, initialize the schema
+        console.error("Error processing checklist data:", err);
+        await initializeInspectionsSchema();
+        throw new Error("Erro ao processar dados do checklist. Por favor, tente novamente.");
+      }
     },
     enabled: !!id && id !== "new" && id !== "editor",
     staleTime: 60000,
