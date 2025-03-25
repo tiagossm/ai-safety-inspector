@@ -334,6 +334,7 @@ export type Database = {
           requires_barcode: boolean | null
           requires_location: boolean | null
           requires_signature: boolean | null
+          sub_checklist_id: string | null
           tipo_resposta: string
           updated_at: string
           weight: number | null
@@ -356,6 +357,7 @@ export type Database = {
           requires_barcode?: boolean | null
           requires_location?: boolean | null
           requires_signature?: boolean | null
+          sub_checklist_id?: string | null
           tipo_resposta: string
           updated_at?: string
           weight?: number | null
@@ -378,6 +380,7 @@ export type Database = {
           requires_barcode?: boolean | null
           requires_location?: boolean | null
           requires_signature?: boolean | null
+          sub_checklist_id?: string | null
           tipo_resposta?: string
           updated_at?: string
           weight?: number | null
