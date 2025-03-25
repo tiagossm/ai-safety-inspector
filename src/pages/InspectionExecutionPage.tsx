@@ -64,42 +64,57 @@ export default function InspectionExecutionPage() {
       if (inspectionError) throw inspectionError;
       if (!inspectionData) throw new Error("Inspection not found");
       
-      // Parse the checklist JSON data if it exists and is a string
-      let checklistData = null;
+      // Parse the checklist JSON data if it exists
+      let checklistTitle = "Untitled Inspection";
+      let checklistDescription = undefined;
+      
+      // Try to get title and description from checklist JSON object
       if (inspectionData.checklist) {
-        try {
-          // If it's a string, try to parse it
-          if (typeof inspectionData.checklist === 'string') {
-            checklistData = JSON.parse(inspectionData.checklist);
-          } else {
-            // Otherwise, assume it's already an object
-            checklistData = inspectionData.checklist;
+        if (typeof inspectionData.checklist === 'string') {
+          try {
+            const parsed = JSON.parse(inspectionData.checklist);
+            checklistTitle = parsed.title || checklistTitle;
+            checklistDescription = parsed.description;
+          } catch (e) {
+            console.error("Error parsing checklist JSON:", e);
           }
-        } catch (e) {
-          console.error("Error parsing checklist JSON:", e);
+        } else if (typeof inspectionData.checklist === 'object') {
+          checklistTitle = inspectionData.checklist.title || checklistTitle;
+          checklistDescription = inspectionData.checklist.description;
         }
       }
       
-      // Map the inspection data to our type
+      // If we have the checklists relation, use that as fallback
+      if (!checklistTitle && inspectionData.checklists && inspectionData.checklists.title) {
+        checklistTitle = inspectionData.checklists.title;
+      }
+      
+      if (!checklistDescription && inspectionData.checklists && inspectionData.checklists.description) {
+        checklistDescription = inspectionData.checklists.description;
+      }
+      
+      // Map status from database to our enum
+      let status: StatusType = "pending";
+      if (inspectionData.status === "Em Andamento") {
+        status = "in_progress";
+      } else if (inspectionData.status === "Concluído") {
+        status = "completed";
+      }
+      
+      // Create inspection details object
       const inspectionDetails: InspectionDetails = {
         id: inspectionData.id,
-        // Use the title from parsed checklist data, checklists relation, or default
-        title: checklistData?.title || 
-               (inspectionData.checklists ? inspectionData.checklists.title : "Untitled Inspection"),
-        // Similarly for description
-        description: checklistData?.description || 
-                    (inspectionData.checklists ? inspectionData.checklists.description : undefined),
+        title: checklistTitle,
+        description: checklistDescription,
         checklistId: inspectionData.checklist_id,
         companyId: inspectionData.company_id,
         locationName: inspectionData.location || "",
         responsibleId: inspectionData.responsible_id,
         scheduledDate: inspectionData.scheduled_date,
         priority: (inspectionData.priority || "medium") as PriorityType,
-        status: (inspectionData.status === "Pendente" ? "pending" : 
-                inspectionData.status === "Em Andamento" ? "in_progress" : "completed") as StatusType,
+        status: status,
         createdAt: inspectionData.created_at,
-        // Use created_at if updated_at is not available
-        updatedAt: inspectionData.created_at
+        updatedAt: inspectionData.updated_at || inspectionData.created_at
       };
       
       setInspection(inspectionDetails);
@@ -293,19 +308,21 @@ export default function InspectionExecutionPage() {
         responses[q.id] && responses[q.id].value !== undefined && responses[q.id].value !== null && responses[q.id].value !== ""
       ).length;
       
+      let dbStatus = "Pendente";
       let newStatus: StatusType = "pending";
       
       if (answeredRequired === totalRequired) {
+        dbStatus = "Concluído";
         newStatus = "completed";
       } else if (answeredRequired > 0) {
+        dbStatus = "Em Andamento";
         newStatus = "in_progress";
       }
       
       const { error: updateError } = await supabase
         .from("inspections")
         .update({ 
-          status: newStatus === "pending" ? "Pendente" : 
-                 newStatus === "in_progress" ? "Em Andamento" : "Concluído",
+          status: dbStatus,
           updated_at: new Date().toISOString()
         })
         .eq("id", id);
@@ -594,3 +611,4 @@ export default function InspectionExecutionPage() {
     </div>
   );
 }
+

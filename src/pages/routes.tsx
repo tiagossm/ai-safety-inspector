@@ -31,6 +31,7 @@ export function ChecklistRoutes() {
       <Route path="/new-checklists/edit/:id" element={<RequireAuth><NewChecklistEdit /></RequireAuth>} />
       <Route path="/new-checklists/:id" element={<RequireAuth><NewChecklistDetails /></RequireAuth>} />
       <Route path="/inspections/new/:id" element={<RequireAuth><NewInspectionPage /></RequireAuth>} />
+      <Route path="/inspections/:id" element={<RequireAuth><InspectionExecutionPage /></RequireAuth>} />
       <Route path="/inspections/:id/view" element={<RequireAuth><InspectionExecutionPage /></RequireAuth>} />
     </>
   );

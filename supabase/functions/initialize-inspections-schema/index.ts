@@ -1,14 +1,10 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+import { corsHeaders } from "../process-checklist-csv/corsUtils.ts";
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -53,17 +49,31 @@ END $$;
 -- Create inspections table if it doesn't exist
 CREATE TABLE IF NOT EXISTS public.inspections (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title TEXT NOT NULL,
+  title TEXT,
   description TEXT,
   checklist_id UUID NOT NULL REFERENCES public.checklists(id),
   company_id UUID REFERENCES public.companies(id),
-  location_name TEXT,
+  location TEXT,
   responsible_id UUID REFERENCES public.users(id),
   scheduled_date TIMESTAMP WITH TIME ZONE,
   priority TEXT CHECK (priority IN ('low', 'medium', 'high')),
-  status TEXT NOT NULL CHECK (status IN ('pending', 'in_progress', 'completed')) DEFAULT 'pending',
+  status TEXT NOT NULL CHECK (status IN ('Pendente', 'Em Andamento', 'Concluído')) DEFAULT 'Pendente',
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  cnae TEXT,
+  inspection_type TEXT,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  checklist JSONB,
+  photos TEXT[] DEFAULT ARRAY[]::TEXT[],
+  audio_url TEXT,
+  report_url TEXT,
+  unit_id UUID,
+  user_id UUID,
+  risks TEXT,
+  approval_status TEXT DEFAULT 'pending',
+  approved_by TEXT,
+  approval_notes TEXT,
+  sync_status TEXT DEFAULT 'synced'
 );
 
 -- Create inspection_responses table if it doesn't exist
@@ -71,10 +81,10 @@ CREATE TABLE IF NOT EXISTS public.inspection_responses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   inspection_id UUID NOT NULL REFERENCES public.inspections(id) ON DELETE CASCADE,
   question_id UUID NOT NULL REFERENCES public.checklist_itens(id),
-  response TEXT,
-  comment TEXT,
+  answer TEXT,
+  notes TEXT,
   action_plan TEXT,
-  attachments TEXT[],
+  media_urls TEXT[],
   completed_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),

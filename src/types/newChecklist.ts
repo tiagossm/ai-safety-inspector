@@ -70,6 +70,11 @@ export interface InspectionDetails {
   status: 'pending' | 'in_progress' | 'completed';
   createdAt: string;
   updatedAt?: string;
+  checklist?: {
+    title?: string;
+    description?: string;
+    total_questions?: number;
+  };
 }
 
 export interface InspectionResponse {
