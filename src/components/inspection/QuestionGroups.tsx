@@ -14,7 +14,7 @@ export function QuestionGroups({ groups, currentGroupId, onGroupChange }: Questi
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Question Groups</CardTitle>
+        <CardTitle className="text-lg">Grupos de Perguntas</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-1">
@@ -36,7 +36,7 @@ export function QuestionGroups({ groups, currentGroupId, onGroupChange }: Questi
             onClick={() => onGroupChange(null)}
           >
             <Clipboard className="h-4 w-4 mr-2" />
-            <span>Ungrouped Questions</span>
+            <span>Perguntas sem Grupo</span>
           </Button>
         </div>
       </CardContent>

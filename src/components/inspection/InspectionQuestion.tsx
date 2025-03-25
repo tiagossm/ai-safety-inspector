@@ -21,11 +21,15 @@ import {
   List,
   CornerDownRight,
   AlertTriangle,
-  Lightbulb
+  Lightbulb,
+  Mic,
+  Video,
+  Image
 } from "lucide-react";
 import { toast } from "sonner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
+import { MediaUpload } from "@/components/media/MediaUpload";
 
 interface InspectionQuestionProps {
   question: any;
@@ -44,6 +48,7 @@ export function InspectionQuestion({
 }: InspectionQuestionProps) {
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
   const [actionPlanDialogOpen, setActionPlanDialogOpen] = useState(false);
+  const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
   const [subChecklistDialogOpen, setSubChecklistDialogOpen] = useState(false);
   const [subChecklist, setSubChecklist] = useState<any>(null);
   const [subChecklistQuestions, setSubChecklistQuestions] = useState<any[]>([]);
@@ -66,7 +71,7 @@ export function InspectionQuestion({
       comment: commentText
     });
     setCommentDialogOpen(false);
-    toast.success("Comment saved");
+    toast.success("Comentário salvo");
   };
   
   const handleSaveActionPlan = () => {
@@ -75,7 +80,19 @@ export function InspectionQuestion({
       actionPlan: actionPlanText
     });
     setActionPlanDialogOpen(false);
-    toast.success("Action plan saved");
+    toast.success("Plano de ação salvo");
+  };
+  
+  const handleMediaUploaded = (mediaData: any) => {
+    const mediaUrls = response?.mediaUrls || [];
+    
+    onResponseChange({
+      ...(response || {}),
+      mediaUrls: [...mediaUrls, mediaData.url]
+    });
+    
+    toast.success("Mídia adicionada com sucesso");
+    setMediaDialogOpen(false);
   };
   
   const loadSubChecklist = async () => {
@@ -115,7 +132,7 @@ export function InspectionQuestion({
       setSubChecklistDialogOpen(true);
     } catch (error) {
       console.error("Error loading sub-checklist:", error);
-      toast.error("Failed to load sub-checklist");
+      toast.error("Falha ao carregar sub-checklist");
     } finally {
       setLoadingSubChecklist(false);
     }
@@ -131,7 +148,7 @@ export function InspectionQuestion({
           size="sm"
         >
           <CheckCircle className="h-4 w-4" />
-          <span>YES</span>
+          <span>SIM</span>
         </Button>
         <Button
           variant={response?.value === "não" ? "default" : "outline"}
@@ -140,7 +157,7 @@ export function InspectionQuestion({
           size="sm"
         >
           <XCircle className="h-4 w-4" />
-          <span>NO</span>
+          <span>NÃO</span>
         </Button>
         <Button
           variant={response?.value === "n/a" ? "default" : "outline"}
@@ -161,7 +178,7 @@ export function InspectionQuestion({
         <Textarea
           value={response?.value || ""}
           onChange={(e) => handleResponseValue(e.target.value)}
-          placeholder="Type your answer..."
+          placeholder="Digite sua resposta..."
           rows={2}
         />
       </div>
@@ -175,7 +192,7 @@ export function InspectionQuestion({
           type="number"
           value={response?.value || ""}
           onChange={(e) => handleResponseValue(e.target.value)}
-          placeholder="Enter a numeric value..."
+          placeholder="Digite um valor numérico..."
         />
       </div>
     );
@@ -183,7 +200,7 @@ export function InspectionQuestion({
   
   const renderMultipleChoiceOptions = () => {
     if (!question.options || question.options.length === 0) {
-      return <p className="text-sm text-muted-foreground mt-2">No options available</p>;
+      return <p className="text-sm text-muted-foreground mt-2">Nenhuma opção disponível</p>;
     }
     
     return (
@@ -202,33 +219,52 @@ export function InspectionQuestion({
     );
   };
   
+  const renderPhotoInput = () => {
+    return (
+      <div className="mt-2">
+        <Button 
+          variant="outline" 
+          className="flex items-center gap-2"
+          size="sm"
+          onClick={() => setMediaDialogOpen(true)}
+        >
+          <Camera className="h-4 w-4" />
+          <span>Adicionar Foto</span>
+        </Button>
+        
+        {response?.mediaUrls && response.mediaUrls.length > 0 && (
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {response.mediaUrls.map((url: string, i: number) => (
+              <div key={i} className="relative aspect-square rounded border overflow-hidden">
+                <img 
+                  src={url} 
+                  alt={`Mídia ${i+1}`} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+  
   const renderResponseInput = () => {
     // Convert from Portuguese to English types
     const responseType = question.responseType;
     
-    if (responseType === "sim/não") {
+    if (responseType === "sim/não" || responseType === "yes_no") {
       return renderYesNoOptions();
-    } else if (responseType === "numérico") {
+    } else if (responseType === "numérico" || responseType === "numeric") {
       return renderNumberInput();
     } else if (responseType === "texto" || responseType === "text") {
       return renderTextInput();
     } else if (responseType === "seleção múltipla" || responseType === "multiple_choice") {
       return renderMultipleChoiceOptions();
     } else if (responseType === "foto" || responseType === "photo") {
-      return (
-        <div className="mt-2">
-          <Button 
-            variant="outline" 
-            className="flex items-center gap-2"
-            size="sm"
-          >
-            <Camera className="h-4 w-4" />
-            <span>Take Photo</span>
-          </Button>
-        </div>
-      );
+      return renderPhotoInput();
     } else {
-      return <p className="text-sm text-muted-foreground mt-2">Unsupported response type: {responseType}</p>;
+      return <p className="text-sm text-muted-foreground mt-2">Tipo de resposta não suportado: {responseType}</p>;
     }
   };
   
@@ -252,7 +288,7 @@ export function InspectionQuestion({
       return `${baseClasses} border-l-4 border-l-yellow-500`;
     }
     
-    if (question.responseType === "sim/não") {
+    if (question.responseType === "sim/não" || question.responseType === "yes_no") {
       if (response?.value === "sim") return `${baseClasses} border-l-4 border-l-green-500`;
       if (response?.value === "não") return `${baseClasses} border-l-4 border-l-red-500`;
       return baseClasses;
@@ -293,14 +329,14 @@ export function InspectionQuestion({
                     className="mt-2 flex items-center gap-1 text-xs"
                   >
                     <MessageCircle className="h-3 w-3" />
-                    <span>Show Comment</span>
+                    <span>Mostrar Comentário</span>
                   </Button>
                 )}
                 
                 {(showCommentSection || response?.comment) && (
                   <div className="mt-2 bg-slate-50 p-2 rounded-md">
                     <div className="flex items-center justify-between mb-1">
-                      <p className="text-xs font-medium text-slate-700">Comment:</p>
+                      <p className="text-xs font-medium text-slate-700">Comentário:</p>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -310,7 +346,7 @@ export function InspectionQuestion({
                         <XCircle className="h-3 w-3" />
                       </Button>
                     </div>
-                    <p className="text-sm text-slate-600">{response?.comment || "No comment added yet."}</p>
+                    <p className="text-sm text-slate-600">{response?.comment || "Nenhum comentário adicionado ainda."}</p>
                   </div>
                 )}
                 
@@ -324,7 +360,7 @@ export function InspectionQuestion({
                       className="flex items-center gap-1"
                     >
                       <List className="h-4 w-4" />
-                      <span>{loadingSubChecklist ? "Loading..." : "Open Sub-Checklist"}</span>
+                      <span>{loadingSubChecklist ? "Carregando..." : "Abrir Sub-Checklist"}</span>
                     </Button>
                   </div>
                 )}
@@ -336,7 +372,7 @@ export function InspectionQuestion({
                 variant="ghost" 
                 size="icon" 
                 className="h-8 w-8 mt-0"
-                title="Question hint"
+                title="Dica da pergunta"
               >
                 <Info className="h-4 w-4" />
               </Button>
@@ -356,14 +392,14 @@ export function InspectionQuestion({
                   className="flex items-center gap-1 w-full justify-start bg-amber-50 border-amber-200 text-amber-800"
                 >
                   <AlertTriangle className="h-4 w-4" />
-                  <span>{response?.actionPlan ? "Action Plan" : "Add Action Plan"}</span>
+                  <span>{response?.actionPlan ? "Plano de Ação" : "Adicionar Plano de Ação"}</span>
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2">
                 <div className="bg-amber-50 p-3 rounded-md border border-amber-200">
                   <div className="flex items-center gap-2 mb-2">
                     <Lightbulb className="h-4 w-4 text-amber-600" />
-                    <h4 className="text-sm font-medium text-amber-800">Action Plan</h4>
+                    <h4 className="text-sm font-medium text-amber-800">Plano de Ação</h4>
                   </div>
                   <Textarea
                     value={response?.actionPlan || ""}
@@ -373,7 +409,7 @@ export function InspectionQuestion({
                         actionPlan: e.target.value
                       });
                     }}
-                    placeholder="Describe the action plan to address this issue..."
+                    placeholder="Descreva o plano de ação para resolver este problema..."
                     rows={2}
                     className="bg-white"
                   />
@@ -382,7 +418,17 @@ export function InspectionQuestion({
             </Collapsible>
           )}
           
-          <div className="flex justify-end gap-2 mt-3">
+          <div className="flex flex-wrap justify-end gap-2 mt-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setMediaDialogOpen(true)}
+              className="flex items-center gap-1"
+            >
+              <Camera className="h-4 w-4" />
+              <span>Mídia</span>
+            </Button>
+            
             <Button
               variant="outline"
               size="sm"
@@ -393,7 +439,7 @@ export function InspectionQuestion({
               className="flex items-center gap-1"
             >
               <MessageCircle className="h-4 w-4" />
-              <span>Comment</span>
+              <span>Comentário</span>
             </Button>
             
             <Button
@@ -404,14 +450,14 @@ export function InspectionQuestion({
                   setActionPlanText(response?.actionPlan || "");
                   setActionPlanDialogOpen(true);
                 } else {
-                  toast.info("Action plans are typically added for 'No' responses");
+                  toast.info("Planos de ação são tipicamente adicionados para respostas 'Não'");
                   setIsActionPlanOpen(true);
                 }
               }}
               className="flex items-center gap-1"
             >
               <AlertTriangle className="h-4 w-4" />
-              <span>Action Plan</span>
+              <span>Plano de Ação</span>
             </Button>
           </div>
         </CardContent>
@@ -421,17 +467,17 @@ export function InspectionQuestion({
       <Dialog open={commentDialogOpen} onOpenChange={setCommentDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Comment</DialogTitle>
+            <DialogTitle>Adicionar Comentário</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="text-sm font-medium mb-1">Question:</Label>
+              <Label className="text-sm font-medium mb-1">Pergunta:</Label>
               <p className="text-sm">{question.text}</p>
             </div>
             <Textarea
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
-              placeholder="Add your comment here..."
+              placeholder="Adicione seu comentário aqui..."
               rows={5}
             />
             <div className="flex justify-end gap-2">
@@ -439,10 +485,10 @@ export function InspectionQuestion({
                 variant="outline"
                 onClick={() => setCommentDialogOpen(false)}
               >
-                Cancel
+                Cancelar
               </Button>
               <Button onClick={handleSaveComment}>
-                Save Comment
+                Salvar Comentário
               </Button>
             </div>
           </div>
@@ -453,17 +499,17 @@ export function InspectionQuestion({
       <Dialog open={actionPlanDialogOpen} onOpenChange={setActionPlanDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Action Plan</DialogTitle>
+            <DialogTitle>Adicionar Plano de Ação</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="text-sm font-medium mb-1">Non-Compliance:</Label>
+              <Label className="text-sm font-medium mb-1">Não-Conformidade:</Label>
               <p className="text-sm">{question.text}</p>
             </div>
             <Textarea
               value={actionPlanText}
               onChange={(e) => setActionPlanText(e.target.value)}
-              placeholder="Describe the required actions to address this issue..."
+              placeholder="Descreva as ações necessárias para resolver este problema..."
               rows={5}
             />
             <div className="flex justify-end gap-2">
@@ -471,10 +517,67 @@ export function InspectionQuestion({
                 variant="outline"
                 onClick={() => setActionPlanDialogOpen(false)}
               >
-                Cancel
+                Cancelar
               </Button>
               <Button onClick={handleSaveActionPlan}>
-                Save Action Plan
+                Salvar Plano de Ação
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Media Upload Dialog */}
+      <Dialog open={mediaDialogOpen} onOpenChange={setMediaDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Adicionar Mídia</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <MediaUpload
+              onMediaUploaded={handleMediaUploaded}
+              className="w-full"
+            />
+            
+            {response?.mediaUrls && response.mediaUrls.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium mb-2">Mídia Atual:</h4>
+                <div className="grid grid-cols-3 gap-2">
+                  {response.mediaUrls.map((url: string, i: number) => (
+                    <div key={i} className="relative aspect-square rounded border overflow-hidden">
+                      <img 
+                        src={url} 
+                        alt={`Mídia ${i+1}`} 
+                        className="w-full h-full object-cover"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6"
+                        onClick={() => {
+                          const updatedMediaUrls = [...response.mediaUrls];
+                          updatedMediaUrls.splice(i, 1);
+                          onResponseChange({
+                            ...response,
+                            mediaUrls: updatedMediaUrls
+                          });
+                          toast.success("Mídia removida");
+                        }}
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setMediaDialogOpen(false)}
+              >
+                Fechar
               </Button>
             </div>
           </div>
@@ -509,7 +612,7 @@ export function InspectionQuestion({
                               className="flex items-center gap-1"
                             >
                               <CheckCircle className="h-4 w-4" />
-                              <span>YES</span>
+                              <span>SIM</span>
                             </Button>
                             <Button
                               variant="outline"
@@ -517,14 +620,14 @@ export function InspectionQuestion({
                               className="flex items-center gap-1"
                             >
                               <XCircle className="h-4 w-4" />
-                              <span>NO</span>
+                              <span>NÃO</span>
                             </Button>
                           </div>
                         )}
                         
                         {subQ.responseType === "texto" && (
                           <Textarea 
-                            placeholder="Type your answer..."
+                            placeholder="Digite sua resposta..."
                             rows={2}
                           />
                         )}
@@ -553,7 +656,7 @@ export function InspectionQuestion({
             <Button
               onClick={() => setSubChecklistDialogOpen(false)}
             >
-              Close
+              Fechar
             </Button>
           </div>
         </DialogContent>

@@ -23,7 +23,7 @@ export function InspectionHeader({ loading, inspection }: InspectionHeaderProps)
         className="flex items-center gap-1"
       >
         <ArrowLeft className="h-4 w-4" />
-        <span>Back</span>
+        <span>Voltar</span>
       </Button>
       
       <div>

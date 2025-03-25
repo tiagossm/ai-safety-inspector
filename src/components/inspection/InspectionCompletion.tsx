@@ -16,7 +16,7 @@ export function InspectionCompletion({ loading, stats }: InspectionCompletionPro
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Completion</CardTitle>
+        <CardTitle className="text-lg">Progresso</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -24,7 +24,7 @@ export function InspectionCompletion({ loading, stats }: InspectionCompletionPro
         ) : (
           <>
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium">Progress:</span>
+              <span className="text-sm font-medium">Progresso:</span>
               <span className="text-sm font-medium">{stats.percentage}%</span>
             </div>
             
@@ -36,7 +36,7 @@ export function InspectionCompletion({ loading, stats }: InspectionCompletionPro
             </div>
             
             <div className="mt-2 text-xs text-muted-foreground">
-              {stats.answered} of {stats.total} questions answered
+              {stats.answered} de {stats.total} perguntas respondidas
             </div>
           </>
         )}

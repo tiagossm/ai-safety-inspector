@@ -31,13 +31,13 @@ export function QuestionsPanel({
         <div className="flex justify-between items-center">
           <CardTitle className="text-lg">
             {currentGroupId ? 
-              groups.find(g => g.id === currentGroupId)?.title || "Questions" : 
-              "Questions"}
+              groups.find(g => g.id === currentGroupId)?.title || "Perguntas" : 
+              "Perguntas"}
           </CardTitle>
           
           <div className="flex gap-2">
             <Badge variant="outline" className="bg-gray-50">
-              {filteredQuestions.length} Questions
+              {filteredQuestions.length} Perguntas
             </Badge>
           </div>
         </div>
@@ -51,7 +51,7 @@ export function QuestionsPanel({
           </div>
         ) : filteredQuestions.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-muted-foreground">No questions in this section</p>
+            <p className="text-muted-foreground">Nenhuma pergunta nesta seção</p>
           </div>
         ) : (
           <ScrollArea className="h-[calc(100vh-300px)] pr-4">
