@@ -72,11 +72,12 @@ export default function InspectionExecutionPage() {
         description: inspectionData.description || inspectionData.checklists?.description,
         checklistId: inspectionData.checklist_id,
         companyId: inspectionData.company_id,
-        locationName: inspectionData.location_name || "",
+        locationName: inspectionData.location || "",
         responsibleId: inspectionData.responsible_id,
         scheduledDate: inspectionData.scheduled_date,
         priority: (inspectionData.priority || "medium") as PriorityType,
-        status: (inspectionData.status || "pending") as StatusType,
+        status: (inspectionData.status === "Pendente" ? "pending" : 
+                inspectionData.status === "Em Andamento" ? "in_progress" : "completed") as StatusType,
         createdAt: inspectionData.created_at,
         updatedAt: inspectionData.updated_at || inspectionData.created_at
       };
@@ -283,7 +284,8 @@ export default function InspectionExecutionPage() {
       const { error: updateError } = await supabase
         .from("inspections")
         .update({ 
-          status: newStatus,
+          status: newStatus === "pending" ? "Pendente" : 
+                 newStatus === "in_progress" ? "Em Andamento" : "Concluído",
           updated_at: new Date().toISOString()
         })
         .eq("id", id);

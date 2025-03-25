@@ -1,5 +1,4 @@
 
-
 export interface ChecklistGroup {
   id: string;
   title: string;
@@ -85,4 +84,3 @@ export interface InspectionResponse {
   createdAt: string;
   updatedAt?: string;
 }
-
