@@ -68,28 +68,26 @@ export default function InspectionExecutionPage() {
       // Extract and parse checklist data safely
       let checklistTitle = "Untitled Inspection";
       let checklistDescription: string | undefined = undefined;
+      let totalQuestions = 0;
       
       // Safely handle the checklist JSON object or string
       if (inspectionData.checklist) {
-        let checklistData: any = null;
-        
-        // If it's a string, try to parse it
-        if (typeof inspectionData.checklist === 'string') {
-          try {
-            checklistData = JSON.parse(inspectionData.checklist);
-          } catch (e) {
-            console.error("Error parsing checklist JSON string:", e);
+        try {
+          // If it's a string, try to parse it
+          const checklistData = typeof inspectionData.checklist === 'string' 
+            ? JSON.parse(inspectionData.checklist) 
+            : inspectionData.checklist;
+          
+          // Extract values if we have valid data
+          if (checklistData && typeof checklistData === 'object' && !Array.isArray(checklistData)) {
+            checklistTitle = checklistData.title || "Untitled Inspection";
+            checklistDescription = checklistData.description;
+            totalQuestions = typeof checklistData.total_questions === 'number' 
+              ? checklistData.total_questions 
+              : 0;
           }
-        } 
-        // If it's already an object, use it directly
-        else if (typeof inspectionData.checklist === 'object') {
-          checklistData = inspectionData.checklist;
-        }
-        
-        // Extract values if we have valid data
-        if (checklistData) {
-          if (checklistData.title) checklistTitle = checklistData.title;
-          if (checklistData.description) checklistDescription = checklistData.description;
+        } catch (e) {
+          console.error("Error parsing checklist JSON:", e);
         }
       }
       
@@ -112,7 +110,7 @@ export default function InspectionExecutionPage() {
         status = "completed";
       }
       
-      // Create inspection details object, ensure all required fields are present
+      // Create inspection details object
       const inspectionDetails: InspectionDetails = {
         id: inspectionData.id,
         title: checklistTitle,
@@ -129,11 +127,20 @@ export default function InspectionExecutionPage() {
         checklist: {
           title: checklistTitle,
           description: checklistDescription,
-          total_questions: typeof inspectionData.checklist === 'object' && 
-            inspectionData.checklist !== null && 
-            'total_questions' in inspectionData.checklist ? 
-            inspectionData.checklist.total_questions : 0
-        }
+          total_questions: totalQuestions
+        },
+        // Include all other fields from the database
+        approval_notes: inspectionData.approval_notes,
+        approval_status: inspectionData.approval_status,
+        approved_by: inspectionData.approved_by,
+        audio_url: inspectionData.audio_url,
+        photos: inspectionData.photos,
+        report_url: inspectionData.report_url,
+        unit_id: inspectionData.unit_id,
+        metadata: inspectionData.metadata,
+        cnae: inspectionData.cnae,
+        inspection_type: inspectionData.inspection_type,
+        sync_status: inspectionData.sync_status
       };
       
       setInspection(inspectionDetails);
@@ -409,101 +416,6 @@ export default function InspectionExecutionPage() {
       answered,
       percentage
     };
-  };
-  
-  const handleResponseChange = (questionId: string, data: any) => {
-    setResponses(prev => ({
-      ...prev,
-      [questionId]: {
-        ...prev[questionId],
-        ...data
-      }
-    }));
-  };
-  
-  const handleSaveInspection = async () => {
-    setSaving(true);
-    
-    try {
-      // Prepare the responses for insertion/update
-      const responseEntries = Object.entries(responses).map(([questionId, data]) => ({
-        inspection_id: id,
-        question_id: questionId,
-        answer: data.value || "",
-        notes: data.comment,
-        action_plan: data.actionPlan,
-        media_urls: data.attachments
-      }));
-      
-      // Check if any required questions are missing answers
-      const requiredQuestions = questions.filter(q => q.isRequired);
-      const unansweredRequired = requiredQuestions.filter(q => 
-        !responses[q.id] || responses[q.id].value === undefined || responses[q.id].value === null || responses[q.id].value === ""
-      );
-      
-      if (unansweredRequired.length > 0) {
-        toast.warning(`There are ${unansweredRequired.length} required questions without answers.`);
-        // Continue saving anyway
-      }
-      
-      // Delete existing responses
-      const { error: deleteError } = await supabase
-        .from("inspection_responses")
-        .delete()
-        .eq("inspection_id", id);
-      
-      if (deleteError) throw deleteError;
-      
-      // Insert new responses (if any)
-      if (responseEntries.length > 0) {
-        const { error: insertError } = await supabase
-          .from("inspection_responses")
-          .insert(responseEntries);
-        
-        if (insertError) throw insertError;
-      }
-      
-      // Update inspection status based on completion
-      const totalRequired = requiredQuestions.length;
-      const answeredRequired = requiredQuestions.filter(q => 
-        responses[q.id] && responses[q.id].value !== undefined && responses[q.id].value !== null && responses[q.id].value !== ""
-      ).length;
-      
-      let dbStatus = "Pendente";
-      let newStatus: StatusType = "pending";
-      
-      if (answeredRequired === totalRequired) {
-        dbStatus = "Concluído";
-        newStatus = "completed";
-      } else if (answeredRequired > 0) {
-        dbStatus = "Em Andamento";
-        newStatus = "in_progress";
-      }
-      
-      const { error: updateError } = await supabase
-        .from("inspections")
-        .update({ 
-          status: dbStatus,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", id);
-      
-      if (updateError) throw updateError;
-      
-      toast.success("Inspection saved successfully");
-      
-      // Update the local inspection status
-      setInspection(prev => prev ? {
-        ...prev,
-        status: newStatus,
-        updatedAt: new Date().toISOString()
-      } : null);
-    } catch (error) {
-      console.error("Error saving inspection:", error);
-      toast.error("Failed to save inspection");
-    } finally {
-      setSaving(false);
-    }
   };
   
   const filteredQuestions = getFilteredQuestions();

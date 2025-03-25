@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export const initializeInspectionsSchema = async () => {
@@ -21,6 +22,8 @@ export const initializeInspectionsSchema = async () => {
     return { success: true, data };
   } catch (error) {
     console.error("Error initializing database schema:", error);
+    // Even if initialization fails, allow the app to continue
+    // This helps when the edge function hasn't been deployed yet
     return { success: false, error };
   }
 };

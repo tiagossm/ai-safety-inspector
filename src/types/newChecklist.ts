@@ -75,6 +75,18 @@ export interface InspectionDetails {
     description?: string;
     total_questions?: number;
   };
+  // Additional fields to match database schema
+  approval_notes?: string | null;
+  approval_status?: string;
+  approved_by?: string | null;
+  audio_url?: string | null;
+  photos?: string[];
+  report_url?: string | null;
+  unit_id?: string | null;
+  metadata?: Record<string, any>;
+  cnae?: string;
+  inspection_type?: string;
+  sync_status?: string;
 }
 
 export interface InspectionResponse {
