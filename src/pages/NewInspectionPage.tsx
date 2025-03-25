@@ -247,7 +247,7 @@ const NewInspectionPage = () => {
       
       console.log("Inspection created successfully:", inspection);
       toast.success("Inspeção criada com sucesso!");
-      navigate(`/inspections/${inspection.id}`);
+      navigate(`/inspections/${inspection.id}/view`);
       
     } catch (error: any) {
       console.error("Error creating inspection:", error);
