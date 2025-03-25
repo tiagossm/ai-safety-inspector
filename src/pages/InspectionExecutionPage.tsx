@@ -1,608 +1,84 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  ArrowLeft, 
-  Calendar, 
-  User, 
-  Building, 
-  MapPin,
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
-  Clipboard,
-  CornerDownRight
-} from "lucide-react";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { InspectionQuestion } from "@/components/inspection/InspectionQuestion";
-import { InspectionDetails } from "@/types/newChecklist";
-import { format } from "date-fns";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Skeleton } from "@/components/ui/skeleton";
-import { initializeInspectionsSchema } from "@/utils/initializeDatabase";
 
-type PriorityType = "low" | "medium" | "high";
-type StatusType = "pending" | "in_progress" | "completed";
+import React, { useState } from "react";
+import { useParams } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { useInspectionData } from "@/hooks/inspection/useInspectionData";
+import { InspectionHeader } from "@/components/inspection/InspectionHeader";
+import { InspectionDetailsCard } from "@/components/inspection/InspectionDetails";
+import { InspectionCompletion } from "@/components/inspection/InspectionCompletion";
+import { QuestionGroups } from "@/components/inspection/QuestionGroups";
+import { QuestionsPanel } from "@/components/inspection/QuestionsPanel";
 
 export default function InspectionExecutionPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [inspection, setInspection] = useState<InspectionDetails | null>(null);
-  const [questions, setQuestions] = useState<any[]>([]);
-  const [responses, setResponses] = useState<Record<string, any>>({});
-  const [groups, setGroups] = useState<any[]>([]);
   const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
-  const [company, setCompany] = useState<any>(null);
-  const [responsible, setResponsible] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
   
-  useEffect(() => {
-    initializeInspectionsSchema().then(() => {
-      if (id) {
-        fetchInspectionData();
-      }
-    });
-  }, [id]);
+  const {
+    loading,
+    inspection,
+    questions,
+    responses,
+    groups,
+    company,
+    responsible,
+    handleResponseChange,
+    handleSaveInspection,
+    getFilteredQuestions,
+    getCompletionStats
+  } = useInspectionData(id);
   
-  const fetchInspectionData = async () => {
-    setLoading(true);
-    try {
-      const { data: inspectionData, error: inspectionError } = await supabase
-        .from("inspections")
-        .select("*, checklists(*)")
-        .eq("id", id)
-        .single();
-      
-      if (inspectionError) throw inspectionError;
-      if (!inspectionData) throw new Error("Inspection not found");
-      
-      let checklistTitle = "Untitled Inspection";
-      let checklistDescription: string | undefined = undefined;
-      let totalQuestions = 0;
-      
-      if (inspectionData.checklist) {
-        try {
-          const checklistData = typeof inspectionData.checklist === 'string' 
-            ? JSON.parse(inspectionData.checklist) 
-            : inspectionData.checklist;
-          
-          if (checklistData && typeof checklistData === 'object' && !Array.isArray(checklistData)) {
-            checklistTitle = checklistData.title || "Untitled Inspection";
-            checklistDescription = checklistData.description;
-            totalQuestions = typeof checklistData.total_questions === 'number' 
-              ? checklistData.total_questions 
-              : 0;
-          }
-        } catch (e) {
-          console.error("Error parsing checklist JSON:", e);
-        }
-      }
-      
-      if (inspectionData.checklists) {
-        if (!checklistTitle && inspectionData.checklists.title) {
-          checklistTitle = inspectionData.checklists.title;
-        }
-        
-        if (!checklistDescription && inspectionData.checklists.description) {
-          checklistDescription = inspectionData.checklists.description;
-        }
-      }
-      
-      let status: StatusType = "pending";
-      if (inspectionData.status === "Em Andamento") {
-        status = "in_progress";
-      } else if (inspectionData.status === "Concluído") {
-        status = "completed";
-      }
-      
-      const inspectionDetails: InspectionDetails = {
-        id: inspectionData.id,
-        title: checklistTitle,
-        description: checklistDescription,
-        checklistId: inspectionData.checklist_id,
-        companyId: inspectionData.company_id,
-        locationName: inspectionData.location || "",
-        responsibleId: inspectionData.responsible_id,
-        scheduledDate: inspectionData.scheduled_date,
-        priority: (inspectionData.priority || "medium") as PriorityType,
-        status: status,
-        createdAt: inspectionData.created_at,
-        updatedAt: inspectionData.updated_at || inspectionData.created_at,
-        checklist: {
-          title: checklistTitle,
-          description: checklistDescription,
-          total_questions: totalQuestions
-        },
-        approval_notes: inspectionData.approval_notes,
-        approval_status: inspectionData.approval_status,
-        approved_by: inspectionData.approved_by,
-        audio_url: inspectionData.audio_url,
-        photos: inspectionData.photos || [],
-        report_url: inspectionData.report_url,
-        unit_id: inspectionData.unit_id,
-        metadata: typeof inspectionData.metadata === 'object' ? inspectionData.metadata : {},
-        cnae: inspectionData.cnae,
-        inspection_type: inspectionData.inspection_type,
-        sync_status: inspectionData.sync_status
-      };
-      
-      setInspection(inspectionDetails);
-      
-      if (inspectionData.company_id) {
-        const { data: companyData } = await supabase
-          .from("companies")
-          .select("id, name, city")
-          .eq("id", inspectionData.company_id)
-          .single();
-        
-        setCompany(companyData);
-      }
-      
-      if (inspectionData.responsible_id) {
-        const { data: userData } = await supabase
-          .from("users")
-          .select("id, name, email")
-          .eq("id", inspectionData.responsible_id)
-          .single();
-        
-        setResponsible(userData);
-      }
-      
-      const { data: questionsData, error: questionsError } = await supabase
-        .from("checklist_itens")
-        .select(`
-          id,
-          pergunta,
-          tipo_resposta,
-          obrigatorio,
-          opcoes,
-          hint,
-          weight,
-          parent_item_id,
-          condition_value,
-          permite_foto,
-          permite_video,
-          permite_audio,
-          ordem,
-          sub_checklist_id
-        `)
-        .eq("checklist_id", inspectionData.checklist_id)
-        .order("ordem", { ascending: true });
-      
-      if (questionsError) throw questionsError;
-      
-      const groupsMap = new Map();
-      const processedQuestions = questionsData.map((q: any) => {
-        let groupId = null;
-        let groupTitle = null;
-        
-        if (q.hint) {
-          try {
-            if (q.hint.includes('groupId')) {
-              const groupInfo = JSON.parse(q.hint);
-              groupId = groupInfo.groupId;
-              groupTitle = groupInfo.groupTitle;
-              
-              if (groupId && groupTitle && !groupsMap.has(groupId)) {
-                groupsMap.set(groupId, {
-                  id: groupId,
-                  title: groupTitle,
-                  order: groupsMap.size
-                });
-              }
-            }
-          } catch (e) {
-            console.warn("Error parsing group info:", e);
-          }
-        }
-        
-        return {
-          id: q.id,
-          text: q.pergunta,
-          responseType: q.tipo_resposta,
-          isRequired: q.obrigatorio,
-          options: Array.isArray(q.opcoes) ? q.opcoes.map((opt: any) => String(opt)) : [],
-          hint: q.hint,
-          weight: q.weight || 1,
-          groupId,
-          parentQuestionId: q.parent_item_id,
-          conditionValue: q.condition_value,
-          allowsPhoto: q.permite_foto,
-          allowsVideo: q.permite_video,
-          allowsAudio: q.permite_audio,
-          order: q.ordem,
-          hasSubChecklist: !!q.sub_checklist_id,
-          subChecklistId: q.sub_checklist_id
-        };
-      });
-      
-      setQuestions(processedQuestions);
-      
-      const groupsArray = Array.from(groupsMap.values());
-      setGroups(groupsArray);
-      
-      if (groupsArray.length > 0) {
-        setCurrentGroupId(groupsArray[0].id);
-      }
-      
-      const { data: responsesData, error: responsesError } = await supabase
-        .from("inspection_responses")
-        .select("*")
-        .eq("inspection_id", id);
-      
-      if (!responsesError && responsesData) {
-        const responsesMap: Record<string, any> = {};
-        responsesData.forEach((response: any) => {
-          responsesMap[response.question_id] = {
-            value: response.answer,
-            comment: response.notes,
-            actionPlan: response.action_plan,
-            attachments: response.media_urls || []
-          };
-        });
-        setResponses(responsesMap);
-      }
-    } catch (error) {
-      console.error("Error fetching inspection data:", error);
-      toast.error("Failed to load inspection data");
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const handleResponseChange = (questionId: string, data: any) => {
-    setResponses(prev => ({
-      ...prev,
-      [questionId]: {
-        ...prev[questionId],
-        ...data
-      }
-    }));
-  };
-  
-  const handleSaveInspection = async () => {
-    setSaving(true);
-    
-    try {
-      const responseEntries = Object.entries(responses).map(([questionId, data]) => ({
-        inspection_id: id,
-        question_id: questionId,
-        answer: data.value || "",
-        notes: data.comment,
-        action_plan: data.actionPlan,
-        media_urls: data.attachments
-      }));
-      
-      const requiredQuestions = questions.filter(q => q.isRequired);
-      const unansweredRequired = requiredQuestions.filter(q => 
-        !responses[q.id] || responses[q.id].value === undefined || responses[q.id].value === null || responses[q.id].value === ""
-      );
-      
-      if (unansweredRequired.length > 0) {
-        toast.warning(`There are ${unansweredRequired.length} required questions without answers.`);
-      }
-      
-      const { error: deleteError } = await supabase
-        .from("inspection_responses")
-        .delete()
-        .eq("inspection_id", id);
-      
-      if (deleteError) throw deleteError;
-      
-      if (responseEntries.length > 0) {
-        const { error: insertError } = await supabase
-          .from("inspection_responses")
-          .insert(responseEntries);
-        
-        if (insertError) throw insertError;
-      }
-      
-      const totalRequired = requiredQuestions.length;
-      const answeredRequired = requiredQuestions.filter(q => 
-        responses[q.id] && responses[q.id].value !== undefined && responses[q.id].value !== null && responses[q.id].value !== ""
-      ).length;
-      
-      let dbStatus = "Pendente";
-      let newStatus: StatusType = "pending";
-      
-      if (answeredRequired === totalRequired) {
-        dbStatus = "Concluído";
-        newStatus = "completed";
-      } else if (answeredRequired > 0) {
-        dbStatus = "Em Andamento";
-        newStatus = "in_progress";
-      }
-      
-      const { error: updateError } = await supabase
-        .from("inspections")
-        .update({ 
-          status: dbStatus,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", id);
-      
-      if (updateError) throw updateError;
-      
-      toast.success("Inspection saved successfully");
-      
-      setInspection(prev => prev ? {
-        ...prev,
-        status: newStatus,
-        updatedAt: new Date().toISOString()
-      } : null);
-    } catch (error) {
-      console.error("Error saving inspection:", error);
-      toast.error("Failed to save inspection");
-    } finally {
-      setSaving(false);
-    }
-  };
-  
-  const getFilteredQuestions = () => {
-    if (!currentGroupId) {
-      return questions.filter(q => !q.groupId);
-    }
-    
-    return questions.filter(q => q.groupId === currentGroupId);
-  };
-  
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "pending":
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Pending</Badge>;
-      case "in_progress":
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">In Progress</Badge>;
-      case "completed":
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Completed</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
-  };
-  
-  const getPriorityBadge = (priority: string) => {
-    switch (priority) {
-      case "low":
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Low</Badge>;
-      case "medium":
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Medium</Badge>;
-      case "high":
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">High</Badge>;
-      default:
-        return <Badge variant="outline">Normal</Badge>;
-    }
-  };
-  
-  const getCompletionStats = () => {
-    const total = questions.length;
-    const answered = Object.keys(responses).length;
-    const percentage = total ? Math.round((answered / total) * 100) : 0;
-    
-    return {
-      total,
-      answered,
-      percentage
-    };
-  };
-  
-  const filteredQuestions = getFilteredQuestions();
+  const filteredQuestions = getFilteredQuestions(currentGroupId);
   const stats = getCompletionStats();
+  
+  const onSaveInspection = async () => {
+    setSaving(true);
+    await handleSaveInspection();
+    setSaving(false);
+  };
   
   return (
     <div className="container py-6 max-w-7xl mx-auto">
-      <div className="flex items-center gap-4 mb-6">
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-1"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span>Back</span>
-        </Button>
-        
-        <div>
-          <h1 className="text-2xl font-bold">
-            {loading ? <Skeleton className="h-8 w-64" /> : inspection?.title}
-          </h1>
-          {loading ? <Skeleton className="h-4 w-48 mt-1" /> : 
-            inspection?.description && <p className="text-muted-foreground">{inspection.description}</p>
-          }
-        </div>
-      </div>
+      <InspectionHeader loading={loading} inspection={inspection} />
       
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-1 space-y-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Inspection Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {loading ? (
-                Array(5).fill(0).map((_, i) => (
-                  <Skeleton key={i} className="h-6 w-full" />
-                ))
-              ) : (
-                <>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Status:</span>
-                    {inspection?.status && getStatusBadge(inspection.status)}
-                  </div>
-                  
-                  {inspection?.priority && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Priority:</span>
-                      {getPriorityBadge(inspection.priority)}
-                    </div>
-                  )}
-                  
-                  {company && (
-                    <div className="flex items-start gap-2">
-                      <Building className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Company</p>
-                        <p className="text-sm text-muted-foreground">{company.name}</p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {inspection?.locationName && (
-                    <div className="flex items-start gap-2">
-                      <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Location</p>
-                        <p className="text-sm text-muted-foreground">{inspection.locationName}</p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {responsible && (
-                    <div className="flex items-start gap-2">
-                      <User className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Responsible</p>
-                        <p className="text-sm text-muted-foreground">{responsible.name}</p>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {inspection?.scheduledDate && (
-                    <div className="flex items-start gap-2">
-                      <Calendar className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">Scheduled Date</p>
-                        <p className="text-sm text-muted-foreground">
-                          {format(new Date(inspection.scheduledDate), "PPP")}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </CardContent>
-          </Card>
+          <InspectionDetailsCard 
+            loading={loading} 
+            inspection={inspection} 
+            company={company} 
+            responsible={responsible} 
+          />
           
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">Completion</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <Skeleton className="h-6 w-full" />
-              ) : (
-                <>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium">Progress:</span>
-                    <span className="text-sm font-medium">{stats.percentage}%</span>
-                  </div>
-                  
-                  <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-primary"
-                      style={{ width: `${stats.percentage}%` }}
-                    />
-                  </div>
-                  
-                  <div className="mt-2 text-xs text-muted-foreground">
-                    {stats.answered} of {stats.total} questions answered
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+          <InspectionCompletion loading={loading} stats={stats} />
           
           {groups.length > 0 && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Question Groups</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-1">
-                  {groups.map(group => (
-                    <Button
-                      key={group.id}
-                      variant={currentGroupId === group.id ? "default" : "ghost"}
-                      className="w-full justify-start"
-                      onClick={() => setCurrentGroupId(group.id)}
-                    >
-                      <Clipboard className="h-4 w-4 mr-2" />
-                      <span className="truncate">{group.title}</span>
-                    </Button>
-                  ))}
-                  
-                  <Button
-                    variant={currentGroupId === null ? "default" : "ghost"}
-                    className="w-full justify-start"
-                    onClick={() => setCurrentGroupId(null)}
-                  >
-                    <Clipboard className="h-4 w-4 mr-2" />
-                    <span>Ungrouped Questions</span>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <QuestionGroups 
+              groups={groups} 
+              currentGroupId={currentGroupId} 
+              onGroupChange={setCurrentGroupId} 
+            />
           )}
           
           <Button
             className="w-full"
             disabled={saving}
-            onClick={handleSaveInspection}
+            onClick={onSaveInspection}
           >
             {saving ? "Saving..." : "Save Inspection"}
           </Button>
         </div>
         
         <div className="lg:col-span-3">
-          <Card>
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-lg">
-                  {currentGroupId ? 
-                    groups.find(g => g.id === currentGroupId)?.title || "Questions" : 
-                    "Questions"}
-                </CardTitle>
-                
-                <div className="flex gap-2">
-                  <Badge variant="outline" className="bg-gray-50">
-                    {filteredQuestions.length} Questions
-                  </Badge>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="space-y-4">
-                  {Array(5).fill(0).map((_, i) => (
-                    <Skeleton key={i} className="h-32 w-full" />
-                  ))}
-                </div>
-              ) : filteredQuestions.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">No questions in this section</p>
-                </div>
-              ) : (
-                <ScrollArea className="h-[calc(100vh-300px)] pr-4">
-                  <div className="space-y-4">
-                    {filteredQuestions.map((question, index) => (
-                      <InspectionQuestion
-                        key={question.id}
-                        question={question}
-                        index={index}
-                        response={responses[question.id]}
-                        onResponseChange={(data) => handleResponseChange(question.id, data)}
-                        allQuestions={questions}
-                      />
-                    ))}
-                  </div>
-                </ScrollArea>
-              )}
-            </CardContent>
-          </Card>
+          <QuestionsPanel 
+            loading={loading}
+            currentGroupId={currentGroupId}
+            filteredQuestions={filteredQuestions}
+            questions={questions}
+            responses={responses}
+            groups={groups}
+            onResponseChange={handleResponseChange}
+          />
         </div>
       </div>
     </div>
