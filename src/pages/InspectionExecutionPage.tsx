@@ -68,8 +68,10 @@ export default function InspectionExecutionPage() {
       // Map the inspection data to our type
       const inspectionDetails: InspectionDetails = {
         id: inspectionData.id,
-        title: inspectionData.title || (inspectionData.checklists?.title || "Untitled Inspection"),
-        description: inspectionData.description || inspectionData.checklists?.description,
+        // Use the title from checklist.title in the metadata or from the related checklists record
+        title: inspectionData.checklist?.title || (inspectionData.checklists?.title || "Untitled Inspection"),
+        // Similarly for description
+        description: inspectionData.checklist?.description || inspectionData.checklists?.description,
         checklistId: inspectionData.checklist_id,
         companyId: inspectionData.company_id,
         locationName: inspectionData.location || "",
@@ -79,7 +81,8 @@ export default function InspectionExecutionPage() {
         status: (inspectionData.status === "Pendente" ? "pending" : 
                 inspectionData.status === "Em Andamento" ? "in_progress" : "completed") as StatusType,
         createdAt: inspectionData.created_at,
-        updatedAt: inspectionData.updated_at || inspectionData.created_at
+        // Use created_at if updated_at is not available
+        updatedAt: inspectionData.created_at
       };
       
       setInspection(inspectionDetails);
