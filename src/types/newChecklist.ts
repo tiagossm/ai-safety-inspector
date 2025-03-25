@@ -69,7 +69,7 @@ export interface InspectionDetails {
   priority?: 'low' | 'medium' | 'high';
   status: 'pending' | 'in_progress' | 'completed';
   createdAt: string;
-  updatedAt?: string;
+  updatedAt: string;
   checklist?: {
     title?: string;
     description?: string;
