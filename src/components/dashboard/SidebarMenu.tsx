@@ -10,6 +10,8 @@ import {
   LayoutDashboard,
   ClipboardCheck,
   FileCheck,
+  Users,
+  FileText
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -39,8 +41,15 @@ export function SidebarMenu({ user, onLogout }: SidebarMenuProps) {
     }));
   };
 
+  // Function to check if a route is active
   const isActive = (path: string) => {
-    return location.pathname === path;
+    // Exact match
+    if (location.pathname === path) return true;
+    
+    // Check for active sub-route (for nested routes)
+    if (path !== '/' && location.pathname.startsWith(path)) return true;
+    
+    return false;
   };
 
   return (
@@ -53,7 +62,7 @@ export function SidebarMenu({ user, onLogout }: SidebarMenuProps) {
               className={cn(
                 buttonVariants({ variant: "ghost" }),
                 "w-full justify-start",
-                location.pathname === "/dashboard" && "bg-muted"
+                isActive("/dashboard") && "bg-muted"
               )}
             >
               <Home className="mr-2 h-4 w-4" />
@@ -66,7 +75,7 @@ export function SidebarMenu({ user, onLogout }: SidebarMenuProps) {
               className={cn(
                 buttonVariants({ variant: "ghost" }),
                 "w-full justify-start",
-                location.pathname.startsWith("/companies") && "bg-muted"
+                isActive("/companies") && "bg-muted"
               )}
             >
               <Building2 className="mr-2 h-4 w-4" />
@@ -79,7 +88,7 @@ export function SidebarMenu({ user, onLogout }: SidebarMenuProps) {
               className={cn(
                 buttonVariants({ variant: "ghost" }),
                 "w-full justify-start",
-                location.pathname.startsWith("/checklists") && "bg-muted"
+                isActive("/checklists") && "bg-muted"
               )}
             >
               <ClipboardCheck className="mr-2 h-4 w-4" />
@@ -87,18 +96,47 @@ export function SidebarMenu({ user, onLogout }: SidebarMenuProps) {
             </Link>
           </li>
           
-          {/* New Checklists Link */}
           <li>
             <Link
               to="/new-checklists"
               className={cn(
                 buttonVariants({ variant: "ghost" }),
                 "w-full justify-start",
-                location.pathname.startsWith("/new-checklists") && "bg-muted"
+                isActive("/new-checklists") && "bg-muted"
               )}
             >
               <FileCheck className="mr-2 h-4 w-4" />
               Novos Checklists
+            </Link>
+          </li>
+          
+          {/* Inspections Link */}
+          <li>
+            <Link
+              to="/inspections"
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "w-full justify-start",
+                isActive("/inspections") && "bg-muted"
+              )}
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              Inspeções
+            </Link>
+          </li>
+          
+          {/* Users Link */}
+          <li>
+            <Link
+              to="/users"
+              className={cn(
+                buttonVariants({ variant: "ghost" }),
+                "w-full justify-start",
+                isActive("/users") && "bg-muted"
+              )}
+            >
+              <Users className="mr-2 h-4 w-4" />
+              Usuários
             </Link>
           </li>
           
@@ -109,7 +147,7 @@ export function SidebarMenu({ user, onLogout }: SidebarMenuProps) {
                   className={cn(
                     buttonVariants({ variant: "ghost" }),
                     "w-full justify-start",
-                    location.pathname.startsWith("/units") && "bg-muted"
+                    isActive("/units") && "bg-muted"
                   )}
                 >
                   <Building2 className="mr-2 h-4 w-4" />
@@ -123,7 +161,7 @@ export function SidebarMenu({ user, onLogout }: SidebarMenuProps) {
                         className={cn(
                           buttonVariants({ variant: "ghost" }),
                           "w-full justify-start text-sm",
-                          location.pathname === "/units/add" && "bg-muted"
+                          isActive("/units/add") && "bg-muted"
                         )}
                       >
                         <Plus className="mr-2 h-4 w-4" />
@@ -141,7 +179,7 @@ export function SidebarMenu({ user, onLogout }: SidebarMenuProps) {
               className={cn(
                 buttonVariants({ variant: "ghost" }),
                 "w-full justify-start",
-                location.pathname === "/settings" && "bg-muted"
+                isActive("/settings") && "bg-muted"
               )}
             >
               <Settings className="mr-2 h-4 w-4" />
@@ -154,7 +192,7 @@ export function SidebarMenu({ user, onLogout }: SidebarMenuProps) {
               className={cn(
                 buttonVariants({ variant: "ghost" }),
                 "w-full justify-start",
-                location.pathname === "/help" && "bg-muted"
+                isActive("/help") && "bg-muted"
               )}
             >
               <HelpCircle className="mr-2 h-4 w-4" />

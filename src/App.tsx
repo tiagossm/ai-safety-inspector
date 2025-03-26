@@ -19,6 +19,7 @@ import NewChecklistDetails from "@/pages/NewChecklistDetails";
 import NewInspectionPage from "@/pages/NewInspectionPage";
 import InspectionExecutionPage from "@/pages/InspectionExecutionPage";
 import Inspections from "@/pages/Inspections";
+import { Users } from "@/pages/Users";
 
 function App() {
   return (
@@ -28,9 +29,11 @@ function App() {
           <Route path="/auth" element={<Auth />} />
           <Route path="/" element={<RequireAuth><DashboardLayout /></RequireAuth>}>
             <Route index element={<Dashboard />} />
+            <Route path="dashboard" element={<Dashboard />} />
             <Route path="companies" element={<Companies />} />
             <Route path="companies/:id" element={<CompanyDetail />} />
             <Route path="employees" element={<Employees />} />
+            <Route path="users" element={<Users />} />
             
             {/* Checklist routes */}
             <Route path="new-checklists" element={<NewChecklists />} />
@@ -41,6 +44,7 @@ function App() {
             {/* Inspection routes */}
             <Route path="inspections" element={<Inspections />} />
             <Route path="inspections/new/:id" element={<NewInspectionPage />} />
+            <Route path="inspections/:id" element={<InspectionExecutionPage />} />
             <Route path="inspections/:id/view" element={<InspectionExecutionPage />} />
             
             {/* Redirect old routes to new ones */}

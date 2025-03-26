@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -30,14 +31,13 @@ export function useInspections() {
         throw new Error("Usuário não autenticado");
       }
 
-      // Fetch inspections with company, responsible and progress data
+      // Fetch inspections without trying to join on responsible_id directly
       let query = supabase
         .from("inspections")
         .select(`
           *,
-          company:companies(id, fantasy_name),
-          responsible:responsible_id(id, name, email, phone),
-          responses:inspection_responses(id, question_id, answer)
+          companies:company_id(id, fantasy_name),
+          checklist:checklist_id(id, title, description, total_questions)
         `);
       
       // Super admins see all inspections, others only see their own or company's
@@ -54,23 +54,76 @@ export function useInspections() {
         return;
       }
       
-      // Calculate progress for each inspection
-      const inspectionsWithProgress = data.map((inspection: any) => {
-        const totalQuestions = inspection.checklist?.total_questions || 0;
-        const answeredQuestions = inspection.responses?.length || 0;
+      // Now that we have inspections, fetch user data for responsible_id in a separate query
+      const userIds = data
+        .map(inspection => inspection.responsible_id)
+        .filter(id => id !== null && id !== undefined);
+      
+      let responsiblesData = {};
+      
+      if (userIds.length > 0) {
+        const { data: usersData, error: usersError } = await supabase
+          .from("users")
+          .select("id, name, email, phone")
+          .in("id", userIds);
+          
+        if (!usersError && usersData) {
+          responsiblesData = usersData.reduce((acc, user) => {
+            acc[user.id] = user;
+            return acc;
+          }, {});
+        }
+      }
+      
+      // Calculate progress for each inspection and format data
+      const inspectionsWithProgress = await Promise.all(data.map(async (inspection: any) => {
+        // Get count of responses for this inspection
+        const { count: answeredQuestions, error: countError } = await supabase
+          .from('inspection_responses')
+          .select('*', { count: 'exact', head: true })
+          .eq('inspection_id', inspection.id);
+        
+        // Get total questions for the checklist
+        const { data: questionData, error: questionError } = await supabase
+          .from('checklist_itens')
+          .select('*', { count: 'exact', head: true })
+          .eq('checklist_id', inspection.checklist_id);
+          
+        const totalQuestions = questionData?.length || 0;
         const progress = totalQuestions > 0 
-          ? Math.round((answeredQuestions / totalQuestions) * 100) 
+          ? Math.round(((answeredQuestions || 0) / totalQuestions) * 100) 
           : 0;
           
         return {
-          ...inspection,
+          id: inspection.id,
+          title: inspection.checklist?.title || "Sem título",
+          description: inspection.checklist?.description,
+          checklistId: inspection.checklist_id,
+          companyId: inspection.company_id,
+          responsibleId: inspection.responsible_id,
+          scheduledDate: inspection.scheduled_date,
+          status: (inspection.status || 'pending') as 'pending' | 'in_progress' | 'completed',
+          createdAt: inspection.created_at,
+          updatedAt: inspection.created_at,
+          priority: (inspection.priority || 'medium') as 'low' | 'medium' | 'high',
+          locationName: inspection.location,
+          company: inspection.companies || null,
+          responsible: inspection.responsible_id ? responsiblesData[inspection.responsible_id] : null,
           progress,
-          company: inspection.company || null,
-          responsible: inspection.responsible || null,
-          // Remove the responses array to keep the object clean
-          responses: undefined
+          // Additional fields from the database schema
+          approval_notes: inspection.approval_notes,
+          approval_status: inspection.approval_status,
+          approved_by: inspection.approved_by,
+          audio_url: inspection.audio_url,
+          photos: inspection.photos || [],
+          report_url: inspection.report_url,
+          unit_id: inspection.unit_id,
+          metadata: inspection.metadata,
+          cnae: inspection.cnae,
+          inspection_type: inspection.inspection_type,
+          sync_status: inspection.sync_status
         };
-      });
+      }));
       
       setInspections(inspectionsWithProgress);
     } catch (error: any) {

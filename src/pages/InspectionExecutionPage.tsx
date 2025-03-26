@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useInspectionData } from "@/hooks/inspection/useInspectionData";
 import { InspectionHeader } from "@/components/inspection/InspectionHeader";
@@ -8,13 +8,17 @@ import { InspectionDetailsCard } from "@/components/inspection/InspectionDetails
 import { InspectionCompletion } from "@/components/inspection/InspectionCompletion";
 import { QuestionGroups } from "@/components/inspection/QuestionGroups";
 import { QuestionsPanel } from "@/components/inspection/QuestionsPanel";
-import { AlertCircle, RefreshCw } from "lucide-react";
+import { AlertCircle, RefreshCw, Save, CheckCircle2, FileText } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { toast } from "sonner";
 
 export default function InspectionExecutionPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [autoSave, setAutoSave] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   
   const {
     loading,
@@ -29,7 +33,9 @@ export default function InspectionExecutionPage() {
     getFilteredQuestions,
     getCompletionStats,
     error,
-    refreshData
+    refreshData,
+    completeInspection,
+    reopenInspection
   } = useInspectionData(id);
   
   // Set default group when groups are loaded
@@ -38,14 +44,72 @@ export default function InspectionExecutionPage() {
       setCurrentGroupId(groups[0].id);
     }
   }, [groups, currentGroupId]);
+
+  // Auto-save timer
+  useEffect(() => {
+    if (autoSave) {
+      const timer = setTimeout(() => {
+        onSaveProgress();
+      }, 60000); // Auto-save every minute
+      
+      return () => clearTimeout(timer);
+    }
+  }, [responses, autoSave]);
   
   const filteredQuestions = getFilteredQuestions(currentGroupId);
   const stats = getCompletionStats();
   
-  const onSaveInspection = async () => {
+  const onSaveProgress = async () => {
     setSaving(true);
-    await handleSaveInspection();
-    setSaving(false);
+    try {
+      await handleSaveInspection();
+      setLastSaved(new Date());
+      toast.success("Progresso salvo com sucesso");
+    } catch (error) {
+      toast.error("Erro ao salvar progresso");
+    } finally {
+      setSaving(false);
+    }
+  };
+  
+  const onCompleteInspection = async () => {
+    if (stats.percentage < 100) {
+      if (!window.confirm("A inspeção não está 100% completa. Deseja finalizar mesmo assim?")) {
+        return;
+      }
+    }
+    
+    try {
+      setSaving(true);
+      await completeInspection();
+      toast.success("Inspeção finalizada com sucesso");
+    } catch (error) {
+      toast.error("Erro ao finalizar inspeção");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const onReopenInspection = async () => {
+    try {
+      setSaving(true);
+      await reopenInspection();
+      toast.success("Inspeção reaberta com sucesso");
+    } catch (error) {
+      toast.error("Erro ao reabrir inspeção");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const onViewActionPlan = () => {
+    toast.info("Funcionalidade de Plano de Ação em desenvolvimento");
+    // Future implementation: navigate to action plan page
+  };
+
+  const onGenerateReport = () => {
+    toast.info("Funcionalidade de geração de relatório em desenvolvimento");
+    // Future implementation: generate PDF report
   };
   
   return (
@@ -95,9 +159,50 @@ export default function InspectionExecutionPage() {
             <Button
               className="w-full text-sm"
               disabled={saving || loading}
-              onClick={onSaveInspection}
+              onClick={onSaveProgress}
             >
-              {saving ? "Salvando..." : "Salvar Inspeção"}
+              {saving ? "Salvando..." : "Salvar Progresso"}
+              <Save className="h-3.5 w-3.5 ml-1.5" />
+            </Button>
+            
+            {inspection?.status !== 'completed' ? (
+              <Button
+                variant="default"
+                className="w-full text-sm"
+                disabled={saving || loading}
+                onClick={onCompleteInspection}
+              >
+                Finalizar Inspeção
+                <CheckCircle2 className="h-3.5 w-3.5 ml-1.5" />
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                className="w-full text-sm"
+                disabled={saving || loading}
+                onClick={onReopenInspection}
+              >
+                Reabrir Inspeção
+              </Button>
+            )}
+            
+            <Button
+              variant="outline"
+              className="w-full text-sm"
+              disabled={loading}
+              onClick={onViewActionPlan}
+            >
+              Plano de Ação
+            </Button>
+            
+            <Button
+              variant="outline"
+              className="w-full text-sm"
+              disabled={loading}
+              onClick={onGenerateReport}
+            >
+              <FileText className="h-3.5 w-3.5 mr-1.5" />
+              Gerar Relatório
             </Button>
             
             <Button

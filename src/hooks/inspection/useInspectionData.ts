@@ -15,262 +15,262 @@ export const useInspectionData = (inspectionId: string | undefined) => {
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   
-  useEffect(() => {
+  const fetchInspectionData = async () => {
     if (!inspectionId) return;
     
-    const fetchInspectionData = async () => {
-      setLoading(true);
-      setLoadError(null);
-      try {
-        console.log(`Fetching inspection data for ID: ${inspectionId}`);
-        
-        // Fetch inspection details with company and responsible data
-        const { data: inspectionData, error: inspectionError } = await supabase
-          .from('inspections')
-          .select(`
-            id,
-            checklist_id,
-            status,
-            company_id,
-            user_id,
-            responsible_id,
-            scheduled_date,
-            location,
-            priority,
-            inspection_type,
-            cnae,
-            metadata,
-            created_at,
-            approval_status,
-            approved_by,
-            approval_notes,
-            audio_url,
-            photos,
-            report_url,
-            unit_id,
-            sync_status,
-            checklist:checklists (
-              title,
-              description
-            )
-          `)
-          .eq('id', inspectionId)
-          .single();
+    setLoading(true);
+    setLoadError(null);
+    try {
+      console.log(`Fetching inspection data for ID: ${inspectionId}`);
       
-        if (inspectionError) {
-          console.error('Error fetching inspection:', inspectionError);
-          setLoadError(`Erro ao carregar inspeção: ${inspectionError.message}`);
-          throw inspectionError;
-        }
-        
-        console.log('Inspection data:', inspectionData);
-        
-        if (!inspectionData) {
-          setLoadError('Inspeção não encontrada');
-          throw new Error('Inspeção não encontrada');
-        }
-        
-        let parsedMetadata: Record<string, any> = {};
-        if (inspectionData.metadata) {
-          if (typeof inspectionData.metadata === 'string') {
-            try {
-              parsedMetadata = JSON.parse(inspectionData.metadata);
-            } catch (e) {
-              console.error('Error parsing metadata:', e);
-            }
-          } else {
-            parsedMetadata = inspectionData.metadata as Record<string, any>;
-          }
-        }
-        
-        const formattedInspection: InspectionDetails = {
-          id: inspectionData.id,
-          title: inspectionData.checklist?.title || 'Sem título',
-          description: inspectionData.checklist?.description,
-          checklistId: inspectionData.checklist_id,
-          companyId: inspectionData.company_id,
-          responsibleId: inspectionData.responsible_id,
-          scheduledDate: inspectionData.scheduled_date,
-          status: (inspectionData.status || 'pending') as 'pending' | 'in_progress' | 'completed',
-          createdAt: inspectionData.created_at,
-          updatedAt: inspectionData.created_at, // Using created_at as fallback since updated_at isn't available
-          priority: (inspectionData.priority || 'medium') as 'low' | 'medium' | 'high',
-          locationName: inspectionData.location,
-          checklist: inspectionData.checklist,
-          approval_notes: inspectionData.approval_notes,
-          approval_status: inspectionData.approval_status,
-          approved_by: inspectionData.approved_by,
-          audio_url: inspectionData.audio_url,
-          photos: inspectionData.photos || [],
-          report_url: inspectionData.report_url,
-          unit_id: inspectionData.unit_id,
-          metadata: parsedMetadata,
-          cnae: inspectionData.cnae,
-          inspection_type: inspectionData.inspection_type,
-          sync_status: inspectionData.sync_status
-        };
-        
-        setInspection(formattedInspection);
-        
-        // Load checklist items/questions
-        const { data: questionsData, error: questionsError } = await supabase
-          .from('checklist_itens')
-          .select('*')
-          .eq('checklist_id', inspectionData.checklist_id)
-          .order('ordem', { ascending: true });
-        
-        if (questionsError) {
-          console.error('Error fetching questions:', questionsError);
-          setLoadError(`Erro ao carregar perguntas: ${questionsError.message}`);
-          throw questionsError;
-        }
-        
-        console.log('Questions data:', questionsData);
-        
-        if (!questionsData || questionsData.length === 0) {
-          console.warn('No questions found for this checklist');
-        }
-        
-        const groupMap = new Map();
-        
-        // Create a default group for ungrouped questions
-        const defaultGroupId = "default-group";
-        groupMap.set(defaultGroupId, {
-          id: defaultGroupId,
-          title: "Geral",
-          order: 0
-        });
-        
-        const formattedQuestions = (questionsData || []).map((q: any) => {
-          let groupId: string = defaultGroupId;
-          let groupTitle: string = "Geral";
-          
-          if (q.hint && q.hint.includes('groupId')) {
-            try {
-              const groupInfo = JSON.parse(q.hint);
-              if (groupInfo.groupId) {
-                groupId = groupInfo.groupId;
-                groupTitle = groupInfo.groupTitle || `Grupo ${groupMap.size}`;
-                
-                if (!groupMap.has(groupId)) {
-                  groupMap.set(groupId, {
-                    id: groupId,
-                    title: groupTitle,
-                    order: groupMap.size
-                  });
-                }
-              }
-            } catch (e) {
-              console.error('Error parsing group info from hint:', e);
-            }
-          }
-          
-          return {
-            id: q.id,
-            text: q.pergunta,
-            responseType: q.tipo_resposta,
-            isRequired: q.obrigatorio,
-            options: q.opcoes || [],
-            order: q.ordem,
-            groupId: groupId,
-            conditionValue: q.condition_value,
-            parentQuestionId: q.parent_item_id,
-            allowsPhoto: q.permite_foto,
-            allowsVideo: q.permite_video,
-            allowsAudio: q.permite_audio,
-            hint: q.hint,
-            weight: q.weight || 1,
-            hasSubChecklist: !!q.sub_checklist_id,
-            subChecklistId: q.sub_checklist_id
-          };
-        });
-        
-        setQuestions(formattedQuestions);
-        setGroups(Array.from(groupMap.values()));
-        
-        // Fetch existing responses
-        const { data: responsesData, error: responsesError } = await supabase
-          .from('inspection_responses')
-          .select('*')
-          .eq('inspection_id', inspectionId);
-        
-        if (responsesError) {
-          console.error('Error fetching responses:', responsesError);
-          setLoadError(`Erro ao carregar respostas: ${responsesError.message}`);
-          throw responsesError;
-        }
-        
-        console.log('Responses data:', responsesData);
-        
-        const responsesMap: Record<string, any> = {};
-        (responsesData || []).forEach((r: any) => {
-          responsesMap[r.question_id] = {
-            value: r.answer,
-            comment: r.notes,
-            actionPlan: r.action_plan,
-            mediaUrls: r.media_urls || [],
-            completedAt: r.completed_at
-          };
-        });
-        
-        setResponses(responsesMap);
-        
-        // Fetch company data if we have a company ID
-        if (inspectionData.company_id) {
+      // Fetch inspection details with company and responsible data
+      const { data: inspectionData, error: inspectionError } = await supabase
+        .from('inspections')
+        .select(`
+          id,
+          checklist_id,
+          status,
+          company_id,
+          user_id,
+          responsible_id,
+          scheduled_date,
+          location,
+          priority,
+          inspection_type,
+          cnae,
+          metadata,
+          created_at,
+          approval_status,
+          approved_by,
+          approval_notes,
+          audio_url,
+          photos,
+          report_url,
+          unit_id,
+          sync_status,
+          checklist:checklists (
+            title,
+            description
+          )
+        `)
+        .eq('id', inspectionId)
+        .single();
+    
+      if (inspectionError) {
+        console.error('Error fetching inspection:', inspectionError);
+        setLoadError(`Erro ao carregar inspeção: ${inspectionError.message}`);
+        throw inspectionError;
+      }
+      
+      console.log('Inspection data:', inspectionData);
+      
+      if (!inspectionData) {
+        setLoadError('Inspeção não encontrada');
+        throw new Error('Inspeção não encontrada');
+      }
+      
+      let parsedMetadata: Record<string, any> = {};
+      if (inspectionData.metadata) {
+        if (typeof inspectionData.metadata === 'string') {
           try {
-            const { data: companyData, error: companyError } = await supabase
+            parsedMetadata = JSON.parse(inspectionData.metadata);
+          } catch (e) {
+            console.error('Error parsing metadata:', e);
+          }
+        } else {
+          parsedMetadata = inspectionData.metadata as Record<string, any>;
+        }
+      }
+      
+      const formattedInspection: InspectionDetails = {
+        id: inspectionData.id,
+        title: inspectionData.checklist?.title || 'Sem título',
+        description: inspectionData.checklist?.description,
+        checklistId: inspectionData.checklist_id,
+        companyId: inspectionData.company_id,
+        responsibleId: inspectionData.responsible_id,
+        scheduledDate: inspectionData.scheduled_date,
+        status: (inspectionData.status || 'pending') as 'pending' | 'in_progress' | 'completed',
+        createdAt: inspectionData.created_at,
+        updatedAt: inspectionData.created_at, // Using created_at as fallback
+        priority: (inspectionData.priority || 'medium') as 'low' | 'medium' | 'high',
+        locationName: inspectionData.location,
+        checklist: inspectionData.checklist,
+        approval_notes: inspectionData.approval_notes,
+        approval_status: inspectionData.approval_status,
+        approved_by: inspectionData.approved_by,
+        audio_url: inspectionData.audio_url,
+        photos: inspectionData.photos || [],
+        report_url: inspectionData.report_url,
+        unit_id: inspectionData.unit_id,
+        metadata: parsedMetadata,
+        cnae: inspectionData.cnae,
+        inspection_type: inspectionData.inspection_type,
+        sync_status: inspectionData.sync_status
+      };
+      
+      setInspection(formattedInspection);
+      
+      // Load checklist items/questions
+      const { data: questionsData, error: questionsError } = await supabase
+        .from('checklist_itens')
+        .select('*')
+        .eq('checklist_id', inspectionData.checklist_id)
+        .order('ordem', { ascending: true });
+      
+      if (questionsError) {
+        console.error('Error fetching questions:', questionsError);
+        setLoadError(`Erro ao carregar perguntas: ${questionsError.message}`);
+        throw questionsError;
+      }
+      
+      console.log('Questions data:', questionsData);
+      
+      if (!questionsData || questionsData.length === 0) {
+        console.warn('No questions found for this checklist');
+      }
+      
+      const groupMap = new Map();
+      
+      // Create a default group for ungrouped questions
+      const defaultGroupId = "default-group";
+      groupMap.set(defaultGroupId, {
+        id: defaultGroupId,
+        title: "Geral",
+        order: 0
+      });
+      
+      const formattedQuestions = (questionsData || []).map((q: any) => {
+        let groupId: string = defaultGroupId;
+        let groupTitle: string = "Geral";
+        
+        if (q.hint && q.hint.includes('groupId')) {
+          try {
+            const groupInfo = JSON.parse(q.hint);
+            if (groupInfo.groupId) {
+              groupId = groupInfo.groupId;
+              groupTitle = groupInfo.groupTitle || `Grupo ${groupMap.size}`;
+              
+              if (!groupMap.has(groupId)) {
+                groupMap.set(groupId, {
+                  id: groupId,
+                  title: groupTitle,
+                  order: groupMap.size
+                });
+              }
+            }
+          } catch (e) {
+            console.error('Error parsing group info from hint:', e);
+          }
+        }
+        
+        return {
+          id: q.id,
+          text: q.pergunta,
+          responseType: q.tipo_resposta,
+          isRequired: q.obrigatorio,
+          options: q.opcoes || [],
+          order: q.ordem,
+          groupId: groupId,
+          conditionValue: q.condition_value,
+          parentQuestionId: q.parent_item_id,
+          allowsPhoto: q.permite_foto,
+          allowsVideo: q.permite_video,
+          allowsAudio: q.permite_audio,
+          hint: q.hint,
+          weight: q.weight || 1,
+          hasSubChecklist: !!q.sub_checklist_id,
+          subChecklistId: q.sub_checklist_id
+        };
+      });
+      
+      setQuestions(formattedQuestions);
+      setGroups(Array.from(groupMap.values()));
+      
+      // Fetch existing responses
+      const { data: responsesData, error: responsesError } = await supabase
+        .from('inspection_responses')
+        .select('*')
+        .eq('inspection_id', inspectionId);
+      
+      if (responsesError) {
+        console.error('Error fetching responses:', responsesError);
+        setLoadError(`Erro ao carregar respostas: ${responsesError.message}`);
+        throw responsesError;
+      }
+      
+      console.log('Responses data:', responsesData);
+      
+      const responsesMap: Record<string, any> = {};
+      (responsesData || []).forEach((r: any) => {
+        responsesMap[r.question_id] = {
+          value: r.answer,
+          comment: r.notes,
+          actionPlan: r.action_plan,
+          mediaUrls: r.media_urls || [],
+          completedAt: r.completed_at
+        };
+      });
+      
+      setResponses(responsesMap);
+      
+      // Fetch company data if we have a company ID
+      if (inspectionData.company_id) {
+        try {
+          const { data: companyData, error: companyError } = await supabase
+            .from('companies')
+            .select('*')
+            .eq('id', inspectionData.company_id)
+            .single();
+          
+          if (companyError) {
+            console.warn('Company fetch error:', companyError);
+            // If using 'name' causes error, try with 'fantasy_name' instead
+            const { data: companyAltData, error: companyAltError } = await supabase
               .from('companies')
-              .select('*')
+              .select('id, fantasy_name, cnpj, email, phone, address, company_type, status, created_at, updated_at')
               .eq('id', inspectionData.company_id)
               .single();
-            
-            if (companyError) {
-              console.warn('Company fetch error:', companyError);
-              // If using 'name' causes error, try with 'fantasy_name' instead
-              const { data: companyAltData, error: companyAltError } = await supabase
-                .from('companies')
-                .select('id, fantasy_name, cnpj, email, phone, address, company_type, status, created_at, updated_at')
-                .eq('id', inspectionData.company_id)
-                .single();
-                
-              if (!companyAltError && companyAltData) {
-                setCompany(companyAltData);
-              }
-            } else if (companyData) {
-              setCompany(companyData);
+              
+            if (!companyAltError && companyAltData) {
+              setCompany(companyAltData);
             }
-          } catch (err) {
-            console.warn('Error fetching company:', err);
+          } else if (companyData) {
+            setCompany(companyData);
           }
+        } catch (err) {
+          console.warn('Error fetching company:', err);
         }
-        
-        // Fetch responsible data if we have a responsible ID
-        if (inspectionData.responsible_id) {
-          try {
-            const { data: userData, error: userError } = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', inspectionData.responsible_id)
-              .single();
-            
-            if (userError) {
-              console.warn('User fetch error:', userError);
-            } else if (userData) {
-              setResponsible(userData);
-            }
-          } catch (err) {
-            console.warn('Error fetching responsible user:', err);
-          }
-        }
-      } catch (error: any) {
-        console.error('Error fetching inspection data:', error);
-        setLoadError(error.message || 'Erro ao carregar dados da inspeção');
-        toast.error('Erro ao carregar dados da inspeção');
-      } finally {
-        setLoading(false);
       }
-    };
-    
+      
+      // Fetch responsible data if we have a responsible ID
+      if (inspectionData.responsible_id) {
+        try {
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', inspectionData.responsible_id)
+            .single();
+          
+          if (userError) {
+            console.warn('User fetch error:', userError);
+          } else if (userData) {
+            setResponsible(userData);
+          }
+        } catch (err) {
+          console.warn('Error fetching responsible user:', err);
+        }
+      }
+    } catch (error: any) {
+      console.error('Error fetching inspection data:', error);
+      setLoadError(error.message || 'Erro ao carregar dados da inspeção');
+      toast.error('Erro ao carregar dados da inspeção');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  useEffect(() => {
     fetchInspectionData();
   }, [inspectionId]);
   
@@ -321,15 +321,76 @@ export const useInspectionData = (inspectionId: string | undefined) => {
         
         if (updateError) {
           console.error('Error updating inspection status:', updateError);
+        } else {
+          setInspection({
+            ...inspection,
+            status: 'in_progress'
+          });
         }
       }
       
-      toast.success('Respostas salvas com sucesso!');
+      return true;
     } catch (error) {
       console.error('Error saving inspection:', error);
-      toast.error('Erro ao salvar respostas');
+      throw error;
     } finally {
       setSaving(false);
+    }
+  };
+
+  const completeInspection = async () => {
+    if (!inspection || !inspectionId) return;
+    
+    try {
+      // First save any pending changes
+      await handleSaveInspection();
+      
+      // Then update the status to completed
+      const { error: updateError } = await supabase
+        .from('inspections')
+        .update({ status: 'completed' })
+        .eq('id', inspectionId);
+      
+      if (updateError) {
+        console.error('Error completing inspection:', updateError);
+        throw updateError;
+      }
+      
+      setInspection({
+        ...inspection,
+        status: 'completed'
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error completing inspection:', error);
+      throw error;
+    }
+  };
+
+  const reopenInspection = async () => {
+    if (!inspection || !inspectionId) return;
+    
+    try {
+      const { error: updateError } = await supabase
+        .from('inspections')
+        .update({ status: 'in_progress' })
+        .eq('id', inspectionId);
+      
+      if (updateError) {
+        console.error('Error reopening inspection:', updateError);
+        throw updateError;
+      }
+      
+      setInspection({
+        ...inspection,
+        status: 'in_progress'
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Error reopening inspection:', error);
+      throw error;
     }
   };
   
@@ -354,120 +415,7 @@ export const useInspectionData = (inspectionId: string | undefined) => {
   };
   
   const refreshData = async () => {
-    if (inspectionId) {
-      setLoading(true);
-      try {
-        // Re-fetch inspection data
-        const { data: inspectionData, error: inspectionError } = await supabase
-          .from('inspections')
-          .select(`
-            id,
-            checklist_id,
-            status,
-            company_id,
-            user_id,
-            responsible_id,
-            scheduled_date,
-            location,
-            priority,
-            inspection_type,
-            cnae,
-            metadata,
-            created_at,
-            approval_status,
-            approved_by,
-            approval_notes,
-            audio_url,
-            photos,
-            report_url,
-            unit_id,
-            sync_status,
-            checklist:checklists (
-              title,
-              description
-            )
-          `)
-          .eq('id', inspectionId)
-          .single();
-          
-        if (inspectionError) throw inspectionError;
-        
-        // Re-fetch questions based on the checklist_id
-        const { data: questionsData, error: questionsError } = await supabase
-          .from('checklist_itens')
-          .select('*')
-          .eq('checklist_id', inspectionData.checklist_id)
-          .order('ordem', { ascending: true });
-          
-        if (questionsError) throw questionsError;
-        
-        // Process and update state
-        console.log('Refreshed questions data:', questionsData);
-        
-        // Same processing logic as in the initial load
-        const groupMap = new Map();
-        const defaultGroupId = "default-group";
-        groupMap.set(defaultGroupId, {
-          id: defaultGroupId,
-          title: "Geral",
-          order: 0
-        });
-        
-        const formattedQuestions = (questionsData || []).map((q: any) => {
-          let groupId: string = defaultGroupId;
-          let groupTitle: string = "Geral";
-          
-          if (q.hint && q.hint.includes('groupId')) {
-            try {
-              const groupInfo = JSON.parse(q.hint);
-              if (groupInfo.groupId) {
-                groupId = groupInfo.groupId;
-                groupTitle = groupInfo.groupTitle || `Grupo ${groupMap.size}`;
-                
-                if (!groupMap.has(groupId)) {
-                  groupMap.set(groupId, {
-                    id: groupId,
-                    title: groupTitle,
-                    order: groupMap.size
-                  });
-                }
-              }
-            } catch (e) {
-              console.error('Error parsing group info from hint:', e);
-            }
-          }
-          
-          return {
-            id: q.id,
-            text: q.pergunta,
-            responseType: q.tipo_resposta,
-            isRequired: q.obrigatorio,
-            options: q.opcoes || [],
-            order: q.ordem,
-            groupId: groupId,
-            conditionValue: q.condition_value,
-            parentQuestionId: q.parent_item_id,
-            allowsPhoto: q.permite_foto,
-            allowsVideo: q.permite_video,
-            allowsAudio: q.permite_audio,
-            hint: q.hint,
-            weight: q.weight || 1,
-            hasSubChecklist: !!q.sub_checklist_id,
-            subChecklistId: q.sub_checklist_id
-          };
-        });
-        
-        setQuestions(formattedQuestions);
-        setGroups(Array.from(groupMap.values()));
-        
-        toast.success('Dados atualizados com sucesso!');
-      } catch (error: any) {
-        console.error('Error refreshing data:', error);
-        toast.error('Erro ao atualizar dados: ' + (error.message || 'Erro desconhecido'));
-      } finally {
-        setLoading(false);
-      }
-    }
+    await fetchInspectionData();
   };
   
   return {
@@ -484,6 +432,8 @@ export const useInspectionData = (inspectionId: string | undefined) => {
     handleSaveInspection,
     getFilteredQuestions,
     getCompletionStats,
-    refreshData
+    refreshData,
+    completeInspection,
+    reopenInspection
   };
 };
