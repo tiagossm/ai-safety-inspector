@@ -1,3 +1,4 @@
+
 export interface ChecklistGroup {
   id: string;
   title: string;
@@ -86,6 +87,19 @@ export interface InspectionDetails {
   cnae?: string;
   inspection_type?: string;
   sync_status?: string;
+  // Non-DB fields for UI display
+  company?: {
+    id?: string;
+    name?: string;
+    fantasy_name?: string;
+  };
+  responsible?: {
+    id?: string;
+    name?: string;
+    email?: string;
+    phone?: string;
+  };
+  progress?: number;
 }
 
 export interface InspectionResponse {

@@ -10,7 +10,7 @@ import { useUsers } from "@/hooks/useUsers";
 import { useChecklists } from "@/hooks/useChecklists";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Search, CalendarIcon, X, Filter, Building2, User2, ClipboardList } from "lucide-react";
+import { Search, CalendarIcon, X, Filter, Building2, User2, ClipboardList, AlertTriangle, CheckCircle } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { InspectionFilters as IInspectionFilters } from "@/types/newChecklist";
 
@@ -228,7 +228,7 @@ export function InspectionFilters({ filters, setFilters }: InspectionFiltersProp
               </div>
               <Select
                 value={filters.priority}
-                onValueChange={(value) =>
+                onValueChange={(value: "all" | "low" | "medium" | "high") =>
                   setFilters({ ...filters, priority: value })
                 }
               >
@@ -251,7 +251,7 @@ export function InspectionFilters({ filters, setFilters }: InspectionFiltersProp
               </div>
               <Select
                 value={filters.status}
-                onValueChange={(value) =>
+                onValueChange={(value: "all" | "pending" | "in_progress" | "completed") =>
                   setFilters({ ...filters, status: value })
                 }
               >

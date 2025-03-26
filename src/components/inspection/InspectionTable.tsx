@@ -54,11 +54,11 @@ export function InspectionTable({ inspections, onView }: InspectionTableProps) {
   const getPriorityIndicator = (priority: string | undefined) => {
     switch (priority) {
       case "high":
-        return <AlertTriangle className="h-4 w-4 text-red-500" title="Alta prioridade" />;
+        return <AlertTriangle className="h-4 w-4 text-red-500" aria-label="Alta prioridade" />;
       case "medium":
-        return <AlertTriangle className="h-4 w-4 text-amber-500" title="Média prioridade" />;
+        return <AlertTriangle className="h-4 w-4 text-amber-500" aria-label="Média prioridade" />;
       case "low":
-        return <AlertTriangle className="h-4 w-4 text-green-500" title="Baixa prioridade" />;
+        return <AlertTriangle className="h-4 w-4 text-green-500" aria-label="Baixa prioridade" />;
       default:
         return null;
     }

@@ -105,13 +105,13 @@ export function useInspections() {
       const matchesPriority = filters.priority === "all" || inspection.priority === filters.priority;
       
       // Company filter
-      const matchesCompany = filters.companyId === "all" || inspection.company_id === filters.companyId;
+      const matchesCompany = filters.companyId === "all" || inspection.companyId === filters.companyId;
       
       // Responsible filter
-      const matchesResponsible = filters.responsibleId === "all" || inspection.responsible_id === filters.responsibleId;
+      const matchesResponsible = filters.responsibleId === "all" || inspection.responsibleId === filters.responsibleId;
       
       // Checklist filter
-      const matchesChecklist = filters.checklistId === "all" || inspection.checklist_id === filters.checklistId;
+      const matchesChecklist = filters.checklistId === "all" || inspection.checklistId === filters.checklistId;
       
       // Date filter
       let matchesDate = true;
