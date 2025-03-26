@@ -1,113 +1,152 @@
 
-import React from "react";
-import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Building, MapPin, User, Calendar } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Building2, Calendar, User2, MapPin, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
-import { InspectionDetails as InspectionDetailsType } from "@/types/newChecklist";
+import { ptBR } from "date-fns/locale";
 
-interface InspectionDetailsProps {
+interface InspectionDetailsCardProps {
   loading: boolean;
-  inspection: InspectionDetailsType | null;
+  inspection: any;
   company: any;
   responsible: any;
 }
 
-export function InspectionDetailsCard({ loading, inspection, company, responsible }: InspectionDetailsProps) {
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "pending":
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Pending</Badge>;
-      case "in_progress":
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">In Progress</Badge>;
-      case "completed":
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Completed</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
+export function InspectionDetailsCard({ 
+  loading, 
+  inspection, 
+  company, 
+  responsible 
+}: InspectionDetailsCardProps) {
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-xl font-bold">
+            <Skeleton className="h-6 w-48" />
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  const formatDate = (date: string | null | undefined) => {
+    if (!date) return "Não agendada";
+    try {
+      return format(new Date(date), "PPP", { locale: ptBR });
+    } catch (e) {
+      return "Data inválida";
     }
   };
   
-  const getPriorityBadge = (priority: string) => {
+  const getPriorityClass = (priority: string | undefined) => {
     switch (priority) {
-      case "low":
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Low</Badge>;
-      case "medium":
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Medium</Badge>;
-      case "high":
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">High</Badge>;
-      default:
-        return <Badge variant="outline">Normal</Badge>;
+      case "high": return "text-red-600";
+      case "medium": return "text-amber-600";
+      case "low": return "text-green-600";
+      default: return "text-gray-600";
     }
   };
-
+  
+  const getStatusClass = (status: string | undefined) => {
+    switch (status) {
+      case "completed": return "text-green-600";
+      case "in_progress": return "text-blue-600";
+      case "pending": return "text-amber-600";
+      default: return "text-gray-600";
+    }
+  };
+  
+  const getStatusText = (status: string | undefined) => {
+    switch (status) {
+      case "completed": return "Concluída";
+      case "in_progress": return "Em Progresso";
+      case "pending": return "Pendente";
+      default: return "Desconhecido";
+    }
+  };
+  
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Inspection Details</CardTitle>
+        <CardTitle className="text-lg">{inspection?.title || "Detalhes da Inspeção"}</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
-        {loading ? (
-          Array(5).fill(0).map((_, i) => (
-            <Skeleton key={i} className="h-6 w-full" />
-          ))
-        ) : (
-          <>
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">Status:</span>
-              {inspection?.status && getStatusBadge(inspection.status)}
+      <CardContent>
+        <div className="space-y-3">
+          {company && (
+            <div className="flex items-start gap-2">
+              <Building2 className="h-5 w-5 text-gray-500 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium">Empresa</p>
+                <p className="text-sm">{company?.name || company?.fantasy_name || "Não informada"}</p>
+              </div>
             </div>
-            
-            {inspection?.priority && (
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Priority:</span>
-                {getPriorityBadge(inspection.priority)}
+          )}
+          
+          {responsible && (
+            <div className="flex items-start gap-2">
+              <User2 className="h-5 w-5 text-gray-500 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium">Responsável</p>
+                <p className="text-sm">{responsible?.name || "Não informado"}</p>
               </div>
-            )}
-            
-            {company && (
-              <div className="flex items-start gap-2">
-                <Building className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Company</p>
-                  <p className="text-sm text-muted-foreground">{company.name}</p>
-                </div>
+            </div>
+          )}
+          
+          {inspection?.scheduledDate && (
+            <div className="flex items-start gap-2">
+              <Calendar className="h-5 w-5 text-gray-500 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium">Data Programada</p>
+                <p className="text-sm">{formatDate(inspection.scheduledDate)}</p>
               </div>
-            )}
-            
-            {inspection?.locationName && (
-              <div className="flex items-start gap-2">
-                <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Location</p>
-                  <p className="text-sm text-muted-foreground">{inspection.locationName}</p>
-                </div>
+            </div>
+          )}
+          
+          {inspection?.locationName && (
+            <div className="flex items-start gap-2">
+              <MapPin className="h-5 w-5 text-gray-500 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium">Local</p>
+                <p className="text-sm">{inspection.locationName}</p>
               </div>
-            )}
-            
-            {responsible && (
-              <div className="flex items-start gap-2">
-                <User className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Responsible</p>
-                  <p className="text-sm text-muted-foreground">{responsible.name}</p>
-                </div>
+            </div>
+          )}
+          
+          <div className="flex items-start gap-2">
+            <CheckCircle className="h-5 w-5 text-gray-500 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium">Status</p>
+              <p className={`text-sm ${getStatusClass(inspection?.status)}`}>
+                {getStatusText(inspection?.status)}
+              </p>
+            </div>
+          </div>
+          
+          {inspection?.priority && (
+            <div className="flex items-start gap-2">
+              <span className="flex h-5 w-5 items-center justify-center text-gray-500">
+                !
+              </span>
+              <div>
+                <p className="text-sm font-medium">Prioridade</p>
+                <p className={`text-sm ${getPriorityClass(inspection.priority)}`}>
+                  {inspection.priority === "high" ? "Alta" : 
+                   inspection.priority === "medium" ? "Média" : 
+                   inspection.priority === "low" ? "Baixa" : "Não definida"}
+                </p>
               </div>
-            )}
-            
-            {inspection?.scheduledDate && (
-              <div className="flex items-start gap-2">
-                <Calendar className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Scheduled Date</p>
-                  <p className="text-sm text-muted-foreground">
-                    {format(new Date(inspection.scheduledDate), "PPP")}
-                  </p>
-                </div>
-              </div>
-            )}
-          </>
-        )}
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

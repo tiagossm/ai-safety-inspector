@@ -24,7 +24,9 @@ import {
   Lightbulb,
   Mic,
   Video,
-  Image
+  Image,
+  Download,
+  FileText
 } from "lucide-react";
 import { toast } from "sonner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -100,7 +102,6 @@ export function InspectionQuestion({
     
     setLoadingSubChecklist(true);
     try {
-      // Fetch sub-checklist
       const { data: checklistData, error: checklistError } = await supabase
         .from("checklists")
         .select("*")
@@ -111,7 +112,6 @@ export function InspectionQuestion({
       
       setSubChecklist(checklistData);
       
-      // Fetch questions
       const { data: questionsData, error: questionsError } = await supabase
         .from("checklist_itens")
         .select("*")
@@ -250,7 +250,6 @@ export function InspectionQuestion({
   };
   
   const renderResponseInput = () => {
-    // Convert from Portuguese to English types
     const responseType = question.responseType;
     
     if (responseType === "sim/não" || responseType === "yes_no") {
@@ -268,19 +267,85 @@ export function InspectionQuestion({
     }
   };
   
-  // Determine if this question is a follow-up question (has a parent)
+  const getAllowedAttachmentTypes = (): ("photo" | "video" | "audio" | "file")[] => {
+    const types: ("photo" | "video" | "audio" | "file")[] = ["file"];
+    
+    if (question.allowsPhoto) {
+      types.push("photo");
+    }
+    
+    if (question.allowsVideo) {
+      types.push("video");
+    }
+    
+    if (question.allowsAudio) {
+      types.push("audio");
+    }
+    
+    return types;
+  };
+  
+  const renderMediaAttachments = () => {
+    if (!response?.mediaUrls || response.mediaUrls.length === 0) return null;
+    
+    return (
+      <div className="mt-3 space-y-2">
+        <h4 className="text-sm font-medium">Anexos ({response.mediaUrls.length})</h4>
+        <div className="grid grid-cols-3 gap-2">
+          {response.mediaUrls.map((url: string, i: number) => {
+            const isImage = url.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i);
+            const isVideo = url.match(/\.(mp4|webm|mov|avi)$/i);
+            const isAudio = url.match(/\.(mp3|wav|ogg|m4a)$/i);
+            
+            return (
+              <div key={i} className="relative aspect-square rounded border overflow-hidden group">
+                {isImage ? (
+                  <img src={url} alt={`Mídia ${i+1}`} className="w-full h-full object-cover" />
+                ) : isVideo ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100">
+                    <Video className="h-8 w-8 text-gray-500" />
+                    <span className="text-xs mt-1 text-gray-500">Vídeo</span>
+                  </div>
+                ) : isAudio ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100">
+                    <Mic className="h-8 w-8 text-gray-500" />
+                    <span className="text-xs mt-1 text-gray-500">Áudio</span>
+                  </div>
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100">
+                    <FileText className="h-8 w-8 text-gray-500" />
+                    <span className="text-xs mt-1 text-gray-500">Arquivo</span>
+                  </div>
+                )}
+                
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                  <a 
+                    href={url} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="bg-white p-1 rounded-full shadow"
+                  >
+                    <Download className="h-4 w-4" />
+                  </a>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+  
   const isFollowUpQuestion = !!question.parentQuestionId;
   const parentQuestion = isFollowUpQuestion ? 
     allQuestions.find(q => q.id === question.parentQuestionId) : null;
   
-  // Determine if this question should be shown based on parent's answer
   const shouldShow = !isFollowUpQuestion || 
     (parentQuestion && response && 
      response.value === question.conditionValue);
   
   if (!shouldShow) return null;
   
-  // Determine card styling based on response or requirement
   const getCardClasses = () => {
     let baseClasses = "overflow-hidden border";
     
@@ -463,7 +528,6 @@ export function InspectionQuestion({
         </CardContent>
       </Card>
       
-      {/* Comment Dialog */}
       <Dialog open={commentDialogOpen} onOpenChange={setCommentDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -495,7 +559,6 @@ export function InspectionQuestion({
         </DialogContent>
       </Dialog>
       
-      {/* Action Plan Dialog */}
       <Dialog open={actionPlanDialogOpen} onOpenChange={setActionPlanDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -527,7 +590,6 @@ export function InspectionQuestion({
         </DialogContent>
       </Dialog>
       
-      {/* Media Upload Dialog */}
       <Dialog open={mediaDialogOpen} onOpenChange={setMediaDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -537,38 +599,13 @@ export function InspectionQuestion({
             <MediaUpload
               onMediaUploaded={handleMediaUploaded}
               className="w-full"
+              allowedTypes={getAllowedAttachmentTypes()}
             />
             
             {response?.mediaUrls && response.mediaUrls.length > 0 && (
               <div>
                 <h4 className="text-sm font-medium mb-2">Mídia Atual:</h4>
-                <div className="grid grid-cols-3 gap-2">
-                  {response.mediaUrls.map((url: string, i: number) => (
-                    <div key={i} className="relative aspect-square rounded border overflow-hidden">
-                      <img 
-                        src={url} 
-                        alt={`Mídia ${i+1}`} 
-                        className="w-full h-full object-cover"
-                      />
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6"
-                        onClick={() => {
-                          const updatedMediaUrls = [...response.mediaUrls];
-                          updatedMediaUrls.splice(i, 1);
-                          onResponseChange({
-                            ...response,
-                            mediaUrls: updatedMediaUrls
-                          });
-                          toast.success("Mídia removida");
-                        }}
-                      >
-                        <XCircle className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+                {renderMediaAttachments()}
               </div>
             )}
             
@@ -584,7 +621,6 @@ export function InspectionQuestion({
         </DialogContent>
       </Dialog>
       
-      {/* Sub-Checklist Dialog */}
       <Dialog open={subChecklistDialogOpen} onOpenChange={setSubChecklistDialogOpen}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
@@ -665,7 +701,6 @@ export function InspectionQuestion({
   );
 }
 
-// Simple Label component for the dialog content
 function Label({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
     <label className={`block ${className || ""}`}>

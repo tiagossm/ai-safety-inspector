@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -19,6 +20,8 @@ export const useInspectionData = (inspectionId: string | undefined) => {
     const fetchInspectionData = async () => {
       setLoading(true);
       try {
+        console.log(`Fetching inspection data for ID: ${inspectionId}`);
+        
         const { data: inspectionData, error: inspectionError } = await supabase
           .from('inspections')
           .select(`
@@ -181,27 +184,41 @@ export const useInspectionData = (inspectionId: string | undefined) => {
         
         setResponses(responsesMap);
         
+        // Fetch company data if we have a company ID
         if (inspectionData.company_id) {
-          const { data: companyData, error: companyError } = await supabase
-            .from('companies')
-            .select('id, name, cnpj')
-            .eq('id', inspectionData.company_id)
-            .single();
-          
-          if (!companyError && companyData) {
-            setCompany(companyData);
+          try {
+            const { data: companyData, error: companyError } = await supabase
+              .from('companies')
+              .select('*')
+              .eq('id', inspectionData.company_id)
+              .single();
+            
+            if (companyError) {
+              console.warn('Company fetch error:', companyError);
+            } else if (companyData) {
+              setCompany(companyData);
+            }
+          } catch (err) {
+            console.warn('Error fetching company:', err);
           }
         }
         
+        // Fetch responsible data if we have a responsible ID
         if (inspectionData.responsible_id) {
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('id, name, email')
-            .eq('id', inspectionData.responsible_id)
-            .single();
-          
-          if (!userError && userData) {
-            setResponsible(userData);
+          try {
+            const { data: userData, error: userError } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', inspectionData.responsible_id)
+              .single();
+            
+            if (userError) {
+              console.warn('User fetch error:', userError);
+            } else if (userData) {
+              setResponsible(userData);
+            }
+          } catch (err) {
+            console.warn('Error fetching responsible user:', err);
           }
         }
       } catch (error) {
