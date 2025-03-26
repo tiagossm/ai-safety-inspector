@@ -47,8 +47,7 @@ export const useInspectionData = (inspectionId: string | undefined) => {
             sync_status,
             checklist:checklists (
               title,
-              description,
-              total_questions
+              description
             )
           `)
           .eq('id', inspectionId)
@@ -74,10 +73,10 @@ export const useInspectionData = (inspectionId: string | undefined) => {
           companyId: inspectionData.company_id,
           responsibleId: inspectionData.responsible_id,
           scheduledDate: inspectionData.scheduled_date,
-          status: inspectionData.status || 'pending',
+          status: (inspectionData.status || 'pending') as 'pending' | 'in_progress' | 'completed',
           createdAt: inspectionData.created_at,
           updatedAt: inspectionData.created_at, // Using created_at as fallback since updated_at isn't available
-          priority: inspectionData.priority || 'medium',
+          priority: (inspectionData.priority || 'medium') as 'low' | 'medium' | 'high',
           locationName: inspectionData.location,
           checklist: inspectionData.checklist,
           // Additional fields to match database schema
@@ -88,7 +87,9 @@ export const useInspectionData = (inspectionId: string | undefined) => {
           photos: inspectionData.photos || [],
           report_url: inspectionData.report_url,
           unit_id: inspectionData.unit_id,
-          metadata: inspectionData.metadata,
+          metadata: inspectionData.metadata ? (typeof inspectionData.metadata === 'string' 
+            ? JSON.parse(inspectionData.metadata) 
+            : inspectionData.metadata) as Record<string, any>,
           cnae: inspectionData.cnae,
           inspection_type: inspectionData.inspection_type,
           sync_status: inspectionData.sync_status
