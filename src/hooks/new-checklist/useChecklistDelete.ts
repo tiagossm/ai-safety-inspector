@@ -10,7 +10,44 @@ export function useChecklistDelete() {
     mutationFn: async (checklistId: string) => {
       console.log("Deleting checklist:", checklistId);
       
-      // First delete all items (questions) associated with the checklist
+      // First check if there are any inspections associated with this checklist
+      const { data: inspectionsData, error: inspectionsCheckError } = await supabase
+        .from("inspections")
+        .select("id")
+        .eq("checklist_id", checklistId);
+        
+      if (inspectionsCheckError) {
+        console.error("Error checking related inspections:", inspectionsCheckError);
+        throw inspectionsCheckError;
+      }
+      
+      // If there are related inspections, ask the user for confirmation or delete them first
+      if (inspectionsData && inspectionsData.length > 0) {
+        console.log(`Found ${inspectionsData.length} inspections related to this checklist`);
+        
+        // Delete all inspections related to this checklist
+        const { error: inspectionResponsesError } = await supabase
+          .from("inspection_responses")
+          .delete()
+          .in("inspection_id", inspectionsData.map(i => i.id));
+          
+        if (inspectionResponsesError) {
+          console.error("Error deleting inspection responses:", inspectionResponsesError);
+          // Continue even if there's an error here
+        }
+        
+        const { error: inspectionsDeleteError } = await supabase
+          .from("inspections")
+          .delete()
+          .eq("checklist_id", checklistId);
+          
+        if (inspectionsDeleteError) {
+          console.error("Error deleting related inspections:", inspectionsDeleteError);
+          throw inspectionsDeleteError;
+        }
+      }
+      
+      // Now delete all items (questions) associated with the checklist
       const { error: itemsError } = await supabase
         .from("checklist_itens")
         .delete()

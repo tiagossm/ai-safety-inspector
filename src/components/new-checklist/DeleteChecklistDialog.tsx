@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,13 +27,17 @@ export function DeleteChecklistDialog({
   onOpenChange
 }: DeleteChecklistDialogProps) {
   const deleteChecklist = useChecklistDelete();
+  const [isConfirming, setIsConfirming] = useState(false);
   
   const handleDelete = async () => {
+    setIsConfirming(true);
     try {
       await deleteChecklist.mutateAsync(checklistId);
       onOpenChange(false);
     } catch (error) {
       console.error("Error in DeleteChecklistDialog:", error);
+    } finally {
+      setIsConfirming(false);
     }
   };
   
@@ -45,7 +49,15 @@ export function DeleteChecklistDialog({
           <AlertDialogDescription>
             Tem certeza que deseja excluir o checklist <strong>"{checklistTitle}"</strong>?
             <br />
-            Esta ação não pode ser desfeita.
+            {deleteChecklist.isPending && isConfirming && (
+              <div className="mt-2 p-2 bg-yellow-50 rounded-md text-amber-700 text-sm">
+                <p>Excluindo checklist e dados relacionados...</p>
+                <p>Isto pode levar alguns instantes se houver inspeções vinculadas a este checklist.</p>
+              </div>
+            )}
+            <div className="mt-2">
+              Esta ação não pode ser desfeita e também removerá todas as inspeções associadas.
+            </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

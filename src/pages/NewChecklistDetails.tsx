@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -63,14 +64,74 @@ export default function NewChecklistDetails() {
     navigate(`/inspections/new/${checklist.id}`);
   };
   
-  // Group questions by group
-  const groupedQuestions = checklist.groups && checklist.questions
-    ? checklist.groups.map(group => ({
-        ...group,
-        questions: checklist.questions!.filter(q => q.groupId === group.id)
-          .sort((a, b) => a.order - b.order)
-      }))
-    : [];
+  const handleDuplicate = () => {
+    toast.info("Funcionalidade de duplicação será implementada em breve");
+  };
+  
+  // Process questions and organize into groups
+  const processQuestions = () => {
+    if (!checklist.questions || checklist.questions.length === 0) {
+      return { groups: [], ungroupedQuestions: [] };
+    }
+    
+    console.log("Processing questions:", checklist.questions.length);
+    
+    const questionsByGroup = new Map();
+    const ungroupedQuestions = [];
+    
+    // First organize questions by group
+    checklist.questions.forEach(question => {
+      if (question.groupId) {
+        if (!questionsByGroup.has(question.groupId)) {
+          questionsByGroup.set(question.groupId, []);
+        }
+        questionsByGroup.get(question.groupId).push(question);
+      } else {
+        ungroupedQuestions.push(question);
+      }
+    });
+    
+    // Then create the groups array using metadata from the defined groups
+    const groups = [];
+    
+    if (checklist.groups && checklist.groups.length > 0) {
+      checklist.groups.forEach(group => {
+        const questionsForGroup = questionsByGroup.get(group.id) || [];
+        if (questionsForGroup.length > 0 || group.id === 'default') {
+          groups.push({
+            ...group,
+            questions: questionsForGroup.sort((a, b) => a.order - b.order)
+          });
+        }
+      });
+    }
+    
+    // If there are grouped questions but no defined groups, create default groups
+    questionsByGroup.forEach((questions, groupId) => {
+      if (!checklist.groups || !checklist.groups.some(g => g.id === groupId)) {
+        // Try to extract title from the first question's hint
+        let groupTitle = `Grupo ${groups.length + 1}`;
+        if (questions[0].hint) {
+          try {
+            const hintData = JSON.parse(questions[0].hint);
+            if (hintData.groupTitle) {
+              groupTitle = hintData.groupTitle;
+            }
+          } catch (e) {}
+        }
+        
+        groups.push({
+          id: groupId,
+          title: groupTitle,
+          questions: questions.sort((a, b) => a.order - b.order)
+        });
+      }
+    });
+    
+    return { groups, ungroupedQuestions };
+  };
+  
+  const { groups, ungroupedQuestions } = processQuestions();
   
   // Format dates
   const createdAt = checklist.createdAt 
@@ -129,6 +190,7 @@ export default function NewChecklistDetails() {
           <Button
             variant="outline"
             size="sm"
+            onClick={handleDuplicate}
           >
             <Copy className="h-4 w-4 mr-2" />
             Duplicar
@@ -166,11 +228,12 @@ export default function NewChecklistDetails() {
               <h2 className="text-xl font-semibold">Perguntas</h2>
             </CardHeader>
             <CardContent>
-              {groupedQuestions.length === 0 ? (
+              {groups.length === 0 && ungroupedQuestions.length === 0 ? (
                 <p className="text-muted-foreground">Este checklist não possui perguntas.</p>
               ) : (
                 <div className="space-y-6">
-                  {groupedQuestions.map(group => (
+                  {/* Display grouped questions */}
+                  {groups.map(group => (
                     <div key={group.id} className="mb-6">
                       <h3 className="text-lg font-medium mb-2 pb-1 border-b">
                         {group.title}
@@ -187,11 +250,11 @@ export default function NewChecklistDetails() {
                               <p className="font-medium mb-1">{index + 1}. {question.text}</p>
                               <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
                                 <Badge variant="outline" className="font-normal">
-                                  {question.responseType === "yes_no" ? "Sim/Não" :
-                                   question.responseType === "multiple_choice" ? "Múltipla escolha" :
-                                   question.responseType === "text" ? "Texto" :
-                                   question.responseType === "numeric" ? "Numérico" :
-                                   question.responseType === "photo" ? "Foto" : "Assinatura"}
+                                  {question.responseType === "sim/não" ? "Sim/Não" :
+                                   question.responseType === "seleção múltipla" ? "Múltipla escolha" :
+                                   question.responseType === "texto" ? "Texto" :
+                                   question.responseType === "numérico" ? "Numérico" :
+                                   question.responseType === "foto" ? "Foto" : "Assinatura"}
                                 </Badge>
                                 
                                 {question.isRequired && (
@@ -225,6 +288,47 @@ export default function NewChecklistDetails() {
                       </div>
                     </div>
                   ))}
+                  
+                  {/* Display ungrouped questions if any */}
+                  {ungroupedQuestions.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="text-lg font-medium mb-2 pb-1 border-b">
+                        Perguntas Gerais
+                      </h3>
+                      
+                      <div className="space-y-3 pl-2">
+                        {ungroupedQuestions.map((question, index) => (
+                          <div key={question.id} className="border-l-2 border-gray-200 pl-3 py-1">
+                            <p className="font-medium mb-1">{index + 1}. {question.text}</p>
+                            <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+                              <Badge variant="outline" className="font-normal">
+                                {question.responseType === "sim/não" ? "Sim/Não" :
+                                 question.responseType === "seleção múltipla" ? "Múltipla escolha" :
+                                 question.responseType === "texto" ? "Texto" :
+                                 question.responseType === "numérico" ? "Numérico" :
+                                 question.responseType === "foto" ? "Foto" : "Assinatura"}
+                              </Badge>
+                              
+                              {question.isRequired && (
+                                <Badge variant="outline" className="bg-red-50 font-normal">Obrigatório</Badge>
+                              )}
+                            </div>
+                            
+                            {question.options && question.options.length > 0 && (
+                              <div className="mt-2 pl-3 border-l border-dashed border-gray-200">
+                                <p className="text-sm font-medium mb-1">Opções:</p>
+                                <ul className="text-sm space-y-1">
+                                  {question.options.map((option, idx) => (
+                                    <li key={idx}>• {option}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -251,7 +355,7 @@ export default function NewChecklistDetails() {
                 
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Perguntas:</span>
-                  <span>{checklist.totalQuestions || 0}</span>
+                  <span>{checklist.questions ? checklist.questions.length : 0}</span>
                 </div>
                 
                 {checklist.responsibleId && (
