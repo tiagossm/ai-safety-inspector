@@ -11,12 +11,14 @@ interface MediaCaptureButtonProps {
   type: 'photo' | 'video' | 'audio';
   onMediaCaptured: (mediaData: any) => void;
   maxRecordingTime?: number; // in seconds
+  className?: string; // Added className prop
 }
 
 export function MediaCaptureButton({ 
   type, 
   onMediaCaptured,
-  maxRecordingTime = 15 // Default to 15 seconds for video/audio
+  maxRecordingTime = 15, // Default to 15 seconds for video/audio
+  className = '' // Default to empty string
 }: MediaCaptureButtonProps) {
   const [capturing, setCapturing] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);

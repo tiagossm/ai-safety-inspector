@@ -65,7 +65,7 @@ export default function InspectionExecutionPage() {
             disabled={saving}
             onClick={onSaveInspection}
           >
-            {saving ? "Saving..." : "Save Inspection"}
+            {saving ? "Salvando..." : "Salvar Inspeção"}
           </Button>
         </div>
         

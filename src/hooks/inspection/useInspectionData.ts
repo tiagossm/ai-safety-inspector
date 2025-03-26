@@ -37,7 +37,6 @@ export const useInspectionData = (inspectionId: string | undefined) => {
             cnae,
             metadata,
             created_at,
-            updated_at,
             approval_status,
             approved_by,
             approval_notes,
@@ -55,7 +54,10 @@ export const useInspectionData = (inspectionId: string | undefined) => {
           .eq('id', inspectionId)
           .single();
       
-        if (inspectionError) throw inspectionError;
+        if (inspectionError) {
+          console.error('Error fetching inspection:', inspectionError);
+          throw inspectionError;
+        }
         
         console.log('Inspection data:', inspectionData);
         
@@ -63,17 +65,18 @@ export const useInspectionData = (inspectionId: string | undefined) => {
           throw new Error('Inspeção não encontrada');
         }
         
+        // Create a properly formatted inspection object
         const formattedInspection: InspectionDetails = {
           id: inspectionData.id,
-          title: inspectionData.checklist.title || 'Sem título',
-          description: inspectionData.checklist.description,
+          title: inspectionData.checklist?.title || 'Sem título',
+          description: inspectionData.checklist?.description,
           checklistId: inspectionData.checklist_id,
           companyId: inspectionData.company_id,
           responsibleId: inspectionData.responsible_id,
           scheduledDate: inspectionData.scheduled_date,
           status: inspectionData.status || 'pending',
           createdAt: inspectionData.created_at,
-          updatedAt: inspectionData.updated_at || inspectionData.created_at,
+          updatedAt: inspectionData.created_at, // Using created_at as fallback since updated_at isn't available
           priority: inspectionData.priority || 'medium',
           locationName: inspectionData.location,
           checklist: inspectionData.checklist,
