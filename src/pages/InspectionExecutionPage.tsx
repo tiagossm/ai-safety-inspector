@@ -8,7 +8,7 @@ import { InspectionDetailsCard } from "@/components/inspection/InspectionDetails
 import { InspectionCompletion } from "@/components/inspection/InspectionCompletion";
 import { QuestionGroups } from "@/components/inspection/QuestionGroups";
 import { QuestionsPanel } from "@/components/inspection/QuestionsPanel";
-import { AlertCircle, ArrowPathIcon, RefreshCw } from "lucide-react";
+import { AlertCircle, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function InspectionExecutionPage() {
