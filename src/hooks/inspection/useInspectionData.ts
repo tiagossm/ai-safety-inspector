@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -20,7 +19,6 @@ export const useInspectionData = (inspectionId: string | undefined) => {
     const fetchInspectionData = async () => {
       setLoading(true);
       try {
-        // Fetch inspection details
         const { data: inspectionData, error: inspectionError } = await supabase
           .from('inspections')
           .select(`
@@ -64,7 +62,6 @@ export const useInspectionData = (inspectionId: string | undefined) => {
           throw new Error('Inspeção não encontrada');
         }
         
-        // Create a properly formatted inspection object
         const formattedInspection: InspectionDetails = {
           id: inspectionData.id,
           title: inspectionData.checklist?.title || 'Sem título',
@@ -79,7 +76,6 @@ export const useInspectionData = (inspectionId: string | undefined) => {
           priority: (inspectionData.priority || 'medium') as 'low' | 'medium' | 'high',
           locationName: inspectionData.location,
           checklist: inspectionData.checklist,
-          // Additional fields to match database schema
           approval_notes: inspectionData.approval_notes,
           approval_status: inspectionData.approval_status,
           approved_by: inspectionData.approved_by,
@@ -87,9 +83,10 @@ export const useInspectionData = (inspectionId: string | undefined) => {
           photos: inspectionData.photos || [],
           report_url: inspectionData.report_url,
           unit_id: inspectionData.unit_id,
-          metadata: inspectionData.metadata ? (typeof inspectionData.metadata === 'string' 
-            ? JSON.parse(inspectionData.metadata) 
-            : inspectionData.metadata) as Record<string, any>,
+          metadata: inspectionData.metadata 
+            ? typeof inspectionData.metadata === 'string' 
+              ? JSON.parse(inspectionData.metadata) as Record<string, any>
+              : inspectionData.metadata as Record<string, any>,
           cnae: inspectionData.cnae,
           inspection_type: inspectionData.inspection_type,
           sync_status: inspectionData.sync_status
@@ -97,7 +94,6 @@ export const useInspectionData = (inspectionId: string | undefined) => {
         
         setInspection(formattedInspection);
         
-        // Fetch checklist questions
         const { data: questionsData, error: questionsError } = await supabase
           .from('checklist_itens')
           .select('*')
@@ -108,13 +104,11 @@ export const useInspectionData = (inspectionId: string | undefined) => {
         
         console.log('Questions data:', questionsData);
         
-        // Group info from the question hint field
         const groupMap = new Map();
         const formattedQuestions = questionsData.map((q: any) => {
           let groupId: string | undefined;
           let groupTitle: string | undefined;
           
-          // Check if hint contains group info
           if (q.hint && q.hint.includes('groupId')) {
             try {
               const groupInfo = JSON.parse(q.hint);
@@ -155,7 +149,6 @@ export const useInspectionData = (inspectionId: string | undefined) => {
         setQuestions(formattedQuestions);
         setGroups(Array.from(groupMap.values()));
         
-        // Fetch responses for this inspection
         const { data: responsesData, error: responsesError } = await supabase
           .from('inspection_responses')
           .select('*')
@@ -165,7 +158,6 @@ export const useInspectionData = (inspectionId: string | undefined) => {
         
         console.log('Responses data:', responsesData);
         
-        // Format responses into a map of question_id -> response data
         const responsesMap: Record<string, any> = {};
         responsesData.forEach((r: any) => {
           responsesMap[r.question_id] = {
@@ -179,7 +171,6 @@ export const useInspectionData = (inspectionId: string | undefined) => {
         
         setResponses(responsesMap);
         
-        // Fetch company info if companyId exists
         if (inspectionData.company_id) {
           const { data: companyData, error: companyError } = await supabase
             .from('companies')
@@ -192,7 +183,6 @@ export const useInspectionData = (inspectionId: string | undefined) => {
           }
         }
         
-        // Fetch responsible user info if responsibleId exists
         if (inspectionData.responsible_id) {
           const { data: userData, error: userError } = await supabase
             .from('users')
@@ -241,7 +231,6 @@ export const useInspectionData = (inspectionId: string | undefined) => {
         completed_at: data.completedAt
       }));
       
-      // For each response, upsert into the database
       for (const responseData of responsesToSave) {
         const { error } = await supabase
           .from('inspection_responses')
@@ -255,7 +244,6 @@ export const useInspectionData = (inspectionId: string | undefined) => {
         }
       }
       
-      // Update the inspection status to in_progress if any responses
       if (responsesToSave.length > 0 && inspection.status === 'pending') {
         const { error: updateError } = await supabase
           .from('inspections')
@@ -278,11 +266,9 @@ export const useInspectionData = (inspectionId: string | undefined) => {
   
   const getFilteredQuestions = (groupId: string | null) => {
     if (!groupId) {
-      // Return questions without a group
       return questions.filter(q => !q.groupId);
     }
     
-    // Return questions for this group
     return questions.filter(q => q.groupId === groupId);
   };
   
