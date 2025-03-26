@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Save, Plus } from "lucide-react";
+import { ArrowLeft, Save, Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
 import { useChecklistUpdate } from "@/hooks/new-checklist/useChecklistUpdate";
@@ -19,7 +19,7 @@ import { QuestionGroup } from "@/components/new-checklist/question-editor/Questi
 export default function NewChecklistEdit() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { data: checklist, isLoading, error } = useChecklistById(id || "");
+  const { data: checklist, isLoading, error, refetch } = useChecklistById(id || "");
   const updateChecklist = useChecklistUpdate();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,78 +44,59 @@ export default function NewChecklistEdit() {
       setIsTemplate(checklist.isTemplate);
       setStatus(checklist.status);
       
-      // Process questions
+      // Process questions and groups
       if (checklist.questions && checklist.questions.length > 0) {
         console.log(`Processing ${checklist.questions.length} questions for edit form`);
-        setQuestions(checklist.questions || []);
+        setQuestions(checklist.questions);
         
-        // Initialize groups if they exist
+        // If we have groups, use them directly
         if (checklist.groups && checklist.groups.length > 0) {
           console.log(`Processing ${checklist.groups.length} groups for edit form`);
           setGroups(checklist.groups);
           setViewMode("grouped");
         } else {
           // If no groups, create a default group
-          const groupedQuestions = new Map<string, ChecklistQuestion[]>();
+          const defaultGroup: ChecklistGroup = {
+            id: "default",
+            title: "Geral",
+            order: 0
+          };
           
-          // Group questions by groupId
-          checklist.questions.forEach(q => {
-            const groupId = q.groupId || "default";
-            if (!groupedQuestions.has(groupId)) {
-              groupedQuestions.set(groupId, []);
-            }
-            groupedQuestions.get(groupId)?.push(q);
-          });
+          // Assign all questions to default group
+          const questionsWithGroup = checklist.questions.map(q => ({
+            ...q,
+            groupId: "default"
+          }));
           
-          // Create group objects
-          const newGroups: ChecklistGroup[] = [];
-          groupedQuestions.forEach((questions, groupId) => {
-            // Find a question with group info in the hint
-            const questionWithGroupInfo = questions.find(q => q.hint && q.hint.includes("groupTitle"));
-            
-            let groupTitle = "Geral";
-            if (questionWithGroupInfo?.hint) {
-              try {
-                const parsed = JSON.parse(questionWithGroupInfo.hint);
-                if (parsed.groupTitle) {
-                  groupTitle = parsed.groupTitle;
-                }
-              } catch (e) {
-                console.error("Error parsing group hint:", e);
-              }
-            }
-            
-            newGroups.push({
-              id: groupId,
-              title: groupTitle,
-              order: newGroups.length
-            });
-          });
-          
-          if (newGroups.length > 0) {
-            console.log(`Created ${newGroups.length} groups from question hints`);
-            setGroups(newGroups);
-            setViewMode("grouped");
-          } else if (checklist.questions.length > 0) {
-            // If no group info was found but we have questions, create a default group
-            const defaultGroup: ChecklistGroup = {
-              id: "default",
-              title: "Geral",
-              order: 0
-            };
-            setGroups([defaultGroup]);
-            
-            // Assign all questions to the default group
-            const updatedQuestions = checklist.questions.map(q => ({
-              ...q,
-              groupId: "default"
-            }));
-            setQuestions(updatedQuestions);
-            setViewMode("grouped");
-          }
+          setGroups([defaultGroup]);
+          setQuestions(questionsWithGroup);
+          setViewMode("grouped");
         }
       } else {
-        console.warn("No questions found for this checklist");
+        // If no questions, create a default empty question
+        const defaultGroup: ChecklistGroup = {
+          id: "default",
+          title: "Geral",
+          order: 0
+        };
+        
+        const defaultQuestion: ChecklistQuestion = {
+          id: `new-${Date.now()}`,
+          text: "",
+          responseType: "yes_no",
+          isRequired: true,
+          weight: 1,
+          allowsPhoto: false,
+          allowsVideo: false, 
+          allowsAudio: false,
+          order: 0,
+          groupId: "default"
+        };
+        
+        setGroups([defaultGroup]);
+        setQuestions([defaultQuestion]);
+        
+        console.warn("No questions found for this checklist, created a default one");
       }
     }
   }, [checklist]);
@@ -127,6 +108,36 @@ export default function NewChecklistEdit() {
       navigate("/new-checklists");
     }
   }, [error, navigate]);
+  
+  // Categorize questions by group for easier rendering
+  const questionsByGroup = useMemo(() => {
+    const result = new Map<string, ChecklistQuestion[]>();
+    
+    // Initialize with empty arrays for all groups
+    groups.forEach(group => {
+      result.set(group.id, []);
+    });
+    
+    // Add questions to their respective groups
+    questions.forEach(question => {
+      const groupId = question.groupId || "default";
+      if (!result.has(groupId)) {
+        result.set(groupId, []);
+      }
+      
+      result.get(groupId)?.push(question);
+    });
+    
+    // Sort questions by order within each group
+    result.forEach((groupQuestions, groupId) => {
+      result.set(
+        groupId,
+        groupQuestions.sort((a, b) => a.order - b.order)
+      );
+    });
+    
+    return result;
+  }, [questions, groups]);
   
   const handleAddGroup = () => {
     const newGroup: ChecklistGroup = {
@@ -176,7 +187,7 @@ export default function NewChecklistEdit() {
       allowsPhoto: false,
       allowsVideo: false,
       allowsAudio: false,
-      order: questions.length,
+      order: questionsByGroup.get(groupId)?.length || 0,
       groupId
     };
     
@@ -280,6 +291,13 @@ export default function NewChecklistEdit() {
     }
   };
   
+  const handleRefresh = () => {
+    if (id) {
+      toast.info("Recarregando dados do checklist...");
+      refetch();
+    }
+  };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -354,6 +372,16 @@ export default function NewChecklistEdit() {
           </Button>
           <h1 className="text-2xl font-bold">Editar Checklist</h1>
         </div>
+        
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefresh}
+          className="flex items-center gap-1"
+        >
+          <Loader2 className="h-4 w-4" />
+          <span>Recarregar</span>
+        </Button>
       </div>
       
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -428,7 +456,7 @@ export default function NewChecklistEdit() {
         
         <Card>
           <CardHeader className="border-b pb-3 flex flex-row items-center justify-between">
-            <h2 className="text-xl font-semibold">Perguntas</h2>
+            <h2 className="text-xl font-semibold">Perguntas {questions.length > 0 ? `(${questions.length})` : ""}</h2>
             <Tabs 
               value={viewMode} 
               onValueChange={(value) => setViewMode(value as "flat" | "grouped")}
@@ -472,7 +500,7 @@ export default function NewChecklistEdit() {
                                     >
                                       <QuestionGroup
                                         group={group}
-                                        questions={questions.filter(q => q.groupId === group.id)}
+                                        questions={questionsByGroup.get(group.id) || []}
                                         onGroupUpdate={handleUpdateGroup}
                                         onAddQuestion={handleAddQuestion}
                                         onUpdateQuestion={handleUpdateQuestion}
@@ -522,7 +550,10 @@ export default function NewChecklistEdit() {
             disabled={isSubmitting}
           >
             {isSubmitting ? (
-              "Salvando..."
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Salvando...
+              </>
             ) : (
               <>
                 <Save className="h-4 w-4 mr-2" />

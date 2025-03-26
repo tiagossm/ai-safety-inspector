@@ -32,18 +32,18 @@ const parseGroupInfo = (hint?: string): { groupId?: string; groupTitle?: string;
 // Map database response type to our TypeScript type
 const mapResponseType = (dbType: string): ChecklistQuestion["responseType"] => {
   const typeMap: Record<string, ChecklistQuestion["responseType"]> = {
-    yes_no: "yes_no",
-    multiple_choice: "multiple_choice",
-    text: "text",
-    numeric: "numeric",
-    photo: "photo",
-    signature: "signature",
+    "yes_no": "yes_no",
+    "multiple_choice": "multiple_choice",
+    "text": "text",
+    "numeric": "numeric",
+    "photo": "photo",
+    "signature": "signature",
     "sim/não": "yes_no",
     "seleção múltipla": "multiple_choice",
-    texto: "text",
-    numérico: "numeric",
-    foto: "photo",
-    assinatura: "signature"
+    "texto": "text",
+    "numérico": "numeric",
+    "foto": "photo",
+    "assinatura": "signature"
   };
   return typeMap[dbType] || "text";
 };
@@ -124,48 +124,93 @@ export function useChecklistById(id: string) {
         }
 
         console.log(`Retrieved ${questionsData?.length || 0} questions for checklist ${id}`);
+        console.log("Processing questions:", questionsData?.length || 0);
 
         const groupsMap = new Map<string, ChecklistGroup>();
         const processedQuestions: ChecklistQuestion[] = [];
 
-        (questionsData || []).forEach((q) => {
-          const { groupId, groupTitle } = parseGroupInfo(q.hint || undefined);
-
-          if (groupId && !groupsMap.has(groupId) && groupTitle) {
-            groupsMap.set(groupId, {
-              id: groupId,
-              title: groupTitle,
-              order: groupsMap.size
+        // Primeiro, vamos identificar grupos existentes para garantir que todas as perguntas sejam mapeadas corretamente
+        if (questionsData) {
+          // Criar um grupo padrão se não houver nenhum explícito
+          let defaultGroupId: string | null = null;
+          
+          // Processar informações de grupos primeiro
+          for (const q of questionsData) {
+            const { groupId, groupTitle } = parseGroupInfo(q.hint || undefined);
+            
+            if (groupId && groupTitle && !groupsMap.has(groupId)) {
+              groupsMap.set(groupId, {
+                id: groupId,
+                title: groupTitle,
+                order: groupsMap.size
+              });
+            }
+          }
+          
+          // Se não encontramos grupos, criar um padrão
+          if (groupsMap.size === 0 && questionsData.length > 0) {
+            defaultGroupId = "default-group";
+            groupsMap.set(defaultGroupId, {
+              id: defaultGroupId,
+              title: "Geral",
+              order: 0
             });
           }
-
-          const options = Array.isArray(q.opcoes)
-            ? q.opcoes.map(String)
-            : typeof q.opcoes === "string"
-            ? [q.opcoes]
-            : undefined;
-
-          processedQuestions.push({
-            id: q.id,
-            text: q.pergunta,
-            responseType: mapResponseType(q.tipo_resposta),
-            isRequired: q.obrigatorio,
-            options,
-            hint: q.hint || undefined,
-            weight: q.weight || 1,
-            groupId: groupId,
-            parentQuestionId: q.parent_item_id || undefined,
-            conditionValue: q.condition_value || undefined,
-            allowsPhoto: q.permite_foto || false,
-            allowsVideo: q.permite_video || false,
-            allowsAudio: q.permite_audio || false,
-            order: q.ordem,
-            hasSubChecklist: !!q.sub_checklist_id,
-            subChecklistId: q.sub_checklist_id || undefined
-          });
-        });
+          
+          // Agora processar todas as perguntas
+          for (const q of questionsData) {
+            let questionGroupId: string | undefined;
+            
+            // Tentar extrair groupId do hint
+            const { groupId } = parseGroupInfo(q.hint || undefined);
+            
+            if (groupId && groupsMap.has(groupId)) {
+              questionGroupId = groupId;
+            } else if (defaultGroupId) {
+              // Se não tem grupo mas temos um padrão, usar o padrão
+              questionGroupId = defaultGroupId;
+            }
+            
+            let options: string[] | undefined;
+            
+            // Processar opções
+            if (q.opcoes) {
+              if (Array.isArray(q.opcoes)) {
+                options = q.opcoes.map(String);
+              } else if (typeof q.opcoes === "string") {
+                try {
+                  const parsed = JSON.parse(q.opcoes);
+                  options = Array.isArray(parsed) ? parsed.map(String) : [q.opcoes];
+                } catch (e) {
+                  options = [q.opcoes];
+                }
+              }
+            }
+            
+            processedQuestions.push({
+              id: q.id,
+              text: q.pergunta,
+              responseType: mapResponseType(q.tipo_resposta),
+              isRequired: q.obrigatorio,
+              options,
+              hint: q.hint || undefined,
+              weight: q.weight || 1,
+              groupId: questionGroupId,
+              parentQuestionId: q.parent_item_id || undefined,
+              conditionValue: q.condition_value || undefined,
+              allowsPhoto: q.permite_foto || false,
+              allowsVideo: q.permite_video || false,
+              allowsAudio: q.permite_audio || false,
+              order: q.ordem || processedQuestions.length,
+              hasSubChecklist: !!q.sub_checklist_id,
+              subChecklistId: q.sub_checklist_id || undefined
+            });
+          }
+        }
 
         const groups = Array.from(groupsMap.values()).sort((a, b) => a.order - b.order);
+        console.log("Processing questions:", processedQuestions.length);
+        console.log("Processing groups:", groups.length);
 
         const checklistWithStats: ChecklistWithStats = {
           id: checklistData.id,
@@ -182,7 +227,7 @@ export function useChecklistById(id: string) {
           dueDate: checklistData.due_date || undefined,
           groups,
           questions: processedQuestions,
-          totalQuestions: questionsData?.length || 0,
+          totalQuestions: processedQuestions.length,
           completedQuestions: 0
         };
 

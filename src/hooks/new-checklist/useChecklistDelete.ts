@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -69,9 +70,9 @@ export function useChecklistDelete() {
     onError: (error: any) => {
       console.error("Error in useChecklistDelete:", error);
       
-      // Provide a more user-friendly error message
+      // Fornecer uma mensagem de erro mais amigável
       if (error.code === "23503" && error.message.includes("inspections")) {
-        toast.error("Este checklist possui inspeções relacionadas e não pode ser excluído.");
+        toast.error("Este checklist possui inspeções relacionadas e não pode ser excluído diretamente.");
       } else {
         toast.error(`Erro ao excluir checklist: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
       }
