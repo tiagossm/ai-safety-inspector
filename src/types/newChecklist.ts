@@ -1,4 +1,3 @@
-
 export interface ChecklistGroup {
   id: string;
   title: string;
@@ -100,4 +99,15 @@ export interface InspectionResponse {
   completedAt?: string;
   createdAt: string;
   updatedAt?: string;
+}
+
+export interface InspectionFilters {
+  search: string;
+  status: "all" | "pending" | "in_progress" | "completed";
+  priority: "all" | "low" | "medium" | "high";
+  companyId: string;
+  responsibleId: string;
+  checklistId: string;
+  startDate?: Date;
+  endDate?: Date;
 }

@@ -18,6 +18,7 @@ import NewChecklistEdit from "@/pages/NewChecklistEdit";
 import NewChecklistDetails from "@/pages/NewChecklistDetails";
 import NewInspectionPage from "@/pages/NewInspectionPage";
 import InspectionExecutionPage from "@/pages/InspectionExecutionPage";
+import Inspections from "@/pages/Inspections";
 
 function App() {
   return (
@@ -38,6 +39,7 @@ function App() {
             <Route path="new-checklists/:id" element={<NewChecklistDetails />} />
             
             {/* Inspection routes */}
+            <Route path="inspections" element={<Inspections />} />
             <Route path="inspections/new/:id" element={<NewInspectionPage />} />
             <Route path="inspections/:id/view" element={<InspectionExecutionPage />} />
             
@@ -45,7 +47,6 @@ function App() {
             <Route path="checklists" element={<Navigate to="/new-checklists" replace />} />
             <Route path="checklists/create" element={<Navigate to="/new-checklists/create" replace />} />
             <Route path="checklists/:id" element={<Navigate to="/new-checklists/:id" replace />} />
-            <Route path="inspections" element={<Navigate to="/new-checklists" replace />} />
             
             <Route path="settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
