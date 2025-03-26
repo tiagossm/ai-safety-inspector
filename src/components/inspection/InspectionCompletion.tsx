@@ -52,7 +52,7 @@ export function InspectionCompletion({ loading, stats }: InspectionCompletionPro
           </div>
           <Progress 
             value={stats.percentage} 
-            className={cn("h-2", getProgressColor(stats.percentage))}
+            className="h-2"
           />
           <div className="flex justify-between items-center text-xs text-gray-500">
             <span>{stats.answered} de {stats.total} perguntas</span>
