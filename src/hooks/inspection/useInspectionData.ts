@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -84,9 +85,9 @@ export const useInspectionData = (inspectionId: string | undefined) => {
           report_url: inspectionData.report_url,
           unit_id: inspectionData.unit_id,
           metadata: inspectionData.metadata 
-            ? typeof inspectionData.metadata === 'string' 
-              ? JSON.parse(inspectionData.metadata) as Record<string, any>
-              : inspectionData.metadata as Record<string, any>,
+            ? (typeof inspectionData.metadata === 'string' 
+              ? JSON.parse(inspectionData.metadata) 
+              : inspectionData.metadata) as Record<string, any>,
           cnae: inspectionData.cnae,
           inspection_type: inspectionData.inspection_type,
           sync_status: inspectionData.sync_status
