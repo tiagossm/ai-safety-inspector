@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -63,6 +62,19 @@ export const useInspectionData = (inspectionId: string | undefined) => {
           throw new Error('Inspeção não encontrada');
         }
         
+        let parsedMetadata: Record<string, any> = {};
+        if (inspectionData.metadata) {
+          if (typeof inspectionData.metadata === 'string') {
+            try {
+              parsedMetadata = JSON.parse(inspectionData.metadata);
+            } catch (e) {
+              console.error('Error parsing metadata:', e);
+            }
+          } else {
+            parsedMetadata = inspectionData.metadata as Record<string, any>;
+          }
+        }
+        
         const formattedInspection: InspectionDetails = {
           id: inspectionData.id,
           title: inspectionData.checklist?.title || 'Sem título',
@@ -84,10 +96,7 @@ export const useInspectionData = (inspectionId: string | undefined) => {
           photos: inspectionData.photos || [],
           report_url: inspectionData.report_url,
           unit_id: inspectionData.unit_id,
-          metadata: inspectionData.metadata 
-            ? (typeof inspectionData.metadata === 'string' 
-              ? JSON.parse(inspectionData.metadata) 
-              : inspectionData.metadata) as Record<string, any>,
+          metadata: parsedMetadata,
           cnae: inspectionData.cnae,
           inspection_type: inspectionData.inspection_type,
           sync_status: inspectionData.sync_status
