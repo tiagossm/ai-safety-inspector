@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 interface InspectionCompletionProps {
   loading: boolean;
@@ -51,8 +52,7 @@ export function InspectionCompletion({ loading, stats }: InspectionCompletionPro
           </div>
           <Progress 
             value={stats.percentage} 
-            className="h-2"
-            indicatorClassName={getProgressColor(stats.percentage)}
+            className={cn("h-2", getProgressColor(stats.percentage))}
           />
           <div className="flex justify-between items-center text-xs text-gray-500">
             <span>{stats.answered} de {stats.total} perguntas</span>
