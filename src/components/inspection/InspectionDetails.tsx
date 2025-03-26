@@ -23,18 +23,18 @@ export function InspectionDetailsCard({
 }: InspectionDetailsCardProps) {
   if (loading) {
     return (
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xl font-bold">
-            <Skeleton className="h-6 w-48" />
+      <Card className="border-gray-200 shadow-sm">
+        <CardHeader className="pb-1 px-4 pt-4">
+          <CardTitle className="text-base font-medium">
+            <Skeleton className="h-5 w-40" />
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
+        <CardContent className="px-4 pb-4">
+          <div className="space-y-3">
+            <Skeleton className="h-3.5 w-full" />
+            <Skeleton className="h-3.5 w-full" />
+            <Skeleton className="h-3.5 w-3/4" />
+            <Skeleton className="h-3.5 w-1/2" />
           </div>
         </CardContent>
       </Card>
@@ -52,19 +52,19 @@ export function InspectionDetailsCard({
   
   const getPriorityClass = (priority: string | undefined) => {
     switch (priority) {
-      case "high": return "text-red-600";
-      case "medium": return "text-amber-600";
-      case "low": return "text-green-600";
-      default: return "text-gray-600";
+      case "high": return "text-red-500";
+      case "medium": return "text-amber-500";
+      case "low": return "text-green-500";
+      default: return "text-gray-500";
     }
   };
   
   const getStatusClass = (status: string | undefined) => {
     switch (status) {
-      case "completed": return "text-green-600";
-      case "in_progress": return "text-blue-600";
-      case "pending": return "text-amber-600";
-      default: return "text-gray-600";
+      case "completed": return "text-green-500";
+      case "in_progress": return "text-blue-500";
+      case "pending": return "text-amber-500";
+      default: return "text-gray-500";
     }
   };
   
@@ -86,10 +86,12 @@ export function InspectionDetailsCard({
   };
   
   return (
-    <Card>
-      <CardHeader className="pb-2">
+    <Card className="border-gray-200 shadow-sm">
+      <CardHeader className="pb-1 px-4 pt-4">
         <div className="flex justify-between items-center">
-          <CardTitle className="text-lg">{inspection?.title || "Detalhes da Inspeção"}</CardTitle>
+          <CardTitle className="text-base font-medium text-gray-800">
+            {inspection?.title || "Detalhes da Inspeção"}
+          </CardTitle>
           
           {onRefresh && (
             <Button 
@@ -97,27 +99,28 @@ export function InspectionDetailsCard({
               size="icon" 
               onClick={onRefresh} 
               title="Atualizar dados"
+              className="h-7 w-7"
             >
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className="h-3.5 w-3.5 text-gray-400" />
             </Button>
           )}
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
+      <CardContent className="px-4 pb-4">
+        <div className="space-y-2.5">
           <div className="flex items-start gap-2">
-            <Building2 className="h-5 w-5 text-gray-500 mt-0.5" />
+            <Building2 className="h-4 w-4 text-gray-400 mt-0.5" />
             <div>
-              <p className="text-sm font-medium">Empresa</p>
+              <p className="text-xs font-medium text-gray-600">Empresa</p>
               <p className="text-sm">{getCompanyName()}</p>
             </div>
           </div>
           
           {responsible && (
             <div className="flex items-start gap-2">
-              <User2 className="h-5 w-5 text-gray-500 mt-0.5" />
+              <User2 className="h-4 w-4 text-gray-400 mt-0.5" />
               <div>
-                <p className="text-sm font-medium">Responsável</p>
+                <p className="text-xs font-medium text-gray-600">Responsável</p>
                 <p className="text-sm">{responsible?.name || "Não informado"}</p>
               </div>
             </div>
@@ -125,9 +128,9 @@ export function InspectionDetailsCard({
           
           {inspection?.scheduledDate && (
             <div className="flex items-start gap-2">
-              <Calendar className="h-5 w-5 text-gray-500 mt-0.5" />
+              <Calendar className="h-4 w-4 text-gray-400 mt-0.5" />
               <div>
-                <p className="text-sm font-medium">Data Programada</p>
+                <p className="text-xs font-medium text-gray-600">Data Programada</p>
                 <p className="text-sm">{formatDate(inspection.scheduledDate)}</p>
               </div>
             </div>
@@ -135,18 +138,18 @@ export function InspectionDetailsCard({
           
           {inspection?.locationName && (
             <div className="flex items-start gap-2">
-              <MapPin className="h-5 w-5 text-gray-500 mt-0.5" />
+              <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
               <div>
-                <p className="text-sm font-medium">Local</p>
+                <p className="text-xs font-medium text-gray-600">Local</p>
                 <p className="text-sm">{inspection.locationName}</p>
               </div>
             </div>
           )}
           
           <div className="flex items-start gap-2">
-            <CheckCircle className="h-5 w-5 text-gray-500 mt-0.5" />
+            <CheckCircle className="h-4 w-4 text-gray-400 mt-0.5" />
             <div>
-              <p className="text-sm font-medium">Status</p>
+              <p className="text-xs font-medium text-gray-600">Status</p>
               <p className={`text-sm ${getStatusClass(inspection?.status)}`}>
                 {getStatusText(inspection?.status)}
               </p>
@@ -155,9 +158,9 @@ export function InspectionDetailsCard({
           
           {inspection?.priority && (
             <div className="flex items-start gap-2">
-              <AlertTriangle className="h-5 w-5 text-gray-500 mt-0.5" />
+              <AlertTriangle className="h-4 w-4 text-gray-400 mt-0.5" />
               <div>
-                <p className="text-sm font-medium">Prioridade</p>
+                <p className="text-xs font-medium text-gray-600">Prioridade</p>
                 <p className={`text-sm ${getPriorityClass(inspection.priority)}`}>
                   {inspection.priority === "high" ? "Alta" : 
                    inspection.priority === "medium" ? "Média" : 
@@ -168,9 +171,9 @@ export function InspectionDetailsCard({
           )}
 
           {inspection?.error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+            <div className="mt-3 p-2.5 bg-red-50 border border-red-100 rounded text-red-600 text-xs">
               <p className="font-medium">Erro ao carregar dados:</p>
-              <p>{inspection.error}</p>
+              <p className="leading-relaxed">{inspection.error}</p>
             </div>
           )}
         </div>

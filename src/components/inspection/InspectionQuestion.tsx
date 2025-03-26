@@ -1,4 +1,8 @@
 
+// Note: This file is quite large at 711 lines. I'll update key parts
+// to improve the UI while preserving functionality. The full file would
+// need refactoring after these changes.
+
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -143,29 +147,29 @@ export function InspectionQuestion({
       <div className="flex flex-wrap gap-2 mt-2">
         <Button
           variant={response?.value === "sim" ? "default" : "outline"}
-          className={`flex items-center gap-2 ${response?.value === "sim" ? "bg-green-500 hover:bg-green-600" : ""}`}
+          className={`flex items-center gap-1.5 text-xs h-8 ${response?.value === "sim" ? "bg-green-500 hover:bg-green-600" : ""}`}
           onClick={() => handleResponseValue("sim")}
           size="sm"
         >
-          <CheckCircle className="h-4 w-4" />
+          <CheckCircle className="h-3.5 w-3.5" />
           <span>SIM</span>
         </Button>
         <Button
           variant={response?.value === "não" ? "default" : "outline"}
-          className={`flex items-center gap-2 ${response?.value === "não" ? "bg-red-500 hover:bg-red-600" : ""}`}
+          className={`flex items-center gap-1.5 text-xs h-8 ${response?.value === "não" ? "bg-red-500 hover:bg-red-600" : ""}`}
           onClick={() => handleResponseValue("não")}
           size="sm"
         >
-          <XCircle className="h-4 w-4" />
+          <XCircle className="h-3.5 w-3.5" />
           <span>NÃO</span>
         </Button>
         <Button
           variant={response?.value === "n/a" ? "default" : "outline"}
-          className={`flex items-center gap-2 ${response?.value === "n/a" ? "bg-gray-500 hover:bg-gray-600" : ""}`}
+          className={`flex items-center gap-1.5 text-xs h-8 ${response?.value === "n/a" ? "bg-gray-500 hover:bg-gray-600" : ""}`}
           onClick={() => handleResponseValue("n/a")}
           size="sm"
         >
-          <HelpCircle className="h-4 w-4" />
+          <HelpCircle className="h-3.5 w-3.5" />
           <span>N/A</span>
         </Button>
       </div>
@@ -180,6 +184,7 @@ export function InspectionQuestion({
           onChange={(e) => handleResponseValue(e.target.value)}
           placeholder="Digite sua resposta..."
           rows={2}
+          className="text-sm"
         />
       </div>
     );
@@ -193,6 +198,7 @@ export function InspectionQuestion({
           value={response?.value || ""}
           onChange={(e) => handleResponseValue(e.target.value)}
           placeholder="Digite um valor numérico..."
+          className="text-sm"
         />
       </div>
     );
@@ -200,7 +206,7 @@ export function InspectionQuestion({
   
   const renderMultipleChoiceOptions = () => {
     if (!question.options || question.options.length === 0) {
-      return <p className="text-sm text-muted-foreground mt-2">Nenhuma opção disponível</p>;
+      return <p className="text-xs text-muted-foreground mt-2">Nenhuma opção disponível</p>;
     }
     
     return (
@@ -211,6 +217,7 @@ export function InspectionQuestion({
             variant={response?.value === option ? "default" : "outline"}
             onClick={() => handleResponseValue(option)}
             size="sm"
+            className="text-xs h-8"
           >
             {option}
           </Button>
@@ -289,8 +296,8 @@ export function InspectionQuestion({
     if (!response?.mediaUrls || response.mediaUrls.length === 0) return null;
     
     return (
-      <div className="mt-3 space-y-2">
-        <h4 className="text-sm font-medium">Anexos ({response.mediaUrls.length})</h4>
+      <div className="mt-3 space-y-1.5">
+        <h4 className="text-xs font-medium text-gray-600">Anexos ({response.mediaUrls.length})</h4>
         <div className="grid grid-cols-3 gap-2">
           {response.mediaUrls.map((url: string, i: number) => {
             const isImage = url.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i);
@@ -302,19 +309,19 @@ export function InspectionQuestion({
                 {isImage ? (
                   <img src={url} alt={`Mídia ${i+1}`} className="w-full h-full object-cover" />
                 ) : isVideo ? (
-                  <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100">
-                    <Video className="h-8 w-8 text-gray-500" />
-                    <span className="text-xs mt-1 text-gray-500">Vídeo</span>
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50">
+                    <Video className="h-6 w-6 text-gray-400" />
+                    <span className="text-xs mt-1 text-gray-400">Vídeo</span>
                   </div>
                 ) : isAudio ? (
-                  <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100">
-                    <Mic className="h-8 w-8 text-gray-500" />
-                    <span className="text-xs mt-1 text-gray-500">Áudio</span>
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50">
+                    <Mic className="h-6 w-6 text-gray-400" />
+                    <span className="text-xs mt-1 text-gray-400">Áudio</span>
                   </div>
                 ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100">
-                    <FileText className="h-8 w-8 text-gray-500" />
-                    <span className="text-xs mt-1 text-gray-500">Arquivo</span>
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50">
+                    <FileText className="h-6 w-6 text-gray-400" />
+                    <span className="text-xs mt-1 text-gray-400">Arquivo</span>
                   </div>
                 )}
                 
@@ -325,7 +332,7 @@ export function InspectionQuestion({
                     rel="noopener noreferrer" 
                     className="bg-white p-1 rounded-full shadow"
                   >
-                    <Download className="h-4 w-4" />
+                    <Download className="h-3.5 w-3.5" />
                   </a>
                 </div>
               </div>
@@ -347,20 +354,20 @@ export function InspectionQuestion({
   if (!shouldShow) return null;
   
   const getCardClasses = () => {
-    let baseClasses = "overflow-hidden border";
+    let baseClasses = "overflow-hidden border border-gray-200 shadow-sm";
     
     if (!response?.value && question.isRequired) {
-      return `${baseClasses} border-l-4 border-l-yellow-500`;
+      return `${baseClasses} border-l-4 border-l-yellow-400`;
     }
     
     if (question.responseType === "sim/não" || question.responseType === "yes_no") {
-      if (response?.value === "sim") return `${baseClasses} border-l-4 border-l-green-500`;
-      if (response?.value === "não") return `${baseClasses} border-l-4 border-l-red-500`;
+      if (response?.value === "sim") return `${baseClasses} border-l-4 border-l-green-400`;
+      if (response?.value === "não") return `${baseClasses} border-l-4 border-l-red-400`;
       return baseClasses;
     }
     
     if (response?.value) {
-      return `${baseClasses} border-l-4 border-l-blue-500`;
+      return `${baseClasses} border-l-4 border-l-blue-400`;
     }
     
     return baseClasses;
@@ -369,18 +376,18 @@ export function InspectionQuestion({
   return (
     <>
       <Card className={getCardClasses()}>
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between gap-4">
+        <CardContent className="p-3.5">
+          <div className="flex items-start justify-between gap-3">
             <div className="flex items-start gap-2">
               {isFollowUpQuestion && (
-                <CornerDownRight className="h-4 w-4 mt-1 text-muted-foreground" />
+                <CornerDownRight className="h-3.5 w-3.5 mt-1 text-gray-400" />
               )}
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="font-medium">{index + 1}.</span>
-                  <h3 className="font-medium">{question.text}</h3>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <span className="font-medium text-sm text-gray-600">{index + 1}.</span>
+                  <h3 className="font-medium text-sm text-gray-800">{question.text}</h3>
                   {question.isRequired && (
-                    <Badge variant="outline" className="text-red-500">*</Badge>
+                    <Badge variant="outline" className="text-red-500 text-xs h-4 ml-1">*</Badge>
                   )}
                 </div>
                 
@@ -391,7 +398,7 @@ export function InspectionQuestion({
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowCommentSection(true)}
-                    className="mt-2 flex items-center gap-1 text-xs"
+                    className="mt-1.5 flex items-center gap-1 text-xs h-7 text-gray-500"
                   >
                     <MessageCircle className="h-3 w-3" />
                     <span>Mostrar Comentário</span>
@@ -399,36 +406,38 @@ export function InspectionQuestion({
                 )}
                 
                 {(showCommentSection || response?.comment) && (
-                  <div className="mt-2 bg-slate-50 p-2 rounded-md">
+                  <div className="mt-1.5 bg-slate-50 p-2 rounded-md">
                     <div className="flex items-center justify-between mb-1">
-                      <p className="text-xs font-medium text-slate-700">Comentário:</p>
+                      <p className="text-xs font-medium text-slate-600">Comentário:</p>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => setShowCommentSection(false)}
                         className="h-5 w-5 p-0"
                       >
-                        <XCircle className="h-3 w-3" />
+                        <XCircle className="h-3 w-3 text-gray-400" />
                       </Button>
                     </div>
-                    <p className="text-sm text-slate-600">{response?.comment || "Nenhum comentário adicionado ainda."}</p>
+                    <p className="text-xs leading-relaxed text-slate-600">{response?.comment || "Nenhum comentário adicionado ainda."}</p>
                   </div>
                 )}
                 
                 {question.hasSubChecklist && (
-                  <div className="mt-3">
+                  <div className="mt-2.5">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={loadSubChecklist}
                       disabled={loadingSubChecklist}
-                      className="flex items-center gap-1"
+                      className="flex items-center gap-1.5 text-xs h-7"
                     >
-                      <List className="h-4 w-4" />
+                      <List className="h-3.5 w-3.5 text-gray-500" />
                       <span>{loadingSubChecklist ? "Carregando..." : "Abrir Sub-Checklist"}</span>
                     </Button>
                   </div>
                 )}
+                
+                {renderMediaAttachments()}
               </div>
             </div>
             
@@ -436,10 +445,10 @@ export function InspectionQuestion({
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-8 w-8 mt-0"
+                className="h-7 w-7 mt-0"
                 title="Dica da pergunta"
               >
-                <Info className="h-4 w-4" />
+                <Info className="h-3.5 w-3.5 text-gray-400" />
               </Button>
             )}
           </div>
@@ -448,23 +457,23 @@ export function InspectionQuestion({
             <Collapsible
               open={isActionPlanOpen || !!response?.actionPlan}
               onOpenChange={setIsActionPlanOpen}
-              className="mt-3"
+              className="mt-2.5"
             >
               <CollapsibleTrigger asChild>
                 <Button 
                   variant="outline" 
                   size="sm"
-                  className="flex items-center gap-1 w-full justify-start bg-amber-50 border-amber-200 text-amber-800"
+                  className="flex items-center gap-1.5 w-full justify-start bg-amber-50 border-amber-200 text-amber-700 text-xs h-7"
                 >
-                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
                   <span>{response?.actionPlan ? "Plano de Ação" : "Adicionar Plano de Ação"}</span>
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2">
-                <div className="bg-amber-50 p-3 rounded-md border border-amber-200">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Lightbulb className="h-4 w-4 text-amber-600" />
-                    <h4 className="text-sm font-medium text-amber-800">Plano de Ação</h4>
+                <div className="bg-amber-50 p-2.5 rounded-md border border-amber-200">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <Lightbulb className="h-3.5 w-3.5 text-amber-500" />
+                    <h4 className="text-xs font-medium text-amber-700">Plano de Ação</h4>
                   </div>
                   <Textarea
                     value={response?.actionPlan || ""}
@@ -476,21 +485,21 @@ export function InspectionQuestion({
                     }}
                     placeholder="Descreva o plano de ação para resolver este problema..."
                     rows={2}
-                    className="bg-white"
+                    className="bg-white text-xs"
                   />
                 </div>
               </CollapsibleContent>
             </Collapsible>
           )}
           
-          <div className="flex flex-wrap justify-end gap-2 mt-3">
+          <div className="flex flex-wrap justify-end gap-1.5 mt-2.5">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setMediaDialogOpen(true)}
-              className="flex items-center gap-1"
+              className="flex items-center gap-1 text-xs h-7"
             >
-              <Camera className="h-4 w-4" />
+              <Camera className="h-3.5 w-3.5 text-gray-500" />
               <span>Mídia</span>
             </Button>
             
@@ -501,9 +510,9 @@ export function InspectionQuestion({
                 setCommentText(response?.comment || "");
                 setCommentDialogOpen(true);
               }}
-              className="flex items-center gap-1"
+              className="flex items-center gap-1 text-xs h-7"
             >
-              <MessageCircle className="h-4 w-4" />
+              <MessageCircle className="h-3.5 w-3.5 text-gray-500" />
               <span>Comentário</span>
             </Button>
             
@@ -519,9 +528,9 @@ export function InspectionQuestion({
                   setIsActionPlanOpen(true);
                 }
               }}
-              className="flex items-center gap-1"
+              className="flex items-center gap-1 text-xs h-7"
             >
-              <AlertTriangle className="h-4 w-4" />
+              <AlertTriangle className="h-3.5 w-3.5 text-gray-500" />
               <span>Plano de Ação</span>
             </Button>
           </div>

@@ -26,36 +26,36 @@ export function QuestionsPanel({
   onResponseChange
 }: QuestionsPanelProps) {
   return (
-    <Card>
-      <CardHeader className="pb-2">
+    <Card className="border-gray-200 shadow-sm">
+      <CardHeader className="pb-2 px-4 pt-4">
         <div className="flex justify-between items-center">
-          <CardTitle className="text-lg">
+          <CardTitle className="text-base font-medium text-gray-800">
             {currentGroupId ? 
               groups.find(g => g.id === currentGroupId)?.title || "Perguntas" : 
               "Perguntas"}
           </CardTitle>
           
           <div className="flex gap-2">
-            <Badge variant="outline" className="bg-gray-50">
+            <Badge variant="outline" className="bg-gray-50 text-xs font-normal text-gray-600">
               {filteredQuestions.length} Perguntas
             </Badge>
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-4 pb-4">
         {loading ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {Array(5).fill(0).map((_, i) => (
-              <Skeleton key={i} className="h-32 w-full" />
+              <Skeleton key={i} className="h-24 w-full" />
             ))}
           </div>
         ) : filteredQuestions.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Nenhuma pergunta nesta seção</p>
+          <div className="text-center py-6">
+            <p className="text-sm text-muted-foreground">Nenhuma pergunta nesta seção</p>
           </div>
         ) : (
-          <ScrollArea className="h-[calc(100vh-300px)] pr-4">
-            <div className="space-y-4">
+          <ScrollArea className="h-[calc(100vh-300px)] pr-3">
+            <div className="space-y-3">
               {filteredQuestions.map((question, index) => (
                 <InspectionQuestion
                   key={question.id}

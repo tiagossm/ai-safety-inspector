@@ -1,39 +1,25 @@
 
-import React from "react";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { InspectionDetails } from "@/types/newChecklist";
 
 interface InspectionHeaderProps {
   loading: boolean;
-  inspection: InspectionDetails | null;
+  inspection: any;
 }
 
 export function InspectionHeader({ loading, inspection }: InspectionHeaderProps) {
-  const navigate = useNavigate();
+  if (loading) {
+    return (
+      <div className="mb-4">
+        <Skeleton className="h-7 w-2/3 max-w-md mb-1" />
+        <Skeleton className="h-4 w-1/3 max-w-xs" />
+      </div>
+    );
+  }
   
   return (
-    <div className="flex items-center gap-4 mb-6">
-      <Button 
-        variant="outline" 
-        size="sm"
-        onClick={() => navigate(-1)}
-        className="flex items-center gap-1"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        <span>Voltar</span>
-      </Button>
-      
-      <div>
-        <h1 className="text-2xl font-bold">
-          {loading ? <Skeleton className="h-8 w-64" /> : inspection?.title}
-        </h1>
-        {loading ? <Skeleton className="h-4 w-48 mt-1" /> : 
-          inspection?.description && <p className="text-muted-foreground">{inspection.description}</p>
-        }
-      </div>
+    <div className="mb-4">
+      <h1 className="text-xl font-medium text-gray-800">{inspection?.title || "Inspeção"}</h1>
+      <p className="text-sm text-gray-500">{inspection?.description || "Execução de checklist"}</p>
     </div>
   );
 }

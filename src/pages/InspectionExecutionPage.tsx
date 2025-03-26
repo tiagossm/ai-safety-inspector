@@ -49,28 +49,30 @@ export default function InspectionExecutionPage() {
   };
   
   return (
-    <div className="container py-6 max-w-7xl mx-auto">
+    <div className="container py-4 max-w-7xl mx-auto">
       <InspectionHeader loading={loading} inspection={inspection} />
       
       {error && (
-        <Alert variant="destructive" className="mb-6">
+        <Alert variant="destructive" className="mb-4">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Erro ao carregar inspeção</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="mt-2" 
-            onClick={refreshData}
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Tentar novamente
-          </Button>
+          <AlertTitle className="text-sm font-medium">Erro ao carregar inspeção</AlertTitle>
+          <AlertDescription className="text-xs">
+            {error}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2 text-xs" 
+              onClick={refreshData}
+            >
+              <RefreshCw className="h-3 w-3 mr-1 text-muted-foreground" />
+              Tentar novamente
+            </Button>
+          </AlertDescription>
         </Alert>
       )}
       
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-1 space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <div className="lg:col-span-1 space-y-3">
           <InspectionDetailsCard 
             loading={loading} 
             inspection={inspection} 
@@ -89,23 +91,25 @@ export default function InspectionExecutionPage() {
             />
           )}
           
-          <Button
-            className="w-full"
-            disabled={saving || loading}
-            onClick={onSaveInspection}
-          >
-            {saving ? "Salvando..." : "Salvar Inspeção"}
-          </Button>
-          
-          <Button
-            variant="outline"
-            className="w-full"
-            disabled={loading}
-            onClick={refreshData}
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Atualizar dados
-          </Button>
+          <div className="space-y-2">
+            <Button
+              className="w-full text-sm"
+              disabled={saving || loading}
+              onClick={onSaveInspection}
+            >
+              {saving ? "Salvando..." : "Salvar Inspeção"}
+            </Button>
+            
+            <Button
+              variant="outline"
+              className="w-full text-sm"
+              disabled={loading}
+              onClick={refreshData}
+            >
+              <RefreshCw className="h-3 w-3 mr-1 text-muted-foreground" />
+              Atualizar dados
+            </Button>
+          </div>
         </div>
         
         <div className="lg:col-span-3">
@@ -120,22 +124,22 @@ export default function InspectionExecutionPage() {
           />
           
           {!loading && questions.length === 0 && (
-            <Alert className="mt-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Sem perguntas disponíveis</AlertTitle>
-              <AlertDescription>
+            <Alert className="mt-3">
+              <AlertCircle className="h-4 w-4 text-muted-foreground" />
+              <AlertTitle className="text-sm font-medium">Sem perguntas disponíveis</AlertTitle>
+              <AlertDescription className="text-xs leading-relaxed">
                 Não foram encontradas perguntas para este checklist.
                 Tente atualizar os dados ou verifique se o checklist possui perguntas cadastradas.
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-2 text-xs" 
+                  onClick={refreshData}
+                >
+                  <RefreshCw className="h-3 w-3 mr-1 text-muted-foreground" />
+                  Atualizar dados
+                </Button>
               </AlertDescription>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="mt-2" 
-                onClick={refreshData}
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Atualizar dados
-              </Button>
             </Alert>
           )}
         </div>
