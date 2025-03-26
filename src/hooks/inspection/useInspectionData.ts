@@ -13,15 +13,18 @@ export const useInspectionData = (inspectionId: string | undefined) => {
   const [company, setCompany] = useState<any>(null);
   const [responsible, setResponsible] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   
   useEffect(() => {
     if (!inspectionId) return;
     
     const fetchInspectionData = async () => {
       setLoading(true);
+      setLoadError(null);
       try {
         console.log(`Fetching inspection data for ID: ${inspectionId}`);
         
+        // Fetch inspection details with company and responsible data
         const { data: inspectionData, error: inspectionError } = await supabase
           .from('inspections')
           .select(`
@@ -56,12 +59,14 @@ export const useInspectionData = (inspectionId: string | undefined) => {
       
         if (inspectionError) {
           console.error('Error fetching inspection:', inspectionError);
+          setLoadError(`Erro ao carregar inspeção: ${inspectionError.message}`);
           throw inspectionError;
         }
         
         console.log('Inspection data:', inspectionData);
         
         if (!inspectionData) {
+          setLoadError('Inspeção não encontrada');
           throw new Error('Inspeção não encontrada');
         }
         
@@ -107,32 +112,53 @@ export const useInspectionData = (inspectionId: string | undefined) => {
         
         setInspection(formattedInspection);
         
+        // Load checklist items/questions
         const { data: questionsData, error: questionsError } = await supabase
           .from('checklist_itens')
           .select('*')
           .eq('checklist_id', inspectionData.checklist_id)
           .order('ordem', { ascending: true });
         
-        if (questionsError) throw questionsError;
+        if (questionsError) {
+          console.error('Error fetching questions:', questionsError);
+          setLoadError(`Erro ao carregar perguntas: ${questionsError.message}`);
+          throw questionsError;
+        }
         
         console.log('Questions data:', questionsData);
         
+        if (!questionsData || questionsData.length === 0) {
+          console.warn('No questions found for this checklist');
+        }
+        
         const groupMap = new Map();
-        const formattedQuestions = questionsData.map((q: any) => {
-          let groupId: string | undefined;
-          let groupTitle: string | undefined;
+        
+        // Create a default group for ungrouped questions
+        const defaultGroupId = "default-group";
+        groupMap.set(defaultGroupId, {
+          id: defaultGroupId,
+          title: "Geral",
+          order: 0
+        });
+        
+        const formattedQuestions = (questionsData || []).map((q: any) => {
+          let groupId: string = defaultGroupId;
+          let groupTitle: string = "Geral";
           
           if (q.hint && q.hint.includes('groupId')) {
             try {
               const groupInfo = JSON.parse(q.hint);
-              groupId = groupInfo.groupId;
-              groupTitle = groupInfo.groupTitle;
-              
-              if (groupId && !groupMap.has(groupId)) {
-                groupMap.set(groupId, {
-                  id: groupId,
-                  title: groupTitle || `Grupo ${groupMap.size + 1}`
-                });
+              if (groupInfo.groupId) {
+                groupId = groupInfo.groupId;
+                groupTitle = groupInfo.groupTitle || `Grupo ${groupMap.size}`;
+                
+                if (!groupMap.has(groupId)) {
+                  groupMap.set(groupId, {
+                    id: groupId,
+                    title: groupTitle,
+                    order: groupMap.size
+                  });
+                }
               }
             } catch (e) {
               console.error('Error parsing group info from hint:', e);
@@ -162,17 +188,22 @@ export const useInspectionData = (inspectionId: string | undefined) => {
         setQuestions(formattedQuestions);
         setGroups(Array.from(groupMap.values()));
         
+        // Fetch existing responses
         const { data: responsesData, error: responsesError } = await supabase
           .from('inspection_responses')
           .select('*')
           .eq('inspection_id', inspectionId);
         
-        if (responsesError) throw responsesError;
+        if (responsesError) {
+          console.error('Error fetching responses:', responsesError);
+          setLoadError(`Erro ao carregar respostas: ${responsesError.message}`);
+          throw responsesError;
+        }
         
         console.log('Responses data:', responsesData);
         
         const responsesMap: Record<string, any> = {};
-        responsesData.forEach((r: any) => {
+        (responsesData || []).forEach((r: any) => {
           responsesMap[r.question_id] = {
             value: r.answer,
             comment: r.notes,
@@ -195,6 +226,16 @@ export const useInspectionData = (inspectionId: string | undefined) => {
             
             if (companyError) {
               console.warn('Company fetch error:', companyError);
+              // If using 'name' causes error, try with 'fantasy_name' instead
+              const { data: companyAltData, error: companyAltError } = await supabase
+                .from('companies')
+                .select('id, fantasy_name, cnpj, email, phone, address, company_type, status, created_at, updated_at')
+                .eq('id', inspectionData.company_id)
+                .single();
+                
+              if (!companyAltError && companyAltData) {
+                setCompany(companyAltData);
+              }
             } else if (companyData) {
               setCompany(companyData);
             }
@@ -221,8 +262,9 @@ export const useInspectionData = (inspectionId: string | undefined) => {
             console.warn('Error fetching responsible user:', err);
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching inspection data:', error);
+        setLoadError(error.message || 'Erro ao carregar dados da inspeção');
         toast.error('Erro ao carregar dados da inspeção');
       } finally {
         setLoading(false);
@@ -293,7 +335,7 @@ export const useInspectionData = (inspectionId: string | undefined) => {
   
   const getFilteredQuestions = (groupId: string | null) => {
     if (!groupId) {
-      return questions.filter(q => !q.groupId);
+      return questions.filter(q => !q.groupId || q.groupId === 'default-group');
     }
     
     return questions.filter(q => q.groupId === groupId);
@@ -311,6 +353,123 @@ export const useInspectionData = (inspectionId: string | undefined) => {
     };
   };
   
+  const refreshData = async () => {
+    if (inspectionId) {
+      setLoading(true);
+      try {
+        // Re-fetch inspection data
+        const { data: inspectionData, error: inspectionError } = await supabase
+          .from('inspections')
+          .select(`
+            id,
+            checklist_id,
+            status,
+            company_id,
+            user_id,
+            responsible_id,
+            scheduled_date,
+            location,
+            priority,
+            inspection_type,
+            cnae,
+            metadata,
+            created_at,
+            approval_status,
+            approved_by,
+            approval_notes,
+            audio_url,
+            photos,
+            report_url,
+            unit_id,
+            sync_status,
+            checklist:checklists (
+              title,
+              description
+            )
+          `)
+          .eq('id', inspectionId)
+          .single();
+          
+        if (inspectionError) throw inspectionError;
+        
+        // Re-fetch questions based on the checklist_id
+        const { data: questionsData, error: questionsError } = await supabase
+          .from('checklist_itens')
+          .select('*')
+          .eq('checklist_id', inspectionData.checklist_id)
+          .order('ordem', { ascending: true });
+          
+        if (questionsError) throw questionsError;
+        
+        // Process and update state
+        console.log('Refreshed questions data:', questionsData);
+        
+        // Same processing logic as in the initial load
+        const groupMap = new Map();
+        const defaultGroupId = "default-group";
+        groupMap.set(defaultGroupId, {
+          id: defaultGroupId,
+          title: "Geral",
+          order: 0
+        });
+        
+        const formattedQuestions = (questionsData || []).map((q: any) => {
+          let groupId: string = defaultGroupId;
+          let groupTitle: string = "Geral";
+          
+          if (q.hint && q.hint.includes('groupId')) {
+            try {
+              const groupInfo = JSON.parse(q.hint);
+              if (groupInfo.groupId) {
+                groupId = groupInfo.groupId;
+                groupTitle = groupInfo.groupTitle || `Grupo ${groupMap.size}`;
+                
+                if (!groupMap.has(groupId)) {
+                  groupMap.set(groupId, {
+                    id: groupId,
+                    title: groupTitle,
+                    order: groupMap.size
+                  });
+                }
+              }
+            } catch (e) {
+              console.error('Error parsing group info from hint:', e);
+            }
+          }
+          
+          return {
+            id: q.id,
+            text: q.pergunta,
+            responseType: q.tipo_resposta,
+            isRequired: q.obrigatorio,
+            options: q.opcoes || [],
+            order: q.ordem,
+            groupId: groupId,
+            conditionValue: q.condition_value,
+            parentQuestionId: q.parent_item_id,
+            allowsPhoto: q.permite_foto,
+            allowsVideo: q.permite_video,
+            allowsAudio: q.permite_audio,
+            hint: q.hint,
+            weight: q.weight || 1,
+            hasSubChecklist: !!q.sub_checklist_id,
+            subChecklistId: q.sub_checklist_id
+          };
+        });
+        
+        setQuestions(formattedQuestions);
+        setGroups(Array.from(groupMap.values()));
+        
+        toast.success('Dados atualizados com sucesso!');
+      } catch (error: any) {
+        console.error('Error refreshing data:', error);
+        toast.error('Erro ao atualizar dados: ' + (error.message || 'Erro desconhecido'));
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+  
   return {
     loading,
     inspection,
@@ -320,9 +479,11 @@ export const useInspectionData = (inspectionId: string | undefined) => {
     company,
     responsible,
     saving,
+    error: loadError,
     handleResponseChange,
     handleSaveInspection,
     getFilteredQuestions,
-    getCompletionStats
+    getCompletionStats,
+    refreshData
   };
 };
