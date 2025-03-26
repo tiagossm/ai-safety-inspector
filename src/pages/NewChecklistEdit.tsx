@@ -37,17 +37,85 @@ export default function NewChecklistEdit() {
   // Initialize form with checklist data when it loads
   useEffect(() => {
     if (checklist) {
+      console.log("Checklist data loaded for edit:", checklist);
       setTitle(checklist.title);
       setDescription(checklist.description || "");
       setCategory(checklist.category || "");
       setIsTemplate(checklist.isTemplate);
       setStatus(checklist.status);
-      setQuestions(checklist.questions || []);
-      setGroups(checklist.groups || []);
       
-      // Default to grouped view if there are groups
-      if (checklist.groups && checklist.groups.length > 0) {
-        setViewMode("grouped");
+      // Process questions
+      if (checklist.questions && checklist.questions.length > 0) {
+        console.log(`Processing ${checklist.questions.length} questions for edit form`);
+        setQuestions(checklist.questions || []);
+        
+        // Initialize groups if they exist
+        if (checklist.groups && checklist.groups.length > 0) {
+          console.log(`Processing ${checklist.groups.length} groups for edit form`);
+          setGroups(checklist.groups);
+          setViewMode("grouped");
+        } else {
+          // If no groups, create a default group
+          const groupedQuestions = new Map<string, ChecklistQuestion[]>();
+          
+          // Group questions by groupId
+          checklist.questions.forEach(q => {
+            const groupId = q.groupId || "default";
+            if (!groupedQuestions.has(groupId)) {
+              groupedQuestions.set(groupId, []);
+            }
+            groupedQuestions.get(groupId)?.push(q);
+          });
+          
+          // Create group objects
+          const newGroups: ChecklistGroup[] = [];
+          groupedQuestions.forEach((questions, groupId) => {
+            // Find a question with group info in the hint
+            const questionWithGroupInfo = questions.find(q => q.hint && q.hint.includes("groupTitle"));
+            
+            let groupTitle = "Geral";
+            if (questionWithGroupInfo?.hint) {
+              try {
+                const parsed = JSON.parse(questionWithGroupInfo.hint);
+                if (parsed.groupTitle) {
+                  groupTitle = parsed.groupTitle;
+                }
+              } catch (e) {
+                console.error("Error parsing group hint:", e);
+              }
+            }
+            
+            newGroups.push({
+              id: groupId,
+              title: groupTitle,
+              order: newGroups.length
+            });
+          });
+          
+          if (newGroups.length > 0) {
+            console.log(`Created ${newGroups.length} groups from question hints`);
+            setGroups(newGroups);
+            setViewMode("grouped");
+          } else if (checklist.questions.length > 0) {
+            // If no group info was found but we have questions, create a default group
+            const defaultGroup: ChecklistGroup = {
+              id: "default",
+              title: "Geral",
+              order: 0
+            };
+            setGroups([defaultGroup]);
+            
+            // Assign all questions to the default group
+            const updatedQuestions = checklist.questions.map(q => ({
+              ...q,
+              groupId: "default"
+            }));
+            setQuestions(updatedQuestions);
+            setViewMode("grouped");
+          }
+        }
+      } else {
+        console.warn("No questions found for this checklist");
       }
     }
   }, [checklist]);

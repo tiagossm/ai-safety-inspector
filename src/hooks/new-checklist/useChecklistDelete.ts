@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -21,30 +20,14 @@ export function useChecklistDelete() {
         throw inspectionsCheckError;
       }
       
-      // If there are related inspections, ask the user for confirmation or delete them first
+      // If there are related inspections, throw an error - can't delete directly
       if (inspectionsData && inspectionsData.length > 0) {
         console.log(`Found ${inspectionsData.length} inspections related to this checklist`);
-        
-        // Delete all inspections related to this checklist
-        const { error: inspectionResponsesError } = await supabase
-          .from("inspection_responses")
-          .delete()
-          .in("inspection_id", inspectionsData.map(i => i.id));
-          
-        if (inspectionResponsesError) {
-          console.error("Error deleting inspection responses:", inspectionResponsesError);
-          // Continue even if there's an error here
-        }
-        
-        const { error: inspectionsDeleteError } = await supabase
-          .from("inspections")
-          .delete()
-          .eq("checklist_id", checklistId);
-          
-        if (inspectionsDeleteError) {
-          console.error("Error deleting related inspections:", inspectionsDeleteError);
-          throw inspectionsDeleteError;
-        }
+        throw {
+          code: "23503",
+          message: "Checklist has related inspections",
+          details: `This checklist has ${inspectionsData.length} related inspections`
+        };
       }
       
       // Now delete all items (questions) associated with the checklist
@@ -55,6 +38,13 @@ export function useChecklistDelete() {
         
       if (itemsError) {
         console.error("Error deleting checklist items:", itemsError);
+        
+        // If this fails due to constraints, we should still try to report a helpful error
+        if (itemsError.code === "23503") {
+          throw itemsError;
+        }
+        
+        // Otherwise just show a warning and continue
         toast.warning("Alguns itens do checklist não puderam ser removidos.");
       }
       
@@ -76,9 +66,15 @@ export function useChecklistDelete() {
       queryClient.invalidateQueries({ queryKey: ["new-checklists"] });
       toast.success("Checklist excluído com sucesso!");
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error in useChecklistDelete:", error);
-      toast.error(`Erro ao excluir checklist: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
+      
+      // Provide a more user-friendly error message
+      if (error.code === "23503" && error.message.includes("inspections")) {
+        toast.error("Este checklist possui inspeções relacionadas e não pode ser excluído.");
+      } else {
+        toast.error(`Erro ao excluir checklist: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
+      }
     }
   });
 }
