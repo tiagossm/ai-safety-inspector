@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useInspectionData } from "@/hooks/inspection/useInspectionData";
+import { useInspectionData } from "@/hooks/inspection";
 import { InspectionHeader } from "@/components/inspection/InspectionHeader";
 import { InspectionDetailsCard } from "@/components/inspection/InspectionDetails";
 import { InspectionCompletion } from "@/components/inspection/InspectionCompletion";
