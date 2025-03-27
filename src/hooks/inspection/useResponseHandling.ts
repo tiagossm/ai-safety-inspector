@@ -65,11 +65,20 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
     }
   }, [inspectionId]);
 
-  const handleSaveSubChecklistResponses = useCallback(async (parentQuestionId: string, responses: any[]) => {
+  // Updated the function signature to match what's expected in InspectionLayout
+  const handleSaveSubChecklistResponses = useCallback(async (
+    parentQuestionId: string, 
+    responses: Record<string, any>
+  ): Promise<boolean> => {
     try {
       if (!inspectionId) throw new Error("ID da inspeção não fornecido");
 
-      const formattedResponses = responses.map(response => ({
+      // Convert the responses object to an array format for Supabase
+      const responsesArray = Array.isArray(responses) 
+        ? responses 
+        : Object.values(responses);
+
+      const formattedResponses = responsesArray.map(response => ({
         inspection_id: inspectionId,
         question_id: response.questionId,
         answer: response.value,

@@ -27,9 +27,9 @@ interface SubChecklistDialogProps {
   subChecklist: any;
   subChecklistQuestions: any[];
   currentResponses?: Record<string, any>;
-  onSaveResponses?: (responses: SubChecklistResponse[]) => void;
+  onSaveResponses?: (responses: Record<string, SubChecklistResponse>) => void;
   readOnly?: boolean;
-  saving?: boolean; // Make sure this prop is defined in the interface
+  saving?: boolean;
 }
 
 export function SubChecklistDialog({
@@ -86,8 +86,8 @@ export function SubChecklistDialog({
     
     setSavingLocal(true);
     try {
-      const responsesArray = Object.values(responses);
-      onSaveResponses(responsesArray);
+      // Instead of passing an array, pass the responses object itself
+      onSaveResponses(responses);
       toast.success("Sub-checklist salvo com sucesso");
       onOpenChange(false);
     } catch (error) {

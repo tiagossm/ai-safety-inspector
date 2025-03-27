@@ -15,7 +15,7 @@ interface QuestionsPanelProps {
   responses: Record<string, any>;
   groups: any[];
   onResponseChange: (questionId: string, data: any) => void;
-  onSaveSubChecklistResponses: (questionId: string, responses: any[]) => Promise<void>;
+  onSaveSubChecklistResponses: (questionId: string, responses: Record<string, any>) => Promise<void>;
   subChecklists: Record<string, any>;
 }
 
@@ -35,24 +35,19 @@ export function QuestionsPanel({
   const [currentParentQuestionId, setCurrentParentQuestionId] = useState<string | null>(null);
   const [savingSubChecklist, setSavingSubChecklist] = useState(false);
   
-  // Function to safely parse response data
   const safeParseResponse = (value: any) => {
     if (!value) return null;
     
     if (typeof value === 'object') return value;
     
-    // Try to parse JSON if it's a string
     if (typeof value === 'string') {
       try {
-        // Only try to parse if it looks like JSON
         if (value.startsWith('{') || value.startsWith('[')) {
           return JSON.parse(value);
         }
-        // For simple string values like "sim", "não", just return as is
         return value;
       } catch (e) {
         console.warn("Failed to parse JSON response:", e);
-        // If it fails to parse, just return the original string
         return value;
       }
     }
@@ -69,16 +64,13 @@ export function QuestionsPanel({
     const subChecklist = subChecklists[questionId];
     const parentResponse = responses[questionId] || {};
     
-    // Process sub-checklist responses
     let subChecklistResponses: Record<string, any> = {};
     
     if (parentResponse.subChecklistResponses) {
       try {
-        // Check if it's already an object
         if (typeof parentResponse.subChecklistResponses === 'object') {
           subChecklistResponses = parentResponse.subChecklistResponses;
         } else {
-          // Try to parse it safely
           const parsedResponses = safeParseResponse(parentResponse.subChecklistResponses);
           if (parsedResponses && typeof parsedResponses === 'object') {
             subChecklistResponses = parsedResponses;
@@ -86,7 +78,6 @@ export function QuestionsPanel({
         }
       } catch (error) {
         console.error("Error parsing sub-checklist responses:", error);
-        // Initialize a new object if parsing fails
         subChecklistResponses = {};
       }
     }
@@ -96,26 +87,18 @@ export function QuestionsPanel({
     setSubChecklistDialogOpen(true);
   };
   
-  const handleSaveSubChecklistResponses = (responses: any[]) => {
+  const handleSaveSubChecklistResponses = (responsesObj: Record<string, any>) => {
     if (!currentParentQuestionId) return;
     
     setSavingSubChecklist(true);
     
     try {
-      // Convert responses array to object indexed by questionId
-      const responsesObj = responses.reduce((acc, curr) => {
-        acc[curr.questionId] = curr;
-        return acc;
-      }, {});
-      
-      // Update parent response with sub-checklist responses
       onResponseChange(currentParentQuestionId, {
         ...(responses[currentParentQuestionId] || {}),
         subChecklistResponses: responsesObj
       });
       
-      // Save to backend
-      onSaveSubChecklistResponses(currentParentQuestionId, responses);
+      onSaveSubChecklistResponses(currentParentQuestionId, responsesObj);
       
       toast.success("Respostas do sub-checklist salvas com sucesso");
       setSubChecklistDialogOpen(false);
@@ -127,7 +110,6 @@ export function QuestionsPanel({
     }
   };
   
-  // Get current group
   const currentGroup = groups.find(g => g.id === currentGroupId);
   
   if (loading) {
@@ -187,7 +169,6 @@ export function QuestionsPanel({
               key={question.id}
               question={{
                 ...question,
-                // Add hasSubChecklist flag if this question has a sub-checklist
                 hasSubChecklist: !!subChecklists[question.id]
               }}
               index={index}
@@ -202,8 +183,6 @@ export function QuestionsPanel({
             <Button
               variant="ghost"
               onClick={() => {
-                // Scroll to next group (in future version)
-                // For now, just show a placeholder message
                 toast.info("Próximo grupo será implementado em versões futuras");
               }}
             >
@@ -213,7 +192,6 @@ export function QuestionsPanel({
         </CardContent>
       </Card>
       
-      {/* Sub-checklist dialog */}
       {currentSubChecklist && (
         <SubChecklistDialog
           open={subChecklistDialogOpen}

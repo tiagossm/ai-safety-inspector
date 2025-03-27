@@ -104,6 +104,16 @@ export default function InspectionExecutionPage() {
     return Promise.resolve();
   };
 
+  // Fix: Create a wrapper function that converts Promise<boolean> to Promise<void>
+  const handleSaveSubChecklistResponsesWrapper = async (
+    subChecklistId: string, 
+    responses: Record<string, any>
+  ): Promise<void> => {
+    await handleSaveSubChecklistResponses(subChecklistId, responses);
+    // Don't return the boolean, just resolve the promise without a value
+    return Promise.resolve();
+  };
+
   if (error) {
     return (
       <InspectionError 
@@ -138,7 +148,7 @@ export default function InspectionExecutionPage() {
       onGenerateReport={onGenerateReport}
       refreshData={refreshData}
       onResponseChange={handleResponseChange}
-      onSaveSubChecklistResponses={handleSaveSubChecklistResponses}
+      onSaveSubChecklistResponses={handleSaveSubChecklistResponsesWrapper}
     />
   );
 }
