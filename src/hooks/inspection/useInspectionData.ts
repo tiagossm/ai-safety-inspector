@@ -2,14 +2,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { InspectionDetails } from '@/types/newChecklist';
-const mapStatusToDB = (status: string): string => {
-  const statusMap: Record<string, string> = {
-    pending: 'Pendente',
-    in_progress: 'Em Andamento',
-    completed: 'Concluído'
-  };
-  return statusMap[status] || 'Pendente';
-};
 
 export const useInspectionData = (inspectionId: string | undefined) => {
   const [loading, setLoading] = useState(true);
@@ -20,10 +12,10 @@ export const useInspectionData = (inspectionId: string | undefined) => {
   const [company, setCompany] = useState<any>(null);
   const [responsible, setResponsible] = useState<any>(null);
   const [saving, setSaving] = useState(false);
-  
+
   useEffect(() => {
     if (!inspectionId) return;
-    
+
     const fetchInspectionData = async () => {
       setLoading(true);
       try {
@@ -58,31 +50,21 @@ export const useInspectionData = (inspectionId: string | undefined) => {
           `)
           .eq('id', inspectionId)
           .single();
-      
-        if (inspectionError) {
-          console.error('Error fetching inspection:', inspectionError);
-          throw inspectionError;
-        }
-        
-        console.log('Inspection data:', inspectionData);
-        
-        if (!inspectionData) {
-          throw new Error('Inspeção não encontrada');
-        }
-        
+
+        if (inspectionError) throw inspectionError;
+        if (!inspectionData) throw new Error('Inspeção não encontrada');
+
         let parsedMetadata: Record<string, any> = {};
         if (inspectionData.metadata) {
-          if (typeof inspectionData.metadata === 'string') {
-            try {
-              parsedMetadata = JSON.parse(inspectionData.metadata);
-            } catch (e) {
-              console.error('Error parsing metadata:', e);
-            }
-          } else {
-            parsedMetadata = inspectionData.metadata as Record<string, any>;
+          try {
+            parsedMetadata = typeof inspectionData.metadata === 'string'
+              ? JSON.parse(inspectionData.metadata)
+              : inspectionData.metadata;
+          } catch (e) {
+            console.error('Erro ao parsear metadata:', e);
           }
         }
-        
+
         const formattedInspection: InspectionDetails = {
           id: inspectionData.id,
           title: inspectionData.checklist?.title || 'Sem título',
@@ -91,9 +73,9 @@ export const useInspectionData = (inspectionId: string | undefined) => {
           companyId: inspectionData.company_id,
           responsibleId: inspectionData.responsible_id,
           scheduledDate: inspectionData.scheduled_date,
-          status: (inspectionData.status || 'pending') as 'pending' | 'in_progress' | 'completed',
+          status: inspectionData.status as 'pending' | 'in_progress' | 'completed',
           createdAt: inspectionData.created_at,
-          updatedAt: inspectionData.created_at, // Using created_at as fallback since updated_at isn't available
+          updatedAt: inspectionData.created_at,
           priority: (inspectionData.priority || 'medium') as 'low' | 'medium' | 'high',
           locationName: inspectionData.location,
           checklist: inspectionData.checklist,
@@ -109,30 +91,28 @@ export const useInspectionData = (inspectionId: string | undefined) => {
           inspection_type: inspectionData.inspection_type,
           sync_status: inspectionData.sync_status
         };
-        
+
         setInspection(formattedInspection);
-        
+
         const { data: questionsData, error: questionsError } = await supabase
           .from('checklist_itens')
           .select('*')
           .eq('checklist_id', inspectionData.checklist_id)
           .order('ordem', { ascending: true });
-        
+
         if (questionsError) throw questionsError;
-        
-        console.log('Questions data:', questionsData);
-        
+
         const groupMap = new Map();
         const formattedQuestions = questionsData.map((q: any) => {
           let groupId: string | undefined;
           let groupTitle: string | undefined;
-          
+
           if (q.hint && q.hint.includes('groupId')) {
             try {
               const groupInfo = JSON.parse(q.hint);
               groupId = groupInfo.groupId;
               groupTitle = groupInfo.groupTitle;
-              
+
               if (groupId && !groupMap.has(groupId)) {
                 groupMap.set(groupId, {
                   id: groupId,
@@ -140,10 +120,10 @@ export const useInspectionData = (inspectionId: string | undefined) => {
                 });
               }
             } catch (e) {
-              console.error('Error parsing group info from hint:', e);
+              console.error('Erro ao parsear hint:', e);
             }
           }
-          
+
           return {
             id: q.id,
             text: q.pergunta,
@@ -163,19 +143,17 @@ export const useInspectionData = (inspectionId: string | undefined) => {
             subChecklistId: q.sub_checklist_id
           };
         });
-        
+
         setQuestions(formattedQuestions);
         setGroups(Array.from(groupMap.values()));
-        
+
         const { data: responsesData, error: responsesError } = await supabase
           .from('inspection_responses')
           .select('*')
           .eq('inspection_id', inspectionId);
-        
+
         if (responsesError) throw responsesError;
-        
-        console.log('Responses data:', responsesData);
-        
+
         const responsesMap: Record<string, any> = {};
         responsesData.forEach((r: any) => {
           responsesMap[r.question_id] = {
@@ -186,43 +164,39 @@ export const useInspectionData = (inspectionId: string | undefined) => {
             completedAt: r.completed_at
           };
         });
-        
+
         setResponses(responsesMap);
-        
+
         if (inspectionData.company_id) {
-          const { data: companyData, error: companyError } = await supabase
+          const { data: companyData } = await supabase
             .from('companies')
             .select('id, name, cnpj')
             .eq('id', inspectionData.company_id)
             .single();
-          
-          if (!companyError && companyData) {
-            setCompany(companyData);
-          }
+
+          setCompany(companyData);
         }
-        
+
         if (inspectionData.responsible_id) {
-          const { data: userData, error: userError } = await supabase
+          const { data: userData } = await supabase
             .from('users')
             .select('id, name, email')
             .eq('id', inspectionData.responsible_id)
             .single();
-          
-          if (!userError && userData) {
-            setResponsible(userData);
-          }
+
+          setResponsible(userData);
         }
       } catch (error) {
-        console.error('Error fetching inspection data:', error);
+        console.error('Erro ao carregar dados da inspeção:', error);
         toast.error('Erro ao carregar dados da inspeção');
       } finally {
         setLoading(false);
       }
     };
-    
+
     fetchInspectionData();
   }, [inspectionId]);
-  
+
   const handleResponseChange = (questionId: string, responseData: any) => {
     setResponses((prev) => ({
       ...prev,
@@ -233,10 +207,10 @@ export const useInspectionData = (inspectionId: string | undefined) => {
       }
     }));
   };
-  
+
   const handleSaveInspection = async () => {
     if (!inspection || !inspectionId) return;
-    
+
     setSaving(true);
     try {
       const responsesToSave = Object.entries(responses).map(([questionId, data]) => ({
@@ -248,61 +222,95 @@ export const useInspectionData = (inspectionId: string | undefined) => {
         media_urls: data.mediaUrls || [],
         completed_at: data.completedAt
       }));
-      
+
       for (const responseData of responsesToSave) {
         const { error } = await supabase
           .from('inspection_responses')
           .upsert(responseData, {
             onConflict: 'inspection_id,question_id'
           });
-        
-        if (error) {
-          console.error('Error saving response:', error);
-          throw error;
-        }
-      }
-      
-      if (responsesToSave.length > 0 && inspection.status === 'pending') {
-        const { error: updateError } = await supabase
-  .from('inspections')
-  .update({ status: mapStatusToDB('in_progress') }) // ou qualquer lógica dinâmica aqui
-  .eq('id', inspectionId);
 
-        
-        if (updateError) {
-          console.error('Error updating inspection status:', updateError);
-        }
+        if (error) throw error;
       }
-      
+
+      if (responsesToSave.length > 0 && inspection.status === 'pending') {
+        await supabase
+          .from('inspections')
+          .update({ status: 'Em Andamento' }) // traduzido
+          .eq('id', inspectionId);
+      }
+
       toast.success('Respostas salvas com sucesso!');
     } catch (error) {
-      console.error('Error saving inspection:', error);
+      console.error('Erro ao salvar inspeção:', error);
       toast.error('Erro ao salvar respostas');
     } finally {
       setSaving(false);
     }
   };
-  
-  const getFilteredQuestions = (groupId: string | null) => {
-    if (!groupId) {
-      return questions.filter(q => !q.groupId);
-    }
-    
-    return questions.filter(q => q.groupId === groupId);
+
+  const mapStatusToDB = (status: string): string => {
+    const map: Record<string, string> = {
+      pending: 'Pendente',
+      in_progress: 'Em Andamento',
+      completed: 'Concluído'
+    };
+    return map[status] || 'Pendente';
   };
-  
+
+  const completeInspection = async () => {
+    if (!inspection || !inspectionId) return;
+
+    setSaving(true);
+    try {
+      const totalRequired = questions.filter(q => q.isRequired).length;
+      const answeredRequired = questions.filter(
+        q =>
+          q.isRequired &&
+          responses[q.id] &&
+          responses[q.id].value !== undefined &&
+          responses[q.id].value !== null &&
+          responses[q.id].value !== ''
+      ).length;
+
+      if (answeredRequired < totalRequired) {
+        toast.warning(`Faltam ${totalRequired - answeredRequired} perguntas obrigatórias.`);
+        return;
+      }
+
+      const { error } = await supabase
+        .from('inspections')
+        .update({
+          status: mapStatusToDB('completed'),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', inspectionId);
+
+      if (error) throw error;
+
+      setInspection(prev => prev ? { ...prev, status: 'completed' } : null);
+      toast.success('Inspeção finalizada com sucesso!');
+    } catch (err) {
+      console.error('Erro na finalização:', err);
+      toast.error('Erro ao finalizar inspeção');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const getFilteredQuestions = (groupId: string | null) => {
+    return groupId
+      ? questions.filter(q => q.groupId === groupId)
+      : questions.filter(q => !q.groupId);
+  };
+
   const getCompletionStats = () => {
     const total = questions.length;
     const answered = Object.values(responses).filter(r => r.value !== undefined && r.value !== null && r.value !== '').length;
     const percentage = total > 0 ? Math.round((answered / total) * 100) : 0;
-    
-    return {
-      total,
-      answered,
-      percentage
-    };
+    return { total, answered, percentage };
   };
-  
+
   return {
     loading,
     inspection,
@@ -314,6 +322,7 @@ export const useInspectionData = (inspectionId: string | undefined) => {
     saving,
     handleResponseChange,
     handleSaveInspection,
+    completeInspection,
     getFilteredQuestions,
     getCompletionStats
   };
