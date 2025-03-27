@@ -52,6 +52,7 @@ export function CommentDialog({
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
             rows={5}
+            aria-describedby="comment-dialog-description"
           />
         </div>
         

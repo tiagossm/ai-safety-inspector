@@ -8,7 +8,7 @@ import { InspectionDetailsCard } from "@/components/inspection/InspectionDetails
 import { InspectionCompletion } from "@/components/inspection/InspectionCompletion";
 import { QuestionGroups } from "@/components/inspection/QuestionGroups";
 import { QuestionsPanel } from "@/components/inspection/QuestionsPanel";
-import { AlertCircle, RefreshCw, Save, CheckCircle2, FileText, ArrowLeftRight } from "lucide-react";
+import { AlertCircle, RefreshCw, Save, CheckCircle2, FileText, ArrowLeftRight, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
@@ -37,6 +37,7 @@ export default function InspectionExecutionPage() {
     getFilteredQuestions,
     getCompletionStats,
     error,
+    detailedError,
     refreshData,
     completeInspection,
     reopenInspection
@@ -71,8 +72,8 @@ export default function InspectionExecutionPage() {
       await handleSaveInspection();
       setLastSaved(new Date());
       toast.success("Progresso salvo com sucesso");
-    } catch (error) {
-      toast.error("Erro ao salvar progresso");
+    } catch (error: any) {
+      toast.error(`Erro ao salvar progresso: ${error.message || 'Erro desconhecido'}`);
     } finally {
       setSaving(false);
     }
@@ -89,8 +90,8 @@ export default function InspectionExecutionPage() {
       setSaving(true);
       await completeInspection();
       toast.success("Inspeção finalizada com sucesso");
-    } catch (error) {
-      toast.error("Erro ao finalizar inspeção");
+    } catch (error: any) {
+      toast.error(`Erro ao finalizar inspeção: ${error.message || 'Erro desconhecido'}`);
     } finally {
       setSaving(false);
     }
@@ -101,8 +102,8 @@ export default function InspectionExecutionPage() {
       setSaving(true);
       await reopenInspection();
       toast.success("Inspeção reaberta com sucesso");
-    } catch (error) {
-      toast.error("Erro ao reabrir inspeção");
+    } catch (error: any) {
+      toast.error(`Erro ao reabrir inspeção: ${error.message || 'Erro desconhecido'}`);
     } finally {
       setSaving(false);
     }
@@ -117,29 +118,56 @@ export default function InspectionExecutionPage() {
     toast.info("Funcionalidade de geração de relatório em desenvolvimento");
     // Future implementation: generate PDF report
   };
+
+  if (error) {
+    return (
+      <div className="container max-w-7xl mx-auto py-8">
+        <div className="mb-4">
+          <h1 className="text-xl font-medium text-gray-800">Inspeção</h1>
+          <p className="text-sm text-gray-500">Execução de checklist</p>
+        </div>
+        
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-5 w-5" />
+          <AlertTitle className="text-base font-medium">Erro ao carregar inspeção</AlertTitle>
+          <AlertDescription className="mt-2 space-y-4">
+            <p>{error}</p>
+            {detailedError && (
+              <div className="px-4 py-3 bg-red-50 border border-red-100 rounded text-sm">
+                <p className="flex items-center font-medium text-red-800"><AlertTriangle className="h-3.5 w-3.5 mr-1" /> Detalhes do erro:</p>
+                <p className="mt-1 text-red-700">
+                  {detailedError.message || JSON.stringify(detailedError)}
+                </p>
+                {detailedError.hint && <p className="mt-1 text-red-700">Sugestão: {detailedError.hint}</p>}
+                {detailedError.details && <p className="mt-1 text-red-700">Detalhes: {detailedError.details}</p>}
+              </div>
+            )}
+            <div className="flex space-x-3 pt-2">
+              <Button 
+                variant="outline" 
+                onClick={() => navigate("/inspections")}
+                className="text-sm"
+              >
+                Voltar para Inspeções
+              </Button>
+              <Button 
+                variant="default" 
+                onClick={refreshData}
+                className="text-sm"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Tentar novamente
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
   
   return (
     <div className="container py-4 max-w-7xl mx-auto">
       <InspectionHeader loading={loading} inspection={inspection} />
-      
-      {error && (
-        <Alert variant="destructive" className="mb-4">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle className="text-sm font-medium">Erro ao carregar inspeção</AlertTitle>
-          <AlertDescription className="text-xs">
-            {error}
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="mt-2 text-xs" 
-              onClick={refreshData}
-            >
-              <RefreshCw className="h-3 w-3 mr-1 text-muted-foreground" />
-              Tentar novamente
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
       
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <div className="lg:col-span-1 space-y-3">

@@ -193,6 +193,7 @@ export function useInspections() {
 export function useInspectionData(inspectionId: string | undefined) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [detailedError, setDetailedError] = useState<any>(null);
   const [inspection, setInspection] = useState<any>(null);
   const [questions, setQuestions] = useState<any[]>([]);
   const [responses, setResponses] = useState<Record<string, any>>({});
@@ -211,18 +212,23 @@ export function useInspectionData(inspectionId: string | undefined) {
     try {
       setLoading(true);
       setError(null);
+      setDetailedError(null);
 
       const { data: inspectionData, error: inspectionError } = await supabase
         .from("inspections")
         .select(`
           *,
-          companies:company_id(id, fantasy_name, razao_social, address, cnae),
+          companies:company_id(id, fantasy_name, address, cnae),
           checklist:checklist_id(id, title, description)
         `)
         .eq("id", inspectionId)
         .single();
 
-      if (inspectionError) throw inspectionError;
+      if (inspectionError) {
+        console.error("Error fetching inspection:", inspectionError);
+        setDetailedError(inspectionError);
+        throw inspectionError;
+      }
 
       if (!inspectionData) {
         throw new Error("Inspeção não encontrada");
@@ -260,7 +266,13 @@ export function useInspectionData(inspectionId: string | undefined) {
         .eq("checklist_id", inspectionData.checklist_id)
         .order("ordem", { ascending: true });
 
-      if (checklistError) throw checklistError;
+      if (checklistError) {
+        console.error("Error fetching checklist items:", checklistError);
+        setDetailedError(checklistError);
+        throw checklistError;
+      }
+
+      console.log(`Loaded ${checklistItems?.length || 0} checklist items for inspection ${inspectionId}`);
 
       const questionsData = checklistItems.map((item: any) => ({
         id: item.id,
@@ -270,35 +282,66 @@ export function useInspectionData(inspectionId: string | undefined) {
         options: item.opcoes,
         isRequired: item.obrigatorio,
         order: item.ordem,
-        parentQuestionId: item.parent_question_id || null,
-        parentValue: item.parent_value || null,
+        parentQuestionId: item.parent_item_id || null,
+        parentValue: item.condition_value || null,
         hint: item.hint || null,
         subChecklistId: item.sub_checklist_id || null,
       }));
 
       setQuestions(questionsData);
 
-      const groupsData = checklistItems
-        .filter((item: any) => item.group_id)
-        .map((item: any) => ({
-          id: item.group_id,
-          title: item.group_title || "Grupo sem título",
-        }))
-        .reduce((unique: any[], group: any) => {
-          if (!unique.some(g => g.id === group.id)) {
-            unique.push(group);
+      const groupsMap = new Map();
+      
+      checklistItems.forEach((item: any) => {
+        if (item.hint && typeof item.hint === 'string' && item.hint.startsWith('{')) {
+          try {
+            const hintData = JSON.parse(item.hint);
+            if (hintData.groupId && hintData.groupTitle) {
+              if (!groupsMap.has(hintData.groupId)) {
+                groupsMap.set(hintData.groupId, {
+                  id: hintData.groupId,
+                  title: hintData.groupTitle,
+                  order: hintData.groupIndex || 0
+                });
+              }
+            }
+          } catch (e) {
+            // Not a valid JSON, might be just a regular hint
           }
-          return unique;
-        }, []);
-
-      setGroups(groupsData);
+        }
+      });
+      
+      const extractedGroups = Array.from(groupsMap.values());
+      
+      if (extractedGroups.length > 0) {
+        setGroups(extractedGroups.sort((a, b) => a.order - b.order));
+      } else {
+        const directGroups = checklistItems
+          .filter((item: any) => item.group_id)
+          .map((item: any) => ({
+            id: item.group_id,
+            title: item.group_title || "Grupo sem título",
+          }))
+          .reduce((unique: any[], group: any) => {
+            if (!unique.some(g => g.id === group.id)) {
+              unique.push(group);
+            }
+            return unique;
+          }, []);
+          
+        setGroups(directGroups);
+      }
 
       const { data: responsesData, error: responsesError } = await supabase
         .from("inspection_responses")
         .select("*")
         .eq("inspection_id", inspectionId);
 
-      if (responsesError) throw responsesError;
+      if (responsesError) {
+        console.error("Error fetching responses:", responsesError);
+        setDetailedError(responsesError);
+        throw responsesError;
+      }
 
       const responsesObj = (responsesData || []).reduce((acc: Record<string, any>, curr: any) => {
         acc[curr.question_id] = {
@@ -361,7 +404,10 @@ export function useInspectionData(inspectionId: string | undefined) {
       }
     } catch (error: any) {
       console.error("Error fetching inspection data:", error);
-      setError(error.message);
+      setError(error.message || "Erro ao carregar dados da inspeção");
+      if (!error.message && error.code) {
+        setError(`Erro ${error.code}: ${error.details || error.message || 'Erro desconhecido'}`);
+      }
     } finally {
       setLoading(false);
     }
@@ -415,12 +461,14 @@ export function useInspectionData(inspectionId: string | undefined) {
         }));
       }
 
+      await fetchInspectionData();
+
       return true;
     } catch (error: any) {
       console.error("Error saving inspection:", error);
       throw error;
     }
-  }, [inspectionId, responses, inspection?.status]);
+  }, [inspectionId, responses, inspection?.status, fetchInspectionData]);
 
   const handleSaveSubChecklistResponses = useCallback(async (questionId: string, subResponses: any[]) => {
     try {
@@ -480,13 +528,15 @@ export function useInspectionData(inspectionId: string | undefined) {
         ...prev,
         status: "completed",
       }));
+      
+      await fetchInspectionData();
 
       return true;
     } catch (error: any) {
       console.error("Error completing inspection:", error);
       throw error;
     }
-  }, [inspectionId, handleSaveInspection]);
+  }, [inspectionId, handleSaveInspection, fetchInspectionData]);
 
   const reopenInspection = useCallback(async () => {
     try {
@@ -503,13 +553,15 @@ export function useInspectionData(inspectionId: string | undefined) {
         ...prev,
         status: "in_progress",
       }));
+      
+      await fetchInspectionData();
 
       return true;
     } catch (error: any) {
       console.error("Error reopening inspection:", error);
       throw error;
     }
-  }, [inspectionId]);
+  }, [inspectionId, fetchInspectionData]);
 
   const getFilteredQuestions = useCallback((groupId: string | null) => {
     if (!groupId) return [];
@@ -535,6 +587,7 @@ export function useInspectionData(inspectionId: string | undefined) {
   return {
     loading,
     error,
+    detailedError,
     inspection,
     questions,
     responses,
