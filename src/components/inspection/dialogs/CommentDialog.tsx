@@ -30,7 +30,10 @@ export function CommentDialog({
 }: CommentDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md" aria-describedby="comment-dialog-description">
+      <DialogContent 
+        className="max-w-md" 
+        aria-describedby="comment-dialog-description"
+      >
         <DialogHeader>
           <DialogTitle>Adicionar Comentário</DialogTitle>
           <DialogDescription id="comment-dialog-description">
