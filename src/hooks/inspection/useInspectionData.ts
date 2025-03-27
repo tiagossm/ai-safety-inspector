@@ -433,7 +433,7 @@ export function useInspectionData(inspectionId: string | undefined) {
         return acc;
       }, {});
 
-      const updatedParentResponse = {
+      const updatedParentResponse = [{
         inspection_id: inspectionId,
         question_id: questionId,
         answer: parentResponse.value || null,
@@ -442,11 +442,11 @@ export function useInspectionData(inspectionId: string | undefined) {
         media_urls: parentResponse.mediaUrls || [],
         sub_checklist_responses: subResponsesObj,
         updated_at: new Date().toISOString(),
-      };
+      }];
 
       const { error } = await supabase
         .from("inspection_responses")
-        .upsert([updatedParentResponse], {
+        .upsert(updatedParentResponse, {
           onConflict: "inspection_id,question_id",
           ignoreDuplicates: false,
         });
