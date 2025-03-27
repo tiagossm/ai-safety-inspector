@@ -29,7 +29,7 @@ interface SubChecklistDialogProps {
   currentResponses?: Record<string, any>;
   onSaveResponses?: (responses: SubChecklistResponse[]) => void;
   readOnly?: boolean;
-  saving?: boolean; // Add the saving prop to the interface
+  saving?: boolean; // Make sure this prop is defined in the interface
 }
 
 export function SubChecklistDialog({
@@ -40,7 +40,7 @@ export function SubChecklistDialog({
   currentResponses = {},
   onSaveResponses,
   readOnly = false,
-  saving = false // Add a default value for the prop
+  saving = false
 }: SubChecklistDialogProps) {
   const [responses, setResponses] = useState<Record<string, SubChecklistResponse>>(
     Object.keys(currentResponses).reduce((acc, key) => {
