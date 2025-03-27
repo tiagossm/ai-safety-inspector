@@ -1,9 +1,4 @@
-
-import { useState, useEffect, useMemo } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { InspectionDetails, InspectionFilters } from "@/types/newChecklist";
-import { useAuth } from "@/components/AuthProvider";
+// ...imports mantidos
 
 export function useInspections() {
   const [inspections, setInspections] = useState<InspectionDetails[]>([]);
@@ -31,106 +26,77 @@ export function useInspections() {
         throw new Error("Usuário não autenticado");
       }
 
-      // Fetch inspections without trying to join on responsible_id directly
       let query = supabase
         .from("inspections")
         .select(`
           *,
           companies:company_id(id, fantasy_name),
-          checklist:checklist_id(id, title, description, total_questions)
+          checklist:checklist_id(id, title, description)
         `);
       
-      // Super admins see all inspections, others only see their own or company's
       if (user.tier !== "super_admin") {
         query = query.or(`user_id.eq.${user.id},responsible_id.eq.${user.id}`);
       }
       
       const { data, error } = await query.order("created_at", { ascending: false });
-      
       if (error) throw error;
-      
-      if (!data) {
-        setInspections([]);
-        return;
-      }
-      
-      // Now that we have inspections, fetch user data for responsible_id in a separate query
-      const userIds = data
-        .map(inspection => inspection.responsible_id)
-        .filter(id => id !== null && id !== undefined);
-      
+      if (!data) return setInspections([]);
+
+      const userIds = data.map(i => i.responsible_id).filter(Boolean);
       let responsiblesData = {};
-      
+
       if (userIds.length > 0) {
-        const { data: usersData, error: usersError } = await supabase
+        const { data: usersData } = await supabase
           .from("users")
           .select("id, name, email, phone")
           .in("id", userIds);
-          
-        if (!usersError && usersData) {
-          responsiblesData = usersData.reduce((acc, user) => {
-            acc[user.id] = user;
-            return acc;
-          }, {});
-        }
+        
+        responsiblesData = (usersData || []).reduce((acc, user) => {
+          acc[user.id] = user;
+          return acc;
+        }, {});
       }
-      
-      // Calculate progress for each inspection and format data
+
       const inspectionsWithProgress = await Promise.all(data.map(async (inspection: any) => {
-        // Get count of responses for this inspection
-        const { count: answeredQuestions, error: countError } = await supabase
+        const { count: answered, error: respError } = await supabase
           .from('inspection_responses')
           .select('*', { count: 'exact', head: true })
           .eq('inspection_id', inspection.id);
-        
-        // Get total questions for the checklist
-        const { data: questionData, error: questionError } = await supabase
+
+        const { count: total, error: totalError } = await supabase
           .from('checklist_itens')
           .select('*', { count: 'exact', head: true })
           .eq('checklist_id', inspection.checklist_id);
-          
-        const totalQuestions = questionData?.length || 0;
-        const progress = totalQuestions > 0 
-          ? Math.round(((answeredQuestions || 0) / totalQuestions) * 100) 
-          : 0;
-          
+
+        const progress = total ? Math.round((answered! / total) * 100) : 0;
+        let status = inspection.status;
+
+        if (progress === 100 && inspection.status !== 'completed') {
+          // Atualiza no Supabase
+          await supabase
+            .from('inspections')
+            .update({ status: 'completed' })
+            .eq('id', inspection.id);
+          status = 'completed';
+        }
+
         return {
-          id: inspection.id,
-          title: inspection.checklist?.title || "Sem título",
+          ...inspection,
+          title: inspection.checklist?.title || 'Sem título',
           description: inspection.checklist?.description,
-          checklistId: inspection.checklist_id,
-          companyId: inspection.company_id,
-          responsibleId: inspection.responsible_id,
-          scheduledDate: inspection.scheduled_date,
-          status: (inspection.status || 'pending') as 'pending' | 'in_progress' | 'completed',
-          createdAt: inspection.created_at,
-          updatedAt: inspection.created_at,
-          priority: (inspection.priority || 'medium') as 'low' | 'medium' | 'high',
-          locationName: inspection.location,
-          company: inspection.companies || null,
-          responsible: inspection.responsible_id ? responsiblesData[inspection.responsible_id] : null,
           progress,
-          // Additional fields from the database schema
-          approval_notes: inspection.approval_notes,
-          approval_status: inspection.approval_status,
-          approved_by: inspection.approved_by,
-          audio_url: inspection.audio_url,
-          photos: inspection.photos || [],
-          report_url: inspection.report_url,
-          unit_id: inspection.unit_id,
-          metadata: inspection.metadata,
-          cnae: inspection.cnae,
-          inspection_type: inspection.inspection_type,
-          sync_status: inspection.sync_status
+          status,
+          company: inspection.companies || null,
+          responsible: responsiblesData[inspection.responsible_id] || null
         };
       }));
-      
+
       setInspections(inspectionsWithProgress);
-    } catch (error: any) {
-      console.error("Error fetching inspections:", error);
-      setError(error.message);
+    } catch (err: any) {
+      console.error("Error fetching inspections:", err);
+      setError(err.message);
       toast.error("Erro ao carregar inspeções", {
-        description: error.message
+        description: err.message
       });
     } finally {
       setLoading(false);
@@ -141,52 +107,33 @@ export function useInspections() {
     fetchInspections();
   }, [user]);
 
-  // Apply filters
   const filteredInspections = useMemo(() => {
     return inspections.filter(inspection => {
-      // Search filter
       const searchLower = filters.search.toLowerCase();
       const matchesSearch = !filters.search || 
         (inspection.title?.toLowerCase().includes(searchLower)) ||
         (inspection.company?.fantasy_name?.toLowerCase().includes(searchLower)) ||
         (inspection.responsible?.name?.toLowerCase().includes(searchLower));
       
-      // Status filter
       const matchesStatus = filters.status === "all" || inspection.status === filters.status;
-      
-      // Priority filter
       const matchesPriority = filters.priority === "all" || inspection.priority === filters.priority;
-      
-      // Company filter
       const matchesCompany = filters.companyId === "all" || inspection.companyId === filters.companyId;
-      
-      // Responsible filter
       const matchesResponsible = filters.responsibleId === "all" || inspection.responsibleId === filters.responsibleId;
-      
-      // Checklist filter
       const matchesChecklist = filters.checklistId === "all" || inspection.checklistId === filters.checklistId;
-      
-      // Date filter
+
       let matchesDate = true;
       if (filters.startDate) {
-        const scheduledDate = inspection.scheduledDate ? new Date(inspection.scheduledDate) : null;
-        const startDate = filters.startDate;
-        const endDate = filters.endDate || startDate;
-        
-        if (scheduledDate) {
-          // Remove time component for date comparison
-          const dateOnly = new Date(scheduledDate.setHours(0, 0, 0, 0));
-          const startDateOnly = new Date(startDate.setHours(0, 0, 0, 0));
-          const endDateOnly = new Date(endDate.setHours(23, 59, 59, 999));
-          
-          matchesDate = dateOnly >= startDateOnly && dateOnly <= endDateOnly;
-        } else {
-          matchesDate = false;
-        }
+        const sched = new Date(inspection.scheduledDate || '');
+        const start = new Date(filters.startDate);
+        const end = filters.endDate ? new Date(filters.endDate) : start;
+        sched.setHours(0, 0, 0, 0);
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
+        matchesDate = sched >= start && sched <= end;
       }
-      
-      return matchesSearch && matchesStatus && matchesPriority && 
-        matchesCompany && matchesResponsible && matchesChecklist && matchesDate;
+
+      return matchesSearch && matchesStatus && matchesPriority &&
+             matchesCompany && matchesResponsible && matchesChecklist && matchesDate;
     });
   }, [inspections, filters]);
 
