@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -94,7 +95,7 @@ export function useInspectionData(inspectionId: string | undefined) {
         setQuestions([]);
         setGroups([]);
       } else {
-        const checklistQuestions = checklistItems.map((item: any) => ({
+        const questionsArray = checklistItems.map((item: any) => ({
           id: item.id,
           text: item.pergunta,
           responseType: item.tipo_resposta,
@@ -138,7 +139,7 @@ export function useInspectionData(inspectionId: string | undefined) {
         if (extractedGroups.length > 0) {
           console.log(`Found ${extractedGroups.length} groups in hints`);
           
-          checklistQuestions.forEach(question => {
+          questionsArray.forEach(question => {
             const item = checklistItems.find((i: any) => i.id === question.id);
             if (item?.hint && typeof item.hint === 'string' && item.hint.includes('groupId')) {
               try {
@@ -173,7 +174,7 @@ export function useInspectionData(inspectionId: string | undefined) {
                 });
               }
               
-              const questionToUpdate = checklistQuestions.find(q => q.id === item.id);
+              const questionToUpdate = questionsArray.find(q => q.id === item.id);
               if (questionToUpdate) {
                 questionToUpdate.groupId = groupId;
               }
@@ -192,7 +193,7 @@ export function useInspectionData(inspectionId: string | undefined) {
               order: 0
             };
             
-            checklistQuestions.forEach(question => {
+            questionsArray.forEach(question => {
               question.groupId = defaultGroup.id;
             });
             
@@ -200,8 +201,8 @@ export function useInspectionData(inspectionId: string | undefined) {
           }
         }
 
-        console.log("Questions after group processing:", checklistQuestions.length);
-        setQuestions(checklistQuestions);
+        console.log("Questions after group processing:", questionsArray.length);
+        setQuestions(questionsArray);
       }
 
       const { data: responsesData, error: responsesError } = await supabase
@@ -228,7 +229,8 @@ export function useInspectionData(inspectionId: string | undefined) {
 
       setResponses(responsesObj);
 
-      const subChecklistIds = checklistQuestions
+      // Use questionsArray which is the correct variable here
+      const subChecklistIds = questionsArray
         .filter(q => q.subChecklistId)
         .map(q => ({ questionId: q.id, subChecklistId: q.subChecklistId }));
 
