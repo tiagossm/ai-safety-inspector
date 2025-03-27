@@ -319,7 +319,7 @@ export function useInspectionData(inspectionId: string | undefined) {
           .from("inspection_responses")
           .update({
             answer: formattedAnswer,
-            updated_at: new Date()
+            updated_at: new Date().toISOString() // Fix: Convert Date to ISO string
           })
           .eq("id", existingResponse.id);
           
@@ -332,7 +332,7 @@ export function useInspectionData(inspectionId: string | undefined) {
             inspection_id: inspectionId,
             question_id: parentQuestionId,
             answer: formattedAnswer,
-            created_at: new Date()
+            created_at: new Date().toISOString() // Fix: Convert Date to ISO string
           });
           
         if (error) throw error;
@@ -393,7 +393,7 @@ export function useInspectionData(inspectionId: string | undefined) {
           .update({
             answer: response.answer,
             notes: response.notes,
-            updated_at: new Date()
+            updated_at: new Date().toISOString() // Fix: Convert Date to ISO string
           })
           .eq("id", response.id);
           
@@ -436,7 +436,7 @@ export function useInspectionData(inspectionId: string | undefined) {
         .from("inspections")
         .update({ 
           status: 'completed',
-          updated_at: new Date()
+          updated_at: new Date().toISOString() // Fix: Convert Date to ISO string
         })
         .eq("id", inspectionId);
         
@@ -461,7 +461,7 @@ export function useInspectionData(inspectionId: string | undefined) {
         .from("inspections")
         .update({ 
           status: 'in_progress',
-          updated_at: new Date()
+          updated_at: new Date().toISOString() // Fix: Convert Date to ISO string
         })
         .eq("id", inspectionId);
         
