@@ -29,6 +29,7 @@ interface SubChecklistDialogProps {
   currentResponses?: Record<string, any>;
   onSaveResponses?: (responses: SubChecklistResponse[]) => void;
   readOnly?: boolean;
+  saving?: boolean; // Add the saving prop to the interface
 }
 
 export function SubChecklistDialog({
@@ -38,7 +39,8 @@ export function SubChecklistDialog({
   subChecklistQuestions,
   currentResponses = {},
   onSaveResponses,
-  readOnly = false
+  readOnly = false,
+  saving = false // Add a default value for the prop
 }: SubChecklistDialogProps) {
   const [responses, setResponses] = useState<Record<string, SubChecklistResponse>>(
     Object.keys(currentResponses).reduce((acc, key) => {
@@ -51,7 +53,9 @@ export function SubChecklistDialog({
     }, {})
   );
 
-  const [saving, setSaving] = useState(false);
+  const [localSaving, setSavingLocal] = useState(false);
+  // Use the prop value or local state
+  const isSaving = saving || localSaving;
 
   const handleValueChange = (questionId: string, value: string) => {
     if (readOnly) return;
@@ -80,7 +84,7 @@ export function SubChecklistDialog({
   const handleSave = () => {
     if (!onSaveResponses) return;
     
-    setSaving(true);
+    setSavingLocal(true);
     try {
       const responsesArray = Object.values(responses);
       onSaveResponses(responsesArray);
@@ -89,7 +93,7 @@ export function SubChecklistDialog({
     } catch (error) {
       toast.error("Erro ao salvar sub-checklist");
     } finally {
-      setSaving(false);
+      setSavingLocal(false);
     }
   };
 
@@ -191,10 +195,10 @@ export function SubChecklistDialog({
           {!readOnly && onSaveResponses && (
             <Button
               onClick={handleSave}
-              disabled={saving}
+              disabled={isSaving}
               className="mr-2"
             >
-              {saving ? "Salvando..." : "Salvar Respostas"}
+              {isSaving ? "Salvando..." : "Salvar Respostas"}
               <Save className="ml-2 h-4 w-4" />
             </Button>
           )}

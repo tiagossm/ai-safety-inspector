@@ -99,7 +99,7 @@ export function useInspectionData(inspectionId: string | undefined) {
         setGroups([]);
       } else {
         // Process checklist items into questions
-        const questionsData = checklistItems.map((item: any) => ({
+        const processedQuestions = checklistItems.map((item: any) => ({
           id: item.id,
           text: item.pergunta,
           responseType: item.tipo_resposta,
@@ -146,7 +146,7 @@ export function useInspectionData(inspectionId: string | undefined) {
           console.log(`Found ${extractedGroups.length} groups in hints`);
           
           // Assign group IDs to questions based on hint
-          questionsData.forEach(question => {
+          processedQuestions.forEach(question => {
             const item = checklistItems.find((i: any) => i.id === question.id);
             if (item?.hint && typeof item.hint === 'string' && item.hint.includes('groupId')) {
               try {
@@ -162,34 +162,39 @@ export function useInspectionData(inspectionId: string | undefined) {
           
           setGroups(extractedGroups.sort((a, b) => a.order - b.order));
         } else {
-          console.log("No groups found in hints, checking for direct group_id");
+          console.log("No groups found in hints, checking for direct group property");
           
-          // Look for direct group_id property
-          const directGroups = checklistItems
-            .filter((item: any) => item.group_id)
-            .map((item: any) => ({
-              id: item.group_id,
-              title: item.group_title || "Grupo sem título",
-            }))
-            .reduce((unique: any[], group: any) => {
-              if (!unique.some(g => g.id === group.id)) {
-                unique.push(group);
+          // Check if each item might have a direct group property
+          // Since group_id might not be a direct property, we'll check more generically
+          let hasGroupProperty = false;
+          const directGroups = new Map();
+          
+          checklistItems.forEach((item: any) => {
+            // Check if the item has any property that might indicate a group
+            const groupId = item.group_id || null;
+            const groupTitle = item.group_title || null;
+            
+            if (groupId) {
+              hasGroupProperty = true;
+              if (!directGroups.has(groupId)) {
+                directGroups.set(groupId, {
+                  id: groupId,
+                  title: groupTitle || `Grupo ${directGroups.size + 1}`,
+                  order: directGroups.size
+                });
               }
-              return unique;
-            }, []);
-            
-          if (directGroups.length > 0) {
-            console.log(`Found ${directGroups.length} direct groups`);
-            
-            // Assign direct group IDs to questions
-            questionsData.forEach(question => {
-              const item = checklistItems.find((i: any) => i.id === question.id);
-              if (item?.group_id) {
-                question.groupId = item.group_id;
+              
+              // Find the corresponding question and assign the group
+              const questionToUpdate = processedQuestions.find(q => q.id === item.id);
+              if (questionToUpdate) {
+                questionToUpdate.groupId = groupId;
               }
-            });
+            }
+          });
             
-            setGroups(directGroups);
+          if (hasGroupProperty && directGroups.size > 0) {
+            console.log(`Found ${directGroups.size} direct groups`);
+            setGroups(Array.from(directGroups.values()));
           } else {
             console.log("No direct groups found, creating default group");
             
@@ -201,7 +206,7 @@ export function useInspectionData(inspectionId: string | undefined) {
             };
             
             // Assign all questions to the default group
-            questionsData.forEach(question => {
+            processedQuestions.forEach(question => {
               question.groupId = defaultGroup.id;
             });
             
@@ -209,8 +214,8 @@ export function useInspectionData(inspectionId: string | undefined) {
           }
         }
 
-        console.log("Questions after group processing:", questionsData.length);
-        setQuestions(questionsData);
+        console.log("Questions after group processing:", processedQuestions.length);
+        setQuestions(processedQuestions);
       }
 
       // Fetch existing responses
@@ -240,7 +245,7 @@ export function useInspectionData(inspectionId: string | undefined) {
       setResponses(responsesObj);
 
       // Load sub-checklists if needed
-      const subChecklistIds = questionsData
+      const subChecklistIds = processedQuestions
         .filter(q => q.subChecklistId)
         .map(q => ({ questionId: q.id, subChecklistId: q.subChecklistId }));
 
@@ -272,7 +277,7 @@ export function useInspectionData(inspectionId: string | undefined) {
               subChecklistsData[questionId] = {
                 ...checklistData,
                 questions: subQuestions.map((q: any) => ({
-                  id: q.id,
+                  id: q.id, // Keep original ID
                   text: q.pergunta,
                   responseType: q.tipo_resposta,
                   groupId: q.group_id,
