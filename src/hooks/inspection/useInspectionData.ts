@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -28,7 +27,6 @@ export function useInspectionData(inspectionId: string | undefined) {
       setError(null);
       setDetailedError(null);
 
-      // Fetch inspection data with related tables
       const { data: inspectionData, error: inspectionError } = await supabase
         .from("inspections")
         .select(`
@@ -65,7 +63,6 @@ export function useInspectionData(inspectionId: string | undefined) {
 
       setCompany(inspectionData.companies);
 
-      // Fetch responsible user data if available
       if (inspectionData.responsible_id) {
         const { data: userData, error: userError } = await supabase
           .from("users")
@@ -78,7 +75,6 @@ export function useInspectionData(inspectionId: string | undefined) {
         }
       }
 
-      // Fetch checklist items
       const { data: checklistItems, error: checklistError } = await supabase
         .from("checklist_itens")
         .select("*")
@@ -98,12 +94,11 @@ export function useInspectionData(inspectionId: string | undefined) {
         setQuestions([]);
         setGroups([]);
       } else {
-        // Process checklist items into questions
         const checklistQuestions = checklistItems.map((item: any) => ({
           id: item.id,
           text: item.pergunta,
           responseType: item.tipo_resposta,
-          groupId: null, // We'll set this after processing groups
+          groupId: null,
           options: item.opcoes,
           isRequired: item.obrigatorio,
           order: item.ordem,
@@ -117,7 +112,6 @@ export function useInspectionData(inspectionId: string | undefined) {
           weight: item.weight || 1,
         }));
 
-        // Process groups from hints
         const groupsMap = new Map();
         
         checklistItems.forEach((item: any) => {
@@ -141,11 +135,9 @@ export function useInspectionData(inspectionId: string | undefined) {
         
         const extractedGroups = Array.from(groupsMap.values());
         
-        // If we found groups in the hints, use those
         if (extractedGroups.length > 0) {
           console.log(`Found ${extractedGroups.length} groups in hints`);
           
-          // Assign group IDs to questions based on hint
           checklistQuestions.forEach(question => {
             const item = checklistItems.find((i: any) => i.id === question.id);
             if (item?.hint && typeof item.hint === 'string' && item.hint.includes('groupId')) {
@@ -164,13 +156,10 @@ export function useInspectionData(inspectionId: string | undefined) {
         } else {
           console.log("No groups found in hints, checking for direct group property");
           
-          // Check if each item might have a direct group property
-          // Since group_id might not be a direct property, we'll check more generically
           let hasGroupProperty = false;
           const directGroups = new Map();
           
           checklistItems.forEach((item: any) => {
-            // Check if the item has any property that might indicate a group
             const groupId = item.group_id || null;
             const groupTitle = item.group_title || null;
             
@@ -184,7 +173,6 @@ export function useInspectionData(inspectionId: string | undefined) {
                 });
               }
               
-              // Find the corresponding question and assign the group
               const questionToUpdate = checklistQuestions.find(q => q.id === item.id);
               if (questionToUpdate) {
                 questionToUpdate.groupId = groupId;
@@ -198,14 +186,12 @@ export function useInspectionData(inspectionId: string | undefined) {
           } else {
             console.log("No direct groups found, creating default group");
             
-            // Create a default group
             const defaultGroup = {
               id: 'default-group',
               title: 'Geral',
               order: 0
             };
             
-            // Assign all questions to the default group
             checklistQuestions.forEach(question => {
               question.groupId = defaultGroup.id;
             });
@@ -218,7 +204,6 @@ export function useInspectionData(inspectionId: string | undefined) {
         setQuestions(checklistQuestions);
       }
 
-      // Fetch existing responses
       const { data: responsesData, error: responsesError } = await supabase
         .from("inspection_responses")
         .select("*")
@@ -230,7 +215,6 @@ export function useInspectionData(inspectionId: string | undefined) {
         throw responsesError;
       }
 
-      // Map responses to our format
       const responsesObj = (responsesData || []).reduce((acc: Record<string, any>, curr: any) => {
         acc[curr.question_id] = {
           value: curr.answer,
@@ -244,7 +228,6 @@ export function useInspectionData(inspectionId: string | undefined) {
 
       setResponses(responsesObj);
 
-      // Load sub-checklists if needed
       const subChecklistIds = checklistQuestions
         .filter(q => q.subChecklistId)
         .map(q => ({ questionId: q.id, subChecklistId: q.subChecklistId }));
@@ -277,7 +260,7 @@ export function useInspectionData(inspectionId: string | undefined) {
               subChecklistsData[questionId] = {
                 ...checklistData,
                 questions: subQuestions.map((q: any) => ({
-                  id: q.id, // Keep original ID
+                  id: q.id,
                   text: q.pergunta,
                   responseType: q.tipo_resposta,
                   groupId: q.group_id,
@@ -305,12 +288,10 @@ export function useInspectionData(inspectionId: string | undefined) {
     }
   }, [inspectionId]);
 
-  // Fetch data on mount and when inspectionId changes
   useEffect(() => {
     fetchInspectionData();
   }, [fetchInspectionData]);
 
-  // Handles changes to responses
   const handleResponseChange = useCallback((questionId: string, data: any) => {
     setResponses(prev => ({
       ...prev,
@@ -321,7 +302,6 @@ export function useInspectionData(inspectionId: string | undefined) {
     }));
   }, []);
 
-  // Saves all responses to the database
   const handleSaveInspection = useCallback(async () => {
     try {
       if (!inspectionId) throw new Error("ID da inspeção não fornecido");
@@ -353,7 +333,6 @@ export function useInspectionData(inspectionId: string | undefined) {
 
       if (error) throw error;
 
-      // If the inspection was in pending status, update it to in_progress
       if (inspection?.status === "pending") {
         const { error: updateError } = await supabase
           .from("inspections")
@@ -375,12 +354,10 @@ export function useInspectionData(inspectionId: string | undefined) {
     }
   }, [inspectionId, inspection, responses]);
 
-  // Saves responses for a sub-checklist
   const handleSaveSubChecklistResponses = useCallback(async (parentQuestionId: string, responses: any[]) => {
     try {
       if (!inspectionId) throw new Error("ID da inspeção não fornecido");
 
-      // Format the sub-checklist responses
       const formattedResponses = responses.map(response => ({
         inspection_id: inspectionId,
         question_id: response.questionId,
@@ -391,7 +368,6 @@ export function useInspectionData(inspectionId: string | undefined) {
         updated_at: new Date().toISOString(),
       }));
 
-      // Save the sub-checklist responses
       const { error } = await supabase
         .from("inspection_responses")
         .upsert(formattedResponses, {
@@ -408,15 +384,12 @@ export function useInspectionData(inspectionId: string | undefined) {
     }
   }, [inspectionId]);
 
-  // Marks the inspection as completed
   const completeInspection = useCallback(async () => {
     try {
       if (!inspectionId) throw new Error("ID da inspeção não fornecido");
 
-      // Save any pending changes first
       await handleSaveInspection();
 
-      // Update the inspection status to completed
       const { error } = await supabase
         .from("inspections")
         .update({ status: "completed" })
@@ -436,7 +409,6 @@ export function useInspectionData(inspectionId: string | undefined) {
     }
   }, [inspectionId, handleSaveInspection]);
 
-  // Reopens a completed inspection
   const reopenInspection = useCallback(async () => {
     try {
       if (!inspectionId) throw new Error("ID da inspeção não fornecido");
@@ -460,7 +432,6 @@ export function useInspectionData(inspectionId: string | undefined) {
     }
   }, [inspectionId]);
 
-  // Filters questions by groupId
   const getFilteredQuestions = useCallback((groupId: string | null) => {
     if (!groupId) return [];
     
@@ -468,7 +439,6 @@ export function useInspectionData(inspectionId: string | undefined) {
     return questions.filter(q => q.groupId === groupId);
   }, [questions]);
 
-  // Calculates completion statistics
   const getCompletionStats = useCallback(() => {
     const totalQuestions = questions.length;
     if (totalQuestions === 0) return { percentage: 0, answered: 0, total: 0 };
