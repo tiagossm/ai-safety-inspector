@@ -20,6 +20,9 @@ serve(async (req) => {
       throw new Error('Sub-checklist data and parent question ID are required');
     }
 
+    console.log("Received parentQuestionId:", parentQuestionId);
+    console.log("Received subChecklist:", JSON.stringify(subChecklist).substring(0, 200) + "...");
+
     // Initialize Supabase client with service role key
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -38,7 +41,7 @@ serve(async (req) => {
         description: subChecklist.description,
         is_template: false,
         status_checklist: "ativo",
-        status: "active" // Fix: use the correct column name and value
+        status: "active"
       })
       .select("id")
       .single();
@@ -49,6 +52,7 @@ serve(async (req) => {
     }
     
     const subChecklistId = checklistData.id;
+    console.log("Created sub-checklist with ID:", subChecklistId);
     
     // Map response types to database format
     const mapResponseType = (type: string): string => {
@@ -77,6 +81,8 @@ serve(async (req) => {
         weight: 1
       }));
       
+      console.log("Inserting questions:", questionInserts.length);
+      
       const { error: insertError } = await supabase
         .from("checklist_itens")
         .insert(questionInserts);
@@ -88,6 +94,7 @@ serve(async (req) => {
     }
     
     // Update the parent question with the sub-checklist ID
+    console.log("Updating parent question:", parentQuestionId, "with sub-checklist ID:", subChecklistId);
     const { error: updateError } = await supabase
       .from("checklist_itens")
       .update({

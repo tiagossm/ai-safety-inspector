@@ -18,9 +18,17 @@ export function MediaUpload({
   allowedTypes = ["photo", "video", "audio", "file"]
 }: MediaUploadProps) {
   const [activeTab, setActiveTab] = useState(allowedTypes.includes("file") ? 'upload' : 'capture');
+  const [uploading, setUploading] = useState(false);
   
   const handleTabChange = (value: string) => {
     setActiveTab(value);
+  };
+  
+  const handleMediaUploaded = (mediaData: any) => {
+    setUploading(false);
+    if (mediaData && mediaData.url) {
+      onMediaUploaded(mediaData);
+    }
   };
   
   return (
@@ -53,8 +61,10 @@ export function MediaUpload({
           {allowedTypes.includes("file") && (
             <TabsContent value="upload" className="mt-0">
               <FileUploadButton 
-                onFileUploaded={onMediaUploaded}
+                onFileUploaded={handleMediaUploaded}
                 buttonText="Selecionar arquivo"
+                onUploadStart={() => setUploading(true)}
+                disabled={uploading}
               />
             </TabsContent>
           )}
@@ -65,13 +75,17 @@ export function MediaUpload({
                 {allowedTypes.includes("photo") && (
                   <MediaCaptureButton 
                     type="photo" 
-                    onMediaCaptured={onMediaUploaded} 
+                    onMediaCaptured={handleMediaUploaded} 
+                    onCaptureStart={() => setUploading(true)}
+                    disabled={uploading}
                   />
                 )}
                 {allowedTypes.includes("video") && (
                   <MediaCaptureButton 
                     type="video" 
-                    onMediaCaptured={onMediaUploaded} 
+                    onMediaCaptured={handleMediaUploaded} 
+                    onCaptureStart={() => setUploading(true)}
+                    disabled={uploading}
                   />
                 )}
               </div>
@@ -82,11 +96,22 @@ export function MediaUpload({
             <TabsContent value="record" className="mt-0">
               <MediaCaptureButton 
                 type="audio" 
-                onMediaCaptured={onMediaUploaded} 
+                onMediaCaptured={handleMediaUploaded}
+                onCaptureStart={() => setUploading(true)}
+                disabled={uploading}
               />
             </TabsContent>
           )}
         </Tabs>
+        
+        {uploading && (
+          <div className="mt-3 text-center">
+            <div className="h-1 w-full bg-gray-200 rounded overflow-hidden">
+              <div className="h-full bg-primary animate-pulse" style={{ width: '100%' }}></div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">Enviando arquivo...</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

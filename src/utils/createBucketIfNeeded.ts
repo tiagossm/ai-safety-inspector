@@ -1,54 +1,53 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-/**
- * Creates a storage bucket if it doesn't already exist
- * @param bucketName The name of the bucket to create
- * @returns Promise<boolean> indicating if bucket exists or was created successfully
- */
-export const createBucketIfNeeded = async (bucketName: string): Promise<boolean> => {
+export async function createBucketIfNeeded(bucketName: string): Promise<boolean> {
   try {
-    // First check if bucket exists
-    const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+    // Check if the bucket exists
+    const { data: buckets, error: bucketsError } = await supabase
+      .storage
+      .listBuckets();
     
-    if (listError) {
-      console.error("Error listing buckets:", listError);
+    if (bucketsError) {
+      console.error("Error checking buckets:", bucketsError);
       return false;
     }
     
-    // Check if our bucket already exists
-    const bucketExists = buckets?.some(bucket => bucket.name === bucketName);
-    
-    if (bucketExists) {
+    // If the bucket doesn't exist, create it
+    if (!buckets.find(b => b.name === bucketName)) {
+      console.log(`Bucket ${bucketName} does not exist, creating...`);
+      
+      const { error: createError } = await supabase
+        .storage
+        .createBucket(bucketName, {
+          public: true,
+          fileSizeLimit: 52428800 // 50MB
+        });
+      
+      if (createError) {
+        console.error("Error creating bucket:", createError);
+        return false;
+      }
+      
+      console.log(`Bucket ${bucketName} created successfully`);
+      
+      // Set the bucket policy to public
+      const { error: policyError } = await supabase
+        .storage
+        .from(bucketName)
+        .createSignedUrl('dummy.txt', 60); // This is just to test if we can create URLs
+      
+      if (policyError && !policyError.message.includes('not found')) {
+        console.error("Error setting bucket policy:", policyError);
+        // Continue anyway as we might still be able to use the bucket
+      }
+    } else {
       console.log(`Bucket ${bucketName} already exists`);
-      return true;
     }
     
-    // Create the bucket if it doesn't exist
-    const { error: createError } = await supabase.storage.createBucket(bucketName, {
-      public: true // Make the bucket public
-    });
-    
-    if (createError) {
-      console.error(`Error creating bucket ${bucketName}:`, createError);
-      return false;
-    }
-    
-    console.log(`Successfully created bucket ${bucketName}`);
-    
-    // The getPublicUrl method doesn't return an error property
-    // Instead, use a try/catch block to verify it works
-    try {
-      // Simply test if we can get a public URL
-      supabase.storage.from(bucketName).getPublicUrl('test');
-      return true;
-    } catch (policyError) {
-      console.warn(`Bucket created but could not verify public access: ${policyError instanceof Error ? policyError.message : String(policyError)}`);
-      return true; // Still return true as the bucket was created
-    }
-    
+    return true;
   } catch (error) {
-    console.error("Unexpected error creating bucket:", error);
+    console.error("Error in createBucketIfNeeded:", error);
     return false;
   }
-};
+}

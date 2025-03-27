@@ -205,12 +205,15 @@ export function useInspectionData(inspectionId: string | undefined) {
   const getFilteredQuestions = (groupId: string | null) => {
     if (!groupId) return [];
     
+    // Filter out questions that are part of a sub-checklist
+    const filteredQuestions = questions.filter(q => !q.parent_item_id);
+    
     // If it's a default group but we don't have explicit group associations
     if (groupId === "default" && groups.length === 1) {
-      return questions.filter(q => !q.parent_item_id);
+      return filteredQuestions;
     }
     
-    return questions.filter(q => {
+    return filteredQuestions.filter(q => {
       // Check if question belongs to this group based on hint
       if (q.hint && q.hint.startsWith('{') && q.hint.endsWith('}')) {
         try {
