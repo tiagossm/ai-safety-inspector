@@ -6,13 +6,15 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 interface QuestionGroupsProps {
   groups: any[];
   currentGroupId: string | null;
-  onGroupChange: (groupId: string) => void;
+  onGroupChange: (groupId: string) => void; // Updated prop name to match usage in InspectionLayout
+  stats: any;
 }
 
 export function QuestionGroups({ 
   groups, 
   currentGroupId, 
-  onGroupChange 
+  onGroupChange, // Updated prop name
+  stats
 }: QuestionGroupsProps) {
   return (
     <Card className="border-gray-200 shadow-sm">

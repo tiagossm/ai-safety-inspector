@@ -93,12 +93,15 @@ export default function InspectionExecutionPage() {
     }
   };
 
-  const onViewActionPlan = () => {
+  // Fix: Add Promise return type to these functions
+  const onViewActionPlan = async (): Promise<void> => {
     toast.info("Funcionalidade de Plano de Ação em desenvolvimento");
+    return Promise.resolve();
   };
 
-  const onGenerateReport = () => {
+  const onGenerateReport = async (): Promise<void> => {
     toast.info("Funcionalidade de geração de relatório em desenvolvimento");
+    return Promise.resolve();
   };
 
   if (error) {

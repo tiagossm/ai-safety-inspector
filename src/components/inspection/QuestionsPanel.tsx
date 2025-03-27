@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { InspectionQuestion } from "./InspectionQuestion";
 import { Button } from "@/components/ui/button";
@@ -16,7 +15,7 @@ interface QuestionsPanelProps {
   responses: Record<string, any>;
   groups: any[];
   onResponseChange: (questionId: string, data: any) => void;
-  onSaveSubChecklistResponses: (questionId: string, responses: any[]) => void;
+  onSaveSubChecklistResponses: (questionId: string, responses: any[]) => Promise<void>;
   subChecklists: Record<string, any>;
 }
 

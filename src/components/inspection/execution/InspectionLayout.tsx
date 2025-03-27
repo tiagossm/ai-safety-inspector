@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ActionButtons } from "./ActionButtons";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react"; // Import AlertCircle from lucide-react instead
+import { AlertCircle } from "lucide-react"; // Fix: Import AlertCircle from lucide-react
 
 interface InspectionLayoutProps {
   loading: boolean;
@@ -29,8 +29,8 @@ interface InspectionLayoutProps {
   onSaveProgress: () => Promise<void>;
   onCompleteInspection: () => Promise<void>;
   onReopenInspection: () => Promise<void>;
-  onViewActionPlan: () => Promise<void>; // Update the return type to match the expected Promise<void>
-  onGenerateReport: () => Promise<void>; // Update the return type to match the expected Promise<void>
+  onViewActionPlan: () => Promise<void>;
+  onGenerateReport: () => Promise<void>;
   refreshData: () => void;
   onResponseChange: (questionId: string, value: any, additionalData?: any) => void;
   onSaveSubChecklistResponses: (subChecklistId: string, responses: Record<string, any>) => Promise<void>;
@@ -146,7 +146,7 @@ export function InspectionLayout({
               <QuestionGroups 
                 groups={groups}
                 currentGroupId={currentGroupId}
-                setCurrentGroupId={setCurrentGroupId}
+                onGroupChange={setCurrentGroupId} // Fix: changed prop name to match QuestionGroups component
                 stats={stats}
               />
             </ScrollArea>
@@ -156,13 +156,15 @@ export function InspectionLayout({
         <div className="md:col-span-3">
           <Card>
             <QuestionsPanel
-              questions={questionsInCurrentGroup}
+              loading={loading}
+              currentGroupId={currentGroupId}
+              filteredQuestions={questionsInCurrentGroup} // Fix: added missing required prop
+              questions={questions}
               responses={responses}
-              subChecklists={subChecklists}
+              groups={groups}
               onResponseChange={onResponseChange}
               onSaveSubChecklistResponses={onSaveSubChecklistResponses}
-              company={company}
-              responsible={responsible}
+              subChecklists={subChecklists}
             />
           </Card>
         </div>
