@@ -99,7 +99,7 @@ export function useInspectionData(inspectionId: string | undefined) {
         setGroups([]);
       } else {
         // Process checklist items into questions
-        const processedQuestions = checklistItems.map((item: any) => ({
+        const checklistQuestions = checklistItems.map((item: any) => ({
           id: item.id,
           text: item.pergunta,
           responseType: item.tipo_resposta,
@@ -146,7 +146,7 @@ export function useInspectionData(inspectionId: string | undefined) {
           console.log(`Found ${extractedGroups.length} groups in hints`);
           
           // Assign group IDs to questions based on hint
-          processedQuestions.forEach(question => {
+          checklistQuestions.forEach(question => {
             const item = checklistItems.find((i: any) => i.id === question.id);
             if (item?.hint && typeof item.hint === 'string' && item.hint.includes('groupId')) {
               try {
@@ -185,7 +185,7 @@ export function useInspectionData(inspectionId: string | undefined) {
               }
               
               // Find the corresponding question and assign the group
-              const questionToUpdate = processedQuestions.find(q => q.id === item.id);
+              const questionToUpdate = checklistQuestions.find(q => q.id === item.id);
               if (questionToUpdate) {
                 questionToUpdate.groupId = groupId;
               }
@@ -206,7 +206,7 @@ export function useInspectionData(inspectionId: string | undefined) {
             };
             
             // Assign all questions to the default group
-            processedQuestions.forEach(question => {
+            checklistQuestions.forEach(question => {
               question.groupId = defaultGroup.id;
             });
             
@@ -214,8 +214,8 @@ export function useInspectionData(inspectionId: string | undefined) {
           }
         }
 
-        console.log("Questions after group processing:", processedQuestions.length);
-        setQuestions(processedQuestions);
+        console.log("Questions after group processing:", checklistQuestions.length);
+        setQuestions(checklistQuestions);
       }
 
       // Fetch existing responses
@@ -245,7 +245,7 @@ export function useInspectionData(inspectionId: string | undefined) {
       setResponses(responsesObj);
 
       // Load sub-checklists if needed
-      const subChecklistIds = processedQuestions
+      const subChecklistIds = checklistQuestions
         .filter(q => q.subChecklistId)
         .map(q => ({ questionId: q.id, subChecklistId: q.subChecklistId }));
 
