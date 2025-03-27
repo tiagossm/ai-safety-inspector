@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { SubChecklistDialog } from "./dialogs/SubChecklistDialog";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface QuestionsPanelProps {
   loading: boolean;
@@ -51,6 +52,7 @@ export function QuestionsPanel({
         // For simple string values like "sim", "não", just return as is
         return value;
       } catch (e) {
+        console.warn("Failed to parse JSON response:", e);
         // If it fails to parse, just return the original string
         return value;
       }
@@ -158,8 +160,14 @@ export function QuestionsPanel({
         <CardHeader>
           <h3 className="text-lg font-semibold">{currentGroup.title}</h3>
         </CardHeader>
-        <CardContent className="p-8 flex justify-center items-center">
-          <p className="text-muted-foreground">Nenhuma pergunta disponível neste grupo</p>
+        <CardContent className="p-8 flex flex-col justify-center items-center">
+          <AlertCircle className="h-10 w-10 text-muted-foreground mb-2" />
+          <p className="text-muted-foreground text-center">
+            Nenhuma pergunta disponível neste grupo.<br />
+            {questions.length > 0 ? 
+              `Há ${questions.length} perguntas em outros grupos.` : 
+              "Nenhuma pergunta foi definida para este checklist."}
+          </p>
         </CardContent>
       </Card>
     );
@@ -170,6 +178,9 @@ export function QuestionsPanel({
       <Card>
         <CardHeader>
           <h3 className="text-lg font-semibold">{currentGroup.title}</h3>
+          <p className="text-sm text-muted-foreground">
+            {filteredQuestions.length} {filteredQuestions.length === 1 ? 'pergunta' : 'perguntas'} neste grupo
+          </p>
         </CardHeader>
         <CardContent className="space-y-4 p-4">
           {filteredQuestions.map((question, index) => (
@@ -184,6 +195,7 @@ export function QuestionsPanel({
               response={responses[question.id] || {}}
               onResponseChange={(data) => onResponseChange(question.id, data)}
               allQuestions={questions}
+              onOpenSubChecklist={question.hasSubChecklist ? () => handleOpenSubChecklist(question.id) : undefined}
             />
           ))}
           
@@ -217,6 +229,7 @@ export function QuestionsPanel({
               : {}
           }
           onSaveResponses={handleSaveSubChecklistResponses}
+          saving={savingSubChecklist}
         />
       )}
     </>

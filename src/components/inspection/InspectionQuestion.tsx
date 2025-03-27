@@ -40,6 +40,7 @@ interface InspectionQuestionProps {
   response: any;
   onResponseChange: (data: any) => void;
   allQuestions: any[];
+  onOpenSubChecklist?: () => void;
 }
 
 export function InspectionQuestion({
@@ -47,19 +48,17 @@ export function InspectionQuestion({
   index,
   response,
   onResponseChange,
-  allQuestions
+  allQuestions,
+  onOpenSubChecklist
 }: InspectionQuestionProps) {
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
   const [actionPlanDialogOpen, setActionPlanDialogOpen] = useState(false);
   const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
-  const [subChecklistDialogOpen, setSubChecklistDialogOpen] = useState(false);
-  const [subChecklist, setSubChecklist] = useState<any>(null);
-  const [subChecklistQuestions, setSubChecklistQuestions] = useState<any[]>([]);
-  const [loadingSubChecklist, setLoadingSubChecklist] = useState(false);
   const [commentText, setCommentText] = useState(response?.comment || "");
   const [actionPlanText, setActionPlanText] = useState(response?.actionPlan || "");
   const [isActionPlanOpen, setIsActionPlanOpen] = useState(false);
   const [showCommentSection, setShowCommentSection] = useState(false);
+  const [loadingSubChecklist, setLoadingSubChecklist] = useState(false);
   
   const handleResponseValue = (value: any) => {
     onResponseChange({
@@ -98,44 +97,19 @@ export function InspectionQuestion({
     setMediaDialogOpen(false);
   };
   
-  const loadSubChecklist = async () => {
-    if (!question.subChecklistId) return;
-    
-    setLoadingSubChecklist(true);
-    try {
-      const { data: checklistData, error: checklistError } = await supabase
-        .from("checklists")
-        .select("*")
-        .eq("id", question.subChecklistId)
-        .single();
-        
-      if (checklistError) throw checklistError;
-      
-      setSubChecklist(checklistData);
-      
-      const { data: questionsData, error: questionsError } = await supabase
-        .from("checklist_itens")
-        .select("*")
-        .eq("checklist_id", question.subChecklistId)
-        .order("ordem", { ascending: true });
-        
-      if (questionsError) throw questionsError;
-      
-      setSubChecklistQuestions(questionsData.map((q: any) => ({
-        id: q.id,
-        text: q.pergunta,
-        responseType: q.tipo_resposta,
-        isRequired: q.obrigatorio,
-        options: Array.isArray(q.opcoes) ? q.opcoes.map((opt: any) => String(opt)) : [],
-        order: q.ordem
-      })));
-      
-      setSubChecklistDialogOpen(true);
-    } catch (error) {
-      console.error("Error loading sub-checklist:", error);
-      toast.error("Falha ao carregar sub-checklist");
-    } finally {
-      setLoadingSubChecklist(false);
+  const handleOpenSubChecklist = () => {
+    if (onOpenSubChecklist) {
+      setLoadingSubChecklist(true);
+      try {
+        onOpenSubChecklist();
+      } catch (error) {
+        console.error("Error opening sub-checklist:", error);
+        toast.error("Falha ao abrir sub-checklist");
+      } finally {
+        setLoadingSubChecklist(false);
+      }
+    } else if (question.subChecklistId) {
+      toast.info("Funcionalidade de sub-checklist em desenvolvimento");
     }
   };
   
@@ -219,7 +193,7 @@ export function InspectionQuestion({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={loadSubChecklist}
+                      onClick={handleOpenSubChecklist}
                       disabled={loadingSubChecklist}
                       className="flex items-center gap-1.5 text-xs h-7"
                     >
@@ -342,13 +316,6 @@ export function InspectionQuestion({
         onMediaUploaded={handleMediaUploaded}
         response={response}
         allowedTypes={getAllowedAttachmentTypes(question)}
-      />
-      
-      <SubChecklistDialog
-        open={subChecklistDialogOpen}
-        onOpenChange={setSubChecklistDialogOpen}
-        subChecklist={subChecklist}
-        subChecklistQuestions={subChecklistQuestions}
       />
     </>
   );

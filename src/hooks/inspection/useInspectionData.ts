@@ -1,194 +1,8 @@
+
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { InspectionDetails, InspectionFilters } from "@/types/newChecklist";
 import { useAuth } from "@/components/AuthProvider";
-
-export function useInspections() {
-  const [inspections, setInspections] = useState<InspectionDetails[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
-  
-  const [filters, setFilters] = useState<InspectionFilters>({
-    search: "",
-    status: "all",
-    priority: "all",
-    companyId: "all",
-    responsibleId: "all", 
-    checklistId: "all",
-    startDate: undefined,
-    endDate: undefined
-  });
-
-  const fetchInspections = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      if (!user) {
-        throw new Error("Usuário não autenticado");
-      }
-
-      let query = supabase
-        .from("inspections")
-        .select(`
-          *,
-          companies:company_id(id, fantasy_name),
-          checklist:checklist_id(id, title, description, total_questions)
-        `);
-      
-      if (user.tier !== "super_admin") {
-        query = query.or(`user_id.eq.${user.id},responsible_id.eq.${user.id}`);
-      }
-      
-      const { data, error } = await query.order("created_at", { ascending: false });
-      
-      if (error) throw error;
-      
-      if (!data) {
-        setInspections([]);
-        return;
-      }
-      
-      const userIds = data
-        .map(inspection => inspection.responsible_id)
-        .filter(id => id !== null && id !== undefined);
-      
-      let responsiblesData = {};
-      
-      if (userIds.length > 0) {
-        const { data: usersData, error: usersError } = await supabase
-          .from("users")
-          .select("id, name, email, phone")
-          .in("id", userIds);
-          
-        if (!usersError && usersData) {
-          responsiblesData = usersData.reduce((acc, user) => {
-            acc[user.id] = user;
-            return acc;
-          }, {});
-        }
-      }
-      
-      const inspectionsWithProgress = await Promise.all(data.map(async (inspection: any) => {
-        const { count: answeredQuestions, error: countError } = await supabase
-          .from('inspection_responses')
-          .select('*', { count: 'exact', head: true })
-          .eq('inspection_id', inspection.id);
-        
-        if (countError) {
-          console.error("Error fetching response count:", countError);
-        }
-        
-        const { count: totalQuestions, error: questionError } = await supabase
-          .from('checklist_itens')
-          .select('*', { count: 'exact', head: true })
-          .eq('checklist_id', inspection.checklist_id);
-          
-        if (questionError) {
-          console.error("Error fetching question count:", questionError);
-        }
-        
-        const progress = totalQuestions > 0 
-          ? Math.round(((answeredQuestions || 0) / totalQuestions) * 100) 
-          : 0;
-          
-        return {
-          id: inspection.id,
-          title: inspection.checklist?.title || "Sem título",
-          description: inspection.checklist?.description,
-          checklistId: inspection.checklist_id,
-          companyId: inspection.company_id,
-          responsibleId: inspection.responsible_id,
-          scheduledDate: inspection.scheduled_date,
-          status: (inspection.status || 'pending') as 'pending' | 'in_progress' | 'completed',
-          createdAt: inspection.created_at,
-          updatedAt: inspection.created_at,
-          priority: (inspection.priority || 'medium') as 'low' | 'medium' | 'high',
-          locationName: inspection.location,
-          company: inspection.companies || null,
-          responsible: inspection.responsible_id ? responsiblesData[inspection.responsible_id] : null,
-          progress,
-          approval_notes: inspection.approval_notes,
-          approval_status: inspection.approval_status,
-          approved_by: inspection.approved_by,
-          audio_url: inspection.audio_url,
-          photos: inspection.photos || [],
-          report_url: inspection.report_url,
-          unit_id: inspection.unit_id,
-          metadata: inspection.metadata,
-          cnae: inspection.cnae,
-          inspection_type: inspection.inspection_type,
-          sync_status: inspection.sync_status
-        };
-      }));
-      
-      setInspections(inspectionsWithProgress);
-    } catch (error: any) {
-      console.error("Error fetching inspections:", error);
-      setError(error.message);
-      toast.error("Erro ao carregar inspeções", {
-        description: error.message
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchInspections();
-  }, [user]);
-
-  const filteredInspections = useMemo(() => {
-    return inspections.filter(inspection => {
-      const searchLower = filters.search.toLowerCase();
-      const matchesSearch = !filters.search || 
-        (inspection.title?.toLowerCase().includes(searchLower)) ||
-        (inspection.company?.fantasy_name?.toLowerCase().includes(searchLower)) ||
-        (inspection.responsible?.name?.toLowerCase().includes(searchLower));
-      
-      const matchesStatus = filters.status === "all" || inspection.status === filters.status;
-      
-      const matchesPriority = filters.priority === "all" || inspection.priority === filters.priority;
-      
-      const matchesCompany = filters.companyId === "all" || inspection.companyId === filters.companyId;
-      
-      const matchesResponsible = filters.responsibleId === "all" || inspection.responsibleId === filters.responsibleId;
-      
-      const matchesChecklist = filters.checklistId === "all" || inspection.checklistId === filters.checklistId;
-      
-      let matchesDate = true;
-      if (filters.startDate) {
-        const scheduledDate = inspection.scheduledDate ? new Date(inspection.scheduledDate) : null;
-        const startDate = filters.startDate;
-        const endDate = filters.endDate || startDate;
-        
-        if (scheduledDate) {
-          const dateOnly = new Date(scheduledDate.setHours(0, 0, 0, 0));
-          const startDateOnly = new Date(startDate.setHours(0, 0, 0, 0));
-          const endDateOnly = new Date(endDate.setHours(23, 59, 59, 999));
-          
-          matchesDate = dateOnly >= startDateOnly && dateOnly <= endDateOnly;
-        } else {
-          matchesDate = false;
-        }
-      }
-      
-      return matchesSearch && matchesStatus && matchesPriority && 
-        matchesCompany && matchesResponsible && matchesChecklist && matchesDate;
-    });
-  }, [inspections, filters]);
-
-  return {
-    inspections: filteredInspections,
-    loading,
-    error,
-    fetchInspections,
-    filters,
-    setFilters
-  };
-}
 
 export function useInspectionData(inspectionId: string | undefined) {
   const [loading, setLoading] = useState(true);
@@ -214,6 +28,7 @@ export function useInspectionData(inspectionId: string | undefined) {
       setError(null);
       setDetailedError(null);
 
+      // Fetch inspection data with related tables
       const { data: inspectionData, error: inspectionError } = await supabase
         .from("inspections")
         .select(`
@@ -234,6 +49,8 @@ export function useInspectionData(inspectionId: string | undefined) {
         throw new Error("Inspeção não encontrada");
       }
 
+      console.log("Loaded inspection data:", inspectionData);
+
       setInspection({
         id: inspectionData.id,
         title: inspectionData.checklist?.title || "Sem título",
@@ -248,6 +65,7 @@ export function useInspectionData(inspectionId: string | undefined) {
 
       setCompany(inspectionData.companies);
 
+      // Fetch responsible user data if available
       if (inspectionData.responsible_id) {
         const { data: userData, error: userError } = await supabase
           .from("users")
@@ -260,6 +78,7 @@ export function useInspectionData(inspectionId: string | undefined) {
         }
       }
 
+      // Fetch checklist items
       const { data: checklistItems, error: checklistError } = await supabase
         .from("checklist_itens")
         .select("*")
@@ -274,64 +93,127 @@ export function useInspectionData(inspectionId: string | undefined) {
 
       console.log(`Loaded ${checklistItems?.length || 0} checklist items for inspection ${inspectionId}`);
 
-      const questionsData = checklistItems.map((item: any) => ({
-        id: item.id,
-        text: item.pergunta,
-        responseType: item.tipo_resposta,
-        groupId: item.group_id,
-        options: item.opcoes,
-        isRequired: item.obrigatorio,
-        order: item.ordem,
-        parentQuestionId: item.parent_item_id || null,
-        parentValue: item.condition_value || null,
-        hint: item.hint || null,
-        subChecklistId: item.sub_checklist_id || null,
-      }));
+      if (!checklistItems || checklistItems.length === 0) {
+        console.warn("No checklist items found for this inspection");
+        setQuestions([]);
+        setGroups([]);
+      } else {
+        // Process checklist items into questions
+        const questionsData = checklistItems.map((item: any) => ({
+          id: item.id,
+          text: item.pergunta,
+          responseType: item.tipo_resposta,
+          groupId: null, // We'll set this after processing groups
+          options: item.opcoes,
+          isRequired: item.obrigatorio,
+          order: item.ordem,
+          parentQuestionId: item.parent_item_id || null,
+          parentValue: item.condition_value || null,
+          hint: item.hint || null,
+          subChecklistId: item.sub_checklist_id || null,
+          allowsPhoto: item.permite_foto || false,
+          allowsVideo: item.permite_video || false,
+          allowsAudio: item.permite_audio || false,
+          weight: item.weight || 1,
+        }));
 
-      setQuestions(questionsData);
-
-      const groupsMap = new Map();
-      
-      checklistItems.forEach((item: any) => {
-        if (item.hint && typeof item.hint === 'string' && item.hint.startsWith('{')) {
-          try {
-            const hintData = JSON.parse(item.hint);
-            if (hintData.groupId && hintData.groupTitle) {
-              if (!groupsMap.has(hintData.groupId)) {
-                groupsMap.set(hintData.groupId, {
-                  id: hintData.groupId,
-                  title: hintData.groupTitle,
-                  order: hintData.groupIndex || 0
-                });
+        // Process groups from hints
+        const groupsMap = new Map();
+        
+        checklistItems.forEach((item: any) => {
+          if (item.hint && typeof item.hint === 'string' && item.hint.includes('groupId')) {
+            try {
+              const hintData = JSON.parse(item.hint);
+              if (hintData.groupId && hintData.groupTitle) {
+                if (!groupsMap.has(hintData.groupId)) {
+                  groupsMap.set(hintData.groupId, {
+                    id: hintData.groupId,
+                    title: hintData.groupTitle,
+                    order: hintData.groupIndex || 0
+                  });
+                }
+              }
+            } catch (e) {
+              console.warn(`Failed to parse hint as JSON: ${item.hint}`, e);
+            }
+          }
+        });
+        
+        const extractedGroups = Array.from(groupsMap.values());
+        
+        // If we found groups in the hints, use those
+        if (extractedGroups.length > 0) {
+          console.log(`Found ${extractedGroups.length} groups in hints`);
+          
+          // Assign group IDs to questions based on hint
+          questionsData.forEach(question => {
+            const item = checklistItems.find((i: any) => i.id === question.id);
+            if (item?.hint && typeof item.hint === 'string' && item.hint.includes('groupId')) {
+              try {
+                const hintData = JSON.parse(item.hint);
+                if (hintData.groupId && groupsMap.has(hintData.groupId)) {
+                  question.groupId = hintData.groupId;
+                }
+              } catch (e) {
+                // Already logged above
               }
             }
-          } catch (e) {
-            // Not a valid JSON, might be just a regular hint
+          });
+          
+          setGroups(extractedGroups.sort((a, b) => a.order - b.order));
+        } else {
+          console.log("No groups found in hints, checking for direct group_id");
+          
+          // Look for direct group_id property
+          const directGroups = checklistItems
+            .filter((item: any) => item.group_id)
+            .map((item: any) => ({
+              id: item.group_id,
+              title: item.group_title || "Grupo sem título",
+            }))
+            .reduce((unique: any[], group: any) => {
+              if (!unique.some(g => g.id === group.id)) {
+                unique.push(group);
+              }
+              return unique;
+            }, []);
+            
+          if (directGroups.length > 0) {
+            console.log(`Found ${directGroups.length} direct groups`);
+            
+            // Assign direct group IDs to questions
+            questionsData.forEach(question => {
+              const item = checklistItems.find((i: any) => i.id === question.id);
+              if (item?.group_id) {
+                question.groupId = item.group_id;
+              }
+            });
+            
+            setGroups(directGroups);
+          } else {
+            console.log("No direct groups found, creating default group");
+            
+            // Create a default group
+            const defaultGroup = {
+              id: 'default-group',
+              title: 'Geral',
+              order: 0
+            };
+            
+            // Assign all questions to the default group
+            questionsData.forEach(question => {
+              question.groupId = defaultGroup.id;
+            });
+            
+            setGroups([defaultGroup]);
           }
         }
-      });
-      
-      const extractedGroups = Array.from(groupsMap.values());
-      
-      if (extractedGroups.length > 0) {
-        setGroups(extractedGroups.sort((a, b) => a.order - b.order));
-      } else {
-        const directGroups = checklistItems
-          .filter((item: any) => item.group_id)
-          .map((item: any) => ({
-            id: item.group_id,
-            title: item.group_title || "Grupo sem título",
-          }))
-          .reduce((unique: any[], group: any) => {
-            if (!unique.some(g => g.id === group.id)) {
-              unique.push(group);
-            }
-            return unique;
-          }, []);
-          
-        setGroups(directGroups);
+
+        console.log("Questions after group processing:", questionsData.length);
+        setQuestions(questionsData);
       }
 
+      // Fetch existing responses
       const { data: responsesData, error: responsesError } = await supabase
         .from("inspection_responses")
         .select("*")
@@ -343,6 +225,7 @@ export function useInspectionData(inspectionId: string | undefined) {
         throw responsesError;
       }
 
+      // Map responses to our format
       const responsesObj = (responsesData || []).reduce((acc: Record<string, any>, curr: any) => {
         acc[curr.question_id] = {
           value: curr.answer,
@@ -356,11 +239,13 @@ export function useInspectionData(inspectionId: string | undefined) {
 
       setResponses(responsesObj);
 
+      // Load sub-checklists if needed
       const subChecklistIds = questionsData
         .filter(q => q.subChecklistId)
         .map(q => ({ questionId: q.id, subChecklistId: q.subChecklistId }));
 
       if (subChecklistIds.length > 0) {
+        console.log(`Loading ${subChecklistIds.length} sub-checklists`);
         const subChecklistsData: Record<string, any> = {};
 
         await Promise.all(
@@ -381,6 +266,8 @@ export function useInspectionData(inspectionId: string | undefined) {
                 .order("ordem", { ascending: true });
 
               if (subQuestionsError) throw subQuestionsError;
+
+              console.log(`Loaded sub-checklist ${subChecklistId} with ${subQuestions.length} questions`);
 
               subChecklistsData[questionId] = {
                 ...checklistData,
@@ -413,6 +300,12 @@ export function useInspectionData(inspectionId: string | undefined) {
     }
   }, [inspectionId]);
 
+  // Fetch data on mount and when inspectionId changes
+  useEffect(() => {
+    fetchInspectionData();
+  }, [fetchInspectionData]);
+
+  // Handles changes to responses
   const handleResponseChange = useCallback((questionId: string, data: any) => {
     setResponses(prev => ({
       ...prev,
@@ -423,6 +316,7 @@ export function useInspectionData(inspectionId: string | undefined) {
     }));
   }, []);
 
+  // Saves all responses to the database
   const handleSaveInspection = useCallback(async () => {
     try {
       if (!inspectionId) throw new Error("ID da inspeção não fornecido");
@@ -438,6 +332,13 @@ export function useInspectionData(inspectionId: string | undefined) {
         updated_at: new Date().toISOString(),
       }));
 
+      if (responsesToSave.length === 0) {
+        console.log("No responses to save");
+        return;
+      }
+
+      console.log(`Saving ${responsesToSave.length} responses`);
+
       const { error } = await supabase
         .from("inspection_responses")
         .upsert(responsesToSave, {
@@ -447,6 +348,7 @@ export function useInspectionData(inspectionId: string | undefined) {
 
       if (error) throw error;
 
+      // If the inspection was in pending status, update it to in_progress
       if (inspection?.status === "pending") {
         const { error: updateError } = await supabase
           .from("inspections")
@@ -457,44 +359,37 @@ export function useInspectionData(inspectionId: string | undefined) {
 
         setInspection(prev => ({
           ...prev,
-          status: "in_progress",
+          status: "in_progress"
         }));
       }
 
-      await fetchInspectionData();
-
       return true;
     } catch (error: any) {
-      console.error("Error saving inspection:", error);
-      throw error;
+      console.error("Error saving inspection responses:", error);
+      throw new Error(`Erro ao salvar respostas: ${error.message || "Erro desconhecido"}`);
     }
-  }, [inspectionId, responses, inspection?.status, fetchInspectionData]);
+  }, [inspectionId, inspection, responses]);
 
-  const handleSaveSubChecklistResponses = useCallback(async (questionId: string, subResponses: any[]) => {
+  // Saves responses for a sub-checklist
+  const handleSaveSubChecklistResponses = useCallback(async (parentQuestionId: string, responses: any[]) => {
     try {
       if (!inspectionId) throw new Error("ID da inspeção não fornecido");
 
-      const parentResponse = responses[questionId] || {};
-      
-      const subResponsesObj = subResponses.reduce((acc, curr) => {
-        acc[curr.questionId] = curr;
-        return acc;
-      }, {});
-
-      const updatedParentResponse = [{
+      // Format the sub-checklist responses
+      const formattedResponses = responses.map(response => ({
         inspection_id: inspectionId,
-        question_id: questionId,
-        answer: parentResponse.value || null,
-        notes: parentResponse.comment || null,
-        action_plan: parentResponse.actionPlan || null,
-        media_urls: parentResponse.mediaUrls || [],
-        sub_checklist_responses: subResponsesObj,
+        question_id: response.questionId,
+        answer: response.value,
+        notes: response.comment || null,
+        action_plan: response.actionPlan || null,
+        media_urls: response.mediaUrls || [],
         updated_at: new Date().toISOString(),
-      }];
+      }));
 
+      // Save the sub-checklist responses
       const { error } = await supabase
         .from("inspection_responses")
-        .upsert(updatedParentResponse, {
+        .upsert(formattedResponses, {
           onConflict: "inspection_id,question_id",
           ignoreDuplicates: false,
         });
@@ -504,40 +399,39 @@ export function useInspectionData(inspectionId: string | undefined) {
       return true;
     } catch (error: any) {
       console.error("Error saving sub-checklist responses:", error);
-      throw error;
+      throw new Error(`Erro ao salvar respostas do sub-checklist: ${error.message || "Erro desconhecido"}`);
     }
-  }, [inspectionId, responses]);
+  }, [inspectionId]);
 
+  // Marks the inspection as completed
   const completeInspection = useCallback(async () => {
     try {
       if (!inspectionId) throw new Error("ID da inspeção não fornecido");
 
+      // Save any pending changes first
       await handleSaveInspection();
 
+      // Update the inspection status to completed
       const { error } = await supabase
         .from("inspections")
-        .update({ 
-          status: "completed",
-          completed_at: new Date().toISOString(),
-        })
+        .update({ status: "completed" })
         .eq("id", inspectionId);
 
       if (error) throw error;
 
       setInspection(prev => ({
         ...prev,
-        status: "completed",
+        status: "completed"
       }));
-      
-      await fetchInspectionData();
 
       return true;
     } catch (error: any) {
       console.error("Error completing inspection:", error);
-      throw error;
+      throw new Error(`Erro ao finalizar inspeção: ${error.message || "Erro desconhecido"}`);
     }
-  }, [inspectionId, handleSaveInspection, fetchInspectionData]);
+  }, [inspectionId, handleSaveInspection]);
 
+  // Reopens a completed inspection
   const reopenInspection = useCallback(async () => {
     try {
       if (!inspectionId) throw new Error("ID da inspeção não fornecido");
@@ -551,43 +445,41 @@ export function useInspectionData(inspectionId: string | undefined) {
 
       setInspection(prev => ({
         ...prev,
-        status: "in_progress",
+        status: "in_progress"
       }));
-      
-      await fetchInspectionData();
 
       return true;
     } catch (error: any) {
       console.error("Error reopening inspection:", error);
-      throw error;
+      throw new Error(`Erro ao reabrir inspeção: ${error.message || "Erro desconhecido"}`);
     }
-  }, [inspectionId, fetchInspectionData]);
+  }, [inspectionId]);
 
+  // Filters questions by groupId
   const getFilteredQuestions = useCallback((groupId: string | null) => {
     if (!groupId) return [];
+    
+    console.log(`Filtering questions for group ${groupId}. Total questions: ${questions.length}`);
     return questions.filter(q => q.groupId === groupId);
   }, [questions]);
 
+  // Calculates completion statistics
   const getCompletionStats = useCallback(() => {
-    const total = questions.length;
-    const answered = Object.values(responses).filter(r => r.value !== undefined && r.value !== null).length;
-    const percentage = total > 0 ? Math.round((answered / total) * 100) : 0;
-    
-    return {
-      total,
-      answered,
-      percentage,
-    };
-  }, [questions, responses]);
+    const totalQuestions = questions.length;
+    if (totalQuestions === 0) return { percentage: 0, answered: 0, total: 0 };
 
-  useEffect(() => {
-    fetchInspectionData();
-  }, [fetchInspectionData]);
+    const answered = Object.keys(responses).filter(questionId => 
+      responses[questionId]?.value !== undefined && 
+      responses[questionId]?.value !== null
+    ).length;
+
+    const percentage = Math.round((answered / totalQuestions) * 100);
+    
+    return { percentage, answered, total: totalQuestions };
+  }, [questions, responses]);
 
   return {
     loading,
-    error,
-    detailedError,
     inspection,
     questions,
     responses,
@@ -595,6 +487,8 @@ export function useInspectionData(inspectionId: string | undefined) {
     company,
     responsible,
     subChecklists,
+    error,
+    detailedError,
     handleResponseChange,
     handleSaveInspection,
     handleSaveSubChecklistResponses,
@@ -602,6 +496,6 @@ export function useInspectionData(inspectionId: string | undefined) {
     getCompletionStats,
     refreshData: fetchInspectionData,
     completeInspection,
-    reopenInspection,
+    reopenInspection
   };
 }

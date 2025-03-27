@@ -145,11 +145,16 @@ export default function ChecklistEditorPage() {
         let groups = [];
         
         if (checklist.groups && checklist.groups.length > 0) {
+          // When we have defined groups, map questions to their groups
           groups = checklist.groups.map(group => {
+            // Filter questions that belong to this group
             const groupQuestions = checklist.questions.filter(q => q.groupId === group.id);
+            console.log(`Group ${group.id} (${group.title}) has ${groupQuestions.length} questions`);
+            
             return {
               ...group,
               questions: groupQuestions.map(q => ({
+                id: q.id, // Keep original ID
                 text: q.text,
                 type: q.responseType,
                 required: q.isRequired,
@@ -172,6 +177,7 @@ export default function ChecklistEditorPage() {
             id: defaultGroupId,
             title: "Geral",
             questions: checklist.questions.map(q => ({
+              id: q.id, // Keep original ID
               text: q.text,
               type: q.responseType,
               required: q.isRequired,
@@ -188,8 +194,9 @@ export default function ChecklistEditorPage() {
           }];
         }
         
-        // Convert questions to the editor format
+        // Convert questions to the editor format (for flat view)
         const questions = checklist.questions.map(q => ({
+          id: q.id, // Keep original ID
           text: q.text,
           type: q.responseType,
           required: q.isRequired,
@@ -203,6 +210,9 @@ export default function ChecklistEditorPage() {
           conditionValue: q.conditionValue,
           groupId: q.groupId || groups[0]?.id
         }));
+        
+        console.log(`Prepared ${questions.length} questions for the editor`);
+        console.log(`Prepared ${groups.length} groups with a total of ${groups.reduce((sum, g) => sum + g.questions.length, 0)} questions`);
         
         setEditorData({
           checklistData: checklist,

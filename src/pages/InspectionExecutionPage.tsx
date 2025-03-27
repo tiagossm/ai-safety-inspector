@@ -47,6 +47,7 @@ export default function InspectionExecutionPage() {
   useEffect(() => {
     if (groups.length > 0 && !currentGroupId) {
       setCurrentGroupId(groups[0].id);
+      console.log(`Setting initial group to ${groups[0].id} (${groups[0].title})`);
     }
   }, [groups, currentGroupId]);
 
@@ -62,7 +63,10 @@ export default function InspectionExecutionPage() {
   }, [responses, autoSave]);
   
   const filteredQuestions = getFilteredQuestions(currentGroupId);
+  console.log(`Filtered questions for group ${currentGroupId}: ${filteredQuestions.length}`);
+  
   const stats = getCompletionStats();
+  console.log(`Completion stats: ${stats.answered}/${stats.total} (${stats.percentage}%)`);
   
   const onSaveProgress = async () => {
     if (saving) return;
@@ -119,6 +123,15 @@ export default function InspectionExecutionPage() {
     // Future implementation: generate PDF report
   };
 
+  const getStatusLabel = (status?: string) => {
+    switch(status) {
+      case 'pending': return 'Pendente';
+      case 'in_progress': return 'Em andamento';
+      case 'completed': return 'Concluído';
+      default: return 'Desconhecido';
+    }
+  };
+
   if (error) {
     return (
       <div className="container max-w-7xl mx-auto py-8">
@@ -167,7 +180,13 @@ export default function InspectionExecutionPage() {
   
   return (
     <div className="container py-4 max-w-7xl mx-auto">
-      <InspectionHeader loading={loading} inspection={inspection} />
+      <InspectionHeader 
+        loading={loading} 
+        inspection={{
+          ...inspection,
+          statusLabel: getStatusLabel(inspection?.status)
+        }} 
+      />
       
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <div className="lg:col-span-1 space-y-3">
