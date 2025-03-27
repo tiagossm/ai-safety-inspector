@@ -1,4 +1,3 @@
-
 import { CalendarClock, Building2, User, Flag, CheckCircle2 } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,10 +9,10 @@ import { ptBR } from "date-fns/locale";
 
 interface InspectionCardProps {
   inspection: InspectionDetails;
-  onOpenInspection?: (id: string) => void;
+  onView?: (id: string) => void;
 }
 
-export function InspectionCard({ inspection, onOpenInspection }: InspectionCardProps) {
+export function InspectionCard({ inspection, onView }: InspectionCardProps) {
   const statusInfo = formatInspectionStatus(inspection.status);
   
   const formatDate = (dateString?: string) => {
@@ -35,8 +34,8 @@ export function InspectionCard({ inspection, onOpenInspection }: InspectionCardP
   };
   
   const handleOpenInspection = () => {
-    if (onOpenInspection) {
-      onOpenInspection(inspection.id);
+    if (onView) {
+      onView(inspection.id);
     }
   };
   

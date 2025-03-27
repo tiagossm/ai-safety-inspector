@@ -16,14 +16,14 @@ import { ptBR } from "date-fns/locale";
 
 interface InspectionTableProps {
   inspections: InspectionDetails[];
-  onViewInspection: (id: string) => void;
+  onView: (id: string) => void;
   onEditInspection?: (id: string) => void;
   onDeleteInspection?: (id: string) => void;
 }
 
 export function InspectionTable({ 
   inspections, 
-  onViewInspection,
+  onView,
   onEditInspection,
   onDeleteInspection
 }: InspectionTableProps) {
@@ -100,7 +100,7 @@ export function InspectionTable({
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => onViewInspection(inspection.id)}
+                      onClick={() => onView(inspection.id)}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
