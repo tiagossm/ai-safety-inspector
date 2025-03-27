@@ -1,37 +1,47 @@
+
 import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import {
-  PlusCircle,
+import { 
+  PlusCircle, 
+  Calendar, 
+  Filter, 
+  Search, 
+  Building2, 
+  User2, 
+  ClipboardList, 
   RefreshCw,
-  ClipboardList,
-  AlertTriangle
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Share2
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useInspections } from "@/hooks/useInspections";
+import { useCompanies } from "@/hooks/useCompanies";
+import { useUsers } from "@/hooks/useUsers";
+import { EmptyState } from "@/components/inspection/EmptyState";
 import { InspectionFilters } from "@/components/inspection/InspectionFilters";
 import { InspectionCard } from "@/components/inspection/InspectionCard";
 import { InspectionTable } from "@/components/inspection/InspectionTable";
-import { EmptyState } from "@/components/inspection/EmptyState";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { useNavigate } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 
 export default function Inspections() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { inspections, loading, error, fetchInspections, filters, setFilters } = useInspections();
   const [viewMode, setViewMode] = useState<"card" | "table">("card");
-
+  
   useEffect(() => {
     document.title = "Inspeções | IASST";
-
-    // Se veio de uma finalização de inspeção, recarrega a lista
-    if (location.state?.refresh) {
-      fetchInspections();
-      toast.success("Inspeções atualizadas com sucesso");
-      window.history.replaceState({}, document.title); // limpa o state
-    }
-  }, [location.state]);
+  }, []);
 
   const handleCreateInspection = () => {
     navigate("/new-checklists");
@@ -60,17 +70,17 @@ export default function Inspections() {
           Nova Inspeção
         </Button>
       </div>
-
+      
       <Separator />
-
+      
       <InspectionFilters filters={filters} setFilters={setFilters} />
-
+      
       <Tabs defaultValue={viewMode} onValueChange={(value) => setViewMode(value as "card" | "table")}>
         <TabsList className="mb-4">
           <TabsTrigger value="card">Cartões</TabsTrigger>
           <TabsTrigger value="table">Tabela</TabsTrigger>
         </TabsList>
-
+        
         {error ? (
           <div className="bg-destructive/10 p-4 rounded-md text-destructive space-y-2">
             <div className="flex items-center gap-2">
@@ -93,7 +103,7 @@ export default function Inspections() {
             </div>
           </div>
         ) : inspections.length === 0 ? (
-          <EmptyState
+          <EmptyState 
             title="Nenhuma inspeção encontrada"
             description="Você ainda não possui inspeções cadastradas ou que correspondam aos filtros selecionados."
             icon={ClipboardList}
@@ -109,7 +119,7 @@ export default function Inspections() {
             <TabsContent value="card" className="mt-0">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {inspections.map((inspection) => (
-                  <InspectionCard
+                  <InspectionCard 
                     key={inspection.id}
                     inspection={inspection}
                     onView={() => handleViewInspection(inspection.id)}
@@ -117,9 +127,9 @@ export default function Inspections() {
                 ))}
               </div>
             </TabsContent>
-
+            
             <TabsContent value="table" className="mt-0">
-              <InspectionTable
+              <InspectionTable 
                 inspections={inspections}
                 onView={handleViewInspection}
               />

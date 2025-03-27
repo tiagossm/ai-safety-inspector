@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,7 @@ export default function InspectionExecutionPage() {
   const [saving, setSaving] = useState(false);
   const [autoSave, setAutoSave] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-
+  
   const {
     loading,
     inspection,
@@ -36,25 +37,28 @@ export default function InspectionExecutionPage() {
     completeInspection,
     reopenInspection
   } = useInspectionData(id);
-
+  
+  // Set default group when groups are loaded
   useEffect(() => {
     if (groups.length > 0 && !currentGroupId) {
       setCurrentGroupId(groups[0].id);
     }
   }, [groups, currentGroupId]);
 
+  // Auto-save timer
   useEffect(() => {
     if (autoSave) {
       const timer = setTimeout(() => {
         onSaveProgress();
-      }, 60000);
+      }, 60000); // Auto-save every minute
+      
       return () => clearTimeout(timer);
     }
   }, [responses, autoSave]);
-
+  
   const filteredQuestions = getFilteredQuestions(currentGroupId);
   const stats = getCompletionStats();
-
+  
   const onSaveProgress = async () => {
     setSaving(true);
     try {
@@ -67,21 +71,18 @@ export default function InspectionExecutionPage() {
       setSaving(false);
     }
   };
-
+  
   const onCompleteInspection = async () => {
     if (stats.percentage < 100) {
       if (!window.confirm("A inspeção não está 100% completa. Deseja finalizar mesmo assim?")) {
         return;
       }
     }
-
+    
     try {
       setSaving(true);
       await completeInspection();
       toast.success("Inspeção finalizada com sucesso");
-
-      // Redireciona com sinalizador para atualizar listagem
-      navigate("/inspections", { state: { refresh: true } });
     } catch (error) {
       toast.error("Erro ao finalizar inspeção");
     } finally {
@@ -103,26 +104,28 @@ export default function InspectionExecutionPage() {
 
   const onViewActionPlan = () => {
     toast.info("Funcionalidade de Plano de Ação em desenvolvimento");
+    // Future implementation: navigate to action plan page
   };
 
   const onGenerateReport = () => {
     toast.info("Funcionalidade de geração de relatório em desenvolvimento");
+    // Future implementation: generate PDF report
   };
-
+  
   return (
     <div className="container py-4 max-w-7xl mx-auto">
       <InspectionHeader loading={loading} inspection={inspection} />
-
+      
       {error && (
         <Alert variant="destructive" className="mb-4">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle className="text-sm font-medium">Erro ao carregar inspeção</AlertTitle>
           <AlertDescription className="text-xs">
             {error}
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-2 text-xs"
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2 text-xs" 
               onClick={refreshData}
             >
               <RefreshCw className="h-3 w-3 mr-1 text-muted-foreground" />
@@ -131,27 +134,27 @@ export default function InspectionExecutionPage() {
           </AlertDescription>
         </Alert>
       )}
-
+      
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <div className="lg:col-span-1 space-y-3">
-          <InspectionDetailsCard
-            loading={loading}
-            inspection={inspection}
-            company={company}
+          <InspectionDetailsCard 
+            loading={loading} 
+            inspection={inspection} 
+            company={company} 
             responsible={responsible}
             onRefresh={refreshData}
           />
-
+          
           <InspectionCompletion loading={loading} stats={stats} />
-
+          
           {groups.length > 0 && (
-            <QuestionGroups
-              groups={groups}
-              currentGroupId={currentGroupId}
-              onGroupChange={setCurrentGroupId}
+            <QuestionGroups 
+              groups={groups} 
+              currentGroupId={currentGroupId} 
+              onGroupChange={setCurrentGroupId} 
             />
           )}
-
+          
           <div className="space-y-2">
             <Button
               className="w-full text-sm"
@@ -161,8 +164,8 @@ export default function InspectionExecutionPage() {
               {saving ? "Salvando..." : "Salvar Progresso"}
               <Save className="h-3.5 w-3.5 ml-1.5" />
             </Button>
-
-            {inspection?.status !== "completed" ? (
+            
+            {inspection?.status !== 'completed' ? (
               <Button
                 variant="default"
                 className="w-full text-sm"
@@ -182,7 +185,7 @@ export default function InspectionExecutionPage() {
                 Reabrir Inspeção
               </Button>
             )}
-
+            
             <Button
               variant="outline"
               className="w-full text-sm"
@@ -191,7 +194,7 @@ export default function InspectionExecutionPage() {
             >
               Plano de Ação
             </Button>
-
+            
             <Button
               variant="outline"
               className="w-full text-sm"
@@ -201,7 +204,7 @@ export default function InspectionExecutionPage() {
               <FileText className="h-3.5 w-3.5 mr-1.5" />
               Gerar Relatório
             </Button>
-
+            
             <Button
               variant="outline"
               className="w-full text-sm"
@@ -213,9 +216,9 @@ export default function InspectionExecutionPage() {
             </Button>
           </div>
         </div>
-
+        
         <div className="lg:col-span-3">
-          <QuestionsPanel
+          <QuestionsPanel 
             loading={loading}
             currentGroupId={currentGroupId}
             filteredQuestions={filteredQuestions}
@@ -224,7 +227,7 @@ export default function InspectionExecutionPage() {
             groups={groups}
             onResponseChange={handleResponseChange}
           />
-
+          
           {!loading && questions.length === 0 && (
             <Alert className="mt-3">
               <AlertCircle className="h-4 w-4 text-muted-foreground" />
@@ -232,10 +235,10 @@ export default function InspectionExecutionPage() {
               <AlertDescription className="text-xs leading-relaxed">
                 Não foram encontradas perguntas para este checklist.
                 Tente atualizar os dados ou verifique se o checklist possui perguntas cadastradas.
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-2 text-xs"
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-2 text-xs" 
                   onClick={refreshData}
                 >
                   <RefreshCw className="h-3 w-3 mr-1 text-muted-foreground" />
