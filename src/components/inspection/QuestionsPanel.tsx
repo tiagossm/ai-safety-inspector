@@ -87,7 +87,7 @@ export function QuestionsPanel({
     setSubChecklistDialogOpen(true);
   };
   
-  const handleSaveSubChecklistResponses = (responsesObj: Record<string, any>) => {
+  const handleSaveSubChecklistResponses = async (responsesObj: Record<string, any>) => {
     if (!currentParentQuestionId) return;
     
     setSavingSubChecklist(true);
@@ -98,7 +98,7 @@ export function QuestionsPanel({
         subChecklistResponses: responsesObj
       });
       
-      onSaveSubChecklistResponses(currentParentQuestionId, responsesObj);
+      await onSaveSubChecklistResponses(currentParentQuestionId, responsesObj);
       
       toast.success("Respostas do sub-checklist salvas com sucesso");
       setSubChecklistDialogOpen(false);

@@ -65,7 +65,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
     }
   }, [inspectionId]);
 
-  // Updated the function signature to match what's expected in InspectionLayout
+  // Make sure this function returns a Promise<boolean> consistently
   const handleSaveSubChecklistResponses = useCallback(async (
     parentQuestionId: string, 
     responses: Record<string, any>
