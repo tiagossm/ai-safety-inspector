@@ -19,14 +19,15 @@ export function SubChecklistAIGenerator({
   parentQuestion,
   onSubChecklistCreated
 }: SubChecklistAIGeneratorProps) {
-  const [prompt, setPrompt] = useState(`Generate a detailed sub-checklist for the following question: "${parentQuestion.text}"`);
+  const [prompt, setPrompt] = useState(`Gere um sub-checklist detalhado para a seguinte pergunta: "${parentQuestion.text}"`);
   const [questionCount, setQuestionCount] = useState(5);
   const [generating, setGenerating] = useState(false);
   const [previewData, setPreviewData] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
   
   const handleGenerate = async () => {
     if (!prompt.trim()) {
-      toast.error("Please enter a prompt");
+      toast.error("Por favor, digite um prompt");
       return;
     }
     
@@ -47,14 +48,14 @@ export function SubChecklistAIGenerator({
       if (error) throw error;
       
       if (!data.success) {
-        throw new Error(data.error || "Failed to generate sub-checklist");
+        throw new Error(data.error || "Falha ao gerar sub-checklist");
       }
       
       setPreviewData(data);
-      toast.success("Sub-checklist generated successfully");
+      toast.success("Sub-checklist gerado com sucesso");
     } catch (error) {
-      console.error("Error generating sub-checklist:", error);
-      toast.error("Failed to generate sub-checklist");
+      console.error("Erro ao gerar sub-checklist:", error);
+      toast.error("Falha ao gerar sub-checklist");
     } finally {
       setGenerating(false);
     }
@@ -62,11 +63,11 @@ export function SubChecklistAIGenerator({
   
   const handleSave = async () => {
     if (!previewData) {
-      toast.error("Please generate a sub-checklist first");
+      toast.error("Por favor, gere um sub-checklist primeiro");
       return;
     }
     
-    setGenerating(true);
+    setSaving(true);
     
     try {
       // Save the sub-checklist to the database
@@ -80,35 +81,35 @@ export function SubChecklistAIGenerator({
       if (error) throw error;
       
       if (!data.success) {
-        throw new Error(data.error || "Failed to save sub-checklist");
+        throw new Error(data.error || "Falha ao salvar sub-checklist");
       }
       
-      toast.success("Sub-checklist saved successfully");
+      toast.success("Sub-checklist salvo com sucesso");
       onSubChecklistCreated(data.subChecklistId);
     } catch (error) {
-      console.error("Error saving sub-checklist:", error);
-      toast.error("Failed to save sub-checklist");
+      console.error("Erro ao salvar sub-checklist:", error);
+      toast.error("Falha ao salvar sub-checklist");
     } finally {
-      setGenerating(false);
+      setSaving(false);
     }
   };
   
   return (
     <div className="space-y-4">
       <div>
-        <Label htmlFor="ai-prompt">AI Prompt</Label>
+        <Label htmlFor="ai-prompt">Prompt de IA</Label>
         <Textarea
           id="ai-prompt"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Describe what kind of sub-checklist you want to generate"
+          placeholder="Descreva que tipo de sub-checklist você deseja gerar"
           rows={3}
         />
       </div>
       
       <div className="flex items-center gap-4">
         <div className="w-1/3">
-          <Label htmlFor="question-count">Number of Questions</Label>
+          <Label htmlFor="question-count">Número de Perguntas</Label>
           <Input
             id="question-count"
             type="number"
@@ -127,12 +128,12 @@ export function SubChecklistAIGenerator({
           {generating ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Generating...
+              Gerando...
             </>
           ) : (
             <>
               <SparkleIcon className="mr-2 h-4 w-4" />
-              Generate Sub-Checklist
+              Gerar Sub-Checklist
             </>
           )}
         </Button>
@@ -149,7 +150,7 @@ export function SubChecklistAIGenerator({
             )}
             
             <div className="space-y-2">
-              <h4 className="font-medium text-sm">Generated Questions:</h4>
+              <h4 className="font-medium text-sm">Perguntas Geradas:</h4>
               <ul className="list-disc pl-5 space-y-1">
                 {previewData.subChecklist.questions.map((question: any, index: number) => (
                   <li key={index} className="text-sm">
@@ -166,9 +167,16 @@ export function SubChecklistAIGenerator({
           <div className="flex justify-end">
             <Button
               onClick={handleSave}
-              disabled={generating}
+              disabled={saving}
             >
-              Save Sub-Checklist
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                "Salvar Sub-Checklist"
+              )}
             </Button>
           </div>
         </>

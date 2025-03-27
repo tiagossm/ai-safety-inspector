@@ -5,7 +5,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter
+  DialogFooter,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -94,7 +95,7 @@ export function SubChecklistDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
+      <DialogContent className="max-w-4xl max-h-[90vh]" aria-describedby="subChecklist-description">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {subChecklist?.title || "Sub-Checklist"}
@@ -102,12 +103,11 @@ export function SubChecklistDialog({
               <Badge variant="outline" className="ml-2">Somente leitura</Badge>
             )}
           </DialogTitle>
+          <DialogDescription id="subChecklist-description">
+            {subChecklist?.description || "Lista de verificação secundária com questões adicionais."}
+          </DialogDescription>
         </DialogHeader>
         <div className="overflow-y-auto p-1 max-h-[calc(90vh-10rem)]">
-          {subChecklist?.description && (
-            <p className="text-muted-foreground mb-4">{subChecklist.description}</p>
-          )}
-          
           <div className="space-y-4">
             {subChecklistQuestions.map((subQ, idx) => (
               <Card key={subQ.id} className="border border-gray-200">

@@ -15,6 +15,19 @@ export function formatInspectionStatus(status: string): { label: string; color: 
       return { label: "Cancelado", color: "red" };
     case "archived":
       return { label: "Arquivado", color: "gray" };
+    // Add additional mappings for Portuguese
+    case "pendente":
+      return { label: "Pendente", color: "amber" };
+    case "em andamento":
+    case "em_andamento":
+      return { label: "Em andamento", color: "blue" };
+    case "concluido":
+    case "concluído":
+      return { label: "Concluído", color: "green" };
+    case "cancelado":
+      return { label: "Cancelado", color: "red" };
+    case "arquivado":
+      return { label: "Arquivado", color: "gray" };
     default:
       return { label: "Desconhecido", color: "gray" };
   }

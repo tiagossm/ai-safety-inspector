@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.8.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,103 +13,81 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
   try {
     const { subChecklist, parentQuestionId } = await req.json();
 
-    if (!subChecklist || !parentQuestionId) {
-      throw new Error('Sub-checklist data and parent question ID are required');
+    if (!subChecklist) {
+      throw new Error('Sub-checklist é obrigatório');
     }
 
-    console.log("Received parentQuestionId:", parentQuestionId);
-    console.log("Received subChecklist:", JSON.stringify(subChecklist).substring(0, 200) + "...");
-
-    // Initialize Supabase client with service role key
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-    
-    if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error('Supabase URL and service role key are required');
+    if (!parentQuestionId) {
+      throw new Error('ID da pergunta pai é obrigatório');
     }
-    
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Create the sub-checklist
+    // 1. Create the new checklist
     const { data: checklistData, error: checklistError } = await supabase
-      .from("checklists")
+      .from('checklists')
       .insert({
         title: subChecklist.title,
-        description: subChecklist.description,
-        is_template: false,
-        status_checklist: "ativo",
-        status: "active"
+        description: subChecklist.description || `Sub-checklist para pergunta ID: ${parentQuestionId}`,
+        is_template: true, // Sub-checklists are treated as templates
+        status: 'active',
+        category: 'sub-checklist'
       })
-      .select("id")
+      .select('id')
       .single();
-    
+
     if (checklistError) {
       console.error("Error creating sub-checklist:", checklistError);
       throw checklistError;
     }
-    
+
     const subChecklistId = checklistData.id;
-    console.log("Created sub-checklist with ID:", subChecklistId);
-    
-    // Map response types to database format
-    const mapResponseType = (type: string): string => {
-      const typeMap: Record<string, string> = {
-        'yes_no': 'sim/não',
-        'text': 'texto',
-        'numeric': 'numérico',
-        'multiple_choice': 'seleção múltipla'
-      };
-      
-      return typeMap[type] || 'sim/não';
-    };
-    
-    // Insert the questions
-    if (subChecklist.questions && subChecklist.questions.length > 0) {
-      const questionInserts = subChecklist.questions.map((q: any, index: number) => ({
-        checklist_id: subChecklistId,
-        pergunta: q.text,
-        tipo_resposta: mapResponseType(q.responseType),
-        obrigatorio: q.isRequired !== false,
-        opcoes: q.responseType === 'multiple_choice' ? q.options : null,
-        ordem: index,
-        permite_foto: q.allowsPhoto || false,
-        permite_video: q.allowsVideo || false,
-        permite_audio: q.allowsAudio || false,
-        weight: 1
-      }));
-      
-      console.log("Inserting questions:", questionInserts.length);
-      
-      const { error: insertError } = await supabase
-        .from("checklist_itens")
-        .insert(questionInserts);
-      
-      if (insertError) {
-        console.error("Error inserting questions:", insertError);
-        throw insertError;
-      }
+
+    // 2. Create all the checklist items in the sub-checklist
+    const questionsToInsert = subChecklist.questions.map((q: any, index: number) => ({
+      checklist_id: subChecklistId,
+      pergunta: q.text,
+      tipo_resposta: q.responseType,
+      obrigatorio: q.isRequired,
+      opcoes: q.responseType === 'multiple_choice' ? q.options : null,
+      permite_foto: q.allowsPhoto,
+      permite_video: q.allowsVideo,
+      permite_audio: q.allowsAudio,
+      ordem: index + 1 // 1-based order
+    }));
+
+    const { error: itemsError } = await supabase
+      .from('checklist_itens')
+      .insert(questionsToInsert);
+
+    if (itemsError) {
+      console.error("Error creating sub-checklist items:", itemsError);
+      throw itemsError;
     }
-    
-    // Update the parent question with the sub-checklist ID
-    console.log("Updating parent question:", parentQuestionId, "with sub-checklist ID:", subChecklistId);
+
+    // 3. Update the parent question to link to this sub-checklist
     const { error: updateError } = await supabase
-      .from("checklist_itens")
-      .update({
-        sub_checklist_id: subChecklistId
+      .from('checklist_itens')
+      .update({ 
+        sub_checklist_id: subChecklistId 
       })
-      .eq("id", parentQuestionId);
-    
+      .eq('id', parentQuestionId);
+
     if (updateError) {
       console.error("Error updating parent question:", updateError);
       throw updateError;
     }
 
+    // Return success response
     return new Response(JSON.stringify({
       success: true,
-      subChecklistId
+      subChecklistId,
+      message: 'Sub-checklist criado com sucesso'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
@@ -117,7 +95,7 @@ serve(async (req) => {
     console.error("Error saving sub-checklist:", error);
     return new Response(JSON.stringify({
       success: false,
-      error: error.message || "Unknown error occurred"
+      error: error.message || "Erro ao salvar sub-checklist"
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500

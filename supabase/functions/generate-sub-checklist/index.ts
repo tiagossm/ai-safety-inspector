@@ -16,43 +16,45 @@ serve(async (req) => {
   try {
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
-      throw new Error('OPENAI_API_KEY is not set in environment variables');
+      throw new Error('OPENAI_API_KEY não está configurada nas variáveis de ambiente');
     }
 
     const { prompt, parentQuestionId, parentQuestionText, questionCount = 5 } = await req.json();
 
     if (!prompt) {
-      throw new Error('Prompt is required');
+      throw new Error('O prompt é obrigatório');
     }
 
     if (!parentQuestionId) {
-      throw new Error('Parent question ID is required');
+      throw new Error('O ID da pergunta principal é obrigatório');
     }
 
     const systemMessage = `
-You are an expert at creating detailed sub-checklists for inspection questions. 
-For the following parent question, create a detailed sub-checklist with ${questionCount} specific questions that would help fully assess this aspect.
+Você é um especialista na criação de sub-checklists detalhados para perguntas de inspeção. 
+Para a seguinte pergunta principal, crie um sub-checklist detalhado com ${questionCount} perguntas específicas que ajudariam a avaliar completamente este aspecto.
 
-Create a very specific, detailed sub-checklist with technical and relevant questions. Your response should follow this exact JSON format:
+Crie um sub-checklist muito específico e detalhado com perguntas técnicas e relevantes. Sua resposta deve seguir exatamente este formato JSON:
 
 {
-  "title": "A short, descriptive title for this sub-checklist (derived from the parent question)",
-  "description": "A brief explanation of what this sub-checklist evaluates",
+  "title": "Um título curto e descritivo para este sub-checklist (derivado da pergunta principal)",
+  "description": "Uma breve explicação do que este sub-checklist avalia",
   "questions": [
     {
-      "text": "Question text",
+      "text": "Texto da pergunta",
       "responseType": "yes_no" | "text" | "numeric" | "multiple_choice",
       "isRequired": true | false,
-      "options": ["Option 1", "Option 2"] (only for multiple_choice type)
+      "options": ["Opção 1", "Opção 2"] (apenas para o tipo multiple_choice)
     }
   ]
 }
 
-Make sure all questions are directly related to the parent question and help evaluate it in detail.
+Certifique-se de que todas as perguntas estejam diretamente relacionadas à pergunta principal e ajudem a avaliá-la em detalhes.
+Utilize apenas os tipos de resposta disponíveis: yes_no, text, numeric, ou multiple_choice.
+Para yes_no, as respostas serão "sim" ou "não".
 `;
 
-    console.log("Generating sub-checklist for parent question:", parentQuestionText);
-    console.log("With prompt:", prompt);
+    console.log("Gerando sub-checklist para pergunta principal:", parentQuestionText);
+    console.log("Com prompt:", prompt);
 
     // Call OpenAI API to generate sub-checklist
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -73,8 +75,8 @@ Make sure all questions are directly related to the parent question and help eva
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("OpenAI API error:", errorText);
-      throw new Error(`OpenAI API error: ${response.status} ${response.statusText}`);
+      console.error("Erro na API OpenAI:", errorText);
+      throw new Error(`Erro na API OpenAI: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
@@ -82,17 +84,25 @@ Make sure all questions are directly related to the parent question and help eva
 
     try {
       const content = data.choices[0].message.content;
-      console.log("Raw AI response:", content);
+      console.log("Resposta bruta da IA:", content);
       
       // Extract JSON from the response
       const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/```([\s\S]*?)```/) || [null, content];
       const jsonContent = jsonMatch[1] || content;
       
-      subChecklist = JSON.parse(jsonContent);
+      try {
+        subChecklist = JSON.parse(jsonContent);
+      } catch (parseError) {
+        console.error("Erro ao analisar JSON:", parseError);
+        
+        // Try to clean the content before parsing
+        const cleansedContent = jsonContent.replace(/[\u0000-\u001F]+/g, " ").trim();
+        subChecklist = JSON.parse(cleansedContent);
+      }
       
       // Validate the structure
       if (!subChecklist.title || !Array.isArray(subChecklist.questions)) {
-        throw new Error("Invalid sub-checklist structure");
+        throw new Error("Estrutura de sub-checklist inválida");
       }
       
       // Process the questions
@@ -104,7 +114,7 @@ Make sure all questions are directly related to the parent question and help eva
         
         // Ensure multiple_choice questions have options
         if (q.responseType === "multiple_choice" && (!q.options || !Array.isArray(q.options) || q.options.length < 2)) {
-          q.options = ["Option 1", "Option 2", "Option 3"];
+          q.options = ["Opção 1", "Opção 2", "Opção 3"];
         }
         
         return {
@@ -118,10 +128,10 @@ Make sure all questions are directly related to the parent question and help eva
         };
       });
     } catch (parseError) {
-      console.error("Error parsing AI response:", parseError);
+      console.error("Erro ao analisar resposta da IA:", parseError);
       return new Response(JSON.stringify({
         success: false,
-        error: "Failed to parse AI response as JSON."
+        error: "Falha ao analisar resposta da IA como JSON."
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200
@@ -132,7 +142,7 @@ Make sure all questions are directly related to the parent question and help eva
       success: true,
       subChecklist: {
         title: subChecklist.title,
-        description: subChecklist.description || `Sub-checklist for: ${parentQuestionText}`,
+        description: subChecklist.description || `Sub-checklist para: ${parentQuestionText}`,
         parentQuestionId,
         questions: subChecklist.questions
       }
@@ -140,10 +150,10 @@ Make sure all questions are directly related to the parent question and help eva
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error("Error generating sub-checklist:", error);
+    console.error("Erro ao gerar sub-checklist:", error);
     return new Response(JSON.stringify({
       success: false,
-      error: error.message || "Unknown error occurred"
+      error: error.message || "Ocorreu um erro desconhecido"
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500

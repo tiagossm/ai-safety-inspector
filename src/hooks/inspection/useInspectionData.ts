@@ -1,503 +1,207 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { InspectionDetails, InspectionFilters } from "@/types/newChecklist";
 import { useAuth } from "@/components/AuthProvider";
 
-export function useInspectionData(inspectionId: string | undefined) {
+export function useInspections() {
+  const [inspections, setInspections] = useState<InspectionDetails[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [inspection, setInspection] = useState<any>(null);
-  const [questions, setQuestions] = useState<any[]>([]);
-  const [responses, setResponses] = useState<Record<string, any>>({});
-  const [groups, setGroups] = useState<any[]>([]);
-  const [company, setCompany] = useState<any>(null);
-  const [responsible, setResponsible] = useState<any>(null);
-  const [subChecklists, setSubChecklists] = useState<Record<string, any>>({});
   const { user } = useAuth();
+  
+  const [filters, setFilters] = useState<InspectionFilters>({
+    search: "",
+    status: "all",
+    priority: "all",
+    companyId: "all",
+    responsibleId: "all", 
+    checklistId: "all",
+    startDate: undefined,
+    endDate: undefined
+  });
 
-  const fetchInspectionData = useCallback(async () => {
-    if (!inspectionId) {
-      setError("ID da inspeção não fornecido");
-      setLoading(false);
-      return;
-    }
-
+  const fetchInspections = async () => {
     try {
       setLoading(true);
       setError(null);
+      
+      if (!user) {
+        throw new Error("Usuário não autenticado");
+      }
 
-      // Fetch inspection details
-      const { data: inspectionData, error: inspectionError } = await supabase
+      // Fetch inspections without trying to join on responsible_id directly
+      let query = supabase
         .from("inspections")
         .select(`
           *,
-          checklist:checklist_id(id, title, description)
-        `)
-        .eq("id", inspectionId)
-        .single();
-
-      if (inspectionError) throw inspectionError;
-      if (!inspectionData) throw new Error("Inspeção não encontrada");
-
-      setInspection(inspectionData);
-
-      // Fetch company details if available
-      if (inspectionData.company_id) {
-        const { data: companyData, error: companyError } = await supabase
-          .from("companies")
-          .select("*")
-          .eq("id", inspectionData.company_id)
-          .single();
-
-        if (!companyError && companyData) {
-          setCompany(companyData);
-        }
+          companies:company_id(id, fantasy_name),
+          checklist:checklist_id(id, title, description, total_questions)
+        `);
+      
+      // Super admins see all inspections, others only see their own or company's
+      if (user.tier !== "super_admin") {
+        query = query.or(`user_id.eq.${user.id},responsible_id.eq.${user.id}`);
       }
-
-      // Fetch responsible user if available
-      if (inspectionData.responsible_id) {
-        const { data: userData, error: userError } = await supabase
+      
+      const { data, error } = await query.order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      
+      if (!data) {
+        setInspections([]);
+        return;
+      }
+      
+      // Now that we have inspections, fetch user data for responsible_id in a separate query
+      const userIds = data
+        .map(inspection => inspection.responsible_id)
+        .filter(id => id !== null && id !== undefined);
+      
+      let responsiblesData = {};
+      
+      if (userIds.length > 0) {
+        const { data: usersData, error: usersError } = await supabase
           .from("users")
           .select("id, name, email, phone")
-          .eq("id", inspectionData.responsible_id)
-          .single();
-
-        if (!userError && userData) {
-          setResponsible(userData);
+          .in("id", userIds);
+          
+        if (!usersError && usersData) {
+          responsiblesData = usersData.reduce((acc, user) => {
+            acc[user.id] = user;
+            return acc;
+          }, {});
         }
       }
-
-      // Fetch checklist questions
-      const { data: questionData, error: questionError } = await supabase
-        .from("checklist_itens")
-        .select("*")
-        .eq("checklist_id", inspectionData.checklist_id)
-        .order("ordem", { ascending: true });
-
-      if (questionError) throw questionError;
       
-      // Process questions to identify groups and sub-checklists
-      const groupsMap = new Map();
-      const qIds = questionData?.map(q => q.id) || [];
-      const subChecksIds: string[] = [];
-      
-      // Extract sub-checklist IDs
-      questionData?.forEach(q => {
-        if (q.sub_checklist_id) {
-          subChecksIds.push(q.sub_checklist_id);
+      // Calculate progress for each inspection with optimized queries
+      const inspectionsWithProgress = await Promise.all(data.map(async (inspection: any) => {
+        // Optimized query to get count of responses for this inspection
+        const { count: answeredQuestions, error: countError } = await supabase
+          .from('inspection_responses')
+          .select('*', { count: 'exact', head: true })
+          .eq('inspection_id', inspection.id);
+        
+        if (countError) {
+          console.error("Error fetching response count:", countError);
         }
         
-        // Extract group info from hint field if it contains JSON
-        if (q.hint && q.hint.startsWith('{') && q.hint.endsWith('}')) {
-          try {
-            const groupInfo = JSON.parse(q.hint);
-            if (groupInfo.groupId && groupInfo.groupTitle) {
-              if (!groupsMap.has(groupInfo.groupId)) {
-                groupsMap.set(groupInfo.groupId, {
-                  id: groupInfo.groupId,
-                  title: groupInfo.groupTitle,
-                  order: groupInfo.groupIndex || 0
-                });
-              }
-            }
-          } catch (e) {
-            // If hint is not valid JSON, just continue
-          }
+        // Optimized query to get total questions count
+        const { count: totalQuestions, error: questionError } = await supabase
+          .from('checklist_itens')
+          .select('*', { count: 'exact', head: true })
+          .eq('checklist_id', inspection.checklist_id);
+          
+        if (questionError) {
+          console.error("Error fetching question count:", questionError);
         }
-      });
-      
-      // Fetch sub-checklists if any
-      if (subChecksIds.length > 0) {
-        const { data: subChecklistsData, error: subChecklistsError } = await supabase
-          .from("checklists")
-          .select("id, title, description")
-          .in("id", subChecksIds);
-          
-        if (subChecklistsError) {
-          console.error("Error fetching sub-checklists:", subChecklistsError);
-        } else if (subChecklistsData) {
-          // Create a map of sub-checklist ID to sub-checklist data
-          const subChecklistsMap: Record<string, any> = {};
-          
-          // For each sub-checklist, fetch its questions
-          await Promise.all(subChecklistsData.map(async (subChecklist) => {
-            const { data: subQuestions, error: subQuestionsError } = await supabase
-              .from("checklist_itens")
-              .select("*")
-              .eq("checklist_id", subChecklist.id)
-              .order("ordem", { ascending: true });
-              
-            if (subQuestionsError) {
-              console.error(`Error fetching questions for sub-checklist ${subChecklist.id}:`, subQuestionsError);
-            } else {
-              subChecklistsMap[subChecklist.id] = {
-                ...subChecklist,
-                questions: subQuestions || []
-              };
-            }
-          }));
-          
-          setSubChecklists(subChecklistsMap);
-        }
-      }
-      
-      // Sort groups by order
-      const sortedGroups = Array.from(groupsMap.values()).sort((a, b) => a.order - b.order);
-      
-      // If no groups were found, create a default group
-      if (sortedGroups.length === 0 && questionData && questionData.length > 0) {
-        sortedGroups.push({
-          id: "default",
-          title: "Geral",
-          order: 0
-        });
-      }
-      
-      setGroups(sortedGroups);
-      setQuestions(questionData || []);
-
-      // Fetch existing responses
-      const { data: responseData, error: responseError } = await supabase
-        .from("inspection_responses")
-        .select("*")
-        .eq("inspection_id", inspectionId);
-
-      if (responseError) throw responseError;
-
-      // Also fetch sub-checklist responses if any
-      const subChecklistResponses: Record<string, any> = {};
-      
-      if (responseData) {
-        // Map responses by question ID for easier access
-        const responsesMap = responseData.reduce((acc, response) => {
-          // Check if response contains sub-checklist data
-          if (response.answer && typeof response.answer === 'string' && response.answer.startsWith('{')) {
-            try {
-              const parsedAnswer = JSON.parse(response.answer);
-              if (parsedAnswer.type === 'sub-checklist' && parsedAnswer.responses) {
-                subChecklistResponses[response.question_id] = parsedAnswer.responses;
-              }
-            } catch (e) {
-              // If not parseable JSON, proceed as normal
-            }
-          }
-          
-          acc[response.question_id] = response;
-          return acc;
-        }, {});
         
-        setResponses(responsesMap);
-      }
+        const progress = totalQuestions > 0 
+          ? Math.round(((answeredQuestions || 0) / totalQuestions) * 100) 
+          : 0;
+          
+        return {
+          id: inspection.id,
+          title: inspection.checklist?.title || "Sem título",
+          description: inspection.checklist?.description,
+          checklistId: inspection.checklist_id,
+          companyId: inspection.company_id,
+          responsibleId: inspection.responsible_id,
+          scheduledDate: inspection.scheduled_date,
+          status: (inspection.status || 'pending') as 'pending' | 'in_progress' | 'completed',
+          createdAt: inspection.created_at,
+          updatedAt: inspection.created_at,
+          priority: (inspection.priority || 'medium') as 'low' | 'medium' | 'high',
+          locationName: inspection.location,
+          company: inspection.companies || null,
+          responsible: inspection.responsible_id ? responsiblesData[inspection.responsible_id] : null,
+          progress,
+          // Additional fields from the database schema
+          approval_notes: inspection.approval_notes,
+          approval_status: inspection.approval_status,
+          approved_by: inspection.approved_by,
+          audio_url: inspection.audio_url,
+          photos: inspection.photos || [],
+          report_url: inspection.report_url,
+          unit_id: inspection.unit_id,
+          metadata: inspection.metadata,
+          cnae: inspection.cnae,
+          inspection_type: inspection.inspection_type,
+          sync_status: inspection.sync_status
+        };
+      }));
+      
+      setInspections(inspectionsWithProgress);
     } catch (error: any) {
-      console.error("Error fetching inspection data:", error);
+      console.error("Error fetching inspections:", error);
       setError(error.message);
+      toast.error("Erro ao carregar inspeções", {
+        description: error.message
+      });
     } finally {
       setLoading(false);
     }
-  }, [inspectionId]);
+  };
 
   useEffect(() => {
-    fetchInspectionData();
-  }, [fetchInspectionData]);
+    fetchInspections();
+  }, [user]);
 
-  const getFilteredQuestions = (groupId: string | null) => {
-    if (!groupId) return [];
-    
-    // Filter out questions that are part of a sub-checklist
-    const filteredQuestions = questions.filter(q => !q.parent_item_id);
-    
-    // If it's a default group but we don't have explicit group associations
-    if (groupId === "default" && groups.length === 1) {
-      return filteredQuestions;
-    }
-    
-    return filteredQuestions.filter(q => {
-      // Check if question belongs to this group based on hint
-      if (q.hint && q.hint.startsWith('{') && q.hint.endsWith('}')) {
-        try {
-          const groupInfo = JSON.parse(q.hint);
-          return groupInfo.groupId === groupId;
-        } catch (e) {
-          return false;
+  // Apply filters
+  const filteredInspections = useMemo(() => {
+    return inspections.filter(inspection => {
+      // Search filter
+      const searchLower = filters.search.toLowerCase();
+      const matchesSearch = !filters.search || 
+        (inspection.title?.toLowerCase().includes(searchLower)) ||
+        (inspection.company?.fantasy_name?.toLowerCase().includes(searchLower)) ||
+        (inspection.responsible?.name?.toLowerCase().includes(searchLower));
+      
+      // Status filter
+      const matchesStatus = filters.status === "all" || inspection.status === filters.status;
+      
+      // Priority filter
+      const matchesPriority = filters.priority === "all" || inspection.priority === filters.priority;
+      
+      // Company filter
+      const matchesCompany = filters.companyId === "all" || inspection.companyId === filters.companyId;
+      
+      // Responsible filter
+      const matchesResponsible = filters.responsibleId === "all" || inspection.responsibleId === filters.responsibleId;
+      
+      // Checklist filter
+      const matchesChecklist = filters.checklistId === "all" || inspection.checklistId === filters.checklistId;
+      
+      // Date filter
+      let matchesDate = true;
+      if (filters.startDate) {
+        const scheduledDate = inspection.scheduledDate ? new Date(inspection.scheduledDate) : null;
+        const startDate = filters.startDate;
+        const endDate = filters.endDate || startDate;
+        
+        if (scheduledDate) {
+          // Remove time component for date comparison
+          const dateOnly = new Date(scheduledDate.setHours(0, 0, 0, 0));
+          const startDateOnly = new Date(startDate.setHours(0, 0, 0, 0));
+          const endDateOnly = new Date(endDate.setHours(23, 59, 59, 999));
+          
+          matchesDate = dateOnly >= startDateOnly && dateOnly <= endDateOnly;
+        } else {
+          matchesDate = false;
         }
       }
-      return false;
+      
+      return matchesSearch && matchesStatus && matchesPriority && 
+        matchesCompany && matchesResponsible && matchesChecklist && matchesDate;
     });
-  };
-
-  const getCompletionStats = () => {
-    // Count total required questions
-    const totalRequired = questions.filter(q => q.obrigatorio).length;
-    
-    // Count answered required questions
-    const answered = questions.filter(q => 
-      q.obrigatorio && responses[q.id] && responses[q.id].answer
-    ).length;
-    
-    const percentage = totalRequired > 0 
-      ? Math.round((answered / totalRequired) * 100) 
-      : 0;
-      
-    return {
-      total: questions.length,
-      totalRequired,
-      answered,
-      percentage
-    };
-  };
-
-  const handleResponseChange = async (questionId: string, value: string, notes?: string) => {
-    // If it's a parent question with a sub-checklist, handle differently
-    const question = questions.find(q => q.id === questionId);
-    
-    if (question && question.sub_checklist_id) {
-      // For now, just store the value
-      setResponses(prev => ({
-        ...prev,
-        [questionId]: {
-          ...prev[questionId],
-          question_id: questionId,
-          inspection_id: inspectionId,
-          answer: value,
-          notes: notes || prev[questionId]?.notes || ""
-        }
-      }));
-      return;
-    }
-    
-    // Update local state
-    setResponses(prev => ({
-      ...prev,
-      [questionId]: {
-        ...prev[questionId],
-        question_id: questionId,
-        inspection_id: inspectionId,
-        answer: value,
-        notes: notes || prev[questionId]?.notes || ""
-      }
-    }));
-    
-    // If inspection status is still pending, update to in_progress
-    if (inspection && inspection.status === 'pending') {
-      try {
-        await supabase
-          .from("inspections")
-          .update({ status: 'in_progress' })
-          .eq("id", inspectionId);
-          
-        setInspection(prev => ({ ...prev, status: 'in_progress' }));
-      } catch (error) {
-        console.error("Error updating inspection status:", error);
-      }
-    }
-  };
-
-  const handleSaveSubChecklistResponses = async (
-    parentQuestionId: string, 
-    subResponses: Array<{questionId: string, value: string, comment?: string}>
-  ) => {
-    if (!inspectionId || !parentQuestionId) return;
-    
-    try {
-      // Format the responses for storage
-      const formattedAnswer = JSON.stringify({
-        type: 'sub-checklist',
-        responses: subResponses.reduce((acc, item) => {
-          acc[item.questionId] = {
-            value: item.value,
-            comment: item.comment || ""
-          };
-          return acc;
-        }, {})
-      });
-      
-      // Check if we already have a response for this parent question
-      const existingResponse = responses[parentQuestionId];
-      
-      if (existingResponse && existingResponse.id) {
-        // Update existing response
-        const { error } = await supabase
-          .from("inspection_responses")
-          .update({
-            answer: formattedAnswer,
-            updated_at: new Date().toISOString() // Fix: Convert Date to ISO string
-          })
-          .eq("id", existingResponse.id);
-          
-        if (error) throw error;
-      } else {
-        // Create new response
-        const { error } = await supabase
-          .from("inspection_responses")
-          .insert({
-            inspection_id: inspectionId,
-            question_id: parentQuestionId,
-            answer: formattedAnswer,
-            created_at: new Date().toISOString() // Fix: Convert Date to ISO string
-          });
-          
-        if (error) throw error;
-      }
-      
-      // Update local state
-      setResponses(prev => ({
-        ...prev,
-        [parentQuestionId]: {
-          ...prev[parentQuestionId],
-          question_id: parentQuestionId,
-          inspection_id: inspectionId,
-          answer: formattedAnswer
-        }
-      }));
-      
-      return true;
-    } catch (error) {
-      console.error("Error saving sub-checklist responses:", error);
-      toast.error("Erro ao salvar respostas do sub-checklist");
-      return false;
-    }
-  };
-
-  const handleSaveInspection = async () => {
-    if (!inspectionId) return;
-    
-    try {
-      setSaving(true);
-      
-      // Prepare responses for insertion/update
-      const responsesToSave = Object.values(responses);
-      
-      // Split into new and existing responses
-      const newResponses = responsesToSave.filter(r => !r.id);
-      const existingResponses = responsesToSave.filter(r => r.id);
-      
-      // Insert new responses
-      if (newResponses.length > 0) {
-        const { error: insertError } = await supabase
-          .from("inspection_responses")
-          .insert(
-            newResponses.map(r => ({
-              inspection_id: inspectionId,
-              question_id: r.question_id,
-              answer: r.answer,
-              notes: r.notes
-            }))
-          );
-          
-        if (insertError) throw insertError;
-      }
-      
-      // Update existing responses
-      for (const response of existingResponses) {
-        const { error: updateError } = await supabase
-          .from("inspection_responses")
-          .update({
-            answer: response.answer,
-            notes: response.notes,
-            updated_at: new Date().toISOString() // Fix: Convert Date to ISO string
-          })
-          .eq("id", response.id);
-          
-        if (updateError) throw updateError;
-      }
-      
-      // Update inspection status to in_progress if it was pending
-      if (inspection && inspection.status === 'pending') {
-        const { error: statusError } = await supabase
-          .from("inspections")
-          .update({ status: 'in_progress' })
-          .eq("id", inspectionId);
-          
-        if (statusError) throw statusError;
-        
-        setInspection(prev => ({ ...prev, status: 'in_progress' }));
-      }
-      
-      // Refresh data to get updated responses with IDs
-      await fetchInspectionData();
-      
-      return true;
-    } catch (error) {
-      console.error("Error saving inspection:", error);
-      throw error;
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const completeInspection = async () => {
-    if (!inspectionId) return;
-    
-    try {
-      // First save current responses
-      await handleSaveInspection();
-      
-      // Then update inspection status to completed
-      const { error } = await supabase
-        .from("inspections")
-        .update({ 
-          status: 'completed',
-          updated_at: new Date().toISOString() // Fix: Convert Date to ISO string
-        })
-        .eq("id", inspectionId);
-        
-      if (error) throw error;
-      
-      // Update local state
-      setInspection(prev => ({ ...prev, status: 'completed' }));
-      
-      return true;
-    } catch (error) {
-      console.error("Error completing inspection:", error);
-      throw error;
-    }
-  };
-
-  const reopenInspection = async () => {
-    if (!inspectionId) return;
-    
-    try {
-      // Update inspection status to in_progress
-      const { error } = await supabase
-        .from("inspections")
-        .update({ 
-          status: 'in_progress',
-          updated_at: new Date().toISOString() // Fix: Convert Date to ISO string
-        })
-        .eq("id", inspectionId);
-        
-      if (error) throw error;
-      
-      // Update local state
-      setInspection(prev => ({ ...prev, status: 'in_progress' }));
-      
-      return true;
-    } catch (error) {
-      console.error("Error reopening inspection:", error);
-      throw error;
-    }
-  };
+  }, [inspections, filters]);
 
   return {
+    inspections: filteredInspections,
     loading,
-    saving,
     error,
-    inspection,
-    questions,
-    responses,
-    groups,
-    company,
-    responsible,
-    subChecklists,
-    handleResponseChange,
-    handleSaveInspection,
-    handleSaveSubChecklistResponses,
-    getFilteredQuestions,
-    getCompletionStats,
-    refreshData: fetchInspectionData,
-    completeInspection,
-    reopenInspection
+    fetchInspections,
+    filters,
+    setFilters
   };
 }

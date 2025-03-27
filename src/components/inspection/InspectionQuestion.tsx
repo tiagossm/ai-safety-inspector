@@ -10,7 +10,8 @@ import {
   CornerDownRight,
   AlertTriangle,
   MessageCircle,
-  XCircle
+  XCircle,
+  Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -222,8 +223,17 @@ export function InspectionQuestion({
                       disabled={loadingSubChecklist}
                       className="flex items-center gap-1.5 text-xs h-7"
                     >
-                      <List className="h-3.5 w-3.5 text-gray-500" />
-                      <span>{loadingSubChecklist ? "Carregando..." : "Abrir Sub-Checklist"}</span>
+                      {loadingSubChecklist ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 text-gray-500 animate-spin" />
+                          <span>Carregando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <List className="h-3.5 w-3.5 text-gray-500" />
+                          <span>Abrir Sub-Checklist</span>
+                        </>
+                      )}
                     </Button>
                   </div>
                 )}

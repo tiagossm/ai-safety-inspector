@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { QuestionGroup } from "./QuestionGroup";
 import { Button } from "@/components/ui/button";
-import { Plus, Sparkles } from "lucide-react";
+import { Plus, Sparkles, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -179,7 +179,7 @@ export function GroupedQuestionsSection({
       toast.success(`${generatedQuestions.length} perguntas geradas com sucesso!`);
       setAiPromptOpen(false);
     } catch (error) {
-      console.error("Error generating questions:", error);
+      console.error("Erro ao gerar perguntas:", error);
       toast.error("Erro ao gerar perguntas. Tente novamente.");
     } finally {
       setGenerating(false);
@@ -217,12 +217,12 @@ export function GroupedQuestionsSection({
         </Button>
       </div>
       
-      {/* AI Prompt Dialog */}
+      {/* AI Prompt Dialog with proper description for accessibility */}
       <Dialog open={aiPromptOpen} onOpenChange={setAiPromptOpen}>
-        <DialogContent>
+        <DialogContent aria-describedby="ai-prompt-description">
           <DialogHeader>
             <DialogTitle>Gerar Perguntas com IA</DialogTitle>
-            <DialogDescription>
+            <DialogDescription id="ai-prompt-description">
               Descreva o tipo de perguntas que você deseja gerar para este grupo.
               Seja específico para obter melhores resultados.
             </DialogDescription>
@@ -251,7 +251,7 @@ export function GroupedQuestionsSection({
               {generating ? (
                 <>
                   <span>Gerando...</span>
-                  <Sparkles className="h-4 w-4 ml-2 animate-pulse" />
+                  <Loader2 className="h-4 w-4 ml-2 animate-spin" />
                 </>
               ) : (
                 <>

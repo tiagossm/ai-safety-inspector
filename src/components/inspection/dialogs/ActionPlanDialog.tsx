@@ -5,10 +5,12 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { AlertTriangle } from "lucide-react";
 
 interface ActionPlanDialogProps {
   open: boolean;
@@ -25,37 +27,39 @@ export function ActionPlanDialog({
   questionText,
   actionPlanText,
   setActionPlanText,
-  onSave,
+  onSave
 }: ActionPlanDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-md" aria-describedby="action-plan-description">
         <DialogHeader>
-          <DialogTitle>Adicionar Plano de Ação</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <span>Plano de Ação</span>
+          </DialogTitle>
+          <DialogDescription id="action-plan-description">
+            Descreva as ações necessárias para resolver esta não conformidade.
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <Label className="text-sm font-medium mb-1">Não-Conformidade:</Label>
-            <p className="text-sm">{questionText}</p>
+        
+        <div className="space-y-3">
+          <div className="bg-muted/50 p-2 rounded text-sm">
+            <p className="font-medium mb-1 text-xs text-muted-foreground">Não conformidade:</p>
+            <p>{questionText}</p>
           </div>
+          
           <Textarea
+            placeholder="Descreva o plano de ação para corrigir esta não conformidade..."
             value={actionPlanText}
             onChange={(e) => setActionPlanText(e.target.value)}
-            placeholder="Descreva as ações necessárias para resolver este problema..."
             rows={5}
           />
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancelar
-            </Button>
-            <Button onClick={onSave}>
-              Salvar Plano de Ação
-            </Button>
-          </div>
         </div>
+        
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={onSave}>Salvar Plano de Ação</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
