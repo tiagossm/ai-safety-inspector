@@ -94,14 +94,16 @@ export function SubChecklistDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl">
+      <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>{subChecklist?.title || "Sub-Checklist"}</DialogTitle>
-          {readOnly && (
-            <Badge variant="outline" className="ml-2">Somente leitura</Badge>
-          )}
+          <DialogTitle className="flex items-center gap-2">
+            {subChecklist?.title || "Sub-Checklist"}
+            {readOnly && (
+              <Badge variant="outline" className="ml-2">Somente leitura</Badge>
+            )}
+          </DialogTitle>
         </DialogHeader>
-        <div className="max-h-[70vh] overflow-y-auto p-1">
+        <div className="overflow-y-auto p-1 max-h-[calc(90vh-10rem)]">
           {subChecklist?.description && (
             <p className="text-muted-foreground mb-4">{subChecklist.description}</p>
           )}
@@ -113,9 +115,9 @@ export function SubChecklistDialog({
                   <div className="flex items-start gap-2">
                     <span className="font-medium">{idx + 1}.</span>
                     <div className="flex-1">
-                      <h3 className="font-medium mb-2 text-sm">{subQ.text}</h3>
+                      <h3 className="font-medium mb-2 text-sm">{subQ.pergunta || subQ.text}</h3>
                       
-                      {(subQ.responseType === "sim/não" || subQ.responseType === "yes_no") && (
+                      {(subQ.tipo_resposta === "sim/não" || subQ.responseType === "yes_no") && (
                         <div className="flex gap-2">
                           <Button
                             variant={responses[subQ.id]?.value === "sim" ? "default" : "outline"}
@@ -140,7 +142,7 @@ export function SubChecklistDialog({
                         </div>
                       )}
                       
-                      {(subQ.responseType === "texto" || subQ.responseType === "text") && (
+                      {(subQ.tipo_resposta === "texto" || subQ.responseType === "text") && (
                         <Textarea 
                           placeholder="Digite sua resposta..."
                           rows={2}
@@ -151,9 +153,9 @@ export function SubChecklistDialog({
                         />
                       )}
                       
-                      {(subQ.responseType === "seleção múltipla" || subQ.responseType === "multiple_choice") && (
+                      {(subQ.tipo_resposta === "seleção múltipla" || subQ.responseType === "multiple_choice") && (
                         <div className="flex flex-wrap gap-2 mt-2">
-                          {subQ.options?.map((option: string, i: number) => (
+                          {(subQ.opcoes || subQ.options || []).map((option: string, i: number) => (
                             <Button
                               key={i}
                               variant={responses[subQ.id]?.value === option ? "default" : "outline"}

@@ -75,21 +75,28 @@ export function useInspections() {
         }
       }
       
-      // Calculate progress for each inspection and format data
+      // Calculate progress for each inspection with optimized queries
       const inspectionsWithProgress = await Promise.all(data.map(async (inspection: any) => {
-        // Get count of responses for this inspection
+        // Optimized query to get count of responses for this inspection
         const { count: answeredQuestions, error: countError } = await supabase
           .from('inspection_responses')
           .select('*', { count: 'exact', head: true })
           .eq('inspection_id', inspection.id);
         
-        // Get total questions for the checklist
-        const { data: questionData, error: questionError } = await supabase
+        if (countError) {
+          console.error("Error fetching response count:", countError);
+        }
+        
+        // Optimized query to get total questions count
+        const { count: totalQuestions, error: questionError } = await supabase
           .from('checklist_itens')
           .select('*', { count: 'exact', head: true })
           .eq('checklist_id', inspection.checklist_id);
           
-        const totalQuestions = questionData?.length || 0;
+        if (questionError) {
+          console.error("Error fetching question count:", questionError);
+        }
+        
         const progress = totalQuestions > 0 
           ? Math.round(((answeredQuestions || 0) / totalQuestions) * 100) 
           : 0;

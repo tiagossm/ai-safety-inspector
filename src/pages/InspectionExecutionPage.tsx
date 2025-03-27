@@ -8,9 +8,11 @@ import { InspectionDetailsCard } from "@/components/inspection/InspectionDetails
 import { InspectionCompletion } from "@/components/inspection/InspectionCompletion";
 import { QuestionGroups } from "@/components/inspection/QuestionGroups";
 import { QuestionsPanel } from "@/components/inspection/QuestionsPanel";
-import { AlertCircle, RefreshCw, Save, CheckCircle2, FileText } from "lucide-react";
+import { AlertCircle, RefreshCw, Save, CheckCircle2, FileText, ArrowLeftRight } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 export default function InspectionExecutionPage() {
   const { id } = useParams<{ id: string }>();
@@ -28,8 +30,10 @@ export default function InspectionExecutionPage() {
     groups,
     company,
     responsible,
+    subChecklists,
     handleResponseChange,
     handleSaveInspection,
+    handleSaveSubChecklistResponses,
     getFilteredQuestions,
     getCompletionStats,
     error,
@@ -60,6 +64,8 @@ export default function InspectionExecutionPage() {
   const stats = getCompletionStats();
   
   const onSaveProgress = async () => {
+    if (saving) return;
+    
     setSaving(true);
     try {
       await handleSaveInspection();
@@ -156,6 +162,23 @@ export default function InspectionExecutionPage() {
           )}
           
           <div className="space-y-2">
+            <div className="flex items-center mb-2 justify-between bg-muted/40 p-2 rounded-md">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="autoSave"
+                  checked={autoSave}
+                  onCheckedChange={setAutoSave}
+                />
+                <Label htmlFor="autoSave" className="text-sm">Auto-salvar</Label>
+              </div>
+              
+              {lastSaved && (
+                <span className="text-xs text-muted-foreground">
+                  Último: {lastSaved.toLocaleTimeString()}
+                </span>
+              )}
+            </div>
+            
             <Button
               className="w-full text-sm"
               disabled={saving || loading}
@@ -183,6 +206,7 @@ export default function InspectionExecutionPage() {
                 onClick={onReopenInspection}
               >
                 Reabrir Inspeção
+                <ArrowLeftRight className="h-3.5 w-3.5 ml-1.5" />
               </Button>
             )}
             
@@ -226,6 +250,8 @@ export default function InspectionExecutionPage() {
             responses={responses}
             groups={groups}
             onResponseChange={handleResponseChange}
+            onSaveSubChecklistResponses={handleSaveSubChecklistResponses}
+            subChecklists={subChecklists}
           />
           
           {!loading && questions.length === 0 && (

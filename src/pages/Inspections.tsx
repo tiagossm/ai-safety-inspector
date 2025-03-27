@@ -3,33 +3,19 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { 
   PlusCircle, 
-  Calendar, 
   Filter, 
   Search, 
-  Building2, 
-  User2, 
-  ClipboardList, 
   RefreshCw,
   AlertTriangle,
-  CheckCircle,
-  Clock,
-  Share2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useInspections } from "@/hooks/useInspections";
-import { useCompanies } from "@/hooks/useCompanies";
-import { useUsers } from "@/hooks/useUsers";
 import { EmptyState } from "@/components/inspection/EmptyState";
 import { InspectionFilters } from "@/components/inspection/InspectionFilters";
 import { InspectionCard } from "@/components/inspection/InspectionCard";
 import { InspectionTable } from "@/components/inspection/InspectionTable";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -38,10 +24,20 @@ export default function Inspections() {
   const navigate = useNavigate();
   const { inspections, loading, error, fetchInspections, filters, setFilters } = useInspections();
   const [viewMode, setViewMode] = useState<"card" | "table">("card");
+  const [searchTerm, setSearchTerm] = useState("");
   
   useEffect(() => {
     document.title = "Inspeções | IASST";
   }, []);
+
+  // Handle search with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters(prev => ({ ...prev, search: searchTerm }));
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [searchTerm, setFilters]);
 
   const handleCreateInspection = () => {
     navigate("/new-checklists");
@@ -73,7 +69,43 @@ export default function Inspections() {
       
       <Separator />
       
-      <InspectionFilters filters={filters} setFilters={setFilters} />
+      <div className="flex flex-col md:flex-row gap-4 justify-between">
+        <div className="relative w-full md:w-64">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar inspeções..."
+            className="pl-8"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9"
+            onClick={() => setFilters({
+              search: "",
+              status: "all",
+              priority: "all",
+              companyId: "all",
+              responsibleId: "all",
+              checklistId: "all",
+              startDate: undefined,
+              endDate: undefined
+            })}
+          >
+            Limpar Filtros
+          </Button>
+          
+          <InspectionFilters filters={filters} setFilters={setFilters} />
+          
+          <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleRetry}>
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
       
       <Tabs defaultValue={viewMode} onValueChange={(value) => setViewMode(value as "card" | "table")}>
         <TabsList className="mb-4">
@@ -106,7 +138,7 @@ export default function Inspections() {
           <EmptyState 
             title="Nenhuma inspeção encontrada"
             description="Você ainda não possui inspeções cadastradas ou que correspondam aos filtros selecionados."
-            icon={ClipboardList}
+            icon={Filter}
             action={
               <Button onClick={handleCreateInspection}>
                 <PlusCircle className="mr-2 h-4 w-4" />
@@ -117,22 +149,26 @@ export default function Inspections() {
         ) : (
           <>
             <TabsContent value="card" className="mt-0">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {inspections.map((inspection) => (
-                  <InspectionCard 
-                    key={inspection.id}
-                    inspection={inspection}
-                    onView={() => handleViewInspection(inspection.id)}
-                  />
-                ))}
-              </div>
+              <ScrollArea className="h-[calc(100vh-320px)]">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {inspections.map((inspection) => (
+                    <InspectionCard 
+                      key={inspection.id}
+                      inspection={inspection}
+                      onView={() => handleViewInspection(inspection.id)}
+                    />
+                  ))}
+                </div>
+              </ScrollArea>
             </TabsContent>
             
             <TabsContent value="table" className="mt-0">
-              <InspectionTable 
-                inspections={inspections}
-                onView={handleViewInspection}
-              />
+              <ScrollArea className="h-[calc(100vh-320px)]">
+                <InspectionTable 
+                  inspections={inspections}
+                  onView={handleViewInspection}
+                />
+              </ScrollArea>
             </TabsContent>
           </>
         )}

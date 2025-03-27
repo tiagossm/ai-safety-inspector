@@ -1,329 +1,500 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { InspectionDetails } from '@/types/newChecklist';
 
-export const useInspectionData = (inspectionId: string | undefined) => {
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useAuth } from "@/components/AuthProvider";
+
+export function useInspectionData(inspectionId: string | undefined) {
   const [loading, setLoading] = useState(true);
-  const [inspection, setInspection] = useState<InspectionDetails | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [inspection, setInspection] = useState<any>(null);
   const [questions, setQuestions] = useState<any[]>([]);
   const [responses, setResponses] = useState<Record<string, any>>({});
   const [groups, setGroups] = useState<any[]>([]);
   const [company, setCompany] = useState<any>(null);
   const [responsible, setResponsible] = useState<any>(null);
-  const [saving, setSaving] = useState(false);
+  const [subChecklists, setSubChecklists] = useState<Record<string, any>>({});
+  const { user } = useAuth();
 
-  useEffect(() => {
-    if (!inspectionId) return;
+  const fetchInspectionData = useCallback(async () => {
+    if (!inspectionId) {
+      setError("ID da inspeção não fornecido");
+      setLoading(false);
+      return;
+    }
 
-    const fetchInspectionData = async () => {
+    try {
       setLoading(true);
-      try {
-        const { data: inspectionData, error: inspectionError } = await supabase
-          .from('inspections')
-          .select(`
-            id,
-            checklist_id,
-            status,
-            company_id,
-            user_id,
-            responsible_id,
-            scheduled_date,
-            location,
-            priority,
-            inspection_type,
-            cnae,
-            metadata,
-            created_at,
-            approval_status,
-            approved_by,
-            approval_notes,
-            audio_url,
-            photos,
-            report_url,
-            unit_id,
-            sync_status,
-            checklist:checklists (
-              title,
-              description
-            )
-          `)
-          .eq('id', inspectionId)
+      setError(null);
+
+      // Fetch inspection details
+      const { data: inspectionData, error: inspectionError } = await supabase
+        .from("inspections")
+        .select(`
+          *,
+          checklist:checklist_id(id, title, description)
+        `)
+        .eq("id", inspectionId)
+        .single();
+
+      if (inspectionError) throw inspectionError;
+      if (!inspectionData) throw new Error("Inspeção não encontrada");
+
+      setInspection(inspectionData);
+
+      // Fetch company details if available
+      if (inspectionData.company_id) {
+        const { data: companyData, error: companyError } = await supabase
+          .from("companies")
+          .select("*")
+          .eq("id", inspectionData.company_id)
           .single();
 
-        if (inspectionError) throw inspectionError;
-        if (!inspectionData) throw new Error('Inspeção não encontrada');
-
-        let parsedMetadata: Record<string, any> = {};
-        if (inspectionData.metadata) {
-          try {
-            parsedMetadata = typeof inspectionData.metadata === 'string'
-              ? JSON.parse(inspectionData.metadata)
-              : inspectionData.metadata;
-          } catch (e) {
-            console.error('Erro ao parsear metadata:', e);
-          }
-        }
-
-        const formattedInspection: InspectionDetails = {
-          id: inspectionData.id,
-          title: inspectionData.checklist?.title || 'Sem título',
-          description: inspectionData.checklist?.description,
-          checklistId: inspectionData.checklist_id,
-          companyId: inspectionData.company_id,
-          responsibleId: inspectionData.responsible_id,
-          scheduledDate: inspectionData.scheduled_date,
-          status: inspectionData.status as 'pending' | 'in_progress' | 'completed',
-          createdAt: inspectionData.created_at,
-          updatedAt: inspectionData.created_at,
-          priority: (inspectionData.priority || 'medium') as 'low' | 'medium' | 'high',
-          locationName: inspectionData.location,
-          checklist: inspectionData.checklist,
-          approval_notes: inspectionData.approval_notes,
-          approval_status: inspectionData.approval_status,
-          approved_by: inspectionData.approved_by,
-          audio_url: inspectionData.audio_url,
-          photos: inspectionData.photos || [],
-          report_url: inspectionData.report_url,
-          unit_id: inspectionData.unit_id,
-          metadata: parsedMetadata,
-          cnae: inspectionData.cnae,
-          inspection_type: inspectionData.inspection_type,
-          sync_status: inspectionData.sync_status
-        };
-
-        setInspection(formattedInspection);
-
-        const { data: questionsData, error: questionsError } = await supabase
-          .from('checklist_itens')
-          .select('*')
-          .eq('checklist_id', inspectionData.checklist_id)
-          .order('ordem', { ascending: true });
-
-        if (questionsError) throw questionsError;
-
-        const groupMap = new Map();
-        const formattedQuestions = questionsData.map((q: any) => {
-          let groupId: string | undefined;
-          let groupTitle: string | undefined;
-
-          if (q.hint && q.hint.includes('groupId')) {
-            try {
-              const groupInfo = JSON.parse(q.hint);
-              groupId = groupInfo.groupId;
-              groupTitle = groupInfo.groupTitle;
-
-              if (groupId && !groupMap.has(groupId)) {
-                groupMap.set(groupId, {
-                  id: groupId,
-                  title: groupTitle || `Grupo ${groupMap.size + 1}`
-                });
-              }
-            } catch (e) {
-              console.error('Erro ao parsear hint:', e);
-            }
-          }
-
-          return {
-            id: q.id,
-            text: q.pergunta,
-            responseType: q.tipo_resposta,
-            isRequired: q.obrigatorio,
-            options: q.opcoes || [],
-            order: q.ordem,
-            groupId: groupId,
-            conditionValue: q.condition_value,
-            parentQuestionId: q.parent_item_id,
-            allowsPhoto: q.permite_foto,
-            allowsVideo: q.permite_video,
-            allowsAudio: q.permite_audio,
-            hint: q.hint,
-            weight: q.weight || 1,
-            hasSubChecklist: !!q.sub_checklist_id,
-            subChecklistId: q.sub_checklist_id
-          };
-        });
-
-        setQuestions(formattedQuestions);
-        setGroups(Array.from(groupMap.values()));
-
-        const { data: responsesData, error: responsesError } = await supabase
-          .from('inspection_responses')
-          .select('*')
-          .eq('inspection_id', inspectionId);
-
-        if (responsesError) throw responsesError;
-
-        const responsesMap: Record<string, any> = {};
-        responsesData.forEach((r: any) => {
-          responsesMap[r.question_id] = {
-            value: r.answer,
-            comment: r.notes,
-            actionPlan: r.action_plan,
-            mediaUrls: r.media_urls || [],
-            completedAt: r.completed_at
-          };
-        });
-
-        setResponses(responsesMap);
-
-        if (inspectionData.company_id) {
-          const { data: companyData } = await supabase
-            .from('companies')
-            .select('id, name, cnpj')
-            .eq('id', inspectionData.company_id)
-            .single();
-
+        if (!companyError && companyData) {
           setCompany(companyData);
         }
+      }
 
-        if (inspectionData.responsible_id) {
-          const { data: userData } = await supabase
-            .from('users')
-            .select('id, name, email')
-            .eq('id', inspectionData.responsible_id)
-            .single();
+      // Fetch responsible user if available
+      if (inspectionData.responsible_id) {
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("id, name, email, phone")
+          .eq("id", inspectionData.responsible_id)
+          .single();
 
+        if (!userError && userData) {
           setResponsible(userData);
         }
-      } catch (error) {
-        console.error('Erro ao carregar dados da inspeção:', error);
-        toast.error('Erro ao carregar dados da inspeção');
-      } finally {
-        setLoading(false);
       }
-    };
 
-    fetchInspectionData();
+      // Fetch checklist questions
+      const { data: questionData, error: questionError } = await supabase
+        .from("checklist_itens")
+        .select("*")
+        .eq("checklist_id", inspectionData.checklist_id)
+        .order("ordem", { ascending: true });
+
+      if (questionError) throw questionError;
+      
+      // Process questions to identify groups and sub-checklists
+      const groupsMap = new Map();
+      const qIds = questionData?.map(q => q.id) || [];
+      const subChecksIds: string[] = [];
+      
+      // Extract sub-checklist IDs
+      questionData?.forEach(q => {
+        if (q.sub_checklist_id) {
+          subChecksIds.push(q.sub_checklist_id);
+        }
+        
+        // Extract group info from hint field if it contains JSON
+        if (q.hint && q.hint.startsWith('{') && q.hint.endsWith('}')) {
+          try {
+            const groupInfo = JSON.parse(q.hint);
+            if (groupInfo.groupId && groupInfo.groupTitle) {
+              if (!groupsMap.has(groupInfo.groupId)) {
+                groupsMap.set(groupInfo.groupId, {
+                  id: groupInfo.groupId,
+                  title: groupInfo.groupTitle,
+                  order: groupInfo.groupIndex || 0
+                });
+              }
+            }
+          } catch (e) {
+            // If hint is not valid JSON, just continue
+          }
+        }
+      });
+      
+      // Fetch sub-checklists if any
+      if (subChecksIds.length > 0) {
+        const { data: subChecklistsData, error: subChecklistsError } = await supabase
+          .from("checklists")
+          .select("id, title, description")
+          .in("id", subChecksIds);
+          
+        if (subChecklistsError) {
+          console.error("Error fetching sub-checklists:", subChecklistsError);
+        } else if (subChecklistsData) {
+          // Create a map of sub-checklist ID to sub-checklist data
+          const subChecklistsMap: Record<string, any> = {};
+          
+          // For each sub-checklist, fetch its questions
+          await Promise.all(subChecklistsData.map(async (subChecklist) => {
+            const { data: subQuestions, error: subQuestionsError } = await supabase
+              .from("checklist_itens")
+              .select("*")
+              .eq("checklist_id", subChecklist.id)
+              .order("ordem", { ascending: true });
+              
+            if (subQuestionsError) {
+              console.error(`Error fetching questions for sub-checklist ${subChecklist.id}:`, subQuestionsError);
+            } else {
+              subChecklistsMap[subChecklist.id] = {
+                ...subChecklist,
+                questions: subQuestions || []
+              };
+            }
+          }));
+          
+          setSubChecklists(subChecklistsMap);
+        }
+      }
+      
+      // Sort groups by order
+      const sortedGroups = Array.from(groupsMap.values()).sort((a, b) => a.order - b.order);
+      
+      // If no groups were found, create a default group
+      if (sortedGroups.length === 0 && questionData && questionData.length > 0) {
+        sortedGroups.push({
+          id: "default",
+          title: "Geral",
+          order: 0
+        });
+      }
+      
+      setGroups(sortedGroups);
+      setQuestions(questionData || []);
+
+      // Fetch existing responses
+      const { data: responseData, error: responseError } = await supabase
+        .from("inspection_responses")
+        .select("*")
+        .eq("inspection_id", inspectionId);
+
+      if (responseError) throw responseError;
+
+      // Also fetch sub-checklist responses if any
+      const subChecklistResponses: Record<string, any> = {};
+      
+      if (responseData) {
+        // Map responses by question ID for easier access
+        const responsesMap = responseData.reduce((acc, response) => {
+          // Check if response contains sub-checklist data
+          if (response.answer && typeof response.answer === 'string' && response.answer.startsWith('{')) {
+            try {
+              const parsedAnswer = JSON.parse(response.answer);
+              if (parsedAnswer.type === 'sub-checklist' && parsedAnswer.responses) {
+                subChecklistResponses[response.question_id] = parsedAnswer.responses;
+              }
+            } catch (e) {
+              // If not parseable JSON, proceed as normal
+            }
+          }
+          
+          acc[response.question_id] = response;
+          return acc;
+        }, {});
+        
+        setResponses(responsesMap);
+      }
+    } catch (error: any) {
+      console.error("Error fetching inspection data:", error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
   }, [inspectionId]);
 
-  const handleResponseChange = (questionId: string, responseData: any) => {
-    setResponses((prev) => ({
-      ...prev,
-      [questionId]: {
-        ...prev[questionId],
-        ...responseData,
-        completedAt: new Date().toISOString()
-      }
-    }));
-  };
-
-  const handleSaveInspection = async () => {
-    if (!inspection || !inspectionId) return;
-
-    setSaving(true);
-    try {
-      const responsesToSave = Object.entries(responses).map(([questionId, data]) => ({
-        inspection_id: inspectionId,
-        question_id: questionId,
-        answer: data.value,
-        notes: data.comment,
-        action_plan: data.actionPlan,
-        media_urls: data.mediaUrls || [],
-        completed_at: data.completedAt
-      }));
-
-      for (const responseData of responsesToSave) {
-        const { error } = await supabase
-          .from('inspection_responses')
-          .upsert(responseData, {
-            onConflict: 'inspection_id,question_id'
-          });
-
-        if (error) throw error;
-      }
-
-      if (responsesToSave.length > 0 && inspection.status === 'pending') {
-        await supabase
-          .from('inspections')
-          .update({ status: 'Em Andamento' }) // traduzido
-          .eq('id', inspectionId);
-      }
-
-      toast.success('Respostas salvas com sucesso!');
-    } catch (error) {
-      console.error('Erro ao salvar inspeção:', error);
-      toast.error('Erro ao salvar respostas');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const mapStatusToDB = (status: string): string => {
-    const map: Record<string, string> = {
-      pending: 'Pendente',
-      in_progress: 'Em Andamento',
-      completed: 'Concluído'
-    };
-    return map[status] || 'Pendente';
-  };
-
-  const completeInspection = async () => {
-    if (!inspection || !inspectionId) return;
-
-    setSaving(true);
-    try {
-      const totalRequired = questions.filter(q => q.isRequired).length;
-      const answeredRequired = questions.filter(
-        q =>
-          q.isRequired &&
-          responses[q.id] &&
-          responses[q.id].value !== undefined &&
-          responses[q.id].value !== null &&
-          responses[q.id].value !== ''
-      ).length;
-
-      if (answeredRequired < totalRequired) {
-        toast.warning(`Faltam ${totalRequired - answeredRequired} perguntas obrigatórias.`);
-        return;
-      }
-
-      const { error } = await supabase
-        .from('inspections')
-        .update({
-          status: mapStatusToDB('completed'),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', inspectionId);
-
-      if (error) throw error;
-
-      setInspection(prev => prev ? { ...prev, status: 'completed' } : null);
-      toast.success('Inspeção finalizada com sucesso!');
-    } catch (err) {
-      console.error('Erro na finalização:', err);
-      toast.error('Erro ao finalizar inspeção');
-    } finally {
-      setSaving(false);
-    }
-  };
+  useEffect(() => {
+    fetchInspectionData();
+  }, [fetchInspectionData]);
 
   const getFilteredQuestions = (groupId: string | null) => {
-    return groupId
-      ? questions.filter(q => q.groupId === groupId)
-      : questions.filter(q => !q.groupId);
+    if (!groupId) return [];
+    
+    // If it's a default group but we don't have explicit group associations
+    if (groupId === "default" && groups.length === 1) {
+      return questions.filter(q => !q.parent_item_id);
+    }
+    
+    return questions.filter(q => {
+      // Check if question belongs to this group based on hint
+      if (q.hint && q.hint.startsWith('{') && q.hint.endsWith('}')) {
+        try {
+          const groupInfo = JSON.parse(q.hint);
+          return groupInfo.groupId === groupId;
+        } catch (e) {
+          return false;
+        }
+      }
+      return false;
+    });
   };
 
   const getCompletionStats = () => {
-    const total = questions.length;
-    const answered = Object.values(responses).filter(r => r.value !== undefined && r.value !== null && r.value !== '').length;
-    const percentage = total > 0 ? Math.round((answered / total) * 100) : 0;
-    return { total, answered, percentage };
+    // Count total required questions
+    const totalRequired = questions.filter(q => q.obrigatorio).length;
+    
+    // Count answered required questions
+    const answered = questions.filter(q => 
+      q.obrigatorio && responses[q.id] && responses[q.id].answer
+    ).length;
+    
+    const percentage = totalRequired > 0 
+      ? Math.round((answered / totalRequired) * 100) 
+      : 0;
+      
+    return {
+      total: questions.length,
+      totalRequired,
+      answered,
+      percentage
+    };
+  };
+
+  const handleResponseChange = async (questionId: string, value: string, notes?: string) => {
+    // If it's a parent question with a sub-checklist, handle differently
+    const question = questions.find(q => q.id === questionId);
+    
+    if (question && question.sub_checklist_id) {
+      // For now, just store the value
+      setResponses(prev => ({
+        ...prev,
+        [questionId]: {
+          ...prev[questionId],
+          question_id: questionId,
+          inspection_id: inspectionId,
+          answer: value,
+          notes: notes || prev[questionId]?.notes || ""
+        }
+      }));
+      return;
+    }
+    
+    // Update local state
+    setResponses(prev => ({
+      ...prev,
+      [questionId]: {
+        ...prev[questionId],
+        question_id: questionId,
+        inspection_id: inspectionId,
+        answer: value,
+        notes: notes || prev[questionId]?.notes || ""
+      }
+    }));
+    
+    // If inspection status is still pending, update to in_progress
+    if (inspection && inspection.status === 'pending') {
+      try {
+        await supabase
+          .from("inspections")
+          .update({ status: 'in_progress' })
+          .eq("id", inspectionId);
+          
+        setInspection(prev => ({ ...prev, status: 'in_progress' }));
+      } catch (error) {
+        console.error("Error updating inspection status:", error);
+      }
+    }
+  };
+
+  const handleSaveSubChecklistResponses = async (
+    parentQuestionId: string, 
+    subResponses: Array<{questionId: string, value: string, comment?: string}>
+  ) => {
+    if (!inspectionId || !parentQuestionId) return;
+    
+    try {
+      // Format the responses for storage
+      const formattedAnswer = JSON.stringify({
+        type: 'sub-checklist',
+        responses: subResponses.reduce((acc, item) => {
+          acc[item.questionId] = {
+            value: item.value,
+            comment: item.comment || ""
+          };
+          return acc;
+        }, {})
+      });
+      
+      // Check if we already have a response for this parent question
+      const existingResponse = responses[parentQuestionId];
+      
+      if (existingResponse && existingResponse.id) {
+        // Update existing response
+        const { error } = await supabase
+          .from("inspection_responses")
+          .update({
+            answer: formattedAnswer,
+            updated_at: new Date()
+          })
+          .eq("id", existingResponse.id);
+          
+        if (error) throw error;
+      } else {
+        // Create new response
+        const { error } = await supabase
+          .from("inspection_responses")
+          .insert({
+            inspection_id: inspectionId,
+            question_id: parentQuestionId,
+            answer: formattedAnswer,
+            created_at: new Date()
+          });
+          
+        if (error) throw error;
+      }
+      
+      // Update local state
+      setResponses(prev => ({
+        ...prev,
+        [parentQuestionId]: {
+          ...prev[parentQuestionId],
+          question_id: parentQuestionId,
+          inspection_id: inspectionId,
+          answer: formattedAnswer
+        }
+      }));
+      
+      return true;
+    } catch (error) {
+      console.error("Error saving sub-checklist responses:", error);
+      toast.error("Erro ao salvar respostas do sub-checklist");
+      return false;
+    }
+  };
+
+  const handleSaveInspection = async () => {
+    if (!inspectionId) return;
+    
+    try {
+      setSaving(true);
+      
+      // Prepare responses for insertion/update
+      const responsesToSave = Object.values(responses);
+      
+      // Split into new and existing responses
+      const newResponses = responsesToSave.filter(r => !r.id);
+      const existingResponses = responsesToSave.filter(r => r.id);
+      
+      // Insert new responses
+      if (newResponses.length > 0) {
+        const { error: insertError } = await supabase
+          .from("inspection_responses")
+          .insert(
+            newResponses.map(r => ({
+              inspection_id: inspectionId,
+              question_id: r.question_id,
+              answer: r.answer,
+              notes: r.notes
+            }))
+          );
+          
+        if (insertError) throw insertError;
+      }
+      
+      // Update existing responses
+      for (const response of existingResponses) {
+        const { error: updateError } = await supabase
+          .from("inspection_responses")
+          .update({
+            answer: response.answer,
+            notes: response.notes,
+            updated_at: new Date()
+          })
+          .eq("id", response.id);
+          
+        if (updateError) throw updateError;
+      }
+      
+      // Update inspection status to in_progress if it was pending
+      if (inspection && inspection.status === 'pending') {
+        const { error: statusError } = await supabase
+          .from("inspections")
+          .update({ status: 'in_progress' })
+          .eq("id", inspectionId);
+          
+        if (statusError) throw statusError;
+        
+        setInspection(prev => ({ ...prev, status: 'in_progress' }));
+      }
+      
+      // Refresh data to get updated responses with IDs
+      await fetchInspectionData();
+      
+      return true;
+    } catch (error) {
+      console.error("Error saving inspection:", error);
+      throw error;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const completeInspection = async () => {
+    if (!inspectionId) return;
+    
+    try {
+      // First save current responses
+      await handleSaveInspection();
+      
+      // Then update inspection status to completed
+      const { error } = await supabase
+        .from("inspections")
+        .update({ 
+          status: 'completed',
+          updated_at: new Date()
+        })
+        .eq("id", inspectionId);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setInspection(prev => ({ ...prev, status: 'completed' }));
+      
+      return true;
+    } catch (error) {
+      console.error("Error completing inspection:", error);
+      throw error;
+    }
+  };
+
+  const reopenInspection = async () => {
+    if (!inspectionId) return;
+    
+    try {
+      // Update inspection status to in_progress
+      const { error } = await supabase
+        .from("inspections")
+        .update({ 
+          status: 'in_progress',
+          updated_at: new Date()
+        })
+        .eq("id", inspectionId);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setInspection(prev => ({ ...prev, status: 'in_progress' }));
+      
+      return true;
+    } catch (error) {
+      console.error("Error reopening inspection:", error);
+      throw error;
+    }
   };
 
   return {
     loading,
+    saving,
+    error,
     inspection,
     questions,
     responses,
     groups,
     company,
     responsible,
-    saving,
+    subChecklists,
     handleResponseChange,
     handleSaveInspection,
-    completeInspection,
+    handleSaveSubChecklistResponses,
     getFilteredQuestions,
-    getCompletionStats
+    getCompletionStats,
+    refreshData: fetchInspectionData,
+    completeInspection,
+    reopenInspection
   };
-};
+}

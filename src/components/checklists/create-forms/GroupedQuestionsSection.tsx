@@ -1,277 +1,268 @@
 
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import React, { useState } from "react";
 import { QuestionGroup } from "./QuestionGroup";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { Button } from "@/components/ui/button";
+import { Plus, Sparkles } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
-interface QuestionType {
-  text: string;
-  type: string;
-  required: boolean;
-  allowPhoto: boolean;
-  allowVideo: boolean;
-  allowAudio: boolean;
-  options?: string[];
-  hint?: string;
-  weight?: number;
-  parentId?: string;
-  conditionValue?: string;
-  groupId?: string;
-}
-
-interface GroupType {
+interface GroupProps {
   id: string;
   title: string;
-  questions: QuestionType[];
+  questions: any[];
 }
 
 interface GroupedQuestionsSectionProps {
-  groups: GroupType[];
-  onGroupsChange: (groups: GroupType[]) => void;
+  groups: GroupProps[];
+  onGroupsChange: (groups: GroupProps[]) => void;
 }
 
-export function GroupedQuestionsSection({ 
-  groups, 
+export function GroupedQuestionsSection({
+  groups,
   onGroupsChange
 }: GroupedQuestionsSectionProps) {
+  const [aiPromptOpen, setAiPromptOpen] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [prompt, setPrompt] = useState("");
+  const [generating, setGenerating] = useState(false);
+  
   const handleAddGroup = () => {
-    onGroupsChange([
-      ...groups,
-      {
-        id: `group-${Date.now()}`,
-        title: `Novo Grupo`,
-        questions: []
+    const newGroup = {
+      id: `group-${Date.now()}`,
+      title: `Grupo ${groups.length + 1}`,
+      questions: []
+    };
+    
+    onGroupsChange([...groups, newGroup]);
+  };
+  
+  const handleGroupTitleChange = (id: string, title: string) => {
+    const newGroups = groups.map(group => {
+      if (group.id === id) {
+        return { ...group, title };
       }
-    ]);
+      return group;
+    });
+    
+    onGroupsChange(newGroups);
   };
-
-  const handleRemoveGroup = (groupId: string) => {
-    onGroupsChange(groups.filter(group => group.id !== groupId));
-  };
-
-  const handleGroupTitleChange = (groupId: string, title: string) => {
-    onGroupsChange(
-      groups.map(group => 
-        group.id === groupId 
-          ? { ...group, title } 
-          : group
-      )
-    );
-  };
-
+  
   const handleAddQuestion = (groupId: string) => {
-    onGroupsChange(
-      groups.map(group => {
-        if (group.id === groupId) {
-          return {
-            ...group,
-            questions: [
-              ...group.questions,
-              {
-                text: "",
-                type: "sim/não",
-                required: true,
-                allowPhoto: false,
-                allowVideo: false,
-                allowAudio: false,
-                groupId
-              }
-            ]
-          };
-        }
-        return group;
-      })
-    );
-  };
-
-  const handleRemoveQuestion = (groupId: string, questionIndex: number) => {
-    onGroupsChange(
-      groups.map(group => {
-        if (group.id === groupId) {
-          const newQuestions = [...group.questions];
-          newQuestions.splice(questionIndex, 1);
-          return {
-            ...group,
-            questions: newQuestions
-          };
-        }
-        return group;
-      })
-    );
-  };
-
-  const handleQuestionChange = (
-    groupId: string,
-    questionIndex: number,
-    field: string,
-    value: any
-  ) => {
-    onGroupsChange(
-      groups.map(group => {
-        if (group.id === groupId) {
-          const newQuestions = [...group.questions];
-          newQuestions[questionIndex] = {
-            ...newQuestions[questionIndex],
-            [field]: value
-          };
-          return {
-            ...group,
-            questions: newQuestions
-          };
-        }
-        return group;
-      })
-    );
-  };
-
-  const handleDragEnd = (result: any) => {
-    const { destination, source, type } = result;
-
-    // If there's no destination or the item was dropped in its original position
-    if (!destination || 
-        (destination.droppableId === source.droppableId && 
-         destination.index === source.index)) {
-      return;
-    }
-
-    // Handle group reordering
-    if (type === 'GROUP') {
-      const newGroups = Array.from(groups);
-      const [movedGroup] = newGroups.splice(source.index, 1);
-      newGroups.splice(destination.index, 0, movedGroup);
-      onGroupsChange(newGroups);
-      return;
-    }
-
-    // Handle question reordering within the same group
-    if (destination.droppableId === source.droppableId) {
-      const groupId = source.droppableId;
-      const targetGroup = groups.find(g => g.id === groupId);
-      
-      if (targetGroup) {
-        const newQuestions = Array.from(targetGroup.questions);
-        const [movedQuestion] = newQuestions.splice(source.index, 1);
-        newQuestions.splice(destination.index, 0, movedQuestion);
-        
-        onGroupsChange(
-          groups.map(group => 
-            group.id === groupId 
-              ? { ...group, questions: newQuestions } 
-              : group
-          )
-        );
+    const newGroups = groups.map(group => {
+      if (group.id === groupId) {
+        return {
+          ...group,
+          questions: [
+            ...group.questions,
+            {
+              text: "",
+              type: "sim/não",
+              required: true,
+              allowPhoto: false,
+              allowVideo: false,
+              allowAudio: false
+            }
+          ]
+        };
       }
-    } 
-    // Handle question moving between groups
-    else {
-      const sourceGroupId = source.droppableId;
-      const destGroupId = destination.droppableId;
-      
-      const sourceGroup = groups.find(g => g.id === sourceGroupId);
-      const destGroup = groups.find(g => g.id === destGroupId);
-      
-      if (sourceGroup && destGroup) {
-        const sourceQuestions = Array.from(sourceGroup.questions);
-        const [movedQuestion] = sourceQuestions.splice(source.index, 1);
-        
-        // Update the groupId of the moved question
-        const updatedQuestion = {
-          ...movedQuestion,
-          groupId: destGroupId
+      return group;
+    });
+    
+    onGroupsChange(newGroups);
+  };
+  
+  const handleRemoveQuestion = (groupId: string, questionIndex: number) => {
+    const newGroups = groups.map(group => {
+      if (group.id === groupId) {
+        return {
+          ...group,
+          questions: group.questions.filter((_, index) => index !== questionIndex)
+        };
+      }
+      return group;
+    });
+    
+    onGroupsChange(newGroups);
+  };
+  
+  const handleQuestionChange = (groupId: string, questionIndex: number, field: string, value: any) => {
+    const newGroups = groups.map(group => {
+      if (group.id === groupId) {
+        const newQuestions = [...group.questions];
+        newQuestions[questionIndex] = {
+          ...newQuestions[questionIndex],
+          [field]: value
         };
         
-        const destQuestions = Array.from(destGroup.questions);
-        destQuestions.splice(destination.index, 0, updatedQuestion);
-        
-        onGroupsChange(
-          groups.map(group => {
-            if (group.id === sourceGroupId) {
-              return { ...group, questions: sourceQuestions };
-            }
-            if (group.id === destGroupId) {
-              return { ...group, questions: destQuestions };
-            }
-            return group;
-          })
-        );
+        return {
+          ...group,
+          questions: newQuestions
+        };
       }
+      return group;
+    });
+    
+    onGroupsChange(newGroups);
+  };
+  
+  const handleRemoveGroup = (id: string) => {
+    // Don't remove if it's the last group
+    if (groups.length <= 1) {
+      toast.warning("É necessário pelo menos um grupo");
+      return;
+    }
+    
+    onGroupsChange(groups.filter(group => group.id !== id));
+  };
+  
+  const handleOpenAiPrompt = (groupId: string) => {
+    const group = groups.find(g => g.id === groupId);
+    if (!group) return;
+    
+    setSelectedGroupId(groupId);
+    setPrompt(`Gere perguntas para uma inspeção de segurança do trabalho para o grupo "${group.title}"`);
+    setAiPromptOpen(true);
+  };
+  
+  const handleGenerateQuestions = async () => {
+    if (!selectedGroupId || !prompt) {
+      toast.error("Grupo ou prompt não selecionado");
+      return;
+    }
+    
+    setGenerating(true);
+    
+    try {
+      // Call the Edge Function to generate questions
+      const { data, error } = await supabase.functions.invoke("generate-sub-checklist", {
+        body: {
+          prompt,
+          parentQuestionId: "dummy", // We don't need an actual parent question ID for this case
+          parentQuestionText: prompt,
+          questionCount: 5
+        }
+      });
+      
+      if (error) throw error;
+      
+      if (!data.success) {
+        throw new Error(data.error || "Falha ao gerar perguntas");
+      }
+      
+      const generatedQuestions = data.subChecklist.questions.map((q: any) => ({
+        text: q.text,
+        type: q.responseType === 'yes_no' ? 'sim/não' : 
+              q.responseType === 'text' ? 'texto' : 
+              q.responseType === 'multiple_choice' ? 'seleção múltipla' : 
+              q.responseType === 'numeric' ? 'numérico' : 'sim/não',
+        required: q.isRequired,
+        allowPhoto: q.allowsPhoto || false,
+        allowVideo: q.allowsVideo || false,
+        allowAudio: q.allowsAudio || false,
+        options: q.options
+      }));
+      
+      // Update the group with new questions
+      const updatedGroups = groups.map(group => {
+        if (group.id === selectedGroupId) {
+          return {
+            ...group,
+            questions: [...group.questions, ...generatedQuestions]
+          };
+        }
+        return group;
+      });
+      
+      onGroupsChange(updatedGroups);
+      toast.success(`${generatedQuestions.length} perguntas geradas com sucesso!`);
+      setAiPromptOpen(false);
+    } catch (error) {
+      console.error("Error generating questions:", error);
+      toast.error("Erro ao gerar perguntas. Tente novamente.");
+    } finally {
+      setGenerating(false);
     }
   };
-
+  
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Categorias de Perguntas</h2>
+      {groups.map((group, index) => (
+        <div key={group.id} className="mb-2 relative">
+          <QuestionGroup
+            id={group.id}
+            title={group.title}
+            questions={group.questions}
+            onTitleChange={handleGroupTitleChange}
+            onAddQuestion={handleAddQuestion}
+            onRemoveQuestion={handleRemoveQuestion}
+            onQuestionChange={handleQuestionChange}
+            onRemoveGroup={handleRemoveGroup}
+            isDragging={false}
+            onGenerateWithAI={() => handleOpenAiPrompt(group.id)}
+          />
+        </div>
+      ))}
+      
+      <div className="flex justify-center gap-2">
         <Button 
+          type="button" 
+          variant="outline" 
+          className="w-auto" 
           onClick={handleAddGroup}
-          size="sm"
         >
           <Plus className="h-4 w-4 mr-2" />
-          Novo Grupo
+          Adicionar Grupo
         </Button>
       </div>
-
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <Droppable droppableId="groups" type="GROUP">
-          {(provided) => (
-            <div
-              {...provided.droppableProps}
-              ref={provided.innerRef}
-              className="space-y-4"
+      
+      {/* AI Prompt Dialog */}
+      <Dialog open={aiPromptOpen} onOpenChange={setAiPromptOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Gerar Perguntas com IA</DialogTitle>
+            <DialogDescription>
+              Descreva o tipo de perguntas que você deseja gerar para este grupo.
+              Seja específico para obter melhores resultados.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Textarea
+            placeholder="Ex: Gere perguntas sobre equipamentos de proteção individual para trabalho em altura"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            rows={5}
+            className="mt-2"
+          />
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setAiPromptOpen(false)}
+              disabled={generating}
             >
-              {groups.map((group, index) => (
-                <Draggable 
-                  key={group.id} 
-                  draggableId={group.id} 
-                  index={index}
-                >
-                  {(provided, snapshot) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                    >
-                      <Droppable 
-                        droppableId={group.id} 
-                        type="QUESTION"
-                      >
-                        {(dropProvided) => (
-                          <div ref={dropProvided.innerRef} {...dropProvided.droppableProps}>
-                            <QuestionGroup
-                              id={group.id}
-                              title={group.title}
-                              questions={group.questions}
-                              onTitleChange={handleGroupTitleChange}
-                              onAddQuestion={handleAddQuestion}
-                              onRemoveQuestion={handleRemoveQuestion}
-                              onQuestionChange={handleQuestionChange}
-                              onRemoveGroup={handleRemoveGroup}
-                              isDragging={snapshot.isDragging}
-                              dragHandleProps={provided.dragHandleProps}
-                            />
-                            {dropProvided.placeholder}
-                          </div>
-                        )}
-                      </Droppable>
-                    </div>
-                  )}
-                </Draggable>
-              ))}
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
-      </DragDropContext>
-
-      {groups.length === 0 && (
-        <div className="text-center py-8 border border-dashed rounded-lg">
-          <p className="text-muted-foreground mb-2">Nenhum grupo criado</p>
-          <Button onClick={handleAddGroup}>
-            <Plus className="h-4 w-4 mr-2" />
-            Criar Primeiro Grupo
-          </Button>
-        </div>
-      )}
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleGenerateQuestions}
+              disabled={generating || !prompt.trim()}
+            >
+              {generating ? (
+                <>
+                  <span>Gerando...</span>
+                  <Sparkles className="h-4 w-4 ml-2 animate-pulse" />
+                </>
+              ) : (
+                <>
+                  <span>Gerar Perguntas</span>
+                  <Sparkles className="h-4 w-4 ml-2" />
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

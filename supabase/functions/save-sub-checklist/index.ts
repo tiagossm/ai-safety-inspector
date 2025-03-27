@@ -38,12 +38,13 @@ serve(async (req) => {
         description: subChecklist.description,
         is_template: false,
         status_checklist: "ativo",
-        parent_question_id: parentQuestionId
+        status: "active" // Fix: use the correct column name and value
       })
       .select("id")
       .single();
     
     if (checklistError) {
+      console.error("Error creating sub-checklist:", checklistError);
       throw checklistError;
     }
     
@@ -81,6 +82,7 @@ serve(async (req) => {
         .insert(questionInserts);
       
       if (insertError) {
+        console.error("Error inserting questions:", insertError);
         throw insertError;
       }
     }
@@ -94,6 +96,7 @@ serve(async (req) => {
       .eq("id", parentQuestionId);
     
     if (updateError) {
+      console.error("Error updating parent question:", updateError);
       throw updateError;
     }
 

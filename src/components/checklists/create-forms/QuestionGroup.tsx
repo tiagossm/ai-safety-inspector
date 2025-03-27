@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Trash2, ChevronDown, ChevronUp, GripHorizontal, Plus } from "lucide-react";
+import { Trash2, ChevronDown, ChevronUp, GripHorizontal, Plus, Sparkles } from "lucide-react";
 import { QuestionItem } from "./QuestionItem";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -18,6 +18,7 @@ export interface QuestionGroupProps {
   onRemoveGroup: (id: string) => void;
   isDragging?: boolean;
   dragHandleProps?: any;
+  onGenerateWithAI?: (groupId: string) => void;
 }
 
 export function QuestionGroup({
@@ -30,7 +31,8 @@ export function QuestionGroup({
   onQuestionChange,
   onRemoveGroup,
   isDragging,
-  dragHandleProps
+  dragHandleProps,
+  onGenerateWithAI
 }: QuestionGroupProps) {
   const [isOpen, setIsOpen] = useState(true);
 
@@ -88,16 +90,31 @@ export function QuestionGroup({
                 />
               ))}
               
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="w-full" 
-                onClick={() => onAddQuestion(id)}
-                size="sm"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Adicionar Pergunta
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={() => onAddQuestion(id)}
+                  size="sm"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar Pergunta
+                </Button>
+                
+                {onGenerateWithAI && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => onGenerateWithAI(id)}
+                    size="sm"
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Gerar com IA
+                  </Button>
+                )}
+              </div>
             </div>
           </CardContent>
         </CollapsibleContent>

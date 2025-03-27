@@ -441,6 +441,7 @@ export type Database = {
           status: string | null
           status_checklist: string
           title: string
+          total_questions: number | null
           updated_at: string
           user_id: string | null
         }
@@ -456,6 +457,7 @@ export type Database = {
           status?: string | null
           status_checklist?: string
           title: string
+          total_questions?: number | null
           updated_at?: string
           user_id?: string | null
         }
@@ -471,6 +473,7 @@ export type Database = {
           status?: string | null
           status_checklist?: string
           title?: string
+          total_questions?: number | null
           updated_at?: string
           user_id?: string | null
         }
@@ -774,6 +777,7 @@ export type Database = {
       inspection_responses: {
         Row: {
           answer: string
+          completed_at: string | null
           created_at: string | null
           id: string
           inspection_id: string | null
@@ -784,6 +788,7 @@ export type Database = {
         }
         Insert: {
           answer: string
+          completed_at?: string | null
           created_at?: string | null
           id?: string
           inspection_id?: string | null
@@ -794,6 +799,7 @@ export type Database = {
         }
         Update: {
           answer?: string
+          completed_at?: string | null
           created_at?: string | null
           id?: string
           inspection_id?: string | null
@@ -808,6 +814,13 @@ export type Database = {
             columns: ["inspection_id"]
             isOneToOne: false
             referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspection_responses_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_itens"
             referencedColumns: ["id"]
           },
         ]
@@ -865,6 +878,7 @@ export type Database = {
           status: string | null
           sync_status: string | null
           unit_id: string | null
+          updated_at: string | null
           user_id: string
         }
         Insert: {
@@ -892,6 +906,7 @@ export type Database = {
           status?: string | null
           sync_status?: string | null
           unit_id?: string | null
+          updated_at?: string | null
           user_id: string
         }
         Update: {
@@ -919,6 +934,7 @@ export type Database = {
           status?: string | null
           sync_status?: string | null
           unit_id?: string | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: [
