@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { InspectionDetails, InspectionFilters } from "@/types/newChecklist";
@@ -203,5 +204,395 @@ export function useInspections() {
     fetchInspections,
     filters,
     setFilters
+  };
+}
+
+export function useInspectionData(inspectionId: string | undefined) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [inspection, setInspection] = useState<any>(null);
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [responses, setResponses] = useState<Record<string, any>>({});
+  const [groups, setGroups] = useState<any[]>([]);
+  const [company, setCompany] = useState<any>(null);
+  const [responsible, setResponsible] = useState<any>(null);
+  const [subChecklists, setSubChecklists] = useState<Record<string, any>>({});
+
+  // Load inspection data
+  const fetchInspectionData = useCallback(async () => {
+    if (!inspectionId) {
+      setError("ID da inspeção não fornecido");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch inspection details
+      const { data: inspectionData, error: inspectionError } = await supabase
+        .from("inspections")
+        .select(`
+          *,
+          companies:company_id(id, fantasy_name, razao_social, address, cnae),
+          checklist:checklist_id(id, title, description)
+        `)
+        .eq("id", inspectionId)
+        .single();
+
+      if (inspectionError) throw inspectionError;
+
+      if (!inspectionData) {
+        throw new Error("Inspeção não encontrada");
+      }
+
+      setInspection({
+        id: inspectionData.id,
+        title: inspectionData.checklist?.title || "Sem título",
+        description: inspectionData.checklist?.description || "",
+        checklistId: inspectionData.checklist_id,
+        status: inspectionData.status || "pending",
+        companyId: inspectionData.company_id,
+        responsibleId: inspectionData.responsible_id,
+        scheduledDate: inspectionData.scheduled_date,
+        locationName: inspectionData.location,
+      });
+
+      setCompany(inspectionData.companies);
+
+      // Fetch responsible user if available
+      if (inspectionData.responsible_id) {
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", inspectionData.responsible_id)
+          .single();
+
+        if (!userError && userData) {
+          setResponsible(userData);
+        }
+      }
+
+      // Fetch checklist questions
+      const { data: checklistItems, error: checklistError } = await supabase
+        .from("checklist_itens")
+        .select("*")
+        .eq("checklist_id", inspectionData.checklist_id)
+        .order("ordem", { ascending: true });
+
+      if (checklistError) throw checklistError;
+
+      // Process questions and group them
+      const questionsData = checklistItems.map((item: any) => ({
+        id: item.id,
+        text: item.pergunta,
+        responseType: item.tipo_resposta,
+        groupId: item.group_id,
+        options: item.opcoes,
+        isRequired: item.obrigatorio,
+        order: item.ordem,
+        parentQuestionId: item.parent_question_id || null,
+        parentValue: item.parent_value || null,
+        hint: item.hint || null,
+        subChecklistId: item.sub_checklist_id || null,
+      }));
+
+      setQuestions(questionsData);
+
+      // Extract unique groups
+      const groupsData = checklistItems
+        .filter((item: any) => item.group_id)
+        .map((item: any) => ({
+          id: item.group_id,
+          title: item.group_title || "Grupo sem título",
+        }))
+        .reduce((unique: any[], group: any) => {
+          // Only add if not already in the array
+          if (!unique.some(g => g.id === group.id)) {
+            unique.push(group);
+          }
+          return unique;
+        }, []);
+
+      setGroups(groupsData);
+
+      // Fetch existing responses
+      const { data: responsesData, error: responsesError } = await supabase
+        .from("inspection_responses")
+        .select("*")
+        .eq("inspection_id", inspectionId);
+
+      if (responsesError) throw responsesError;
+
+      // Convert responses array to object keyed by question_id
+      const responsesObj = (responsesData || []).reduce((acc: Record<string, any>, curr: any) => {
+        acc[curr.question_id] = {
+          value: curr.value,
+          comment: curr.comment,
+          actionPlan: curr.action_plan,
+          mediaUrls: curr.media_urls || [],
+          subChecklistResponses: curr.sub_checklist_responses || {},
+        };
+        return acc;
+      }, {});
+
+      setResponses(responsesObj);
+
+      // Fetch sub-checklists if any questions have them
+      const subChecklistIds = questionsData
+        .filter(q => q.subChecklistId)
+        .map(q => ({ questionId: q.id, subChecklistId: q.subChecklistId }));
+
+      if (subChecklistIds.length > 0) {
+        const subChecklistsData: Record<string, any> = {};
+
+        await Promise.all(
+          subChecklistIds.map(async ({ questionId, subChecklistId }) => {
+            try {
+              const { data: checklistData, error: checklistError } = await supabase
+                .from("checklists")
+                .select("*")
+                .eq("id", subChecklistId)
+                .single();
+
+              if (checklistError) throw checklistError;
+
+              const { data: subQuestions, error: subQuestionsError } = await supabase
+                .from("checklist_itens")
+                .select("*")
+                .eq("checklist_id", subChecklistId)
+                .order("ordem", { ascending: true });
+
+              if (subQuestionsError) throw subQuestionsError;
+
+              subChecklistsData[questionId] = {
+                ...checklistData,
+                questions: subQuestions.map((q: any) => ({
+                  id: q.id,
+                  text: q.pergunta,
+                  responseType: q.tipo_resposta,
+                  groupId: q.group_id,
+                  options: q.opcoes,
+                  isRequired: q.obrigatorio,
+                  order: q.ordem,
+                })),
+              };
+            } catch (error) {
+              console.error(`Error fetching sub-checklist for question ${questionId}:`, error);
+            }
+          })
+        );
+
+        setSubChecklists(subChecklistsData);
+      }
+    } catch (error: any) {
+      console.error("Error fetching inspection data:", error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [inspectionId]);
+
+  // Handle response changes
+  const handleResponseChange = useCallback((questionId: string, data: any) => {
+    setResponses(prev => ({
+      ...prev,
+      [questionId]: {
+        ...(prev[questionId] || {}),
+        ...data,
+      },
+    }));
+  }, []);
+
+  // Save inspection responses
+  const handleSaveInspection = useCallback(async () => {
+    try {
+      if (!inspectionId) throw new Error("ID da inspeção não fornecido");
+
+      const responsesToSave = Object.entries(responses).map(([questionId, data]) => ({
+        inspection_id: inspectionId,
+        question_id: questionId,
+        value: data.value,
+        comment: data.comment || null,
+        action_plan: data.actionPlan || null,
+        media_urls: data.mediaUrls || [],
+        sub_checklist_responses: data.subChecklistResponses || {},
+        updated_at: new Date().toISOString(),
+      }));
+
+      // Upsert responses
+      const { error } = await supabase
+        .from("inspection_responses")
+        .upsert(responsesToSave, {
+          onConflict: "inspection_id,question_id",
+          ignoreDuplicates: false,
+        });
+
+      if (error) throw error;
+
+      // Update inspection status to in_progress if it was pending
+      if (inspection?.status === "pending") {
+        const { error: updateError } = await supabase
+          .from("inspections")
+          .update({ status: "in_progress" })
+          .eq("id", inspectionId);
+
+        if (updateError) throw updateError;
+
+        setInspection(prev => ({
+          ...prev,
+          status: "in_progress",
+        }));
+      }
+
+      return true;
+    } catch (error: any) {
+      console.error("Error saving inspection:", error);
+      throw error;
+    }
+  }, [inspectionId, responses, inspection?.status]);
+
+  // Save sub-checklist responses
+  const handleSaveSubChecklistResponses = useCallback(async (questionId: string, subResponses: any[]) => {
+    try {
+      if (!inspectionId) throw new Error("ID da inspeção não fornecido");
+
+      // First ensure the parent response exists
+      const parentResponse = responses[questionId] || {};
+      
+      // Convert sub-responses array to object
+      const subResponsesObj = subResponses.reduce((acc, curr) => {
+        acc[curr.questionId] = curr;
+        return acc;
+      }, {});
+
+      // Update parent response with sub-checklist responses
+      const updatedParentResponse = {
+        inspection_id: inspectionId,
+        question_id: questionId,
+        value: parentResponse.value || null,
+        comment: parentResponse.comment || null,
+        action_plan: parentResponse.actionPlan || null,
+        media_urls: parentResponse.mediaUrls || [],
+        sub_checklist_responses: subResponsesObj,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Upsert the parent response
+      const { error } = await supabase
+        .from("inspection_responses")
+        .upsert([updatedParentResponse], {
+          onConflict: "inspection_id,question_id",
+          ignoreDuplicates: false,
+        });
+
+      if (error) throw error;
+
+      return true;
+    } catch (error: any) {
+      console.error("Error saving sub-checklist responses:", error);
+      throw error;
+    }
+  }, [inspectionId, responses]);
+
+  // Complete inspection
+  const completeInspection = useCallback(async () => {
+    try {
+      if (!inspectionId) throw new Error("ID da inspeção não fornecido");
+
+      // First save all responses
+      await handleSaveInspection();
+
+      // Update inspection status to completed
+      const { error } = await supabase
+        .from("inspections")
+        .update({ 
+          status: "completed",
+          completed_at: new Date().toISOString(),
+        })
+        .eq("id", inspectionId);
+
+      if (error) throw error;
+
+      setInspection(prev => ({
+        ...prev,
+        status: "completed",
+      }));
+
+      return true;
+    } catch (error: any) {
+      console.error("Error completing inspection:", error);
+      throw error;
+    }
+  }, [inspectionId, handleSaveInspection]);
+
+  // Reopen inspection
+  const reopenInspection = useCallback(async () => {
+    try {
+      if (!inspectionId) throw new Error("ID da inspeção não fornecido");
+
+      // Update inspection status to in_progress
+      const { error } = await supabase
+        .from("inspections")
+        .update({ status: "in_progress" })
+        .eq("id", inspectionId);
+
+      if (error) throw error;
+
+      setInspection(prev => ({
+        ...prev,
+        status: "in_progress",
+      }));
+
+      return true;
+    } catch (error: any) {
+      console.error("Error reopening inspection:", error);
+      throw error;
+    }
+  }, [inspectionId]);
+
+  // Get questions filtered by group
+  const getFilteredQuestions = useCallback((groupId: string | null) => {
+    if (!groupId) return [];
+    return questions.filter(q => q.groupId === groupId);
+  }, [questions]);
+
+  // Calculate completion stats
+  const getCompletionStats = useCallback(() => {
+    const total = questions.length;
+    const answered = Object.values(responses).filter(r => r.value !== undefined && r.value !== null).length;
+    const percentage = total > 0 ? Math.round((answered / total) * 100) : 0;
+    
+    return {
+      total,
+      answered,
+      percentage,
+    };
+  }, [questions, responses]);
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchInspectionData();
+  }, [fetchInspectionData]);
+
+  return {
+    loading,
+    error,
+    inspection,
+    questions,
+    responses,
+    groups,
+    company,
+    responsible,
+    subChecklists,
+    handleResponseChange,
+    handleSaveInspection,
+    handleSaveSubChecklistResponses,
+    getFilteredQuestions,
+    getCompletionStats,
+    refreshData: fetchInspectionData,
+    completeInspection,
+    reopenInspection,
   };
 }
