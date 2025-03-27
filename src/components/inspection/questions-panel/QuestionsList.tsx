@@ -21,6 +21,14 @@ export function QuestionsList({
   onOpenSubChecklist,
   subChecklists
 }: QuestionsListProps) {
+  if (!questions || questions.length === 0) {
+    return (
+      <div className="p-6 text-center">
+        <p className="text-muted-foreground">Nenhuma pergunta disponível neste grupo</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {questions.map((question, index) => (

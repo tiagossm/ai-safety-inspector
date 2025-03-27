@@ -45,7 +45,7 @@ const mapResponseType = (dbType: string): ChecklistQuestion["responseType"] => {
     "foto": "photo",
     "assinatura": "signature"
   };
-  return typeMap[dbType] || "text";
+  return typeMap[dbType.toLowerCase()] || "text";
 };
 
 export function useChecklistById(id: string) {
@@ -130,7 +130,7 @@ export function useChecklistById(id: string) {
         const processedQuestions: ChecklistQuestion[] = [];
 
         // Primeiro, vamos identificar grupos existentes para garantir que todas as perguntas sejam mapeadas corretamente
-        if (questionsData) {
+        if (questionsData?.length > 0) {
           // Criar um grupo padrão se não houver nenhum explícito
           let defaultGroupId: string | null = null;
           
