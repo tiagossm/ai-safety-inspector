@@ -229,8 +229,15 @@ export function useInspectionData(inspectionId: string | undefined) {
 
       setResponses(responsesObj);
 
-      // Use questionsArray which is the correct variable here
-      const subChecklistIds = questionsArray
+      // Define questionsArray for this block to prevent the error
+      const questionsForSubChecklists = questions.length > 0 ? questions : 
+        (checklistItems && checklistItems.length > 0 ? 
+          checklistItems.map((item: any) => ({
+            id: item.id,
+            subChecklistId: item.sub_checklist_id || null,
+          })) : []);
+
+      const subChecklistIds = questionsForSubChecklists
         .filter(q => q.subChecklistId)
         .map(q => ({ questionId: q.id, subChecklistId: q.subChecklistId }));
 
