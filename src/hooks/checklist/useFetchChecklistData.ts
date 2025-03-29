@@ -32,14 +32,24 @@ export function useFetchChecklistData(id: string) {
           throw new Error("Checklist não encontrado.");
         }
         
+        // Explicitly type the checklistData with parent_question_id
+        const typedChecklistData = checklistData as {
+          id: string;
+          title: string;
+          category: string;
+          is_template: boolean;
+          parent_question_id?: string | null;
+          [key: string]: any;
+        };
+        
         // Log the checklist for debugging
         console.log("Checklist found:", {
-          id: checklistData.id,
-          title: checklistData.title,
-          category: checklistData.category,
-          isTemplate: checklistData.is_template,
-          parentQuestionId: checklistData.parent_question_id || null,
-          isSubChecklist: checklistData.category === 'sub-checklist'
+          id: typedChecklistData.id,
+          title: typedChecklistData.title,
+          category: typedChecklistData.category,
+          isTemplate: typedChecklistData.is_template,
+          parentQuestionId: typedChecklistData.parent_question_id || null,
+          isSubChecklist: typedChecklistData.category === 'sub-checklist'
         });
 
         // Buscar perguntas
@@ -112,7 +122,7 @@ export function useFetchChecklistData(id: string) {
 
         // Buscar nome do responsável
         let responsibleName = "Não atribuído";
-        const responsibleId = checklistData.responsible_id;
+        const responsibleId = typedChecklistData.responsible_id;
         if (isValidUUID(responsibleId)) {
           const { data: userData } = await supabase
             .from("users")
@@ -124,29 +134,29 @@ export function useFetchChecklistData(id: string) {
 
         // Map data to the Checklist type with extended properties
         return {
-          id: checklistData.id,
-          title: checklistData.title || "Sem título",
-          description: checklistData.description || "Sem descrição",
-          created_at: checklistData.created_at,
-          updated_at: checklistData.updated_at,
-          status: checklistData.status || "ativo",
-          status_checklist: checklistData.status_checklist,
-          is_template: checklistData.is_template || false,
-          user_id: checklistData.user_id,
-          company_id: checklistData.company_id,
+          id: typedChecklistData.id,
+          title: typedChecklistData.title || "Sem título",
+          description: typedChecklistData.description || "Sem descrição",
+          created_at: typedChecklistData.created_at,
+          updated_at: typedChecklistData.updated_at,
+          status: typedChecklistData.status || "ativo",
+          status_checklist: typedChecklistData.status_checklist,
+          is_template: typedChecklistData.is_template || false,
+          user_id: typedChecklistData.user_id,
+          company_id: typedChecklistData.company_id,
           responsible_id: responsibleId,
           responsibleName,
-          category: checklistData.category || "general",
+          category: typedChecklistData.category || "general",
           questions: processedQuestions,
           groups,
-          is_sub_checklist: checklistData.category === 'sub-checklist',
-          parent_question_id: checklistData.parent_question_id || null,
+          is_sub_checklist: typedChecklistData.category === 'sub-checklist',
+          parent_question_id: typedChecklistData.parent_question_id || null,
         } as Checklist & {
           questions: any[];
           groups: any[];
           responsibleName: string;
           is_sub_checklist?: boolean;
-          parent_question_id?: string;
+          parent_question_id?: string | null;
         };
       } catch (err) {
         console.error("Erro ao buscar dados do checklist:", err);
