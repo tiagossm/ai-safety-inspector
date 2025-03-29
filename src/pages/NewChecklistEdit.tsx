@@ -47,54 +47,39 @@ export default function NewChecklistEdit() {
       // Process questions and groups
       if (checklist.questions && checklist.questions.length > 0) {
         console.log(`Processing ${checklist.questions.length} questions for edit form`);
-        setQuestions(checklist.questions);
         
-        // If we have groups, use them directly
-        if (checklist.questions && checklist.questions.length > 0) {
-          console.log(`Processing ${checklist.questions.length} questions for edit form`);
-        
-          if (checklist.groups && checklist.groups.length > 0) {
-            console.log(`Processing ${checklist.groups.length} groups for edit form`);
-            setGroups(checklist.groups);
-        
-            const questionsWithGroup = checklist.questions.map(q => ({
-              ...q,
-              groupId: q.groupId || checklist.groups[0]?.id || "default"
-            }));
-        
-            setQuestions(questionsWithGroup);
-            setViewMode("grouped");
-
-          } 
-          // Garantir que todas as perguntas tenham groupId
-const updatedQuestions = checklist.questions.map(q => ({
-  ...q,
-  groupId: q.groupId || checklist.groups[0].id // atribui o primeiro grupo se estiver faltando
-}));
-setQuestions(updatedQuestions);
-
-          else {
-            // If no groups, create a default group
-            const defaultGroup: ChecklistGroup = {
-              id: "default",
-              title: "Geral",
-              order: 0
-            };
-        
-            const questionsWithGroup = checklist.questions.map(q => ({
-              ...q,
-              groupId: "default"
-            }));
-        
-            setGroups([defaultGroup]);
-            setQuestions(questionsWithGroup);
-            setViewMode("grouped");
-          }
-        }
-        
+        // Initialize groups first if they exist
+        if (checklist.groups && checklist.groups.length > 0) {
+          console.log(`Processing ${checklist.groups.length} groups for edit form`);
+          setGroups(checklist.groups);
+          
+          // Ensure every question has a valid groupId
+          const questionsWithValidGroups = checklist.questions.map(q => ({
+            ...q,
+            groupId: q.groupId || checklist.groups[0].id // Assign to first group if missing
+          }));
+          
+          setQuestions(questionsWithValidGroups);
+          setViewMode("grouped");
+        } else {
+          // If no groups defined, create a default group
+          const defaultGroup: ChecklistGroup = {
+            id: "default",
+            title: "Geral",
+            order: 0
+          };
+          
+          const questionsWithDefaultGroup = checklist.questions.map(q => ({
+            ...q,
+            groupId: "default"
+          }));
+          
+          setGroups([defaultGroup]);
+          setQuestions(questionsWithDefaultGroup);
+          setViewMode("grouped");
         }
       } else {
-        // If no questions, create a default empty question
+        // If no questions, create a default empty question and group
         const defaultGroup: ChecklistGroup = {
           id: "default",
           title: "Geral",
@@ -141,12 +126,16 @@ setQuestions(updatedQuestions);
     
     // Add questions to their respective groups
     questions.forEach(question => {
-      const groupId = question.groupId || "default";
+      const groupId = question.groupId || groups[0]?.id || "default";
       if (!result.has(groupId)) {
+        // If group doesn't exist in map yet, add it
         result.set(groupId, []);
       }
       
-      result.get(groupId)?.push(question);
+      // Add the question to its group
+      const groupQuestions = result.get(groupId) || [];
+      groupQuestions.push(question);
+      result.set(groupId, groupQuestions);
     });
     
     // Sort questions by order within each group
@@ -159,6 +148,14 @@ setQuestions(updatedQuestions);
     
     return result;
   }, [questions, groups]);
+  
+  // Filter groups that have at least one question
+  const nonEmptyGroups = useMemo(() => {
+    return groups.filter(group => {
+      const groupQuestions = questionsByGroup.get(group.id) || [];
+      return groupQuestions.length > 0;
+    }).sort((a, b) => a.order - b.order);
+  }, [groups, questionsByGroup]);
   
   const handleAddGroup = () => {
     const newGroup: ChecklistGroup = {
@@ -499,59 +496,84 @@ setQuestions(updatedQuestions);
                         ref={provided.innerRef}
                         className="space-y-4"
                       >
-                        {groups.map((group, index) => (
-                          <Draggable 
-                            key={group.id} 
-                            draggableId={group.id} 
-                            index={index}
-                          >
-                            {(draggableProvided) => (
-                              <div
-                                ref={draggableProvided.innerRef}
-                                {...draggableProvided.draggableProps}
+                        {nonEmptyGroups.length > 0 ? (
+                          nonEmptyGroups.map((group, index) => {
+                            const groupQuestions = questionsByGroup.get(group.id) || [];
+                            
+                            // Only render groups that have at least one question
+                            if (groupQuestions.length === 0) {
+                              return null;
+                            }
+                            
+                            return (
+                              <Draggable 
+                                key={group.id} 
+                                draggableId={group.id} 
+                                index={index}
                               >
-                                <Droppable 
-                                  droppableId={group.id} 
-                                  type="QUESTION"
-                                >
-                                  {(droppableProvided) => (
-                                    <div
-                                      ref={droppableProvided.innerRef}
-                                      {...droppableProvided.droppableProps}
+                                {(draggableProvided) => (
+                                  <div
+                                    ref={draggableProvided.innerRef}
+                                    {...draggableProvided.draggableProps}
+                                  >
+                                    <Droppable 
+                                      droppableId={group.id} 
+                                      type="QUESTION"
                                     >
-                                      <QuestionGroup
-                                        group={group}
-                                        questions={questionsByGroup.get(group.id) || []}
-                                        onGroupUpdate={handleUpdateGroup}
-                                        onAddQuestion={handleAddQuestion}
-                                        onUpdateQuestion={handleUpdateQuestion}
-                                        onDeleteQuestion={handleDeleteQuestion}
-                                        onDeleteGroup={handleDeleteGroup}
-                                        dragHandleProps={draggableProvided.dragHandleProps}
-                                      />
-                                      {droppableProvided.placeholder}
-                                    </div>
-                                  )}
-                                </Droppable>
-                              </div>
-                            )}
-                          </Draggable>
-                        ))}
+                                      {(droppableProvided) => (
+                                        <div
+                                          ref={droppableProvided.innerRef}
+                                          {...droppableProvided.droppableProps}
+                                        >
+                                          <QuestionGroup
+                                            group={group}
+                                            questions={groupQuestions}
+                                            onGroupUpdate={handleUpdateGroup}
+                                            onAddQuestion={handleAddQuestion}
+                                            onUpdateQuestion={handleUpdateQuestion}
+                                            onDeleteQuestion={handleDeleteQuestion}
+                                            onDeleteGroup={handleDeleteGroup}
+                                            dragHandleProps={draggableProvided.dragHandleProps}
+                                          />
+                                          {droppableProvided.placeholder}
+                                        </div>
+                                      )}
+                                    </Droppable>
+                                  </div>
+                                )}
+                              </Draggable>
+                            );
+                          })
+                        ) : (
+                          <div className="text-center py-8 border border-dashed rounded">
+                            <p className="text-muted-foreground mb-4">Nenhum grupo com perguntas encontrado</p>
+                            <Button 
+                              variant="outline" 
+                              onClick={handleAddGroup}
+                              className="mx-auto"
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Adicionar Grupo
+                            </Button>
+                          </div>
+                        )}
                         {provided.placeholder}
                       </div>
                     )}
                   </Droppable>
                 </DragDropContext>
                 
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleAddGroup}
-                  className="w-full mt-4"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar Grupo
-                </Button>
+                {nonEmptyGroups.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleAddGroup}
+                    className="w-full mt-4"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar Grupo
+                  </Button>
+                )}
               </div>
             )}
           </CardContent>
