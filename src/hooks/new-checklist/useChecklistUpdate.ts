@@ -80,7 +80,7 @@ export function useChecklistUpdate() {
           description: checklist.description,
           is_template: checklist.isTemplate,
           status_checklist: statusChecklist, // Fixed value for database constraint
-          status: databaseStatus, // Properly formatted status value
+         
           category: checklist.category,
           responsible_id: checklist.responsibleId,
           company_id: checklist.companyId,
