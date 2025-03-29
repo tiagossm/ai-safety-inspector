@@ -64,7 +64,16 @@ export default function NewChecklistEdit() {
         
             setQuestions(questionsWithGroup);
             setViewMode("grouped");
-          } else {
+
+          } 
+          // Garantir que todas as perguntas tenham groupId
+const updatedQuestions = checklist.questions.map(q => ({
+  ...q,
+  groupId: q.groupId || checklist.groups[0].id // atribui o primeiro grupo se estiver faltando
+}));
+setQuestions(updatedQuestions);
+
+          else {
             // If no groups, create a default group
             const defaultGroup: ChecklistGroup = {
               id: "default",
