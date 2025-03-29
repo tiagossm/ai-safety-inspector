@@ -1,6 +1,7 @@
+// ✅ useInspectionFetch.ts
+
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/components/AuthProvider";
 
 export function useInspectionFetch(inspectionId: string | undefined) {
   const [loading, setLoading] = useState(true);
@@ -26,18 +27,28 @@ export function useInspectionFetch(inspectionId: string | undefined) {
       setError(null);
       setDetailedError(null);
 
+      // 🔹 Buscar dados principais da inspeção
       const { data: inspectionData, error: inspectionError } = await supabase
         .from("inspections")
         .select(`
           *,
           companies:company_id(id, fantasy_name, address, cnae),
-          checklist:checklist_id(id, title, description)
+          checklist:checklist_id(id, title, description, category)
         `)
         .eq("id", inspectionId)
         .single();
 
-      if (inspectionError) throw inspectionError;
-      if (!inspectionData) throw new Error("Inspeção não encontrada");
+      if (inspectionError || !inspectionData) {
+        throw inspectionError || new Error("Inspeção não encontrada");
+      }
+
+      const isSubChecklist = inspectionData.checklist?.category === "sub-checklist";
+      if (isSubChecklist) {
+        console.warn("❌ Esta inspeção aponta para um sub-checklist. Ignorando carregamento.");
+        setError("Esta inspeção é um sub-checklist e não pode ser executada diretamente.");
+        setLoading(false);
+        return;
+      }
 
       setInspection({
         id: inspectionData.id,
@@ -56,12 +67,13 @@ export function useInspectionFetch(inspectionId: string | undefined) {
       if (inspectionData.responsible_id) {
         const { data: userData } = await supabase
           .from("users")
-          .select("*")
+          .select("name")
           .eq("id", inspectionData.responsible_id)
           .single();
         if (userData) setResponsible(userData);
       }
 
+      // 🔹 Buscar perguntas do checklist principal
       const { data: checklistItems, error: checklistError } = await supabase
         .from("checklist_itens")
         .select("*")
@@ -70,95 +82,62 @@ export function useInspectionFetch(inspectionId: string | undefined) {
 
       if (checklistError) throw checklistError;
 
-      const questionsArray = checklistItems.map((item: any) => ({
-        id: item.id,
-        text: item.pergunta,
-        responseType: item.tipo_resposta,
-        groupId: null,
-        options: item.opcoes,
-        isRequired: item.obrigatorio,
-        order: item.ordem,
-        parentQuestionId: item.parent_item_id || null,
-        parentValue: item.condition_value || null,
-        hint: item.hint || null,
-        subChecklistId: item.sub_checklist_id || null,
-        hasSubChecklist: !!item.sub_checklist_id,
-        allowsPhoto: item.permite_foto || false,
-        allowsVideo: item.permite_video || false,
-        allowsAudio: item.permite_audio || false,
-        weight: item.weight || 1,
-      }));
-
-      const groupsMap = new Map();
       const DEFAULT_GROUP = {
-        id: 'default-group',
-        title: 'Geral',
-        order: 0
+        id: "default-group",
+        title: "Geral",
+        order: 0,
       };
+      const groupsMap = new Map<string, any>();
+      const processedQuestions = checklistItems.map((item: any) => {
+        let groupId = DEFAULT_GROUP.id;
 
-      checklistItems.forEach((item: any) => {
+        // Tenta extrair o grupo do campo hint (se houver)
         if (item.hint) {
           try {
-            let hintData = item.hint;
-            if (typeof item.hint === 'string') {
-              try {
-                hintData = JSON.parse(item.hint);
-              } catch (e) {}
-            }
-            if (hintData && hintData.groupId && hintData.groupTitle) {
-              if (!groupsMap.has(hintData.groupId)) {
-                groupsMap.set(hintData.groupId, {
-                  id: hintData.groupId,
-                  title: hintData.groupTitle,
-                  order: hintData.groupIndex || 0,
+            const parsed = typeof item.hint === "string" ? JSON.parse(item.hint) : item.hint;
+            if (parsed.groupId && parsed.groupTitle) {
+              groupId = parsed.groupId;
+              if (!groupsMap.has(groupId)) {
+                groupsMap.set(groupId, {
+                  id: groupId,
+                  title: parsed.groupTitle,
+                  order: parsed.groupIndex || 0,
                 });
               }
             }
           } catch (e) {
-            console.warn(`Erro ao processar hint do item ${item.id}:`, e);
+            console.warn("Hint inválido:", item.hint);
           }
         }
+
+        return {
+          id: item.id,
+          text: item.pergunta,
+          responseType: item.tipo_resposta,
+          groupId,
+          options: item.opcoes,
+          isRequired: item.obrigatorio,
+          order: item.ordem,
+          parentQuestionId: item.parent_item_id || null,
+          parentValue: item.condition_value || null,
+          hint: item.hint || null,
+          subChecklistId: item.sub_checklist_id || null,
+          hasSubChecklist: !!item.sub_checklist_id,
+          allowsPhoto: item.permite_foto || false,
+          allowsVideo: item.permite_video || false,
+          allowsAudio: item.permite_audio || false,
+          weight: item.weight || 1,
+        };
       });
 
       if (groupsMap.size === 0) {
         groupsMap.set(DEFAULT_GROUP.id, DEFAULT_GROUP);
       }
 
-      checklistItems.forEach((item: any, index: number) => {
-        const questionToUpdate = questionsArray[index];
-        if (!questionToUpdate) return;
+      setGroups(Array.from(groupsMap.values()).sort((a, b) => a.order - b.order));
+      setQuestions(processedQuestions);
 
-        if (item.hint) {
-          try {
-            let hintData = item.hint;
-            if (typeof item.hint === 'string') {
-              try {
-                hintData = JSON.parse(item.hint);
-              } catch (e) {}
-            }
-            if (hintData && hintData.groupId && groupsMap.has(hintData.groupId)) {
-              questionToUpdate.groupId = hintData.groupId;
-            }
-          } catch (e) {}
-        }
-
-        if (questionToUpdate.groupId === null) {
-          questionToUpdate.groupId = DEFAULT_GROUP.id;
-        }
-      });
-
-      const extractedGroups = Array.from(groupsMap.values()).sort((a, b) => a.order - b.order);
-
-      // 🛠️ GARANTIR QUE TODAS AS PERGUNTAS TENHAM GROUP ID VÁLIDO
-      const fallbackGroupId = extractedGroups[0]?.id || DEFAULT_GROUP.id;
-      const questionsWithValidGroups = questionsArray.map((q) => ({
-        ...q,
-        groupId: q.groupId || fallbackGroupId,
-      }));
-
-      setGroups(extractedGroups);
-      setQuestions(questionsWithValidGroups);
-
+      // 🔹 Buscar respostas existentes
       const { data: responsesData, error: responsesError } = await supabase
         .from("inspection_responses")
         .select("*")
@@ -176,52 +155,36 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         };
         return acc;
       }, {});
-
       setResponses(responsesObj);
 
-      const subChecklistIds = questionsWithValidGroups
-        .filter(q => q.subChecklistId)
-        .map(q => ({ questionId: q.id, subChecklistId: q.subChecklistId }));
+      // 🔹 Buscar perguntas de sub-checklists (apenas se referenciadas)
+      const subChecklistRefs = processedQuestions
+        .filter((q) => q.subChecklistId)
+        .map((q) => ({ questionId: q.id, subChecklistId: q.subChecklistId }));
 
-      if (subChecklistIds.length > 0) {
-        const subChecklistsData: Record<string, any> = {};
-        await Promise.all(
-          subChecklistIds.map(async ({ questionId, subChecklistId }) => {
-            try {
-              const { data: checklistData } = await supabase
-                .from("checklists")
-                .select("*")
-                .eq("id", subChecklistId)
-                .single();
+      const subChecklistsData: Record<string, any> = {};
+      for (const { questionId, subChecklistId } of subChecklistRefs) {
+        const { data: checklistData } = await supabase
+          .from("checklists")
+          .select("*")
+          .eq("id", subChecklistId)
+          .single();
 
-              const { data: subQuestions } = await supabase
-                .from("checklist_itens")
-                .select("*")
-                .eq("checklist_id", subChecklistId)
-                .order("ordem", { ascending: true });
+        if (checklistData?.category !== "sub-checklist") continue;
 
-              if (checklistData && subQuestions) {
-                subChecklistsData[questionId] = {
-                  ...checklistData,
-                  questions: subQuestions.map((q: any) => ({
-                    id: q.id,
-                    text: q.pergunta,
-                    responseType: q.tipo_resposta,
-                    groupId: q.group_id,
-                    options: q.opcoes,
-                    isRequired: q.obrigatorio,
-                    order: q.ordem,
-                  })),
-                };
-              }
-            } catch (error) {
-              console.error(`Erro ao buscar sub-checklist ${subChecklistId}`, error);
-            }
-          })
-        );
+        const { data: subQuestions } = await supabase
+          .from("checklist_itens")
+          .select("*")
+          .eq("checklist_id", subChecklistId)
+          .order("ordem", { ascending: true });
 
-        setSubChecklists(subChecklistsData);
+        subChecklistsData[questionId] = {
+          ...checklistData,
+          questions: subQuestions,
+        };
       }
+
+      setSubChecklists(subChecklistsData);
     } catch (err: any) {
       console.error("Erro ao buscar dados da inspeção:", err);
       setError(err.message || "Erro ao carregar dados da inspeção");
@@ -247,6 +210,6 @@ export function useInspectionFetch(inspectionId: string | undefined) {
     responsible,
     subChecklists,
     setResponses,
-    refreshData: fetchInspectionData
+    refreshData: fetchInspectionData,
   };
 }
