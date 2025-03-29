@@ -34,28 +34,36 @@ export function useInspectionData(inspectionId: string | undefined) {
     let answeredQuestions = 0;
     let groupStats: Record<string, { total: number; completed: number }> = {};
     
-    // Initialize group stats
+    // Initialize group stats for all groups
     groups.forEach(group => {
       groupStats[group.id] = { total: 0, completed: 0 };
     });
     
     // Count questions and answers by group
     questions.forEach(question => {
-      const groupId = question.groupId || 'ungrouped';
+      const groupId = question.groupId || 'default-group';
       
-      if (groupStats[groupId]) {
-        groupStats[groupId].total += 1;
-        
-        if (responses[question.id] && responses[question.id].value) {
-          groupStats[groupId].completed += 1;
-          answeredQuestions += 1;
-        }
+      // Create group entry if it doesn't exist
+      if (!groupStats[groupId]) {
+        groupStats[groupId] = { total: 0, completed: 0 };
+      }
+      
+      // Increment total count
+      groupStats[groupId].total += 1;
+      
+      // Check if question is answered
+      if (responses[question.id] && responses[question.id].value !== undefined) {
+        groupStats[groupId].completed += 1;
+        answeredQuestions += 1;
       }
     });
     
     const completionPercentage = totalQuestions > 0 
       ? Math.round((answeredQuestions / totalQuestions) * 100) 
       : 0;
+    
+    console.log(`Stats: ${answeredQuestions}/${totalQuestions} questions answered (${completionPercentage}%)`);
+    console.log('Group stats:', groupStats);
     
     return {
       totalQuestions,

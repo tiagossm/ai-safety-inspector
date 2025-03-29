@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { toast } from "sonner";
 
 export function useSubChecklistDialog(
@@ -11,81 +11,63 @@ export function useSubChecklistDialog(
   const [currentSubChecklist, setCurrentSubChecklist] = useState<any>(null);
   const [currentParentQuestionId, setCurrentParentQuestionId] = useState<string | null>(null);
   const [savingSubChecklist, setSavingSubChecklist] = useState(false);
-  
-  const safeParseResponse = (value: any) => {
-    if (!value) return null;
-    
-    if (typeof value === 'object') return value;
-    
-    if (typeof value === 'string') {
+
+  const safeParseResponse = useCallback((responseData: any) => {
+    if (typeof responseData === 'string') {
       try {
-        if (value.startsWith('{') || value.startsWith('[')) {
-          return JSON.parse(value);
-        }
-        return value;
+        return JSON.parse(responseData);
       } catch (e) {
-        console.warn("Failed to parse JSON response:", e);
-        return value;
+        console.warn("Failed to parse sub-checklist responses:", e);
+        return {};
       }
     }
+    return responseData || {};
+  }, []);
+
+  const handleOpenSubChecklist = useCallback((questionId: string, subChecklists: Record<string, any>) => {
+    const subChecklist = subChecklists[questionId];
     
-    return value;
-  };
-  
-  const handleOpenSubChecklist = (questionId: string, subChecklists: Record<string, any>) => {
-    if (!subChecklists || !subChecklists[questionId]) {
+    if (!subChecklist) {
       toast.error("Sub-checklist não encontrado");
       return;
     }
     
-    const subChecklist = subChecklists[questionId];
-    const parentResponse = responses[questionId] || {};
-    
-    let subChecklistResponses: Record<string, any> = {};
-    
-    if (parentResponse.subChecklistResponses) {
-      try {
-        if (typeof parentResponse.subChecklistResponses === 'object') {
-          subChecklistResponses = parentResponse.subChecklistResponses;
-        } else {
-          const parsedResponses = safeParseResponse(parentResponse.subChecklistResponses);
-          if (parsedResponses && typeof parsedResponses === 'object') {
-            subChecklistResponses = parsedResponses;
-          }
-        }
-      } catch (error) {
-        console.error("Error parsing sub-checklist responses:", error);
-        subChecklistResponses = {};
-      }
-    }
+    console.log(`Opening sub-checklist for question ${questionId}`, subChecklist);
     
     setCurrentSubChecklist(subChecklist);
     setCurrentParentQuestionId(questionId);
     setSubChecklistDialogOpen(true);
-  };
-  
-  const handleSaveSubChecklistResponses = async (responsesObj: Record<string, any>) => {
-    if (!currentParentQuestionId) return;
-    
-    setSavingSubChecklist(true);
+  }, []);
+
+  const handleSaveSubChecklistResponses = useCallback(async (newResponses: Record<string, any>) => {
+    if (!currentParentQuestionId) return false;
     
     try {
+      setSavingSubChecklist(true);
+      
+      // Update parent question response with sub-checklist responses
+      const currentResponse = responses[currentParentQuestionId] || {};
+      
       onResponseChange(currentParentQuestionId, {
-        ...(responses[currentParentQuestionId] || {}),
-        subChecklistResponses: responsesObj
+        ...currentResponse,
+        subChecklistResponses: newResponses
       });
       
-      await onSaveSubChecklistResponses(currentParentQuestionId, responsesObj);
+      // Save to backend if provided
+      if (onSaveSubChecklistResponses) {
+        await onSaveSubChecklistResponses(currentParentQuestionId, newResponses);
+      }
       
-      toast.success("Respostas do sub-checklist salvas com sucesso");
-      setSubChecklistDialogOpen(false);
+      toast.success("Sub-checklist salvo com sucesso");
+      return true;
     } catch (error) {
       console.error("Error saving sub-checklist responses:", error);
       toast.error("Erro ao salvar respostas do sub-checklist");
+      return false;
     } finally {
       setSavingSubChecklist(false);
     }
-  };
+  }, [currentParentQuestionId, responses, onResponseChange, onSaveSubChecklistResponses]);
 
   return {
     subChecklistDialogOpen,

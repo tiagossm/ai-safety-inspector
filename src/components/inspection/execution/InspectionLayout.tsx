@@ -61,13 +61,19 @@ export function InspectionLayout({
   onResponseChange,
   onSaveSubChecklistResponses
 }: InspectionLayoutProps) {
-  // Important fix: Make sure we're properly filtering questions by group
+  // Filter questions by current group, handling null groupId values
   const questionsInCurrentGroup = currentGroupId
-    ? questions.filter(q => q.groupId === currentGroupId)
-    : questions;
+    ? questions.filter(q => q.groupId === currentGroupId || 
+                          (q.groupId === null && currentGroupId === 'default-group'))
+    : [];
 
   // Log the filtered questions for debugging
-  console.log(`Layout: Current group ${currentGroupId} has ${questionsInCurrentGroup.length} of ${questions.length} total questions`);
+  console.log(`Layout: Questions in group ${currentGroupId}: ${questionsInCurrentGroup.length} of ${questions.length} total`);
+  console.log('Group IDs distribution:', questions.reduce((acc, q) => {
+    const key = q.groupId || 'null';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {}));
   
   if (loading) {
     return (

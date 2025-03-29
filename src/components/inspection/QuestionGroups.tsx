@@ -6,16 +6,22 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 interface QuestionGroupsProps {
   groups: any[];
   currentGroupId: string | null;
-  onGroupChange: (groupId: string) => void; // Updated prop name to match usage in InspectionLayout
+  onGroupChange: (groupId: string) => void;
   stats: any;
 }
 
 export function QuestionGroups({ 
   groups, 
   currentGroupId, 
-  onGroupChange, // Updated prop name
+  onGroupChange,
   stats
 }: QuestionGroupsProps) {
+  // Calculate questions per group
+  const groupQuestionsCount = groups.reduce((acc, group) => {
+    acc[group.id] = stats.groupStats?.[group.id]?.total || 0;
+    return acc;
+  }, {} as Record<string, number>);
+
   return (
     <Card className="border-gray-200 shadow-sm">
       <CardHeader className="pb-1 px-4 pt-4">
@@ -36,9 +42,9 @@ export function QuestionGroups({
                 onClick={() => onGroupChange(group.id)}
               >
                 <span className="truncate">{group.title}</span>
-                {group.questions > 0 && (
+                {groupQuestionsCount[group.id] > 0 && (
                   <span className="ml-auto bg-gray-200 text-gray-800 rounded-full px-2 py-0.5 text-xs">
-                    {group.questions}
+                    {groupQuestionsCount[group.id]}
                   </span>
                 )}
               </Button>
