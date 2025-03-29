@@ -44,41 +44,8 @@ export default function NewChecklistEdit() {
       setIsTemplate(checklist.isTemplate);
       setStatus(checklist.status);
       
-      // Process question s and groups
       // Process questions and groups
-if (checklist.questions && checklist.questions.length > 0) {
-  console.log(`Processing ${checklist.questions.length} questions for edit form`);
-
-  if (checklist.groups && checklist.groups.length > 0) {
-    console.log(`Processing ${checklist.groups.length} groups for edit form`);
-    setGroups(checklist.groups);
-
-    const questionsWithGroup = checklist.questions.map(q => ({
-      ...q,
-      groupId: q.groupId || checklist.groups[0]?.id || "default"
-    }));
-
-    setQuestions(questionsWithGroup);
-    setViewMode("grouped");
-  } else {
-    // If no groups, create a default group
-    const defaultGroup: ChecklistGroup = {
-      id: "default",
-      title: "Geral",
-      order: 0
-    };
-
-    const questionsWithGroup = checklist.questions.map(q => ({
-      ...q,
-      groupId: "default"
-    }));
-
-    setGroups([defaultGroup]);
-    setQuestions(questionsWithGroup);
-    setViewMode("grouped");
-  }
-}
-
+      if (checklist.questions && checklist.questions.length > 0) {
         console.log(`Processing ${checklist.questions.length} questions for edit form`);
         setQuestions(checklist.questions);
         
