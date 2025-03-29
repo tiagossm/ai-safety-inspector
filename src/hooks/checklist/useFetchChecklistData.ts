@@ -122,7 +122,7 @@ export function useFetchChecklistData(id: string) {
           responsibleName = userData?.name || "Usuário desconhecido";
         }
 
-        // Aqui está a correção: mapear os campos corretamente para corresponder ao tipo Checklist
+        // Map data to the Checklist type with extended properties
         return {
           id: checklistData.id,
           title: checklistData.title || "Sem título",
