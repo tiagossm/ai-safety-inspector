@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Checklist } from "@/types/checklist";
@@ -98,18 +99,19 @@ export function useFetchChecklistData(id: string) {
           responsibleName = userData?.name || "Usuário desconhecido";
         }
 
+        // Aqui está a correção: mapear os campos corretamente para corresponder ao tipo Checklist
         return {
           id: checklistData.id,
           title: checklistData.title || "Sem título",
           description: checklistData.description || "Sem descrição",
-          createdAt: checklistData.created_at,
-          updatedAt: checklistData.updated_at,
+          created_at: checklistData.created_at,
+          updated_at: checklistData.updated_at,
           status: checklistData.status || "ativo",
           status_checklist: checklistData.status_checklist,
-          isTemplate: checklistData.is_template || false,
-          userId: checklistData.user_id,
-          companyId: checklistData.company_id,
-          responsibleId,
+          is_template: checklistData.is_template || false,
+          user_id: checklistData.user_id,
+          company_id: checklistData.company_id,
+          responsible_id: responsibleId,
           responsibleName,
           category: checklistData.category || "general",
           questions: processedQuestions,
