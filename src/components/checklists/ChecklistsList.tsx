@@ -1,4 +1,3 @@
-
 import { Checklist } from "@/types/checklist";
 import {
   Table,
@@ -82,6 +81,10 @@ export function ChecklistsList({
     );
   }
 
+  const filteredChecklists = checklists.filter(
+    checklist => checklist.category !== 'sub-checklist'
+  );
+
   return (
     <div className="border rounded-md">
       <Table>
@@ -96,7 +99,7 @@ export function ChecklistsList({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {checklists.map((checklist) => (
+          {filteredChecklists.map((checklist) => (
             <ChecklistRow
               key={checklist.id}
               checklist={checklist}

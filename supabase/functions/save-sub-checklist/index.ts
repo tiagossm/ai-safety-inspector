@@ -8,6 +8,20 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
+// Map standard response types to the types allowed in the database
+function mapResponseType(type: string): string {
+  const typeMap: Record<string, string> = {
+    'yes_no': 'sim/não',
+    'multiple_choice': 'seleção múltipla',
+    'text': 'texto',
+    'numeric': 'numérico',
+    'photo': 'foto',
+    'signature': 'assinatura'
+  };
+  
+  return typeMap[type] || 'texto';
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -28,6 +42,10 @@ serve(async (req) => {
       throw new Error('ID da pergunta pai é obrigatório');
     }
 
+    console.log(`Processing sub-checklist for parent question: ${parentQuestionId}`);
+    console.log(`Sub-checklist title: ${subChecklist.title}`);
+    console.log(`Number of questions: ${subChecklist.questions?.length || 0}`);
+
     // 1. Create the new checklist
     const { data: checklistData, error: checklistError } = await supabase
       .from('checklists')
@@ -36,7 +54,8 @@ serve(async (req) => {
         description: subChecklist.description || `Sub-checklist para pergunta ID: ${parentQuestionId}`,
         is_template: true, // Sub-checklists are treated as templates
         status: 'active',
-        category: 'sub-checklist'
+        category: 'sub-checklist', // Special category to identify sub-checklists
+        parent_question_id: parentQuestionId // Link to parent question
       })
       .select('id')
       .single();
@@ -47,27 +66,38 @@ serve(async (req) => {
     }
 
     const subChecklistId = checklistData.id;
+    console.log(`Created sub-checklist with ID: ${subChecklistId}`);
 
     // 2. Create all the checklist items in the sub-checklist
-    const questionsToInsert = subChecklist.questions.map((q: any, index: number) => ({
-      checklist_id: subChecklistId,
-      pergunta: q.text,
-      tipo_resposta: q.responseType,
-      obrigatorio: q.isRequired,
-      opcoes: q.responseType === 'multiple_choice' ? q.options : null,
-      permite_foto: q.allowsPhoto,
-      permite_video: q.allowsVideo,
-      permite_audio: q.allowsAudio,
-      ordem: index + 1 // 1-based order
-    }));
+    if (subChecklist.questions && subChecklist.questions.length > 0) {
+      const questionsToInsert = subChecklist.questions.map((q: any, index: number) => {
+        // Map the response type to an allowed value
+        const tipoResposta = mapResponseType(q.responseType);
+        console.log(`Question ${index + 1}: "${q.text?.substring(0, 30)}..." - Type: ${q.responseType} -> ${tipoResposta}`);
+        
+        return {
+          checklist_id: subChecklistId,
+          pergunta: q.text,
+          tipo_resposta: tipoResposta,
+          obrigatorio: q.isRequired,
+          opcoes: q.responseType === 'multiple_choice' ? q.options : null,
+          permite_foto: q.allowsPhoto,
+          permite_video: q.allowsVideo,
+          permite_audio: q.allowsAudio,
+          ordem: index + 1 // 1-based order
+        };
+      });
 
-    const { error: itemsError } = await supabase
-      .from('checklist_itens')
-      .insert(questionsToInsert);
+      const { error: itemsError } = await supabase
+        .from('checklist_itens')
+        .insert(questionsToInsert);
 
-    if (itemsError) {
-      console.error("Error creating sub-checklist items:", itemsError);
-      throw itemsError;
+      if (itemsError) {
+        console.error("Error creating sub-checklist items:", itemsError);
+        throw itemsError;
+      }
+      
+      console.log(`Successfully inserted ${questionsToInsert.length} questions`);
     }
 
     // 3. Update the parent question to link to this sub-checklist
@@ -82,6 +112,8 @@ serve(async (req) => {
       console.error("Error updating parent question:", updateError);
       throw updateError;
     }
+    
+    console.log(`Successfully linked sub-checklist to parent question ${parentQuestionId}`);
 
     // Return success response
     return new Response(JSON.stringify({

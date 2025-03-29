@@ -15,7 +15,7 @@ import { ChecklistsDashboard } from "@/components/checklists/ChecklistsDashboard
 export default function Checklists() {
   const navigate = useNavigate();
   const { 
-    checklists, 
+    checklists: allChecklists, 
     isLoading, 
     searchTerm, 
     setSearchTerm, 
@@ -24,6 +24,11 @@ export default function Checklists() {
     selectedCompanyId,
     setSelectedCompanyId
   } = useChecklists();
+  
+  // Filter out sub-checklists (those with category 'sub-checklist')
+  const checklists = allChecklists.filter(checklist => 
+    checklist.category !== 'sub-checklist'
+  );
   
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;

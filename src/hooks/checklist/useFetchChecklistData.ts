@@ -31,6 +31,16 @@ export function useFetchChecklistData(id: string) {
         if (checklistError || !checklistData) {
           throw new Error("Checklist não encontrado.");
         }
+        
+        // Log the checklist for debugging
+        console.log("Checklist found:", {
+          id: checklistData.id,
+          title: checklistData.title,
+          category: checklistData.category,
+          isTemplate: checklistData.is_template,
+          parentQuestionId: checklistData.parent_question_id,
+          isSubChecklist: checklistData.category === 'sub-checklist'
+        });
 
         // Buscar perguntas
         const { data: checklistItens, error: itensError } = await supabase
@@ -42,6 +52,8 @@ export function useFetchChecklistData(id: string) {
         if (itensError) {
           console.warn("Erro ao buscar perguntas:", itensError);
         }
+        
+        console.log(`Found ${checklistItens?.length || 0} questions for checklist ${id}`);
 
         // Processar grupos a partir do campo "hint"
         const groupsMap = new Map();
@@ -50,7 +62,8 @@ export function useFetchChecklistData(id: string) {
 
           if (item.hint) {
             try {
-              const hint = JSON.parse(item.hint);
+              // Try to parse the hint as JSON
+              const hint = typeof item.hint === 'string' ? JSON.parse(item.hint) : item.hint;
               if (hint.groupId && hint.groupTitle) {
                 groupId = hint.groupId;
                 if (!groupsMap.has(groupId)) {
@@ -64,6 +77,13 @@ export function useFetchChecklistData(id: string) {
             } catch (e) {
               console.warn("Erro ao interpretar hint:", item.hint);
             }
+          }
+          
+          // Check for sub-checklist
+          const hasSubChecklist = !!item.sub_checklist_id;
+          
+          if (hasSubChecklist) {
+            console.log(`Question ${item.id} has sub-checklist: ${item.sub_checklist_id}`);
           }
 
           return {
@@ -82,10 +102,13 @@ export function useFetchChecklistData(id: string) {
             parent_item_id: item.parent_item_id,
             condition_value: item.condition_value,
             sub_checklist_id: item.sub_checklist_id || null,
+            hasSubChecklist: hasSubChecklist,
           };
         });
 
         const groups = Array.from(groupsMap.values()).sort((a, b) => a.order - b.order);
+        
+        console.log(`Processed ${groups.length} groups for checklist ${id}`);
 
         // Buscar nome do responsável
         let responsibleName = "Não atribuído";
@@ -116,10 +139,14 @@ export function useFetchChecklistData(id: string) {
           category: checklistData.category || "general",
           questions: processedQuestions,
           groups,
+          is_sub_checklist: checklistData.category === 'sub-checklist',
+          parent_question_id: checklistData.parent_question_id,
         } as Checklist & {
           questions: any[];
           groups: any[];
           responsibleName: string;
+          is_sub_checklist?: boolean;
+          parent_question_id?: string;
         };
       } catch (err) {
         console.error("Erro ao buscar dados do checklist:", err);

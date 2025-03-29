@@ -8,60 +8,58 @@ export function useQuestionResponse(question: any, response: any, onResponseChan
   const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
   const [commentText, setCommentText] = useState(response?.comment || "");
   const [actionPlanText, setActionPlanText] = useState(response?.actionPlan || "");
-  const [isActionPlanOpen, setIsActionPlanOpen] = useState(false);
-  const [showCommentSection, setShowCommentSection] = useState(false);
+  const [isActionPlanOpen, setIsActionPlanOpen] = useState(!!response?.actionPlan);
+  const [showCommentSection, setShowCommentSection] = useState(!!response?.comment);
   const [loadingSubChecklist, setLoadingSubChecklist] = useState(false);
-  
+
   const handleResponseValue = (value: any) => {
     onResponseChange({
       ...(response || {}),
       value
     });
   };
-  
+
   const handleSaveComment = () => {
     onResponseChange({
       ...(response || {}),
       comment: commentText
     });
     setCommentDialogOpen(false);
-    toast.success("Comentário salvo");
   };
-  
+
   const handleSaveActionPlan = () => {
     onResponseChange({
       ...(response || {}),
       actionPlan: actionPlanText
     });
     setActionPlanDialogOpen(false);
-    toast.success("Plano de ação salvo");
+    setIsActionPlanOpen(true);
   };
-  
-  const handleMediaUploaded = (mediaData: any) => {
-    const mediaUrls = response?.mediaUrls || [];
-    
+
+  const handleMediaUploaded = (mediaUrls: string[]) => {
     onResponseChange({
       ...(response || {}),
-      mediaUrls: [...mediaUrls, mediaData.url]
+      mediaUrls: [...(response?.mediaUrls || []), ...mediaUrls]
     });
-    
-    toast.success("Mídia adicionada com sucesso");
-    setMediaDialogOpen(false);
   };
-  
-  const handleOpenSubChecklist = (onOpenSubChecklist?: () => void) => {
-    if (onOpenSubChecklist) {
-      setLoadingSubChecklist(true);
-      try {
-        onOpenSubChecklist();
-      } catch (error) {
-        console.error("Error opening sub-checklist:", error);
-        toast.error("Falha ao abrir sub-checklist");
-      } finally {
-        setLoadingSubChecklist(false);
+
+  const handleOpenSubChecklist = (onOpenSubChecklistCallback?: () => void) => {
+    if (!question.hasSubChecklist) {
+      toast.error("Esta pergunta não possui um sub-checklist associado.");
+      return;
+    }
+
+    setLoadingSubChecklist(true);
+    try {
+      // Call the callback to open the sub-checklist dialog
+      if (onOpenSubChecklistCallback) {
+        onOpenSubChecklistCallback();
       }
-    } else if (question.subChecklistId) {
-      toast.info("Funcionalidade de sub-checklist em desenvolvimento");
+    } catch (error) {
+      console.error("Error opening sub-checklist:", error);
+      toast.error("Erro ao abrir sub-checklist");
+    } finally {
+      setLoadingSubChecklist(false);
     }
   };
 

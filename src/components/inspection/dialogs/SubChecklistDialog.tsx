@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle, XCircle, Save } from "lucide-react";
+import { CheckCircle, XCircle, Save, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
@@ -42,20 +42,52 @@ export function SubChecklistDialog({
   readOnly = false,
   saving = false
 }: SubChecklistDialogProps) {
-  const [responses, setResponses] = useState<Record<string, SubChecklistResponse>>(
-    Object.keys(currentResponses).reduce((acc, key) => {
-      acc[key] = {
-        questionId: key,
-        value: currentResponses[key].value || '',
-        comment: currentResponses[key].comment || ''
-      };
-      return acc;
-    }, {})
-  );
-
+  const [responses, setResponses] = useState<Record<string, SubChecklistResponse>>({});
   const [localSaving, setSavingLocal] = useState(false);
   // Use the prop value or local state
   const isSaving = saving || localSaving;
+  
+  // Initialize responses from currentResponses when the dialog opens or when currentResponses changes
+  useEffect(() => {
+    if (open && currentResponses) {
+      try {
+        // If currentResponses is a string, try to parse it
+        if (typeof currentResponses === 'string') {
+          try {
+            const parsed = JSON.parse(currentResponses);
+            setResponses(parsed);
+          } catch (e) {
+            console.warn("Failed to parse responses string:", e);
+            setResponses({});
+          }
+        } else {
+          // If it's already an object, use it directly
+          setResponses(Object.keys(currentResponses).reduce((acc, key) => {
+            acc[key] = {
+              questionId: key,
+              value: currentResponses[key].value || '',
+              comment: currentResponses[key].comment || ''
+            };
+            return acc;
+          }, {} as Record<string, SubChecklistResponse>));
+        }
+      } catch (error) {
+        console.error("Error setting responses:", error);
+        setResponses({});
+      }
+    }
+  }, [open, currentResponses]);
+  
+  // Log for debugging
+  useEffect(() => {
+    if (open) {
+      console.log("SubChecklistDialog opened with:", { 
+        subChecklist,
+        questionsCount: subChecklistQuestions.length,
+        currentResponses
+      });
+    }
+  }, [open, subChecklist, subChecklistQuestions, currentResponses]);
 
   const handleValueChange = (questionId: string, value: string) => {
     if (readOnly) return;
@@ -86,16 +118,49 @@ export function SubChecklistDialog({
     
     setSavingLocal(true);
     try {
-      // Instead of passing an array, pass the responses object itself
+      // Log what we're sending
+      console.log("Saving sub-checklist responses:", responses);
+      
+      // Call the save function with the responses object
       onSaveResponses(responses);
       toast.success("Sub-checklist salvo com sucesso");
+      
+      // Close dialog after successful save
       onOpenChange(false);
     } catch (error) {
-      toast.error("Erro ao salvar sub-checklist");
+      console.error("Error saving sub-checklist responses:", error);
+      toast.error("Erro ao salvar respostas do sub-checklist");
     } finally {
       setSavingLocal(false);
     }
   };
+
+  // Check if there are any questions to display
+  if (subChecklistQuestions.length === 0) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="text-yellow-500 h-5 w-5" />
+              Sub-Checklist Vazio
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4 text-center">
+            <p className="text-muted-foreground">Este sub-checklist não possui perguntas.</p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
