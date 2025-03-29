@@ -38,7 +38,7 @@ export function useFetchChecklistData(id: string) {
           title: checklistData.title,
           category: checklistData.category,
           isTemplate: checklistData.is_template,
-          parentQuestionId: checklistData.parent_question_id,
+          parentQuestionId: checklistData.parent_question_id || null,
           isSubChecklist: checklistData.category === 'sub-checklist'
         });
 
@@ -140,7 +140,7 @@ export function useFetchChecklistData(id: string) {
           questions: processedQuestions,
           groups,
           is_sub_checklist: checklistData.category === 'sub-checklist',
-          parent_question_id: checklistData.parent_question_id,
+          parent_question_id: checklistData.parent_question_id || null,
         } as Checklist & {
           questions: any[];
           groups: any[];
