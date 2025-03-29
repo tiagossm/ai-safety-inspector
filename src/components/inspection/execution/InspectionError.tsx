@@ -3,7 +3,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, RefreshCw, AlertTriangle } from "lucide-react";
+import { AlertCircle, RefreshCw, AlertTriangle, ArrowLeft } from "lucide-react";
 
 interface InspectionErrorProps {
   error: string | null;
@@ -34,6 +34,7 @@ export function InspectionError({ error, detailedError, refreshData }: Inspectio
               </p>
               {detailedError.hint && <p className="mt-1 text-red-700">Sugestão: {detailedError.hint}</p>}
               {detailedError.details && <p className="mt-1 text-red-700">Detalhes: {detailedError.details}</p>}
+              {detailedError.code && <p className="mt-1 text-red-700">Código: {detailedError.code}</p>}
             </div>
           )}
           <div className="flex space-x-3 pt-2">
@@ -42,6 +43,7 @@ export function InspectionError({ error, detailedError, refreshData }: Inspectio
               onClick={() => navigate("/inspections")}
               className="text-sm"
             >
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Voltar para Inspeções
             </Button>
             <Button 

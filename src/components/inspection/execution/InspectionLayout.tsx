@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ActionButtons } from "./ActionButtons";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react"; // Fix: Import AlertCircle from lucide-react
+import { AlertCircle } from "lucide-react";
 
 interface InspectionLayoutProps {
   loading: boolean;
@@ -61,10 +61,14 @@ export function InspectionLayout({
   onResponseChange,
   onSaveSubChecklistResponses
 }: InspectionLayoutProps) {
+  // Important fix: Make sure we're properly filtering questions by group
   const questionsInCurrentGroup = currentGroupId
     ? questions.filter(q => q.groupId === currentGroupId)
     : questions;
 
+  // Log the filtered questions for debugging
+  console.log(`Layout: Current group ${currentGroupId} has ${questionsInCurrentGroup.length} of ${questions.length} total questions`);
+  
   if (loading) {
     return (
       <div className="container max-w-7xl mx-auto py-8">
@@ -146,7 +150,7 @@ export function InspectionLayout({
               <QuestionGroups 
                 groups={groups}
                 currentGroupId={currentGroupId}
-                onGroupChange={setCurrentGroupId} // Fix: changed prop name to match QuestionGroups component
+                onGroupChange={setCurrentGroupId}
                 stats={stats}
               />
             </ScrollArea>
@@ -158,7 +162,7 @@ export function InspectionLayout({
             <QuestionsPanel
               loading={loading}
               currentGroupId={currentGroupId}
-              filteredQuestions={questionsInCurrentGroup} // Fix: added missing required prop
+              filteredQuestions={questionsInCurrentGroup}
               questions={questions}
               responses={responses}
               groups={groups}

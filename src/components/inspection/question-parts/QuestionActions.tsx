@@ -26,6 +26,7 @@ export function QuestionActions({
         size="sm"
         onClick={onOpenMediaDialog}
         className="flex items-center gap-1 text-xs h-7"
+        data-testid="open-media-button"
       >
         <Camera className="h-3.5 w-3.5 text-gray-500" />
         <span>Mídia</span>
@@ -36,6 +37,7 @@ export function QuestionActions({
         size="sm"
         onClick={onOpenCommentDialog}
         className="flex items-center gap-1 text-xs h-7"
+        data-testid="open-comment-button"
       >
         <MessageCircle className="h-3.5 w-3.5 text-gray-500" />
         <span>Comentário</span>
@@ -53,6 +55,7 @@ export function QuestionActions({
           }
         }}
         className="flex items-center gap-1 text-xs h-7"
+        data-testid="open-action-plan-button"
       >
         <AlertTriangle className="h-3.5 w-3.5 text-gray-500" />
         <span>Plano de Ação</span>

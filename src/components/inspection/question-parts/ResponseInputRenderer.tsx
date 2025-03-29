@@ -19,19 +19,25 @@ export function ResponseInputRenderer({
   onResponseChange,
   onAddMedia
 }: ResponseInputRendererProps) {
-  const responseType = question.responseType;
+  const responseType = question.responseType?.toLowerCase() || question.tipo_resposta?.toLowerCase();
   
-  if (responseType === "sim/não" || responseType === "yes_no") {
+  // Normalize response type to handle different formats
+  if (responseType === "sim/não" || responseType === "yes_no" || responseType === "yes/no") {
     return <YesNoInput value={response?.value} onChange={onResponseChange} />;
-  } else if (responseType === "numérico" || responseType === "numeric") {
+  } else if (responseType === "numérico" || responseType === "numeric" || responseType === "number") {
     return <NumberInput value={response?.value} onChange={onResponseChange} />;
   } else if (responseType === "texto" || responseType === "text") {
     return <TextInput value={response?.value} onChange={onResponseChange} />;
   } else if (responseType === "seleção múltipla" || responseType === "multiple_choice") {
-    return <MultipleChoiceInput options={question.options || []} value={response?.value} onChange={onResponseChange} />;
+    return <MultipleChoiceInput 
+      options={question.options || question.opcoes || []} 
+      value={response?.value} 
+      onChange={onResponseChange} 
+    />;
   } else if (responseType === "foto" || responseType === "photo") {
     return <PhotoInput onAddMedia={onAddMedia} mediaUrls={response?.mediaUrls} />;
   } else {
+    console.warn(`Unsupported response type: ${responseType} for question:`, question);
     return <p className="text-sm text-muted-foreground mt-2">Tipo de resposta não suportado: {responseType}</p>;
   }
 }

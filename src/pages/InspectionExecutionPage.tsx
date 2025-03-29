@@ -124,6 +124,13 @@ export default function InspectionExecutionPage() {
     );
   }
   
+  // Log questions and groups to help debug
+  console.log(`Execution Page: Loaded ${questions.length} questions, ${groups.length} groups`);
+  if (currentGroupId) {
+    const questionsInGroup = questions.filter(q => q.groupId === currentGroupId);
+    console.log(`Current group ${currentGroupId} has ${questionsInGroup.length} questions`);
+  }
+  
   return (
     <InspectionLayout
       loading={loading}

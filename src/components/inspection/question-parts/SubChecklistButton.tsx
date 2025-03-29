@@ -14,6 +14,7 @@ export function SubChecklistButton({
   loading,
   onOpenSubChecklist
 }: SubChecklistButtonProps) {
+  // Don't render anything if there's no sub-checklist
   if (!hasSubChecklist) return null;
   
   return (
@@ -24,6 +25,7 @@ export function SubChecklistButton({
         onClick={onOpenSubChecklist}
         disabled={loading}
         className="flex items-center gap-1.5 text-xs h-7"
+        data-testid="open-subchecklist-button"
       >
         {loading ? (
           <>

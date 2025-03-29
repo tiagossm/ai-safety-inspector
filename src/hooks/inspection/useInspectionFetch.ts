@@ -27,6 +27,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
       setError(null);
       setDetailedError(null);
 
+      // Fetch the inspection data with company and checklist information
       const { data: inspectionData, error: inspectionError } = await supabase
         .from("inspections")
         .select(`
@@ -49,6 +50,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
 
       console.log("Loaded inspection data:", inspectionData);
 
+      // Set inspection state
       setInspection({
         id: inspectionData.id,
         title: inspectionData.checklist?.title || "Sem título",
@@ -61,8 +63,10 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         locationName: inspectionData.location,
       });
 
+      // Set company state
       setCompany(inspectionData.companies);
 
+      // Fetch responsible user data if available
       if (inspectionData.responsible_id) {
         const { data: userData, error: userError } = await supabase
           .from("users")
@@ -75,6 +79,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         }
       }
 
+      // Fetch checklist items
       const { data: checklistItems, error: checklistError } = await supabase
         .from("checklist_itens")
         .select("*")
@@ -94,11 +99,12 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         setQuestions([]);
         setGroups([]);
       } else {
+        // Map checklist items to questions
         const questionsArray = checklistItems.map((item: any) => ({
           id: item.id,
           text: item.pergunta,
           responseType: item.tipo_resposta,
-          groupId: null,
+          groupId: null, // Will be updated later
           options: item.opcoes,
           isRequired: item.obrigatorio,
           order: item.ordem,
@@ -106,14 +112,17 @@ export function useInspectionFetch(inspectionId: string | undefined) {
           parentValue: item.condition_value || null,
           hint: item.hint || null,
           subChecklistId: item.sub_checklist_id || null,
+          hasSubChecklist: !!item.sub_checklist_id,
           allowsPhoto: item.permite_foto || false,
           allowsVideo: item.permite_video || false,
           allowsAudio: item.permite_audio || false,
           weight: item.weight || 1,
         }));
 
+        // Extract groups from hints or create a default group
         const groupsMap = new Map();
         
+        // First try to extract groups from hint field
         checklistItems.forEach((item: any) => {
           if (item.hint && typeof item.hint === 'string' && item.hint.includes('groupId')) {
             try {
@@ -138,6 +147,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         if (extractedGroups.length > 0) {
           console.log(`Found ${extractedGroups.length} groups in hints`);
           
+          // Assign questions to groups based on hints
           questionsArray.forEach(question => {
             const item = checklistItems.find((i: any) => i.id === question.id);
             if (item?.hint && typeof item.hint === 'string' && item.hint.includes('groupId')) {
@@ -156,6 +166,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         } else {
           console.log("No groups found in hints, checking for direct group property");
           
+          // Check if items have direct group_id property
           let hasGroupProperty = false;
           const directGroups = new Map();
           
@@ -173,6 +184,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
                 });
               }
               
+              // Assign group to question
               const questionToUpdate = questionsArray.find(q => q.id === item.id);
               if (questionToUpdate) {
                 questionToUpdate.groupId = groupId;
@@ -186,6 +198,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
           } else {
             console.log("No direct groups found, creating default group");
             
+            // Create a default group and assign all questions to it
             const defaultGroup = {
               id: 'default-group',
               title: 'Geral',
@@ -204,6 +217,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         setQuestions(questionsArray);
       }
 
+      // Fetch responses
       const { data: responsesData, error: responsesError } = await supabase
         .from("inspection_responses")
         .select("*")
@@ -215,6 +229,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         throw responsesError;
       }
 
+      // Convert responses to object format for easier access
       const responsesObj = (responsesData || []).reduce((acc: Record<string, any>, curr: any) => {
         acc[curr.question_id] = {
           value: curr.answer,
@@ -228,7 +243,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
 
       setResponses(responsesObj);
 
-      // Define questionsForSubChecklists to handle cases where questions might not be available yet
+      // Handle sub-checklists
       const questionsForSubChecklists = questions.length > 0 ? questions : 
         (checklistItems && checklistItems.length > 0 ? 
           checklistItems.map((item: any) => ({
@@ -236,6 +251,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
             subChecklistId: item.sub_checklist_id || null,
           })) : []);
 
+      // Find questions with sub-checklists
       const subChecklistIds = questionsForSubChecklists
         .filter(q => q.subChecklistId)
         .map(q => ({ questionId: q.id, subChecklistId: q.subChecklistId }));
@@ -244,6 +260,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         console.log(`Loading ${subChecklistIds.length} sub-checklists`);
         const subChecklistsData: Record<string, any> = {};
 
+        // Load each sub-checklist and its questions
         await Promise.all(
           subChecklistIds.map(async ({ questionId, subChecklistId }) => {
             try {
@@ -296,6 +313,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
     }
   }, [inspectionId, questions]);
 
+  // Fetch data when the component mounts or inspectionId changes
   useEffect(() => {
     fetchInspectionData();
   }, [fetchInspectionData]);
