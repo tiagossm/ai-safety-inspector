@@ -70,8 +70,6 @@ export function useInspectionFetch(inspectionId: string | undefined) {
 
       if (checklistError) throw checklistError;
 
-      console.log(`Fetched ${checklistItems?.length || 0} checklist items`);
-
       const questionsArray = checklistItems.map((item: any) => ({
         id: item.id,
         text: item.pergunta,
@@ -102,15 +100,11 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         if (item.hint) {
           try {
             let hintData = item.hint;
-            
             if (typeof item.hint === 'string') {
               try {
                 hintData = JSON.parse(item.hint);
-              } catch (e) {
-                console.warn(`Failed to parse hint as JSON: ${item.hint}`, e);
-              }
+              } catch (e) {}
             }
-            
             if (hintData && hintData.groupId && hintData.groupTitle) {
               if (!groupsMap.has(hintData.groupId)) {
                 groupsMap.set(hintData.groupId, {
@@ -121,7 +115,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
               }
             }
           } catch (e) {
-            console.warn(`Error processing hint for item ${item.id}:`, e);
+            console.warn(`Erro ao processar hint do item ${item.id}:`, e);
           }
         }
       });
@@ -137,21 +131,15 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         if (item.hint) {
           try {
             let hintData = item.hint;
-            
             if (typeof item.hint === 'string') {
               try {
                 hintData = JSON.parse(item.hint);
-              } catch (e) {
-                // Invalid JSON - keep as string
-              }
+              } catch (e) {}
             }
-            
             if (hintData && hintData.groupId && groupsMap.has(hintData.groupId)) {
               questionToUpdate.groupId = hintData.groupId;
             }
-          } catch (e) {
-            // Error parsing hint, ignore
-          }
+          } catch (e) {}
         }
 
         if (questionToUpdate.groupId === null) {
@@ -160,15 +148,16 @@ export function useInspectionFetch(inspectionId: string | undefined) {
       });
 
       const extractedGroups = Array.from(groupsMap.values()).sort((a, b) => a.order - b.order);
-      
-      console.log(`Processed ${extractedGroups.length} groups`);
-      console.log(`Question group distribution:`, questionsArray.reduce((acc: any, q: any) => {
-        acc[q.groupId] = (acc[q.groupId] || 0) + 1;
-        return acc;
-      }, {}));
+
+      // 🛠️ GARANTIR QUE TODAS AS PERGUNTAS TENHAM GROUP ID VÁLIDO
+      const fallbackGroupId = extractedGroups[0]?.id || DEFAULT_GROUP.id;
+      const questionsWithValidGroups = questionsArray.map((q) => ({
+        ...q,
+        groupId: q.groupId || fallbackGroupId,
+      }));
 
       setGroups(extractedGroups);
-      setQuestions(questionsArray);
+      setQuestions(questionsWithValidGroups);
 
       const { data: responsesData, error: responsesError } = await supabase
         .from("inspection_responses")
@@ -190,13 +179,11 @@ export function useInspectionFetch(inspectionId: string | undefined) {
 
       setResponses(responsesObj);
 
-      const subChecklistIds = questionsArray
+      const subChecklistIds = questionsWithValidGroups
         .filter(q => q.subChecklistId)
         .map(q => ({ questionId: q.id, subChecklistId: q.subChecklistId }));
 
       if (subChecklistIds.length > 0) {
-        console.log(`Found ${subChecklistIds.length} sub-checklists to fetch`);
-        
         const subChecklistsData: Record<string, any> = {};
         await Promise.all(
           subChecklistIds.map(async ({ questionId, subChecklistId }) => {
@@ -214,8 +201,6 @@ export function useInspectionFetch(inspectionId: string | undefined) {
                 .order("ordem", { ascending: true });
 
               if (checklistData && subQuestions) {
-                console.log(`Fetched sub-checklist ${subChecklistId} for question ${questionId} with ${subQuestions.length} questions`);
-                
                 subChecklistsData[questionId] = {
                   ...checklistData,
                   questions: subQuestions.map((q: any) => ({
@@ -230,19 +215,16 @@ export function useInspectionFetch(inspectionId: string | undefined) {
                 };
               }
             } catch (error) {
-              console.error(`Error fetching sub-checklist for question ${questionId}:`, error);
+              console.error(`Erro ao buscar sub-checklist ${subChecklistId}`, error);
             }
           })
         );
-        
+
         setSubChecklists(subChecklistsData);
       }
     } catch (err: any) {
       console.error("Erro ao buscar dados da inspeção:", err);
       setError(err.message || "Erro ao carregar dados da inspeção");
-      if (!err.message && err.code) {
-        setError(`Erro ${err.code}: ${err.details || err.message || 'Erro desconhecido'}`);
-      }
       setDetailedError(err);
     } finally {
       setLoading(false);
