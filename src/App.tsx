@@ -1,7 +1,8 @@
-
 import { Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
+import AppRoutes from "./pages/routes";
+import { AppSidebar } from "./components/AppSidebar";
 
 // Import your page components
 import InspectionExecutionPage from "./pages/InspectionExecutionPage";
@@ -16,28 +17,23 @@ import Checklists from "./pages/Checklists";
 
 function App() {
   return (
-    <>
-      <Routes>
-        <Route path="/" element={<Inspections />} />
-        <Route path="/inspections" element={<Inspections />} />
-        <Route path="/inspections/new" element={<NewInspectionPage />} />
-        <Route path="/inspections/:id" element={<InspectionExecutionPage />} />
-        <Route path="/inspections/:id/view" element={<InspectionExecutionPage />} />
-        
-        <Route path="/checklists" element={<Checklists />} />
-        <Route path="/checklists/new" element={<ChecklistEditorPage />} />
-        <Route path="/checklists/:id/edit" element={<ChecklistEditorPage />} />
-        <Route path="/checklists/editor" element={<ChecklistEditorPage />} />
-        <Route path="/checklists/:id" element={<ChecklistDetails />} />
-        <Route path="/checklist/:id" element={<ChecklistDetail />} />
-        
-        <Route path="/companies" element={<Companies />} />
-        <Route path="/companies/new" element={<CompanyDetail />} />
-        <Route path="/companies/:id" element={<CompanyDetail />} />
-      </Routes>
-      <FloatingNavigation threshold={400} />
-      <Toaster />
-    </>
+    <div className="flex min-h-screen">
+      <AppSidebar />
+      <main className="flex-1 p-4 overflow-x-hidden">
+        <Routes>
+          <AppRoutes />
+          
+          {/* Legacy routes - keep these for compatibility */}
+          <Route path="/" element={<Inspections />} />
+          <Route path="/inspections" element={<Inspections />} />
+          <Route path="/companies" element={<Companies />} />
+          <Route path="/companies/new" element={<CompanyDetail />} />
+          <Route path="/companies/:id" element={<CompanyDetail />} />
+        </Routes>
+        <FloatingNavigation threshold={400} />
+        <Toaster />
+      </main>
+    </div>
   );
 }
 

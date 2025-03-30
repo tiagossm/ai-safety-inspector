@@ -22,6 +22,7 @@ interface ChecklistQuestionsProps {
   onUpdateQuestion: (question: ChecklistQuestion) => void;
   onDeleteQuestion: (questionId: string) => void;
   onDragEnd: (result: any) => void;
+  onEditSubChecklist?: (questionId: string, subChecklistId: string) => void;
 }
 
 export function ChecklistQuestions({
@@ -37,7 +38,8 @@ export function ChecklistQuestions({
   onAddQuestion,
   onUpdateQuestion,
   onDeleteQuestion,
-  onDragEnd
+  onDragEnd,
+  onEditSubChecklist
 }: ChecklistQuestionsProps) {
   return (
     <Card>
@@ -73,6 +75,7 @@ export function ChecklistQuestions({
                         onUpdateQuestion={onUpdateQuestion}
                         onDeleteQuestion={onDeleteQuestion}
                         onDeleteGroup={onDeleteGroup}
+                        onEditSubChecklist={onEditSubChecklist}
                       />
                     ) : (
                       <div className="text-center py-8 border border-dashed rounded">

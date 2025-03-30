@@ -1,4 +1,3 @@
-
 export interface ChecklistGroup {
   id: string;
   title: string;
@@ -37,6 +36,7 @@ export interface Checklist {
   createdAt?: string;
   updatedAt?: string;
   dueDate?: string | null;
+  is_sub_checklist?: boolean; // Added for filtering sub-checklists
 }
 
 export interface ChecklistWithStats extends Checklist {
