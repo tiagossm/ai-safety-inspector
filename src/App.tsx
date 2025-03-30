@@ -23,6 +23,7 @@ function App() {
           <Route path="/inspections" element={<Inspections />} />
           <Route path="/inspections/new" element={<NewInspectionPage />} />
           <Route path="/inspections/:id" element={<InspectionExecutionPage />} />
+          <Route path="/inspections/:id/view" element={<InspectionExecutionPage />} />
           
           <Route path="/checklists" element={<Checklists />} />
           <Route path="/checklists/new" element={<ChecklistEditorPage />} />
