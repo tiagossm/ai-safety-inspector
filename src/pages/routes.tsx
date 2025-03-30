@@ -37,8 +37,7 @@ export function ChecklistRoutes() {
   );
 }
 
-export default function AppRoutes() {
-  // IMPORTANT: We're returning just the routes now, not wrapping them in a Routes component
-  // because that should be handled in App.tsx
-  return <ChecklistRoutes />;
-}
+// This default export is no longer needed since we're using ChecklistRoutes directly in App.tsx
+// export default function AppRoutes() {
+//   return <ChecklistRoutes />;
+// }
