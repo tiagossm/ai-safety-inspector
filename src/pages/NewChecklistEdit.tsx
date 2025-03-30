@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -12,7 +12,6 @@ import { ChecklistBasicInfo } from "@/components/new-checklist/edit/ChecklistBas
 import { ChecklistQuestions } from "@/components/new-checklist/edit/ChecklistQuestions";
 import { ChecklistEditActions } from "@/components/new-checklist/edit/ChecklistEditActions";
 import { LoadingState } from "@/components/new-checklist/edit/LoadingState";
-import { SubChecklistEditor } from "@/components/new-checklist/edit/SubChecklistEditor";
 
 export default function NewChecklistEdit() {
   const navigate = useNavigate();
@@ -47,11 +46,7 @@ export default function NewChecklistEdit() {
     handleUpdateQuestion,
     handleDeleteQuestion,
     handleDragEnd,
-    handleSubmit,
-    // New functions for sub-checklist handling
-    handleEditSubChecklist,
-    subChecklistBeingEdited,
-    setSubChecklistBeingEdited
+    handleSubmit
   } = useChecklistEdit(checklist, id);
   
   // Initialize form with checklist data when it loads
@@ -71,40 +66,6 @@ export default function NewChecklistEdit() {
   
   if (isLoading) {
     return <LoadingState />;
-  }
-  
-  // If we're editing a sub-checklist, show that UI
-  if (subChecklistBeingEdited) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <Button 
-            variant="outline" 
-            onClick={() => setSubChecklistBeingEdited(null)}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Voltar para o Checklist Principal</span>
-          </Button>
-          <h2 className="text-xl font-semibold">Editar Sub-Checklist</h2>
-        </div>
-        
-        <Card>
-          <CardContent className="p-6">
-            {/* Display sub-checklist editor with the sub-checklist ID */}
-            <SubChecklistEditor
-              parentQuestionId={subChecklistBeingEdited.questionId}
-              existingSubChecklistId={subChecklistBeingEdited.subChecklistId}
-              onSubChecklistCreated={() => {
-                toast.success("Sub-checklist salvo com sucesso!");
-                setSubChecklistBeingEdited(null);
-                refetch(); // Refresh main checklist data
-              }}
-            />
-          </CardContent>
-        </Card>
-      </div>
-    );
   }
   
   return (
@@ -147,7 +108,6 @@ export default function NewChecklistEdit() {
           onUpdateQuestion={handleUpdateQuestion}
           onDeleteQuestion={handleDeleteQuestion}
           onDragEnd={handleDragEnd}
-          onEditSubChecklist={handleEditSubChecklist}
         />
         
         <ChecklistEditActions

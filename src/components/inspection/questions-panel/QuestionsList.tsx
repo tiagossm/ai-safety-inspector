@@ -76,27 +76,26 @@ export function QuestionsList({
       // Render each sub-checklist question with hierarchical numbering
       subChecklistQuestions.forEach((subQuestion: any, subIndex: number) => {
         components.push(
-          <div key={`${question.id}-sub-${subQuestion.id || subIndex}`} className="ml-6">
-            <InspectionQuestion
-              question={subQuestion}
-              index={subIndex}
-              response={subChecklistResponses[subQuestion.id] || {}}
-              onResponseChange={(data) => {
-                // Update the parent question's subChecklistResponses
-                const currentResponses = responses[question.id]?.subChecklistResponses || {};
-                onResponseChange(question.id, {
-                  ...(responses[question.id] || {}),
-                  subChecklistResponses: {
-                    ...currentResponses,
-                    [subQuestion.id]: data
-                  }
-                });
-              }}
-              allQuestions={subChecklistQuestions}
-              numberLabel={`${numberLabel.replace(')', '')}.${subIndex + 1})`}
-              isSubQuestion={true}
-            />
-          </div>
+          <InspectionQuestion
+            key={`${question.id}-sub-${subQuestion.id || subIndex}`}
+            question={subQuestion}
+            index={subIndex}
+            response={subChecklistResponses[subQuestion.id] || {}}
+            onResponseChange={(data) => {
+              // Update the parent question's subChecklistResponses
+              const currentResponses = responses[question.id]?.subChecklistResponses || {};
+              onResponseChange(question.id, {
+                ...(responses[question.id] || {}),
+                subChecklistResponses: {
+                  ...currentResponses,
+                  [subQuestion.id]: data
+                }
+              });
+            }}
+            allQuestions={subChecklistQuestions}
+            numberLabel={`${numberLabel.replace(')', '')}.${subIndex + 1})`}
+            isSubQuestion={true}
+          />
         );
       });
     }

@@ -1,198 +1,200 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.8.0';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+}
 
 serve(async (req) => {
-  // Handle CORS preflight request
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    const { cnpj } = await req.json();
+    const { cnpj } = await req.json()
+    
+    if (!cnpj) {
+      throw new Error('CNPJ é obrigatório')
+    }
 
-    // Remove non-numeric characters
-    const cleanCnpj = cnpj.replace(/[^\d]/g, '');
-    console.log(`Consultando CNPJ: ${cleanCnpj}`);
+    // Remove caracteres não numéricos
+    const cleanCNPJ = cnpj.replace(/\D/g, '')
+    
+    console.log('Consultando CNPJ:', cleanCNPJ)
 
-    // Call ReceitaWS API
-    const response = await fetch(`https://receitaws.com.br/v1/cnpj/${cleanCnpj}`);
-    const data = await response.json();
-    console.log(`Dados recebidos da ReceitaWS: ${JSON.stringify(data, null, 2)}`);
+    // Chama a API ReceitaWS
+    const response = await fetch(`https://www.receitaws.com.br/v1/cnpj/${cleanCNPJ}`)
+    const data = await response.json()
 
-    // Handle error from ReceitaWS
     if (data.status === 'ERROR') {
-      return new Response(
-        JSON.stringify({ error: data.message || 'Erro ao consultar CNPJ' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.error('Erro da API ReceitaWS:', data.message)
+      throw new Error(data.message || 'CNPJ não encontrado')
     }
 
-    // Extract the main CNAE code and format it correctly
-    let cnae = '';
-    if (data.atividade_principal && data.atividade_principal.length > 0) {
-      // Extract the code part (e.g., "17.10-9-00" -> "1710-9")
-      const fullCode = data.atividade_principal[0].code;
-      // Remove all dots and hyphens first
-      const cleanCode = fullCode.replace(/[^\d]/g, '');
-      
-      // Now format it as XXXX-X (if possible)
-      if (cleanCode.length >= 5) {
-        cnae = `${cleanCode.substring(0, 4)}-${cleanCode.substring(4, 5)}`;
-      } else {
-        cnae = cleanCode;
-      }
-    }
-    console.log(`CNAE formatado: ${cnae}`);
+    console.log('Dados recebidos da ReceitaWS:', data)
 
-    // Connect to Supabase to get the risk level from the CNAE
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Try different strategies to find the risk level
-    console.log(`Tentando buscar grau de risco com as seguintes variações: ${cnae} (formato padrão XXXX-X), ${cnae.replace('-', '')} (formato sem hífen), ${cnae.substring(0, 4)} (primeiros 4 dígitos)`);
-    
-    let riskLevel = "1"; // Default risk level
-    
-    // Strategy 1: Try exact match with formatted CNAE (XXXX-X format)
-    console.log(`Tentando busca exata com CNAE: ${cnae} (formato padrão XXXX-X)`);
-    let { data: riskData, error } = await supabase
-      .from('nr4_riscos')
-      .select('grau_risco')
-      .eq('cnae', cnae)
-      .maybeSingle();
+    // Formata o CNAE para buscar o grau de risco
+    const extractCnae = (cnaeString) => {
+      if (!cnaeString) return '';
       
-    if (error) {
-      console.log(`Erro ao buscar grau de risco: ${error.message}`);
-    }
-    
-    if (riskData) {
-      riskLevel = riskData.grau_risco;
-      console.log(`Grau de risco encontrado para ${cnae}: ${riskLevel}`);
-    } else {
-      console.log(`Nenhum resultado exato para ${cnae}`);
-      
-      // Strategy 2: Try with CNAE without hyphen
-      const cnaeNoHyphen = cnae.replace('-', '');
-      console.log(`Tentando busca exata com CNAE: ${cnaeNoHyphen} (formato sem hífen)`);
-      
-      const { data: riskData2, error: error2 } = await supabase
-        .from('nr4_riscos')
-        .select('grau_risco')
-        .eq('cnae', cnaeNoHyphen)
-        .maybeSingle();
-        
-      if (error2) {
-        console.log(`Erro ao buscar grau de risco para ${cnaeNoHyphen}: ${error2.message}`);
+      // Extrai apenas os números do CNAE e o hífen se presente
+      const match = cnaeString.match(/(\d{4})-?(\d)/);
+      if (match) {
+        return `${match[1]}-${match[2]}`;
       }
       
-      if (riskData2) {
-        riskLevel = riskData2.grau_risco;
-        console.log(`Grau de risco encontrado para ${cnaeNoHyphen}: ${riskLevel}`);
-      } else {
-        console.log(`Nenhum resultado exato para ${cnaeNoHyphen}`);
+      // Se não encontrar no formato padrão, tenta extrair só os números
+      const numbers = cnaeString.replace(/[^\d]/g, '');
+      
+      // Se tiver pelo menos 5 dígitos, formata como XXXX-X
+      if (numbers.length >= 5) {
+        return `${numbers.slice(0, 4)}-${numbers.slice(4, 5)}`;
+      }
+      
+      // Se tiver menos de 5 dígitos, completa com zeros
+      return `${numbers.padEnd(4, '0')}-0`;
+    };
+
+    // Pega o CNAE principal
+    const cnae = data.atividade_principal?.[0]?.code || '';
+    const formattedCnae = extractCnae(cnae);
+    
+    console.log('CNAE formatado:', formattedCnae);
+    
+    // Criar cliente Supabase para consultar o grau de risco
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || 'https://jkgmgjjtslkozhehwmng.supabase.co';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprZ21namp0c2xrb3poZWh3bW5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE3MjMwNDAsImV4cCI6MjA1NzI5OTA0MH0.VHL_5dontJ5Zin2cPTrQgkdx-CbnqWtRkVq-nNSnAZg';
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+    // Define nossa função para buscar o grau de risco com fallbacks
+    const findRiskLevel = async (formattedCnae) => {
+      if (!formattedCnae) return "1"; // Default se não tiver CNAE
+      
+      // Prepara todas as variações possíveis do CNAE para aumentar chances de encontrar
+      const strippedCnae = formattedCnae.replace(/-/g, '');
+      const firstFourDigits = formattedCnae.slice(0, 4);
+      const firstTwoDigits = formattedCnae.slice(0, 2);
+      
+      const variations = [
+        { format: formattedCnae, type: 'formato padrão XXXX-X' },
+        { format: strippedCnae, type: 'formato sem hífen' },
+        { format: firstFourDigits, type: 'primeiros 4 dígitos' }
+      ];
+      
+      console.log('Tentando buscar grau de risco com as seguintes variações:', 
+        variations.map(v => `${v.format} (${v.type})`).join(', '));
+      
+      // Tenta cada formato exato
+      for (const variation of variations) {
+        if (!variation.format) continue;
         
-        // Strategy 3: Try with first 4 digits of CNAE
-        const cnaeFirst4 = cnae.substring(0, 4);
-        console.log(`Tentando busca exata com CNAE: ${cnaeFirst4} (primeiros 4 dígitos)`);
+        console.log(`Tentando busca exata com CNAE: ${variation.format} (${variation.type})`);
         
-        const { data: riskData3, error: error3 } = await supabase
+        const { data: exactMatch, error } = await supabase
           .from('nr4_riscos')
           .select('grau_risco')
-          .eq('cnae', cnaeFirst4)
+          .eq('cnae', variation.format)
           .maybeSingle();
           
-        if (error3) {
-          console.log(`Erro ao buscar grau de risco para ${cnaeFirst4}: ${error3.message}`);
+        if (error) {
+          console.error(`Erro ao buscar exato para ${variation.format}:`, error.message);
+          continue;
         }
         
-        if (riskData3) {
-          riskLevel = riskData3.grau_risco;
-          console.log(`Grau de risco encontrado para ${cnaeFirst4}: ${riskLevel}`);
-        } else {
-          console.log(`Nenhum resultado exato para ${cnaeFirst4}`);
+        if (exactMatch) {
+          console.log(`✅ Encontrado grau de risco para ${variation.format}: ${exactMatch.grau_risco}`);
+          return exactMatch.grau_risco.toString();
+        }
+        
+        console.log(`Nenhum resultado exato para ${variation.format}`);
+      }
+      
+      // Se não encontrou correspondência exata, tenta busca com LIKE para os primeiros dígitos
+      console.log('Tentando busca parcial com LIKE');
+      
+      // Tenta com os primeiros 4 dígitos
+      if (firstFourDigits) {
+        console.log(`Tentando LIKE com primeiros 4 dígitos: ${firstFourDigits}%`);
+        
+        const { data: likeMatch4, error: likeError4 } = await supabase
+          .from('nr4_riscos')
+          .select('grau_risco')
+          .like('cnae', `${firstFourDigits}%`)
+          .order('cnae')
+          .limit(1);
           
-          // Strategy 4: Try partial match with LIKE
-          console.log(`Tentando busca parcial com LIKE`);
-          
-          // Try with first 4 digits
-          console.log(`Tentando LIKE com primeiros 4 dígitos: ${cnaeFirst4}%`);
-          const { data: riskData4, error: error4 } = await supabase
-            .from('nr4_riscos')
-            .select('grau_risco')
-            .like('cnae', `${cnaeFirst4}%`)
-            .order('cnae')
-            .limit(1);
-            
-          if (error4) {
-            console.log(`Erro ao buscar grau de risco com LIKE ${cnaeFirst4}%: ${error4.message}`);
-          }
-          
-          if (riskData4 && riskData4.length > 0) {
-            riskLevel = riskData4[0].grau_risco;
-            console.log(`Grau de risco encontrado para LIKE ${cnaeFirst4}%: ${riskLevel}`);
-          } else {
-            // Try with first 2 digits if all else fails
-            const cnaeFirst2 = cnae.substring(0, 2);
-            console.log(`Tentando LIKE com primeiros 2 dígitos: ${cnaeFirst2}%`);
-            
-            const { data: riskData5, error: error5 } = await supabase
-              .from('nr4_riscos')
-              .select('grau_risco')
-              .like('cnae', `${cnaeFirst2}%`)
-              .order('cnae')
-              .limit(1);
-              
-            if (error5) {
-              console.log(`Erro ao buscar grau de risco com LIKE ${cnaeFirst2}%: ${error5.message}`);
-            }
-            
-            if (riskData5 && riskData5.length > 0) {
-              riskLevel = riskData5[0].grau_risco;
-              console.log(`Grau de risco encontrado para LIKE ${cnaeFirst2}%: ${riskLevel}`);
-            } else {
-              console.log(`⚠️ Nenhum grau de risco encontrado após todas as tentativas. Retornando padrão (1)`);
-            }
-          }
+        if (likeError4) {
+          console.error('Erro na busca LIKE com 4 dígitos:', likeError4.message);
+        } else if (likeMatch4 && likeMatch4.length > 0) {
+          console.log(`✅ Encontrado via LIKE com 4 dígitos: ${likeMatch4[0].grau_risco}`);
+          return likeMatch4[0].grau_risco.toString();
         }
       }
-    }
-    
+      
+      // Última tentativa com os primeiros 2 dígitos (grupo econômico)
+      if (firstTwoDigits) {
+        console.log(`Tentando LIKE com primeiros 2 dígitos: ${firstTwoDigits}%`);
+        
+        const { data: likeMatch2, error: likeError2 } = await supabase
+          .from('nr4_riscos')
+          .select('grau_risco')
+          .like('cnae', `${firstTwoDigits}%`)
+          .order('cnae')
+          .limit(1);
+          
+        if (likeError2) {
+          console.error('Erro na busca LIKE com 2 dígitos:', likeError2.message);
+        } else if (likeMatch2 && likeMatch2.length > 0) {
+          console.log(`✅ Encontrado via LIKE com 2 dígitos: ${likeMatch2[0].grau_risco}`);
+          return likeMatch2[0].grau_risco.toString();
+        }
+      }
+      
+      // Não encontrou nada, retorna o valor padrão
+      console.log('⚠️ Nenhum grau de risco encontrado após todas as tentativas. Retornando padrão (1)');
+      return "1";
+    };
+
+    // Busca o grau de risco
+    const riskLevel = await findRiskLevel(formattedCnae);
     console.log(`Grau de risco final determinado: ${riskLevel}`);
 
-    // Format the response data
+    // Formata os dados para retornar
     const formattedData = {
-      fantasyName: data.nome || data.fantasia || "",
-      cnae: cnae,
+      fantasyName: data.fantasia || data.nome,
+      cnae: formattedCnae,
       riskLevel: riskLevel,
-      address: `${data.logradouro || ""}, ${data.numero || ""}, ${data.complemento || ""} - ${data.bairro || ""}, ${data.municipio || ""}/${data.uf || ""}`,
-      contactEmail: data.email || "",
-      contactPhone: data.telefone || "",
-      contactName: data.qsa && data.qsa.length > 0 ? data.qsa[0].nome : ""
-    };
-    
-    console.log(`Dados formatados para retorno: ${JSON.stringify(formattedData, null, 2)}`);
+      address: `${data.logradouro}, ${data.numero}${data.complemento ? `, ${data.complemento}` : ''} - ${data.bairro}, ${data.municipio}/${data.uf}`,
+      contactEmail: data.email || '',
+      contactPhone: data.telefone || '',
+      contactName: data.qsa?.[0]?.nome || ''
+    }
+
+    console.log('Dados formatados para retorno:', formattedData)
 
     return new Response(
       JSON.stringify(formattedData),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  } catch (error) {
-    console.error('Error in validate-cnpj function:', error);
-    
-    return new Response(
-      JSON.stringify({ error: 'Erro ao processar solicitação: ' + error.message }),
       { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json'
+        } 
       }
-    );
+    )
+  } catch (error) {
+    console.error('Erro na consulta do CNPJ:', error)
+    return new Response(
+      JSON.stringify({ error: error.message || "Erro desconhecido" }),
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json'
+        },
+        status: 400 
+      }
+    )
   }
-});
+})

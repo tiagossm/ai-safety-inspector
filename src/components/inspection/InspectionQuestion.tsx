@@ -78,6 +78,7 @@ export function InspectionQuestion({
   const indentationClass = isSubQuestion ? "ml-6" : "";
   
   return (
+    // Fix: Wrap with a div instead of Fragment when data attributes are needed
     <div>
       <Card className={`${getQuestionCardClasses(question, response)} ${indentationClass} mb-4`}>
         <CardContent className="p-3.5">
@@ -88,8 +89,7 @@ export function InspectionQuestion({
             response={response}
             showCommentSection={showCommentSection}
             setShowCommentSection={setShowCommentSection}
-            numberLabel={displayLabel}
-            // Removing the hint display - as per requirements
+            numberLabel={displayLabel} // Pass the number label to the header
           />
           
           <div className="mt-2">

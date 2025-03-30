@@ -1,9 +1,14 @@
 
 import React from "react";
-import { MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
+import { Info } from "lucide-react";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface QuestionHeaderProps {
   question: any;
@@ -12,7 +17,7 @@ interface QuestionHeaderProps {
   response: any;
   showCommentSection: boolean;
   setShowCommentSection: (show: boolean) => void;
-  numberLabel?: string;
+  numberLabel?: string; // Add number label for hierarchical display
 }
 
 export function QuestionHeader({
@@ -22,49 +27,58 @@ export function QuestionHeader({
   response,
   showCommentSection,
   setShowCommentSection,
-  numberLabel = ""
+  numberLabel
 }: QuestionHeaderProps) {
-  const hasComment = response?.notes && response.notes.trim().length > 0;
+  // Determine if the question has been answered
+  const isAnswered = response && response.value !== undefined;
+  
+  // Use the provided number label or fall back to the index + 1
+  const displayNumber = numberLabel || `${index + 1})`;
+  
+  // Determine if this is a sub-checklist question based on the number format (contains a dot)
+  const isSubChecklistQuestion = displayNumber.includes('.');
   
   return (
-    <div className="flex justify-between gap-2">
-      <div className="flex-1">
-        <div className="flex items-start">
-          <span className="font-medium text-sm mr-2">{numberLabel}</span>
-          <span className="text-sm">
+    <div className="flex items-start justify-between mb-1">
+      <div className="flex items-start gap-2">
+        <span className={`font-medium mt-0.5 ${isSubChecklistQuestion ? 'text-gray-600' : ''}`}>
+          {displayNumber}
+        </span>
+        <div>
+          <h3 className={`font-medium text-base ${isFollowUpQuestion ? 'mt-0.5' : ''} ${isSubChecklistQuestion ? 'text-gray-700' : ''}`}>
             {question.text}
-            {question.isRequired && <span className="text-red-500 ml-1">*</span>}
-          </span>
+          </h3>
         </div>
-      </div>
-      
-      <div className="flex items-center gap-1">
-        {hasComment && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => setShowCommentSection(!showCommentSection)}
-                >
-                  <MessageSquare className="h-4 w-4 text-primary" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Esta questão possui comentários</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+        
+        {question.isRequired && (
+          <Badge variant="outline" className="text-red-500 ml-1">*</Badge>
         )}
         
-        {question.weight > 1 && (
-          <Badge variant="secondary" className="text-xs">
-            Peso {question.weight}
+        {isAnswered && response.comment && (
+          <Badge 
+            variant="outline" 
+            className="ml-1 cursor-pointer"
+            onClick={() => setShowCommentSection(!showCommentSection)}
+          >
+            Comentário
           </Badge>
         )}
       </div>
+      
+      {question.hint && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7">
+                <Info className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{question.hint}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
     </div>
   );
 }

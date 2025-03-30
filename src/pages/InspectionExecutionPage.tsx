@@ -5,6 +5,7 @@ import { useInspectionData } from "@/hooks/inspection";
 import { toast } from "sonner";
 import { InspectionError } from "@/components/inspection/execution/InspectionError";
 import { InspectionLayout } from "@/components/inspection/execution/InspectionLayout";
+import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 
 export default function InspectionExecutionPage() {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +34,7 @@ export default function InspectionExecutionPage() {
     reopenInspection
   } = useInspectionData(id);
   
+  // Set default group when groups are loaded
   useEffect(() => {
     if (groups.length > 0 && !currentGroupId) {
       setCurrentGroupId(groups[0].id);
@@ -40,6 +42,7 @@ export default function InspectionExecutionPage() {
     }
   }, [groups, currentGroupId]);
 
+  // Auto-save timer
   useEffect(() => {
     if (autoSave) {
       const timer = setTimeout(() => {
@@ -91,6 +94,7 @@ export default function InspectionExecutionPage() {
     }
   };
 
+  // Fix: Add Promise return type to these functions
   const onViewActionPlan = async (): Promise<void> => {
     toast.info("Funcionalidade de Plano de Ação em desenvolvimento");
     return Promise.resolve();
@@ -101,11 +105,13 @@ export default function InspectionExecutionPage() {
     return Promise.resolve();
   };
 
+  // Fix: Create a wrapper function that converts Promise<boolean> to Promise<void>
   const handleSaveSubChecklistResponsesWrapper = async (
     subChecklistId: string, 
     responses: Record<string, any>
   ): Promise<void> => {
     await handleSaveSubChecklistResponses(subChecklistId, responses);
+    // Don't return the boolean, just resolve the promise without a value
     return Promise.resolve();
   };
 
@@ -119,6 +125,7 @@ export default function InspectionExecutionPage() {
     );
   }
   
+  // Log questions and groups to help debug
   console.log(`Execution Page: Loaded ${questions.length} questions, ${groups.length} groups`);
   if (currentGroupId) {
     const questionsInGroup = questions.filter(q => q.groupId === currentGroupId);
@@ -126,30 +133,33 @@ export default function InspectionExecutionPage() {
   }
   
   return (
-    <InspectionLayout
-      loading={loading}
-      inspection={inspection}
-      company={company}
-      responsible={responsible}
-      questions={questions}
-      responses={responses}
-      groups={groups}
-      subChecklists={subChecklists}
-      currentGroupId={currentGroupId}
-      stats={stats}
-      saving={saving}
-      autoSave={autoSave}
-      lastSaved={lastSaved}
-      setAutoSave={setAutoSave}
-      setCurrentGroupId={setCurrentGroupId}
-      onSaveProgress={onSaveProgress}
-      onCompleteInspection={onCompleteInspection}
-      onReopenInspection={onReopenInspection}
-      onViewActionPlan={onViewActionPlan}
-      onGenerateReport={onGenerateReport}
-      refreshData={refreshData}
-      onResponseChange={handleResponseChange}
-      onSaveSubChecklistResponses={handleSaveSubChecklistResponsesWrapper}
-    />
+    <>
+      <InspectionLayout
+        loading={loading}
+        inspection={inspection}
+        company={company}
+        responsible={responsible}
+        questions={questions}
+        responses={responses}
+        groups={groups}
+        subChecklists={subChecklists}
+        currentGroupId={currentGroupId}
+        stats={stats}
+        saving={saving}
+        autoSave={autoSave}
+        lastSaved={lastSaved}
+        setAutoSave={setAutoSave}
+        setCurrentGroupId={setCurrentGroupId}
+        onSaveProgress={onSaveProgress}
+        onCompleteInspection={onCompleteInspection}
+        onReopenInspection={onReopenInspection}
+        onViewActionPlan={onViewActionPlan}
+        onGenerateReport={onGenerateReport}
+        refreshData={refreshData}
+        onResponseChange={handleResponseChange}
+        onSaveSubChecklistResponses={handleSaveSubChecklistResponsesWrapper}
+      />
+      <FloatingNavigation threshold={400} />
+    </>
   );
 }

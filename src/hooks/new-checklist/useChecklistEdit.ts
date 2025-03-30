@@ -1,445 +1,336 @@
 
-import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { Checklist, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
+import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
+import { useChecklistUpdate } from "@/hooks/new-checklist/useChecklistUpdate";
 
-interface SubChecklistBeingEdited {
-  questionId: string;
-  subChecklistId: string;
-}
-
-export function useChecklistEdit(initialChecklist: Checklist | null, checklistId: string | undefined) {
-  const navigate = useNavigate();
+export function useChecklistEdit(checklist: any, id: string | undefined) {
+  const updateChecklist = useChecklistUpdate();
   
-  // Basic checklist info
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [viewMode, setViewMode] = useState<"flat" | "grouped">("grouped");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [isTemplate, setIsTemplate] = useState(false);
   const [status, setStatus] = useState<"active" | "inactive">("active");
   
-  // Questions and groups
   const [questions, setQuestions] = useState<ChecklistQuestion[]>([]);
   const [groups, setGroups] = useState<ChecklistGroup[]>([]);
-  
-  // UI state
-  const [viewMode, setViewMode] = useState<"flat" | "grouped">("grouped");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletedQuestionIds, setDeletedQuestionIds] = useState<string[]>([]);
   
-  // Add state for sub-checklist editing
-  const [subChecklistBeingEdited, setSubChecklistBeingEdited] = useState<SubChecklistBeingEdited | null>(null);
-  
-  // Initialize state when checklist data is available
+  // Initialize form with checklist data when it loads
   useEffect(() => {
-    if (initialChecklist) {
-      setTitle(initialChecklist.title || "");
-      setDescription(initialChecklist.description || "");
-      setCategory(initialChecklist.category || "");
-      setIsTemplate(initialChecklist.is_template || initialChecklist.isTemplate || false);
-      setStatus((initialChecklist.status === "active" || initialChecklist.status === "pendente") ? "active" : "inactive");
+    if (checklist) {
+      setTitle(checklist.title);
+      setDescription(checklist.description || "");
+      setCategory(checklist.category || "");
+      setIsTemplate(checklist.isTemplate);
+      setStatus(checklist.status);
       
-      // Handle questions from different possible sources in the API response
-      let checklistQuestions: ChecklistQuestion[] = [];
-      
-      if (initialChecklist.questions && Array.isArray(initialChecklist.questions)) {
-        checklistQuestions = initialChecklist.questions;
-      } else if (initialChecklist.items && Array.isArray(initialChecklist.items)) {
-        // Map from items format to questions format if needed
-        checklistQuestions = initialChecklist.items.map(item => ({
-          id: item.id,
-          text: item.pergunta || "",
-          type: item.tipo_resposta || "sim/não",
-          responseType: item.tipo_resposta || "sim/não",
-          isRequired: item.obrigatorio,
-          allowsPhoto: item.permite_foto,
-          allowsVideo: item.permite_video,
-          allowsAudio: item.permite_audio,
-          options: item.opcoes,
-          hint: item.hint,
-          weight: item.weight,
-          parentQuestionId: item.parent_item_id,
-          conditionValue: item.condition_value,
-          groupId: item.group_id || null,
-          order: item.ordem || 0
-        }));
-      }
-      
-      setQuestions(checklistQuestions);
-      
-      // Handle groups
-      let checklistGroups: ChecklistGroup[] = [];
-      
-      if (initialChecklist.groups && Array.isArray(initialChecklist.groups)) {
-        checklistGroups = initialChecklist.groups;
+      // Process questions and groups
+      if (checklist.questions && checklist.questions.length > 0) {
+        console.log(`Processing ${checklist.questions.length} questions for edit form`);
+        
+        // Initialize groups first if they exist
+        if (checklist.groups && checklist.groups.length > 0) {
+          console.log(`Processing ${checklist.groups.length} groups for edit form`);
+          setGroups(checklist.groups);
+          
+          // Ensure every question has a valid groupId
+          const questionsWithValidGroups = checklist.questions.map((q: ChecklistQuestion) => ({
+            ...q,
+            groupId: q.groupId || checklist.groups[0].id // Assign to first group if missing
+          }));
+          
+          setQuestions(questionsWithValidGroups);
+          setViewMode("grouped");
+        } else {
+          // If no groups defined, create a default group
+          const defaultGroup: ChecklistGroup = {
+            id: "default",
+            title: "Geral",
+            order: 0
+          };
+          
+          const questionsWithDefaultGroup = checklist.questions.map((q: ChecklistQuestion) => ({
+            ...q,
+            groupId: "default"
+          }));
+          
+          setGroups([defaultGroup]);
+          setQuestions(questionsWithDefaultGroup);
+          setViewMode("grouped");
+        }
       } else {
-        // If no groups, create a default group
-        const defaultGroup = {
-          id: `group-default-${Date.now()}`,
+        // If no questions, create a default empty question and group
+        const defaultGroup: ChecklistGroup = {
+          id: "default",
           title: "Geral",
-          description: "",
           order: 0
         };
-        checklistGroups = [defaultGroup];
+        
+        const defaultQuestion: ChecklistQuestion = {
+          id: `new-${Date.now()}`,
+          text: "",
+          responseType: "yes_no",
+          isRequired: true,
+          weight: 1,
+          allowsPhoto: false,
+          allowsVideo: false, 
+          allowsAudio: false,
+          order: 0,
+          groupId: "default"
+        };
+        
+        setGroups([defaultGroup]);
+        setQuestions([defaultQuestion]);
+        
+        console.warn("No questions found for this checklist, created a default one");
       }
-      
-      setGroups(checklistGroups);
     }
-  }, [initialChecklist]);
+  }, [checklist]);
   
-  // Computed properties
-  const questionsByGroup = useCallback(() => {
-    const result: Record<string, ChecklistQuestion[]> = {};
+  // Categorize questions by group for easier rendering
+  const questionsByGroup = useMemo(() => {
+    const result = new Map<string, ChecklistQuestion[]>();
     
+    // Initialize with empty arrays for all groups
     groups.forEach(group => {
-      result[group.id] = questions.filter(q => q.groupId === group.id);
+      result.set(group.id, []);
     });
     
-    // Add uncategorized questions to the first group
-    const uncategorized = questions.filter(q => !q.groupId);
-    if (uncategorized.length > 0 && groups.length > 0) {
-      result[groups[0].id] = [...(result[groups[0].id] || []), ...uncategorized];
-    }
+    // Add questions to their respective groups
+    questions.forEach(question => {
+      const groupId = question.groupId || groups[0]?.id || "default";
+      if (!result.has(groupId)) {
+        // If group doesn't exist in map yet, add it
+        result.set(groupId, []);
+      }
+      
+      // Add the question to its group
+      const groupQuestions = result.get(groupId) || [];
+      groupQuestions.push(question);
+      result.set(groupId, groupQuestions);
+    });
+    
+    // Sort questions by order within each group
+    result.forEach((groupQuestions, groupId) => {
+      result.set(
+        groupId,
+        groupQuestions.sort((a, b) => a.order - b.order)
+      );
+    });
     
     return result;
   }, [questions, groups]);
   
-  const nonEmptyGroups = useCallback(() => {
-    const qByGroup = questionsByGroup();
-    return groups.filter(group => qByGroup[group.id]?.length > 0);
+  // Filter groups that have at least one question
+  const nonEmptyGroups = useMemo(() => {
+    return groups.filter(group => {
+      const groupQuestions = questionsByGroup.get(group.id) || [];
+      return groupQuestions.length > 0;
+    }).sort((a, b) => a.order - b.order);
   }, [groups, questionsByGroup]);
   
-  // Group handlers
   const handleAddGroup = () => {
-    const newGroup = {
+    const newGroup: ChecklistGroup = {
       id: `group-${Date.now()}`,
-      title: `Grupo ${groups.length + 1}`,
-      description: "",
+      title: "Novo Grupo",
       order: groups.length
     };
     
     setGroups([...groups, newGroup]);
   };
   
-  const handleUpdateGroup = (id: string, updates: Partial<ChecklistGroup>) => {
-    setGroups(groups.map(g => g.id === id ? { ...g, ...updates } : g));
+  const handleUpdateGroup = (updatedGroup: ChecklistGroup) => {
+    const index = groups.findIndex(g => g.id === updatedGroup.id);
+    if (index === -1) return;
+    
+    const newGroups = [...groups];
+    newGroups[index] = updatedGroup;
+    setGroups(newGroups);
   };
   
-  const handleDeleteGroup = (id: string) => {
-    // Move questions to the first group or leave without group
-    const targetGroupId = groups.length > 1 ? groups[0].id : null;
+  const handleDeleteGroup = (groupId: string) => {
+    // Don't allow deleting the last group
+    if (groups.length <= 1) {
+      toast.warning("É necessário pelo menos um grupo.");
+      return;
+    }
     
-    setQuestions(questions.map(q => 
-      q.groupId === id ? { ...q, groupId: targetGroupId } : q
-    ));
+    // Find the default group to move questions to
+    const defaultGroup = groups[0].id !== groupId ? groups[0] : groups[1];
     
-    setGroups(groups.filter(g => g.id !== id));
+    // Move questions from deleted group to default group
+    const updatedQuestions = questions.map(q => 
+      q.groupId === groupId ? { ...q, groupId: defaultGroup.id } : q
+    );
+    
+    setQuestions(updatedQuestions);
+    setGroups(groups.filter(g => g.id !== groupId));
   };
   
-  // Question handlers
   const handleAddQuestion = (groupId: string) => {
     const newQuestion: ChecklistQuestion = {
-      id: `q-${Date.now()}`,
+      id: `new-${Date.now()}-${questions.length}`,
       text: "",
-      type: "sim/não",
-      responseType: "sim/não",
+      responseType: "yes_no",
       isRequired: true,
+      weight: 1,
       allowsPhoto: false,
       allowsVideo: false,
       allowsAudio: false,
-      options: [],
-      hint: "",
-      weight: 1,
-      parentQuestionId: null,
-      conditionValue: null,
-      groupId: groupId,
-      order: questions.length
+      order: questionsByGroup.get(groupId)?.length || 0,
+      groupId
     };
     
     setQuestions([...questions, newQuestion]);
   };
   
-  const handleUpdateQuestion = (id: string, updates: Partial<ChecklistQuestion>) => {
-    setQuestions(questions.map(q => q.id === id ? { ...q, ...updates } : q));
+  const handleUpdateQuestion = (updatedQuestion: ChecklistQuestion) => {
+    const index = questions.findIndex(q => q.id === updatedQuestion.id);
+    if (index === -1) return;
+    
+    const newQuestions = [...questions];
+    newQuestions[index] = updatedQuestion;
+    setQuestions(newQuestions);
   };
   
-  const handleDeleteQuestion = (id: string) => {
-    // Remove the question
-    setQuestions(questions.filter(q => q.id !== id));
-    
-    // Store the ID for deletion if it's an existing question from the database
-    if (id.indexOf('q-') !== 0) {
-      setDeletedQuestionIds([...deletedQuestionIds, id]);
-    }
-    
-    // Also remove any child questions
-    const childQuestions = questions.filter(q => q.parentQuestionId === id);
-    if (childQuestions.length > 0) {
-      const childIds = childQuestions.map(q => q.id);
-      setQuestions(questions.filter(q => !childIds.includes(q.id)));
-      
-      // Add existing child IDs to the deleted list
-      const existingChildIds = childIds.filter(id => id.indexOf('q-') !== 0);
-      if (existingChildIds.length > 0) {
-        setDeletedQuestionIds([...deletedQuestionIds, ...existingChildIds]);
-      }
-    }
-  };
-  
-  // Handle drag and drop reordering
-  const handleDragEnd = (result: any) => {
-    if (!result.destination) return;
-    
-    const { source, destination } = result;
-    
-    // Reordering within the same group
-    if (source.droppableId === destination.droppableId) {
-      const groupId = source.droppableId;
-      const groupQuestions = questionsByGroup()[groupId];
-      
-      const reordered = Array.from(groupQuestions);
-      const [removed] = reordered.splice(source.index, 1);
-      reordered.splice(destination.index, 0, removed);
-      
-      // Update all questions, replacing only those in the affected group
-      const updatedQuestions = questions.filter(q => q.groupId !== groupId);
-      setQuestions([...updatedQuestions, ...reordered]);
-    } 
-    // Moving between groups
-    else {
-      const sourceGroupId = source.droppableId;
-      const destGroupId = destination.droppableId;
-      
-      const sourceQuestions = questionsByGroup()[sourceGroupId];
-      const destQuestions = questionsByGroup()[destGroupId];
-      
-      const sourceReordered = Array.from(sourceQuestions);
-      const [removed] = sourceReordered.splice(source.index, 1);
-      
-      // Change the group ID of the moved question
-      const movedQuestion = { ...removed, groupId: destGroupId };
-      
-      const destReordered = Array.from(destQuestions);
-      destReordered.splice(destination.index, 0, movedQuestion);
-      
-      // Update all questions
-      const updatedQuestions = questions.filter(q => 
-        q.groupId !== sourceGroupId && q.groupId !== destGroupId
-      );
-      
-      setQuestions([
-        ...updatedQuestions,
-        ...sourceReordered,
-        ...destReordered
-      ]);
-    }
-  };
-  
-  // Handle sub-checklist editing
-  const handleEditSubChecklist = (questionId: string, subChecklistId: string) => {
-    setSubChecklistBeingEdited({
-      questionId,
-      subChecklistId
-    });
-  };
-  
-  // Save changes to the database
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!title.trim()) {
-      toast.error("O título é obrigatório");
+  const handleDeleteQuestion = (questionId: string) => {
+    // Don't allow deleting if it's the only question
+    if (questions.length <= 1) {
+      toast.warning("O checklist deve ter pelo menos uma pergunta.");
       return;
     }
     
+    // If question exists in database (not a new one), add to deleted list
+    if (!questionId.startsWith("new-")) {
+      setDeletedQuestionIds([...deletedQuestionIds, questionId]);
+    }
+    
+    // Remove from current questions
+    setQuestions(questions.filter(q => q.id !== questionId));
+  };
+  
+  const handleDragEnd = (result: any) => {
+    const { destination, source, type } = result;
+    
+    // If dropped outside a droppable area or same position
+    if (!destination || (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    )) {
+      return;
+    }
+    
+    // Reordering groups
+    if (type === "GROUP") {
+      const reorderedGroups = [...groups];
+      const [removed] = reorderedGroups.splice(source.index, 1);
+      reorderedGroups.splice(destination.index, 0, removed);
+      
+      // Update order property
+      const groupsWithUpdatedOrder = reorderedGroups.map((group, index) => ({
+        ...group,
+        order: index
+      }));
+      
+      setGroups(groupsWithUpdatedOrder);
+      return;
+    }
+    
+    // Reordering questions within same group
+    if (source.droppableId === destination.droppableId) {
+      const groupQuestions = questions.filter(q => q.groupId === source.droppableId);
+      const otherQuestions = questions.filter(q => q.groupId !== source.droppableId);
+      
+      const reorderedGroupQuestions = [...groupQuestions];
+      const [removed] = reorderedGroupQuestions.splice(source.index, 1);
+      reorderedGroupQuestions.splice(destination.index, 0, removed);
+      
+      // Update order property
+      const updatedGroupQuestions = reorderedGroupQuestions.map((question, index) => ({
+        ...question,
+        order: index
+      }));
+      
+      setQuestions([...otherQuestions, ...updatedGroupQuestions]);
+    } 
+    // Moving question between groups
+    else {
+      const sourceGroupQuestions = questions.filter(q => q.groupId === source.droppableId);
+      const destGroupQuestions = questions.filter(q => q.groupId === destination.droppableId);
+      const otherQuestions = questions.filter(
+        q => q.groupId !== source.droppableId && q.groupId !== destination.droppableId
+      );
+      
+      // Remove from source group
+      const questionToMove = sourceGroupQuestions[source.index];
+      const updatedSourceQuestions = [...sourceGroupQuestions];
+      updatedSourceQuestions.splice(source.index, 1);
+      
+      // Add to destination group
+      const updatedDestQuestions = [...destGroupQuestions];
+      updatedDestQuestions.splice(destination.index, 0, {
+        ...questionToMove,
+        groupId: destination.droppableId
+      });
+      
+      // Update order property for both groups
+      const finalSourceQuestions = updatedSourceQuestions.map((q, idx) => ({ ...q, order: idx }));
+      const finalDestQuestions = updatedDestQuestions.map((q, idx) => ({ ...q, order: idx }));
+      
+      setQuestions([...otherQuestions, ...finalSourceQuestions, ...finalDestQuestions]);
+    }
+  };
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (isSubmitting || !id) return;
     setIsSubmitting(true);
     
     try {
-      let checklistData: any;
-      
-      // Update existing checklist
-      if (checklistId) {
-        const { data, error } = await supabase
-          .from("checklists")
-          .update({
-            title,
-            description,
-            category,
-            is_template: isTemplate,
-            status,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', checklistId)
-          .select();
-        
-        if (error) throw error;
-        checklistData = data?.[0];
-        
-        // Update or create groups
-        for (const group of groups) {
-          if (group.id.startsWith('group-')) {
-            // Create new group
-            const { data: groupData, error: groupError } = await supabase
-              .from("checklist_groups")
-              .insert({
-                checklist_id: checklistId,
-                title: group.title,
-                description: group.description,
-                order: group.order
-              })
-              .select();
-            
-            if (groupError) throw groupError;
-            
-            // Update group ID for associated questions
-            setQuestions(questions.map(q => 
-              q.groupId === group.id ? { ...q, groupId: groupData?.[0]?.id } : q
-            ));
-          } else {
-            // Update existing group
-            const { error: groupError } = await supabase
-              .from("checklist_groups")
-              .update({
-                title: group.title,
-                description: group.description,
-                order: group.order
-              })
-              .eq('id', group.id);
-            
-            if (groupError) throw groupError;
-          }
-        }
-        
-        // Delete removed questions
-        if (deletedQuestionIds.length > 0) {
-          const { error: deleteError } = await supabase
-            .from("checklist_questions")
-            .delete()
-            .in('id', deletedQuestionIds);
-          
-          if (deleteError) throw deleteError;
-        }
-        
-        // Update or create questions
-        for (const question of questions) {
-          if (question.id.startsWith('q-')) {
-            // Create new question
-            const { error: questionError } = await supabase
-              .from("checklist_items")
-              .insert({
-                checklist_id: checklistId,
-                text: question.text,
-                response_type: question.type,
-                is_required: question.isRequired,
-                allows_photo: question.allowsPhoto,
-                allows_video: question.allowsVideo,
-                allows_audio: question.allowsAudio,
-                options: question.options,
-                hint: question.hint,
-                weight: question.weight,
-                parent_question_id: question.parentQuestionId,
-                condition_value: question.conditionValue,
-                group_id: question.groupId && !question.groupId.startsWith('group-') ? question.groupId : null,
-                sub_checklist_id: question.subChecklistId,
-                order: question.order || 0
-              });
-            
-            if (questionError) throw questionError;
-          } else {
-            // Update existing question
-            const { error: questionError } = await supabase
-              .from("checklist_items")
-              .update({
-                text: question.text,
-                response_type: question.type,
-                is_required: question.isRequired,
-                allows_photo: question.allowsPhoto,
-                allows_video: question.allowsVideo,
-                allows_audio: question.allowsAudio,
-                options: question.options,
-                hint: question.hint,
-                weight: question.weight,
-                parent_question_id: question.parentQuestionId,
-                condition_value: question.conditionValue,
-                group_id: question.groupId && !question.groupId.startsWith('group-') ? question.groupId : null,
-                sub_checklist_id: question.subChecklistId,
-                order: question.order || 0
-              })
-              .eq('id', question.id);
-            
-            if (questionError) throw questionError;
-          }
-        }
-      } 
-      // Create new checklist
-      else {
-        const { data, error } = await supabase
-          .from("checklists")
-          .insert({
-            title,
-            description,
-            category,
-            is_template: isTemplate,
-            status
-          })
-          .select();
-        
-        if (error) throw error;
-        checklistData = data?.[0];
-        
-        // Create groups
-        for (const group of groups) {
-          const { data: groupData, error: groupError } = await supabase
-            .from("checklist_groups")
-            .insert({
-              checklist_id: checklistData.id,
-              title: group.title,
-              description: group.description,
-              order: group.order
-            })
-            .select();
-          
-          if (groupError) throw groupError;
-          
-          // Update group ID for associated questions
-          setQuestions(questions.map(q => 
-            q.groupId === group.id ? { ...q, groupId: groupData?.[0]?.id } : q
-          ));
-        }
-        
-        // Create questions
-        for (const question of questions) {
-          const { error: questionError } = await supabase
-            .from("checklist_items")
-            .insert({
-              checklist_id: checklistData.id,
-              text: question.text,
-              response_type: question.type,
-              is_required: question.isRequired,
-              allows_photo: question.allowsPhoto,
-              allows_video: question.allowsVideo,
-              allows_audio: question.allowsAudio,
-              options: question.options,
-              hint: question.hint,
-              weight: question.weight,
-              parent_question_id: question.parentQuestionId,
-              condition_value: question.conditionValue,
-              group_id: question.groupId && !question.groupId.startsWith('group-') ? question.groupId : null,
-              sub_checklist_id: question.subChecklistId,
-              order: question.order || 0
-            });
-          
-          if (questionError) throw questionError;
-        }
+      // Validate form
+      if (!title.trim()) {
+        toast.error("O título do checklist é obrigatório.");
+        setIsSubmitting(false);
+        return;
       }
       
-      toast.success("Checklist salvo com sucesso!");
-      navigate("/new-checklists");
-    } catch (error: any) {
-      console.error("Error saving checklist:", error);
-      toast.error(`Erro ao salvar checklist: ${error.message}`);
+      // Filter out empty questions
+      const validQuestions = questions.filter(q => q.text.trim());
+      if (validQuestions.length === 0) {
+        toast.error("Adicione pelo menos uma pergunta válida.");
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Prepare updated checklist data
+      const updatedChecklist = {
+        id,
+        title,
+        description,
+        category,
+        isTemplate,
+        status
+      };
+      
+      // Update checklist
+      await updateChecklist.mutateAsync({
+        checklist: updatedChecklist,
+        questions: validQuestions,
+        groups,
+        deletedQuestionIds
+      });
+      
+      // Navigate back to the checklist list
+      return true;
+    } catch (error) {
+      console.error("Error updating checklist:", error);
+      toast.error("Erro ao atualizar checklist. Tente novamente.");
+      return false;
     } finally {
       setIsSubmitting(false);
     }
@@ -455,8 +346,8 @@ export function useChecklistEdit(initialChecklist: Checklist | null, checklistId
     groups,
     viewMode,
     deletedQuestionIds,
-    questionsByGroup: questionsByGroup(),
-    nonEmptyGroups: nonEmptyGroups(),
+    questionsByGroup,
+    nonEmptyGroups,
     isSubmitting,
     setTitle,
     setDescription,
@@ -473,10 +364,6 @@ export function useChecklistEdit(initialChecklist: Checklist | null, checklistId
     handleUpdateQuestion,
     handleDeleteQuestion,
     handleDragEnd,
-    handleSubmit,
-    // Sub-checklist editing
-    handleEditSubChecklist,
-    subChecklistBeingEdited,
-    setSubChecklistBeingEdited
+    handleSubmit
   };
 }
