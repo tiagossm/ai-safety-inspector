@@ -61,7 +61,7 @@ export function ChecklistsList({
         <ChecklistCard
           key={checklist.id}
           checklist={checklist}
-          onSelect={() => onSelectChecklist(checklist)}
+          onOpen={() => onSelectChecklist(checklist)}
           onEdit={() => onEditChecklist(checklist.id)}
           onDelete={() => onDeleteChecklist(checklist.id)}
           onDuplicate={() => onDuplicateChecklist(checklist.id)}

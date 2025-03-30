@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import { ChecklistBasicInfo } from "@/components/new-checklist/edit/ChecklistBas
 import { ChecklistQuestions } from "@/components/new-checklist/edit/ChecklistQuestions";
 import { ChecklistEditActions } from "@/components/new-checklist/edit/ChecklistEditActions";
 import { LoadingState } from "@/components/new-checklist/edit/LoadingState";
+import { SubChecklistEditor } from "@/components/new-checklist/edit/SubChecklistEditor";
 
 export default function NewChecklistEdit() {
   const navigate = useNavigate();

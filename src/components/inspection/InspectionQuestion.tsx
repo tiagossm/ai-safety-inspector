@@ -97,7 +97,7 @@ export function InspectionQuestion({
               question={question}
               response={response}
               onResponseChange={handleResponseValue}
-              onAddMedia={handleMediaUploaded}
+              onAddMedia={() => setMediaDialogOpen(true)}
             />
           </div>
           
