@@ -14,10 +14,19 @@ export function FloatingNavigation({ threshold = 300 }: FloatingNavigationProps)
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
-      setShowNav(scrollY > threshold);
+      const pageHeight = document.documentElement.scrollHeight;
+      const viewportHeight = window.innerHeight;
+      
+      // Only show if we can actually scroll (page is taller than viewport)
+      // and we've scrolled past the threshold
+      const canScroll = pageHeight > viewportHeight + 100; // Add some margin
+      setShowNav(canScroll && scrollY > threshold);
     };
     
     window.addEventListener('scroll', handleScroll);
+    // Check initial state
+    handleScroll();
+    
     return () => window.removeEventListener('scroll', handleScroll);
   }, [threshold]);
   

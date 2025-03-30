@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { 
   Camera, Mic, Video, Upload, 
-  File, X, MoreHorizontal 
+  File, X, MoreHorizontal, Image
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -11,6 +11,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 interface MediaCaptureMenuProps {
   onAddMedia: () => void;
@@ -49,6 +51,30 @@ export function MediaCaptureMenu({ onAddMedia, mediaUrls }: MediaCaptureMenuProp
   const mediaCounts = getMediaCounts();
   const hasMedia = mediaUrls && mediaUrls.length > 0;
   
+  const handleCapturePhoto = () => {
+    setIsOpen(false);
+    onAddMedia();
+    toast.info("Captura de foto iniciada");
+  };
+  
+  const handleRecordVideo = () => {
+    setIsOpen(false);
+    onAddMedia();
+    toast.info("Gravação de vídeo (15s) iniciada");
+  };
+  
+  const handleRecordAudio = () => {
+    setIsOpen(false);
+    onAddMedia();
+    toast.info("Gravação de áudio iniciada");
+  };
+  
+  const handleUploadFile = () => {
+    setIsOpen(false);
+    onAddMedia();
+    toast.info("Upload de arquivo iniciado");
+  };
+  
   return (
     <div className="mt-2">
       <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
@@ -68,19 +94,19 @@ export function MediaCaptureMenu({ onAddMedia, mediaUrls }: MediaCaptureMenuProp
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
-          <DropdownMenuItem onClick={onAddMedia} className="cursor-pointer">
+          <DropdownMenuItem onClick={handleCapturePhoto} className="cursor-pointer">
             <Camera className="h-4 w-4 mr-2" />
             <span>Capturar foto</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={onAddMedia} className="cursor-pointer">
+          <DropdownMenuItem onClick={handleRecordVideo} className="cursor-pointer">
             <Video className="h-4 w-4 mr-2" />
             <span>Gravar vídeo (15s)</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={onAddMedia} className="cursor-pointer">
+          <DropdownMenuItem onClick={handleRecordAudio} className="cursor-pointer">
             <Mic className="h-4 w-4 mr-2" />
             <span>Gravar áudio</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={onAddMedia} className="cursor-pointer">
+          <DropdownMenuItem onClick={handleUploadFile} className="cursor-pointer">
             <Upload className="h-4 w-4 mr-2" />
             <span>Enviar arquivo</span>
           </DropdownMenuItem>
@@ -118,6 +144,3 @@ export function MediaCaptureMenu({ onAddMedia, mediaUrls }: MediaCaptureMenuProp
     </div>
   );
 }
-
-// Add the missing Badge component
-import { Badge } from "@/components/ui/badge";

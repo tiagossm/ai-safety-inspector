@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { ChecklistEditor } from "@/components/checklists/ChecklistEditor";
 import { useNavigate, useParams } from "react-router-dom";
@@ -7,6 +6,7 @@ import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 
 export default function ChecklistEditorPage() {
   const [loading, setLoading] = useState(true);
@@ -18,9 +18,7 @@ export default function ChecklistEditorPage() {
   const checklistQuery = useChecklistById(isEditorMode ? "" : id || "");
 
   useEffect(() => {
-    // Special case for the editor route
     if (isEditorMode) {
-      // Get the editor data from sessionStorage
       const storedData = sessionStorage.getItem('checklistEditorData');
       
       if (!storedData) {
@@ -41,22 +39,17 @@ export default function ChecklistEditorPage() {
           return;
         }
         
-        // Process the data to create groups if they exist
         let questionGroups: any[] = [];
         
-        // If groups came from AI, use them
         if (parsedData.groups && Array.isArray(parsedData.groups)) {
           questionGroups = parsedData.groups;
         } 
-        // Otherwise, if we have questions with groupIds, organize them into groups
         else if (parsedData.questions && Array.isArray(parsedData.questions)) {
           console.log(`Total questions from session storage: ${parsedData.questions.length}`);
           
-          // Check if questions have groupIds
           const hasGroupIds = parsedData.questions.some((q: any) => q.groupId);
           
           if (hasGroupIds) {
-            // Group the questions by groupId
             const groupMap = new Map<string, any[]>();
             
             parsedData.questions.forEach((question: any) => {
@@ -67,14 +60,12 @@ export default function ChecklistEditorPage() {
               groupMap.get(groupId)!.push(question);
             });
             
-            // Convert the map to an array of group objects
             questionGroups = Array.from(groupMap.entries()).map(([groupId, questions], index) => ({
               id: groupId === "default" ? `group-default-${Date.now()}` : groupId,
               title: groupId === "default" ? "Geral" : `Grupo ${index + 1}`,
               questions
             }));
           } else {
-            // If no groupIds, create a default group with all questions
             questionGroups = [{
               id: `group-default-${Date.now()}`,
               title: "Geral",
@@ -83,7 +74,6 @@ export default function ChecklistEditorPage() {
           }
         }
         
-        // Validate and normalize questions to ensure they have all required fields
         if (questionGroups.length > 0) {
           questionGroups = questionGroups.map(group => ({
             ...group,
@@ -105,7 +95,6 @@ export default function ChecklistEditorPage() {
           }));
         }
         
-        // Update the editorData with groups
         setEditorData({
           ...parsedData,
           groups: questionGroups
@@ -118,7 +107,6 @@ export default function ChecklistEditorPage() {
         setLoading(false);
       }
     } else {
-      // For editing existing checklists
       if (checklistQuery.isLoading) {
         setLoading(true);
         return;
@@ -141,20 +129,17 @@ export default function ChecklistEditorPage() {
         const checklist = checklistQuery.data;
         console.log(`Checklist has ${checklist.questions?.length || 0} questions`);
         
-        // Organize questions into groups if they exist
         let groups = [];
         
         if (checklist.groups && checklist.groups.length > 0) {
-          // When we have defined groups, map questions to their groups
           groups = checklist.groups.map(group => {
-            // Filter questions that belong to this group
             const groupQuestions = checklist.questions.filter(q => q.groupId === group.id);
             console.log(`Group ${group.id} (${group.title}) has ${groupQuestions.length} questions`);
             
             return {
               ...group,
               questions: groupQuestions.map(q => ({
-                id: q.id, // Keep original ID
+                id: q.id,
                 text: q.text,
                 type: q.responseType,
                 required: q.isRequired,
@@ -171,13 +156,12 @@ export default function ChecklistEditorPage() {
             };
           });
         } else {
-          // If no groups defined, create a default group with all questions
           const defaultGroupId = `group-default-${Date.now()}`;
           groups = [{
             id: defaultGroupId,
             title: "Geral",
             questions: checklist.questions.map(q => ({
-              id: q.id, // Keep original ID
+              id: q.id,
               text: q.text,
               type: q.responseType,
               required: q.isRequired,
@@ -194,9 +178,8 @@ export default function ChecklistEditorPage() {
           }];
         }
         
-        // Convert questions to the editor format (for flat view)
         const questions = checklist.questions.map(q => ({
-          id: q.id, // Keep original ID
+          id: q.id,
           text: q.text,
           type: q.responseType,
           required: q.isRequired,
@@ -226,20 +209,14 @@ export default function ChecklistEditorPage() {
   }, [navigate, id, checklistQuery.isLoading, checklistQuery.error, checklistQuery.data, isEditorMode]);
 
   const handleSave = (checklistId: string) => {
-    // Clear the stored data
     console.log("Checklist saved successfully with ID:", checklistId);
     sessionStorage.removeItem('checklistEditorData');
-    
-    // Redirect to the checklist details
     navigate(`/checklists/${checklistId}`);
   };
 
   const handleCancel = () => {
-    // Clear the stored data
     console.log("Checklist editing cancelled");
     sessionStorage.removeItem('checklistEditorData');
-    
-    // Redirect to the checklists page
     navigate('/checklists');
   };
 
@@ -302,13 +279,16 @@ export default function ChecklistEditorPage() {
   }
 
   return (
-    <ChecklistEditor
-      initialChecklist={editorData.checklistData}
-      initialQuestions={editorData.questions || []}
-      initialGroups={editorData.groups || []}
-      mode={editorData.mode || "create"}
-      onSave={handleSave}
-      onCancel={handleCancel}
-    />
+    <>
+      <ChecklistEditor
+        initialChecklist={editorData.checklistData}
+        initialQuestions={editorData.questions || []}
+        initialGroups={editorData.groups || []}
+        mode={editorData.mode || "create"}
+        onSave={handleSave}
+        onCancel={handleCancel}
+      />
+      <FloatingNavigation threshold={400} />
+    </>
   );
 }

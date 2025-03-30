@@ -19,6 +19,7 @@ import { format } from "date-fns";
 import { ChecklistResponseItem } from "@/components/checklists/ChecklistResponseItem";
 import { ptBR } from "date-fns/locale";
 import { ChecklistActions } from "@/components/checklists/ChecklistActions";
+import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 
 export default function ChecklistDetail() {
   const { id } = useParams<{ id: string }>();
@@ -36,7 +37,6 @@ export default function ChecklistDetail() {
         setLoading(true);
         if (!id) return;
 
-        // Fetch checklist details
         const { data: checklistData, error: checklistError } = await supabase
           .from('checklists')
           .select('*')
@@ -46,7 +46,6 @@ export default function ChecklistDetail() {
         if (checklistError) throw checklistError;
         setChecklist(checklistData);
 
-        // Fetch checklist items
         const { data: itemsData, error: itemsError } = await supabase
           .from('checklist_itens')
           .select('*')
@@ -55,7 +54,6 @@ export default function ChecklistDetail() {
 
         if (itemsError) throw itemsError;
         
-        // Transform the data to match our ChecklistItem type
         const transformedItems: ChecklistItem[] = itemsData.map(item => ({
           id: item.id,
           checklist_id: item.checklist_id,
@@ -78,7 +76,6 @@ export default function ChecklistDetail() {
         
         setItems(transformedItems);
 
-        // Fetch company if exists
         if (checklistData.company_id) {
           const { data: companyData } = await supabase
             .from('companies')
@@ -89,7 +86,6 @@ export default function ChecklistDetail() {
           setCompany(companyData);
         }
 
-        // Fetch responsible if exists
         if (checklistData.responsible_id) {
           const { data: userData } = await supabase
             .from('users')
@@ -121,7 +117,6 @@ export default function ChecklistDetail() {
   const handleSaveResponses = async () => {
     if (!id) return;
     
-    // Check if all required questions are answered
     const unansweredRequired = items.filter(item => 
       item.obrigatorio && (item.resposta === null || item.resposta === undefined || item.resposta.toString().trim() === '')
     );
@@ -134,16 +129,11 @@ export default function ChecklistDetail() {
     try {
       setSubmitting(true);
       
-      // Create an array to store all the promises
       const responsePromises = [];
       
-      // For each item, update with the response
       for (const item of items) {
         console.log(`Saving response for item ${item.id}:`, item.resposta);
         
-        // This is a placeholder for the actual update logic
-        // In a real-world solution, you would use a separate table for responses
-        // For now, we'll just store the response value in a comment
         try {
           const { data: userData } = await supabase.auth.getUser();
           
@@ -163,31 +153,24 @@ export default function ChecklistDetail() {
         }
       }
       
-      // Wait for all response promises to resolve
       await Promise.all(responsePromises);
       
-      // Update checklist status to completed using the correct enum value for 'concluido'
       try {
         const { error: updateError } = await supabase
           .from('checklists')
           .update({ 
-            status: 'concluido'  // This must be exactly one of the permitted values
+            status: 'concluido' 
           })
           .eq('id', id);
           
         if (updateError) {
           console.error("Error updating checklist status:", updateError);
-          
-          // If the first approach fails, let's check which status values are actually permitted
-          // We know from the error that there's a check constraint for values in the status column
-          // Let's try with a different approach - no status update at all to not block the user
           console.log("Skipping status update due to constraint error");
         }
       } catch (error) {
         console.error("Error updating checklist:", error);
       }
       
-      // Add history entry
       try {
         const { data: userData } = await supabase.auth.getUser();
         if (userData.user) {
@@ -228,7 +211,6 @@ export default function ChecklistDetail() {
     );
   }
 
-  // Calcular o progresso
   const totalItems = items.length;
   const answeredItems = items.filter(item => item.resposta !== null && item.resposta !== undefined).length;
   const progress = totalItems > 0 ? (answeredItems / totalItems) * 100 : 0;
@@ -244,175 +226,177 @@ export default function ChecklistDetail() {
   const scorePercentage = maxScore > 0 ? (score / maxScore) * 100 : 0;
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={() => navigate('/checklists')}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-2xl font-bold">{checklist.title}</h1>
-        </div>
-        <ChecklistActions checklist={checklist} />
-      </div>
-      
-      <Card className={`bg-gradient-to-r ${progress >= 70 ? 'from-green-500/20 to-green-400/10' : progress >= 30 ? 'from-amber-500/20 to-amber-400/10' : 'from-red-500/20 to-red-400/10'}`}>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xl flex items-center gap-2">
-            <ClipboardCheck className="h-5 w-5" />
-            {checklist.description || "Inspeção"}
-          </CardTitle>
-          <CardDescription>
-            Criado em {format(new Date(checklist.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col md:flex-row justify-between gap-4">
-            <div className="space-y-1 flex-1">
-              <div className="flex justify-between text-sm text-muted-foreground mb-1">
-                <span>Progresso</span>
-                <span>{answeredItems} de {totalItems} ({Math.round(progress)}%)</span>
-              </div>
-              <Progress value={progress} className="h-2" />
-            </div>
-            
-            <div className="space-y-1 flex-1">
-              <div className="flex justify-between text-sm text-muted-foreground mb-1">
-                <span>Pontuação</span>
-                <span>{score} de {maxScore} ({Math.round(scorePercentage)}%)</span>
-              </div>
-              <Progress value={scorePercentage} className="h-2" />
-            </div>
+    <>
+      <div className="container mx-auto py-6 space-y-6">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => navigate('/checklists')}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-2xl font-bold">{checklist.title}</h1>
           </div>
-        </CardContent>
-      </Card>
-      
-      <div className="grid md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 space-y-6">
-          <div className="space-y-4">
-            {items.map((item, index) => (
-              <ChecklistResponseItem
-                key={item.id}
-                item={item}
-                onResponseChange={handleResponseChange}
-                index={index}
-              />
-            ))}
-          </div>
-          
-          <Card>
-            <CardFooter className="p-4">
-              <Button 
-                onClick={handleSaveResponses} 
-                disabled={submitting}
-                className="w-full"
-              >
-                {submitting ? 'Salvando...' : 'Salvar Respostas'}
-              </Button>
-            </CardFooter>
-          </Card>
+          <ChecklistActions checklist={checklist} />
         </div>
         
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Informações</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Status</h3>
-                <p className="mt-1 flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${checklist.status === 'concluido' ? 'bg-green-500' : 'bg-amber-500'}`}></span>
-                  {checklist.status === 'concluido' ? 'Concluído' : 'Pendente'}
-                </p>
+        <Card className={`bg-gradient-to-r ${progress >= 70 ? 'from-green-500/20 to-green-400/10' : progress >= 30 ? 'from-amber-500/20 to-amber-400/10' : 'from-red-500/20 to-red-400/10'}`}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xl flex items-center gap-2">
+              <ClipboardCheck className="h-5 w-5" />
+              {checklist.description || "Inspeção"}
+            </CardTitle>
+            <CardDescription>
+              Criado em {format(new Date(checklist.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col md:flex-row justify-between gap-4">
+              <div className="space-y-1 flex-1">
+                <div className="flex justify-between text-sm text-muted-foreground mb-1">
+                  <span>Progresso</span>
+                  <span>{answeredItems} de {totalItems} ({Math.round(progress)}%)</span>
+                </div>
+                <Progress value={progress} className="h-2" />
               </div>
               
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Categoria</h3>
-                <p className="mt-1">{checklist.category || 'Geral'}</p>
+              <div className="space-y-1 flex-1">
+                <div className="flex justify-between text-sm text-muted-foreground mb-1">
+                  <span>Pontuação</span>
+                  <span>{score} de {maxScore} ({Math.round(scorePercentage)}%)</span>
+                </div>
+                <Progress value={scorePercentage} className="h-2" />
               </div>
-              
-              {checklist.due_date && (
+            </div>
+          </CardContent>
+        </Card>
+        
+        <div className="grid md:grid-cols-3 gap-6">
+          <div className="md:col-span-2 space-y-6">
+            <div className="space-y-4">
+              {items.map((item, index) => (
+                <ChecklistResponseItem
+                  key={item.id}
+                  item={item}
+                  onResponseChange={handleResponseChange}
+                  index={index}
+                />
+              ))}
+            </div>
+            
+            <Card>
+              <CardFooter className="p-4">
+                <Button 
+                  onClick={handleSaveResponses} 
+                  disabled={submitting}
+                  className="w-full"
+                >
+                  {submitting ? 'Salvando...' : 'Salvar Respostas'}
+                </Button>
+              </CardFooter>
+            </Card>
+          </div>
+          
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Informações</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground">Data de Vencimento</h3>
-                  <p className="mt-1 flex items-center gap-1">
-                    <Calendar className="h-4 w-4" />
-                    {format(new Date(checklist.due_date), 'dd/MM/yyyy')}
+                  <h3 className="text-sm font-medium text-muted-foreground">Status</h3>
+                  <p className="mt-1 flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full ${checklist.status === 'concluido' ? 'bg-green-500' : 'bg-amber-500'}`}></span>
+                    {checklist.status === 'concluido' ? 'Concluído' : 'Pendente'}
                   </p>
                 </div>
-              )}
-              
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Criado em</h3>
-                <p className="mt-1 flex items-center gap-1">
-                  <Clock className="h-4 w-4" />
-                  {format(new Date(checklist.created_at), 'dd/MM/yyyy')}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-          
-          {company && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Empresa</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="font-medium">{company.fantasy_name || 'Empresa sem nome'}</p>
-                {company.cnpj && (
-                  <p className="text-sm text-muted-foreground mt-1">CNPJ: {company.cnpj}</p>
+                
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Categoria</h3>
+                  <p className="mt-1">{checklist.category || 'Geral'}</p>
+                </div>
+                
+                {checklist.due_date && (
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground">Data de Vencimento</h3>
+                    <p className="mt-1 flex items-center gap-1">
+                      <Calendar className="h-4 w-4" />
+                      {format(new Date(checklist.due_date), 'dd/MM/yyyy')}
+                    </p>
+                  </div>
                 )}
-                {company.address && (
-                  <p className="text-sm text-muted-foreground mt-1">{company.address}</p>
-                )}
+                
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground">Criado em</h3>
+                  <p className="mt-1 flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    {format(new Date(checklist.created_at), 'dd/MM/yyyy')}
+                  </p>
+                </div>
               </CardContent>
             </Card>
-          )}
-          
-          {responsible && (
+            
+            {company && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Empresa</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="font-medium">{company.fantasy_name || 'Empresa sem nome'}</p>
+                  {company.cnpj && (
+                    <p className="text-sm text-muted-foreground mt-1">CNPJ: {company.cnpj}</p>
+                  )}
+                  {company.address && (
+                    <p className="text-sm text-muted-foreground mt-1">{company.address}</p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            
+            {responsible && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Responsável</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="font-medium">{responsible.name}</p>
+                  {responsible.email && (
+                    <p className="text-sm text-muted-foreground mt-1">{responsible.email}</p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Responsável</CardTitle>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Info className="h-4 w-4" />
+                  <span>Dicas</span>
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="font-medium">{responsible.name}</p>
-                {responsible.email && (
-                  <p className="text-sm text-muted-foreground mt-1">{responsible.email}</p>
-                )}
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-red-500 mt-0.5" />
+                    <span>Itens obrigatórios estão marcados com <span className="text-red-500">*</span></span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Info className="h-4 w-4 text-blue-500 mt-0.5" />
+                    <span>Clique no ícone de informação para ver instruções adicionais</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Clock className="h-4 w-4 text-amber-500 mt-0.5" />
+                    <span>Certifique-se de completar o checklist antes da data de vencimento</span>
+                  </li>
+                </ul>
               </CardContent>
             </Card>
-          )}
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Info className="h-4 w-4" />
-                <span>Dicas</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-2 text-sm">
-                <li className="flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 text-red-500 mt-0.5" />
-                  <span>Itens obrigatórios estão marcados com <span className="text-red-500">*</span></span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Info className="h-4 w-4 text-blue-500 mt-0.5" />
-                  <span>Clique no ícone de informação para ver instruções adicionais</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Clock className="h-4 w-4 text-amber-500 mt-0.5" />
-                  <span>Certifique-se de completar o checklist antes da data de vencimento</span>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
+          </div>
         </div>
       </div>
-    </div>
+      <FloatingNavigation threshold={400} />
+    </>
   );
 }
-

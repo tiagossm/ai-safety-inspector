@@ -1,64 +1,51 @@
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Toaster } from "@/components/ui/toaster";
+import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 
-import { Routes, Route, Navigate } from "react-router-dom";
-import { DashboardLayout } from "@/components/layouts/DashboardLayout";
-import { AuthProvider } from "@/components/AuthProvider";
-import { RequireAuth } from "@/components/RequireAuth";
-import Dashboard from "@/pages/Dashboard";
-import Auth from "@/pages/Auth";
-import Companies from "@/pages/Companies";
-import CompanyDetail from "@/pages/CompanyDetail";
-import Employees from "@/pages/Employees";
-import Settings from "@/pages/Settings";
-import { Toaster } from "@/components/ui/sonner";
-import { ThemeProvider } from "@/components/theme-provider";
-import NotFound from "@/pages/NotFound";
-import NewChecklists from "@/pages/NewChecklists";
-import NewChecklistCreate from "@/pages/NewChecklistCreate";
-import NewChecklistEdit from "@/pages/NewChecklistEdit";
-import NewChecklistDetails from "@/pages/NewChecklistDetails";
-import NewInspectionPage from "@/pages/NewInspectionPage";
-import InspectionExecutionPage from "@/pages/InspectionExecutionPage";
-import Inspections from "@/pages/Inspections";
-import { Users } from "@/pages/Users";
+// Import your page components
+import InspectionExecutionPage from "./pages/InspectionExecutionPage";
+import ChecklistEditorPage from "./pages/ChecklistEditorPage";
+import ChecklistDetails from "./pages/ChecklistDetails";
+import ChecklistDetail from "./pages/ChecklistDetail";
+import ChecklistsPage from "./pages/ChecklistsPage";
+import NewInspectionPage from "./pages/NewInspectionPage";
+import InspectionsPage from "./pages/InspectionsPage";
+import CompaniesPage from "./pages/CompaniesPage";
+import CompanyDetailsPage from "./pages/CompanyDetailsPage";
+import NewCompanyPage from "./pages/NewCompanyPage";
+import ResponsiblePage from "./pages/ResponsiblePage";
+import NewResponsiblePage from "./pages/NewResponsiblePage";
+import ResponsibleDetailsPage from "./pages/ResponsibleDetailsPage";
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-      <AuthProvider>
+    <>
+      <Router>
         <Routes>
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/" element={<RequireAuth><DashboardLayout /></RequireAuth>}>
-            <Route index element={<Dashboard />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="companies" element={<Companies />} />
-            <Route path="companies/:id" element={<CompanyDetail />} />
-            <Route path="employees" element={<Employees />} />
-            <Route path="users" element={<Users />} />
-            
-            {/* Checklist routes */}
-            <Route path="new-checklists" element={<NewChecklists />} />
-            <Route path="new-checklists/create" element={<NewChecklistCreate />} />
-            <Route path="new-checklists/edit/:id" element={<NewChecklistEdit />} />
-            <Route path="new-checklists/:id" element={<NewChecklistDetails />} />
-            
-            {/* Inspection routes */}
-            <Route path="inspections" element={<Inspections />} />
-            <Route path="inspections/new/:id" element={<NewInspectionPage />} />
-            <Route path="inspections/:id" element={<InspectionExecutionPage />} />
-            <Route path="inspections/:id/view" element={<InspectionExecutionPage />} />
-            
-            {/* Redirect old routes to new ones */}
-            <Route path="checklists" element={<Navigate to="/new-checklists" replace />} />
-            <Route path="checklists/create" element={<Navigate to="/new-checklists/create" replace />} />
-            <Route path="checklists/:id" element={<Navigate to="/new-checklists/:id" replace />} />
-            
-            <Route path="settings" element={<Settings />} />
-            <Route path="*" element={<NotFound />} />
-          </Route>
+          <Route path="/" element={<InspectionsPage />} />
+          <Route path="/inspections" element={<InspectionsPage />} />
+          <Route path="/inspections/new" element={<NewInspectionPage />} />
+          <Route path="/inspections/:id" element={<InspectionExecutionPage />} />
+          
+          <Route path="/checklists" element={<ChecklistsPage />} />
+          <Route path="/checklists/new" element={<ChecklistEditorPage />} />
+          <Route path="/checklists/:id/edit" element={<ChecklistEditorPage />} />
+          <Route path="/checklists/editor" element={<ChecklistEditorPage />} />
+          <Route path="/checklists/:id" element={<ChecklistDetails />} />
+          <Route path="/checklist/:id" element={<ChecklistDetail />} />
+          
+          <Route path="/companies" element={<CompaniesPage />} />
+          <Route path="/companies/new" element={<NewCompanyPage />} />
+          <Route path="/companies/:id" element={<CompanyDetailsPage />} />
+          
+          <Route path="/responsible" element={<ResponsiblePage />} />
+          <Route path="/responsible/new" element={<NewResponsiblePage />} />
+          <Route path="/responsible/:id" element={<ResponsibleDetailsPage />} />
         </Routes>
-        <Toaster />
-      </AuthProvider>
-    </ThemeProvider>
+        <FloatingNavigation threshold={400} />
+      </Router>
+      <Toaster />
+    </>
   );
 }
 
