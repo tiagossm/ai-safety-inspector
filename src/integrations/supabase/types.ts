@@ -436,7 +436,9 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          is_sub_checklist: boolean | null
           is_template: boolean | null
+          parent_question_id: string | null
           responsible_id: string | null
           status: string | null
           status_checklist: string
@@ -452,7 +454,9 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          is_sub_checklist?: boolean | null
           is_template?: boolean | null
+          parent_question_id?: string | null
           responsible_id?: string | null
           status?: string | null
           status_checklist?: string
@@ -468,7 +472,9 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          is_sub_checklist?: boolean | null
           is_template?: boolean | null
+          parent_question_id?: string | null
           responsible_id?: string | null
           status?: string | null
           status_checklist?: string
@@ -776,6 +782,7 @@ export type Database = {
       }
       inspection_responses: {
         Row: {
+          action_plan: string | null
           answer: string
           completed_at: string | null
           created_at: string | null
@@ -784,9 +791,11 @@ export type Database = {
           media_urls: string[] | null
           notes: string | null
           question_id: string
+          sub_checklist_responses: Json | null
           updated_at: string | null
         }
         Insert: {
+          action_plan?: string | null
           answer: string
           completed_at?: string | null
           created_at?: string | null
@@ -795,9 +804,11 @@ export type Database = {
           media_urls?: string[] | null
           notes?: string | null
           question_id: string
+          sub_checklist_responses?: Json | null
           updated_at?: string | null
         }
         Update: {
+          action_plan?: string | null
           answer?: string
           completed_at?: string | null
           created_at?: string | null
@@ -806,6 +817,7 @@ export type Database = {
           media_urls?: string[] | null
           notes?: string | null
           question_id?: string
+          sub_checklist_responses?: Json | null
           updated_at?: string | null
         }
         Relationships: [

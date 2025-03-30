@@ -68,7 +68,7 @@ serve(async (req) => {
     if (formattedCnae) {
       console.log('Consultando grau de risco para CNAE:', formattedCnae);
       
-      // Tenta buscar com várias formatações do CNAE para aumentar chances de encontrar
+      // Preparar todas as possíveis variações do CNAE para aumentar chances de encontrar
       const cnaeLookups = [
         formattedCnae,                           // XXXX-X (formato padrão)
         formattedCnae.replace('-', ''),          // XXXXX (sem hífen)
@@ -77,6 +77,7 @@ serve(async (req) => {
       ];
       
       console.log('Tentando buscar com as seguintes variações de CNAE:', cnaeLookups);
+      let foundMatch = false;
       
       // Tenta cada formato em sequência até encontrar
       for (const cnaeFormat of cnaeLookups) {
@@ -98,17 +99,43 @@ serve(async (req) => {
         if (riskData) {
           riskLevel = riskData.grau_risco.toString();
           console.log(`Grau de risco encontrado para ${cnaeFormat}:`, riskLevel);
+          foundMatch = true;
           break;
+        } else {
+          console.log(`Nenhum resultado exato encontrado para ${cnaeFormat}`);
         }
       }
       
-      // Se ainda não encontrou, tenta uma busca parcial
-      if (!riskLevel) {
-        console.log('Tentando busca parcial com like');
+      // Se ainda não encontrou, tenta uma busca parcial (LIKE)
+      if (!foundMatch) {
+        console.log('Tentando busca parcial com LIKE');
         const cnaeDigits = formattedCnae.replace(/\D/g, '');
         
-        if (cnaeDigits.length >= 4) {
+        if (cnaeDigits.length >= 2) {
+          // Tenta com os primeiros 2 dígitos (grupo econômico)
+          const firstTwoDigits = cnaeDigits.slice(0, 2);
+          console.log(`Tentando busca parcial com os primeiros 2 dígitos: ${firstTwoDigits}`);
+          
+          const { data: riskData, error } = await supabase
+            .from('nr4_riscos')
+            .select('grau_risco')
+            .like('cnae', `${firstTwoDigits}%`)
+            .limit(1);
+            
+          if (error) {
+            console.error('Erro ao fazer busca parcial:', error);
+          } else if (riskData && riskData.length > 0) {
+            riskLevel = riskData[0].grau_risco.toString();
+            console.log('Grau de risco encontrado com busca parcial pelos primeiros 2 dígitos:', riskLevel);
+            foundMatch = true;
+          }
+        }
+        
+        // Se ainda não encontrou e temos pelo menos 4 dígitos, tenta com os primeiros 4
+        if (!foundMatch && cnaeDigits.length >= 4) {
           const firstFourDigits = cnaeDigits.slice(0, 4);
+          console.log(`Tentando busca parcial com os primeiros 4 dígitos: ${firstFourDigits}`);
+          
           const { data: riskData, error } = await supabase
             .from('nr4_riscos')
             .select('grau_risco')
@@ -116,15 +143,16 @@ serve(async (req) => {
             .limit(1);
             
           if (error) {
-            console.error('Erro ao fazer busca parcial:', error);
+            console.error('Erro ao fazer busca parcial com 4 dígitos:', error);
           } else if (riskData && riskData.length > 0) {
             riskLevel = riskData[0].grau_risco.toString();
-            console.log('Grau de risco encontrado com busca parcial:', riskLevel);
+            console.log('Grau de risco encontrado com busca parcial pelos primeiros 4 dígitos:', riskLevel);
+            foundMatch = true;
           }
         }
       }
       
-      // Se ainda não temos o grau de risco, define como 1 (padrão)
+      // Se ainda não temos o grau de risco, define como 1 (padrão/menor risco)
       if (!riskLevel) {
         console.log('Nenhum grau de risco encontrado para o CNAE. Definindo como padrão (1).');
         riskLevel = "1";

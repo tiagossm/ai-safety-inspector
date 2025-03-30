@@ -2,7 +2,13 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CornerDownRight, Info, MessageCircle, XCircle } from "lucide-react";
+import { Info } from "lucide-react";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface QuestionHeaderProps {
   question: any;
@@ -11,6 +17,7 @@ interface QuestionHeaderProps {
   response: any;
   showCommentSection: boolean;
   setShowCommentSection: (show: boolean) => void;
+  numberLabel?: string; // Add number label for hierarchical display
 }
 
 export function QuestionHeader({
@@ -19,63 +26,59 @@ export function QuestionHeader({
   isFollowUpQuestion,
   response,
   showCommentSection,
-  setShowCommentSection
+  setShowCommentSection,
+  numberLabel
 }: QuestionHeaderProps) {
+  // Determine if the question has been answered
+  const isAnswered = response && response.value !== undefined;
+  
+  // Use the provided number label or fall back to the index + 1
+  const displayNumber = numberLabel || `${index + 1})`;
+  
   return (
-    <div className="flex items-start justify-between gap-3">
+    <div className="flex items-start justify-between mb-1">
       <div className="flex items-start gap-2">
-        {isFollowUpQuestion && (
-          <CornerDownRight className="h-3.5 w-3.5 mt-1 text-gray-400" />
-        )}
-        <div className="flex-1">
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <span className="font-medium text-sm text-gray-600">{index + 1}.</span>
-            <h3 className="font-medium text-sm text-gray-800">{question.text}</h3>
-            {question.isRequired && (
-              <Badge variant="outline" className="text-red-500 text-xs h-4 ml-1">*</Badge>
-            )}
-          </div>
+        <span className="font-medium mt-0.5">{displayNumber}</span>
+        <div>
+          <h3 className={`font-medium text-base ${isFollowUpQuestion ? 'mt-0.5' : ''}`}>
+            {question.text}
+          </h3>
           
-          {response?.comment && !showCommentSection && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowCommentSection(true)}
-              className="mt-1.5 flex items-center gap-1 text-xs h-7 text-gray-500"
-            >
-              <MessageCircle className="h-3 w-3" />
-              <span>Mostrar Comentário</span>
-            </Button>
-          )}
-          
-          {(showCommentSection || response?.comment) && (
-            <div className="mt-1.5 bg-slate-50 p-2 rounded-md">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-xs font-medium text-slate-600">Comentário:</p>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowCommentSection(false)}
-                  className="h-5 w-5 p-0"
-                >
-                  <XCircle className="h-3 w-3 text-gray-400" />
-                </Button>
-              </div>
-              <p className="text-xs leading-relaxed text-slate-600">{response?.comment || "Nenhum comentário adicionado ainda."}</p>
-            </div>
+          {question.subHeader && (
+            <p className="text-sm text-muted-foreground -mt-0.5">
+              {question.subHeader}
+            </p>
           )}
         </div>
+        
+        {question.isRequired && (
+          <Badge variant="outline" className="text-red-500 ml-1">*</Badge>
+        )}
+        
+        {isAnswered && response.comment && (
+          <Badge 
+            variant="outline" 
+            className="ml-1 cursor-pointer"
+            onClick={() => setShowCommentSection(!showCommentSection)}
+          >
+            Comentário
+          </Badge>
+        )}
       </div>
       
       {question.hint && (
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="h-7 w-7 mt-0"
-          title="Dica da pergunta"
-        >
-          <Info className="h-3.5 w-3.5 text-gray-400" />
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-7 w-7">
+                <Info className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{question.hint}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       )}
     </div>
   );

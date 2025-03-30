@@ -26,6 +26,8 @@ interface InspectionQuestionProps {
   onResponseChange: (data: any) => void;
   allQuestions: any[];
   onOpenSubChecklist?: () => void;
+  numberLabel?: string; // Add parent number label for hierarchical display
+  isSubQuestion?: boolean; // Flag to indicate if this is a sub-checklist question
 }
 
 export function InspectionQuestion({
@@ -34,7 +36,9 @@ export function InspectionQuestion({
   response,
   onResponseChange,
   allQuestions,
-  onOpenSubChecklist
+  onOpenSubChecklist,
+  numberLabel,
+  isSubQuestion = false
 }: InspectionQuestionProps) {
   const {
     commentDialogOpen,
@@ -67,9 +71,15 @@ export function InspectionQuestion({
   
   const isFollowUpQuestion = !!question.parentQuestionId;
   
+  // Create the proper question number label
+  const displayLabel = numberLabel || `${index + 1})`;
+  
+  // Apply indentation for sub-questions via CSS
+  const indentationClass = isSubQuestion ? "ml-6" : "";
+  
   return (
     <>
-      <Card className={getQuestionCardClasses(question, response)}>
+      <Card className={`${getQuestionCardClasses(question, response)} ${indentationClass} mb-4`}>
         <CardContent className="p-3.5">
           <QuestionHeader
             question={question}
@@ -78,6 +88,7 @@ export function InspectionQuestion({
             response={response}
             showCommentSection={showCommentSection}
             setShowCommentSection={setShowCommentSection}
+            numberLabel={displayLabel} // Pass the number label to the header
           />
           
           <div className="mt-2">
