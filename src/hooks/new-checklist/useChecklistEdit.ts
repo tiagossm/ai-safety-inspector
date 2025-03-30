@@ -18,14 +18,14 @@ export function useChecklistEdit(initialChecklist: Checklist | null, checklistId
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [isTemplate, setIsTemplate] = useState(false);
-  const [status, setStatus] = useState("active");
+  const [status, setStatus] = useState<"active" | "inactive">("active");
   
   // Questions and groups
   const [questions, setQuestions] = useState<ChecklistQuestion[]>([]);
   const [groups, setGroups] = useState<ChecklistGroup[]>([]);
   
   // UI state
-  const [viewMode, setViewMode] = useState<"all" | "by-group">("by-group");
+  const [viewMode, setViewMode] = useState<"flat" | "grouped">("grouped");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletedQuestionIds, setDeletedQuestionIds] = useState<string[]>([]);
   
@@ -38,8 +38,8 @@ export function useChecklistEdit(initialChecklist: Checklist | null, checklistId
       setTitle(initialChecklist.title || "");
       setDescription(initialChecklist.description || "");
       setCategory(initialChecklist.category || "");
-      setIsTemplate(initialChecklist.is_template || false);
-      setStatus(initialChecklist.status || "active");
+      setIsTemplate(initialChecklist.is_template || initialChecklist.isTemplate || false);
+      setStatus((initialChecklist.status === "active" || initialChecklist.status === "pendente") ? "active" : "inactive");
       
       // Handle questions from different possible sources in the API response
       let checklistQuestions: ChecklistQuestion[] = [];
@@ -62,7 +62,8 @@ export function useChecklistEdit(initialChecklist: Checklist | null, checklistId
           weight: item.weight,
           parentQuestionId: item.parent_item_id,
           conditionValue: item.condition_value,
-          groupId: item.group_id || null
+          groupId: item.group_id || null,
+          order: item.ordem || 0
         }));
       }
       
@@ -153,7 +154,8 @@ export function useChecklistEdit(initialChecklist: Checklist | null, checklistId
       weight: 1,
       parentQuestionId: null,
       conditionValue: null,
-      groupId: groupId
+      groupId: groupId,
+      order: questions.length
     };
     
     setQuestions([...questions, newQuestion]);
@@ -260,7 +262,7 @@ export function useChecklistEdit(initialChecklist: Checklist | null, checklistId
       // Update existing checklist
       if (checklistId) {
         const { data, error } = await supabase
-          .from('new_checklists')
+          .from("checklists")
           .update({
             title,
             description,
@@ -280,7 +282,7 @@ export function useChecklistEdit(initialChecklist: Checklist | null, checklistId
           if (group.id.startsWith('group-')) {
             // Create new group
             const { data: groupData, error: groupError } = await supabase
-              .from('new_checklist_groups')
+              .from("checklist_groups")
               .insert({
                 checklist_id: checklistId,
                 title: group.title,
@@ -298,7 +300,7 @@ export function useChecklistEdit(initialChecklist: Checklist | null, checklistId
           } else {
             // Update existing group
             const { error: groupError } = await supabase
-              .from('new_checklist_groups')
+              .from("checklist_groups")
               .update({
                 title: group.title,
                 description: group.description,
@@ -313,7 +315,7 @@ export function useChecklistEdit(initialChecklist: Checklist | null, checklistId
         // Delete removed questions
         if (deletedQuestionIds.length > 0) {
           const { error: deleteError } = await supabase
-            .from('new_checklist_questions')
+            .from("checklist_questions")
             .delete()
             .in('id', deletedQuestionIds);
           
@@ -325,7 +327,7 @@ export function useChecklistEdit(initialChecklist: Checklist | null, checklistId
           if (question.id.startsWith('q-')) {
             // Create new question
             const { error: questionError } = await supabase
-              .from('new_checklist_questions')
+              .from("checklist_items")
               .insert({
                 checklist_id: checklistId,
                 text: question.text,
@@ -340,14 +342,15 @@ export function useChecklistEdit(initialChecklist: Checklist | null, checklistId
                 parent_question_id: question.parentQuestionId,
                 condition_value: question.conditionValue,
                 group_id: question.groupId && !question.groupId.startsWith('group-') ? question.groupId : null,
-                sub_checklist_id: question.subChecklistId
+                sub_checklist_id: question.subChecklistId,
+                order: question.order || 0
               });
             
             if (questionError) throw questionError;
           } else {
             // Update existing question
             const { error: questionError } = await supabase
-              .from('new_checklist_questions')
+              .from("checklist_items")
               .update({
                 text: question.text,
                 response_type: question.type,
@@ -361,7 +364,8 @@ export function useChecklistEdit(initialChecklist: Checklist | null, checklistId
                 parent_question_id: question.parentQuestionId,
                 condition_value: question.conditionValue,
                 group_id: question.groupId && !question.groupId.startsWith('group-') ? question.groupId : null,
-                sub_checklist_id: question.subChecklistId
+                sub_checklist_id: question.subChecklistId,
+                order: question.order || 0
               })
               .eq('id', question.id);
             
@@ -372,7 +376,7 @@ export function useChecklistEdit(initialChecklist: Checklist | null, checklistId
       // Create new checklist
       else {
         const { data, error } = await supabase
-          .from('new_checklists')
+          .from("checklists")
           .insert({
             title,
             description,
@@ -388,7 +392,7 @@ export function useChecklistEdit(initialChecklist: Checklist | null, checklistId
         // Create groups
         for (const group of groups) {
           const { data: groupData, error: groupError } = await supabase
-            .from('new_checklist_groups')
+            .from("checklist_groups")
             .insert({
               checklist_id: checklistData.id,
               title: group.title,
@@ -408,7 +412,7 @@ export function useChecklistEdit(initialChecklist: Checklist | null, checklistId
         // Create questions
         for (const question of questions) {
           const { error: questionError } = await supabase
-            .from('new_checklist_questions')
+            .from("checklist_items")
             .insert({
               checklist_id: checklistData.id,
               text: question.text,
@@ -423,7 +427,8 @@ export function useChecklistEdit(initialChecklist: Checklist | null, checklistId
               parent_question_id: question.parentQuestionId,
               condition_value: question.conditionValue,
               group_id: question.groupId && !question.groupId.startsWith('group-') ? question.groupId : null,
-              sub_checklist_id: question.subChecklistId
+              sub_checklist_id: question.subChecklistId,
+              order: question.order || 0
             });
           
           if (questionError) throw questionError;

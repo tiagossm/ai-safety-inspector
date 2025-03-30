@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
-import { useChecklistEdit } from "@/hooks/new-checklist/useChecklistEdit";
 import { Loader2 } from "lucide-react";
+import { ChecklistQuestion } from "@/types/newChecklist";
 
 interface SubChecklistEditorProps {
   parentQuestionId: string;
@@ -25,7 +25,7 @@ export function SubChecklistEditor({
   const [saving, setSaving] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [questions, setQuestions] = useState<any[]>([]);
+  const [questions, setQuestions] = useState<Partial<ChecklistQuestion>[]>([]);
   
   const { data: existingSubChecklist, isLoading: loadingSubChecklist } = 
     useChecklistById(existingSubChecklistId || "");
@@ -40,16 +40,19 @@ export function SubChecklistEditor({
           id: item.id,
           text: item.pergunta || "",
           type: item.tipo_resposta || "sim/não",
-          required: item.obrigatorio || true,
-          allowPhoto: item.permite_foto || false,
-          allowVideo: item.permite_video || false,
-          allowAudio: item.permite_audio || false,
+          isRequired: item.obrigatorio || true,
+          allowsPhoto: item.permite_foto || false,
+          allowsVideo: item.permite_video || false,
+          allowsAudio: item.permite_audio || false,
           options: item.opcoes || [],
           hint: item.hint || "",
           weight: item.weight || 1,
-          groupId: item.groupId || null, // Updated from group_id to groupId
+          groupId: item.groupId || null,
         }));
         setQuestions(formattedQuestions);
+      } else if (existingSubChecklist.questions && Array.isArray(existingSubChecklist.questions)) {
+        // Also handle when questions are available directly
+        setQuestions(existingSubChecklist.questions);
       }
       setLoading(false);
     } else {
@@ -61,10 +64,10 @@ export function SubChecklistEditor({
           id: `q-${Date.now()}-1`,
           text: "Esta área está em conformidade?",
           type: "sim/não",
-          required: true,
-          allowPhoto: true,
-          allowVideo: false,
-          allowAudio: false,
+          isRequired: true,
+          allowsPhoto: true,
+          allowsVideo: false,
+          allowsAudio: false,
           options: [],
           hint: "",
           weight: 1,
@@ -104,14 +107,14 @@ export function SubChecklistEditor({
   };
 
   const handleAddQuestion = () => {
-    const newQuestion = {
+    const newQuestion: Partial<ChecklistQuestion> = {
       id: `q-${Date.now()}`,
       text: "",
       type: "sim/não",
-      required: true,
-      allowPhoto: false,
-      allowVideo: false,
-      allowAudio: false,
+      isRequired: true,
+      allowsPhoto: false,
+      allowsVideo: false,
+      allowsAudio: false,
       options: [],
       hint: "",
       weight: 1,
@@ -184,7 +187,7 @@ export function SubChecklistEditor({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleRemoveQuestion(question.id)}
+                  onClick={() => handleRemoveQuestion(question.id!)}
                   className="text-destructive"
                 >
                   Remover
@@ -196,7 +199,7 @@ export function SubChecklistEditor({
                 <Input
                   id={`question-${question.id}`}
                   value={question.text}
-                  onChange={(e) => handleUpdateQuestion(question.id, { text: e.target.value })}
+                  onChange={(e) => handleUpdateQuestion(question.id!, { text: e.target.value })}
                   placeholder="Digite a pergunta"
                 />
               </div>
@@ -206,7 +209,7 @@ export function SubChecklistEditor({
                 <select
                   id={`type-${question.id}`}
                   value={question.type}
-                  onChange={(e) => handleUpdateQuestion(question.id, { type: e.target.value })}
+                  onChange={(e) => handleUpdateQuestion(question.id!, { type: e.target.value })}
                   className="w-full p-2 border rounded"
                 >
                   <option value="sim/não">Sim/Não</option>

@@ -17,6 +17,8 @@ export interface ChecklistQuestion {
   conditionValue?: string | null;
   groupId?: string | null;
   subChecklistId?: string | null;
+  order?: number;
+  hasSubChecklist?: boolean;
 }
 
 export interface ChecklistGroup {
@@ -40,6 +42,12 @@ export interface Checklist {
   is_sub_checklist?: boolean;
   parent_question_id?: string | null;
   
+  // Add interfaces for compatibility with different namings
+  isTemplate?: boolean;
+  companyId?: string;
+  responsibleId?: string;
+  dueDate?: string;
+  
   // Add the missing properties that were causing TypeScript errors
   questions?: ChecklistQuestion[];
   groups?: ChecklistGroup[];
@@ -61,4 +69,48 @@ export interface ChecklistResponse {
   action_responsible?: string;
   action_deadline?: string;
   action_status?: 'pending' | 'in_progress' | 'completed';
+}
+
+// Add missing interfaces that were imported in various files
+export interface ChecklistWithStats extends Checklist {
+  totalQuestions?: number;
+  createdAt?: string;
+}
+
+export interface NewChecklistPayload {
+  title: string;
+  description?: string;
+  category?: string;
+  isTemplate?: boolean;
+  status?: string;
+  responsibleId?: string;
+  companyId?: string;
+  dueDate?: string;
+}
+
+export interface InspectionDetails {
+  id: string;
+  title: string;
+  description?: string;
+  status?: string;
+  created_at?: string;
+  completed_at?: string;
+  checklist_id?: string;
+  created_by?: string;
+  assigned_to?: string;
+  company_id?: string;
+  location?: string;
+  due_date?: string;
+  total_questions?: number;
+  completed_questions?: number;
+  score?: number;
+}
+
+export interface InspectionFilters {
+  status?: string[];
+  startDate?: string;
+  endDate?: string;
+  assignedTo?: string[];
+  company?: string[];
+  search?: string;
 }

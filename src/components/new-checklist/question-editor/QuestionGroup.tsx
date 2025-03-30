@@ -30,7 +30,12 @@ export function QuestionGroup({
 }: QuestionGroupProps) {
   // Questions filtered to only include those in this group
   const groupQuestions = questions.filter(q => q.groupId === group.id)
-    .sort((a, b) => a.order - b.order);
+    .sort((a, b) => {
+      // Safely handle sorting with optional order property
+      const orderA = a.order !== undefined ? a.order : 0;
+      const orderB = b.order !== undefined ? b.order : 0;
+      return orderA - orderB;
+    });
   
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onGroupUpdate({
