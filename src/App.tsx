@@ -1,5 +1,5 @@
 
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 
@@ -17,27 +17,25 @@ import Checklists from "./pages/Checklists";
 function App() {
   return (
     <>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Inspections />} />
-          <Route path="/inspections" element={<Inspections />} />
-          <Route path="/inspections/new" element={<NewInspectionPage />} />
-          <Route path="/inspections/:id" element={<InspectionExecutionPage />} />
-          <Route path="/inspections/:id/view" element={<InspectionExecutionPage />} />
-          
-          <Route path="/checklists" element={<Checklists />} />
-          <Route path="/checklists/new" element={<ChecklistEditorPage />} />
-          <Route path="/checklists/:id/edit" element={<ChecklistEditorPage />} />
-          <Route path="/checklists/editor" element={<ChecklistEditorPage />} />
-          <Route path="/checklists/:id" element={<ChecklistDetails />} />
-          <Route path="/checklist/:id" element={<ChecklistDetail />} />
-          
-          <Route path="/companies" element={<Companies />} />
-          <Route path="/companies/new" element={<CompanyDetail />} />
-          <Route path="/companies/:id" element={<CompanyDetail />} />
-        </Routes>
-        <FloatingNavigation threshold={400} />
-      </Router>
+      <Routes>
+        <Route path="/" element={<Inspections />} />
+        <Route path="/inspections" element={<Inspections />} />
+        <Route path="/inspections/new" element={<NewInspectionPage />} />
+        <Route path="/inspections/:id" element={<InspectionExecutionPage />} />
+        <Route path="/inspections/:id/view" element={<InspectionExecutionPage />} />
+        
+        <Route path="/checklists" element={<Checklists />} />
+        <Route path="/checklists/new" element={<ChecklistEditorPage />} />
+        <Route path="/checklists/:id/edit" element={<ChecklistEditorPage />} />
+        <Route path="/checklists/editor" element={<ChecklistEditorPage />} />
+        <Route path="/checklists/:id" element={<ChecklistDetails />} />
+        <Route path="/checklist/:id" element={<ChecklistDetail />} />
+        
+        <Route path="/companies" element={<Companies />} />
+        <Route path="/companies/new" element={<CompanyDetail />} />
+        <Route path="/companies/:id" element={<CompanyDetail />} />
+      </Routes>
+      <FloatingNavigation threshold={400} />
       <Toaster />
     </>
   );
