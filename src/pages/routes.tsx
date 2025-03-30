@@ -1,6 +1,6 @@
 
 import { Suspense, lazy } from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route } from "react-router-dom";
 import { RequireAuth } from "@/components/RequireAuth";
 
 const ChecklistEditorPage = lazy(() => import("@/pages/ChecklistEditorPage"));
@@ -38,9 +38,7 @@ export function ChecklistRoutes() {
 }
 
 export default function AppRoutes() {
-  return (
-    <Routes>
-      <ChecklistRoutes />
-    </Routes>
-  );
+  // IMPORTANT: We're returning just the routes now, not wrapping them in a Routes component
+  // because that should be handled in App.tsx
+  return <ChecklistRoutes />;
 }

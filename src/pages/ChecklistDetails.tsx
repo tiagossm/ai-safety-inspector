@@ -1,3 +1,4 @@
+
 import { useParams, useNavigate } from "react-router-dom";
 import ChecklistDetailsContainer from "@/components/checklists/ChecklistDetailsContainer";
 import { useEffect } from "react";
@@ -46,9 +47,5 @@ export default function ChecklistDetails() {
     );
   }
   
-  return (
-    <>
-      <ChecklistDetailsContainer checklistId={id} />
-    </>
-  );
+  return <ChecklistDetailsContainer checklistId={id} />;
 }

@@ -1,10 +1,10 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useInspectionData } from "@/hooks/inspection";
 import { toast } from "sonner";
 import { InspectionError } from "@/components/inspection/execution/InspectionError";
 import { InspectionLayout } from "@/components/inspection/execution/InspectionLayout";
-import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 
 export default function InspectionExecutionPage() {
   const { id } = useParams<{ id: string }>();
@@ -126,32 +126,30 @@ export default function InspectionExecutionPage() {
   }
   
   return (
-    <>
-      <InspectionLayout
-        loading={loading}
-        inspection={inspection}
-        company={company}
-        responsible={responsible}
-        questions={questions}
-        responses={responses}
-        groups={groups}
-        subChecklists={subChecklists}
-        currentGroupId={currentGroupId}
-        stats={stats}
-        saving={saving}
-        autoSave={autoSave}
-        lastSaved={lastSaved}
-        setAutoSave={setAutoSave}
-        setCurrentGroupId={setCurrentGroupId}
-        onSaveProgress={onSaveProgress}
-        onCompleteInspection={onCompleteInspection}
-        onReopenInspection={onReopenInspection}
-        onViewActionPlan={onViewActionPlan}
-        onGenerateReport={onGenerateReport}
-        refreshData={refreshData}
-        onResponseChange={handleResponseChange}
-        onSaveSubChecklistResponses={handleSaveSubChecklistResponsesWrapper}
-      />
-    </>
+    <InspectionLayout
+      loading={loading}
+      inspection={inspection}
+      company={company}
+      responsible={responsible}
+      questions={questions}
+      responses={responses}
+      groups={groups}
+      subChecklists={subChecklists}
+      currentGroupId={currentGroupId}
+      stats={stats}
+      saving={saving}
+      autoSave={autoSave}
+      lastSaved={lastSaved}
+      setAutoSave={setAutoSave}
+      setCurrentGroupId={setCurrentGroupId}
+      onSaveProgress={onSaveProgress}
+      onCompleteInspection={onCompleteInspection}
+      onReopenInspection={onReopenInspection}
+      onViewActionPlan={onViewActionPlan}
+      onGenerateReport={onGenerateReport}
+      refreshData={refreshData}
+      onResponseChange={handleResponseChange}
+      onSaveSubChecklistResponses={handleSaveSubChecklistResponsesWrapper}
+    />
   );
 }
