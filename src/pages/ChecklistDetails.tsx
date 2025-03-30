@@ -1,11 +1,9 @@
-
 import { useParams, useNavigate } from "react-router-dom";
 import ChecklistDetailsContainer from "@/components/checklists/ChecklistDetailsContainer";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 
 export default function ChecklistDetails() {
   const { id } = useParams<{ id: string }>();
@@ -51,7 +49,6 @@ export default function ChecklistDetails() {
   return (
     <>
       <ChecklistDetailsContainer checklistId={id} />
-      <FloatingNavigation threshold={400} />
     </>
   );
 }

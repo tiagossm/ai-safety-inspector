@@ -19,7 +19,6 @@ import { format } from "date-fns";
 import { ChecklistResponseItem } from "@/components/checklists/ChecklistResponseItem";
 import { ptBR } from "date-fns/locale";
 import { ChecklistActions } from "@/components/checklists/ChecklistActions";
-import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 
 export default function ChecklistDetail() {
   const { id } = useParams<{ id: string }>();
@@ -396,7 +395,6 @@ export default function ChecklistDetail() {
           </div>
         </div>
       </div>
-      <FloatingNavigation threshold={400} />
     </>
   );
 }

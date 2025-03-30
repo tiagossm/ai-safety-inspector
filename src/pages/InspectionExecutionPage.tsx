@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useInspectionData } from "@/hooks/inspection";
@@ -34,7 +33,6 @@ export default function InspectionExecutionPage() {
     reopenInspection
   } = useInspectionData(id);
   
-  // Set default group when groups are loaded
   useEffect(() => {
     if (groups.length > 0 && !currentGroupId) {
       setCurrentGroupId(groups[0].id);
@@ -42,7 +40,6 @@ export default function InspectionExecutionPage() {
     }
   }, [groups, currentGroupId]);
 
-  // Auto-save timer
   useEffect(() => {
     if (autoSave) {
       const timer = setTimeout(() => {
@@ -94,7 +91,6 @@ export default function InspectionExecutionPage() {
     }
   };
 
-  // Fix: Add Promise return type to these functions
   const onViewActionPlan = async (): Promise<void> => {
     toast.info("Funcionalidade de Plano de Ação em desenvolvimento");
     return Promise.resolve();
@@ -105,13 +101,11 @@ export default function InspectionExecutionPage() {
     return Promise.resolve();
   };
 
-  // Fix: Create a wrapper function that converts Promise<boolean> to Promise<void>
   const handleSaveSubChecklistResponsesWrapper = async (
     subChecklistId: string, 
     responses: Record<string, any>
   ): Promise<void> => {
     await handleSaveSubChecklistResponses(subChecklistId, responses);
-    // Don't return the boolean, just resolve the promise without a value
     return Promise.resolve();
   };
 
@@ -125,7 +119,6 @@ export default function InspectionExecutionPage() {
     );
   }
   
-  // Log questions and groups to help debug
   console.log(`Execution Page: Loaded ${questions.length} questions, ${groups.length} groups`);
   if (currentGroupId) {
     const questionsInGroup = questions.filter(q => q.groupId === currentGroupId);
@@ -159,7 +152,6 @@ export default function InspectionExecutionPage() {
         onResponseChange={handleResponseChange}
         onSaveSubChecklistResponses={handleSaveSubChecklistResponsesWrapper}
       />
-      <FloatingNavigation threshold={400} />
     </>
   );
 }
