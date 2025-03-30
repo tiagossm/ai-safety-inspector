@@ -39,8 +39,8 @@ export function QuestionsList({
     const hasSubChecklist = !!subChecklists[question.id];
     const isExpanded = expandedSubChecklists[question.id];
     
-    // Generate the question number label
-    const numberLabel = parentLabel ? `${parentLabel}${index + 1})` : `${index + 1})`;
+    // Generate hierarchical question number label
+    const numberLabel = parentLabel ? `${parentLabel}.${index + 1})` : `${index + 1})`;
     
     // Initialize the components array with the main question
     const components = [
@@ -73,7 +73,7 @@ export function QuestionsList({
       // Get the sub-checklist responses or initialize an empty object
       const subChecklistResponses = (responses[question.id]?.subChecklistResponses) || {};
       
-      // Render each sub-checklist question with proper numbering
+      // Render each sub-checklist question with hierarchical numbering
       subChecklistQuestions.forEach((subQuestion: any, subIndex: number) => {
         components.push(
           <InspectionQuestion
@@ -93,7 +93,7 @@ export function QuestionsList({
               });
             }}
             allQuestions={subChecklistQuestions}
-            numberLabel={`${numberLabel}${subIndex + 1})`}
+            numberLabel={`${numberLabel.replace(')', '')}.${subIndex + 1})`}
             isSubQuestion={true}
           />
         );

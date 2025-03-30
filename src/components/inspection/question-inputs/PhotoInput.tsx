@@ -1,7 +1,6 @@
 
 import React from "react";
-import { Button } from "@/components/ui/button";
-import { Camera } from "lucide-react";
+import { MediaCaptureMenu } from "./MediaCaptureMenu";
 
 interface PhotoInputProps {
   onAddMedia: () => void;
@@ -11,15 +10,10 @@ interface PhotoInputProps {
 export function PhotoInput({ onAddMedia, mediaUrls }: PhotoInputProps) {
   return (
     <div className="mt-2">
-      <Button 
-        variant="outline" 
-        className="flex items-center gap-2 text-xs"
-        size="sm"
-        onClick={onAddMedia}
-      >
-        <Camera className="h-3.5 w-3.5" />
-        <span>Adicionar Foto</span>
-      </Button>
+      <MediaCaptureMenu 
+        onAddMedia={onAddMedia}
+        mediaUrls={mediaUrls}
+      />
       
       {mediaUrls && mediaUrls.length > 0 && (
         <div className="mt-2 grid grid-cols-3 gap-2">

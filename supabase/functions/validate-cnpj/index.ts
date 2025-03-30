@@ -40,7 +40,13 @@ serve(async (req) => {
     const extractCnae = (cnaeString) => {
       if (!cnaeString) return '';
       
-      // Extrai apenas os números do CNAE
+      // Extrai apenas os números do CNAE e o hífen se presente
+      const match = cnaeString.match(/(\d{4})-?(\d)/);
+      if (match) {
+        return `${match[1]}-${match[2]}`;
+      }
+      
+      // Se não encontrar no formato padrão, tenta extrair só os números
       const numbers = cnaeString.replace(/[^\d]/g, '');
       
       // Se tiver pelo menos 5 dígitos, formata como XXXX-X
@@ -63,104 +69,98 @@ serve(async (req) => {
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImprZ21namp0c2xrb3poZWh3bW5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE3MjMwNDAsImV4cCI6MjA1NzI5OTA0MH0.VHL_5dontJ5Zin2cPTrQgkdx-CbnqWtRkVq-nNSnAZg';
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-    // Buscar grau de risco na tabela nr4_riscos
-    let riskLevel = '';
-    if (formattedCnae) {
-      console.log('Consultando grau de risco para CNAE:', formattedCnae);
+    // Define nossa função para buscar o grau de risco com fallbacks
+    const findRiskLevel = async (formattedCnae) => {
+      if (!formattedCnae) return "1"; // Default se não tiver CNAE
       
-      // Preparar todas as possíveis variações do CNAE para aumentar chances de encontrar
-      const cnaeLookups = [
-        formattedCnae,                           // XXXX-X (formato padrão)
-        formattedCnae.replace('-', ''),          // XXXXX (sem hífen)
-        formattedCnae.slice(0, 4),               // XXXX (primeiros 4 dígitos)
-        formattedCnae.slice(0, 2)                // XX (primeiros 2 dígitos - grupo econômico)
+      // Prepara todas as variações possíveis do CNAE para aumentar chances de encontrar
+      const strippedCnae = formattedCnae.replace(/-/g, '');
+      const firstFourDigits = formattedCnae.slice(0, 4);
+      const firstTwoDigits = formattedCnae.slice(0, 2);
+      
+      const variations = [
+        { format: formattedCnae, type: 'formato padrão XXXX-X' },
+        { format: strippedCnae, type: 'formato sem hífen' },
+        { format: firstFourDigits, type: 'primeiros 4 dígitos' }
       ];
       
-      console.log('Tentando buscar com as seguintes variações de CNAE:', cnaeLookups);
-      let foundMatch = false;
+      console.log('Tentando buscar grau de risco com as seguintes variações:', 
+        variations.map(v => `${v.format} (${v.type})`).join(', '));
       
-      // Tenta cada formato em sequência até encontrar
-      for (const cnaeFormat of cnaeLookups) {
-        if (!cnaeFormat) continue;
+      // Tenta cada formato exato
+      for (const variation of variations) {
+        if (!variation.format) continue;
         
-        console.log('Tentando buscar com CNAE:', cnaeFormat);
+        console.log(`Tentando busca exata com CNAE: ${variation.format} (${variation.type})`);
         
-        const { data: riskData, error } = await supabase
+        const { data: exactMatch, error } = await supabase
           .from('nr4_riscos')
           .select('grau_risco')
-          .eq('cnae', cnaeFormat)
+          .eq('cnae', variation.format)
           .maybeSingle();
-
+          
         if (error) {
-          console.error(`Erro ao consultar grau de risco para ${cnaeFormat}:`, error);
+          console.error(`Erro ao buscar exato para ${variation.format}:`, error.message);
           continue;
         }
         
-        if (riskData) {
-          riskLevel = riskData.grau_risco.toString();
-          console.log(`Grau de risco encontrado para ${cnaeFormat}:`, riskLevel);
-          foundMatch = true;
-          break;
-        } else {
-          console.log(`Nenhum resultado exato encontrado para ${cnaeFormat}`);
+        if (exactMatch) {
+          console.log(`✅ Encontrado grau de risco para ${variation.format}: ${exactMatch.grau_risco}`);
+          return exactMatch.grau_risco.toString();
+        }
+        
+        console.log(`Nenhum resultado exato para ${variation.format}`);
+      }
+      
+      // Se não encontrou correspondência exata, tenta busca com LIKE para os primeiros dígitos
+      console.log('Tentando busca parcial com LIKE');
+      
+      // Tenta com os primeiros 4 dígitos
+      if (firstFourDigits) {
+        console.log(`Tentando LIKE com primeiros 4 dígitos: ${firstFourDigits}%`);
+        
+        const { data: likeMatch4, error: likeError4 } = await supabase
+          .from('nr4_riscos')
+          .select('grau_risco')
+          .like('cnae', `${firstFourDigits}%`)
+          .order('cnae')
+          .limit(1);
+          
+        if (likeError4) {
+          console.error('Erro na busca LIKE com 4 dígitos:', likeError4.message);
+        } else if (likeMatch4 && likeMatch4.length > 0) {
+          console.log(`✅ Encontrado via LIKE com 4 dígitos: ${likeMatch4[0].grau_risco}`);
+          return likeMatch4[0].grau_risco.toString();
         }
       }
       
-      // Se ainda não encontrou, tenta uma busca parcial (LIKE)
-      if (!foundMatch) {
-        console.log('Tentando busca parcial com LIKE');
-        const cnaeDigits = formattedCnae.replace(/\D/g, '');
+      // Última tentativa com os primeiros 2 dígitos (grupo econômico)
+      if (firstTwoDigits) {
+        console.log(`Tentando LIKE com primeiros 2 dígitos: ${firstTwoDigits}%`);
         
-        if (cnaeDigits.length >= 2) {
-          // Tenta com os primeiros 2 dígitos (grupo econômico)
-          const firstTwoDigits = cnaeDigits.slice(0, 2);
-          console.log(`Tentando busca parcial com os primeiros 2 dígitos: ${firstTwoDigits}`);
+        const { data: likeMatch2, error: likeError2 } = await supabase
+          .from('nr4_riscos')
+          .select('grau_risco')
+          .like('cnae', `${firstTwoDigits}%`)
+          .order('cnae')
+          .limit(1);
           
-          const { data: riskData, error } = await supabase
-            .from('nr4_riscos')
-            .select('grau_risco')
-            .like('cnae', `${firstTwoDigits}%`)
-            .limit(1);
-            
-          if (error) {
-            console.error('Erro ao fazer busca parcial:', error);
-          } else if (riskData && riskData.length > 0) {
-            riskLevel = riskData[0].grau_risco.toString();
-            console.log('Grau de risco encontrado com busca parcial pelos primeiros 2 dígitos:', riskLevel);
-            foundMatch = true;
-          }
-        }
-        
-        // Se ainda não encontrou e temos pelo menos 4 dígitos, tenta com os primeiros 4
-        if (!foundMatch && cnaeDigits.length >= 4) {
-          const firstFourDigits = cnaeDigits.slice(0, 4);
-          console.log(`Tentando busca parcial com os primeiros 4 dígitos: ${firstFourDigits}`);
-          
-          const { data: riskData, error } = await supabase
-            .from('nr4_riscos')
-            .select('grau_risco')
-            .like('cnae', `${firstFourDigits}%`)
-            .limit(1);
-            
-          if (error) {
-            console.error('Erro ao fazer busca parcial com 4 dígitos:', error);
-          } else if (riskData && riskData.length > 0) {
-            riskLevel = riskData[0].grau_risco.toString();
-            console.log('Grau de risco encontrado com busca parcial pelos primeiros 4 dígitos:', riskLevel);
-            foundMatch = true;
-          }
+        if (likeError2) {
+          console.error('Erro na busca LIKE com 2 dígitos:', likeError2.message);
+        } else if (likeMatch2 && likeMatch2.length > 0) {
+          console.log(`✅ Encontrado via LIKE com 2 dígitos: ${likeMatch2[0].grau_risco}`);
+          return likeMatch2[0].grau_risco.toString();
         }
       }
       
-      // Se ainda não temos o grau de risco, define como 1 (padrão/menor risco)
-      if (!riskLevel) {
-        console.log('Nenhum grau de risco encontrado para o CNAE. Definindo como padrão (1).');
-        riskLevel = "1";
-      }
-    } else {
-      console.log('CNAE não disponível. Definindo grau de risco como padrão (1).');
-      riskLevel = "1";
-    }
+      // Não encontrou nada, retorna o valor padrão
+      console.log('⚠️ Nenhum grau de risco encontrado após todas as tentativas. Retornando padrão (1)');
+      return "1";
+    };
+
+    // Busca o grau de risco
+    const riskLevel = await findRiskLevel(formattedCnae);
+    console.log(`Grau de risco final determinado: ${riskLevel}`);
 
     // Formata os dados para retornar
     const formattedData = {

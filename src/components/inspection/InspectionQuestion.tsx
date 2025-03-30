@@ -78,7 +78,8 @@ export function InspectionQuestion({
   const indentationClass = isSubQuestion ? "ml-6" : "";
   
   return (
-    <>
+    // Fix: Wrap with a div instead of Fragment when data attributes are needed
+    <div>
       <Card className={`${getQuestionCardClasses(question, response)} ${indentationClass} mb-4`}>
         <CardContent className="p-3.5">
           <QuestionHeader
@@ -168,6 +169,6 @@ export function InspectionQuestion({
         response={response}
         allowedTypes={getAllowedAttachmentTypes(question)}
       />
-    </>
+    </div>
   );
 }

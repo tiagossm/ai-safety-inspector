@@ -35,20 +35,19 @@ export function QuestionHeader({
   // Use the provided number label or fall back to the index + 1
   const displayNumber = numberLabel || `${index + 1})`;
   
+  // Determine if this is a sub-checklist question based on the number format (contains a dot)
+  const isSubChecklistQuestion = displayNumber.includes('.');
+  
   return (
     <div className="flex items-start justify-between mb-1">
       <div className="flex items-start gap-2">
-        <span className="font-medium mt-0.5">{displayNumber}</span>
+        <span className={`font-medium mt-0.5 ${isSubChecklistQuestion ? 'text-gray-600' : ''}`}>
+          {displayNumber}
+        </span>
         <div>
-          <h3 className={`font-medium text-base ${isFollowUpQuestion ? 'mt-0.5' : ''}`}>
+          <h3 className={`font-medium text-base ${isFollowUpQuestion ? 'mt-0.5' : ''} ${isSubChecklistQuestion ? 'text-gray-700' : ''}`}>
             {question.text}
           </h3>
-          
-          {question.subHeader && (
-            <p className="text-sm text-muted-foreground -mt-0.5">
-              {question.subHeader}
-            </p>
-          )}
         </div>
         
         {question.isRequired && (
