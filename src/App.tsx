@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
-import { ChecklistRoutes } from "./pages/routes";
+import { checklistRoutes } from "./pages/routes";
 import { AppSidebar } from "./components/AppSidebar";
 
 // Import your page components
@@ -21,8 +21,8 @@ function App() {
       <AppSidebar />
       <main className="flex-1 p-4 overflow-x-hidden">
         <Routes>
-          {/* Include all routes from ChecklistRoutes */}
-          <ChecklistRoutes />
+          {/* Include all routes from checklistRoutes array */}
+          {checklistRoutes}
           
           {/* Legacy routes - keep these for compatibility */}
           <Route path="/" element={<Inspections />} />
