@@ -12,6 +12,7 @@ import { ChecklistBasicInfo } from "@/components/new-checklist/edit/ChecklistBas
 import { ChecklistQuestions } from "@/components/new-checklist/edit/ChecklistQuestions";
 import { ChecklistEditActions } from "@/components/new-checklist/edit/ChecklistEditActions";
 import { LoadingState } from "@/components/new-checklist/edit/LoadingState";
+import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 
 export default function NewChecklistEdit() {
   const navigate = useNavigate();
@@ -115,6 +116,8 @@ export default function NewChecklistEdit() {
           onCancel={() => navigate("/new-checklists")}
         />
       </form>
+      
+      <FloatingNavigation threshold={400} />
     </div>
   );
 }

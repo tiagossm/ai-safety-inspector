@@ -65,7 +65,8 @@ export function QuestionHeader({
         )}
       </div>
       
-      {question.hint && (
+      {/* Hide hints during inspection execution as requested */}
+      {/*question.hint && (
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -78,7 +79,7 @@ export function QuestionHeader({
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-      )}
+      )*/}
     </div>
   );
 }
