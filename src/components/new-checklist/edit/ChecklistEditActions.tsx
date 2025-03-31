@@ -1,40 +1,50 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2, Save } from "lucide-react";
+import { Save, PlayCircle } from "lucide-react";
 
 interface ChecklistEditActionsProps {
   isSubmitting: boolean;
   onCancel: () => void;
+  onStartInspection?: () => void;
 }
 
-export function ChecklistEditActions({ isSubmitting, onCancel }: ChecklistEditActionsProps) {
+export function ChecklistEditActions({ 
+  isSubmitting, 
+  onCancel,
+  onStartInspection
+}: ChecklistEditActionsProps) {
   return (
     <div className="flex justify-end gap-4">
-      <Button
-        type="button"
-        variant="outline"
+      <Button 
+        variant="outline" 
+        type="button" 
         onClick={onCancel}
+        disabled={isSubmitting}
       >
         Cancelar
       </Button>
       
-      <Button
+      <Button 
         type="submit"
         disabled={isSubmitting}
+        className="flex items-center"
       >
-        {isSubmitting ? (
-          <>
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            Salvando...
-          </>
-        ) : (
-          <>
-            <Save className="h-4 w-4 mr-2" />
-            Salvar alterações
-          </>
-        )}
+        <Save className="mr-2 h-4 w-4" />
+        {isSubmitting ? "Salvando..." : "Salvar"}
       </Button>
+      
+      {onStartInspection && (
+        <Button 
+          type="button"
+          onClick={onStartInspection}
+          disabled={isSubmitting}
+          className="flex items-center"
+        >
+          <PlayCircle className="mr-2 h-4 w-4" />
+          Iniciar Inspeção
+        </Button>
+      )}
     </div>
   );
 }

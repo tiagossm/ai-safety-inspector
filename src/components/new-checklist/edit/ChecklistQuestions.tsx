@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { QuestionGroupsList } from "./QuestionGroupsList";
+import { FlatQuestionsList } from "./FlatQuestionsList";
 
 interface ChecklistQuestionsProps {
   questions: ChecklistQuestion[];
@@ -39,6 +40,13 @@ export function ChecklistQuestions({
   onDeleteQuestion,
   onDragEnd
 }: ChecklistQuestionsProps) {
+  // Forçar seleção "flat" se não houver grupos
+  React.useEffect(() => {
+    if (groups.length === 0 && viewMode === "grouped") {
+      onViewModeChange("flat");
+    }
+  }, [groups.length, viewMode, onViewModeChange]);
+
   return (
     <Card>
       <CardHeader className="border-b pb-3 flex flex-row items-center justify-between">
@@ -54,6 +62,17 @@ export function ChecklistQuestions({
         </Tabs>
       </CardHeader>
       <CardContent className="pt-6">
+        {/* Lista plana de perguntas */}
+        {viewMode === "flat" && (
+          <FlatQuestionsList
+            questions={questions}
+            onAddQuestion={() => onAddQuestion(groups[0]?.id || "default")}
+            onUpdateQuestion={onUpdateQuestion}
+            onDeleteQuestion={onDeleteQuestion}
+          />
+        )}
+        
+        {/* Perguntas agrupadas */}
         {viewMode === "grouped" && (
           <div className="space-y-4">
             <DragDropContext onDragEnd={onDragEnd}>

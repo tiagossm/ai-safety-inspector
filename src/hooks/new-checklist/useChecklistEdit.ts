@@ -1,14 +1,16 @@
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { useChecklistUpdate } from "@/hooks/new-checklist/useChecklistUpdate";
+import { useNavigate } from "react-router-dom";
 
 export function useChecklistEdit(checklist: any, id: string | undefined) {
+  const navigate = useNavigate();
   const updateChecklist = useChecklistUpdate();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [viewMode, setViewMode] = useState<"flat" | "grouped">("grouped");
+  const [viewMode, setViewMode] = useState<"flat" | "grouped">("flat"); // Alterado para "flat" por padrão
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
@@ -44,7 +46,6 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
           }));
           
           setQuestions(questionsWithValidGroups);
-          setViewMode("grouped");
         } else {
           // If no groups defined, create a default group
           const defaultGroup: ChecklistGroup = {
@@ -60,7 +61,6 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
           
           setGroups([defaultGroup]);
           setQuestions(questionsWithDefaultGroup);
-          setViewMode("grouped");
         }
       } else {
         // If no questions, create a default empty question and group
@@ -171,7 +171,7 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
     setGroups(groups.filter(g => g.id !== groupId));
   };
   
-  const handleAddQuestion = (groupId: string) => {
+  const handleAddQuestion = useCallback((groupId: string) => {
     const newQuestion: ChecklistQuestion = {
       id: `new-${Date.now()}-${questions.length}`,
       text: "",
@@ -186,7 +186,7 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
     };
     
     setQuestions([...questions, newQuestion]);
-  };
+  }, [questions, questionsByGroup]);
   
   const handleUpdateQuestion = (updatedQuestion: ChecklistQuestion) => {
     const index = questions.findIndex(q => q.id === updatedQuestion.id);
@@ -285,10 +285,10 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
     }
   };
   
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     
-    if (isSubmitting || !id) return;
+    if (isSubmitting || !id) return false;
     setIsSubmitting(true);
     
     try {
@@ -296,7 +296,7 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
       if (!title.trim()) {
         toast.error("O título do checklist é obrigatório.");
         setIsSubmitting(false);
-        return;
+        return false;
       }
       
       // Filter out empty questions
@@ -304,7 +304,7 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
       if (validQuestions.length === 0) {
         toast.error("Adicione pelo menos uma pergunta válida.");
         setIsSubmitting(false);
-        return;
+        return false;
       }
       
       // Prepare updated checklist data
@@ -325,7 +325,7 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
         deletedQuestionIds
       });
       
-      // Navigate back to the checklist list
+      toast.success("Checklist atualizado com sucesso!");
       return true;
     } catch (error) {
       console.error("Error updating checklist:", error);

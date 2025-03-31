@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Save, PlayCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
 import { useChecklistEdit } from "@/hooks/new-checklist/useChecklistEdit";
@@ -49,6 +49,16 @@ export default function NewChecklistEdit() {
     handleDragEnd,
     handleSubmit
   } = useChecklistEdit(checklist, id);
+
+  const handleStartInspection = async () => {
+    // Primeiro salvar o checklist
+    const success = await handleSubmit();
+    
+    if (success && id) {
+      // Redirecionar para a página de criação de inspeção com o checklist selecionado
+      navigate(`/inspections/new?checklist=${id}`);
+    }
+  };
   
   // Initialize form with checklist data when it loads
   useEffect(() => {
@@ -81,7 +91,32 @@ export default function NewChecklistEdit() {
         }}
       />
       
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Botões de ação no topo */}
+      <div className="flex justify-end space-x-4">
+        <Button 
+          variant="outline" 
+          onClick={() => handleSubmit()}
+          disabled={isSubmitting}
+          className="flex items-center"
+        >
+          <Save className="mr-2 h-4 w-4" />
+          Salvar
+        </Button>
+        
+        <Button 
+          onClick={handleStartInspection}
+          disabled={isSubmitting}
+          className="flex items-center"
+        >
+          <PlayCircle className="mr-2 h-4 w-4" />
+          Iniciar Inspeção
+        </Button>
+      </div>
+      
+      <form onSubmit={(e) => {
+        e.preventDefault();
+        handleSubmit();
+      }} className="space-y-6">
         <ChecklistBasicInfo
           title={title}
           description={description}
@@ -114,6 +149,7 @@ export default function NewChecklistEdit() {
         <ChecklistEditActions
           isSubmitting={isSubmitting}
           onCancel={() => navigate("/new-checklists")}
+          onStartInspection={handleStartInspection}
         />
       </form>
       
