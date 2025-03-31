@@ -90,8 +90,8 @@ export function useChecklistById(id: string) {
             }
           }
 
-          // Check if this question has a sub-checklist
-          const hasSubChecklist = !!q.has_subchecklist || false;
+          // For backward compatibility, check if sub_checklist_id exists and use it to determine if hasSubChecklist is true
+          const hasSubChecklist = q.sub_checklist_id ? true : false;
           const subChecklistId = q.sub_checklist_id || null;
 
           // For backward compatibility and consistency
@@ -201,8 +201,8 @@ export function useChecklistById(id: string) {
           totalQuestions: normalizedQuestions.length,
           completedQuestions: 0,
           // Support for both camelCase and snake_case
-          created_at: checklist.created_at,
-          updated_at: checklist.updated_at,
+          createdAt: checklist.created_at,
+          updatedAt: checklist.updated_at,
           isSubChecklist: checklist.is_sub_checklist,
           is_sub_checklist: checklist.is_sub_checklist
         };
