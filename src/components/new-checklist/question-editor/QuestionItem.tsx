@@ -4,7 +4,7 @@ import { ChecklistQuestion } from "@/types/newChecklist";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Trash2, GripVertical, Image, Video, Mic, List, Bot } from "lucide-react";
+import { Trash2, GripVertical, Image, Video, Mic, List } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -157,12 +157,7 @@ export function QuestionItem({
     });
     
     setSubChecklistDialogOpen(false);
-    toast.success("Sub-checklist created and linked to question");
-  };
-  
-  const handleGenerateAISubChecklist = () => {
-    setActiveTab("ai");
-    setSubChecklistDialogOpen(true);
+    toast.success("Sub-checklist criado e vinculado à pergunta");
   };
   
   return (
@@ -181,16 +176,6 @@ export function QuestionItem({
             placeholder="Digite a pergunta..."
             className="flex-grow"
           />
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleGenerateAISubChecklist}
-            className="flex items-center gap-1"
-            title="Generate sub-checklist with AI"
-          >
-            <Bot className="h-4 w-4" />
-          </Button>
           
           <Button
             variant="ghost"
@@ -245,7 +230,7 @@ export function QuestionItem({
             </div>
             
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">Uses sub-checklist?</label>
+              <label className="text-sm font-medium">Possui sub-checklist?</label>
               <Switch
                 checked={!!question.hasSubChecklist}
                 onCheckedChange={handleSubChecklistToggle}
@@ -255,7 +240,7 @@ export function QuestionItem({
             {question.hasSubChecklist && question.subChecklistId && (
               <div className="flex items-center justify-between">
                 <span className="text-sm text-green-600">
-                  Sub-checklist linked
+                  Sub-checklist vinculado
                 </span>
                 <Button 
                   variant="outline" 
@@ -264,7 +249,7 @@ export function QuestionItem({
                   className="flex items-center gap-1"
                 >
                   <List className="h-4 w-4" />
-                  <span>Edit</span>
+                  <span>Editar</span>
                 </Button>
               </div>
             )}
@@ -346,15 +331,15 @@ export function QuestionItem({
             <DialogHeader>
               <DialogTitle>
                 {question.subChecklistId ? 
-                  "Edit Sub-Checklist" : 
-                  "Create Sub-Checklist for Question"}
+                  "Editar Sub-Checklist" : 
+                  "Criar Sub-Checklist para a Pergunta"}
               </DialogTitle>
             </DialogHeader>
             
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="mb-4">
-                <TabsTrigger value="manual">Create Manually</TabsTrigger>
-                <TabsTrigger value="ai">Generate with AI</TabsTrigger>
+                <TabsTrigger value="manual">Criar Manualmente</TabsTrigger>
+                <TabsTrigger value="ai">Gerar com IA</TabsTrigger>
               </TabsList>
               
               <TabsContent value="manual" className="min-h-[400px]">
