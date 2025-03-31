@@ -122,8 +122,7 @@ export function SubChecklistAIGenerator({
       const { error: updateError } = await supabase
         .from("checklist_itens")
         .update({ 
-          sub_checklist_id: newChecklist.id,
-          has_subchecklist: true
+          sub_checklist_id: newChecklist.id
         })
         .eq("id", parentQuestion.id);
       

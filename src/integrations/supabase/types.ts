@@ -320,6 +320,7 @@ export type Database = {
           checklist_id: string
           condition_value: string | null
           created_at: string
+          has_subchecklist: boolean | null
           hint: string | null
           id: string
           obrigatorio: boolean
@@ -343,6 +344,7 @@ export type Database = {
           checklist_id: string
           condition_value?: string | null
           created_at?: string
+          has_subchecklist?: boolean | null
           hint?: string | null
           id?: string
           obrigatorio?: boolean
@@ -366,6 +368,7 @@ export type Database = {
           checklist_id?: string
           condition_value?: string | null
           created_at?: string
+          has_subchecklist?: boolean | null
           hint?: string | null
           id?: string
           obrigatorio?: boolean

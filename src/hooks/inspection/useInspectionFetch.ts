@@ -42,7 +42,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
       }
 
       // Check if this is a sub-checklist inspection - we don't want to execute these directly
-      const isSubChecklist = inspectionData.checklist?.category === "sub-checklist";
+      const isSubChecklist = inspectionData.checklist?.category === "subchecklist";
       if (isSubChecklist) {
         setError("Esta inspeção é um sub-checklist e não pode ser executada diretamente.");
         setLoading(false);
@@ -84,6 +84,8 @@ export function useInspectionFetch(inspectionId: string | undefined) {
 
       if (checklistError) throw checklistError;
 
+      console.log(`Fetched ${checklistItems?.length || 0} questions for inspection ${inspectionId}`);
+
       // Set up a default group in case questions don't have group information
       const DEFAULT_GROUP = {
         id: "default-group",
@@ -116,6 +118,15 @@ export function useInspectionFetch(inspectionId: string | undefined) {
           // Se erro, mantém grupo default
         }
 
+        // Check if the question has a sub-checklist
+        const hasSubChecklist = !!item.sub_checklist_id;
+        const subChecklistId = item.sub_checklist_id;
+        
+        // Log sub-checklist info for debugging
+        if (hasSubChecklist) {
+          console.log(`Question ${item.id} has sub-checklist with ID: ${subChecklistId}`);
+        }
+
         return {
           id: item.id,
           text: item.pergunta,
@@ -127,8 +138,8 @@ export function useInspectionFetch(inspectionId: string | undefined) {
           parentQuestionId: item.parent_item_id || null,
           parentValue: item.condition_value || null,
           hint: item.hint || null,
-          subChecklistId: item.sub_checklist_id || null,
-          hasSubChecklist: !!item.sub_checklist_id,
+          subChecklistId: subChecklistId,
+          hasSubChecklist: hasSubChecklist,
           allowsPhoto: item.permite_foto || false,
           allowsVideo: item.permite_video || false,
           allowsAudio: item.permite_audio || false,
@@ -161,47 +172,73 @@ export function useInspectionFetch(inspectionId: string | undefined) {
       setResponses(responsesObj);
 
       // Fetch sub-checklists for questions that reference them
-      const subChecklistRefs = parsedQuestions.filter(q => q.subChecklistId);
+      const questionsWithSubchecklist = parsedQuestions.filter(q => q.subChecklistId);
+      console.log(`Found ${questionsWithSubchecklist.length} questions with sub-checklists`);
+      
       const subChecklistsMap: Record<string, any> = {};
 
-      for (const ref of subChecklistRefs) {
-        // Fetch sub-checklist data
-        const { data: checklistData } = await supabase
-          .from("checklists")
-          .select("*")
-          .eq("id", ref.subChecklistId)
-          .single();
+      if (questionsWithSubchecklist.length > 0) {
+        for (const question of questionsWithSubchecklist) {
+          console.log(`Fetching sub-checklist ${question.subChecklistId} for question ${question.id}`);
+          
+          try {
+            // Fetch sub-checklist data
+            const { data: checklistData, error: checklistError } = await supabase
+              .from("checklists")
+              .select("*")
+              .eq("id", question.subChecklistId)
+              .single();
 
-        // Fetch sub-checklist questions
-        const { data: subQuestions } = await supabase
-          .from("checklist_itens")
-          .select("*")
-          .eq("checklist_id", ref.subChecklistId)
-          .order("ordem", { ascending: true });
+            if (checklistError) {
+              console.error(`Error fetching sub-checklist ${question.subChecklistId}:`, checklistError);
+              continue;
+            }
 
-        if (checklistData && subQuestions) {
-          // Process the sub-checklist questions just like we did for the main questions
-          const processedSubQuestions = subQuestions.map((item: any) => ({
-            id: item.id,
-            text: item.pergunta,
-            responseType: item.tipo_resposta,
-            options: item.opcoes,
-            isRequired: item.obrigatorio,
-            order: item.ordem,
-            parentQuestionId: item.parent_item_id || null,
-            parentValue: item.condition_value || null,
-            hint: item.hint || null,
-            allowsPhoto: item.permite_foto || false,
-            allowsVideo: item.permite_video || false,
-            allowsAudio: item.permite_audio || false,
-            weight: item.weight || 1,
-          }));
+            // Fetch sub-checklist questions
+            const { data: subQuestions, error: questionsError } = await supabase
+              .from("checklist_itens")
+              .select("*")
+              .eq("checklist_id", question.subChecklistId)
+              .order("ordem", { ascending: true });
 
-          // Store the sub-checklist data linked to the parent question's ID for easy access
-          subChecklistsMap[ref.id] = {
-            ...checklistData,
-            questions: processedSubQuestions,
-          };
+            if (questionsError) {
+              console.error(`Error fetching questions for sub-checklist ${question.subChecklistId}:`, questionsError);
+              continue;
+            }
+
+            console.log(`Fetched ${subQuestions?.length || 0} questions for sub-checklist ${question.subChecklistId}`);
+
+            if (checklistData && subQuestions && subQuestions.length > 0) {
+              // Process the sub-checklist questions
+              const processedSubQuestions = subQuestions.map((item: any) => ({
+                id: item.id,
+                text: item.pergunta,
+                responseType: item.tipo_resposta,
+                options: item.opcoes,
+                isRequired: item.obrigatorio,
+                order: item.ordem,
+                parentQuestionId: item.parent_item_id || null,
+                parentValue: item.condition_value || null,
+                hint: item.hint || null,
+                allowsPhoto: item.permite_foto || false,
+                allowsVideo: item.permite_video || false,
+                allowsAudio: item.permite_audio || false,
+                weight: item.weight || 1,
+              }));
+
+              // Store the sub-checklist data linked to the parent question's ID
+              subChecklistsMap[question.id] = {
+                id: checklistData.id,
+                title: checklistData.title,
+                description: checklistData.description,
+                questions: processedSubQuestions,
+              };
+              
+              console.log(`Added sub-checklist ${checklistData.id} for question ${question.id} with ${processedSubQuestions.length} questions`);
+            }
+          } catch (err) {
+            console.error(`Error processing sub-checklist for question ${question.id}:`, err);
+          }
         }
       }
 

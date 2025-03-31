@@ -90,7 +90,7 @@ export function useChecklistById(id: string) {
             }
           }
 
-          // For backward compatibility, check if sub_checklist_id exists and use it to determine if hasSubChecklist is true
+          // Check if question has a sub-checklist
           const hasSubChecklist = q.sub_checklist_id ? true : false;
           const subChecklistId = q.sub_checklist_id || null;
 
@@ -155,8 +155,8 @@ export function useChecklistById(id: string) {
             allowsVideo: q.permite_video || false,
             allowsAudio: q.permite_audio || false,
             order: q.ordem || index,
-            hasSubChecklist,
-            subChecklistId
+            hasSubChecklist: hasSubChecklist,
+            subChecklistId: subChecklistId
           });
         });
 
