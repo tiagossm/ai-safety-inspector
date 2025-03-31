@@ -14,7 +14,7 @@ import { useChecklistAI } from "@/hooks/new-checklist/useChecklistAI";
 import { AIAssistantSelector } from "@/components/checklists/create-forms/AIAssistantSelector";
 import { CSVImportSection } from "@/components/checklists/create-forms/CSVImportSection";
 import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
-import { FloatingNavigation } from "@/components/ui/floating-navigation";
+import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 
 export default function NewChecklistCreate() {
   const navigate = useNavigate();
