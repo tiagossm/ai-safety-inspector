@@ -200,9 +200,6 @@ export function useChecklistById(id: string) {
           questions: normalizedQuestions,
           totalQuestions: normalizedQuestions.length,
           completedQuestions: 0,
-          // Support for both camelCase and snake_case
-          createdAt: checklist.created_at,
-          updatedAt: checklist.updated_at,
           isSubChecklist: checklist.is_sub_checklist,
           is_sub_checklist: checklist.is_sub_checklist
         };
