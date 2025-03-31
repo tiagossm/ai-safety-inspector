@@ -1,26 +1,32 @@
-
 export interface ChecklistWithStats {
   id: string;
   title: string;
   description?: string;
   category?: string;
   is_template: boolean;
+  isTemplate?: boolean;
   status: "active" | "inactive";
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  createdAt?: string;
+  updated_at?: string;
+  updatedAt?: string;
   user_id?: string;
+  userId?: string;
   responsible_id?: string;
+  responsibleId?: string;
   company_id?: string;
+  companyId?: string;
   due_date?: string;
+  dueDate?: string;
   parent_question_id?: string;
+  parentQuestionId?: string;
   is_sub_checklist?: boolean;
   isSubChecklist?: boolean;
-  total_questions: number;
+  total_questions?: number;
+  totalQuestions?: number;
   groups?: ChecklistGroup[];
   questions?: ChecklistQuestion[];
-  totalQuestions?: number;
   completedQuestions?: number;
-  createdAt?: string;
 }
 
 export interface ChecklistQuestion {

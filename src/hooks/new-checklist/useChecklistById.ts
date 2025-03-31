@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats, ChecklistGroup, ChecklistQuestion } from "@/types/newChecklist";
@@ -227,9 +226,7 @@ export function useChecklistById(id: string) {
           companyId: checklistData.company_id || undefined,
           userId: checklistData.user_id || undefined,
           createdAt: checklistData.created_at,
-          created_at: checklistData.created_at,
           updatedAt: checklistData.updated_at,
-          updated_at: checklistData.updated_at,
           dueDate: checklistData.due_date || undefined,
           groups,
           questions: processedQuestions,

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { ChecklistWithStats } from "@/types/newChecklist";
@@ -6,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { PlusCircle, Edit, Trash, Copy, ClipboardCheck, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { formatDate } from "@/lib/utils";
+import { format } from "date-fns";
 
 interface ChecklistListProps {
   checklists: ChecklistWithStats[];
@@ -84,6 +83,11 @@ export function ChecklistList({
     );
   }
 
+  const formatDate = (date?: string) => {
+    if (!date) return "—";
+    return format(new Date(date), "dd/MM/yyyy");
+  };
+
   return (
     <div className="rounded-md border">
       <Table>
@@ -127,7 +131,7 @@ export function ChecklistList({
                   </Badge>
                 )}
               </TableCell>
-              <TableCell>{formatDate(checklist.createdAt || checklist.created_at)}</TableCell>
+              <TableCell>{formatDate(checklist.createdAt)}</TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
                   {onEdit && (
