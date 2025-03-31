@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { ResponseInputRenderer } from "./question-parts/ResponseInputRenderer";
 import { Textarea } from "@/components/ui/textarea";
 import { ActionPlanInput } from "./question-parts/ActionPlanInput";
@@ -18,7 +19,7 @@ interface InspectionQuestionProps {
   onOpenSubChecklist?: () => void;
 }
 
-export function InspectionQuestion({
+export const InspectionQuestion = React.memo(function InspectionQuestion({
   question,
   index,
   response,
@@ -32,7 +33,7 @@ export function InspectionQuestion({
   const [isActionPlanOpen, setIsActionPlanOpen] = useState(false);
   const [isValid, setIsValid] = useState(!question.isRequired);
   
-  const normalizedType = (() => {
+  const normalizedType = useMemo(() => {
     const type = question.responseType || question.tipo_resposta || "";
     if (typeof type !== 'string') return 'unknown';
     
@@ -50,7 +51,7 @@ export function InspectionQuestion({
     } else {
       return lowerType;
     }
-  })();
+  }, [question.responseType, question.tipo_resposta]);
   
   const questionText = question.text || question.pergunta || "";
   const isRequired = question.isRequired !== undefined ? question.isRequired : question.obrigatorio;
@@ -60,16 +61,19 @@ export function InspectionQuestion({
   const allowsVideo = question.allowsVideo || question.permite_video || false;
   const allowsAudio = question.allowsAudio || question.permite_audio || false;
   
+  // Reduzir chamadas ao console em produção
   useEffect(() => {
-    console.log(`Question ${question.id} media capabilities:`, { 
-      allowsPhoto, 
-      allowsVideo, 
-      allowsAudio,
-      responseType: normalizedType
-    });
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`Question ${question.id} media capabilities:`, { 
+        allowsPhoto, 
+        allowsVideo, 
+        allowsAudio,
+        responseType: normalizedType
+      });
+    }
   }, [question.id, allowsPhoto, allowsVideo, allowsAudio, normalizedType]);
   
-  const handleValueChange = (value: any) => {
+  const handleValueChange = useCallback((value: any) => {
     setIsValid(!isRequired || (value !== undefined && value !== null && value !== ""));
     
     onResponseChange({
@@ -77,25 +81,25 @@ export function InspectionQuestion({
       value,
       comment
     });
-  };
+  }, [isRequired, response, comment, onResponseChange]);
   
-  const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleCommentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setComment(e.target.value);
     
     onResponseChange({
       ...response,
       comment: e.target.value
     });
-  };
+  }, [response, onResponseChange]);
   
-  const handleActionPlanChange = (actionPlan: string) => {
+  const handleActionPlanChange = useCallback((actionPlan: string) => {
     onResponseChange({
       ...response,
       actionPlan
     });
-  };
+  }, [response, onResponseChange]);
   
-  const handleAddMedia = () => {
+  const handleAddMedia = useCallback(() => {
     console.log("Attempting to add media to question:", question.id);
     
     const mediaUrls = response.mediaUrls || [];
@@ -105,9 +109,9 @@ export function InspectionQuestion({
       ...response,
       mediaUrls: [...mediaUrls, mockMediaUrl]
     });
-  };
+  }, [question.id, response, onResponseChange]);
   
-  const shouldBeVisible = () => {
+  const shouldBeVisible = useCallback(() => {
     if (!question.parentQuestionId && !question.parent_item_id) {
       return true;
     }
@@ -120,7 +124,7 @@ export function InspectionQuestion({
     }
     
     return true;
-  };
+  }, [question.parentQuestionId, question.parent_item_id, allQuestions]);
   
   if (!shouldBeVisible()) {
     return null;
@@ -219,4 +223,4 @@ export function InspectionQuestion({
       </div>
     </div>
   );
-}
+});

@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { memo } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertTriangle } from "lucide-react";
 
@@ -8,7 +8,7 @@ interface ActionPlanInputProps {
   onChange: (value: string) => void;
 }
 
-export function ActionPlanInput({ value, onChange }: ActionPlanInputProps) {
+export const ActionPlanInput = memo(function ActionPlanInput({ value, onChange }: ActionPlanInputProps) {
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     onChange(e.target.value);
   };
@@ -29,4 +29,4 @@ export function ActionPlanInput({ value, onChange }: ActionPlanInputProps) {
       </div>
     </div>
   );
-}
+});

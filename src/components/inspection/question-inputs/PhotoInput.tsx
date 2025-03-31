@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { memo } from "react";
 import { MediaCaptureMenu } from "./MediaCaptureMenu";
 import { Button } from "@/components/ui/button";
 import { Camera, Video, Mic } from "lucide-react";
@@ -12,7 +12,7 @@ interface PhotoInputProps {
   allowsAudio?: boolean;
 }
 
-export function PhotoInput({ 
+export const PhotoInput = memo(function PhotoInput({ 
   onAddMedia, 
   mediaUrls,
   allowsPhoto = true,
@@ -52,6 +52,7 @@ export function PhotoInput({
                 src={url} 
                 alt={`Mídia ${i+1}`} 
                 className="w-full h-full object-cover"
+                loading="lazy"
               />
             </div>
           ))}
@@ -59,4 +60,4 @@ export function PhotoInput({
       )}
     </div>
   );
-}
+});

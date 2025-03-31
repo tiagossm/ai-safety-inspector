@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { memo } from "react";
 import { YesNoInput } from "../question-inputs/YesNoInput";
 import { TextInput } from "../question-inputs/TextInput";
 import { NumberInput } from "../question-inputs/NumberInput";
@@ -13,7 +13,7 @@ interface ResponseInputRendererProps {
   onAddMedia: () => void;
 }
 
-export function ResponseInputRenderer({
+export const ResponseInputRenderer = memo(function ResponseInputRenderer({
   question,
   response,
   onResponseChange,
@@ -50,10 +50,12 @@ export function ResponseInputRenderer({
     }
   })();
   
-  // For debugging
-  console.log(`Rendering input for question ${question.id}, type: ${responseType}, media: `, {
-    allowsPhoto, allowsVideo, allowsAudio
-  });
+  // Limitar logs apenas para ambiente de desenvolvimento
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`Rendering input for question ${question.id}, type: ${responseType}, media: `, {
+      allowsPhoto, allowsVideo, allowsAudio
+    });
+  }
   
   switch (responseType) {
     case "yes_no":
@@ -103,4 +105,4 @@ export function ResponseInputRenderer({
       
       return <p className="text-sm text-muted-foreground mt-2">Tipo de resposta não suportado: {responseType}</p>;
   }
-}
+});
