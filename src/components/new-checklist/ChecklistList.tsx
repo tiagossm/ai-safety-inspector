@@ -127,7 +127,7 @@ export function ChecklistList({
                   </Badge>
                 )}
               </TableCell>
-              <TableCell>{formatDate(checklist.createdAt)}</TableCell>
+              <TableCell>{formatDate(checklist.createdAt || checklist.created_at)}</TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
                   {onEdit && (

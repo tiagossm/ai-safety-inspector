@@ -14,11 +14,13 @@ export interface ChecklistWithStats {
   due_date?: string;
   parent_question_id?: string;
   is_sub_checklist?: boolean;
+  isSubChecklist?: boolean;
   total_questions: number;
   groups?: ChecklistGroup[];
   questions?: ChecklistQuestion[];
   totalQuestions?: number;
   completedQuestions?: number;
+  createdAt?: string;
 }
 
 export interface ChecklistQuestion {
