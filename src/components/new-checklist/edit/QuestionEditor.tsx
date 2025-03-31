@@ -1,21 +1,31 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { ChecklistQuestion } from "@/types/newChecklist";
-import { Camera, Video, Mic } from "lucide-react";
+import { Image, Video, Mic, Trash2, Plus } from "lucide-react";
 
 interface QuestionEditorProps {
   question: ChecklistQuestion;
   onUpdate: (question: ChecklistQuestion) => void;
+  isSubQuestion?: boolean;
 }
 
-export function QuestionEditor({ question, onUpdate }: QuestionEditorProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  
+export function QuestionEditor({ 
+  question, 
+  onUpdate,
+  isSubQuestion = false
+}: QuestionEditorProps) {
+  // Atualizar o texto da pergunta
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onUpdate({
       ...question,
@@ -23,13 +33,24 @@ export function QuestionEditor({ question, onUpdate }: QuestionEditorProps) {
     });
   };
   
+  // Atualizar o tipo de resposta
   const handleResponseTypeChange = (value: string) => {
+    // Converter para o tipo correto
+    const responseType = value as ChecklistQuestion["responseType"];
+    
+    // Se mudando de múltipla escolha, inicializar opções
+    const options = responseType === "multiple_choice" 
+      ? question.options || ["Opção 1", "Opção 2"]
+      : undefined;
+    
     onUpdate({
       ...question,
-      responseType: value as any
+      responseType,
+      options
     });
   };
   
+  // Atualizar se a pergunta é obrigatória
   const handleRequiredChange = (checked: boolean) => {
     onUpdate({
       ...question,
@@ -37,179 +58,213 @@ export function QuestionEditor({ question, onUpdate }: QuestionEditorProps) {
     });
   };
   
-  const handleAllowsPhotoChange = (checked: boolean) => {
+  // Atualizar peso da pergunta
+  const handleWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const weight = parseInt(e.target.value) || 1;
+    onUpdate({
+      ...question,
+      weight: Math.max(1, Math.min(10, weight)) // Entre 1 e 10
+    });
+  };
+  
+  // Atualizar permissões de mídia
+  const handleAllowPhotoChange = (checked: boolean) => {
     onUpdate({
       ...question,
       allowsPhoto: checked
     });
   };
   
-  const handleAllowsVideoChange = (checked: boolean) => {
+  const handleAllowVideoChange = (checked: boolean) => {
     onUpdate({
       ...question,
       allowsVideo: checked
     });
   };
   
-  const handleAllowsAudioChange = (checked: boolean) => {
+  const handleAllowAudioChange = (checked: boolean) => {
     onUpdate({
       ...question,
       allowsAudio: checked
     });
   };
   
-  const handleHintChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  // Manipular opções de múltipla escolha
+  const handleOptionChange = (index: number, value: string) => {
+    if (!question.options) return;
+    
+    const newOptions = [...question.options];
+    newOptions[index] = value;
+    
     onUpdate({
       ...question,
-      hint: e.target.value
+      options: newOptions
     });
   };
   
-  const handleWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value) || 1;
+  const handleAddOption = () => {
+    if (!question.options) return;
+    
     onUpdate({
       ...question,
-      weight: value
+      options: [...question.options, `Opção ${question.options.length + 1}`]
+    });
+  };
+  
+  const handleRemoveOption = (index: number) => {
+    if (!question.options || question.options.length <= 2) return;
+    
+    const newOptions = [...question.options];
+    newOptions.splice(index, 1);
+    
+    onUpdate({
+      ...question,
+      options: newOptions
+    });
+  };
+
+  // Sub-checklist toggle apenas para perguntas principais
+  const handleSubChecklistToggle = (checked: boolean) => {
+    if (isSubQuestion) return; // Não permitir sub-checklists em sub-perguntas
+    
+    onUpdate({
+      ...question,
+      hasSubChecklist: checked,
+      subChecklistId: checked ? question.subChecklistId : undefined
     });
   };
   
   return (
     <div className="space-y-4">
       <Input
-        placeholder="Digite a pergunta..."
         value={question.text}
         onChange={handleTextChange}
+        placeholder="Digite a pergunta..."
         className="w-full"
       />
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label>Tipo de Resposta</Label>
-          <Select
-            value={question.responseType}
-            onValueChange={handleResponseTypeChange}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione o tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="yes_no">Sim/Não</SelectItem>
-              <SelectItem value="text">Texto</SelectItem>
-              <SelectItem value="numeric">Numérico</SelectItem>
-              <SelectItem value="multiple_choice">Múltipla Escolha</SelectItem>
-              <SelectItem value="photo">Foto</SelectItem>
-              <SelectItem value="signature">Assinatura</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div>
-          <Label>Peso da Pergunta</Label>
-          <Input
-            type="number"
-            min="1"
-            max="10"
-            value={question.weight}
-            onChange={handleWeightChange}
-          />
-        </div>
-      </div>
-      
-      {/* Opções de múltipla escolha (apenas exibe quando relevante) */}
-      {question.responseType === 'multiple_choice' && (
-        <div>
-          <Label>Opções</Label>
-          <div className="border rounded p-2 space-y-2">
-            {(question.options || []).map((option, index) => (
-              <Input 
-                key={index}
-                value={option}
-                onChange={(e) => {
-                  const newOptions = [...(question.options || [])];
-                  newOptions[index] = e.target.value;
-                  onUpdate({
-                    ...question,
-                    options: newOptions
-                  });
-                }}
-                className="mb-2"
-              />
-            ))}
-            <button
-              type="button"
-              onClick={() => {
-                onUpdate({
-                  ...question,
-                  options: [...(question.options || []), ""]
-                });
-              }}
-              className="text-sm text-blue-600 hover:text-blue-800"
-            >
-              + Adicionar opção
-            </button>
-          </div>
-        </div>
-      )}
-      
-      <Textarea
-        placeholder="Instruções ou dicas para o inspetor (opcional)..."
-        value={question.hint || ""}
-        onChange={handleHintChange}
-        rows={2}
-      />
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label htmlFor={`required-${question.id}`} className="flex items-center">
-              Obrigatório
-            </Label>
+            <label className="text-sm font-medium">Tipo de resposta:</label>
+            <Select
+              value={question.responseType}
+              onValueChange={handleResponseTypeChange}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="yes_no">Sim/Não</SelectItem>
+                <SelectItem value="multiple_choice">Múltipla escolha</SelectItem>
+                <SelectItem value="text">Texto</SelectItem>
+                <SelectItem value="numeric">Numérico</SelectItem>
+                <SelectItem value="photo">Foto</SelectItem>
+                <SelectItem value="signature">Assinatura</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium">Obrigatório:</label>
             <Switch
-              id={`required-${question.id}`}
               checked={question.isRequired}
               onCheckedChange={handleRequiredChange}
             />
           </div>
           
           <div className="flex items-center justify-between">
-            <Label htmlFor={`allows-photo-${question.id}`} className="flex items-center gap-1">
-              <Camera className="h-4 w-4" />
-              Permite Foto
-            </Label>
-            <Switch
-              id={`allows-photo-${question.id}`}
-              checked={question.allowsPhoto}
-              onCheckedChange={handleAllowsPhotoChange}
+            <label className="text-sm font-medium">Peso da pergunta:</label>
+            <Input
+              type="number"
+              value={question.weight}
+              onChange={handleWeightChange}
+              min={1}
+              max={10}
+              className="w-20 text-right"
             />
           </div>
+          
+          {!isSubQuestion && (
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Possui sub-checklist?</label>
+              <Switch
+                checked={!!question.hasSubChecklist}
+                onCheckedChange={handleSubChecklistToggle}
+              />
+            </div>
+          )}
         </div>
         
-        <div className="space-y-2">
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Label htmlFor={`allows-video-${question.id}`} className="flex items-center gap-1">
-              <Video className="h-4 w-4" />
-              Permite Vídeo
-            </Label>
+            <label className="flex items-center gap-1 text-sm font-medium">
+              <Image className="h-4 w-4" />
+              Permite foto:
+            </label>
             <Switch
-              id={`allows-video-${question.id}`}
-              checked={question.allowsVideo}
-              onCheckedChange={handleAllowsVideoChange}
+              checked={question.allowsPhoto}
+              onCheckedChange={handleAllowPhotoChange}
             />
           </div>
           
           <div className="flex items-center justify-between">
-            <Label htmlFor={`allows-audio-${question.id}`} className="flex items-center gap-1">
-              <Mic className="h-4 w-4" />
-              Permite Áudio
-            </Label>
+            <label className="flex items-center gap-1 text-sm font-medium">
+              <Video className="h-4 w-4" />
+              Permite vídeo:
+            </label>
             <Switch
-              id={`allows-audio-${question.id}`}
+              checked={question.allowsVideo}
+              onCheckedChange={handleAllowVideoChange}
+            />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-1 text-sm font-medium">
+              <Mic className="h-4 w-4" />
+              Permite áudio:
+            </label>
+            <Switch
               checked={question.allowsAudio}
-              onCheckedChange={handleAllowsAudioChange}
+              onCheckedChange={handleAllowAudioChange}
             />
           </div>
         </div>
       </div>
+      
+      {question.responseType === "multiple_choice" && question.options && (
+        <div className="mt-2 border-t pt-4">
+          <label className="text-sm font-medium block mb-2">Opções:</label>
+          <div className="space-y-2 max-h-60 overflow-y-auto">
+            {question.options.map((option, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <Input
+                  value={option}
+                  onChange={(e) => handleOptionChange(index, e.target.value)}
+                  placeholder={`Opção ${index + 1}`}
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleRemoveOption(index)}
+                  disabled={question.options!.length <= 2}
+                  className="h-10 w-10 p-0"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAddOption}
+              className="w-full mt-2"
+            >
+              Adicionar opção
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

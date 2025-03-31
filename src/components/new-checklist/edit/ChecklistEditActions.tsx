@@ -7,12 +7,14 @@ interface ChecklistEditActionsProps {
   isSubmitting: boolean;
   onCancel: () => void;
   onStartInspection?: () => void;
+  onSave?: () => void;
 }
 
 export function ChecklistEditActions({ 
   isSubmitting, 
   onCancel,
-  onStartInspection
+  onStartInspection,
+  onSave
 }: ChecklistEditActionsProps) {
   return (
     <div className="flex justify-end gap-4">
@@ -25,14 +27,17 @@ export function ChecklistEditActions({
         Cancelar
       </Button>
       
-      <Button 
-        type="submit"
-        disabled={isSubmitting}
-        className="flex items-center"
-      >
-        <Save className="mr-2 h-4 w-4" />
-        {isSubmitting ? "Salvando..." : "Salvar"}
-      </Button>
+      {onSave && (
+        <Button 
+          type="button"
+          onClick={onSave}
+          disabled={isSubmitting}
+          className="flex items-center"
+        >
+          <Save className="mr-2 h-4 w-4" />
+          {isSubmitting ? "Salvando..." : "Salvar Checklist"}
+        </Button>
+      )}
       
       {onStartInspection && (
         <Button 

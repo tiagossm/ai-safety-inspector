@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { QuestionEditor } from "./QuestionEditor";
-import { SubChecklistQuestions } from "./SubChecklistQuestions";
 
 interface FlatQuestionsListProps {
   questions: ChecklistQuestion[];
@@ -24,6 +23,7 @@ export function FlatQuestionsList({
     const questionMap = new Map<string, ChecklistQuestion>();
     const rootQuestions: ChecklistQuestion[] = [];
     const childrenMap = new Map<string, ChecklistQuestion[]>();
+    const subChecklistMap = new Map<string, ChecklistQuestion[]>();
     
     // Indexar todas as perguntas
     questions.forEach(q => {
@@ -44,24 +44,42 @@ export function FlatQuestionsList({
         // É uma pergunta raiz
         rootQuestions.push(q);
       }
+      
+      // Agrupar perguntas de sub-checklists
+      if (q.hasSubChecklist && q.subChecklistId) {
+        // Procurar perguntas que pertencem a este sub-checklist
+        const subQuestions = questions.filter(sq => 
+          sq.parentQuestionId === q.id || 
+          (sq.hint && sq.hint.includes(`"parentId":"${q.id}"`))
+        );
+        
+        if (subQuestions.length > 0) {
+          subChecklistMap.set(q.id, subQuestions);
+        }
+      }
     });
     
     return {
       rootQuestions: rootQuestions.sort((a, b) => a.order - b.order),
-      childrenMap
+      childrenMap,
+      subChecklistMap
     };
   };
   
-  const { rootQuestions, childrenMap } = organizeQuestions();
+  const { rootQuestions, childrenMap, subChecklistMap } = organizeQuestions();
   
   // Renderiza uma pergunta com suas subperguntas
   const renderQuestion = (question: ChecklistQuestion, index: number, parentNumbering: string = '') => {
     // Calcular a numeração
     const questionNumber = parentNumbering ? `${parentNumbering}.${index + 1}` : `${index + 1}`;
     
-    // Verificar se tem subperguntas
+    // Verificar se tem subperguntas de sub-checklist
+    const subChecklistQuestions = subChecklistMap.get(question.id) || [];
+    const hasSubChecklistQuestions = subChecklistQuestions.length > 0;
+    
+    // Verificar se tem subperguntas normais
     const childQuestions = childrenMap.get(question.id) || [];
-    const hasChildren = childQuestions.length > 0 || question.hasSubChecklist;
+    const hasChildren = childQuestions.length > 0;
     
     return (
       <div key={question.id} className="mb-6">
@@ -86,8 +104,40 @@ export function FlatQuestionsList({
           />
         </div>
         
-        {/* Renderiza as perguntas filhas */}
-        {childQuestions.length > 0 && (
+        {/* Renderizar perguntas do sub-checklist */}
+        {hasSubChecklistQuestions && (
+          <div className="mt-2 ml-6 space-y-2 border-l-2 border-green-200 pl-4">
+            {subChecklistQuestions
+              .sort((a, b) => a.order - b.order)
+              .map((subQuestion, subIndex) => (
+                <div key={subQuestion.id} className="border rounded-md p-3 bg-slate-50">
+                  <div className="flex items-start justify-between mb-3">
+                    <span className="font-semibold text-sm bg-muted px-2 py-1 rounded">
+                      {`${questionNumber}.${subIndex + 1}`}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => onDeleteQuestion(subQuestion.id)}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  <QuestionEditor
+                    question={subQuestion}
+                    onUpdate={onUpdateQuestion}
+                    isSubQuestion={true}
+                  />
+                </div>
+              ))
+            }
+          </div>
+        )}
+        
+        {/* Renderiza as perguntas filhas normais */}
+        {hasChildren && (
           <div className="mt-2 ml-6 space-y-2">
             {childQuestions
               .sort((a, b) => a.order - b.order)

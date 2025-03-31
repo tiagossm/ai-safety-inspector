@@ -60,6 +60,13 @@ export default function NewChecklistEdit() {
     }
   };
   
+  const handleSave = async () => {
+    const success = await handleSubmit();
+    if (success) {
+      navigate("/new-checklists");
+    }
+  };
+  
   // Initialize form with checklist data when it loads
   useEffect(() => {
     if (checklist) {
@@ -95,12 +102,12 @@ export default function NewChecklistEdit() {
       <div className="flex justify-end space-x-4">
         <Button 
           variant="outline" 
-          onClick={() => handleSubmit()}
+          onClick={handleSave}
           disabled={isSubmitting}
           className="flex items-center"
         >
           <Save className="mr-2 h-4 w-4" />
-          Salvar
+          Salvar Checklist
         </Button>
         
         <Button 
@@ -150,6 +157,7 @@ export default function NewChecklistEdit() {
           isSubmitting={isSubmitting}
           onCancel={() => navigate("/new-checklists")}
           onStartInspection={handleStartInspection}
+          onSave={handleSave}
         />
       </form>
       

@@ -40,7 +40,7 @@ export function ChecklistQuestions({
   onDeleteQuestion,
   onDragEnd
 }: ChecklistQuestionsProps) {
-  // Forçar seleção "flat" se não houver grupos
+  // Usar "flat" por padrão, mesmo se não houver grupos
   React.useEffect(() => {
     if (groups.length === 0 && viewMode === "grouped") {
       onViewModeChange("flat");
