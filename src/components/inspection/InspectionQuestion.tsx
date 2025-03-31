@@ -129,7 +129,6 @@ export function InspectionQuestion({
           
           <QuestionActions
             response={response}
-            onOpenMediaDialog={() => setMediaDialogOpen(true)}
             onOpenCommentDialog={() => {
               setCommentText(response?.comment || "");
               setCommentDialogOpen(true);

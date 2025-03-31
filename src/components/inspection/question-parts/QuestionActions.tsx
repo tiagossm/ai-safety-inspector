@@ -1,12 +1,10 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Camera, MessageCircle } from "lucide-react";
-import { toast } from "sonner";
+import { MessageSquare, ClipboardList } from "lucide-react";
 
 interface QuestionActionsProps {
   response: any;
-  onOpenMediaDialog: () => void;
   onOpenCommentDialog: () => void;
   onOpenActionPlanDialog: () => void;
   setIsActionPlanOpen: (isOpen: boolean) => void;
@@ -14,52 +12,36 @@ interface QuestionActionsProps {
 
 export function QuestionActions({
   response,
-  onOpenMediaDialog,
   onOpenCommentDialog,
   onOpenActionPlanDialog,
   setIsActionPlanOpen
 }: QuestionActionsProps) {
   return (
-    <div className="flex flex-wrap justify-end gap-1.5 mt-2.5">
+    <div className="flex flex-wrap justify-end gap-2 mt-3">
       <Button
-        variant="outline"
+        variant="ghost"
         size="sm"
-        onClick={onOpenMediaDialog}
-        className="flex items-center gap-1 text-xs h-7"
-        data-testid="open-media-button"
-      >
-        <Camera className="h-3.5 w-3.5 text-gray-500" />
-        <span>Mídia</span>
-      </Button>
-      
-      <Button
-        variant="outline"
-        size="sm"
+        className="h-7 text-xs"
         onClick={onOpenCommentDialog}
-        className="flex items-center gap-1 text-xs h-7"
-        data-testid="open-comment-button"
       >
-        <MessageCircle className="h-3.5 w-3.5 text-gray-500" />
-        <span>Comentário</span>
+        <MessageSquare className="h-3.5 w-3.5 mr-1" />
+        {response?.comment ? "Editar comentário" : "Adicionar comentário"}
       </Button>
       
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => {
-          if (response?.value === "não") {
-            onOpenActionPlanDialog();
-          } else {
-            toast.info("Planos de ação são tipicamente adicionados para respostas 'Não'");
+      {response?.value === "não" && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 text-xs text-amber-600"
+          onClick={() => {
             setIsActionPlanOpen(true);
-          }
-        }}
-        className="flex items-center gap-1 text-xs h-7"
-        data-testid="open-action-plan-button"
-      >
-        <AlertTriangle className="h-3.5 w-3.5 text-gray-500" />
-        <span>Plano de Ação</span>
-      </Button>
+            onOpenActionPlanDialog();
+          }}
+        >
+          <ClipboardList className="h-3.5 w-3.5 mr-1" />
+          {response?.actionPlan ? "Editar plano de ação" : "Adicionar plano de ação"}
+        </Button>
+      )}
     </div>
   );
 }

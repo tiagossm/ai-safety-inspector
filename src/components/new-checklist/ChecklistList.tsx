@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { ChecklistWithStats } from "@/types/newChecklist";
@@ -26,7 +27,11 @@ export function ChecklistList({
 }: ChecklistListProps) {
   // Filter out sub-checklists from display
   const filteredChecklists = checklists.filter(
-    checklist => !(checklist.isSubChecklist || checklist.is_sub_checklist)
+    checklist => {
+      // Check both properties to ensure backward compatibility
+      const isSubChecklist = checklist.isSubChecklist || checklist.is_sub_checklist;
+      return !isSubChecklist;
+    }
   );
   
   if (isLoading) {

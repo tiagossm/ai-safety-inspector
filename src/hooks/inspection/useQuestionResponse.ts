@@ -1,6 +1,5 @@
 
 import { useState } from "react";
-import { toast } from "sonner";
 
 export function useQuestionResponse(question: any, response: any, onResponseChange: (data: any) => void) {
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
@@ -9,24 +8,28 @@ export function useQuestionResponse(question: any, response: any, onResponseChan
   const [commentText, setCommentText] = useState(response?.comment || "");
   const [actionPlanText, setActionPlanText] = useState(response?.actionPlan || "");
   const [isActionPlanOpen, setIsActionPlanOpen] = useState(!!response?.actionPlan);
-  const [showCommentSection, setShowCommentSection] = useState(!!response?.comment);
+  const [showCommentSection, setShowCommentSection] = useState(false);
   const [loadingSubChecklist, setLoadingSubChecklist] = useState(false);
 
-  const handleResponseValue = (value: any) => {
+  // Handle response value changes (yes/no, text, etc)
+  const handleResponseValue = (value: string | number | boolean) => {
     onResponseChange({
       ...(response || {}),
       value
     });
   };
 
+  // Handle saving comment
   const handleSaveComment = () => {
     onResponseChange({
       ...(response || {}),
       comment: commentText
     });
     setCommentDialogOpen(false);
+    setShowCommentSection(true);
   };
 
+  // Handle saving action plan
   const handleSaveActionPlan = () => {
     onResponseChange({
       ...(response || {}),
@@ -36,31 +39,28 @@ export function useQuestionResponse(question: any, response: any, onResponseChan
     setIsActionPlanOpen(true);
   };
 
+  // Handle media upload completion
   const handleMediaUploaded = (mediaUrls: string[]) => {
+    const currentUrls = response?.mediaUrls || [];
+    const newUrls = [...currentUrls, ...mediaUrls];
+    
     onResponseChange({
       ...(response || {}),
-      mediaUrls: [...(response?.mediaUrls || []), ...mediaUrls]
+      mediaUrls: newUrls
     });
+    
+    setMediaDialogOpen(false);
   };
 
-  const handleOpenSubChecklist = (onOpenSubChecklistCallback?: () => void) => {
-    if (!question.hasSubChecklist) {
-      toast.error("Esta pergunta não possui um sub-checklist associado.");
-      return;
-    }
-
+  // Handle opening subchecklist
+  const handleOpenSubChecklist = (callback?: () => void) => {
     setLoadingSubChecklist(true);
-    try {
-      // Call the callback to open the sub-checklist dialog
-      if (onOpenSubChecklistCallback) {
-        onOpenSubChecklistCallback();
-      }
-    } catch (error) {
-      console.error("Error opening sub-checklist:", error);
-      toast.error("Erro ao abrir sub-checklist");
-    } finally {
+    
+    // Use timeout to simulate loading
+    setTimeout(() => {
       setLoadingSubChecklist(false);
-    }
+      if (callback) callback();
+    }, 500);
   };
 
   return {

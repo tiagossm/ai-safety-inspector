@@ -19,7 +19,7 @@ serve(async (req) => {
       throw new Error('OPENAI_API_KEY não está configurada nas variáveis de ambiente');
     }
 
-    const { prompt, parentQuestionId, parentQuestionText, questionCount = 5 } = await req.json();
+    const { prompt, parentQuestionId, parentQuestionText, questionCount = 3 } = await req.json();
 
     if (!prompt) {
       throw new Error('O prompt é obrigatório');
@@ -29,9 +29,12 @@ serve(async (req) => {
       throw new Error('O ID da pergunta principal é obrigatório');
     }
 
+    // A requested count between 2-5 makes sense for sub-checklists
+    const actualQuestionCount = Math.min(Math.max(questionCount, 2), 5);
+
     const systemMessage = `
 Você é um especialista na criação de sub-checklists detalhados para perguntas de inspeção. 
-Para a seguinte pergunta principal, crie um sub-checklist detalhado com ${questionCount} perguntas específicas que ajudariam a avaliar completamente este aspecto.
+Para a seguinte pergunta principal, crie um sub-checklist detalhado com ${actualQuestionCount} perguntas específicas que ajudariam a avaliar completamente este aspecto.
 
 Crie um sub-checklist muito específico e detalhado com perguntas técnicas e relevantes. Sua resposta deve seguir exatamente este formato JSON:
 
@@ -55,6 +58,7 @@ Para yes_no, as respostas serão "sim" ou "não".
 
     console.log("Gerando sub-checklist para pergunta principal:", parentQuestionText);
     console.log("Com prompt:", prompt);
+    console.log("Quantidade de perguntas solicitada:", actualQuestionCount);
 
     // Call OpenAI API to generate sub-checklist
     const response = await fetch('https://api.openai.com/v1/chat/completions', {

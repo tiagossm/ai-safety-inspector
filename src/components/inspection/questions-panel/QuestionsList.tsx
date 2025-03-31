@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { InspectionQuestion } from "../InspectionQuestion";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,7 @@ export function QuestionsList({
     const isExpanded = expandedSubChecklists[question.id];
     
     // Generate hierarchical question number label
-    const numberLabel = parentLabel ? `${parentLabel}.${index + 1})` : `${index + 1})`;
+    const numberLabel = parentLabel ? `${parentLabel}.${index + 1}` : `${index + 1}`;
     
     // Initialize the components array with the main question
     const components = [
@@ -75,26 +76,27 @@ export function QuestionsList({
       // Render each sub-checklist question with hierarchical numbering
       subChecklistQuestions.forEach((subQuestion: any, subIndex: number) => {
         components.push(
-          <InspectionQuestion
-            key={`${question.id}-sub-${subQuestion.id || subIndex}`}
-            question={subQuestion}
-            index={subIndex}
-            response={subChecklistResponses[subQuestion.id] || {}}
-            onResponseChange={(data) => {
-              // Update the parent question's subChecklistResponses
-              const currentResponses = responses[question.id]?.subChecklistResponses || {};
-              onResponseChange(question.id, {
-                ...(responses[question.id] || {}),
-                subChecklistResponses: {
-                  ...currentResponses,
-                  [subQuestion.id]: data
-                }
-              });
-            }}
-            allQuestions={subChecklistQuestions}
-            numberLabel={`${numberLabel.replace(')', '')}.${subIndex + 1})`}
-            isSubQuestion={true}
-          />
+          <div className="ml-6" key={`${question.id}-sub-${subQuestion.id || subIndex}`}>
+            <InspectionQuestion
+              question={subQuestion}
+              index={subIndex}
+              response={subChecklistResponses[subQuestion.id] || {}}
+              onResponseChange={(data) => {
+                // Update the parent question's subChecklistResponses
+                const currentResponses = responses[question.id]?.subChecklistResponses || {};
+                onResponseChange(question.id, {
+                  ...(responses[question.id] || {}),
+                  subChecklistResponses: {
+                    ...currentResponses,
+                    [subQuestion.id]: data
+                  }
+                });
+              }}
+              allQuestions={subChecklistQuestions}
+              numberLabel={`${numberLabel}.${subIndex + 1}`}
+              isSubQuestion={true}
+            />
+          </div>
         );
       });
     }

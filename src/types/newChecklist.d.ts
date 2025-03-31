@@ -1,3 +1,4 @@
+
 export interface ChecklistWithStats {
   id: string;
   title: string;
@@ -32,7 +33,7 @@ export interface ChecklistWithStats {
 export interface ChecklistQuestion {
   id: string;
   text: string;
-  type: string;
+  type?: string;
   responseType?: string;
   isRequired: boolean;
   required?: boolean;
