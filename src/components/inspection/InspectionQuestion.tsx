@@ -1,7 +1,5 @@
-
 import React, { useState, useEffect } from "react";
 import { ResponseInputRenderer } from "./question-parts/ResponseInputRenderer";
-import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { ActionPlanInput } from "./question-parts/ActionPlanInput";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -34,7 +32,6 @@ export function InspectionQuestion({
   const [isActionPlanOpen, setIsActionPlanOpen] = useState(false);
   const [isValid, setIsValid] = useState(!question.isRequired);
   
-  // Normalize response type to know how to validate
   const normalizedType = (() => {
     const type = question.responseType || question.tipo_resposta || "";
     if (typeof type !== 'string') return 'unknown';
@@ -55,17 +52,14 @@ export function InspectionQuestion({
     }
   })();
   
-  // Support both camelCase and snake_case properties
   const questionText = question.text || question.pergunta || "";
   const isRequired = question.isRequired !== undefined ? question.isRequired : question.obrigatorio;
   const hasSubChecklist = question.hasSubChecklist || false;
   
-  // Media capabilities
   const allowsPhoto = question.allowsPhoto || question.permite_foto || false;
   const allowsVideo = question.allowsVideo || question.permite_video || false;
   const allowsAudio = question.allowsAudio || question.permite_audio || false;
   
-  // Log media capabilities for debugging
   useEffect(() => {
     console.log(`Question ${question.id} media capabilities:`, { 
       allowsPhoto, 
@@ -102,10 +96,8 @@ export function InspectionQuestion({
   };
   
   const handleAddMedia = () => {
-    // Mock implementation - in a real app this would open a media capture dialog
     console.log("Attempting to add media to question:", question.id);
     
-    // Add a placeholder URL to demonstrate the flow
     const mediaUrls = response.mediaUrls || [];
     const mockMediaUrl = `https://placehold.co/300x200?text=Media+${mediaUrls.length + 1}`;
     
@@ -115,7 +107,6 @@ export function InspectionQuestion({
     });
   };
   
-  // Check if the question should be visible based on parent conditions
   const shouldBeVisible = () => {
     if (!question.parentQuestionId && !question.parent_item_id) {
       return true;
@@ -128,8 +119,6 @@ export function InspectionQuestion({
       return true;
     }
     
-    // Finding the parent's response in the ancestral chain would be complex here
-    // For simplicity, showing all conditional questions
     return true;
   };
   
@@ -167,7 +156,6 @@ export function InspectionQuestion({
             />
           </div>
           
-          {/* Show media options if allowed */}
           {(allowsPhoto || allowsVideo || allowsAudio) && (
             <div className="mt-2 flex flex-wrap gap-2">
               {allowsPhoto && (
