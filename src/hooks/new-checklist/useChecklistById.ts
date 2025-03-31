@@ -91,8 +91,8 @@ export function useChecklistById(id: string) {
           }
 
           // Check if this question has a sub-checklist
-          const hasSubChecklist = q.has_subchecklist || false;
-          const subChecklistId = q.subchecklist_id || null;
+          const hasSubChecklist = !!q.has_subchecklist || false;
+          const subChecklistId = q.sub_checklist_id || null;
 
           // For backward compatibility and consistency
           const responseType = (() => {
@@ -111,17 +111,31 @@ export function useChecklistById(id: string) {
           let options: string[] | undefined = undefined;
           if (q.opcoes) {
             if (Array.isArray(q.opcoes)) {
-              options = q.opcoes;
+              options = q.opcoes.map(opt => String(opt));
             } else if (typeof q.opcoes === 'string') {
               try {
                 options = JSON.parse(q.opcoes);
+                if (!Array.isArray(options)) {
+                  options = [String(q.opcoes)];
+                }
               } catch (e) {
                 // If parse fails, treat as a single option
                 options = [String(q.opcoes)];
               }
-            } else {
-              // For any other case, convert to string array
-              options = [String(q.opcoes)];
+            } else if (q.opcoes !== null && typeof q.opcoes === 'object') {
+              // If it's a JSONB object, convert to array of strings
+              try {
+                const jsonStr = JSON.stringify(q.opcoes);
+                const parsedOptions = JSON.parse(jsonStr);
+                if (Array.isArray(parsedOptions)) {
+                  options = parsedOptions.map(opt => String(opt));
+                } else {
+                  // If it's not an array, create an array with string values
+                  options = Object.values(parsedOptions).map(opt => String(opt));
+                }
+              } catch (e) {
+                options = undefined;
+              }
             }
           }
 
