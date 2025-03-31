@@ -11,14 +11,23 @@ import { formatDate } from "@/lib/utils";
 interface ChecklistListProps {
   checklists: ChecklistWithStats[];
   isLoading?: boolean;
-  onDelete?: (id: string) => void;
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string, title: string) => void;
   onDuplicate?: (id: string) => void;
+  onOpen?: (id: string) => void;
 }
 
-export function ChecklistList({ checklists, isLoading, onDelete, onDuplicate }: ChecklistListProps) {
+export function ChecklistList({ 
+  checklists, 
+  isLoading, 
+  onEdit, 
+  onDelete,
+  onDuplicate,
+  onOpen 
+}: ChecklistListProps) {
   // Filter out sub-checklists from display
   const filteredChecklists = checklists.filter(
-    checklist => !checklist.isSubChecklist && !checklist.is_sub_checklist
+    checklist => !(checklist.isSubChecklist || checklist.is_sub_checklist)
   );
   
   if (isLoading) {
@@ -118,19 +127,21 @@ export function ChecklistList({ checklists, isLoading, onDelete, onDuplicate }: 
                   </Badge>
                 )}
               </TableCell>
-              <TableCell>{formatDate(checklist.createdAt || checklist.created_at)}</TableCell>
+              <TableCell>{formatDate(checklist.createdAt)}</TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    asChild
-                    title="Editar"
-                  >
-                    <Link to={`/new-checklists/edit/${checklist.id}`}>
-                      <Edit className="h-4 w-4" />
-                    </Link>
-                  </Button>
+                  {onEdit && (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      asChild
+                      title="Editar"
+                    >
+                      <Link to={`/new-checklists/edit/${checklist.id}`}>
+                        <Edit className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                  )}
                   
                   {onDuplicate && (
                     <Button
@@ -147,7 +158,7 @@ export function ChecklistList({ checklists, isLoading, onDelete, onDuplicate }: 
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => onDelete(checklist.id)}
+                      onClick={() => onDelete(checklist.id, checklist.title)}
                       title="Excluir"
                       className="text-red-600"
                     >

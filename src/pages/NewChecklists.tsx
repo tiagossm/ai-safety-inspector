@@ -10,6 +10,7 @@ import { ChecklistFilters } from "@/components/new-checklist/ChecklistFilters";
 import { ChecklistGrid } from "@/components/new-checklist/ChecklistGrid";
 import { ChecklistList } from "@/components/new-checklist/ChecklistList";
 import { DeleteChecklistDialog } from "@/components/new-checklist/DeleteChecklistDialog";
+import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 
 export default function NewChecklists() {
   const navigate = useNavigate();
@@ -120,6 +121,8 @@ export default function NewChecklists() {
         isOpen={deleteDialog.open}
         onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
       />
+      
+      <FloatingNavigation threshold={300} />
     </div>
   );
 }

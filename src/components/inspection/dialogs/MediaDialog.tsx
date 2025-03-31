@@ -1,153 +1,132 @@
 
-import React, { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import React from "react";
 import { 
-  Camera, 
-  Mic, 
-  Video, 
-  Upload,
-  Loader2
-} from "lucide-react";
-import { toast } from "sonner";
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Camera, Mic, Video, Upload } from "lucide-react";
 
 interface MediaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onMediaUploaded: (url: string) => void;
-  response: any;
-  allowedTypes: string[];
+  onMediaUploaded: (mediaUrls: string[]) => void;
+  response?: any;
+  allowedTypes?: string[];
 }
-
-type MediaType = "photo" | "audio" | "video" | "document";
 
 export function MediaDialog({
   open,
   onOpenChange,
   onMediaUploaded,
   response,
-  allowedTypes
+  allowedTypes = ["photo", "video", "audio"]
 }: MediaDialogProps) {
-  const [selectedType, setSelectedType] = useState<MediaType>("photo");
-  const [isUploading, setIsUploading] = useState(false);
-  
-  // Mock upload function - in a real app, this would handle the actual file upload
-  const handleUpload = async () => {
-    setIsUploading(true);
-    
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Mock upload delay
-      
-      // Mock successful upload with a fake URL
-      const mockUrl = `https://example.com/uploads/${Date.now()}_${selectedType}`;
-      onMediaUploaded(mockUrl);
-      
-      toast.success(`${getMediaTypeLabel(selectedType)} enviado com sucesso!`);
-      onOpenChange(false);
-    } catch (error) {
-      toast.error(`Erro ao enviar ${getMediaTypeLabel(selectedType).toLowerCase()}`);
-      console.error("Upload error:", error);
-    } finally {
-      setIsUploading(false);
-    }
+  const handleMediaUpload = (mediaUrl: string) => {
+    // For backward compatibility, wrap single URL in an array
+    onMediaUploaded([mediaUrl]);
+    onOpenChange(false);
   };
-  
-  // Get a friendly label for the media type
-  const getMediaTypeLabel = (type: MediaType): string => {
-    switch (type) {
-      case "photo": return "Foto";
-      case "audio": return "Áudio";
-      case "video": return "Vídeo";
-      case "document": return "Documento";
-    }
-  };
-  
-  // Get icon for the media type
-  const getMediaTypeIcon = (type: MediaType) => {
-    switch (type) {
-      case "photo": return <Camera className="h-5 w-5" />;
-      case "audio": return <Mic className="h-5 w-5" />;
-      case "video": return <Video className="h-5 w-5" />;
-      case "document": return <Upload className="h-5 w-5" />;
-    }
-  };
-  
-  // Filter available media types based on allowed types
-  const availableMediaTypes: MediaType[] = [
-    ...(allowedTypes.includes("photo") ? ["photo" as MediaType] : []),
-    ...(allowedTypes.includes("audio") ? ["audio" as MediaType] : []),
-    ...(allowedTypes.includes("video") ? ["video" as MediaType] : []),
-    // Always allow document uploads
-    "document" as MediaType
-  ];
-  
-  // If no specific media types are allowed, enable all
-  const mediaOptions = availableMediaTypes.length > 0 
-    ? availableMediaTypes 
-    : ["photo", "audio", "video", "document"] as MediaType[];
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Adicionar Mídia</DialogTitle>
+          <DialogTitle>Adicionar mídia</DialogTitle>
         </DialogHeader>
         
-        <div className="flex flex-col space-y-4 py-4">
-          <RadioGroup 
-            defaultValue={selectedType} 
-            value={selectedType}
-            onValueChange={(value) => setSelectedType(value as MediaType)}
-            className="flex flex-col space-y-2"
-          >
-            {mediaOptions.map((type) => (
-              <div key={type} className="flex items-center space-x-2">
-                <RadioGroupItem value={type} id={`media-type-${type}`} />
-                <Label 
-                  htmlFor={`media-type-${type}`}
-                  className="flex items-center cursor-pointer"
-                >
-                  {getMediaTypeIcon(type)}
-                  <span className="ml-2">
-                    {type === "photo" && "Tirar Foto"}
-                    {type === "audio" && "Gravar Áudio"}
-                    {type === "video" && "Gravar Vídeo (15s)"}
-                    {type === "document" && "Enviar Documento (PDF/Imagem)"}
-                  </span>
-                </Label>
-              </div>
-            ))}
-          </RadioGroup>
+        <Tabs defaultValue="photo" className="mt-4">
+          <TabsList className="grid grid-cols-4">
+            {allowedTypes.includes("photo") && (
+              <TabsTrigger value="photo">
+                <Camera className="h-4 w-4 mr-2" />
+                Foto
+              </TabsTrigger>
+            )}
+            {allowedTypes.includes("video") && (
+              <TabsTrigger value="video">
+                <Video className="h-4 w-4 mr-2" />
+                Vídeo
+              </TabsTrigger>
+            )}
+            {allowedTypes.includes("audio") && (
+              <TabsTrigger value="audio">
+                <Mic className="h-4 w-4 mr-2" />
+                Áudio
+              </TabsTrigger>
+            )}
+            <TabsTrigger value="upload">
+              <Upload className="h-4 w-4 mr-2" />
+              Arquivo
+            </TabsTrigger>
+          </TabsList>
           
-          <div className="text-sm text-muted-foreground">
-            {selectedType === "photo" && "Tire uma foto da situação observada."}
-            {selectedType === "audio" && "Grave um áudio com observações importantes."}
-            {selectedType === "video" && "Grave um vídeo curto (máximo 15 segundos)."}
-            {selectedType === "document" && "Envie um documento relacionado à pergunta."}
-          </div>
-        </div>
-        
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button 
-            type="button" 
-            onClick={handleUpload} 
-            disabled={isUploading}
-          >
-            {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isUploading ? "Enviando..." : "Iniciar Captura"}
-          </Button>
-        </DialogFooter>
+          <TabsContent value="photo" className="mt-4">
+            <div className="text-center p-8 border rounded-lg">
+              <Camera className="h-8 w-8 mx-auto text-muted-foreground" />
+              <h3 className="mt-2 text-sm font-medium">Tirar foto</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Clique para capturar uma foto com sua câmera
+              </p>
+              <button 
+                className="mt-4 px-4 py-2 bg-primary text-white rounded-md text-sm"
+                onClick={() => handleMediaUpload("https://example.com/sample-photo.jpg")}
+              >
+                Capturar foto
+              </button>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="video" className="mt-4">
+            <div className="text-center p-8 border rounded-lg">
+              <Video className="h-8 w-8 mx-auto text-muted-foreground" />
+              <h3 className="mt-2 text-sm font-medium">Gravar vídeo</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Grave um vídeo de até 15 segundos
+              </p>
+              <button 
+                className="mt-4 px-4 py-2 bg-primary text-white rounded-md text-sm"
+                onClick={() => handleMediaUpload("https://example.com/sample-video.mp4")}
+              >
+                Iniciar gravação
+              </button>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="audio" className="mt-4">
+            <div className="text-center p-8 border rounded-lg">
+              <Mic className="h-8 w-8 mx-auto text-muted-foreground" />
+              <h3 className="mt-2 text-sm font-medium">Gravar áudio</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Grave uma nota de áudio
+              </p>
+              <button 
+                className="mt-4 px-4 py-2 bg-primary text-white rounded-md text-sm"
+                onClick={() => handleMediaUpload("https://example.com/sample-audio.mp3")}
+              >
+                Iniciar gravação
+              </button>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="upload" className="mt-4">
+            <div className="text-center p-8 border rounded-lg">
+              <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
+              <h3 className="mt-2 text-sm font-medium">Enviar arquivo</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Envie um documento, imagem ou outro arquivo
+              </p>
+              <button 
+                className="mt-4 px-4 py-2 bg-primary text-white rounded-md text-sm"
+                onClick={() => handleMediaUpload("https://example.com/sample-file.pdf")}
+              >
+                Selecionar arquivo
+              </button>
+            </div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

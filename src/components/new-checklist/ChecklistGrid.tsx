@@ -10,12 +10,23 @@ import { Button } from "@/components/ui/button";
 interface ChecklistGridProps {
   checklists: ChecklistWithStats[];
   isLoading?: boolean;
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string, title: string) => void;
+  onDuplicate?: (id: string) => void;
+  onOpen?: (id: string) => void;
 }
 
-export function ChecklistGrid({ checklists, isLoading }: ChecklistGridProps) {
+export function ChecklistGrid({ 
+  checklists, 
+  isLoading,
+  onEdit,
+  onDelete,
+  onDuplicate,
+  onOpen
+}: ChecklistGridProps) {
   // Filter out sub-checklists from the grid display
   const filteredChecklists = checklists.filter(
-    checklist => !checklist.isSubChecklist && !checklist.is_sub_checklist
+    checklist => !(checklist.isSubChecklist || checklist.is_sub_checklist)
   );
   
   if (isLoading) {
@@ -41,7 +52,14 @@ export function ChecklistGrid({ checklists, isLoading }: ChecklistGridProps) {
       </Link>
 
       {filteredChecklists.map((checklist) => (
-        <ChecklistCard key={checklist.id} checklist={checklist} />
+        <ChecklistCard 
+          key={checklist.id} 
+          checklist={checklist} 
+          onEdit={onEdit || (() => {})}
+          onDelete={onDelete || (() => {})}
+          onDuplicate={onDuplicate}
+          onOpen={onOpen}
+        />
       ))}
       
       {filteredChecklists.length === 0 && !isLoading && (

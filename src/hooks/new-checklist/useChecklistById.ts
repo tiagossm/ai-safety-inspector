@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats, ChecklistGroup, ChecklistQuestion } from "@/types/newChecklist";
@@ -80,7 +81,8 @@ export function useChecklistById(id: string) {
           user_id,
           created_at,
           updated_at,
-          due_date
+          due_date,
+          is_sub_checklist
         `)
         .eq("id", id)
         .single();
@@ -231,7 +233,8 @@ export function useChecklistById(id: string) {
           questions: processedQuestions,
           totalQuestions: processedQuestions.length,
           completedQuestions: 0,
-          isSubChecklist: checklistData.is_sub_checklist || checklistData.category === 'sub-checklist'
+          isSubChecklist: checklistData.is_sub_checklist || checklistData.category === 'sub-checklist',
+          is_sub_checklist: checklistData.is_sub_checklist
         };
 
         return checklistWithStats;

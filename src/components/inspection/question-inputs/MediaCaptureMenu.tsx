@@ -11,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 
 interface MediaCaptureMenuProps {
   onAddMedia: () => void;
@@ -118,6 +119,3 @@ export function MediaCaptureMenu({ onAddMedia, mediaUrls }: MediaCaptureMenuProp
     </div>
   );
 }
-
-// Add the missing Badge component
-import { Badge } from "@/components/ui/badge";
