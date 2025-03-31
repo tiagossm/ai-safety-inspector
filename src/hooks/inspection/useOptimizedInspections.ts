@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -79,22 +80,30 @@ export function useOptimizedInspections() {
           : Promise.resolve({ data: [], error: null }),
         
         // Fetch total questions counts for all checklists at once
+        // Use count aggregate and filter by checklist_id instead of group
         checklistIds.length > 0 
-          ? supabase
-              .from('checklist_itens')
-              .select('checklist_id, count(*)', { count: 'exact' })
-              .in('checklist_id', checklistIds)
-              .group('checklist_id')
-          : Promise.resolve({ data: [], error: null }),
+          ? Promise.all(
+              checklistIds.map(checklistId => 
+                supabase
+                  .from('checklist_itens')
+                  .select('*', { count: 'exact', head: true })
+                  .eq('checklist_id', checklistId)
+              )
+            )
+          : Promise.resolve([]),
           
         // Fetch answered questions counts for all inspections at once
+        // Use count aggregate and filter by inspection_id instead of group
         inspectionIds.length > 0
-          ? supabase
-              .from('inspection_responses')
-              .select('inspection_id, count(*)', { count: 'exact' })
-              .in('inspection_id', inspectionIds)
-              .group('inspection_id')
-          : Promise.resolve({ data: [], error: null })
+          ? Promise.all(
+              inspectionIds.map(inspectionId => 
+                supabase
+                  .from('inspection_responses')
+                  .select('*', { count: 'exact', head: true })
+                  .eq('inspection_id', inspectionId)
+              )
+            )
+          : Promise.resolve([])
       ]);
       
       // Process the data into maps for quick lookup
@@ -103,23 +112,38 @@ export function useOptimizedInspections() {
         return acc;
       }, {});
       
-      const questionsCountMap = (questionsCountData.data || []).reduce((acc, item) => {
-        acc[item.checklist_id] = parseInt(item.count, 10);
+      // Convert the array of count queries into a map for checklist questions
+      const questionsCountMap = checklistIds.reduce((acc, checklistId, index) => {
+        if (questionsCountData[index] && questionsCountData[index].count !== null) {
+          acc[checklistId] = questionsCountData[index].count;
+        } else {
+          acc[checklistId] = 0;
+        }
         return acc;
       }, {});
       
-      const responsesCountMap = (responsesCountData.data || []).reduce((acc, item) => {
-        acc[item.inspection_id] = parseInt(item.count, 10);
+      // Convert the array of count queries into a map for inspection responses
+      const responsesCountMap = inspectionIds.reduce((acc, inspectionId, index) => {
+        if (responsesCountData[index] && responsesCountData[index].count !== null) {
+          acc[inspectionId] = responsesCountData[index].count;
+        } else {
+          acc[inspectionId] = 0;
+        }
         return acc;
       }, {});
       
       // Now build the final inspections array with all the data
-      const processedInspections = inspectionsData.map(inspection => {
+      const processedInspections: InspectionDetails[] = inspectionsData.map(inspection => {
         const totalQuestions = questionsCountMap[inspection.checklist_id] || 0;
         const answeredQuestions = responsesCountMap[inspection.id] || 0;
         const progress = totalQuestions > 0 
           ? Math.round((answeredQuestions / totalQuestions) * 100) 
           : 0;
+          
+        // Convert metadata from JSON to Record<string, any> or provide an empty object
+        const metadata = typeof inspection.metadata === 'object' 
+          ? inspection.metadata as Record<string, any> 
+          : {};
           
         return {
           id: inspection.id,
@@ -145,7 +169,7 @@ export function useOptimizedInspections() {
           photos: inspection.photos || [],
           report_url: inspection.report_url,
           unit_id: inspection.unit_id,
-          metadata: inspection.metadata,
+          metadata, // Use the converted metadata
           cnae: inspection.cnae,
           inspection_type: inspection.inspection_type,
           sync_status: inspection.sync_status
@@ -168,7 +192,7 @@ export function useOptimizedInspections() {
     fetchInspections();
   }, [user]);
 
-  // Apply filters com memoização para evitar recálculos desnecessários
+  // Apply filters with memoization to avoid unnecessary recalculations
   const filteredInspections = useMemo(() => {
     return inspections.filter(inspection => {
       // Search filter (case insensitive)
