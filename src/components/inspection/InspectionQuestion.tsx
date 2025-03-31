@@ -26,8 +26,8 @@ interface InspectionQuestionProps {
   onResponseChange: (data: any) => void;
   allQuestions: any[];
   onOpenSubChecklist?: () => void;
-  numberLabel?: string; // Add parent number label for hierarchical display
-  isSubQuestion?: boolean; // Flag to indicate if this is a sub-checklist question
+  numberLabel?: string;
+  isSubQuestion?: boolean;
 }
 
 export function InspectionQuestion({
@@ -78,7 +78,6 @@ export function InspectionQuestion({
   const indentationClass = isSubQuestion ? "ml-6" : "";
   
   return (
-    // Fix: Wrap with a div instead of Fragment when data attributes are needed
     <div>
       <Card className={`${getQuestionCardClasses(question, response)} ${indentationClass} mb-4`}>
         <CardContent className="p-3.5">
@@ -89,7 +88,7 @@ export function InspectionQuestion({
             response={response}
             showCommentSection={showCommentSection}
             setShowCommentSection={setShowCommentSection}
-            numberLabel={displayLabel} // Pass the number label to the header
+            numberLabel={displayLabel}
           />
           
           <div className="mt-2">

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { InspectionQuestion } from "../InspectionQuestion";
 import { Button } from "@/components/ui/button";

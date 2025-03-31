@@ -6,175 +6,146 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogDescription
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Camera, File, Upload, Loader2 } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { 
+  Camera, 
+  Mic, 
+  Video, 
+  Upload,
+  Loader2
+} from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { v4 as uuidv4 } from "uuid";
 
 interface MediaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onMediaUploaded: (mediaData: any) => void;
+  onMediaUploaded: (url: string) => void;
   response: any;
-  allowedTypes?: string[];
+  allowedTypes: string[];
 }
+
+type MediaType = "photo" | "audio" | "video" | "document";
 
 export function MediaDialog({
   open,
   onOpenChange,
   onMediaUploaded,
   response,
-  allowedTypes = ["image/*", "video/*", "audio/*", "application/pdf"]
+  allowedTypes
 }: MediaDialogProps) {
-  const [file, setFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<MediaType>("photo");
+  const [isUploading, setIsUploading] = useState(false);
   
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
-      
-      // Check file size (limit to 10MB)
-      if (selectedFile.size > 10 * 1024 * 1024) {
-        toast.error("Arquivo muito grande. O tamanho máximo é 10MB.");
-        return;
-      }
-      
-      setFile(selectedFile);
-      
-      // Create preview for images
-      if (selectedFile.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          setPreview(event.target?.result as string);
-        };
-        reader.readAsDataURL(selectedFile);
-      } else {
-        setPreview(null);
-      }
-    }
-  };
-  
+  // Mock upload function - in a real app, this would handle the actual file upload
   const handleUpload = async () => {
-    if (!file) {
-      toast.error("Selecione um arquivo para upload");
-      return;
-    }
-    
-    setUploading(true);
+    setIsUploading(true);
     
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${uuidv4()}.${fileExt}`;
-      const filePath = `inspection_media/${fileName}`;
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Mock upload delay
       
-      // Upload to Supabase Storage
-      const { data, error } = await supabase.storage
-        .from('media')
-        .upload(filePath, file);
+      // Mock successful upload with a fake URL
+      const mockUrl = `https://example.com/uploads/${Date.now()}_${selectedType}`;
+      onMediaUploaded(mockUrl);
       
-      if (error) throw error;
-      
-      // Get the public URL
-      const { data: urlData } = supabase.storage
-        .from('media')
-        .getPublicUrl(filePath);
-      
-      if (!urlData.publicUrl) throw new Error("Falha ao obter URL pública do arquivo");
-      
-      onMediaUploaded({
-        url: urlData.publicUrl,
-        type: file.type,
-        name: file.name,
-        size: file.size
-      });
-      
-      // Reset state
-      setFile(null);
-      setPreview(null);
-      
+      toast.success(`${getMediaTypeLabel(selectedType)} enviado com sucesso!`);
+      onOpenChange(false);
     } catch (error) {
-      console.error("Error uploading file:", error);
-      toast.error("Erro ao fazer upload do arquivo");
+      toast.error(`Erro ao enviar ${getMediaTypeLabel(selectedType).toLowerCase()}`);
+      console.error("Upload error:", error);
     } finally {
-      setUploading(false);
+      setIsUploading(false);
     }
   };
   
-  const acceptAttribute = allowedTypes.join(", ");
+  // Get a friendly label for the media type
+  const getMediaTypeLabel = (type: MediaType): string => {
+    switch (type) {
+      case "photo": return "Foto";
+      case "audio": return "Áudio";
+      case "video": return "Vídeo";
+      case "document": return "Documento";
+    }
+  };
+  
+  // Get icon for the media type
+  const getMediaTypeIcon = (type: MediaType) => {
+    switch (type) {
+      case "photo": return <Camera className="h-5 w-5" />;
+      case "audio": return <Mic className="h-5 w-5" />;
+      case "video": return <Video className="h-5 w-5" />;
+      case "document": return <Upload className="h-5 w-5" />;
+    }
+  };
+  
+  // Filter available media types based on allowed types
+  const availableMediaTypes: MediaType[] = [
+    ...(allowedTypes.includes("photo") ? ["photo" as MediaType] : []),
+    ...(allowedTypes.includes("audio") ? ["audio" as MediaType] : []),
+    ...(allowedTypes.includes("video") ? ["video" as MediaType] : []),
+    // Always allow document uploads
+    "document" as MediaType
+  ];
+  
+  // If no specific media types are allowed, enable all
+  const mediaOptions = availableMediaTypes.length > 0 
+    ? availableMediaTypes 
+    : ["photo", "audio", "video", "document"] as MediaType[];
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md" aria-describedby="media-dialog-description">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Camera className="h-4 w-4" />
-            <span>Adicionar Mídia</span>
-          </DialogTitle>
-          <DialogDescription id="media-dialog-description">
-            Adicione fotos, vídeos ou outros arquivos à sua resposta.
-          </DialogDescription>
+          <DialogTitle>Adicionar Mídia</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4">
-          <div className="grid w-full max-w-sm items-center gap-1.5">
-            <Label htmlFor="media-file">Selecione um arquivo</Label>
-            <Input
-              id="media-file"
-              type="file"
-              accept={acceptAttribute}
-              onChange={handleFileChange}
-              disabled={uploading}
-            />
-          </div>
-          
-          {preview && (
-            <div className="mt-2 rounded-md overflow-hidden border">
-              <img 
-                src={preview} 
-                alt="Preview" 
-                className="w-full h-auto max-h-[200px] object-contain" 
-              />
-            </div>
-          )}
-          
-          {file && !preview && (
-            <div className="mt-2 p-4 border rounded-md flex items-center gap-2">
-              <File className="h-8 w-8 text-muted-foreground" />
-              <div className="overflow-hidden">
-                <p className="text-sm font-medium truncate">{file.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {(file.size / 1024).toFixed(2)} KB • {file.type}
-                </p>
+        <div className="flex flex-col space-y-4 py-4">
+          <RadioGroup 
+            defaultValue={selectedType} 
+            value={selectedType}
+            onValueChange={(value) => setSelectedType(value as MediaType)}
+            className="flex flex-col space-y-2"
+          >
+            {mediaOptions.map((type) => (
+              <div key={type} className="flex items-center space-x-2">
+                <RadioGroupItem value={type} id={`media-type-${type}`} />
+                <Label 
+                  htmlFor={`media-type-${type}`}
+                  className="flex items-center cursor-pointer"
+                >
+                  {getMediaTypeIcon(type)}
+                  <span className="ml-2">
+                    {type === "photo" && "Tirar Foto"}
+                    {type === "audio" && "Gravar Áudio"}
+                    {type === "video" && "Gravar Vídeo (15s)"}
+                    {type === "document" && "Enviar Documento (PDF/Imagem)"}
+                  </span>
+                </Label>
               </div>
-            </div>
-          )}
+            ))}
+          </RadioGroup>
+          
+          <div className="text-sm text-muted-foreground">
+            {selectedType === "photo" && "Tire uma foto da situação observada."}
+            {selectedType === "audio" && "Grave um áudio com observações importantes."}
+            {selectedType === "video" && "Grave um vídeo curto (máximo 15 segundos)."}
+            {selectedType === "document" && "Envie um documento relacionado à pergunta."}
+          </div>
         </div>
         
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={uploading}>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
           <Button 
+            type="button" 
             onClick={handleUpload} 
-            disabled={!file || uploading}
+            disabled={isUploading}
           >
-            {uploading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                <span>Enviando...</span>
-              </>
-            ) : (
-              <>
-                <Upload className="mr-2 h-4 w-4" />
-                <span>Enviar</span>
-              </>
-            )}
+            {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isUploading ? "Enviando..." : "Iniciar Captura"}
           </Button>
         </DialogFooter>
       </DialogContent>

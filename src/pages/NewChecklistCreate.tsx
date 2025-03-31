@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,6 +14,7 @@ import { useChecklistAI } from "@/hooks/new-checklist/useChecklistAI";
 import { AIAssistantSelector } from "@/components/checklists/create-forms/AIAssistantSelector";
 import { CSVImportSection } from "@/components/checklists/create-forms/CSVImportSection";
 import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
+import { FloatingNavigation } from "@/components/ui/floating-navigation";
 
 export default function NewChecklistCreate() {
   const navigate = useNavigate();
@@ -494,6 +494,8 @@ export default function NewChecklistCreate() {
           </Button>
         </div>
       </form>
+      
+      <FloatingNavigation threshold={400} />
     </div>
   );
 }

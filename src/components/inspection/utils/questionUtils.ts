@@ -1,51 +1,81 @@
 
-export const getAllowedAttachmentTypes = (question: any): ("photo" | "video" | "audio" | "file")[] => {
-  const types: ("photo" | "video" | "audio" | "file")[] = ["file"];
+/**
+ * Determines the CSS classes for a question card based on its state
+ */
+export function getQuestionCardClasses(question: any, response: any): string {
+  // Base classes for all cards
+  let classes = "border";
   
-  if (question.allowsPhoto) {
-    types.push("photo");
+  // If the question has been answered, apply specific styles
+  if (response && response.value !== undefined) {
+    // Style based on yes/no response type for better visual cues
+    if (response.value === "sim") {
+      classes += " border-green-300 bg-green-50";
+    } else if (response.value === "não") {
+      classes += " border-red-300 bg-red-50";
+    } else {
+      classes += " border-blue-300 bg-blue-50";
+    }
   }
   
-  if (question.allowsVideo) {
-    types.push("video");
+  // Add specific class for required questions
+  if (question.isRequired || question.required) {
+    classes += " border-l-4";
   }
   
-  if (question.allowsAudio) {
-    types.push("audio");
-  }
-  
-  return types;
-};
+  return classes;
+}
 
-export const shouldShowQuestion = (question: any, allQuestions: any[], responses: Record<string, any>) => {
-  const isFollowUpQuestion = !!question.parentQuestionId;
+/**
+ * Determines if a question should be shown based on parent conditions
+ */
+export function shouldShowQuestion(
+  question: any,
+  allQuestions: any[],
+  responses: Record<string, any>
+): boolean {
+  // If it's not a conditional question, always show it
+  if (!question.parentQuestionId && !question.parent_item_id) {
+    return true;
+  }
   
-  if (!isFollowUpQuestion) return true;
+  // Find the parent question
+  const parentId = question.parentQuestionId || question.parent_item_id;
+  const parentQuestion = allQuestions.find(q => q.id === parentId);
   
-  const parentQuestion = isFollowUpQuestion ? 
-    allQuestions.find(q => q.id === question.parentQuestionId) : null;
+  if (!parentQuestion) {
+    return true; // If parent not found, default to showing the question
+  }
   
-  return parentQuestion && 
-         responses[parentQuestion.id] && 
-         responses[parentQuestion.id].value === question.conditionValue;
-};
+  // Get the parent's response
+  const parentResponse = responses[parentId];
+  
+  if (!parentResponse || parentResponse.value === undefined) {
+    return false; // If parent has no response, don't show this question
+  }
+  
+  // Check if the condition value matches
+  const conditionValue = question.conditionValue || question.condition_value || "sim";
+  return parentResponse.value === conditionValue;
+}
 
-export const getQuestionCardClasses = (question: any, response: any) => {
-  let baseClasses = "overflow-hidden border border-gray-200 shadow-sm";
+/**
+ * Returns the allowed attachment types for a question
+ */
+export function getAllowedAttachmentTypes(question: any): string[] {
+  const allowedTypes = [];
   
-  if (!response?.value && question.isRequired) {
-    return `${baseClasses} border-l-4 border-l-yellow-400`;
+  if (question.allowsPhoto || question.permite_foto) {
+    allowedTypes.push("photo");
   }
   
-  if (question.responseType === "sim/não" || question.responseType === "yes_no") {
-    if (response?.value === "sim") return `${baseClasses} border-l-4 border-l-green-400`;
-    if (response?.value === "não") return `${baseClasses} border-l-4 border-l-red-400`;
-    return baseClasses;
+  if (question.allowsVideo || question.permite_video) {
+    allowedTypes.push("video");
   }
   
-  if (response?.value) {
-    return `${baseClasses} border-l-4 border-l-blue-400`;
+  if (question.allowsAudio || question.permite_audio) {
+    allowedTypes.push("audio");
   }
   
-  return baseClasses;
-};
+  return allowedTypes;
+}
