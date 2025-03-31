@@ -54,6 +54,9 @@ Crie um sub-checklist muito específico e detalhado com perguntas técnicas e re
 Certifique-se de que todas as perguntas estejam diretamente relacionadas à pergunta principal e ajudem a avaliá-la em detalhes.
 Utilize apenas os tipos de resposta disponíveis: yes_no, text, numeric, ou multiple_choice.
 Para yes_no, as respostas serão "sim" ou "não".
+
+IMPORTANTE: Gere exatamente ${actualQuestionCount} perguntas para o sub-checklist. 
+Nem mais, nem menos.
 `;
 
     console.log("Gerando sub-checklist para pergunta principal:", parentQuestionText);
@@ -131,6 +134,31 @@ Para yes_no, as respostas serão "sim" ou "não".
           allowsAudio: false
         };
       });
+      
+      // Check if we have the correct number of questions
+      if (subChecklist.questions.length !== actualQuestionCount) {
+        console.log(`Número incorreto de perguntas geradas: ${subChecklist.questions.length}, ajustando para ${actualQuestionCount}`);
+        
+        // Adjust question count if needed
+        if (subChecklist.questions.length > actualQuestionCount) {
+          // Remove excess questions
+          subChecklist.questions = subChecklist.questions.slice(0, actualQuestionCount);
+        } else if (subChecklist.questions.length < actualQuestionCount) {
+          // Add generic questions if we don't have enough
+          const missingCount = actualQuestionCount - subChecklist.questions.length;
+          for (let i = 0; i < missingCount; i++) {
+            subChecklist.questions.push({
+              text: `Pergunta adicional ${i+1} sobre ${parentQuestionText}?`,
+              responseType: "yes_no",
+              isRequired: true,
+              allowsPhoto: false,
+              allowsVideo: false,
+              allowsAudio: false
+            });
+          }
+        }
+      }
+      
     } catch (parseError) {
       console.error("Erro ao analisar resposta da IA:", parseError);
       return new Response(JSON.stringify({

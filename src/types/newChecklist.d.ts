@@ -1,64 +1,54 @@
-
-export interface ChecklistWithStats {
+export interface ChecklistGroup {
   id: string;
   title: string;
-  description?: string;
-  category?: string;
-  is_template: boolean;
-  isTemplate?: boolean;
-  status: "active" | "inactive";
-  created_at?: string;
-  createdAt?: string;
-  updated_at?: string;
-  updatedAt?: string;
-  user_id?: string;
-  userId?: string;
-  responsible_id?: string;
-  responsibleId?: string;
-  company_id?: string;
-  companyId?: string;
-  due_date?: string;
-  dueDate?: string;
-  parent_question_id?: string;
-  parentQuestionId?: string;
-  is_sub_checklist?: boolean;
-  isSubChecklist?: boolean;
-  total_questions?: number;
-  totalQuestions?: number;
-  groups?: ChecklistGroup[];
-  questions?: ChecklistQuestion[];
-  completedQuestions?: number;
+  order: number;
 }
 
 export interface ChecklistQuestion {
   id: string;
   text: string;
-  type?: string;
-  responseType?: string;
+  responseType: 'yes_no' | 'multiple_choice' | 'text' | 'numeric' | 'photo' | 'signature';
   isRequired: boolean;
-  required?: boolean;
+  options?: string[];
+  hint?: string;
   weight: number;
-  order?: number;
+  groupId?: string;
+  parentQuestionId?: string;
+  conditionValue?: string;
   allowsPhoto: boolean;
   allowsVideo: boolean;
   allowsAudio: boolean;
-  options?: string[];
-  hint?: string;
-  parentQuestionId?: string;
-  parentId?: string;
-  parent_item_id?: string;
-  conditionValue?: string;
-  condition_value?: string;
-  groupId?: string;
-  subChecklistId?: string;
+  order: number;
   hasSubChecklist?: boolean;
+  subChecklistId?: string;
 }
 
-export interface ChecklistGroup {
+export interface Checklist {
   id: string;
   title: string;
-  order?: number;
+  description?: string;
+  isTemplate: boolean;
+  status: 'active' | 'inactive';
+  category?: string;
+  responsibleId?: string | null;
+  companyId?: string | null;
+  userId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  dueDate?: string | null;
+  isSubChecklist?: boolean;
+}
+
+export interface ChecklistWithStats extends Checklist {
+  totalQuestions?: number;
+  completedQuestions?: number;
+  groups?: ChecklistGroup[];
   questions?: ChecklistQuestion[];
+  is_sub_checklist?: boolean; // For backward compatibility
+  isSubChecklist?: boolean;
+  // Support both snake_case and camelCase for backward compatibility
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface NewChecklistPayload {

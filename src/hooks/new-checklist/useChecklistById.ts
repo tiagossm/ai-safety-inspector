@@ -1,251 +1,188 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ChecklistWithStats, ChecklistGroup, ChecklistQuestion } from "@/types/newChecklist";
-import { initializeInspectionsSchema } from "@/utils/initializeDatabase";
-
-// Utility function to validate UUID format
-const isValidUUID = (id: string): boolean => {
-  if (!id) return false;
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(id);
-};
-
-// Helper to parse group information from hint field
-const parseGroupInfo = (hint?: string): { groupId?: string; groupTitle?: string; groupIndex?: number } => {
-  if (!hint) return {};
-  try {
-    if (hint.includes("groupId")) {
-      const groupInfo = JSON.parse(hint);
-      return {
-        groupId: groupInfo.groupId,
-        groupTitle: groupInfo.groupTitle,
-        groupIndex: groupInfo.groupIndex
-      };
-    }
-  } catch (e) {
-    console.warn("Invalid group info JSON:", hint);
-  }
-  return {};
-};
-
-// Map database response type to our TypeScript type
-const mapResponseType = (dbType: string): ChecklistQuestion["responseType"] => {
-  const typeMap: Record<string, ChecklistQuestion["responseType"]> = {
-    "yes_no": "yes_no",
-    "multiple_choice": "multiple_choice",
-    "text": "text",
-    "numeric": "numeric",
-    "photo": "photo",
-    "signature": "signature",
-    "sim/não": "yes_no",
-    "seleção múltipla": "multiple_choice",
-    "texto": "text",
-    "numérico": "numeric",
-    "foto": "photo",
-    "assinatura": "signature"
-  };
-  return typeMap[dbType.toLowerCase()] || "text";
-};
+import { toast } from "sonner";
+import { ChecklistWithStats, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 
 export function useChecklistById(id: string) {
   return useQuery({
     queryKey: ["new-checklist", id],
     queryFn: async (): Promise<ChecklistWithStats | null> => {
-      if (!id || id === "new" || id === "editor") {
-        console.log("Skipping query for special ID:", id);
-        return null;
-      }
+      if (!id) return null;
 
-      if (!isValidUUID(id)) {
-        console.error("Invalid UUID format:", id);
-        throw new Error("ID de checklist inválido");
-      }
-
-      // Initialize the database schema to ensure required columns exist
-      await initializeInspectionsSchema();
-
-      console.log(`Fetching checklist with ID: ${id}`);
-
-      const { data: checklistData, error: checklistError } = await supabase
-        .from("checklists")
-        .select(`
-          id,
-          title,
-          description,
-          is_template,
-          status_checklist,
-          category,
-          responsible_id,
-          company_id,
-          user_id,
-          created_at,
-          updated_at,
-          due_date,
-          is_sub_checklist
-        `)
-        .eq("id", id)
-        .single();
-
-      if (checklistError) {
-        console.error("Error fetching checklist:", checklistError);
-        throw checklistError;
-      }
-
-      if (!checklistData) {
-        console.error("No checklist found with ID:", id);
-        throw new Error("Checklist não encontrado");
-      }
+      console.log("Fetching checklist with ID:", id);
 
       try {
-        const { data: questionsData, error: questionsError } = await supabase
+        // Fetch the main checklist data
+        const { data: checklist, error: checklistError } = await supabase
+          .from("checklists")
+          .select("*")
+          .eq("id", id)
+          .single();
+
+        if (checklistError) {
+          console.error("Error fetching checklist:", checklistError);
+          throw checklistError;
+        }
+
+        if (!checklist) {
+          console.error("Checklist not found with ID:", id);
+          throw new Error("Checklist not found");
+        }
+
+        // Fetch the checklist questions
+        const { data: questions, error: questionsError } = await supabase
           .from("checklist_itens")
-          .select(`
-            id,
-            pergunta,
-            tipo_resposta,
-            obrigatorio,
-            opcoes,
-            hint,
-            weight,
-            parent_item_id,
-            condition_value,
-            permite_foto,
-            permite_video,
-            permite_audio,
-            ordem,
-            sub_checklist_id
-          `)
+          .select("*")
           .eq("checklist_id", id)
           .order("ordem", { ascending: true });
 
         if (questionsError) {
-          console.error("Error fetching questions for checklist:", questionsError);
+          console.error("Error fetching checklist questions:", questionsError);
           throw questionsError;
         }
 
-        console.log(`Retrieved ${questionsData?.length || 0} questions for checklist ${id}`);
-        console.log("Processing questions:", questionsData?.length || 0);
+        console.log(`Retrieved ${questions?.length || 0} questions for checklist ${id}`);
 
-        const groupsMap = new Map<string, ChecklistGroup>();
-        const processedQuestions: ChecklistQuestion[] = [];
+        // Process the questions to extract groups
+        const groupMap = new Map<string, ChecklistGroup>();
+        const normalizedQuestions: ChecklistQuestion[] = [];
 
-        // Primeiro, vamos identificar grupos existentes para garantir que todas as perguntas sejam mapeadas corretamente
-        if (questionsData?.length > 0) {
-          // Criar um grupo padrão se não houver nenhum explícito
-          let defaultGroupId: string | null = null;
+        // Helper function to extract group info from hint
+        const extractGroupInfo = (hint: string | null): { 
+          groupId: string; 
+          groupTitle: string; 
+          groupIndex: number 
+        } | null => {
+          if (!hint) return null;
+
+          try {
+            const parsedHint = JSON.parse(hint);
+            if (parsedHint.groupId && parsedHint.groupTitle) {
+              return {
+                groupId: parsedHint.groupId,
+                groupTitle: parsedHint.groupTitle,
+                groupIndex: parsedHint.groupIndex || 0
+              };
+            }
+          } catch (e) {
+            return null;
+          }
+
+          return null;
+        };
+
+        // Process each question to normalize and extract group info
+        questions?.forEach((q, index) => {
+          const groupInfo = extractGroupInfo(q.hint);
+          let groupId = "default";
           
-          // Processar informações de grupos primeiro
-          for (const q of questionsData) {
-            const { groupId, groupTitle } = parseGroupInfo(q.hint || undefined);
+          if (groupInfo) {
+            groupId = groupInfo.groupId;
             
-            if (groupId && groupTitle && !groupsMap.has(groupId)) {
-              groupsMap.set(groupId, {
+            // Add group to groupMap if not exists
+            if (!groupMap.has(groupId)) {
+              groupMap.set(groupId, {
                 id: groupId,
-                title: groupTitle,
-                order: groupsMap.size
+                title: groupInfo.groupTitle,
+                order: groupInfo.groupIndex
               });
             }
           }
-          
-          // Se não encontramos grupos, criar um padrão
-          if (groupsMap.size === 0 && questionsData.length > 0) {
-            defaultGroupId = "default-group";
-            groupsMap.set(defaultGroupId, {
-              id: defaultGroupId,
-              title: "Geral",
-              order: 0
-            });
-          }
-          
-          // Agora processar todas as perguntas
-          for (const q of questionsData) {
-            let questionGroupId: string | undefined;
-            
-            // Tentar extrair groupId do hint
-            const { groupId } = parseGroupInfo(q.hint || undefined);
-            
-            if (groupId && groupsMap.has(groupId)) {
-              questionGroupId = groupId;
-            } else if (defaultGroupId) {
-              // Se não tem grupo mas temos um padrão, usar o padrão
-              questionGroupId = defaultGroupId;
+
+          // Check if this question has a sub-checklist
+          const hasSubChecklist = q.has_subchecklist || false;
+          const subChecklistId = q.subchecklist_id || null;
+
+          // For backward compatibility and consistency
+          const responseType = (() => {
+            switch (q.tipo_resposta) {
+              case "sim/não": return "yes_no";
+              case "texto": return "text";
+              case "numérico": return "numeric";
+              case "seleção múltipla": return "multiple_choice";
+              case "foto": return "photo";
+              case "assinatura": return "signature";
+              default: return "yes_no";
             }
-            
-            let options: string[] | undefined;
-            
-            // Processar opções
-            if (q.opcoes) {
-              if (Array.isArray(q.opcoes)) {
-                options = q.opcoes.map(String);
-              } else if (typeof q.opcoes === "string") {
-                try {
-                  const parsed = JSON.parse(q.opcoes);
-                  options = Array.isArray(parsed) ? parsed.map(String) : [q.opcoes];
-                } catch (e) {
-                  options = [q.opcoes];
-                }
-              }
+          })();
+
+          // Add normalized question
+          normalizedQuestions.push({
+            id: q.id,
+            text: q.pergunta,
+            responseType: responseType,
+            isRequired: q.obrigatorio,
+            weight: q.weight || 1,
+            options: q.opcoes,
+            hint: q.hint,
+            groupId,
+            parentQuestionId: q.parent_item_id,
+            conditionValue: q.condition_value,
+            allowsPhoto: q.permite_foto || false,
+            allowsVideo: q.permite_video || false,
+            allowsAudio: q.permite_audio || false,
+            order: q.ordem || index,
+            hasSubChecklist,
+            subChecklistId
+          });
+        });
+
+        // Convert group map to array and sort by order
+        const groups = Array.from(groupMap.values()).sort((a, b) => a.order - b.order);
+
+        // If no groups defined but we have questions, create a default group
+        if (groups.length === 0 && normalizedQuestions.length > 0) {
+          groups.push({
+            id: "default",
+            title: "Geral",
+            order: 0
+          });
+          
+          // Assign all questions to the default group
+          normalizedQuestions.forEach(q => {
+            if (!q.groupId) {
+              q.groupId = "default";
             }
-            
-            // Special handling for sub-checklists
-            const isSubChecklist = q.sub_checklist_id;
-            
-            processedQuestions.push({
-              id: q.id,
-              text: q.pergunta,
-              responseType: mapResponseType(q.tipo_resposta),
-              isRequired: q.obrigatorio,
-              options,
-              hint: q.hint || undefined,
-              weight: q.weight || 1,
-              groupId: questionGroupId,
-              parentQuestionId: q.parent_item_id || undefined,
-              conditionValue: q.condition_value || undefined,
-              allowsPhoto: q.permite_foto || false,
-              allowsVideo: q.permite_video || false,
-              allowsAudio: q.permite_audio || false,
-              order: q.ordem || processedQuestions.length,
-              hasSubChecklist: !!q.sub_checklist_id,
-              subChecklistId: q.sub_checklist_id || undefined
-            });
-          }
+          });
         }
 
-        const groups = Array.from(groupsMap.values()).sort((a, b) => a.order - b.order);
-        console.log("Processing questions:", processedQuestions.length);
-        console.log("Processing groups:", groups.length);
+        console.log(`Processing questions: ${normalizedQuestions.length}`);
+        console.log(`Processing groups: ${groups.length}`);
 
+        // Build the final checklist with stats
         const checklistWithStats: ChecklistWithStats = {
-          id: checklistData.id,
-          title: checklistData.title,
-          description: checklistData.description || undefined,
-          isTemplate: checklistData.is_template,
-          status: checklistData.status_checklist === "ativo" ? "active" : "inactive",
-          category: checklistData.category || undefined,
-          responsibleId: checklistData.responsible_id || undefined,
-          companyId: checklistData.company_id || undefined,
-          userId: checklistData.user_id || undefined,
-          createdAt: checklistData.created_at,
-          updatedAt: checklistData.updated_at,
-          dueDate: checklistData.due_date || undefined,
+          id: checklist.id,
+          title: checklist.title,
+          description: checklist.description,
+          isTemplate: checklist.is_template,
+          status: checklist.status_checklist === "ativo" ? "active" : "inactive",
+          category: checklist.category,
+          responsibleId: checklist.responsible_id,
+          companyId: checklist.company_id,
+          userId: checklist.user_id,
+          createdAt: checklist.created_at,
+          updatedAt: checklist.updated_at,
+          dueDate: checklist.due_date,
           groups,
-          questions: processedQuestions,
-          totalQuestions: processedQuestions.length,
+          questions: normalizedQuestions,
+          totalQuestions: normalizedQuestions.length,
           completedQuestions: 0,
-          isSubChecklist: checklistData.is_sub_checklist || checklistData.category === 'sub-checklist',
-          is_sub_checklist: checklistData.is_sub_checklist
+          // Support for both camelCase and snake_case
+          created_at: checklist.created_at,
+          updated_at: checklist.updated_at,
+          isSubChecklist: checklist.is_sub_checklist,
+          is_sub_checklist: checklist.is_sub_checklist
         };
 
         return checklistWithStats;
-      } catch (err) {
-        // If there's an error related to missing columns, initialize the schema
-        console.error("Error processing checklist data:", err);
-        await initializeInspectionsSchema();
-        throw new Error("Erro ao processar dados do checklist. Por favor, tente novamente.");
+      } catch (error) {
+        console.error("Error in useChecklistById:", error);
+        toast.error(`Erro ao carregar checklist: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
+        throw error;
       }
     },
-    enabled: !!id && id !== "new" && id !== "editor",
-    staleTime: 60000,
-    gcTime: 300000
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }
