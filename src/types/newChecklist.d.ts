@@ -1,3 +1,4 @@
+
 export interface ChecklistGroup {
   id: string;
   title: string;
@@ -49,6 +50,8 @@ export interface ChecklistWithStats extends Checklist {
   // Support both snake_case and camelCase for backward compatibility
   created_at?: string;
   updated_at?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface NewChecklistPayload {

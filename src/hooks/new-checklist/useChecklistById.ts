@@ -107,6 +107,24 @@ export function useChecklistById(id: string) {
             }
           })();
 
+          // Convert options to array if it's not already
+          let options: string[] | undefined = undefined;
+          if (q.opcoes) {
+            if (Array.isArray(q.opcoes)) {
+              options = q.opcoes;
+            } else if (typeof q.opcoes === 'string') {
+              try {
+                options = JSON.parse(q.opcoes);
+              } catch (e) {
+                // If parse fails, treat as a single option
+                options = [String(q.opcoes)];
+              }
+            } else {
+              // For any other case, convert to string array
+              options = [String(q.opcoes)];
+            }
+          }
+
           // Add normalized question
           normalizedQuestions.push({
             id: q.id,
@@ -114,7 +132,7 @@ export function useChecklistById(id: string) {
             responseType: responseType,
             isRequired: q.obrigatorio,
             weight: q.weight || 1,
-            options: q.opcoes,
+            options: options,
             hint: q.hint,
             groupId,
             parentQuestionId: q.parent_item_id,
