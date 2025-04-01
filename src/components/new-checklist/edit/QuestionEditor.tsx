@@ -241,8 +241,8 @@ export function QuestionEditor({
             <ToggleGroupItem 
               value="photo" 
               aria-label="Permitir foto"
-              pressed={question.allowsPhoto}
-              onPressedChange={(pressed) => handleUpdate("allowsPhoto", pressed)}
+              data-state={question.allowsPhoto ? "on" : "off"}
+              onClick={() => handleUpdate("allowsPhoto", !question.allowsPhoto)}
               title="Permitir foto"
             >
               <Image className="h-4 w-4" />
@@ -250,8 +250,8 @@ export function QuestionEditor({
             <ToggleGroupItem 
               value="video" 
               aria-label="Permitir vídeo"
-              pressed={question.allowsVideo}
-              onPressedChange={(pressed) => handleUpdate("allowsVideo", pressed)}
+              data-state={question.allowsVideo ? "on" : "off"}
+              onClick={() => handleUpdate("allowsVideo", !question.allowsVideo)}
               title="Permitir vídeo"
             >
               <Video className="h-4 w-4" />
@@ -259,8 +259,8 @@ export function QuestionEditor({
             <ToggleGroupItem 
               value="audio" 
               aria-label="Permitir áudio"
-              pressed={question.allowsAudio}
-              onPressedChange={(pressed) => handleUpdate("allowsAudio", pressed)}
+              data-state={question.allowsAudio ? "on" : "off"}
+              onClick={() => handleUpdate("allowsAudio", !question.allowsAudio)}
               title="Permitir áudio"
             >
               <Mic className="h-4 w-4" />
@@ -268,8 +268,8 @@ export function QuestionEditor({
             <ToggleGroupItem 
               value="files" 
               aria-label="Permitir arquivos"
-              pressed={question.allowsFiles}
-              onPressedChange={(pressed) => handleUpdate("allowsFiles", pressed)}
+              data-state={question.allowsFiles ? "on" : "off"}
+              onClick={() => handleUpdate("allowsFiles", !question.allowsFiles)}
               title="Permitir arquivos"
             >
               <FileText className="h-4 w-4" />

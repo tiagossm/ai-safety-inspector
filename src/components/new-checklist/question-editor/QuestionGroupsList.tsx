@@ -58,7 +58,7 @@ export function QuestionGroupsList({
                       <QuestionGroup
                         group={group}
                         questions={groupQuestions}
-                        onGroupUpdate={onUpdateGroup}
+                        onUpdateGroup={onUpdateGroup}
                         onAddQuestion={onAddQuestion}
                         onUpdateQuestion={onUpdateQuestion}
                         onDeleteQuestion={onDeleteQuestion}

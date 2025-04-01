@@ -6,11 +6,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SubChecklistEditor } from "./SubChecklistEditor";
 import { SubChecklistAIGenerator } from "./SubChecklistAIGenerator";
 import { List, Sparkles } from "lucide-react";
+import { ChecklistQuestion } from "@/types/newChecklist";
 
 interface SubChecklistButtonProps {
   parentQuestionId: string;
   hasSubChecklist: boolean;
-  subChecklistId?: string;
+  subChecklistId?: string | null;
   onSubChecklistCreated: (subChecklistId: string) => void;
 }
 
@@ -70,7 +71,18 @@ export function SubChecklistButton({
 
             <TabsContent value="ai">
               <SubChecklistAIGenerator
-                parentQuestion={{ id: parentQuestionId, text: "Pergunta principal" }}
+                parentQuestion={{
+                  id: parentQuestionId,
+                  text: "Pergunta principal",
+                  responseType: "yes_no",
+                  isRequired: true,
+                  weight: 1,
+                  order: 0,
+                  allowsPhoto: false,
+                  allowsVideo: false,
+                  allowsAudio: false,
+                  allowsFiles: false
+                }}
                 onSubChecklistCreated={(id) => {
                   onSubChecklistCreated(id);
                   setOpen(false);
