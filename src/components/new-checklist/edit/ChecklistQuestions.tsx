@@ -6,7 +6,7 @@ import { Plus } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
-import { QuestionGroupsList } from "./QuestionGroupsList";
+import { QuestionGroupsList } from "@/components/new-checklist/question-editor/QuestionGroupsList";
 import { FlatQuestionsList } from "./FlatQuestionsList";
 
 interface ChecklistQuestionsProps {

@@ -79,6 +79,7 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
           allowsPhoto: false,
           allowsVideo: false, 
           allowsAudio: false,
+          allowsFiles: false,
           order: 0,
           groupId: "default"
         };
@@ -181,6 +182,7 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
       allowsPhoto: false,
       allowsVideo: false,
       allowsAudio: false,
+      allowsFiles: false,
       order: questionsByGroup.get(groupId)?.length || 0,
       groupId
     };

@@ -53,6 +53,7 @@ export default function NewChecklistCreate() {
       allowsPhoto: false,
       allowsVideo: false,
       allowsAudio: false,
+      allowsFiles: false,
       order: 0
     }
   ]);
@@ -86,6 +87,7 @@ export default function NewChecklistCreate() {
       allowsPhoto: false,
       allowsVideo: false,
       allowsAudio: false,
+      allowsFiles: false,
       order: questions.length,
       groupId: groups[0]?.id
     };
@@ -210,6 +212,7 @@ export default function NewChecklistCreate() {
           allowsPhoto: false,
           allowsVideo: false,
           allowsAudio: false,
+          allowsFiles: false,
           order: index,
           options: options,
           groupId: questions[0]?.groupId

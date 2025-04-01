@@ -12,6 +12,7 @@ interface QuestionGroupsListProps {
   onUpdateQuestion: (question: ChecklistQuestion) => void;
   onDeleteQuestion: (questionId: string) => void;
   onDeleteGroup: (groupId: string) => void;
+  enableAllMedia?: boolean;
 }
 
 export function QuestionGroupsList({
@@ -21,7 +22,8 @@ export function QuestionGroupsList({
   onAddQuestion,
   onUpdateQuestion,
   onDeleteQuestion,
-  onDeleteGroup
+  onDeleteGroup,
+  enableAllMedia = false
 }: QuestionGroupsListProps) {
   return (
     <>
@@ -62,6 +64,7 @@ export function QuestionGroupsList({
                         onDeleteQuestion={onDeleteQuestion}
                         onDeleteGroup={onDeleteGroup}
                         dragHandleProps={draggableProvided.dragHandleProps}
+                        enableAllMedia={enableAllMedia}
                       />
                       {droppableProvided.placeholder}
                     </div>
