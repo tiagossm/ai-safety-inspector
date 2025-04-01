@@ -39,8 +39,8 @@ export function useSubChecklistDialog(
     setSubChecklistDialogOpen(true);
   }, []);
 
-  const handleSaveSubChecklistResponses = useCallback(async (newResponses: Record<string, any>) => {
-    if (!currentParentQuestionId) return false;
+  const handleSaveSubChecklistResponses = useCallback(async (newResponses: Record<string, any>): Promise<void> => {
+    if (!currentParentQuestionId) return;
     
     try {
       setSavingSubChecklist(true);
@@ -59,11 +59,9 @@ export function useSubChecklistDialog(
       }
       
       toast.success("Sub-checklist salvo com sucesso");
-      return true;
     } catch (error) {
       console.error("Error saving sub-checklist responses:", error);
       toast.error("Erro ao salvar respostas do sub-checklist");
-      return false;
     } finally {
       setSavingSubChecklist(false);
     }

@@ -91,7 +91,9 @@ export function QuestionsPanel({
               ? safeParseResponse(responses[currentParentQuestionId].subChecklistResponses)
               : {}
           }
-          onSaveResponses={handleSaveSubChecklistResponses}
+          onSaveResponses={async (responses) => {
+            await handleSaveSubChecklistResponses(responses);
+          }}
           saving={savingSubChecklist}
         />
       )}
