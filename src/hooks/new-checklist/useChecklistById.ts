@@ -154,7 +154,7 @@ export function useChecklistById(id: string) {
             allowsPhoto: q.permite_foto || false,
             allowsVideo: q.permite_video || false,
             allowsAudio: q.permite_audio || false,
-            allowsFiles: q.permite_arquivos || false,
+            allowsFiles: false, // Setting a default value since permite_arquivos doesn't exist in the database schema yet
             order: q.ordem || index,
             hasSubChecklist: hasSubChecklist,
             subChecklistId: subChecklistId
