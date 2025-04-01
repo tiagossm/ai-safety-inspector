@@ -42,19 +42,19 @@ export function ChecklistQuestions({
   onDragEnd,
   enableAllMedia = false
 }: ChecklistQuestionsProps) {
-  // Usar "flat" por padrão, mesmo se não houver grupos
+  // Use "flat" by default, especially if there are no groups
   useEffect(() => {
     if (groups.length === 0 && viewMode === "grouped") {
       onViewModeChange("flat");
     }
   }, [groups.length, viewMode, onViewModeChange]);
 
-  // Obter todas as perguntas, incluindo as de sub-checklists
+  // Get all questions, including sub-checklist questions
   const getAllQuestionsWithSubchecklists = () => {
-    // Criar um mapa para armazenar quais perguntas têm sub-checklists
+    // Create a map to store which questions have sub-checklists
     const questionsWithSubs = new Map<string, ChecklistQuestion[]>();
     
-    // Identificar perguntas de sub-checklists e organizá-las por pergunta pai
+    // Identify sub-checklist questions and organize them by parent question
     questions.forEach(q => {
       if (q.parentQuestionId) {
         const parentQs = questionsWithSubs.get(q.parentQuestionId) || [];
@@ -63,29 +63,29 @@ export function ChecklistQuestions({
       }
     });
     
-    // Criar lista ordenada com todas as perguntas incluindo sub-perguntas
+    // Create ordered list with all questions including sub-questions
     const orderedQuestions: ChecklistQuestion[] = [];
     let counter = 1;
     
-    // Função recursiva para adicionar perguntas e suas sub-perguntas
+    // Recursive function to add questions and their sub-questions
     const addQuestionsRecursively = (qs: ChecklistQuestion[], parentNumber: string = '') => {
-      // Ordenar as perguntas por ordem
+      // Sort questions by order
       const sortedQs = [...qs].sort((a, b) => a.order - b.order);
       
       sortedQs.forEach((q, index) => {
-        // Definir numeração adequada
+        // Define appropriate numbering
         const questionNumber = parentNumber ? `${parentNumber}.${index + 1}` : `${counter}`;
         
-        // Adicionar a pergunta principal com seu número
+        // Add the main question with its number
         const questionWithNumber = { ...q, displayNumber: questionNumber };
         orderedQuestions.push(questionWithNumber);
         
-        // Se não for parentNumber (ou seja, não é uma sub-pergunta), incrementar contador principal
+        // If not parentNumber (i.e., not a sub-question), increment main counter
         if (!parentNumber) {
           counter++;
         }
         
-        // Verificar e adicionar sub-perguntas, se houver
+        // Check and add sub-questions if any
         const subQuestions = questionsWithSubs.get(q.id);
         if (subQuestions && subQuestions.length > 0) {
           addQuestionsRecursively(subQuestions, questionNumber);
@@ -93,14 +93,14 @@ export function ChecklistQuestions({
       });
     };
     
-    // Começar com perguntas que não são sub-perguntas
+    // Start with questions that are not sub-questions
     const rootQuestions = questions.filter(q => !q.parentQuestionId);
     addQuestionsRecursively(rootQuestions);
     
     return orderedQuestions;
   };
 
-  // Obter todas as perguntas com numeração hierárquica
+  // Get all questions with hierarchical numbering
   const allQuestionsWithHierarchy = getAllQuestionsWithSubchecklists();
 
   return (
@@ -118,7 +118,7 @@ export function ChecklistQuestions({
         </Tabs>
       </CardHeader>
       <CardContent className="pt-6">
-        {/* Lista plana de perguntas */}
+        {/* Flat questions list */}
         {viewMode === "flat" && (
           <FlatQuestionsList
             questions={allQuestionsWithHierarchy}
@@ -129,7 +129,7 @@ export function ChecklistQuestions({
           />
         )}
         
-        {/* Perguntas agrupadas */}
+        {/* Grouped questions */}
         {viewMode === "grouped" && (
           <div className="space-y-4">
             <DragDropContext onDragEnd={onDragEnd}>

@@ -2,9 +2,9 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { Draggable } from "react-beautiful-dnd";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { QuestionEditor } from "./QuestionEditor";
+import { SubChecklistQuestions } from "./SubChecklistQuestions";
 
 interface FlatQuestionsListProps {
   questions: ChecklistQuestion[];
@@ -21,6 +21,9 @@ export function FlatQuestionsList({
   onDeleteQuestion,
   enableAllMedia = false
 }: FlatQuestionsListProps) {
+  // Group questions by their parent IDs
+  const parentQuestions = questions.filter(q => !q.parentQuestionId);
+  
   if (questions.length === 0) {
     return (
       <div className="text-center py-8 border border-dashed rounded-md">
@@ -41,35 +44,37 @@ export function FlatQuestionsList({
 
   return (
     <div className="space-y-4">
-      {questions.map((question, index) => {
-        // Determinar classe de indentação baseada no displayNumber
-        let indentClass = "";
-        if (question.displayNumber && question.displayNumber.includes(".")) {
-          // Calcular o nível de indentação baseado no número de pontos
-          const indentLevel = (question.displayNumber.match(/\./g) || []).length;
-          indentClass = `ml-${indentLevel * 6}`;
-        }
-        
-        // Determinar se é uma sub-pergunta para display visual
-        const isSubQuestion = question.parentQuestionId !== undefined;
+      {parentQuestions.map((question, index) => {
+        const displayNumber = question.displayNumber || String(index + 1);
         
         return (
-          <div 
-            key={question.id} 
-            className={`${indentClass} ${isSubQuestion ? "border-l-2 border-l-blue-200 pl-3" : ""}`}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <span className="font-semibold min-w-8">
-                {question.displayNumber || index + 1}.
+          <div key={question.id} className="space-y-2">
+            {/* Main question */}
+            <div className="flex items-start gap-2">
+              <span className="font-semibold min-w-8 mt-1">
+                {displayNumber}.
               </span>
+              
+              <div className="flex-1">
+                <QuestionEditor
+                  question={question}
+                  onUpdate={onUpdateQuestion}
+                  onDelete={onDeleteQuestion}
+                  enableAllMedia={enableAllMedia}
+                />
+                
+                {/* Sub-questions */}
+                {question.hasSubChecklist && (
+                  <SubChecklistQuestions
+                    parentId={question.id}
+                    questions={questions}
+                    onUpdateQuestion={onUpdateQuestion}
+                    onDeleteQuestion={onDeleteQuestion}
+                    parentNumbering={displayNumber}
+                  />
+                )}
+              </div>
             </div>
-            <QuestionEditor
-              question={question}
-              onUpdate={onUpdateQuestion}
-              onDelete={onDeleteQuestion}
-              isSubQuestion={isSubQuestion}
-              enableAllMedia={enableAllMedia}
-            />
           </div>
         );
       })}
