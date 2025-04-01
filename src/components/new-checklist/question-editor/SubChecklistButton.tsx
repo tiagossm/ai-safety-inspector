@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SubChecklistEditor } from "./SubChecklistEditor";
 import { SubChecklistAIGenerator } from "./SubChecklistAIGenerator";
@@ -23,6 +23,7 @@ export function SubChecklistButton({
 }: SubChecklistButtonProps) {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"manual" | "ai">("manual");
+  const descriptionId = "subchecklist-description";
 
   return (
     <>
@@ -39,11 +40,17 @@ export function SubChecklistButton({
       </Button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent 
+          className="max-w-3xl"
+          aria-describedby={descriptionId}
+        >
           <DialogHeader>
             <DialogTitle>
               {hasSubChecklist ? "Editar Sub-checklist" : "Criar Sub-checklist"}
             </DialogTitle>
+            <DialogDescription id={descriptionId}>
+              Crie uma lista de verificação aninhada que será preenchida durante a inspeção.
+            </DialogDescription>
           </DialogHeader>
 
           <Tabs value={activeTab} onValueChange={(tab) => setActiveTab(tab as "manual" | "ai")}>
@@ -82,7 +89,7 @@ export function SubChecklistButton({
                   allowsVideo: false,
                   allowsAudio: false,
                   allowsFiles: false
-                }}
+                } as ChecklistQuestion}
                 onSubChecklistCreated={(id) => {
                   onSubChecklistCreated(id);
                   setOpen(false);

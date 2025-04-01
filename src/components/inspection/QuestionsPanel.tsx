@@ -40,9 +40,12 @@ export function QuestionsPanel({
     safeParseResponse
   } = useSubChecklistDialog(responses, onResponseChange, onSaveSubChecklistResponses);
   
-  const currentGroup = groups.find(g => g.id === currentGroupId);
+  // Encontrar o grupo atual ou usar um grupo padrão
+  const currentGroup = currentGroupId 
+    ? groups.find(g => g.id === currentGroupId) 
+    : { id: "default-group", title: "Perguntas", order: 0 };
   
-  // Display loading or empty states if needed
+  // Se não temos perguntas para mostrar, exibir o estado vazio
   if (loading || !currentGroupId || !currentGroup || filteredQuestions.length === 0) {
     return (
       <QuestionsEmptyState 
@@ -58,7 +61,7 @@ export function QuestionsPanel({
     <>
       <Card>
         <CardHeader>
-          <h3 className="text-lg font-semibold">{currentGroup.title}</h3>
+          <h3 className="text-lg font-semibold">{currentGroup.title || "Perguntas"}</h3>
           <p className="text-sm text-muted-foreground">
             {filteredQuestions.length} {filteredQuestions.length === 1 ? 'pergunta' : 'perguntas'} neste grupo
           </p>

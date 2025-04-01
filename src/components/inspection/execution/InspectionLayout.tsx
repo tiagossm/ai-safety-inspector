@@ -61,14 +61,27 @@ export function InspectionLayout({
   onResponseChange,
   onSaveSubChecklistResponses
 }: InspectionLayoutProps) {
+  // Definir grupo padrão se não houver nenhum
+  const defaultGroup = {
+    id: "default-group",
+    title: "Perguntas",
+    order: 0
+  };
+  
+  // Garantir que sempre existe pelo menos um grupo
+  const displayGroups = groups.length > 0 ? groups : [defaultGroup];
+  
+  // Definir currentGroupId se não estiver definido
+  const effectiveCurrentGroupId = currentGroupId || (displayGroups.length > 0 ? displayGroups[0].id : null);
+  
   // Filter questions by current group, handling null groupId values
-  const questionsInCurrentGroup = currentGroupId
-    ? questions.filter(q => q.groupId === currentGroupId || 
-                          (q.groupId === null && currentGroupId === 'default-group'))
+  const questionsInCurrentGroup = effectiveCurrentGroupId
+    ? questions.filter(q => q.groupId === effectiveCurrentGroupId || 
+                          (q.groupId === null && effectiveCurrentGroupId === 'default-group'))
     : [];
 
   // Log the filtered questions for debugging
-  console.log(`Layout: Questions in group ${currentGroupId}: ${questionsInCurrentGroup.length} of ${questions.length} total`);
+  console.log(`Layout: Questions in group ${effectiveCurrentGroupId}: ${questionsInCurrentGroup.length} of ${questions.length} total`);
   console.log('Group IDs distribution:', questions.reduce((acc, q) => {
     const key = q.groupId || 'null';
     acc[key] = (acc[key] || 0) + 1;
@@ -154,8 +167,8 @@ export function InspectionLayout({
           <Card>
             <ScrollArea className="h-[calc(100vh-350px)]">
               <QuestionGroups 
-                groups={groups}
-                currentGroupId={currentGroupId}
+                groups={displayGroups}
+                currentGroupId={effectiveCurrentGroupId}
                 onGroupChange={setCurrentGroupId}
                 stats={stats}
               />
@@ -167,11 +180,11 @@ export function InspectionLayout({
           <Card>
             <QuestionsPanel
               loading={loading}
-              currentGroupId={currentGroupId}
+              currentGroupId={effectiveCurrentGroupId}
               filteredQuestions={questionsInCurrentGroup}
               questions={questions}
               responses={responses}
-              groups={groups}
+              groups={displayGroups}
               onResponseChange={onResponseChange}
               onSaveSubChecklistResponses={onSaveSubChecklistResponses}
               subChecklists={subChecklists}

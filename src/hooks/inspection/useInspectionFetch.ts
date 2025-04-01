@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -149,7 +148,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
 
       // Sort and set groups
       const sortedGroups = Array.from(groupsMap.values()).sort((a, b) => a.order - b.order);
-      setGroups(sortedGroups);
+      setGroups(sortedGroups.length > 0 ? sortedGroups : [DEFAULT_GROUP]); // Garantir que há pelo menos um grupo
       setQuestions(parsedQuestions);
 
       // Fetch responses for this inspection
@@ -254,8 +253,17 @@ export function useInspectionFetch(inspectionId: string | undefined) {
   }, [inspectionId]);
 
   useEffect(() => {
-    fetchInspectionData();
-  }, [fetchInspectionData]);
+    if (inspectionId) {
+      fetchInspectionData();
+    } else {
+      // Reset states if no inspection ID is provided
+      setLoading(false);
+      setGroups([]);
+      setQuestions([]);
+      setResponses({});
+      setSubChecklists({});
+    }
+  }, [fetchInspectionData, inspectionId]);
 
   return {
     loading,

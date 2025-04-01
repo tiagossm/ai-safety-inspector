@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useInspectionData } from "@/hooks/inspection";
 import { toast } from "sonner";
 import { InspectionError } from "@/components/inspection/execution/InspectionError";
@@ -9,10 +8,20 @@ import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 
 export default function InspectionExecutionPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [autoSave, setAutoSave] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  
+  useEffect(() => {
+    if (id === "new") {
+      navigate("/inspections/new");
+      return;
+    }
+  }, [id, navigate]);
+  
+  const skipLoading = id === "new";
   
   const {
     loading,
@@ -32,9 +41,8 @@ export default function InspectionExecutionPage() {
     refreshData,
     completeInspection,
     reopenInspection
-  } = useInspectionData(id);
+  } = useInspectionData(skipLoading ? undefined : id);
   
-  // Set default group when groups are loaded
   useEffect(() => {
     if (groups.length > 0 && !currentGroupId) {
       setCurrentGroupId(groups[0].id);
@@ -42,7 +50,6 @@ export default function InspectionExecutionPage() {
     }
   }, [groups, currentGroupId]);
 
-  // Auto-save timer
   useEffect(() => {
     if (autoSave) {
       const timer = setTimeout(() => {
@@ -94,7 +101,6 @@ export default function InspectionExecutionPage() {
     }
   };
 
-  // Fix: Add Promise return type to these functions
   const onViewActionPlan = async (): Promise<void> => {
     toast.info("Funcionalidade de Plano de Ação em desenvolvimento");
     return Promise.resolve();
@@ -105,15 +111,17 @@ export default function InspectionExecutionPage() {
     return Promise.resolve();
   };
 
-  // Fix: Create a wrapper function that converts Promise<boolean> to Promise<void>
   const handleSaveSubChecklistResponsesWrapper = async (
     subChecklistId: string, 
     responses: Record<string, any>
   ): Promise<void> => {
     await handleSaveSubChecklistResponses(subChecklistId, responses);
-    // Don't return the boolean, just resolve the promise without a value
     return Promise.resolve();
   };
+
+  if (id === "new") {
+    return null;
+  }
 
   if (error) {
     return (
@@ -125,7 +133,6 @@ export default function InspectionExecutionPage() {
     );
   }
   
-  // Log questions and groups to help debug
   console.log(`Execution Page: Loaded ${questions.length} questions, ${groups.length} groups`);
   if (currentGroupId) {
     const questionsInGroup = questions.filter(q => q.groupId === currentGroupId);
