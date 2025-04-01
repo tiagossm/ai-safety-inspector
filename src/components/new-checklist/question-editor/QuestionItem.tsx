@@ -1,47 +1,37 @@
 
 import React, { useState } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Trash2, GripVertical, Image, Video, Mic, List } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { SubChecklistEditor } from "./SubChecklistEditor";
-import { SubChecklistAIGenerator } from "./SubChecklistAIGenerator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 
 interface QuestionItemProps {
   question: ChecklistQuestion;
   onUpdate: (question: ChecklistQuestion) => void;
   onDelete: (questionId: string) => void;
-  dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
+  enableAllMedia?: boolean;
 }
 
-export function QuestionItem({
-  question,
-  onUpdate,
-  onDelete,
-  dragHandleProps
-}: QuestionItemProps) {
-  const [subChecklistDialogOpen, setSubChecklistDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("manual");
+export function QuestionItem({ question, onUpdate, onDelete, enableAllMedia = false }: QuestionItemProps) {
+  const [expanded, setExpanded] = useState(false);
+  
+  // Apply enableAllMedia if set
+  React.useEffect(() => {
+    if (enableAllMedia && (!question.allowsPhoto || !question.allowsVideo || !question.allowsAudio || !question.allowsFiles)) {
+      onUpdate({
+        ...question,
+        allowsPhoto: true,
+        allowsVideo: true,
+        allowsAudio: true,
+        allowsFiles: true
+      });
+    }
+  }, [enableAllMedia, question, onUpdate]);
   
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onUpdate({
@@ -51,18 +41,9 @@ export function QuestionItem({
   };
   
   const handleTypeChange = (value: string) => {
-    // Ensure value is one of the allowed response types
-    const responseType = value as ChecklistQuestion["responseType"];
-    
-    // If changing from multiple choice to another type, clear options
-    const options = responseType === "multiple_choice" 
-      ? question.options || ["Opção 1", "Opção 2"]
-      : undefined;
-    
     onUpdate({
       ...question,
-      responseType,
-      options
+      responseType: value as any
     });
   };
   
@@ -73,293 +54,164 @@ export function QuestionItem({
     });
   };
   
-  const handleAllowsPhotoChange = (checked: boolean) => {
+  const handleHintChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     onUpdate({
       ...question,
-      allowsPhoto: checked
+      hint: e.target.value
     });
   };
   
-  const handleAllowsVideoChange = (checked: boolean) => {
+  const handleAllowMediaChange = (type: 'allowsPhoto' | 'allowsVideo' | 'allowsAudio' | 'allowsFiles', checked: boolean) => {
     onUpdate({
       ...question,
-      allowsVideo: checked
+      [type]: checked
     });
-  };
-  
-  const handleAllowsAudioChange = (checked: boolean) => {
-    onUpdate({
-      ...question,
-      allowsAudio: checked
-    });
-  };
-  
-  const handleWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const weight = parseInt(e.target.value) || 1;
-    onUpdate({
-      ...question,
-      weight: Math.max(1, Math.min(10, weight)) // Ensure between 1 and 10
-    });
-  };
-  
-  const handleOptionChange = (index: number, value: string) => {
-    if (!question.options) return;
-    
-    const newOptions = [...question.options];
-    newOptions[index] = value;
-    
-    onUpdate({
-      ...question,
-      options: newOptions
-    });
-  };
-  
-  const handleAddOption = () => {
-    if (!question.options) return;
-    
-    onUpdate({
-      ...question,
-      options: [...question.options, `Opção ${question.options.length + 1}`]
-    });
-  };
-  
-  const handleRemoveOption = (index: number) => {
-    if (!question.options || question.options.length <= 2) return;
-    
-    const newOptions = [...question.options];
-    newOptions.splice(index, 1);
-    
-    onUpdate({
-      ...question,
-      options: newOptions
-    });
-  };
-
-  const handleSubChecklistToggle = (checked: boolean) => {
-    onUpdate({
-      ...question,
-      hasSubChecklist: checked,
-      // If toggling off, remove the subChecklistId
-      subChecklistId: checked ? question.subChecklistId : undefined
-    });
-    
-    // If enabling sub-checklist, open the dialog
-    if (checked && !question.subChecklistId) {
-      setSubChecklistDialogOpen(true);
-    }
-  };
-  
-  const handleSubChecklistCreated = (subChecklistId: string) => {
-    onUpdate({
-      ...question,
-      hasSubChecklist: true,
-      subChecklistId: subChecklistId
-    });
-    
-    setSubChecklistDialogOpen(false);
-    toast.success("Sub-checklist criado e vinculado à pergunta");
   };
   
   return (
-    <Card className="border border-gray-200">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-2 mb-3">
-          {dragHandleProps && (
-            <div {...dragHandleProps} className="cursor-grab">
-              <GripVertical className="h-5 w-5 text-muted-foreground" />
-            </div>
-          )}
-          
+    <Card className="p-3 border">
+      <div className="flex items-start">
+        <div className="flex-grow">
           <Input
             value={question.text}
             onChange={handleTextChange}
-            placeholder="Digite a pergunta..."
-            className="flex-grow"
+            placeholder="Digite sua pergunta aqui"
+            className="text-base mb-2"
           />
           
+          <div className="flex items-center gap-2 text-sm">
+            <Select
+              value={question.responseType}
+              onValueChange={handleTypeChange}
+            >
+              <SelectTrigger className="w-40 h-8">
+                <SelectValue placeholder="Tipo de resposta" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="yes_no">Sim/Não</SelectItem>
+                <SelectItem value="multiple_choice">Múltipla escolha</SelectItem>
+                <SelectItem value="text">Texto</SelectItem>
+                <SelectItem value="numeric">Numérico</SelectItem>
+                <SelectItem value="photo">Foto</SelectItem>
+                <SelectItem value="signature">Assinatura</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <div className="flex items-center gap-1">
+              <Checkbox
+                id={`required-${question.id}`}
+                checked={question.isRequired}
+                onCheckedChange={handleRequiredChange}
+              />
+              <label htmlFor={`required-${question.id}`} className="text-sm">
+                Obrigatório
+              </label>
+            </div>
+            
+            {question.parentQuestionId && (
+              <Badge variant="outline" className="text-xs">
+                Sub-pergunta
+              </Badge>
+            )}
+          </div>
+        </div>
+        
+        <div className="flex items-center ml-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setExpanded(!expanded)}
+          >
+            {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+          </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => onDelete(question.id)}
-            className="h-10 w-10 p-0"
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 size={18} className="text-destructive" />
           </Button>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">Tipo de resposta:</label>
-              <Select
-                value={question.responseType}
-                onValueChange={handleTypeChange}
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="yes_no">Sim/Não</SelectItem>
-                  <SelectItem value="multiple_choice">Múltipla escolha</SelectItem>
-                  <SelectItem value="text">Texto</SelectItem>
-                  <SelectItem value="numeric">Numérico</SelectItem>
-                  <SelectItem value="photo">Foto</SelectItem>
-                  <SelectItem value="signature">Assinatura</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">Obrigatório:</label>
-              <Switch
-                checked={question.isRequired}
-                onCheckedChange={handleRequiredChange}
-              />
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">Peso da pergunta:</label>
-              <Input
-                type="number"
-                value={question.weight}
-                onChange={handleWeightChange}
-                min={1}
-                max={10}
-                className="w-20 text-right"
-              />
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">Possui sub-checklist?</label>
-              <Switch
-                checked={!!question.hasSubChecklist}
-                onCheckedChange={handleSubChecklistToggle}
-              />
-            </div>
-            
-            {question.hasSubChecklist && question.subChecklistId && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-green-600">
-                  Sub-checklist vinculado
-                </span>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setSubChecklistDialogOpen(true)}
-                  className="flex items-center gap-1"
-                >
-                  <List className="h-4 w-4" />
-                  <span>Editar</span>
-                </Button>
-              </div>
-            )}
+      </div>
+      
+      {expanded && (
+        <div className="mt-3 pt-3 border-t space-y-3">
+          <div>
+            <label className="text-sm font-medium mb-1 block">
+              Dica para o inspetor
+            </label>
+            <Textarea
+              value={question.hint || ""}
+              onChange={handleHintChange}
+              placeholder="Adicione detalhes ou instruções para quem estiver preenchendo"
+              className="resize-none h-20"
+            />
           </div>
           
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-1 text-sm font-medium">
-                <Image className="h-4 w-4" />
-                Permite foto:
-              </label>
-              <Switch
-                checked={question.allowsPhoto}
-                onCheckedChange={handleAllowsPhotoChange}
-              />
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-1 text-sm font-medium">
-                <Video className="h-4 w-4" />
-                Permite vídeo:
-              </label>
-              <Switch
-                checked={question.allowsVideo}
-                onCheckedChange={handleAllowsVideoChange}
-              />
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-1 text-sm font-medium">
-                <Mic className="h-4 w-4" />
-                Permite áudio:
-              </label>
-              <Switch
-                checked={question.allowsAudio}
-                onCheckedChange={handleAllowsAudioChange}
-              />
+          <div className="space-y-2">
+            <label className="text-sm font-medium block">
+              Opções de mídia
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id={`photo-${question.id}`}
+                  checked={question.allowsPhoto}
+                  onCheckedChange={(checked) => 
+                    handleAllowMediaChange('allowsPhoto', checked as boolean)
+                  }
+                  disabled={enableAllMedia}
+                />
+                <label htmlFor={`photo-${question.id}`} className="text-sm">
+                  Permite Fotos
+                </label>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id={`video-${question.id}`}
+                  checked={question.allowsVideo}
+                  onCheckedChange={(checked) => 
+                    handleAllowMediaChange('allowsVideo', checked as boolean)
+                  }
+                  disabled={enableAllMedia}
+                />
+                <label htmlFor={`video-${question.id}`} className="text-sm">
+                  Permite Vídeos
+                </label>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id={`audio-${question.id}`}
+                  checked={question.allowsAudio}
+                  onCheckedChange={(checked) => 
+                    handleAllowMediaChange('allowsAudio', checked as boolean)
+                  }
+                  disabled={enableAllMedia}
+                />
+                <label htmlFor={`audio-${question.id}`} className="text-sm">
+                  Permite Áudio
+                </label>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id={`files-${question.id}`}
+                  checked={question.allowsFiles}
+                  onCheckedChange={(checked) => 
+                    handleAllowMediaChange('allowsFiles', checked as boolean)
+                  }
+                  disabled={enableAllMedia}
+                />
+                <label htmlFor={`files-${question.id}`} className="text-sm">
+                  Permite Arquivos
+                </label>
+              </div>
             </div>
           </div>
         </div>
-        
-        {question.responseType === "multiple_choice" && question.options && (
-          <div className="mt-4 border-t pt-4">
-            <label className="text-sm font-medium block mb-2">Opções:</label>
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              {question.options.map((option, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <Input
-                    value={option}
-                    onChange={(e) => handleOptionChange(index, e.target.value)}
-                    placeholder={`Opção ${index + 1}`}
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleRemoveOption(index)}
-                    disabled={question.options!.length <= 2}
-                    className="h-10 w-10 p-0"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleAddOption}
-                className="w-full mt-2"
-              >
-                Adicionar opção
-              </Button>
-            </div>
-          </div>
-        )}
-        
-        {/* Sub-checklist dialog */}
-        <Dialog open={subChecklistDialogOpen} onOpenChange={setSubChecklistDialogOpen}>
-          <DialogContent className="max-w-4xl">
-            <DialogHeader>
-              <DialogTitle>
-                {question.subChecklistId ? 
-                  "Editar Sub-Checklist" : 
-                  "Criar Sub-Checklist para a Pergunta"}
-              </DialogTitle>
-            </DialogHeader>
-            
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="mb-4">
-                <TabsTrigger value="manual">Criar Manualmente</TabsTrigger>
-                <TabsTrigger value="ai">Gerar com IA</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="manual" className="min-h-[400px]">
-                <SubChecklistEditor 
-                  parentQuestionId={question.id}
-                  existingSubChecklistId={question.subChecklistId}
-                  onSubChecklistCreated={handleSubChecklistCreated}
-                />
-              </TabsContent>
-              
-              <TabsContent value="ai" className="min-h-[400px]">
-                <SubChecklistAIGenerator 
-                  parentQuestion={question}
-                  onSubChecklistCreated={handleSubChecklistCreated}
-                />
-              </TabsContent>
-            </Tabs>
-          </DialogContent>
-        </Dialog>
-      </CardContent>
+      )}
     </Card>
   );
 }

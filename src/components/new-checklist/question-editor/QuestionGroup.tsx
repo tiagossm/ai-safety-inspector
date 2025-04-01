@@ -16,6 +16,7 @@ interface QuestionGroupProps {
   onDeleteQuestion: (questionId: string) => void;
   onDeleteGroup: (groupId: string) => void;
   dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
+  enableAllMedia?: boolean;
 }
 
 export function QuestionGroup({
@@ -26,7 +27,8 @@ export function QuestionGroup({
   onUpdateQuestion,
   onDeleteQuestion,
   onDeleteGroup,
-  dragHandleProps
+  dragHandleProps,
+  enableAllMedia = false
 }: QuestionGroupProps) {
   // Questions filtered to only include those in this group
   const groupQuestions = questions.filter(q => q.groupId === group.id)
@@ -90,6 +92,7 @@ export function QuestionGroup({
                 question={question}
                 onUpdate={onUpdateQuestion}
                 onDelete={onDeleteQuestion}
+                enableAllMedia={enableAllMedia}
               />
             ))}
             

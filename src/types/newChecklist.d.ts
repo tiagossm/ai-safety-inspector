@@ -19,7 +19,7 @@ export interface ChecklistQuestion {
   allowsPhoto: boolean;
   allowsVideo: boolean;
   allowsAudio: boolean;
-  allowsFiles?: boolean;
+  allowsFiles: boolean;
   order: number;
   hasSubChecklist?: boolean;
   subChecklistId?: string;
