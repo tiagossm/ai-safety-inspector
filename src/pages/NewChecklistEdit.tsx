@@ -3,8 +3,9 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2, Save, PlayCircle } from "lucide-react";
+import { ArrowLeft, Loader2, Save, PlayCircle, FileUp } from "lucide-react";
 import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
 import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
 import { useChecklistEdit } from "@/hooks/new-checklist/useChecklistEdit";
 import { ChecklistEditHeader } from "@/components/new-checklist/edit/ChecklistEditHeader";
@@ -18,6 +19,7 @@ export default function NewChecklistEdit() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { data: checklist, isLoading, error, refetch } = useChecklistById(id || "");
+  const [enableAllMedia, setEnableAllMedia] = useState(false);
   
   const {
     title,
@@ -50,6 +52,26 @@ export default function NewChecklistEdit() {
     handleSubmit
   } = useChecklistEdit(checklist, id);
 
+  // Função para aplicar opções de mídia para todas as perguntas
+  const toggleAllMediaOptions = (enabled: boolean) => {
+    setEnableAllMedia(enabled);
+    
+    // Aplicar a configuração a todas as perguntas
+    const updatedQuestions = questions.map(question => ({
+      ...question,
+      allowsPhoto: enabled,
+      allowsVideo: enabled,
+      allowsAudio: enabled,
+      allowsFiles: enabled
+    }));
+    
+    setQuestions(updatedQuestions);
+    toast.success(enabled 
+      ? "Opções de mídia ativadas para todas as perguntas" 
+      : "Opções de mídia desativadas para todas as perguntas"
+    );
+  };
+
   const handleStartInspection = async () => {
     // Primeiro salvar o checklist
     const success = await handleSubmit();
@@ -67,14 +89,14 @@ export default function NewChecklistEdit() {
     }
   };
   
-  // Initialize form with checklist data when it loads
+  // Inicializar formulário com dados do checklist quando ele for carregado
   useEffect(() => {
     if (checklist) {
       console.log("Checklist data loaded for edit:", checklist);
     }
   }, [checklist]);
   
-  // Handle errors
+  // Lidar com erros
   useEffect(() => {
     if (error) {
       toast.error("Erro ao carregar checklist. Verifique o ID ou tente novamente.");
@@ -99,25 +121,37 @@ export default function NewChecklistEdit() {
       />
       
       {/* Botões de ação no topo */}
-      <div className="flex justify-end space-x-4">
-        <Button 
-          variant="outline" 
-          onClick={handleSave}
-          disabled={isSubmitting}
-          className="flex items-center"
-        >
-          <Save className="mr-2 h-4 w-4" />
-          Salvar Checklist
-        </Button>
-        
-        <Button 
-          onClick={handleStartInspection}
-          disabled={isSubmitting}
-          className="flex items-center"
-        >
-          <PlayCircle className="mr-2 h-4 w-4" />
-          Iniciar Inspeção
-        </Button>
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-4">
+          <Switch
+            id="all-media-options"
+            checked={enableAllMedia}
+            onCheckedChange={toggleAllMediaOptions}
+          />
+          <label htmlFor="all-media-options" className="text-sm font-medium">
+            Ativar todas as opções de mídia
+          </label>
+        </div>
+        <div className="flex space-x-4">
+          <Button 
+            variant="outline" 
+            onClick={handleSave}
+            disabled={isSubmitting}
+            className="flex items-center"
+          >
+            <Save className="mr-2 h-4 w-4" />
+            Salvar Checklist
+          </Button>
+          
+          <Button 
+            onClick={handleStartInspection}
+            disabled={isSubmitting}
+            className="flex items-center"
+          >
+            <PlayCircle className="mr-2 h-4 w-4" />
+            Iniciar Inspeção
+          </Button>
+        </div>
       </div>
       
       <form onSubmit={(e) => {
@@ -151,6 +185,7 @@ export default function NewChecklistEdit() {
           onUpdateQuestion={handleUpdateQuestion}
           onDeleteQuestion={handleDeleteQuestion}
           onDragEnd={handleDragEnd}
+          enableAllMedia={enableAllMedia}
         />
         
         <ChecklistEditActions

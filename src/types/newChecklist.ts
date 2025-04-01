@@ -1,3 +1,4 @@
+
 export interface ChecklistGroup {
   id: string;
   title: string;
@@ -18,9 +19,11 @@ export interface ChecklistQuestion {
   allowsPhoto: boolean;
   allowsVideo: boolean;
   allowsAudio: boolean;
+  allowsFiles?: boolean;
   order: number;
   hasSubChecklist?: boolean;
   subChecklistId?: string;
+  displayNumber?: string;  // Numeração hierárquica para exibição (1, 1.1, 1.2, etc)
 }
 
 export interface Checklist {

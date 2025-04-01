@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -23,6 +23,7 @@ interface ChecklistQuestionsProps {
   onUpdateQuestion: (question: ChecklistQuestion) => void;
   onDeleteQuestion: (questionId: string) => void;
   onDragEnd: (result: any) => void;
+  enableAllMedia?: boolean;
 }
 
 export function ChecklistQuestions({
@@ -38,14 +39,69 @@ export function ChecklistQuestions({
   onAddQuestion,
   onUpdateQuestion,
   onDeleteQuestion,
-  onDragEnd
+  onDragEnd,
+  enableAllMedia = false
 }: ChecklistQuestionsProps) {
   // Usar "flat" por padrão, mesmo se não houver grupos
-  React.useEffect(() => {
+  useEffect(() => {
     if (groups.length === 0 && viewMode === "grouped") {
       onViewModeChange("flat");
     }
   }, [groups.length, viewMode, onViewModeChange]);
+
+  // Obter todas as perguntas, incluindo as de sub-checklists
+  const getAllQuestionsWithSubchecklists = () => {
+    // Criar um mapa para armazenar quais perguntas têm sub-checklists
+    const questionsWithSubs = new Map<string, ChecklistQuestion[]>();
+    
+    // Identificar perguntas de sub-checklists e organizá-las por pergunta pai
+    questions.forEach(q => {
+      if (q.parentQuestionId) {
+        const parentQs = questionsWithSubs.get(q.parentQuestionId) || [];
+        parentQs.push(q);
+        questionsWithSubs.set(q.parentQuestionId, parentQs);
+      }
+    });
+    
+    // Criar lista ordenada com todas as perguntas incluindo sub-perguntas
+    const orderedQuestions: ChecklistQuestion[] = [];
+    let counter = 1;
+    
+    // Função recursiva para adicionar perguntas e suas sub-perguntas
+    const addQuestionsRecursively = (qs: ChecklistQuestion[], parentNumber: string = '') => {
+      // Ordenar as perguntas por ordem
+      const sortedQs = [...qs].sort((a, b) => a.order - b.order);
+      
+      sortedQs.forEach((q, index) => {
+        // Definir numeração adequada
+        const questionNumber = parentNumber ? `${parentNumber}.${index + 1}` : `${counter}`;
+        
+        // Adicionar a pergunta principal com seu número
+        const questionWithNumber = { ...q, displayNumber: questionNumber };
+        orderedQuestions.push(questionWithNumber);
+        
+        // Se não for parentNumber (ou seja, não é uma sub-pergunta), incrementar contador principal
+        if (!parentNumber) {
+          counter++;
+        }
+        
+        // Verificar e adicionar sub-perguntas, se houver
+        const subQuestions = questionsWithSubs.get(q.id);
+        if (subQuestions && subQuestions.length > 0) {
+          addQuestionsRecursively(subQuestions, questionNumber);
+        }
+      });
+    };
+    
+    // Começar com perguntas que não são sub-perguntas
+    const rootQuestions = questions.filter(q => !q.parentQuestionId);
+    addQuestionsRecursively(rootQuestions);
+    
+    return orderedQuestions;
+  };
+
+  // Obter todas as perguntas com numeração hierárquica
+  const allQuestionsWithHierarchy = getAllQuestionsWithSubchecklists();
 
   return (
     <Card>
@@ -65,10 +121,11 @@ export function ChecklistQuestions({
         {/* Lista plana de perguntas */}
         {viewMode === "flat" && (
           <FlatQuestionsList
-            questions={questions}
+            questions={allQuestionsWithHierarchy}
             onAddQuestion={() => onAddQuestion(groups[0]?.id || "default")}
             onUpdateQuestion={onUpdateQuestion}
             onDeleteQuestion={onDeleteQuestion}
+            enableAllMedia={enableAllMedia}
           />
         )}
         
@@ -92,6 +149,7 @@ export function ChecklistQuestions({
                         onUpdateQuestion={onUpdateQuestion}
                         onDeleteQuestion={onDeleteQuestion}
                         onDeleteGroup={onDeleteGroup}
+                        enableAllMedia={enableAllMedia}
                       />
                     ) : (
                       <div className="text-center py-8 border border-dashed rounded">

@@ -25,10 +25,10 @@ export function ChecklistList({
   onDuplicate,
   onOpen 
 }: ChecklistListProps) {
-  // Filter out sub-checklists from display
+  // Filtrar sub-checklists da exibição
   const filteredChecklists = checklists.filter(
     checklist => {
-      // Check both properties to ensure backward compatibility
+      // Verificar ambas as propriedades para garantir compatibilidade
       const isSubChecklist = checklist.isSubChecklist || checklist.is_sub_checklist;
       return !isSubChecklist;
     }

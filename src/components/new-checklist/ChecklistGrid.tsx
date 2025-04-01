@@ -24,9 +24,13 @@ export function ChecklistGrid({
   onDuplicate,
   onOpen
 }: ChecklistGridProps) {
-  // Filter out sub-checklists from the grid display
+  // Filtrar sub-checklists para não exibi-los na grade
   const filteredChecklists = checklists.filter(
-    checklist => !(checklist.isSubChecklist || checklist.is_sub_checklist)
+    checklist => {
+      // Verificar ambas as propriedades para garantir compatibilidade
+      const isSubChecklist = checklist.isSubChecklist || checklist.is_sub_checklist;
+      return !isSubChecklist;
+    }
   );
   
   if (isLoading) {

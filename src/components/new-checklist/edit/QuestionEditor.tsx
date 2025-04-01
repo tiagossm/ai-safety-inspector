@@ -12,18 +12,22 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { ChecklistQuestion } from "@/types/newChecklist";
-import { Image, Video, Mic, Trash2, Plus } from "lucide-react";
+import { Image, Video, Mic, Trash2, Plus, FileUp } from "lucide-react";
 
 interface QuestionEditorProps {
   question: ChecklistQuestion;
   onUpdate: (question: ChecklistQuestion) => void;
+  onDelete?: (questionId: string) => void;
   isSubQuestion?: boolean;
+  enableAllMedia?: boolean;
 }
 
 export function QuestionEditor({ 
   question, 
   onUpdate,
-  isSubQuestion = false
+  onDelete,
+  isSubQuestion = false,
+  enableAllMedia = false
 }: QuestionEditorProps) {
   // Atualizar o texto da pergunta
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,6 +93,13 @@ export function QuestionEditor({
     });
   };
   
+  const handleAllowFilesChange = (checked: boolean) => {
+    onUpdate({
+      ...question,
+      allowsFiles: checked
+    });
+  };
+  
   // Manipular opções de múltipla escolha
   const handleOptionChange = (index: number, value: string) => {
     if (!question.options) return;
@@ -134,14 +145,43 @@ export function QuestionEditor({
     });
   };
   
+  React.useEffect(() => {
+    // Aplicar configuração global de mídia, se ativada
+    if (enableAllMedia) {
+      if (!question.allowsPhoto || !question.allowsVideo || 
+          !question.allowsAudio || !question.allowsFiles) {
+        onUpdate({
+          ...question,
+          allowsPhoto: true,
+          allowsVideo: true,
+          allowsAudio: true,
+          allowsFiles: true
+        });
+      }
+    }
+  }, [enableAllMedia]);
+  
   return (
-    <div className="space-y-4">
-      <Input
-        value={question.text}
-        onChange={handleTextChange}
-        placeholder="Digite a pergunta..."
-        className="w-full"
-      />
+    <div className="space-y-4 p-4 border rounded-md">
+      <div className="flex items-center gap-2">
+        <Input
+          value={question.text}
+          onChange={handleTextChange}
+          placeholder="Digite a pergunta..."
+          className="w-full"
+        />
+        
+        {onDelete && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onDelete(question.id)}
+            className="h-10 w-10 p-0"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-4">
@@ -194,6 +234,14 @@ export function QuestionEditor({
               />
             </div>
           )}
+          
+          {question.hasSubChecklist && question.subChecklistId && (
+            <div className="bg-blue-50 p-2 rounded-md mt-2">
+              <span className="text-sm text-blue-600">
+                Sub-checklist vinculado
+              </span>
+            </div>
+          )}
         </div>
         
         <div className="space-y-4">
@@ -205,6 +253,7 @@ export function QuestionEditor({
             <Switch
               checked={question.allowsPhoto}
               onCheckedChange={handleAllowPhotoChange}
+              disabled={enableAllMedia}
             />
           </div>
           
@@ -216,6 +265,7 @@ export function QuestionEditor({
             <Switch
               checked={question.allowsVideo}
               onCheckedChange={handleAllowVideoChange}
+              disabled={enableAllMedia}
             />
           </div>
           
@@ -227,6 +277,19 @@ export function QuestionEditor({
             <Switch
               checked={question.allowsAudio}
               onCheckedChange={handleAllowAudioChange}
+              disabled={enableAllMedia}
+            />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-1 text-sm font-medium">
+              <FileUp className="h-4 w-4" />
+              Permite arquivos:
+            </label>
+            <Switch
+              checked={question.allowsFiles}
+              onCheckedChange={handleAllowFilesChange}
+              disabled={enableAllMedia}
             />
           </div>
         </div>
