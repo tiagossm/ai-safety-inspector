@@ -1,4 +1,3 @@
-
 export interface ChecklistGroup {
   id: string;
   title: string;
@@ -8,22 +7,22 @@ export interface ChecklistGroup {
 export interface ChecklistQuestion {
   id: string;
   text: string;
-  responseType: 'yes_no' | 'multiple_choice' | 'text' | 'numeric' | 'photo' | 'signature';
+  responseType: "yes_no" | "multiple_choice" | "text" | "numeric" | "photo" | "signature";
   isRequired: boolean;
-  options?: string[];
-  hint?: string;
-  weight: number;
   groupId?: string;
-  parentQuestionId?: string;
-  conditionValue?: string;
-  allowsPhoto: boolean;
-  allowsVideo: boolean;
-  allowsAudio: boolean;
-  allowsFiles: boolean;
   order: number;
+  weight?: number;
+  options?: string[];
+  hint?: string | null;
+  allowsPhoto?: boolean;
+  allowsVideo?: boolean;
+  allowsAudio?: boolean;
+  allowsFiles?: boolean;
+  parentQuestionId?: string | null;
+  conditionValue?: string | null;
   hasSubChecklist?: boolean;
-  subChecklistId?: string;
-  displayNumber?: string;  // Numeração hierárquica para exibição (1, 1.1, 1.2, etc)
+  subChecklistId?: string | null;
+  displayNumber?: string;
 }
 
 export interface Checklist {

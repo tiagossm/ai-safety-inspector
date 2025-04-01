@@ -1,114 +1,126 @@
-
-import React from "react";
-import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Trash2, ChevronDown, ChevronUp, GripHorizontal, Plus, Sparkles } from "lucide-react";
 import { QuestionItem } from "./QuestionItem";
-import { Plus, GripVertical, Trash2 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChecklistQuestion } from "@/types/newChecklist";
 
-interface QuestionGroupProps {
-  group: ChecklistGroup;
+export interface QuestionGroupProps {
+  group: {
+    id: string;
+    title: string;
+    order: number;
+  };
   questions: ChecklistQuestion[];
-  onGroupUpdate: (group: ChecklistGroup) => void;
+  onUpdateGroup: (group: { id: string; title: string; order: number }) => void;
   onAddQuestion: (groupId: string) => void;
   onUpdateQuestion: (question: ChecklistQuestion) => void;
   onDeleteQuestion: (questionId: string) => void;
   onDeleteGroup: (groupId: string) => void;
-  dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
+  dragHandleProps?: any;
   enableAllMedia?: boolean;
+  onGenerateWithAI?: (groupId: string) => void;
 }
 
 export function QuestionGroup({
   group,
   questions,
-  onGroupUpdate,
+  onUpdateGroup,
   onAddQuestion,
   onUpdateQuestion,
   onDeleteQuestion,
   onDeleteGroup,
   dragHandleProps,
-  enableAllMedia = false
+  enableAllMedia = false,
+  onGenerateWithAI
 }: QuestionGroupProps) {
-  // Questions filtered to only include those in this group
-  const groupQuestions = questions.filter(q => q.groupId === group.id)
-    .sort((a, b) => a.order - b.order);
-  
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onGroupUpdate({
-      ...group,
-      title: e.target.value
-    });
-  };
-  
-  const handleAddQuestion = () => {
-    onAddQuestion(group.id);
-  };
-  
+  const [isOpen, setIsOpen] = useState(true);
+
   return (
     <Card className="mb-4">
-      <CardHeader className="flex flex-row items-center justify-between px-4 py-2 border-b">
-        <div className="flex items-center gap-2 flex-grow">
+      <CardHeader className="pb-2 pt-4 px-4">
+        <div className="flex items-center justify-between gap-4">
           <div {...dragHandleProps} className="cursor-grab">
-            <GripVertical className="h-5 w-5 text-muted-foreground" />
+            <GripHorizontal className="h-5 w-5 text-muted-foreground" />
           </div>
-          <Input
-            value={group.title}
-            onChange={handleTitleChange}
-            placeholder="Nome do grupo"
-            className="font-medium border-0 h-9 focus-visible:ring-0 focus-visible:ring-offset-0 pl-1"
-          />
-        </div>
-        <div className="flex items-center">
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => onDeleteGroup(group.id)}
-          >
-            <Trash2 className="h-4 w-4 text-muted-foreground" />
-          </Button>
+          
+          <div className="flex-1">
+            <Input
+              value={group.title}
+              onChange={(e) => onUpdateGroup({ ...group, title: e.target.value })}
+              placeholder="Nome do grupo"
+              className="font-medium h-8"
+            />
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => onDeleteGroup(group.id)}
+              className="h-8 w-8"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+            
+            <CollapsibleTrigger asChild onClick={() => setIsOpen(!isOpen)}>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                {isOpen ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </Button>
+            </CollapsibleTrigger>
+          </div>
         </div>
       </CardHeader>
-      <CardContent className="p-4">
-        {groupQuestions.length === 0 ? (
-          <div className="text-center py-6 border border-dashed rounded-md">
-            <p className="text-sm text-muted-foreground mb-2">
-              Nenhuma pergunta neste grupo
-            </p>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={handleAddQuestion}
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Adicionar pergunta
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {groupQuestions.map((question) => (
-              <QuestionItem
-                key={question.id}
-                question={question}
-                onUpdate={onUpdateQuestion}
-                onDelete={onDeleteQuestion}
-                enableAllMedia={enableAllMedia}
-              />
-            ))}
-            
-            <div className="flex justify-center mt-4">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleAddQuestion}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Adicionar pergunta
-              </Button>
+      
+      <Collapsible open={isOpen}>
+        <CollapsibleContent>
+          <CardContent className="pt-0 px-4 pb-4">
+            <div className="space-y-3">
+              {questions.map((question) => (
+                <QuestionItem
+                  key={question.id}
+                  question={question}
+                  onDelete={onDeleteQuestion}
+                  onUpdate={onUpdateQuestion}
+                  enableAllMedia={enableAllMedia}
+                />
+              ))}
+              
+              <div className="flex gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={() => onAddQuestion(group.id)}
+                  size="sm"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar Pergunta
+                </Button>
+                
+                {onGenerateWithAI && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => onGenerateWithAI(group.id)}
+                    size="sm"
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Gerar com IA
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
-        )}
-      </CardContent>
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
     </Card>
   );
 }

@@ -1,6 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.8.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,184 +8,140 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
+const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY") || "";
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!openAIApiKey) {
-      throw new Error('OPENAI_API_KEY não está configurada nas variáveis de ambiente');
-    }
-
     const { prompt, parentQuestionId, parentQuestionText, questionCount = 3 } = await req.json();
 
     if (!prompt) {
-      throw new Error('O prompt é obrigatório');
+      throw new Error('Prompt é obrigatório');
     }
 
     if (!parentQuestionId) {
-      throw new Error('O ID da pergunta principal é obrigatório');
+      throw new Error('ID da pergunta pai é obrigatório');
     }
 
-    // A requested count between 2-5 makes sense for sub-checklists
-    const actualQuestionCount = Math.min(Math.max(questionCount, 2), 5);
+    console.log(`Generating sub-checklist for parent question: ${parentQuestionText || parentQuestionId}`);
+    console.log(`Using prompt: ${prompt}`);
+    console.log(`Requested question count: ${questionCount}`);
 
-    const systemMessage = `
-Você é um especialista na criação de sub-checklists detalhados para perguntas de inspeção. 
-Para a seguinte pergunta principal, crie um sub-checklist detalhado com ${actualQuestionCount} perguntas específicas que ajudariam a avaliar completamente este aspecto.
+    // Create a system prompt that guides the AI to generate a sub-checklist
+    const systemPrompt = `
+      Você é um especialista em criar checklists para inspeções e auditorias.
+      Crie um sub-checklist detalhado para uma pergunta principal.
+      O sub-checklist deve ter um título claro, uma descrição breve, e ${questionCount} perguntas.
+      
+      Para cada pergunta, defina:
+      - Texto da pergunta (claro e objetivo)
+      - Tipo de resposta (sim/não, múltipla escolha, texto, ou numérico)
+      - Se é obrigatória (true/false)
+      - Para perguntas de múltipla escolha, forneça 2-4 opções
+      
+      Formate a saída como um objeto JSON com a seguinte estrutura:
+      {
+        "title": "Título do sub-checklist",
+        "description": "Breve descrição do propósito deste sub-checklist",
+        "questions": [
+          {
+            "text": "Texto da pergunta 1",
+            "responseType": "yes_no", // Pode ser "yes_no", "multiple_choice", "text", "numeric"
+            "isRequired": true,
+            "options": ["Opção 1", "Opção 2"] // Apenas para "multiple_choice"
+          },
+          // mais perguntas...
+        ]
+      }
+    `;
 
-Crie um sub-checklist muito específico e detalhado com perguntas técnicas e relevantes. Sua resposta deve seguir exatamente este formato JSON:
+    // Prepare the conversation for OpenAI
+    const messages = [
+      { 
+        role: "system", 
+        content: systemPrompt 
+      },
+      { 
+        role: "user", 
+        content: `
+          Pergunta principal: "${parentQuestionText || 'Pergunta sem texto'}"
+          
+          Instruções adicionais: ${prompt}
+          
+          Gere um sub-checklist com ${questionCount} perguntas.
+        `
+      }
+    ];
 
-{
-  "title": "Um título curto e descritivo para este sub-checklist (derivado da pergunta principal)",
-  "description": "Uma breve explicação do que este sub-checklist avalia",
-  "questions": [
-    {
-      "text": "Texto da pergunta",
-      "responseType": "yes_no" | "text" | "numeric" | "multiple_choice",
-      "isRequired": true | false,
-      "options": ["Opção 1", "Opção 2"] (apenas para o tipo multiple_choice)
-    }
-  ]
-}
-
-Certifique-se de que todas as perguntas estejam diretamente relacionadas à pergunta principal e ajudem a avaliá-la em detalhes.
-Utilize apenas os tipos de resposta disponíveis: yes_no, text, numeric, ou multiple_choice.
-Para yes_no, as respostas serão "sim" ou "não".
-
-IMPORTANTE: Gere exatamente ${actualQuestionCount} perguntas para o sub-checklist. 
-Nem mais, nem menos.
-`;
-
-    console.log("Gerando sub-checklist para pergunta principal:", parentQuestionText);
-    console.log("Com prompt:", prompt);
-    console.log("Quantidade de perguntas solicitada:", actualQuestionCount);
-
-    // Call OpenAI API to generate sub-checklist
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
+    // Make request to OpenAI API
+    const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemMessage },
-          { role: 'user', content: prompt }
-        ],
+        model: "gpt-4o-mini",
+        messages,
         temperature: 0.7,
-      }),
+        max_tokens: 1000
+      })
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Erro na API OpenAI:", errorText);
-      throw new Error(`Erro na API OpenAI: ${response.status} ${response.statusText}`);
+    const openaiData = await openaiResponse.json();
+    
+    if (!openaiResponse.ok) {
+      console.error("OpenAI API error:", openaiData);
+      throw new Error(`Erro na API OpenAI: ${openaiData.error?.message || "Erro desconhecido"}`);
     }
 
-    const data = await response.json();
+    // Extract the generated text from the completion
+    const generatedText = openaiData.choices[0].message.content;
+    
+    // Parse the JSON from the generated text
     let subChecklist;
-
     try {
-      const content = data.choices[0].message.content;
-      console.log("Resposta bruta da IA:", content);
+      // Extract JSON object from the text (the AI might include markdown formatting)
+      const jsonMatch = generatedText.match(/```json\s*([\s\S]*?)\s*```/) || 
+                        generatedText.match(/{[\s\S]*}/);
       
-      // Extract JSON from the response
-      const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/```([\s\S]*?)```/) || [null, content];
-      const jsonContent = jsonMatch[1] || content;
+      const jsonString = jsonMatch ? jsonMatch[0].replace(/```json|```/g, '') : generatedText;
+      subChecklist = JSON.parse(jsonString);
       
-      try {
-        subChecklist = JSON.parse(jsonContent);
-      } catch (parseError) {
-        console.error("Erro ao analisar JSON:", parseError);
-        
-        // Try to clean the content before parsing
-        const cleansedContent = jsonContent.replace(/[\u0000-\u001F]+/g, " ").trim();
-        subChecklist = JSON.parse(cleansedContent);
-      }
-      
-      // Validate the structure
+      // Basic validation of the parsed object
       if (!subChecklist.title || !Array.isArray(subChecklist.questions)) {
-        throw new Error("Estrutura de sub-checklist inválida");
+        throw new Error("Formato JSON inválido");
       }
       
-      // Process the questions
-      subChecklist.questions = subChecklist.questions.map((q: any) => {
-        // Ensure responseType is valid
-        if (!["yes_no", "text", "numeric", "multiple_choice"].includes(q.responseType)) {
-          q.responseType = "yes_no";
-        }
-        
-        // Ensure multiple_choice questions have options
-        if (q.responseType === "multiple_choice" && (!q.options || !Array.isArray(q.options) || q.options.length < 2)) {
-          q.options = ["Opção 1", "Opção 2", "Opção 3"];
-        }
-        
-        return {
-          text: q.text,
-          responseType: q.responseType,
-          isRequired: q.isRequired !== false,
-          options: q.options,
-          allowsPhoto: false,
-          allowsVideo: false,
-          allowsAudio: false
-        };
-      });
+      // Add additional properties to each question
+      subChecklist.questions = subChecklist.questions.map(q => ({
+        ...q,
+        id: crypto.randomUUID(),
+        allowsPhoto: true,
+        allowsVideo: false,
+        allowsAudio: false
+      }));
       
-      // Check if we have the correct number of questions
-      if (subChecklist.questions.length !== actualQuestionCount) {
-        console.log(`Número incorreto de perguntas geradas: ${subChecklist.questions.length}, ajustando para ${actualQuestionCount}`);
-        
-        // Adjust question count if needed
-        if (subChecklist.questions.length > actualQuestionCount) {
-          // Remove excess questions
-          subChecklist.questions = subChecklist.questions.slice(0, actualQuestionCount);
-        } else if (subChecklist.questions.length < actualQuestionCount) {
-          // Add generic questions if we don't have enough
-          const missingCount = actualQuestionCount - subChecklist.questions.length;
-          for (let i = 0; i < missingCount; i++) {
-            subChecklist.questions.push({
-              text: `Pergunta adicional ${i+1} sobre ${parentQuestionText}?`,
-              responseType: "yes_no",
-              isRequired: true,
-              allowsPhoto: false,
-              allowsVideo: false,
-              allowsAudio: false
-            });
-          }
-        }
-      }
-      
-    } catch (parseError) {
-      console.error("Erro ao analisar resposta da IA:", parseError);
-      return new Response(JSON.stringify({
-        success: false,
-        error: "Falha ao analisar resposta da IA como JSON."
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      });
+    } catch (error) {
+      console.error("Error parsing generated sub-checklist:", error);
+      console.error("Generated text:", generatedText);
+      throw new Error("Não foi possível gerar um sub-checklist válido. Tente novamente com um prompt diferente.");
     }
 
     return new Response(JSON.stringify({
       success: true,
-      subChecklist: {
-        title: subChecklist.title,
-        description: subChecklist.description || `Sub-checklist para: ${parentQuestionText}`,
-        parentQuestionId,
-        questions: subChecklist.questions
-      }
+      subChecklist
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    console.error("Erro ao gerar sub-checklist:", error);
+    console.error("Error generating sub-checklist:", error);
     return new Response(JSON.stringify({
       success: false,
-      error: error.message || "Ocorreu um erro desconhecido"
+      error: error.message || "Erro ao gerar sub-checklist"
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500

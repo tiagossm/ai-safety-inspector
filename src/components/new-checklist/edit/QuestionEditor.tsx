@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Image, Video, Mic, Trash2, Plus, FileUp } from "lucide-react";
+import { SubChecklistButton } from "../question-editor/SubChecklistButton";
 
 interface QuestionEditorProps {
   question: ChecklistQuestion;
@@ -145,6 +145,15 @@ export function QuestionEditor({
     });
   };
   
+  // Handler for when a subchecklist is created or updated
+  const handleSubChecklistCreated = (subChecklistId: string) => {
+    onUpdate({
+      ...question,
+      hasSubChecklist: true,
+      subChecklistId
+    });
+  };
+  
   React.useEffect(() => {
     // Aplicar configuração global de mídia, se ativada
     if (enableAllMedia) {
@@ -226,20 +235,13 @@ export function QuestionEditor({
           </div>
           
           {!isSubQuestion && (
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">Possui sub-checklist?</label>
-              <Switch
-                checked={!!question.hasSubChecklist}
-                onCheckedChange={handleSubChecklistToggle}
+            <div>
+              <SubChecklistButton
+                parentQuestionId={question.id}
+                hasSubChecklist={!!question.hasSubChecklist}
+                subChecklistId={question.subChecklistId}
+                onSubChecklistCreated={handleSubChecklistCreated}
               />
-            </div>
-          )}
-          
-          {question.hasSubChecklist && question.subChecklistId && (
-            <div className="bg-blue-50 p-2 rounded-md mt-2">
-              <span className="text-sm text-blue-600">
-                Sub-checklist vinculado
-              </span>
             </div>
           )}
         </div>

@@ -1,14 +1,14 @@
-
 import React, { useState } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Card } from "@/components/ui/card";
-import { Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Trash2, ChevronDown, ChevronUp, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { SubChecklistButton } from "./SubChecklistButton";
 
 interface QuestionItemProps {
   question: ChecklistQuestion;
@@ -20,7 +20,6 @@ interface QuestionItemProps {
 export function QuestionItem({ question, onUpdate, onDelete, enableAllMedia = false }: QuestionItemProps) {
   const [expanded, setExpanded] = useState(false);
   
-  // Apply enableAllMedia if set
   React.useEffect(() => {
     if (enableAllMedia && (!question.allowsPhoto || !question.allowsVideo || !question.allowsAudio || !question.allowsFiles)) {
       onUpdate({
@@ -65,6 +64,14 @@ export function QuestionItem({ question, onUpdate, onDelete, enableAllMedia = fa
     onUpdate({
       ...question,
       [type]: checked
+    });
+  };
+  
+  const handleSubChecklistCreated = (subChecklistId: string) => {
+    onUpdate({
+      ...question,
+      hasSubChecklist: true,
+      subChecklistId
     });
   };
   
@@ -210,6 +217,26 @@ export function QuestionItem({ question, onUpdate, onDelete, enableAllMedia = fa
               </div>
             </div>
           </div>
+          
+          {!question.parentQuestionId && (
+            <div className="mt-3 pt-2 border-t">
+              <label className="text-sm font-medium block mb-2">
+                Sub-checklist
+              </label>
+              <SubChecklistButton
+                parentQuestionId={question.id}
+                hasSubChecklist={!!question.hasSubChecklist}
+                subChecklistId={question.subChecklistId}
+                onSubChecklistCreated={handleSubChecklistCreated}
+              />
+              
+              {question.hasSubChecklist && question.subChecklistId && (
+                <div className="mt-2 text-xs text-blue-600 bg-blue-50 p-2 rounded">
+                  Sub-checklist vinculado (ID: {question.subChecklistId.substring(0, 8)}...)
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </Card>
