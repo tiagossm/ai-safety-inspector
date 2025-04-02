@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { NewChecklist } from "@/types/checklist";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -16,9 +16,11 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { CompanyListItem } from "@/types/CompanyListItem";
 import { AIAssistantType } from "@/hooks/checklist/useChecklistCreation";
-import { AIAssistantSelector } from "@/components/checklists/create-forms/AIAssistantSelector";
-import { Bot, Sparkles, BrainCircuit } from "lucide-react";
+import { Bot, Sparkles, BrainCircuit, RefreshCw } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { CompanySelector } from "@/components/inspection/CompanySelector";
+import { useOpenAIAssistants } from "@/hooks/useOpenAIAssistants";
+import { Badge } from "@/components/ui/badge";
 
 interface AICreateFormProps {
   form: NewChecklist;
@@ -57,6 +59,14 @@ const BasicInfoFields = ({
 
   const handleSelectChange = (name: string, value: string) => {
     setForm({ ...form, [name]: value });
+  };
+
+  const handleCompanySelect = (companyId: string, companyData: any) => {
+    console.log("Company selected:", companyData);
+    setForm({ 
+      ...form, 
+      company_id: companyId 
+    });
   };
 
   return (
@@ -104,28 +114,12 @@ const BasicInfoFields = ({
       <div>
         <div className="space-y-2">
           <Label htmlFor="company_id">Empresa</Label>
-          {loadingCompanies ? (
-            <Skeleton className="h-9 w-full" />
-          ) : (
-            <Select
-              value={form.company_id?.toString() || "none"}
-              onValueChange={(value) => handleSelectChange("company_id", value === "none" ? "" : value)}
-            >
-              <SelectTrigger id="company_id">
-                <SelectValue placeholder="Selecione uma empresa (opcional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nenhuma empresa</SelectItem>
-                {companies.map((company) => (
-                  <SelectItem key={company.id} value={company.id}>
-                    {company.fantasy_name || company.id}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+          <CompanySelector
+            value={form.company_id?.toString() || ""}
+            onSelect={handleCompanySelect}
+          />
           <p className="text-sm text-muted-foreground">
-            Opcional. Vincula este checklist a uma empresa específica.
+            Selecione uma empresa para gerar um checklist específico para ela.
           </p>
         </div>
       </div>
@@ -162,7 +156,116 @@ const BasicInfoFields = ({
   );
 };
 
+// Improved AI Assistant selector that gets directly from OpenAI API
+function OpenAIAssistantSelector({ 
+  selectedAssistant, 
+  setSelectedAssistant 
+}: { 
+  selectedAssistant: string,
+  setSelectedAssistant: (value: string) => void 
+}) {
+  const { assistants, loading, error } = useOpenAIAssistants();
+
+  if (loading) {
+    return <Skeleton className="h-9 w-full" />;
+  }
+
+  if (error) {
+    return (
+      <div className="text-sm text-red-500">
+        <p>Erro ao carregar assistentes: {error}</p>
+        <p>Verifique se a chave da API da OpenAI está configurada corretamente.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="openai-assistant">Assistente de IA</Label>
+      <Select
+        value={selectedAssistant || "default"}
+        onValueChange={setSelectedAssistant}
+      >
+        <SelectTrigger id="openai-assistant">
+          <SelectValue placeholder="Selecione um assistente da OpenAI" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="default">Assistente padrão</SelectItem>
+          {assistants.map((assistant) => (
+            <SelectItem key={assistant.id} value={assistant.id}>
+              <div className="flex items-center">
+                {assistant.name}
+                {assistant.model && (
+                  <Badge variant="outline" className="ml-2 text-xs">
+                    {assistant.model}
+                  </Badge>
+                )}
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <p className="text-sm text-muted-foreground">
+        Escolha um assistente especializado para melhorar os resultados.
+      </p>
+    </div>
+  );
+}
+
 export function AICreateForm(props: AICreateFormProps) {
+  const [generatedPrompt, setGeneratedPrompt] = useState<string>("");
+  const [companyData, setCompanyData] = useState<any>(null);
+
+  // Fetch company data when company_id changes
+  useEffect(() => {
+    if (props.form.company_id) {
+      fetchCompanyData(props.form.company_id.toString());
+    }
+  }, [props.form.company_id]);
+
+  // Function to fetch company data
+  const fetchCompanyData = async (companyId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('id', companyId)
+        .single();
+      
+      if (error) throw error;
+      
+      setCompanyData(data);
+      
+      // Auto-generate prompt based on company data
+      if (data) {
+        const riskGrade = data.metadata?.risk_grade || "médio";
+        const employeeCount = data.employee_count || "não informado";
+        const activity = data.metadata?.main_activity || "não informada";
+        
+        const newPrompt = `Crie um checklist para a empresa ${data.fantasy_name || 'Empresa'}, com CNAE ${data.cnae || 'não informado'}, atividade ${activity}, grau de risco ${riskGrade}, ${employeeCount} funcionários.`;
+        
+        setGeneratedPrompt(newPrompt);
+        props.setAiPrompt(newPrompt);
+      }
+    } catch (error) {
+      console.error("Error fetching company data:", error);
+    }
+  };
+
+  // Function to regenerate prompt
+  const regeneratePrompt = () => {
+    if (companyData) {
+      const riskGrade = companyData.metadata?.risk_grade || "médio";
+      const employeeCount = companyData.employee_count || "não informado";
+      const activity = companyData.metadata?.main_activity || "não informada";
+      
+      const newPrompt = `Crie um checklist para a empresa ${companyData.fantasy_name || 'Empresa'}, com CNAE ${companyData.cnae || 'não informado'}, atividade ${activity}, grau de risco ${riskGrade}, ${employeeCount} funcionários.`;
+      
+      setGeneratedPrompt(newPrompt);
+      props.setAiPrompt(newPrompt);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <BasicInfoFields 
@@ -181,11 +284,9 @@ export function AICreateForm(props: AICreateFormProps) {
         </div>
         
         <div className="space-y-4">
-          <AIAssistantSelector
-            selectedAssistant={props.selectedAssistant}
-            onChange={props.setSelectedAssistant}
-            openAIAssistant={props.openAIAssistant}
-            onOpenAIAssistantChange={props.setOpenAIAssistant}
+          <OpenAIAssistantSelector
+            selectedAssistant={props.openAIAssistant}
+            setSelectedAssistant={props.setOpenAIAssistant}
           />
           
           <div>
@@ -205,7 +306,21 @@ export function AICreateForm(props: AICreateFormProps) {
           </div>
           
           <div>
-            <Label htmlFor="prompt">Descreva o que você deseja verificar</Label>
+            <div className="flex justify-between items-center">
+              <Label htmlFor="prompt">Descreva o que você deseja verificar</Label>
+              {companyData && (
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={regeneratePrompt}
+                  className="flex items-center gap-1"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  <span>Regenerar prompt</span>
+                </Button>
+              )}
+            </div>
             <Textarea
               id="prompt"
               placeholder="Ex: Crie um checklist para inspeção de segurança em um canteiro de obras"

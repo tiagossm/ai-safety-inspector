@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -16,11 +16,7 @@ export const useOpenAIAssistants = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadAssistants();
-  }, []);
-
-  const loadAssistants = async () => {
+  const loadAssistants = useCallback(async () => {
     setLoading(true);
     setError(null);
     
@@ -52,7 +48,8 @@ export const useOpenAIAssistants = () => {
           model: assistant.model || '',
           created_at: assistant.created_at ? new Date(assistant.created_at * 1000).toLocaleDateString() : ''
         }))
-        .filter(assistant => assistant.id);
+        .filter(assistant => assistant.id)
+        .sort((a, b) => a.name.localeCompare(b.name)); // Sort alphabetically by name
 
       console.log('Formatted assistants:', formattedAssistants);
       setAssistants(formattedAssistants);
@@ -65,12 +62,21 @@ export const useOpenAIAssistants = () => {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    loadAssistants();
+  }, [loadAssistants]);
+
+  // Refresh assistants function that can be called from components
+  const refreshAssistants = () => {
+    loadAssistants();
   };
 
   return {
     assistants,
     loading,
     error,
-    loadAssistants
+    refreshAssistants
   };
 };

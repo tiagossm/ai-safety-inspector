@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { NewChecklist } from "@/types/checklist";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useChecklistSubmit } from "./form/useChecklistSubmit";
 import { useOpenAIAssistants } from "@/hooks/useOpenAIAssistants";
 import { CompanyListItem } from "@/types/CompanyListItem";
+import { useChecklistCompanies } from "./form/useChecklistCompanies";
 
 export type AIAssistantType = 'general' | 'workplace-safety' | 'compliance' | 'quality';
 
@@ -25,8 +26,7 @@ export function useChecklistCreation() {
   // Form data
   const [users, setUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState<boolean>(true);
-  const [companies, setCompanies] = useState<CompanyListItem[]>([]);
-  const [loadingCompanies, setLoadingCompanies] = useState<boolean>(true);
+  const { companies, loadingCompanies } = useChecklistCompanies();
   
   // Import related state
   const [file, setFile] = useState<File | null>(null);
@@ -39,7 +39,7 @@ export function useChecklistCreation() {
   const [openAIAssistant, setOpenAIAssistant] = useState<string>("");
   
   // Get OpenAI assistants
-  const { assistants, loading: loadingAssistants } = useOpenAIAssistants();
+  const { assistants, loading: loadingAssistants, refreshAssistants } = useOpenAIAssistants();
   
   // Question management
   const [questions, setQuestions] = useState<Array<{ text: string; type: string; required: boolean; allowPhoto: boolean; allowVideo: boolean; allowAudio: boolean; options?: string[]; hint?: string; weight?: number; parentId?: string; conditionValue?: string }>>([
@@ -78,34 +78,12 @@ export function useChecklistCreation() {
     fetchUsers();
   }, []);
   
-  // Fetch companies
+  // Refresh assistants when changing to AI tab
   useEffect(() => {
-    const fetchCompanies = async () => {
-      try {
-        setLoadingCompanies(true);
-        
-        const { data, error } = await supabase
-          .from('companies')
-          .select('id, fantasy_name')
-          .eq('status', 'active')
-          .order('fantasy_name', { ascending: true });
-          
-        if (error) {
-          console.error("Error fetching companies:", error);
-          toast.error("Erro ao carregar empresas");
-          throw error;
-        }
-        
-        setCompanies(data || []);
-      } catch (error) {
-        console.error("Error in fetchCompanies:", error);
-      } finally {
-        setLoadingCompanies(false);
-      }
-    };
-    
-    fetchCompanies();
-  }, []);
+    if (activeTab === "ai") {
+      refreshAssistants();
+    }
+  }, [activeTab, refreshAssistants]);
   
   // Handle file selection for import
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,7 +122,7 @@ export function useChecklistCreation() {
   
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
-    return await submitForm(e, activeTab, form, questions, file, aiPrompt);
+    return await submitForm(e, activeTab, form, questions, file, aiPrompt, openAIAssistant, numQuestions);
   };
   
   return {
@@ -176,6 +154,7 @@ export function useChecklistCreation() {
     handleSubmit,
     navigate,
     companies,
-    loadingCompanies
+    loadingCompanies,
+    refreshAssistants
   };
 }

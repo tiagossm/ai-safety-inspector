@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { 
   Command,
@@ -43,16 +42,15 @@ export function CompanySelector({ value, onSelect }: CompanySelectorProps) {
     address: "",
     contact_name: "",
     contact_email: "",
-    contact_phone: ""
+    contact_phone: "",
+    employee_count: ""
   });
   const { user } = useAuth();
 
-  // Fetch companies when the component mounts
   useEffect(() => {
     fetchCompanies();
   }, []);
 
-  // Fetch companies from Supabase
   const fetchCompanies = async () => {
     try {
       setLoading(true);
@@ -74,10 +72,16 @@ export function CompanySelector({ value, onSelect }: CompanySelectorProps) {
     }
   };
 
-  // Get the currently selected company
   const selectedCompany = value ? companies.find(company => company.id === value) : null;
 
-  // Handle the creation of a new company
+  const handleSelectCompany = (companyId: string) => {
+    const selectedCompany = companies.find(company => company.id === companyId);
+    if (selectedCompany) {
+      onSelect(companyId, selectedCompany);
+    }
+    setOpen(false);
+  };
+
   const handleCreateCompany = async () => {
     try {
       if (!user || !user.id) {
@@ -90,23 +94,41 @@ export function CompanySelector({ value, onSelect }: CompanySelectorProps) {
         return;
       }
       
-      // Format CNPJ by removing non-numeric characters
       const formattedCNPJ = newCompany.cnpj.replace(/\D/g, "");
       
-      // Validate CNPJ length
       if (formattedCNPJ.length !== 14) {
         toast.error("CNPJ deve ter 14 dígitos");
         return;
       }
+
+      let riskGrade = 2;
+      if (newCompany.cnae) {
+        try {
+          const { data: riskData } = await supabase
+            .from("nr4_riscos")
+            .select("grau_risco")
+            .eq("cnae", newCompany.cnae)
+            .single();
+            
+          if (riskData) {
+            riskGrade = riskData.grau_risco;
+          }
+        } catch (err) {
+          console.warn("Error fetching risk grade:", err);
+        }
+      }
       
-      // Create the company in Supabase
       const { data, error } = await supabase
         .from("companies")
         .insert({
           ...newCompany,
           cnpj: formattedCNPJ,
           status: "active",
-          user_id: user.id  // Adding the required user_id field from the authenticated user
+          user_id: user.id,
+          metadata: {
+            risk_grade: riskGrade.toString(),
+            main_activity: newCompany.cnae ? undefined : "Não informada"
+          }
         })
         .select("*")
         .single();
@@ -116,14 +138,12 @@ export function CompanySelector({ value, onSelect }: CompanySelectorProps) {
       toast.success("Empresa criada com sucesso!");
       setShowCreateDialog(false);
       
-      // Refresh companies and select the new one
       await fetchCompanies();
       
       if (data) {
         onSelect(data.id, data);
       }
       
-      // Reset form
       setNewCompany({
         fantasy_name: "",
         cnpj: "",
@@ -131,7 +151,8 @@ export function CompanySelector({ value, onSelect }: CompanySelectorProps) {
         address: "",
         contact_name: "",
         contact_email: "",
-        contact_phone: ""
+        contact_phone: "",
+        employee_count: ""
       });
       
     } catch (error: any) {
@@ -140,7 +161,6 @@ export function CompanySelector({ value, onSelect }: CompanySelectorProps) {
     }
   };
 
-  // Filter companies based on search query
   const filteredCompanies = searchQuery
     ? companies.filter(company => 
         company.fantasy_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -206,10 +226,7 @@ export function CompanySelector({ value, onSelect }: CompanySelectorProps) {
                   <CommandItem
                     key={company.id}
                     value={company.id}
-                    onSelect={() => {
-                      onSelect(company.id, company);
-                      setOpen(false);
-                    }}
+                    onSelect={() => handleSelectCompany(company.id)}
                     className="flex justify-between"
                   >
                     <div className="flex items-center">
@@ -248,7 +265,6 @@ export function CompanySelector({ value, onSelect }: CompanySelectorProps) {
         </PopoverContent>
       </Popover>
       
-      {/* Dialog for creating a new company */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -333,6 +349,21 @@ export function CompanySelector({ value, onSelect }: CompanySelectorProps) {
                   value={newCompany.contact_phone}
                   onChange={(e) => setNewCompany({ ...newCompany, contact_phone: e.target.value })}
                   placeholder="(00) 00000-0000"
+                  className="mt-1"
+                />
+              </div>
+              
+              <div className="col-span-2">
+                <Label htmlFor="employee_count">Número de Funcionários</Label>
+                <Input
+                  id="employee_count"
+                  type="number"
+                  value={newCompany.employee_count || ""}
+                  onChange={(e) => setNewCompany({ 
+                    ...newCompany, 
+                    employee_count: e.target.value ? parseInt(e.target.value) : undefined 
+                  })}
+                  placeholder="Ex: 100"
                   className="mt-1"
                 />
               </div>

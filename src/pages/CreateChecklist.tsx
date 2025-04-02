@@ -41,7 +41,8 @@ export default function CreateChecklist() {
     handleSubmit,
     navigate,
     companies,
-    loadingCompanies
+    loadingCompanies,
+    refreshAssistants
   } = useChecklistCreation();
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -49,7 +50,7 @@ export default function CreateChecklist() {
     if (isSubmitting) return;
     
     try {
-      // Add some basic validation based on the active tab
+      // Add basic validation based on the active tab
       if (activeTab === "manual" && !form.title?.trim()) {
         toast.error("O título é obrigatório");
         return;
@@ -59,6 +60,11 @@ export default function CreateChecklist() {
       } else if (activeTab === "ai" && !aiPrompt?.trim()) {
         toast.error("Por favor, forneça um prompt para gerar o checklist");
         return;
+      }
+      
+      // If on the AI tab and assistant selection is open, refresh the list
+      if (activeTab === "ai") {
+        refreshAssistants();
       }
       
       const success = await handleSubmit(e);
