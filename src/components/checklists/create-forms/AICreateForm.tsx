@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { NewChecklist } from "@/types/checklist";
 import { Label } from "@/components/ui/label";
@@ -21,6 +20,7 @@ import { Card } from "@/components/ui/card";
 import { CompanySelector } from "@/components/inspection/CompanySelector";
 import { useOpenAIAssistants } from "@/hooks/useOpenAIAssistants";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AICreateFormProps {
   form: NewChecklist;
@@ -43,7 +43,6 @@ interface AICreateFormProps {
   loadingAssistants: boolean;
 }
 
-// Separate form fields component to reduce complexity
 const BasicInfoFields = ({
   form,
   setForm,
@@ -156,7 +155,6 @@ const BasicInfoFields = ({
   );
 };
 
-// Improved AI Assistant selector that gets directly from OpenAI API
 function OpenAIAssistantSelector({ 
   selectedAssistant, 
   setSelectedAssistant 
@@ -216,14 +214,12 @@ export function AICreateForm(props: AICreateFormProps) {
   const [generatedPrompt, setGeneratedPrompt] = useState<string>("");
   const [companyData, setCompanyData] = useState<any>(null);
 
-  // Fetch company data when company_id changes
   useEffect(() => {
     if (props.form.company_id) {
       fetchCompanyData(props.form.company_id.toString());
     }
   }, [props.form.company_id]);
 
-  // Function to fetch company data
   const fetchCompanyData = async (companyId: string) => {
     try {
       const { data, error } = await supabase
@@ -236,7 +232,6 @@ export function AICreateForm(props: AICreateFormProps) {
       
       setCompanyData(data);
       
-      // Auto-generate prompt based on company data
       if (data) {
         const riskGrade = data.metadata?.risk_grade || "médio";
         const employeeCount = data.employee_count || "não informado";
@@ -252,7 +247,6 @@ export function AICreateForm(props: AICreateFormProps) {
     }
   };
 
-  // Function to regenerate prompt
   const regeneratePrompt = () => {
     if (companyData) {
       const riskGrade = companyData.metadata?.risk_grade || "médio";

@@ -118,11 +118,21 @@ export function CompanySelector({ value, onSelect }: CompanySelectorProps) {
         }
       }
       
+      const employeeCount = newCompany.employee_count ? 
+        parseInt(newCompany.employee_count) : 
+        undefined;
+      
       const { data, error } = await supabase
         .from("companies")
         .insert({
-          ...newCompany,
+          fantasy_name: newCompany.fantasy_name,
           cnpj: formattedCNPJ,
+          cnae: newCompany.cnae,
+          address: newCompany.address,
+          contact_name: newCompany.contact_name,
+          contact_email: newCompany.contact_email,
+          contact_phone: newCompany.contact_phone,
+          employee_count: employeeCount,
           status: "active",
           user_id: user.id,
           metadata: {
@@ -361,7 +371,7 @@ export function CompanySelector({ value, onSelect }: CompanySelectorProps) {
                   value={newCompany.employee_count || ""}
                   onChange={(e) => setNewCompany({ 
                     ...newCompany, 
-                    employee_count: e.target.value ? parseInt(e.target.value) : undefined 
+                    employee_count: e.target.value 
                   })}
                   placeholder="Ex: 100"
                   className="mt-1"
