@@ -5,10 +5,13 @@ import { toast } from "sonner";
 import { NewChecklist } from "@/types/checklist";
 import Papa from "papaparse";
 
-type ChecklistImportResult = {
+export type ChecklistImportResult = {
   success: boolean;
   message?: string;
   checklistId?: string;
+  checklistData?: any;
+  questions?: any[];
+  mode?: string;
 };
 
 export function useChecklistImport() {
@@ -84,6 +87,9 @@ export function useChecklistImport() {
                   return resolve({ 
                     success: true, 
                     checklistId: checklist.id,
+                    checklistData: checklist,
+                    questions: questions,
+                    mode: 'import',
                     message: 'Checklist importado com sucesso!'
                   });
                 } catch (error: any) {

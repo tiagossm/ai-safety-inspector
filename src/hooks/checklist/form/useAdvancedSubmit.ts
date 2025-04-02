@@ -22,11 +22,11 @@ export function useAdvancedSubmit() {
     const importResult = await importFromFile(file, form);
     
     if (importResult && typeof importResult === 'object' && importResult.success) {
-      // Instead of saving directly, store the data in session storage for the editor
+      // Store the data needed for editor
       const editorData = {
-        checklistData: importResult.checklistData,
-        questions: importResult.questions,
-        mode: importResult.mode
+        checklistData: importResult.checklistData || { id: importResult.checklistId },
+        questions: importResult.questions || [],
+        mode: importResult.mode || 'import'
       };
       
       console.log("Storing import data for editor:", editorData);
@@ -56,11 +56,11 @@ export function useAdvancedSubmit() {
     const aiResult = await generateAIChecklist(form);
     
     if (aiResult && typeof aiResult === 'object' && aiResult.success) {
-      // Instead of saving directly, store the data in session storage for the editor
+      // Store data for editor
       const editorData = {
-        checklistData: aiResult.checklistData,
-        questions: aiResult.questions,
-        mode: aiResult.mode
+        checklistData: aiResult.checklistData || { id: aiResult.checklistId },
+        questions: aiResult.questions || [],
+        mode: aiResult.mode || 'ai'
       };
       
       console.log("Storing AI data for editor:", editorData);
