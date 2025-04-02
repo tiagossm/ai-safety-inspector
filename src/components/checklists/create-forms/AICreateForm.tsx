@@ -232,16 +232,33 @@ export function AICreateForm(props: AICreateFormProps) {
       
       if (error) throw error;
       
-      setCompanyData(data);
+      // Convert the Supabase data to the Company type
+      const companyData: Company = {
+        id: data.id,
+        fantasy_name: data.fantasy_name,
+        cnpj: data.cnpj,
+        cnae: data.cnae,
+        contact_email: data.contact_email,
+        contact_phone: data.contact_phone,
+        contact_name: data.contact_name,
+        employee_count: data.employee_count,
+        metadata: data.metadata as CompanyMetadata | null,
+        created_at: data.created_at,
+        status: data.status as Company['status'],
+        deactivated_at: data.deactivated_at,
+        address: data.address
+      };
       
-      if (data) {
+      setCompanyData(companyData);
+      
+      if (companyData) {
         // Safely access metadata properties with proper type checking
-        const metadata = data.metadata as CompanyMetadata | null;
+        const metadata = companyData.metadata as CompanyMetadata | null;
         const riskGrade = metadata?.risk_grade || "médio";
-        const employeeCount = data.employee_count || "não informado";
+        const employeeCount = companyData.employee_count || "não informado";
         const activity = metadata?.main_activity || "não informada";
         
-        const newPrompt = `Crie um checklist para a empresa ${data.fantasy_name || 'Empresa'}, com CNAE ${data.cnae || 'não informado'}, atividade ${activity}, grau de risco ${riskGrade}, ${employeeCount} funcionários.`;
+        const newPrompt = `Crie um checklist para a empresa ${companyData.fantasy_name || 'Empresa'}, com CNAE ${companyData.cnae || 'não informado'}, atividade ${activity}, grau de risco ${riskGrade}, ${employeeCount} funcionários.`;
         
         setGeneratedPrompt(newPrompt);
         props.setAiPrompt(newPrompt);
