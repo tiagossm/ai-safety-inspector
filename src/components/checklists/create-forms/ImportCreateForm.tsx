@@ -1,4 +1,3 @@
-
 import React from "react";
 import { NewChecklist } from "@/types/checklist";
 import { Label } from "@/components/ui/label";
@@ -74,7 +73,10 @@ export function ImportCreateForm({
                 ) : (
                   <Select
                     value={form.responsible_id ? form.responsible_id.toString() : ""}
-                    onValueChange={(value) => setForm({ ...form, responsible_id: value ? parseInt(value) : undefined })}
+                    onValueChange={(value) => setForm({ 
+                      ...form, 
+                      responsible_id: value !== "" ? parseInt(value) : undefined 
+                    })}
                   >
                     <SelectTrigger id="responsible_id">
                       <SelectValue placeholder="Selecione um responsável" />
@@ -98,7 +100,10 @@ export function ImportCreateForm({
                 ) : (
                   <Select
                     value={form.company_id ? form.company_id.toString() : ""}
-                    onValueChange={(value) => setForm({ ...form, company_id: value ? parseInt(value) : undefined })}
+                    onValueChange={(value) => setForm({ 
+                      ...form, 
+                      company_id: value !== "" ? parseInt(value) : undefined 
+                    })}
                   >
                     <SelectTrigger id="company_id">
                       <SelectValue placeholder="Selecione uma empresa" />
