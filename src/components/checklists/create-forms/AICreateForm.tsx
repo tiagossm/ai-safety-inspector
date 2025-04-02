@@ -45,113 +45,113 @@ interface AICreateFormProps {
   loadingAssistants: boolean;
 }
 
-const BasicInfoFields = ({
-  form,
-  setForm,
-  users,
-  loadingUsers,
-  companies,
-  loadingCompanies,
-}: Pick<AICreateFormProps, 'form' | 'setForm' | 'users' | 'loadingUsers' | 'companies' | 'loadingCompanies'>) => {
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-  };
-
-  const handleSelectChange = (name: string, value: string) => {
-    setForm({ ...form, [name]: value });
-  };
-
-  const handleCompanySelect = (companyId: string, companyData: any) => {
-    console.log("Company selected:", companyData);
-    setForm({ 
-      ...form, 
-      company_id: companyId 
-    });
-  };
-
+// Componente para selecionar o tipo de assistente
+const AssistantTypeSelector = ({ 
+  selectedType, 
+  onChange 
+}: { 
+  selectedType: AIAssistantType;
+  onChange: (type: AIAssistantType) => void;
+}) => {
   return (
-    <div className="grid gap-6 md:grid-cols-2">
-      <div>
-        <div className="space-y-2">
-          <Label htmlFor="title">Título</Label>
-          <Input
-            id="title"
-            placeholder="Título será gerado automaticamente a partir do prompt"
-            name="title"
-            value={form.title || ""}
-            onChange={handleInputChange}
-          />
-          <p className="text-sm text-muted-foreground">
-            Opcional. Se não preenchido, será gerado do prompt.
-          </p>
-        </div>
-      </div>
-
-      <div>
-        <div className="space-y-2">
-          <Label htmlFor="category">Categoria</Label>
-          <Select
-            value={form.category || "general"}
-            onValueChange={(value) => handleSelectChange("category", value)}
-          >
-            <SelectTrigger id="category">
-              <SelectValue placeholder="Selecione uma categoria" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="general">Geral</SelectItem>
-              <SelectItem value="safety">Segurança</SelectItem>
-              <SelectItem value="maintenance">Manutenção</SelectItem>
-              <SelectItem value="operational">Operacional</SelectItem>
-              <SelectItem value="quality">Qualidade</SelectItem>
-            </SelectContent>
-          </Select>
-          <p className="text-sm text-muted-foreground">
-            Opcional. Ajuda a organizar seus checklists.
-          </p>
-        </div>
-      </div>
-
-      <div>
-        <div className="space-y-2">
-          <Label htmlFor="company_id">Empresa</Label>
-          <CompanySelector
-            value={form.company_id?.toString() || ""}
-            onSelect={handleCompanySelect}
-          />
-          <p className="text-sm text-muted-foreground">
-            Selecione uma empresa para gerar um checklist específico para ela.
-          </p>
-        </div>
-      </div>
-
-      <div>
-        <div className="space-y-2">
-          <Label htmlFor="responsible_id">Responsável</Label>
-          {loadingUsers ? (
-            <Skeleton className="h-9 w-full" />
-          ) : (
-            <Select
-              value={form.responsible_id?.toString() || "none"}
-              onValueChange={(value) => handleSelectChange("responsible_id", value === "none" ? "" : value)}
-            >
-              <SelectTrigger id="responsible_id">
-                <SelectValue placeholder="Selecione um responsável (opcional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nenhum responsável</SelectItem>
-                {users.map((user) => (
-                  <SelectItem key={user.id} value={user.id}>
-                    {user.name || user.email}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-          <p className="text-sm text-muted-foreground">
-            Opcional. Define quem é responsável por este checklist.
-          </p>
-        </div>
+    <div className="space-y-3">
+      <h3 className="text-lg font-medium">Selecione o tipo de assistente</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <Card 
+          className={`p-4 cursor-pointer transition-all ${selectedType === 'general' ? 'border-teal-500 ring-1 ring-teal-500' : 'hover:border-muted-foreground'}`}
+          onClick={() => onChange('general')}
+        >
+          <div className="flex flex-col items-center text-center gap-2 p-2">
+            <div className="mb-2">
+              <input
+                type="radio"
+                checked={selectedType === 'general'}
+                onChange={() => onChange('general')}
+                className="sr-only"
+                id="assistant-general"
+              />
+              <div className={`w-5 h-5 rounded-full border ${selectedType === 'general' ? 'bg-teal-500 border-teal-600' : 'border-gray-400'}`}>
+                {selectedType === 'general' && <div className="w-2.5 h-2.5 rounded-full bg-white mx-auto mt-1"></div>}
+              </div>
+            </div>
+            <label htmlFor="assistant-general" className="font-medium">Geral</label>
+            <p className="text-xs text-muted-foreground">
+              Checklists para uso geral e diversos propósitos
+            </p>
+          </div>
+        </Card>
+        
+        <Card 
+          className={`p-4 cursor-pointer transition-all ${selectedType === 'workplace-safety' ? 'border-teal-500 ring-1 ring-teal-500' : 'hover:border-muted-foreground'}`}
+          onClick={() => onChange('workplace-safety')}
+        >
+          <div className="flex flex-col items-center text-center gap-2 p-2">
+            <div className="mb-2">
+              <input
+                type="radio"
+                checked={selectedType === 'workplace-safety'}
+                onChange={() => onChange('workplace-safety')}
+                className="sr-only"
+                id="assistant-safety"
+              />
+              <div className={`w-5 h-5 rounded-full border ${selectedType === 'workplace-safety' ? 'bg-teal-500 border-teal-600' : 'border-gray-400'}`}>
+                {selectedType === 'workplace-safety' && <div className="w-2.5 h-2.5 rounded-full bg-white mx-auto mt-1"></div>}
+              </div>
+            </div>
+            <label htmlFor="assistant-safety" className="font-medium">Segurança</label>
+            <p className="text-xs text-muted-foreground">
+              Segurança do trabalho, prevenção de acidentes
+            </p>
+          </div>
+        </Card>
+        
+        <Card 
+          className={`p-4 cursor-pointer transition-all ${selectedType === 'compliance' ? 'border-teal-500 ring-1 ring-teal-500' : 'hover:border-muted-foreground'}`}
+          onClick={() => onChange('compliance')}
+        >
+          <div className="flex flex-col items-center text-center gap-2 p-2">
+            <div className="mb-2">
+              <input
+                type="radio"
+                checked={selectedType === 'compliance'}
+                onChange={() => onChange('compliance')}
+                className="sr-only"
+                id="assistant-compliance"
+              />
+              <div className={`w-5 h-5 rounded-full border ${selectedType === 'compliance' ? 'bg-teal-500 border-teal-600' : 'border-gray-400'}`}>
+                {selectedType === 'compliance' && <div className="w-2.5 h-2.5 rounded-full bg-white mx-auto mt-1"></div>}
+              </div>
+            </div>
+            <label htmlFor="assistant-compliance" className="font-medium">Conformidade</label>
+            <p className="text-xs text-muted-foreground">
+              Auditorias, normas e requisitos regulatórios
+            </p>
+          </div>
+        </Card>
+        
+        <Card 
+          className={`p-4 cursor-pointer transition-all ${selectedType === 'quality' ? 'border-teal-500 ring-1 ring-teal-500' : 'hover:border-muted-foreground'}`}
+          onClick={() => onChange('quality')}
+        >
+          <div className="flex flex-col items-center text-center gap-2 p-2">
+            <div className="mb-2">
+              <input
+                type="radio"
+                checked={selectedType === 'quality'}
+                onChange={() => onChange('quality')}
+                className="sr-only"
+                id="assistant-quality"
+              />
+              <div className={`w-5 h-5 rounded-full border ${selectedType === 'quality' ? 'bg-teal-500 border-teal-600' : 'border-gray-400'}`}>
+                {selectedType === 'quality' && <div className="w-2.5 h-2.5 rounded-full bg-white mx-auto mt-1"></div>}
+              </div>
+            </div>
+            <label htmlFor="assistant-quality" className="font-medium">Qualidade</label>
+            <p className="text-xs text-muted-foreground">
+              Controle de qualidade e processos
+            </p>
+          </div>
+        </Card>
       </div>
     </div>
   );
@@ -215,6 +215,7 @@ function OpenAIAssistantSelector({
 export function AICreateForm(props: AICreateFormProps) {
   const [generatedPrompt, setGeneratedPrompt] = useState<string>("");
   const [companyData, setCompanyData] = useState<Company | null>(null);
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState<boolean>(false);
 
   useEffect(() => {
     if (props.form.company_id) {
@@ -285,92 +286,125 @@ export function AICreateForm(props: AICreateFormProps) {
 
   return (
     <div className="space-y-6">
-      <BasicInfoFields 
-        form={props.form}
-        setForm={props.setForm}
-        users={props.users}
-        loadingUsers={props.loadingUsers}
-        companies={props.companies}
-        loadingCompanies={props.loadingCompanies}
-      />
-
-      <Card className="border rounded-md p-4 bg-slate-50">
-        <div className="flex items-center gap-2 mb-4">
-          <BrainCircuit className="h-6 w-6 text-indigo-600" />
-          <h3 className="text-lg font-medium">Configurações de Geração por IA</h3>
-        </div>
-        
-        <div className="space-y-4">
-          <OpenAIAssistantSelector
-            selectedAssistant={props.openAIAssistant}
-            setSelectedAssistant={props.setOpenAIAssistant}
-          />
-          
-          <div>
-            <Label htmlFor="num-questions">Número de Perguntas: {props.numQuestions}</Label>
-            <Slider 
-              id="num-questions"
-              defaultValue={[props.numQuestions]} 
-              min={5} 
-              max={50} 
-              step={1}
-              onValueChange={(values) => props.setNumQuestions(values[0])}
-              className="my-4"
-            />
-            <p className="text-sm text-muted-foreground">
-              Defina quantas perguntas você deseja que a IA gere.
-            </p>
-          </div>
-          
-          <div>
-            <div className="flex justify-between items-center">
-              <Label htmlFor="prompt">Descreva o que você deseja verificar</Label>
-              {companyData && (
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={regeneratePrompt}
-                  className="flex items-center gap-1"
-                >
-                  <RefreshCw className="h-3 w-3" />
-                  <span>Regenerar prompt</span>
-                </Button>
-              )}
-            </div>
+      <div className="mt-4 mb-8">
+        <div className="flex flex-col space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="prompt" className="text-lg font-medium">Prompt para gerar o checklist *</Label>
             <Textarea
               id="prompt"
-              placeholder="Ex: Crie um checklist para inspeção de segurança em um canteiro de obras"
+              placeholder="Descreva o checklist que você deseja gerar. Ex: Checklist para inspeção de segurança em um canteiro de obras..."
               value={props.aiPrompt}
               onChange={(e) => props.setAiPrompt(e.target.value)}
               rows={5}
-              className="w-full"
+              className="w-full text-base"
             />
-            <p className="text-sm text-muted-foreground mt-1">
-              Seja específico e inclua detalhes relevantes para obter melhores resultados.
-            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="num-questions" className="flex justify-between">
+                    <span>Número de Perguntas</span>
+                    <span className="font-medium">{props.numQuestions}</span>
+                  </Label>
+                  <Slider 
+                    id="num-questions"
+                    value={[props.numQuestions]} 
+                    min={5} 
+                    max={50} 
+                    step={1}
+                    onValueChange={(values) => props.setNumQuestions(values[0])}
+                    className="my-4"
+                  />
+                </div>
+                
+                <AssistantTypeSelector 
+                  selectedType={props.selectedAssistant} 
+                  onChange={props.setSelectedAssistant}
+                />
+                
+                <Button
+                  type="button"
+                  onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {showAdvancedOptions ? "Ocultar opções avançadas" : "Mostrar opções avançadas"}
+                </Button>
+                
+                {showAdvancedOptions && (
+                  <div className="space-y-4 border-t pt-4 mt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="company_id">Empresa</Label>
+                      <CompanySelector
+                        value={props.form.company_id?.toString() || ""}
+                        onSelect={(companyId, companyData) => {
+                          props.setForm({ 
+                            ...props.form, 
+                            company_id: companyId 
+                          });
+                        }}
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Selecione uma empresa para gerar um checklist específico para ela.
+                      </p>
+                    </div>
+
+                    <OpenAIAssistantSelector
+                      selectedAssistant={props.openAIAssistant}
+                      setSelectedAssistant={props.setOpenAIAssistant}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div>
+              <div className="bg-slate-50 p-6 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-4">Como funciona</h3>
+                <p className="text-sm text-muted-foreground mb-6">
+                  Nosso assistente de IA irá gerar um checklist com base na sua descrição. 
+                  Quanto mais detalhado for o prompt, melhores serão os resultados.
+                </p>
+                
+                <h4 className="font-medium text-sm mt-4 mb-2">Exemplos de prompts:</h4>
+                <ul className="text-sm text-muted-foreground space-y-2">
+                  <li>"Checklist para inspeção de segurança em andaimes"</li>
+                  <li>"Lista de verificação para manutenção preventiva de empilhadeiras"</li>
+                  <li>"Auditoria de conformidade para normas de proteção contra incêndio"</li>
+                </ul>
+                
+                <div className="mt-4 border-t pt-4">
+                  <p className="text-xs text-muted-foreground">
+                    Você poderá revisar e editar o checklist gerado antes de salvá-lo.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
           
           <Button
             type="button"
             onClick={props.onGenerateAI}
             disabled={props.aiLoading || !props.aiPrompt.trim()}
-            className="w-full bg-indigo-600 hover:bg-indigo-700"
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 mt-4"
+            size="lg"
           >
             {props.aiLoading ? (
               <>
-                <Sparkles className="mr-2 h-4 w-4 animate-spin" />
+                <Sparkles className="mr-2 h-5 w-5 animate-spin" />
                 Gerando...
               </>
             ) : (
               <>
-                <Bot className="mr-2 h-4 w-4" />
+                <Bot className="mr-2 h-5 w-5" />
                 Gerar Checklist com IA
               </>
             )}
           </Button>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }

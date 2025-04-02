@@ -117,19 +117,19 @@ export default function CreateChecklist() {
       </div>
 
       <form onSubmit={onSubmit} className="space-y-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-3 mb-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid grid-cols-3 mb-4 w-full">
             <TabsTrigger value="manual" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               <span>Criação Manual</span>
             </TabsTrigger>
-            <TabsTrigger value="import" className="flex items-center gap-2">
-              <Upload className="h-4 w-4" />
-              <span>Importar Planilha</span>
-            </TabsTrigger>
             <TabsTrigger value="ai" className="flex items-center gap-2">
               <Bot className="h-4 w-4" />
               <span>Gerado por IA</span>
+            </TabsTrigger>
+            <TabsTrigger value="import" className="flex items-center gap-2">
+              <Upload className="h-4 w-4" />
+              <span>Importar Planilha</span>
             </TabsTrigger>
           </TabsList>
           
@@ -143,19 +143,6 @@ export default function CreateChecklist() {
               onAddQuestion={handleAddQuestion}
               onRemoveQuestion={handleRemoveQuestion}
               onQuestionChange={handleQuestionChange}
-              companies={companies}
-              loadingCompanies={loadingCompanies}
-            />
-          </TabsContent>
-          
-          <TabsContent value="import" className="py-4">
-            <ImportCreateForm 
-              form={form}
-              setForm={setForm}
-              users={users}
-              loadingUsers={loadingUsers}
-              file={file}
-              onFileChange={handleFileChange}
               companies={companies}
               loadingCompanies={loadingCompanies}
             />
@@ -181,6 +168,19 @@ export default function CreateChecklist() {
               setOpenAIAssistant={setOpenAIAssistant}
               assistants={assistants}
               loadingAssistants={loadingAssistants}
+            />
+          </TabsContent>
+          
+          <TabsContent value="import" className="py-4">
+            <ImportCreateForm 
+              form={form}
+              setForm={setForm}
+              users={users}
+              loadingUsers={loadingUsers}
+              file={file}
+              onFileChange={handleFileChange}
+              companies={companies}
+              loadingCompanies={loadingCompanies}
             />
           </TabsContent>
         </Tabs>
