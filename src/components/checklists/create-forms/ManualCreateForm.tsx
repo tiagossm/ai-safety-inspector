@@ -4,6 +4,8 @@ import { NewChecklist } from "@/types/checklist";
 import { BasicInfoSection } from "./BasicInfoSection";
 import { QuestionsSection } from "./QuestionsSection";
 import { CompanyListItem } from "@/types/CompanyListItem";
+import { FormActions } from "./FormActions";
+import { useNavigate } from "react-router-dom";
 
 interface ManualCreateFormProps {
   form: NewChecklist;
@@ -28,6 +30,8 @@ interface ManualCreateFormProps {
   onQuestionChange: (index: number, field: string, value: string | boolean) => void;
   companies: CompanyListItem[];
   loadingCompanies: boolean;
+  onSubmit: (e: React.FormEvent) => Promise<boolean>;
+  isSubmitting: boolean;
 }
 
 export function ManualCreateForm({
@@ -40,10 +44,14 @@ export function ManualCreateForm({
   onRemoveQuestion,
   onQuestionChange,
   companies,
-  loadingCompanies
+  loadingCompanies,
+  onSubmit,
+  isSubmitting
 }: ManualCreateFormProps) {
+  const navigate = useNavigate();
+
   return (
-    <div className="space-y-6">
+    <form onSubmit={onSubmit} className="space-y-6">
       <BasicInfoSection
         form={form}
         setForm={setForm}
@@ -59,6 +67,13 @@ export function ManualCreateForm({
         onRemoveQuestion={onRemoveQuestion}
         onQuestionChange={onQuestionChange}
       />
-    </div>
+
+      <FormActions
+        isSubmitting={isSubmitting}
+        onCancel={() => navigate("/checklists")}
+        canSubmit={true}
+        submitText="Avançar para Edição"
+      />
+    </form>
   );
 }

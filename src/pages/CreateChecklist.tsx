@@ -1,20 +1,21 @@
 
 import { useState } from "react";
-import { useChecklistCreation } from "@/hooks/checklist/useChecklistCreation";
+import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, Upload, Bot } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { BackButton } from "@/components/checklists/create-forms/FormActions";
+import { AIChecklistCreator } from "@/components/checklists/create-forms/AIChecklistCreator";
 import { ManualCreateForm } from "@/components/checklists/create-forms/ManualCreateForm";
 import { ImportCreateForm } from "@/components/checklists/create-forms/ImportCreateForm";
-import { AICreateForm } from "@/components/checklists/create-forms/AICreateForm";
-import { BackButton, FormActions } from "@/components/checklists/create-forms/FormActions";
-import { toast } from "sonner";
+import { useChecklistCreation } from "@/hooks/checklist/useChecklistCreation";
 
 export default function CreateChecklist() {
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<string>("ai");
   
+  // Use o hook para a lógica de criação de checklist
   const {
-    activeTab,
-    setActiveTab,
     form,
     setForm,
     users,
@@ -23,114 +24,63 @@ export default function CreateChecklist() {
     file,
     handleFileChange,
     clearFile,
-    aiPrompt,
-    setAiPrompt,
-    numQuestions,
-    setNumQuestions,
-    aiLoading,
-    selectedAssistant,
-    setSelectedAssistant,
-    openAIAssistant,
-    setOpenAIAssistant,
-    assistants,
-    loadingAssistants,
     questions,
     handleAddQuestion,
     handleRemoveQuestion,
     handleQuestionChange,
     handleSubmit,
-    navigate,
     companies,
-    loadingCompanies,
-    refreshAssistants
+    loadingCompanies
   } = useChecklistCreation();
-
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isSubmitting) return;
-    
-    try {
-      // Add basic validation based on the active tab
-      if (activeTab === "manual" && !form.title?.trim()) {
-        toast.error("O título é obrigatório");
-        return;
-      } else if (activeTab === "import" && !file) {
-        toast.error("Por favor, selecione um arquivo para importar");
-        return;
-      } else if (activeTab === "ai" && !aiPrompt?.trim()) {
-        toast.error("Por favor, forneça um prompt para gerar o checklist");
-        return;
-      }
-      
-      // If on the AI tab and assistant selection is open, refresh the list
-      if (activeTab === "ai") {
-        refreshAssistants();
-      }
-      
-      const success = await handleSubmit(e);
-      
-      if (success) {
-        toast.success("Redirecionando para o editor...");
-      }
-    } catch (error) {
-      console.error("Erro ao criar checklist:", error);
-      toast.error("Ocorreu um erro ao criar o checklist");
-    }
-  };
-
-  const handleGenerateAI = () => {
-    if (!aiPrompt.trim()) {
-      toast.error("Por favor, forneça um prompt para gerar o checklist");
-      return;
-    }
-    
-    // Set a title based on the AI prompt if not already set
-    if (!form.title) {
-      const shortPrompt = aiPrompt.length > 40 ? 
-        aiPrompt.substring(0, 40) + "..." : 
-        aiPrompt;
-      setForm({
-        ...form,
-        title: `Checklist: ${shortPrompt}`,
-        description: `Checklist gerado automaticamente com base em: ${aiPrompt}`,
-        status: "active", // Ensure proper status value for database constraint
-        status_checklist: "ativo" // Fix for database constraint
-      });
-    }
-    
-    onSubmit({
-      preventDefault: () => {},
-    } as React.FormEvent);
-  };
-
-  if (isLoading) {
-    return <div className="py-20 text-center">Carregando...</div>;
-  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <BackButton onClick={() => navigate("/checklists")} />
-          <h1 className="text-2xl font-bold">Criar Nova Lista de Verificação</h1>
+          <h1 className="text-2xl font-bold">Criar Novo Checklist</h1>
         </div>
       </div>
 
-      <form onSubmit={onSubmit} className="space-y-6">
+      {/* Botões na parte superior para navegação rápida */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <Card 
+          className={`p-4 cursor-pointer hover:border-gray-400 transition-all ${activeTab === "manual" ? "bg-gray-50" : "bg-white"}`}
+          onClick={() => setActiveTab("manual")}
+        >
+          <div className="flex items-center justify-center flex-col text-center gap-2 py-2">
+            <FileText className="h-6 w-6 text-gray-700" />
+            <span className="font-medium">Criação Manual</span>
+          </div>
+        </Card>
+        
+        <Card 
+          className={`p-4 cursor-pointer hover:border-gray-400 transition-all ${activeTab === "ai" ? "bg-gray-50" : "bg-white"}`}
+          onClick={() => setActiveTab("ai")}
+        >
+          <div className="flex items-center justify-center flex-col text-center gap-2 py-2">
+            <Bot className="h-6 w-6 text-gray-700" />
+            <span className="font-medium">Gerado por IA</span>
+          </div>
+        </Card>
+        
+        <Card 
+          className={`p-4 cursor-pointer hover:border-gray-400 transition-all ${activeTab === "import" ? "bg-gray-50" : "bg-white"}`}
+          onClick={() => setActiveTab("import")}
+        >
+          <div className="flex items-center justify-center flex-col text-center gap-2 py-2">
+            <Upload className="h-6 w-6 text-gray-700" />
+            <span className="font-medium">Importar Planilha</span>
+          </div>
+        </Card>
+      </div>
+
+      <div className="mt-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-3 mb-4 w-full">
-            <TabsTrigger value="manual" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              <span>Criação Manual</span>
-            </TabsTrigger>
-            <TabsTrigger value="ai" className="flex items-center gap-2">
-              <Bot className="h-4 w-4" />
-              <span>Gerado por IA</span>
-            </TabsTrigger>
-            <TabsTrigger value="import" className="flex items-center gap-2">
-              <Upload className="h-4 w-4" />
-              <span>Importar Planilha</span>
-            </TabsTrigger>
+          <TabsList className="hidden">
+            <TabsTrigger value="manual">Criação Manual</TabsTrigger>
+            <TabsTrigger value="ai">Gerado por IA</TabsTrigger>
+            <TabsTrigger value="import">Importar Planilha</TabsTrigger>
           </TabsList>
           
           <TabsContent value="manual" className="py-4">
@@ -145,29 +95,19 @@ export default function CreateChecklist() {
               onQuestionChange={handleQuestionChange}
               companies={companies}
               loadingCompanies={loadingCompanies}
+              onSubmit={handleSubmit}
+              isSubmitting={isSubmitting}
             />
           </TabsContent>
           
           <TabsContent value="ai" className="py-4">
-            <AICreateForm 
+            <AIChecklistCreator 
               form={form}
               setForm={setForm}
-              users={users}
-              loadingUsers={loadingUsers}
-              aiPrompt={aiPrompt}
-              setAiPrompt={setAiPrompt}
-              numQuestions={numQuestions}
-              setNumQuestions={setNumQuestions}
-              onGenerateAI={handleGenerateAI}
-              aiLoading={aiLoading}
+              onSubmit={handleSubmit}
+              isSubmitting={isSubmitting}
               companies={companies}
               loadingCompanies={loadingCompanies}
-              selectedAssistant={selectedAssistant}
-              setSelectedAssistant={setSelectedAssistant}
-              openAIAssistant={openAIAssistant}
-              setOpenAIAssistant={setOpenAIAssistant}
-              assistants={assistants}
-              loadingAssistants={loadingAssistants}
             />
           </TabsContent>
           
@@ -181,17 +121,12 @@ export default function CreateChecklist() {
               onFileChange={handleFileChange}
               companies={companies}
               loadingCompanies={loadingCompanies}
+              onSubmit={handleSubmit}
+              isSubmitting={isSubmitting}
             />
           </TabsContent>
         </Tabs>
-        
-        <FormActions 
-          isSubmitting={isSubmitting}
-          onCancel={() => navigate("/checklists")}
-          canSubmit={!isSubmitting}
-          submitText={isSubmitting ? "Processando..." : "Avançar para Edição"}
-        />
-      </form>
+      </div>
     </div>
   );
 }

@@ -5,7 +5,6 @@ import { NewChecklist } from "@/types/checklist";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useChecklistSubmit } from "./form/useChecklistSubmit";
-import { useOpenAIAssistants } from "@/hooks/useOpenAIAssistants";
 import { CompanyListItem } from "@/types/CompanyListItem";
 import { useChecklistCompanies } from "./form/useChecklistCompanies";
 
@@ -13,7 +12,7 @@ export type AIAssistantType = 'general' | 'workplace-safety' | 'compliance' | 'q
 
 export function useChecklistCreation() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<string>("manual");
+  const [activeTab, setActiveTab] = useState<string>("ai");
   const [form, setForm] = useState<NewChecklist>({
     title: "",
     description: "",
@@ -37,9 +36,6 @@ export function useChecklistCreation() {
   const [aiLoading, setAiLoading] = useState<boolean>(false);
   const [selectedAssistant, setSelectedAssistant] = useState<AIAssistantType>("general");
   const [openAIAssistant, setOpenAIAssistant] = useState<string>("");
-  
-  // Get OpenAI assistants
-  const { assistants, loading: loadingAssistants, refreshAssistants } = useOpenAIAssistants();
   
   // Question management
   const [questions, setQuestions] = useState<Array<{ text: string; type: string; required: boolean; allowPhoto: boolean; allowVideo: boolean; allowAudio: boolean; options?: string[]; hint?: string; weight?: number; parentId?: string; conditionValue?: string }>>([
@@ -78,17 +74,12 @@ export function useChecklistCreation() {
     fetchUsers();
   }, []);
   
-  // Refresh assistants when changing to AI tab
-  useEffect(() => {
-    if (activeTab === "ai") {
-      refreshAssistants();
-    }
-  }, [activeTab, refreshAssistants]);
-  
   // Handle file selection for import
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       setFile(e.target.files[0]);
+    } else {
+      setFile(null);
     }
   };
   
@@ -122,7 +113,16 @@ export function useChecklistCreation() {
   
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
-    return await submitForm(e, activeTab, form, questions, file, aiPrompt, openAIAssistant, numQuestions);
+    return await submitForm(
+      e, 
+      activeTab, 
+      form, 
+      questions, 
+      file, 
+      aiPrompt, 
+      openAIAssistant, 
+      numQuestions
+    );
   };
   
   return {
@@ -145,8 +145,6 @@ export function useChecklistCreation() {
     setSelectedAssistant,
     openAIAssistant,
     setOpenAIAssistant,
-    assistants,
-    loadingAssistants,
     questions,
     handleAddQuestion,
     handleRemoveQuestion,
@@ -154,7 +152,6 @@ export function useChecklistCreation() {
     handleSubmit,
     navigate,
     companies,
-    loadingCompanies,
-    refreshAssistants
+    loadingCompanies
   };
 }
