@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { NewChecklist } from "@/types/checklist";
 import { Label } from "@/components/ui/label";
@@ -21,6 +22,7 @@ import { CompanySelector } from "@/components/inspection/CompanySelector";
 import { useOpenAIAssistants } from "@/hooks/useOpenAIAssistants";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { Company, CompanyMetadata } from "@/types/company";
 
 interface AICreateFormProps {
   form: NewChecklist;
@@ -212,7 +214,7 @@ function OpenAIAssistantSelector({
 
 export function AICreateForm(props: AICreateFormProps) {
   const [generatedPrompt, setGeneratedPrompt] = useState<string>("");
-  const [companyData, setCompanyData] = useState<any>(null);
+  const [companyData, setCompanyData] = useState<Company | null>(null);
 
   useEffect(() => {
     if (props.form.company_id) {
@@ -233,9 +235,11 @@ export function AICreateForm(props: AICreateFormProps) {
       setCompanyData(data);
       
       if (data) {
-        const riskGrade = data.metadata?.risk_grade || "médio";
+        // Safely access metadata properties with proper type checking
+        const metadata = data.metadata as CompanyMetadata | null;
+        const riskGrade = metadata?.risk_grade || "médio";
         const employeeCount = data.employee_count || "não informado";
-        const activity = data.metadata?.main_activity || "não informada";
+        const activity = metadata?.main_activity || "não informada";
         
         const newPrompt = `Crie um checklist para a empresa ${data.fantasy_name || 'Empresa'}, com CNAE ${data.cnae || 'não informado'}, atividade ${activity}, grau de risco ${riskGrade}, ${employeeCount} funcionários.`;
         
@@ -249,9 +253,11 @@ export function AICreateForm(props: AICreateFormProps) {
 
   const regeneratePrompt = () => {
     if (companyData) {
-      const riskGrade = companyData.metadata?.risk_grade || "médio";
+      // Safely access metadata properties with proper type checking
+      const metadata = companyData.metadata as CompanyMetadata | null;
+      const riskGrade = metadata?.risk_grade || "médio";
       const employeeCount = companyData.employee_count || "não informado";
-      const activity = companyData.metadata?.main_activity || "não informada";
+      const activity = metadata?.main_activity || "não informada";
       
       const newPrompt = `Crie um checklist para a empresa ${companyData.fantasy_name || 'Empresa'}, com CNAE ${companyData.cnae || 'não informado'}, atividade ${activity}, grau de risco ${riskGrade}, ${employeeCount} funcionários.`;
       
