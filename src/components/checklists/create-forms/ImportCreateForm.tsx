@@ -1,3 +1,4 @@
+
 import React from "react";
 import { NewChecklist } from "@/types/checklist";
 import { Label } from "@/components/ui/label";
@@ -72,7 +73,7 @@ export function ImportCreateForm({
                   <Skeleton className="h-9 w-full" />
                 ) : (
                   <Select
-                    value={form.responsible_id ? form.responsible_id.toString() : ""}
+                    value={form.responsible_id !== undefined ? String(form.responsible_id) : ""}
                     onValueChange={(value) => setForm({ 
                       ...form, 
                       responsible_id: value !== "" ? parseInt(value) : undefined 
@@ -84,7 +85,7 @@ export function ImportCreateForm({
                     <SelectContent>
                       <SelectItem value="">Nenhum responsável</SelectItem>
                       {users.map((user) => (
-                        <SelectItem key={user.id} value={user.id.toString()}>
+                        <SelectItem key={user.id} value={String(user.id)}>
                           {user.name}
                         </SelectItem>
                       ))}
@@ -99,7 +100,7 @@ export function ImportCreateForm({
                   <Skeleton className="h-9 w-full" />
                 ) : (
                   <Select
-                    value={form.company_id ? form.company_id.toString() : ""}
+                    value={form.company_id !== undefined ? String(form.company_id) : ""}
                     onValueChange={(value) => setForm({ 
                       ...form, 
                       company_id: value !== "" ? parseInt(value) : undefined 
@@ -111,7 +112,7 @@ export function ImportCreateForm({
                     <SelectContent>
                       <SelectItem value="">Nenhuma empresa</SelectItem>
                       {companies.map((company) => (
-                        <SelectItem key={company.id} value={company.id.toString()}>
+                        <SelectItem key={company.id} value={String(company.id)}>
                           {company.fantasy_name}
                         </SelectItem>
                       ))}
