@@ -73,7 +73,7 @@ export function ImportCreateForm({
                   <Skeleton className="h-9 w-full" />
                 ) : (
                   <Select
-                    value={form.responsible_id?.toString() || ""}
+                    value={form.responsible_id ? form.responsible_id.toString() : ""}
                     onValueChange={(value) => setForm({ ...form, responsible_id: value ? parseInt(value) : undefined })}
                   >
                     <SelectTrigger id="responsible_id">
@@ -97,7 +97,7 @@ export function ImportCreateForm({
                   <Skeleton className="h-9 w-full" />
                 ) : (
                   <Select
-                    value={form.company_id?.toString() || ""}
+                    value={form.company_id ? form.company_id.toString() : ""}
                     onValueChange={(value) => setForm({ ...form, company_id: value ? parseInt(value) : undefined })}
                   >
                     <SelectTrigger id="company_id">
