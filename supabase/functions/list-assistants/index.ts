@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
@@ -35,7 +34,7 @@ serve(async (req) => {
       headers: {
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
-        'OpenAI-Beta': 'assistants=v1'
+        'OpenAI-Beta': 'assistants=v2'
       }
     });
 
@@ -57,7 +56,7 @@ serve(async (req) => {
     const data = await response.json();
     
     return new Response(
-      JSON.stringify({ data }),
+      JSON.stringify(data),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
