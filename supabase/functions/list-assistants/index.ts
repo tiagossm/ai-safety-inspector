@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
@@ -16,6 +17,35 @@ serve(async (req) => {
 
   // Check if API key is available
   if (!OPENAI_API_KEY) {
+    console.error("OpenAI API key is missing");
+    
+    // Return mock data in development to allow testing without the API key
+    if (Deno.env.get('ENVIRONMENT') === 'development') {
+      const mockAssistants = [
+        {
+          id: "asst_mock1",
+          name: "Assistente para NR (gpt-4o-mini)",
+          description: "Specializes in NR Safety Standards",
+          model: "gpt-4o-mini",
+          created_at: Date.now() / 1000
+        },
+        {
+          id: "asst_mock2",
+          name: "Assistente de Checklists Industriais (gpt-4o)",
+          description: "Creates industrial safety checklists",
+          model: "gpt-4o",
+          created_at: Date.now() / 1000
+        }
+      ];
+      
+      return new Response(
+        JSON.stringify({ assistants: mockAssistants }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+    
     return new Response(
       JSON.stringify({
         error: "OpenAI API key is required. Please set the OPENAI_API_KEY environment variable."
@@ -39,12 +69,12 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      console.error('OpenAI API error:', error);
+      const errorData = await response.json();
+      console.error('OpenAI API error:', errorData);
 
       return new Response(
         JSON.stringify({
-          error: `OpenAI API error: ${error.error?.message || 'Unknown error'}`
+          error: `OpenAI API error: ${errorData.error?.message || 'Unknown error'}`
         }),
         {
           status: response.status,

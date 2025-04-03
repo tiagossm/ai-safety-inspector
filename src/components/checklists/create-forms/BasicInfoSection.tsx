@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,22 +62,16 @@ export function BasicInfoSection({
         </div>
         
         <div className="grid gap-2">
-          <Label htmlFor="category">Categoria</Label>
-          <Select 
-            value={form.category} 
-            onValueChange={(value) => setForm({ ...form, category: value })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione uma categoria" />
-            </SelectTrigger>
-            <SelectContent>
-              {CATEGORIES.map((category) => (
-                <SelectItem key={category.value} value={category.value}>
-                  {category.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label htmlFor="category">
+            Categoria <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="category"
+            value={form.category || ""}
+            onChange={(e) => setForm({ ...form, category: e.target.value })}
+            placeholder="Ex: NR-35, Inspeção de Equipamentos"
+            required
+          />
         </div>
       </div>
 

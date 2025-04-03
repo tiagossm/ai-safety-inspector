@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -20,6 +21,7 @@ export const useOpenAIAssistants = () => {
     setError(null);
 
     try {
+      console.log('Fetching OpenAI assistants...');
       const response = await supabase.functions.invoke('list-assistants');
       console.log('Response from list-assistants:', response);
 
@@ -48,6 +50,7 @@ export const useOpenAIAssistants = () => {
         .filter((assistant) => assistant.id)
         .sort((a, b) => a.name.localeCompare(b.name));
 
+      console.log(`Retrieved ${formattedAssistants.length} OpenAI assistants`);
       setAssistants(formattedAssistants);
     } catch (error: any) {
       console.error('Error loading assistants:', error);

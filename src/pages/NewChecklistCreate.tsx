@@ -13,7 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useChecklistCreate } from "@/hooks/new-checklist/useChecklistCreate";
 import { useChecklistAI } from "@/hooks/new-checklist/useChecklistAI";
-import { AIAssistantSelector } from "@/components/checklists/create-forms/AIAssistantSelector";
 import { CSVImportSection } from "@/components/checklists/create-forms/CSVImportSection";
 import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
@@ -46,7 +45,7 @@ export default function NewChecklistCreate() {
     description: "",
     isTemplate: false,
     status: "active",
-    category: "general"
+    category: ""
   });
   
   const [questions, setQuestions] = useState<ChecklistQuestion[]>([
@@ -133,6 +132,12 @@ export default function NewChecklistCreate() {
         return;
       }
       
+      if (!checklist.category) {
+        toast.error("A categoria do checklist é obrigatória.");
+        setIsSubmitting(false);
+        return;
+      }
+      
       const validQuestions = questions.filter(q => q.text.trim() !== "");
       if (validQuestions.length === 0) {
         toast.error("Adicione pelo menos uma pergunta válida.");
@@ -158,8 +163,19 @@ export default function NewChecklistCreate() {
   };
   
   const handleGenerateWithAI = async () => {
-    if (!prompt.trim()) {
-      toast.error("Digite um prompt para gerar o checklist.");
+    // Validation
+    if (!checklist.category?.trim()) {
+      toast.error("A categoria do checklist é obrigatória.");
+      return;
+    }
+    
+    if (!checklist.company_id) {
+      toast.error("Por favor, selecione uma empresa.");
+      return;
+    }
+    
+    if (!openAIAssistant) {
+      toast.error("Por favor, selecione um assistente de IA.");
       return;
     }
     
@@ -282,7 +298,9 @@ export default function NewChecklistCreate() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="title">Título *</Label>
+                      <Label htmlFor="title">
+                        Título <span className="text-red-500">*</span>
+                      </Label>
                       <Input
                         id="title"
                         value={checklist.title}
@@ -306,13 +324,40 @@ export default function NewChecklistCreate() {
                   
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="category">Categoria</Label>
+                      <Label htmlFor="category">
+                        Categoria <span className="text-red-500">*</span>
+                      </Label>
                       <Input
                         id="category"
                         value={checklist.category || ""}
                         onChange={(e) => setChecklist({ ...checklist, category: e.target.value })}
-                        placeholder="Ex: Segurança, Qualidade, etc."
+                        placeholder="Ex: NR-35, Inspeção de Equipamentos"
+                        required
                       />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="company">Empresa</Label>
+                      <Select 
+                        value={checklist.company_id?.toString() || "none"} 
+                        onValueChange={(value) => setChecklist({ ...checklist, company_id: value === "none" ? undefined : value })}
+                      >
+                        <SelectTrigger id="company">
+                          <SelectValue placeholder="Selecione uma empresa" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Nenhuma</SelectItem>
+                          {loadingCompanies ? (
+                            <SelectItem value="loading" disabled>Carregando empresas...</SelectItem>
+                          ) : (
+                            companies.map((company) => (
+                              <SelectItem key={company.id} value={company.id}>
+                                {company.fantasy_name || 'Empresa sem nome'}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
                     </div>
                     
                     <div className="flex items-center space-x-2">
@@ -416,6 +461,44 @@ export default function NewChecklistCreate() {
           <TabsContent value="import">
             <Card>
               <CardContent className="pt-6">
+                <div className="space-y-4 mb-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="import-title">
+                      Título <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="import-title"
+                      value={checklist.title}
+                      onChange={(e) => setChecklist({ ...checklist, title: e.target.value })}
+                      placeholder="Digite o título do checklist"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="import-category">
+                      Categoria <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="import-category"
+                      value={checklist.category || ""}
+                      onChange={(e) => setChecklist({ ...checklist, category: e.target.value })}
+                      placeholder="Ex: NR-35, Inspeção de Equipamentos"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="import-description">Descrição</Label>
+                    <Textarea
+                      id="import-description"
+                      value={checklist.description || ""}
+                      onChange={(e) => setChecklist({ ...checklist, description: e.target.value })}
+                      placeholder="Digite uma descrição para o checklist"
+                      className="min-h-[100px]"
+                    />
+                  </div>
+                </div>
                 <CSVImportSection onDataParsed={handleCsvDataParsed} />
               </CardContent>
             </Card>
@@ -433,7 +516,7 @@ export default function NewChecklistCreate() {
           
           <Button
             type="submit"
-            disabled={isSubmitting || (activeTab === "import" && questions.length <= 1)}
+            disabled={isSubmitting || !checklist.title || !checklist.category || (activeTab === "manual" && questions.length <= 0)}
           >
             {isSubmitting ? (
               "Salvando..."
