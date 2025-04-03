@@ -59,6 +59,7 @@ export interface NewChecklistPayload {
   category?: string;
   responsibleId?: string | null;
   companyId?: string | null;
+  company_id?: string | null; // For backward compatibility
   dueDate?: string | null;
 }
 

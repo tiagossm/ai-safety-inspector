@@ -28,7 +28,7 @@ export function useChecklistAI() {
         return { success: false, error: "Prompt vazio" };
       }
       
-      if (!checklistData.company_id) {
+      if (!checklistData.companyId) {
         toast.error("É necessário selecionar uma empresa");
         return { success: false, error: "Empresa não selecionada" };
       }

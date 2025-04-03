@@ -1,4 +1,4 @@
-import { AICreateForm } from "@/components/checklists/create-forms/AICreateForm";
+
 import React, { useEffect, useState } from "react";
 import { NewChecklist } from "@/types/checklist";
 import { Label } from "@/components/ui/label";
@@ -110,20 +110,20 @@ function OpenAIAssistantSelector({
   );
 }
 
-export function AICreateForm(props: AICreateFormProps) {
+export function AICreateFormContent(props: AICreateFormProps) {
   const [companyData, setCompanyData] = useState<Company | null>(null);
   const [formattedPrompt, setFormattedPrompt] = useState<string>("");
   const [customPrompt, setCustomPrompt] = useState<string>("");
 
   // Monitor changes to relevant form fields
   useEffect(() => {
-    if (props.form.company_id) {
-      fetchCompanyData(props.form.company_id.toString());
+    if (props.form.companyId) {
+      fetchCompanyData(props.form.companyId.toString());
     } else {
       setCompanyData(null);
       updateFormattedPrompt(null, props.form.category || "", customPrompt);
     }
-  }, [props.form.company_id, props.form.category, customPrompt]);
+  }, [props.form.companyId, props.form.category, customPrompt]);
 
   const fetchCompanyData = async (companyId: string) => {
     try {
@@ -197,7 +197,7 @@ Descrição: ${description || ""}`;
       return;
     }
 
-    if (!props.form.company_id) {
+    if (!props.form.companyId) {
       toast.error("Por favor, selecione uma empresa");
       return;
     }
@@ -238,11 +238,11 @@ Descrição: ${description || ""}`;
                   Empresa <span className="text-red-500">*</span>
                 </Label>
                 <CompanySelector
-                  value={props.form.company_id?.toString() || ""}
+                  value={props.form.companyId?.toString() || ""}
                   onSelect={(companyId) => {
                     props.setForm({ 
                       ...props.form, 
-                      company_id: companyId 
+                      companyId: companyId 
                     });
                   }}
                 />
@@ -303,7 +303,7 @@ Descrição: ${description || ""}`;
           <Button
             type="button"
             onClick={handleGenerateClick}
-            disabled={props.aiLoading || !props.form.category?.trim() || !props.form.company_id || !props.openAIAssistant}
+            disabled={props.aiLoading || !props.form.category?.trim() || !props.form.companyId || !props.openAIAssistant}
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 mt-4"
             size="lg"
           >
@@ -323,4 +323,8 @@ Descrição: ${description || ""}`;
       </div>
     </div>
   );
+}
+
+export function AICreateForm(props: AICreateFormProps) {
+  return <AICreateFormContent {...props} />;
 }

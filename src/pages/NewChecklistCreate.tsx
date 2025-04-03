@@ -1,3 +1,4 @@
+
 import {
   Select,
   SelectContent,
@@ -175,7 +176,7 @@ export default function NewChecklistCreate() {
       return;
     }
     
-    if (!checklist.company_id) {
+    if (!checklist.companyId) {
       toast.error("Por favor, selecione uma empresa.");
       return;
     }
@@ -345,8 +346,8 @@ export default function NewChecklistCreate() {
                     <div className="space-y-2">
                       <Label htmlFor="company">Empresa</Label>
                       <Select 
-                        value={checklist.company_id?.toString() || "none"} 
-                        onValueChange={(value) => setChecklist({ ...checklist, company_id: value === "none" ? undefined : value })}
+                        value={checklist.companyId?.toString() || "none"} 
+                        onValueChange={(value) => setChecklist({ ...checklist, companyId: value === "none" ? undefined : value })}
                       >
                         <SelectTrigger id="company">
                           <SelectValue placeholder="Selecione uma empresa" />
