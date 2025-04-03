@@ -36,6 +36,8 @@ export default function NewChecklistCreate() {
   const [activeTab, setActiveTab] = useState<"manual" | "ai" | "import">("manual");
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  const [companies, setCompanies] = useState([]);
+  
   const [checklist, setChecklist] = useState<NewChecklistPayload>({
     title: "",
     description: "",
@@ -384,29 +386,29 @@ export default function NewChecklistCreate() {
               </CardContent>
             </Card>
           </TabsContent>
+          
           <TabsContent value="ai">
-  <AICreateForm
-    form={checklist}
-    setForm={setChecklist}
-    users={[]} // ou passe `users` do seu state, se necessário
-    loadingUsers={false} // idem acima
-    companies={companies}
-    loadingCompanies={false} // ajuste conforme seu estado
-    aiPrompt={prompt}
-    setAiPrompt={setPrompt}
-    numQuestions={questionCount}
-    setNumQuestions={setQuestionCount}
-    onGenerateAI={handleGenerateWithAI}
-    aiLoading={isGenerating}
-    selectedAssistant={selectedAssistant}
-    setSelectedAssistant={setSelectedAssistant}
-    openAIAssistant={openAIAssistant}
-    setOpenAIAssistant={setOpenAIAssistant}
-    assistants={[]} // se quiser passar seus assistants reais, substitua aqui
-    loadingAssistants={false}
-  />
-</TabsContent>
-
+            <AICreateForm
+              form={checklist}
+              setForm={setChecklist}
+              users={[]} 
+              loadingUsers={false}
+              companies={companies}
+              loadingCompanies={false}
+              aiPrompt={prompt}
+              setAiPrompt={setPrompt}
+              numQuestions={questionCount}
+              setNumQuestions={setQuestionCount}
+              onGenerateAI={handleGenerateWithAI}
+              aiLoading={isGenerating}
+              selectedAssistant={selectedAssistant}
+              setSelectedAssistant={setSelectedAssistant}
+              openAIAssistant={openAIAssistant}
+              setOpenAIAssistant={setOpenAIAssistant}
+              assistants={[]} 
+              loadingAssistants={false}
+            />
+          </TabsContent>
           
           <TabsContent value="import">
             <Card>
