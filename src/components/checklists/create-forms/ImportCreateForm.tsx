@@ -76,7 +76,7 @@ export function ImportCreateForm({
                     value={form.responsible_id !== undefined ? String(form.responsible_id) : ""}
                     onValueChange={(value) => setForm({ 
                       ...form, 
-                      responsible_id: value !== "" ? parseInt(value) : undefined 
+                      responsible_id: value !== "" ? value : undefined 
                     })}
                   >
                     <SelectTrigger id="responsible_id">
@@ -103,7 +103,7 @@ export function ImportCreateForm({
                     value={form.company_id !== undefined ? String(form.company_id) : ""}
                     onValueChange={(value) => setForm({ 
                       ...form, 
-                      company_id: value !== "" ? parseInt(value) : undefined 
+                      company_id: value !== "" ? value : undefined 
                     })}
                   >
                     <SelectTrigger id="company_id">

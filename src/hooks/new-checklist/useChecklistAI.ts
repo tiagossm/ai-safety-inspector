@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { NewChecklistPayload } from '@/types/newChecklist';
 
+export type AIAssistantType = 'general' | 'workplace-safety' | 'compliance' | 'quality';
+
 interface GenerateResult {
   success: boolean;
   checklistData?: any;
@@ -15,7 +17,7 @@ interface GenerateResult {
 export function useChecklistAI() {
   const [prompt, setPrompt] = useState('');
   const [questionCount, setQuestionCount] = useState(10);
-  const [selectedAssistant, setSelectedAssistant] = useState<string>('');
+  const [selectedAssistant, setSelectedAssistant] = useState<AIAssistantType>('general');
   const [openAIAssistant, setOpenAIAssistant] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
   
@@ -28,7 +30,7 @@ export function useChecklistAI() {
         return { success: false, error: "Prompt vazio" };
       }
       
-      if (!checklistData.companyId) {
+      if (!checklistData.company_id) {
         toast.error("É necessário selecionar uma empresa");
         return { success: false, error: "Empresa não selecionada" };
       }
