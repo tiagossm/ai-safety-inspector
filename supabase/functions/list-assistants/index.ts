@@ -20,9 +20,9 @@ serve(async (req) => {
       JSON.stringify({
         error: "OpenAI API key is required. Please set the OPENAI_API_KEY environment variable."
       }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }
@@ -34,41 +34,42 @@ serve(async (req) => {
       headers: {
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
-        'OpenAI-Beta': 'assistants=v2'
+        'OpenAI-Beta': 'assistants=v2' // Atualizado de v1 para v2!
       }
     });
 
     if (!response.ok) {
       const error = await response.json();
       console.error('OpenAI API error:', error);
-      
+
       return new Response(
-        JSON.stringify({ 
-          error: `OpenAI API error: ${error.error?.message || 'Unknown error'}` 
+        JSON.stringify({
+          error: `OpenAI API error: ${error.error?.message || 'Unknown error'}`
         }),
-        { 
-          status: response.status, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        {
+          status: response.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       );
     }
 
     const data = await response.json();
-    
+
+    // Corrigido para retornar no formato esperado
     return new Response(
-      JSON.stringify(data),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      JSON.stringify({ assistants: data.data }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   } catch (error) {
     console.error('Error in list-assistants function:', error);
-    
+
     return new Response(
       JSON.stringify({ error: error.message || 'An error occurred' }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }
