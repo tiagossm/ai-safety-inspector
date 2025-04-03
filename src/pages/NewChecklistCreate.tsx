@@ -383,86 +383,29 @@ export default function NewChecklistCreate() {
               </CardContent>
             </Card>
           </TabsContent>
-          
           <TabsContent value="ai">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="prompt">Prompt para gerar o checklist *</Label>
-                      <Textarea
-                        id="prompt"
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                        placeholder="Descreva o checklist que você deseja gerar. Ex: Checklist de segurança para trabalho em altura..."
-                        className="min-h-[150px]"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="questionCount">Número de perguntas</Label>
-                      <Input
-                        id="questionCount"
-                        type="number"
-                        min={1}
-                        max={30}
-                        value={questionCount}
-                        onChange={(e) => setQuestionCount(parseInt(e.target.value) || 5)}
-                      />
-                    </div>
-                    
-                    <AIAssistantSelector
-                      selectedAssistant={selectedAssistant}
-                      onChange={setSelectedAssistant}
-                      openAIAssistant={openAIAssistant}
-                      onOpenAIAssistantChange={setOpenAIAssistant}
-                    />
-                    
-                    <Button
-                      type="button"
-                      onClick={handleGenerateWithAI}
-                      disabled={isSubmitting || isGenerating || !prompt.trim()}
-                      className="w-full"
-                    >
-                      {isGenerating ? (
-                        "Gerando..."
-                      ) : (
-                        <>
-                          <Bot className="h-4 w-4 mr-2" />
-                          Gerar com IA
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                  
-                  <div>
-                    <div className="bg-muted rounded-md p-4">
-                      <h3 className="font-medium mb-2">Como funciona</h3>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Nosso assistente de IA irá gerar um checklist com base na sua descrição. 
-                        Quanto mais detalhado for o prompt, melhores serão os resultados.
-                      </p>
-                      
-                      <h4 className="font-medium text-sm mt-4 mb-1">Exemplos de prompts:</h4>
-                      <ul className="text-sm text-muted-foreground space-y-2">
-                        <li>"Checklist para inspeção de segurança em andaimes"</li>
-                        <li>"Lista de verificação para manutenção preventiva de empilhadeiras"</li>
-                        <li>"Auditoria de conformidade para normas de proteção contra incêndio"</li>
-                      </ul>
-                      
-                      <div className="mt-4 border-t pt-3">
-                        <p className="text-xs text-muted-foreground">
-                          Você poderá revisar e editar o checklist gerado antes de salvá-lo.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+  <AICreateForm
+    form={checklist}
+    setForm={setChecklist}
+    users={[]} // ou passe `users` do seu state, se necessário
+    loadingUsers={false} // idem acima
+    companies={companies}
+    loadingCompanies={false} // ajuste conforme seu estado
+    aiPrompt={prompt}
+    setAiPrompt={setPrompt}
+    numQuestions={questionCount}
+    setNumQuestions={setQuestionCount}
+    onGenerateAI={handleGenerateWithAI}
+    aiLoading={isGenerating}
+    selectedAssistant={selectedAssistant}
+    setSelectedAssistant={setSelectedAssistant}
+    openAIAssistant={openAIAssistant}
+    setOpenAIAssistant={setOpenAIAssistant}
+    assistants={[]} // se quiser passar seus assistants reais, substitua aqui
+    loadingAssistants={false}
+  />
+</TabsContent>
+
           
           <TabsContent value="import">
             <Card>
