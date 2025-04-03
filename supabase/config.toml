@@ -1,1 +1,5 @@
+
 project_id = "jkgmgjjtslkozhehwmng"
+
+[functions.list-openai-assistants]
+verify_jwt = true

@@ -1,5 +1,6 @@
+
 import { AICreateForm } from "@/components/checklists/create-forms/AICreateForm";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,8 @@ import { AIAssistantSelector } from "@/components/checklists/create-forms/AIAssi
 import { CSVImportSection } from "@/components/checklists/create-forms/CSVImportSection";
 import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
+import { useChecklistCompanies } from "@/hooks/checklist/form/useChecklistCompanies";
+import { CompanyListItem } from "@/types/CompanyListItem";
 
 export default function NewChecklistCreate() {
   const navigate = useNavigate();
@@ -33,10 +36,10 @@ export default function NewChecklistCreate() {
     generateChecklist 
   } = useChecklistAI();
   
+  const { companies, loadingCompanies } = useChecklistCompanies();
+  
   const [activeTab, setActiveTab] = useState<"manual" | "ai" | "import">("manual");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const [companies, setCompanies] = useState([]);
   
   const [checklist, setChecklist] = useState<NewChecklistPayload>({
     title: "",
@@ -394,7 +397,7 @@ export default function NewChecklistCreate() {
               users={[]} 
               loadingUsers={false}
               companies={companies}
-              loadingCompanies={false}
+              loadingCompanies={loadingCompanies}
               aiPrompt={prompt}
               setAiPrompt={setPrompt}
               numQuestions={questionCount}

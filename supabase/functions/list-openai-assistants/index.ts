@@ -18,13 +18,13 @@ serve(async (req) => {
     
     if (!OPENAI_API_KEY) {
       console.error("OPENAI_API_KEY is not set");
-      // Return mock data when API key is not available
+      // Return mock data with a 200 status code when API key is not available
       const mockAssistants = {
         assistants: [
           {
             id: "asst_mock_1",
             name: "Assistente de Segurança do Trabalho",
-            model: "gpt-4",
+            model: "gpt-4-turbo",
             description: "Especializado em normas de segurança",
             created_at: Date.now()
           },
@@ -39,6 +39,7 @@ serve(async (req) => {
       };
       
       return new Response(JSON.stringify(mockAssistants), {
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -59,13 +60,13 @@ serve(async (req) => {
       const errorText = await response.text();
       console.error('OpenAI API error:', errorText, 'Status:', response.status);
       
-      // Return mock data on API error
+      // Return mock data with a 200 status code on API error
       const mockAssistants = {
         assistants: [
           {
             id: "asst_mock_1",
             name: "Assistente de Segurança do Trabalho",
-            model: "gpt-4",
+            model: "gpt-4-turbo",
             description: "Especializado em normas de segurança",
             created_at: Date.now()
           },
@@ -80,6 +81,7 @@ serve(async (req) => {
       };
       
       return new Response(JSON.stringify(mockAssistants), {
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -97,18 +99,19 @@ serve(async (req) => {
     }));
 
     return new Response(JSON.stringify({ assistants }), {
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
     console.error('Error in list-openai-assistants function:', error);
     
-    // Return mock data on any error
+    // Return mock data on any error with a 200 status code
     const mockAssistants = {
       assistants: [
         {
           id: "asst_mock_1",
           name: "Assistente de Segurança do Trabalho",
-          model: "gpt-4",
+          model: "gpt-4-turbo",
           description: "Especializado em normas de segurança",
           created_at: Date.now()
         },
@@ -123,8 +126,8 @@ serve(async (req) => {
     };
     
     return new Response(JSON.stringify(mockAssistants), {
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200, // Always return 200 to prevent frontend errors
     });
   }
 });
