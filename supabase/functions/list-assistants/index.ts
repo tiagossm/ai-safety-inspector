@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-const OPENAI_API_URL = "https://api.openai.com/v1/assistants";
+const OPENAI_API_URL = "https://api.openai.com/v2/assistants";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
