@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -23,7 +22,7 @@ export function AIAssistantSelector({
   openAIAssistant,
   onOpenAIAssistantChange
 }: AIAssistantSelectorProps) {
-  const { assistants, isLoading: loadingAssistants, refetch: loadAssistants, error } = useOpenAIAssistants();
+  const { assistants, loading, refetch: loadAssistants, error } = useOpenAIAssistants();
 
   return (
     <div className="space-y-4">
@@ -86,9 +85,9 @@ export function AIAssistantSelector({
               variant="ghost" 
               size="sm" 
               onClick={() => loadAssistants()}
-              disabled={loadingAssistants}
+              disabled={loading}
             >
-              {loadingAssistants ? (
+              {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <RefreshCw className="h-4 w-4" />
@@ -112,10 +111,10 @@ export function AIAssistantSelector({
             onValueChange={(value) => {
               onOpenAIAssistantChange(value === "none" ? "" : value);
             }}
-            disabled={loadingAssistants}
+            disabled={loading}
           >
             <SelectTrigger id="openai-assistant" className="w-full">
-              <SelectValue placeholder={loadingAssistants ? "Carregando assistentes..." : "Selecione um assistente especializado (opcional)"} />
+              <SelectValue placeholder={loading ? "Carregando assistentes..." : "Selecione um assistente especializado (opcional)"} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">Nenhum assistente específico</SelectItem>
@@ -131,7 +130,7 @@ export function AIAssistantSelector({
             <p className="text-sm text-muted-foreground mt-1">
               {assistants.length} assistentes encontrados. Selecione um para gerar checklists mais específicos.
             </p>
-          ) : !loadingAssistants && (
+          ) : !loading && (
             <p className="text-sm text-muted-foreground mt-1">
               Nenhum assistente encontrado. Crie assistentes em platform.openai.com/assistants
             </p>
