@@ -1,7 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
-import { corsHeaders } from "../process-checklist-csv/corsUtils.ts";
+import { corsHeaders } from "./corsUtils.ts";
 
 serve(async (req) => {
   // Handle CORS preflight requests
