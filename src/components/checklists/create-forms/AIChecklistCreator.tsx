@@ -36,12 +36,23 @@ export function AIChecklistCreator({
   const [aiPrompt, setAiPrompt] = useState<string>("");
   const [numQuestions, setNumQuestions] = useState<number>(10);
   const [selectedAssistant, setSelectedAssistant] = useState<AssistantType>("general");
-  const { isGenerating } = useChecklistAI();
+  const { 
+    isGenerating, 
+    setPrompt, 
+    setOpenAIAssistant, 
+    setSelectedAssistant: setChecklistAssistant,
+    setQuestionCount
+  } = useChecklistAI();
 
   const handleGenerateAI = (e: React.FormEvent) => {
     if (!aiPrompt.trim()) {
       return;
     }
+    
+    // Set values in the useChecklistAI hook
+    setPrompt(aiPrompt);
+    setChecklistAssistant(selectedAssistant);
+    setQuestionCount(numQuestions);
     
     // Define um título baseado no prompt se não estiver definido
     if (!form.title) {

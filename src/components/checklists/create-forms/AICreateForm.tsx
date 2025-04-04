@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { Company, CompanyMetadata } from "@/types/company";
 import { toast } from "sonner";
+import { Slider } from "@/components/ui/slider";
 
 interface AICreateFormProps {
   form: NewChecklist;
@@ -86,10 +87,10 @@ function OpenAIAssistantSelector({
         </SelectTrigger>
         <SelectContent>
           {assistants.length === 0 ? (
-            <SelectItem value="" disabled>Nenhum assistente disponível</SelectItem>
+            <SelectItem value="no-assistants-available" disabled>Nenhum assistente disponível</SelectItem>
           ) : (
             assistants.map((assistant) => (
-              <SelectItem key={assistant.id} value={assistant.id}>
+              <SelectItem key={assistant.id} value={assistant.id || "default-assistant"}>
                 <div className="flex items-center">
                   {assistant.name}
                   {assistant.model && (
@@ -105,6 +106,50 @@ function OpenAIAssistantSelector({
       </Select>
       <p className="text-sm text-muted-foreground">
         Escolha um assistente especializado para melhorar os resultados.
+      </p>
+    </div>
+  );
+}
+
+function QuestionCountSelector({ 
+  questionCount, 
+  setQuestionCount 
+}: {
+  questionCount: number;
+  setQuestionCount: React.Dispatch<React.SetStateAction<number>>;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="question-count" className="flex items-center justify-between">
+        <span>Quantidade de Perguntas</span>
+        <span className="text-sm text-muted-foreground">{questionCount}</span>
+      </Label>
+      <div className="flex items-center gap-4">
+        <Slider
+          id="question-count"
+          value={[questionCount]}
+          min={1}
+          max={50}
+          step={1}
+          onValueChange={(values) => setQuestionCount(values[0])}
+          className="flex-1"
+        />
+        <Input
+          type="number"
+          min={1}
+          max={50}
+          value={questionCount}
+          onChange={(e) => {
+            const value = parseInt(e.target.value);
+            if (!isNaN(value) && value >= 1 && value <= 50) {
+              setQuestionCount(value);
+            }
+          }}
+          className="w-16"
+        />
+      </div>
+      <p className="text-sm text-muted-foreground">
+        Defina quantas perguntas o assistente deve gerar (de 1 a 50)
       </p>
     </div>
   );
@@ -254,6 +299,12 @@ Descrição: ${description || ""}`;
               <OpenAIAssistantSelector
                 selectedAssistant={props.openAIAssistant}
                 setSelectedAssistant={props.setOpenAIAssistant}
+              />
+              
+              {/* New Question Count Selector */}
+              <QuestionCountSelector 
+                questionCount={props.numQuestions}
+                setQuestionCount={props.setNumQuestions}
               />
 
               <div className="space-y-2">

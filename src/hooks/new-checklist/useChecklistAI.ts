@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -39,6 +40,8 @@ export function useChecklistAI() {
         return { success: false, error: "Assistente não selecionado" };
       }
 
+      console.log(`Generating checklist with ${questionCount} questions`);
+      
       const { data, error } = await supabase.functions.invoke('generate-checklist', {
         body: {
           prompt,

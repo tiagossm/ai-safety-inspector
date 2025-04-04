@@ -83,7 +83,7 @@ export function ImportCreateForm({
                       <SelectValue placeholder="Selecione um responsável" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhum responsável</SelectItem>
+                      <SelectItem value="none">Nenhum responsável</SelectItem>
                       {users.map((user) => (
                         <SelectItem key={user.id} value={String(user.id)}>
                           {user.name}
@@ -110,7 +110,7 @@ export function ImportCreateForm({
                       <SelectValue placeholder="Selecione uma empresa" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhuma empresa</SelectItem>
+                      <SelectItem value="none">Nenhuma empresa</SelectItem>
                       {companies.map((company) => (
                         <SelectItem key={company.id} value={String(company.id)}>
                           {company.fantasy_name}
