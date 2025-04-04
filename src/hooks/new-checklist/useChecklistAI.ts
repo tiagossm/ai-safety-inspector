@@ -42,6 +42,36 @@ export function useChecklistAI() {
 
       console.log(`Generating checklist with ${questionCount} questions`);
       
+      // Validate the assistant exists first (prevent 500 error)
+      const { data: assistantsData, error: assistantsError } = await supabase.functions.invoke('list-assistants', {});
+      
+      if (assistantsError) {
+        console.error("Erro ao listar assistentes:", assistantsError);
+        toast.error(`Erro ao verificar assistentes: ${assistantsError.message}`);
+        return {
+          success: false,
+          error: assistantsError.message,
+          checklistData,
+          questions: [],
+          groups: []
+        };
+      }
+      
+      // Check if the selected assistant exists in the list
+      const assistantExists = assistantsData?.assistants?.some((assistant: any) => assistant.id === openAIAssistant);
+      
+      if (!assistantExists) {
+        console.error("Assistente não encontrado:", openAIAssistant);
+        toast.error("O assistente selecionado não foi encontrado. Por favor, selecione outro assistente.");
+        return {
+          success: false,
+          error: "Assistente não encontrado",
+          checklistData,
+          questions: [],
+          groups: []
+        };
+      }
+
       const { data, error } = await supabase.functions.invoke('generate-checklist', {
         body: {
           prompt,

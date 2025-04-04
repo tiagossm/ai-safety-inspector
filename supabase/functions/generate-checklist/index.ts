@@ -1,373 +1,377 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { ChatCompletionRequestMessageRoleEnum, Configuration, OpenAIApi } from "https://esm.sh/openai@3.2.1";
 
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
-const OPENAI_ASSISTANT_API_URL = "https://api.openai.com/v1/assistants";
-
+// Define CORS headers for browser access
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const openAiConfig = new Configuration({
+  apiKey: Deno.env.get("OPENAI_API_KEY")
+});
+
+const openai = new OpenAIApi(openAiConfig);
+
+async function generateWithAssistant(prompt: string, questionCount: number, assistantId: string | undefined) {
+  try {
+    // Log the assistant ID being used
+    console.log(`Attempting to generate checklist with assistant: ${assistantId || "default"}`);
+    
+    // Validate the assistant ID if provided
+    if (assistantId) {
+      try {
+        // Try to retrieve the assistant to verify it exists
+        const response = await fetch(`https://api.openai.com/v1/assistants/${assistantId}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${Deno.env.get("OPENAI_API_KEY")}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Assistant not found: ${assistantId}`);
+        }
+        
+        const assistantData = await response.json();
+        console.log(`Using assistant: ${assistantData.name} (${assistantId})`);
+      } catch (error) {
+        console.error(`Error validating assistant: ${error.message}`);
+        throw error;
+      }
+    }
+    
+    // Create thread
+    const threadResponse = await fetch("https://api.openai.com/v1/threads", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${Deno.env.get("OPENAI_API_KEY")}`
+      },
+      body: JSON.stringify({})
+    });
+    
+    if (!threadResponse.ok) {
+      throw new Error("Failed to create thread");
+    }
+    
+    const threadData = await threadResponse.json();
+    const threadId = threadData.id;
+    console.log(`Thread created: ${threadId}`);
+    
+    // Add message to thread
+    const messageText = `Generate a checklist with the following requirements:\n\n${prompt}\n\nPlease generate exactly ${questionCount} questions.`;
+    
+    const messageResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${Deno.env.get("OPENAI_API_KEY")}`
+      },
+      body: JSON.stringify({
+        role: "user",
+        content: messageText
+      })
+    });
+    
+    if (!messageResponse.ok) {
+      throw new Error("Failed to add message to thread");
+    }
+    
+    console.log(`Message added to thread ${threadId}`);
+    
+    // Run the assistant
+    const runResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${Deno.env.get("OPENAI_API_KEY")}`
+      },
+      body: JSON.stringify({
+        assistant_id: assistantId,
+        instructions: `Generate a checklist with ${questionCount} questions based on the user's prompt. 
+The response must be in JSON format with the following structure:
+{
+  "title": "Title of the checklist",
+  "description": "Description of the checklist",
+  "groups": [
+    {
+      "id": "group-1",
+      "title": "Group title",
+      "order": 0
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "text": "Question text",
+      "responseType": "yes_no", // One of: yes_no, multiple_choice, text, numeric, photo, signature
+      "isRequired": true,
+      "weight": 1,
+      "groupId": "group-1",
+      "order": 0,
+      "options": ["Option 1", "Option 2"] // Only for multiple_choice
+    }
+  ]
+}`
+      })
+    });
+    
+    if (!runResponse.ok) {
+      throw new Error("Failed to run assistant");
+    }
+    
+    const runData = await runResponse.json();
+    const runId = runData.id;
+    console.log(`Run created: ${runId}`);
+    
+    // Poll for completion
+    let runStatus = "queued";
+    let attempts = 0;
+    const maxAttempts = 30;
+    const pollInterval = 1000;
+    
+    while ((runStatus === "queued" || runStatus === "in_progress") && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      
+      const checkRunResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Deno.env.get("OPENAI_API_KEY")}`
+        }
+      });
+      
+      if (!checkRunResponse.ok) {
+        throw new Error("Failed to check run status");
+      }
+      
+      const checkRunData = await checkRunResponse.json();
+      runStatus = checkRunData.status;
+      attempts++;
+      console.log(`Run status: ${runStatus} (attempt ${attempts}/${maxAttempts})`);
+    }
+    
+    if (runStatus !== "completed") {
+      throw new Error(`Run did not complete in time. Status: ${runStatus}`);
+    }
+    
+    // Get messages
+    const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${Deno.env.get("OPENAI_API_KEY")}`
+      }
+    });
+    
+    if (!messagesResponse.ok) {
+      throw new Error("Failed to get messages");
+    }
+    
+    const messagesData = await messagesResponse.json();
+    
+    // Find the assistant's response
+    const assistantMessages = messagesData.data.filter((msg: any) => msg.role === "assistant");
+    
+    if (!assistantMessages.length) {
+      throw new Error("No assistant messages found");
+    }
+    
+    // Get the most recent assistant message
+    const lastMessage = assistantMessages[0];
+    const messageContent = lastMessage.content[0]?.text?.value || "";
+    
+    console.log("Parsing assistant response to JSON");
+    
+    // Try to extract JSON from the response
+    try {
+      const jsonMatch = messageContent.match(/```json\n([\s\S]*?)\n```/) || 
+                         messageContent.match(/```([\s\S]*?)```/) ||
+                         messageContent.match(/{[\s\S]*}/);
+      
+      if (!jsonMatch) {
+        throw new Error("No JSON found in assistant response");
+      }
+      
+      const jsonString = jsonMatch[1] || jsonMatch[0];
+      const jsonData = JSON.parse(jsonString.replace(/```json|```/g, '').trim());
+      
+      // Ensure questions have unique IDs
+      if (jsonData.questions) {
+        jsonData.questions = jsonData.questions.map((q: any, index: number) => ({
+          ...q,
+          id: `ai-${Date.now()}-${index}`,
+          order: index
+        }));
+      }
+      
+      // Ensure groups have unique IDs
+      if (jsonData.groups) {
+        jsonData.groups = jsonData.groups.map((g: any, index: number) => ({
+          ...g,
+          id: `group-${Date.now()}-${index}`,
+          order: index
+        }));
+      }
+      
+      console.log(`Successfully generated checklist with ${jsonData.questions?.length || 0} questions`);
+      
+      return {
+        checklistData: {
+          title: jsonData.title,
+          description: jsonData.description
+        },
+        questions: jsonData.questions || [],
+        groups: jsonData.groups || []
+      };
+    } catch (error) {
+      console.error("Error parsing JSON from assistant response:", error);
+      throw new Error(`Failed to parse JSON: ${error.message}`);
+    }
+  } catch (error) {
+    console.error("Error in generateWithAssistant:", error);
+    throw error;
+  }
+}
+
+// Traditional OpenAI API approach as fallback
+async function generateWithOpenAI(prompt: string, questionCount: number): Promise<any> {
+  try {
+    console.log("Using OpenAI API directly as fallback");
+    
+    const response = await openai.createChatCompletion({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: ChatCompletionRequestMessageRoleEnum.System,
+          content: `You are a checklist generation assistant. Create detailed, professional checklists for various purposes.
+Generate a checklist with ${questionCount} questions. The response must be in JSON format with the following structure:
+{
+  "title": "Title of the checklist",
+  "description": "Description of the checklist",
+  "groups": [
+    {
+      "id": "group-1",
+      "title": "Group title",
+      "order": 0
+    }
+  ],
+  "questions": [
+    {
+      "id": "q1",
+      "text": "Question text",
+      "responseType": "yes_no", // One of: yes_no, multiple_choice, text, numeric, photo, signature
+      "isRequired": true,
+      "weight": 1,
+      "groupId": "group-1",
+      "order": 0,
+      "options": ["Option 1", "Option 2"] // Only for multiple_choice
+    }
+  ]
+}`
+        },
+        {
+          role: ChatCompletionRequestMessageRoleEnum.User,
+          content: `Generate a checklist with the following requirements:\n\n${prompt}\n\nPlease generate exactly ${questionCount} questions.`
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 4000
+    });
+    
+    // Extract the JSON from the response text
+    const responseText = response.data.choices[0]?.message?.content || "";
+    const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/) || 
+                     responseText.match(/```([\s\S]*?)```/) ||
+                     responseText.match(/{[\s\S]*}/);
+    
+    if (!jsonMatch) {
+      throw new Error("No JSON found in OpenAI response");
+    }
+    
+    const jsonString = jsonMatch[1] || jsonMatch[0];
+    const jsonData = JSON.parse(jsonString.replace(/```json|```/g, '').trim());
+    
+    // Ensure questions have unique IDs
+    if (jsonData.questions) {
+      jsonData.questions = jsonData.questions.map((q: any, index: number) => ({
+        ...q,
+        id: `ai-${Date.now()}-${index}`,
+        order: index
+      }));
+    }
+    
+    // Ensure groups have unique IDs
+    if (jsonData.groups) {
+      jsonData.groups = jsonData.groups.map((g: any, index: number) => ({
+        ...g,
+        id: `group-${Date.now()}-${index}`,
+        order: index
+      }));
+    }
+    
+    return {
+      checklistData: {
+        title: jsonData.title,
+        description: jsonData.description
+      },
+      questions: jsonData.questions || [],
+      groups: jsonData.groups || []
+    };
+  } catch (error) {
+    console.error("Error in generateWithOpenAI:", error);
+    throw error;
+  }
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
-
-  // Check if API key is available
-  if (!OPENAI_API_KEY) {
-    return new Response(
-      JSON.stringify({
-        error: "OpenAI API key is required. Please set the OPENAI_API_KEY environment variable."
-      }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
-  }
-
+  
   try {
-    const { prompt, checklistData, questionCount, assistantId } = await req.json();
-
-    // Validate input
-    if (!prompt) {
-      return new Response(
-        JSON.stringify({ error: "Prompt is required" }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
-    let generatedContent;
-
-    // Use a specific assistant if provided
-    if (assistantId) {
-      generatedContent = await generateWithAssistant(assistantId, prompt, questionCount || 10);
-    } else {
-      // Otherwise use the standard model
-      generatedContent = await generateWithModel(prompt, questionCount || 10);
-    }
-
-    if (!generatedContent) {
-      throw new Error("Failed to generate content");
-    }
-
-    // Parse and process the generated content
-    const processedData = processGeneratedContent(generatedContent, checklistData);
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        checklistData: {
-          ...checklistData,
-          title: processedData.title || checklistData.title,
-          description: processedData.description || checklistData.description
-        },
-        questions: processedData.questions,
-        groups: processedData.groups || []
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
-  } catch (error) {
-    console.error('Error in generate-checklist function:', error);
+    const { prompt, questionCount = 10, checklistData, assistantId } = await req.json();
+    console.log(`Generating checklist with prompt: "${prompt.substring(0, 50)}..."`);
+    console.log(`Question count: ${questionCount}`);
+    console.log(`Assistant ID: ${assistantId || "not provided"}`);
     
-    return new Response(
-      JSON.stringify({ 
-        success: false,
-        error: error.message || 'An error occurred',
-        checklistData: {},
-        questions: [],
-        groups: []
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    let result;
+    
+    try {
+      if (assistantId) {
+        result = await generateWithAssistant(prompt, questionCount, assistantId);
+      } else {
+        throw new Error("No assistant ID provided, falling back to OpenAI API");
       }
-    );
+    } catch (error) {
+      console.log(`Error with assistant method: ${error.message}, falling back to OpenAI API`);
+      result = await generateWithOpenAI(prompt, questionCount);
+    }
+    
+    return new Response(JSON.stringify({
+      success: true,
+      checklistData: {
+        ...checklistData,
+        title: result.checklistData.title || checklistData.title,
+        description: result.checklistData.description || checklistData.description
+      },
+      questions: result.questions || [],
+      groups: result.groups || []
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error("Error in generate-checklist function:", error);
+    return new Response(JSON.stringify({
+      success: false,
+      error: `${error.message || "Unknown error occurred"}`
+    }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   }
 });
-
-// Function to generate content with a specific OpenAI assistant
-async function generateWithAssistant(assistantId, prompt, questionCount) {
-  try {
-    // First check if the assistant exists
-    const assistantResponse = await fetch(`${OPENAI_ASSISTANT_API_URL}/${assistantId}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-        'OpenAI-Beta': 'assistants=v1'
-      }
-    });
-
-    if (!assistantResponse.ok) {
-      throw new Error(`Assistant not found: ${assistantId}`);
-    }
-
-    // Create a thread
-    const threadResponse = await fetch('https://api.openai.com/v1/threads', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-        'OpenAI-Beta': 'assistants=v1'
-      },
-      body: JSON.stringify({})
-    });
-
-    if (!threadResponse.ok) {
-      throw new Error('Failed to create thread');
-    }
-
-    const threadData = await threadResponse.json();
-    const threadId = threadData.id;
-
-    // Add a message to the thread
-    const enhancedPrompt = `${prompt}\n\nCrie um checklist com aproximadamente ${questionCount} perguntas. O resultado deve ser formatado como JSON com: title, description, questions (array com objetos que possuem text, responseType, isRequired, options). Tipos possíveis: yes_no, multiple_choice, text, numeric, photo, signature.`;
-    
-    const messageResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-        'OpenAI-Beta': 'assistants=v1'
-      },
-      body: JSON.stringify({
-        role: 'user',
-        content: enhancedPrompt
-      })
-    });
-
-    if (!messageResponse.ok) {
-      throw new Error('Failed to add message to thread');
-    }
-
-    // Run the assistant
-    const runResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-        'OpenAI-Beta': 'assistants=v1'
-      },
-      body: JSON.stringify({
-        assistant_id: assistantId
-      })
-    });
-
-    if (!runResponse.ok) {
-      throw new Error('Failed to run assistant');
-    }
-
-    const runData = await runResponse.json();
-    const runId = runData.id;
-
-    // Poll for the run to complete
-    let runStatus = 'queued';
-    let maxPolls = 60; // Maximum number of polls (2 minutes at 2-second intervals)
-    let pollCount = 0;
-
-    while (['queued', 'in_progress'].includes(runStatus) && pollCount < maxPolls) {
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds between polls
-      pollCount++;
-
-      const statusResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs/${runId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-          'OpenAI-Beta': 'assistants=v1'
-        }
-      });
-
-      if (!statusResponse.ok) {
-        throw new Error('Failed to check run status');
-      }
-
-      const statusData = await statusResponse.json();
-      runStatus = statusData.status;
-
-      if (runStatus === 'completed') {
-        break;
-      } else if (runStatus === 'failed' || runStatus === 'cancelled' || runStatus === 'expired') {
-        throw new Error(`Run failed with status: ${runStatus}`);
-      }
-    }
-
-    if (pollCount >= maxPolls) {
-      throw new Error('Timed out waiting for assistant response');
-    }
-
-    // Get the assistant's messages
-    const messagesResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-        'OpenAI-Beta': 'assistants=v1'
-      }
-    });
-
-    if (!messagesResponse.ok) {
-      throw new Error('Failed to retrieve messages');
-    }
-
-    const messagesData = await messagesResponse.json();
-    
-    // Find the assistant's response (should be the most recent message by the assistant)
-    const assistantMessages = messagesData.data.filter(msg => msg.role === 'assistant');
-    
-    if (assistantMessages.length === 0) {
-      throw new Error('No response from assistant');
-    }
-
-    const assistantResponse = assistantMessages[0].content[0].text.value;
-    return assistantResponse;
-
-  } catch (error) {
-    console.error('Error in generateWithAssistant:', error);
-    throw error;
-  }
-}
-
-// Function to generate content with a standard OpenAI model
-async function generateWithModel(prompt, questionCount) {
-  const enhancedPrompt = `${prompt}\n\nCrie um checklist com aproximadamente ${questionCount} perguntas. O resultado deve ser formatado como JSON com os seguintes campos:
-  
-  {
-    "title": "Título do Checklist",
-    "description": "Descrição detalhada do checklist",
-    "questions": [
-      {
-        "text": "Texto da pergunta 1",
-        "responseType": "yes_no", // Tipos: yes_no, multiple_choice, text, numeric, photo, signature
-        "isRequired": true,
-        "allowsPhoto": false,
-        "allowsVideo": false,
-        "allowsAudio": false,
-        "options": ["Opção 1", "Opção 2"] // Obrigatório apenas para multiple_choice
-      },
-      // Mais perguntas...
-    ]
-  }
-  
-  Responda apenas com o JSON, sem texto adicional.`;
-
-  const response = await fetch(OPENAI_API_URL, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${OPENAI_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o-mini', // Use a newer model for better results
-      messages: [
-        { 
-          role: 'system', 
-          content: 'Você é um assistente especializado em criar checklists detalhados para inspeções de segurança, manutenção e qualidade. Você sempre retorna o resultado em formato JSON válido, conforme solicitado.' 
-        },
-        { role: 'user', content: enhancedPrompt }
-      ],
-      temperature: 0.7,
-      max_tokens: 4000
-    })
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(`OpenAI API error: ${error.error?.message || 'Unknown error'}`);
-  }
-
-  const data = await response.json();
-  return data.choices[0].message.content;
-}
-
-// Process and sanitize the generated content
-function processGeneratedContent(content, checklistData) {
-  try {
-    // Extract JSON from the response (handling possible text around it)
-    let jsonString = content.trim();
-    
-    // If response contains markdown code blocks, extract JSON
-    const jsonMatch = jsonString.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-    if (jsonMatch && jsonMatch[1]) {
-      jsonString = jsonMatch[1].trim();
-    }
-
-    // Try to parse the JSON
-    const parsedData = JSON.parse(jsonString);
-    
-    // Ensure the required structure exists
-    if (!parsedData.questions || !Array.isArray(parsedData.questions)) {
-      throw new Error('Invalid JSON structure: missing or invalid questions array');
-    }
-
-    // Process and validate each question
-    const processedQuestions = parsedData.questions.map((question, index) => ({
-      id: `ai-generated-${Date.now()}-${index}`,
-      text: question.text || `Pergunta ${index + 1}`,
-      responseType: validateResponseType(question.responseType || 'yes_no'),
-      isRequired: question.isRequired !== false,
-      weight: question.weight || 1,
-      allowsPhoto: question.allowsPhoto || false,
-      allowsVideo: question.allowsVideo || false,
-      allowsAudio: question.allowsAudio || false,
-      options: question.responseType === 'multiple_choice' ? (question.options || ['Opção 1', 'Opção 2']) : undefined,
-      order: index
-    }));
-
-    // Generate a default group to organize questions
-    const defaultGroup = {
-      id: `group-default-${Date.now()}`,
-      title: parsedData.title || checklistData.title || 'Checklist Gerado por IA',
-      order: 0
-    };
-
-    return {
-      title: parsedData.title || checklistData.title || 'Checklist Gerado por IA',
-      description: parsedData.description || checklistData.description || `Checklist gerado com base no prompt: ${checklistData.prompt || 'IA'}`,
-      questions: processedQuestions,
-      groups: [defaultGroup]
-    };
-  } catch (error) {
-    console.error('Error processing generated content:', error);
-    console.error('Content that failed to process:', content);
-    
-    // Return a minimal valid structure on error
-    return {
-      title: checklistData.title || 'Checklist Gerado por IA (Erro)',
-      description: `Houve um erro ao processar o conteúdo gerado. ${error.message}`,
-      questions: [
-        {
-          id: `error-${Date.now()}-0`,
-          text: 'Houve um erro ao gerar as perguntas. Por favor, tente novamente.',
-          responseType: 'yes_no',
-          isRequired: true,
-          weight: 1,
-          allowsPhoto: false,
-          allowsVideo: false,
-          allowsAudio: false,
-          order: 0
-        }
-      ],
-      groups: [
-        {
-          id: `group-error-${Date.now()}`,
-          title: 'Erro na Geração',
-          order: 0
-        }
-      ]
-    };
-  }
-}
-
-function validateResponseType(type) {
-  const validTypes = ['yes_no', 'multiple_choice', 'text', 'numeric', 'photo', 'signature'];
-  return validTypes.includes(type) ? type : 'yes_no';
-}

@@ -7,7 +7,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AICreateForm } from "@/components/checklists/create-forms/AICreateForm";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,6 @@ import { CSVImportSection } from "@/components/checklists/create-forms/CSVImport
 import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 import { useChecklistCompanies } from "@/hooks/checklist/form/useChecklistCompanies";
-import { CompanyListItem } from "@/types/CompanyListItem";
 
 export default function NewChecklistCreate() {
   const navigate = useNavigate();
@@ -346,34 +345,33 @@ export default function NewChecklistCreate() {
                     <div className="space-y-2">
                       <Label htmlFor="company">Empresa</Label>
                       <Select
-  value={checklist.company_id?.toString() || ""}
-  onValueChange={(value) =>
-    setChecklist({
-      ...checklist,
-      company_id: value === "__none" ? undefined : value
-    })
-  }
->
-  <SelectTrigger id="company">
-    <SelectValue placeholder="Selecione uma empresa" />
-  </SelectTrigger>
-  <SelectContent>
-    <SelectItem value="__none">Nenhuma</SelectItem>
+                        value={checklist.company_id?.toString() || ""}
+                        onValueChange={(value) =>
+                          setChecklist({
+                            ...checklist,
+                            company_id: value === "__none" ? undefined : value
+                          })
+                        }
+                      >
+                        <SelectTrigger id="company">
+                          <SelectValue placeholder="Selecione uma empresa" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none">Nenhuma</SelectItem>
 
-    {loadingCompanies ? (
-      <SelectItem value="__loading" disabled>
-        Carregando empresas...
-      </SelectItem>
-    ) : (
-      companies.map((company) => (
-        <SelectItem key={company.id} value={company.id}>
-          {company.fantasy_name || "Empresa sem nome"}
-        </SelectItem>
-      ))
-    )}
-  </SelectContent>
-</Select>
-
+                          {loadingCompanies ? (
+                            <SelectItem value="__loading" disabled>
+                              Carregando empresas...
+                            </SelectItem>
+                          ) : (
+                            companies.map((company) => (
+                              <SelectItem key={company.id} value={company.id}>
+                                {company.fantasy_name || "Empresa sem nome"}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
                     </div>
                     
                     <div className="flex items-center space-x-2">

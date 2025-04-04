@@ -301,7 +301,7 @@ Descrição: ${description || ""}`;
                 setSelectedAssistant={props.setOpenAIAssistant}
               />
               
-              {/* New Question Count Selector */}
+              {/* Question Count Selector */}
               <QuestionCountSelector 
                 questionCount={props.numQuestions}
                 setQuestionCount={props.setNumQuestions}

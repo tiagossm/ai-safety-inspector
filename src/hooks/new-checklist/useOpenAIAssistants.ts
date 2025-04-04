@@ -1,102 +1,47 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
 interface Assistant {
   id: string;
   name: string;
   description?: string;
   model?: string;
-  created_at?: string;
 }
 
 export function useOpenAIAssistants() {
   const [assistants, setAssistants] = useState<Assistant[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchAssistants = async () => {
-    setIsLoading(true);
+    setLoading(true);
     setError(null);
     
     try {
-      console.log("Fetching OpenAI assistants...");
-      
-      const { data, error } = await supabase.functions.invoke('list-openai-assistants', {
-        method: 'GET'
-      });
+      console.log('Fetching OpenAI assistants...');
+      const { data, error } = await supabase.functions.invoke('list-assistants');
       
       if (error) {
-        console.error('Error calling list-openai-assistants function:', error);
-        setError('Erro ao buscar assistentes da OpenAI: ' + error.message);
-        // Fall back to mock data on error
-        setAssistants([
-          {
-            id: "asst_mock_1",
-            name: "Assistente de Segurança do Trabalho",
-            model: "gpt-4-turbo",
-            description: "Especializado em normas de segurança",
-            created_at: Date.now().toString()
-          },
-          {
-            id: "asst_mock_2",
-            name: "Assistente de Qualidade",
-            model: "gpt-4",
-            description: "Especializado em ISO 9001",
-            created_at: Date.now().toString()
-          }
-        ]);
+        console.error('Error fetching assistants:', error);
+        setError(`Error fetching assistants: ${error.message}`);
         return;
       }
       
-      if (!data || !Array.isArray(data.assistants)) {
-        console.error('Invalid response from list-openai-assistants:', data);
-        setError('Resposta inválida ao buscar assistentes');
-        // Fall back to mock data on invalid response
-        setAssistants([
-          {
-            id: "asst_mock_1",
-            name: "Assistente de Segurança do Trabalho",
-            model: "gpt-4-turbo",
-            description: "Especializado em normas de segurança",
-            created_at: Date.now().toString()
-          },
-          {
-            id: "asst_mock_2",
-            name: "Assistente de Qualidade",
-            model: "gpt-4",
-            description: "Especializado em ISO 9001",
-            created_at: Date.now().toString()
-          }
-        ]);
-        return;
-      }
+      console.log('Response from list-assistants:', data);
       
-      console.log(`Retrieved ${data.assistants.length} OpenAI assistants`);
-      setAssistants(data.assistants);
-    } catch (err: any) {
-      console.error('Error in useOpenAIAssistants:', err);
-      setError('Erro ao buscar assistentes: ' + (err.message || 'Erro desconhecido'));
-      // Fall back to mock data on any error
-      setAssistants([
-        {
-          id: "asst_mock_1",
-          name: "Assistente de Segurança do Trabalho",
-          model: "gpt-4-turbo",
-          description: "Especializado em normas de segurança",
-          created_at: Date.now().toString()
-        },
-        {
-          id: "asst_mock_2",
-          name: "Assistente de Qualidade",
-          model: "gpt-4",
-          description: "Especializado em ISO 9001",
-          created_at: Date.now().toString()
-        }
-      ]);
+      if (data && data.assistants) {
+        console.log(`Retrieved ${data.assistants.length} OpenAI assistants`);
+        setAssistants(data.assistants);
+      } else {
+        setError('No assistants data returned');
+        console.error('No assistants data in response:', data);
+      }
+    } catch (err) {
+      console.error('Unexpected error fetching assistants:', err);
+      setError(`Unexpected error: ${err.message || 'Unknown error'}`);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -104,10 +49,12 @@ export function useOpenAIAssistants() {
     fetchAssistants();
   }, []);
 
-  return {
-    assistants,
-    isLoading,
+  return { 
+    assistants, 
+    loading, 
     error,
-    refetch: fetchAssistants
+    refetch: fetchAssistants 
   };
 }
+
+export default useOpenAIAssistants;
