@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,7 +14,7 @@ export default function CreateChecklist() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>("ai");
   
-  // Use o hook para a lógica de criação de checklist
+  // Use the hook for checklist creation logic
   const {
     form,
     setForm,
@@ -50,7 +51,7 @@ export default function CreateChecklist() {
         </div>
       </div>
 
-      {/* Botões na parte superior para navegação rápida */}
+      {/* Quick navigation buttons at the top */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <Card 
           className={`p-4 cursor-pointer hover:border-gray-400 transition-all ${activeTab === "manual" ? "bg-gray-50" : "bg-white"}`}

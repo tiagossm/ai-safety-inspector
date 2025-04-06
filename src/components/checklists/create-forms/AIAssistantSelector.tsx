@@ -1,142 +1,127 @@
 
 import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AIAssistantType } from "@/hooks/new-checklist/useChecklistAI";
-import { useOpenAIAssistants } from "@/hooks/new-checklist/useOpenAIAssistants";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { useOpenAIAssistants } from "@/hooks/new-checklist/useOpenAIAssistants";
+
+interface OpenAIAssistantSelectorProps {
+  selectedAssistant: string;
+  setSelectedAssistant: (value: string) => void;
+  required?: boolean;
+}
+
+export function OpenAIAssistantSelector({ 
+  selectedAssistant, 
+  setSelectedAssistant,
+  required = true
+}: OpenAIAssistantSelectorProps) {
+  const { assistants, loading, error, refetch } = useOpenAIAssistants();
+
+  if (loading) {
+    return <Skeleton className="h-9 w-full" />;
+  }
+
+  if (error) {
+    return (
+      <div className="text-sm text-red-500">
+        <p>Erro ao carregar assistentes: {error}</p>
+        <p>Verifique se a chave da API da OpenAI está configurada corretamente.</p>
+        <Button variant="outline" size="sm" onClick={refetch} className="mt-2">
+          Tentar novamente
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="openai-assistant" className="flex items-center">
+        Assistente de IA
+        {required && <span className="text-red-500 ml-1">*</span>}
+      </Label>
+      <Select
+        value={selectedAssistant || ""}
+        onValueChange={setSelectedAssistant}
+      >
+        <SelectTrigger id="openai-assistant">
+          <SelectValue placeholder="Selecione um assistente da OpenAI" />
+        </SelectTrigger>
+        <SelectContent>
+          {assistants.length === 0 ? (
+            <SelectItem value="no-assistants-available" disabled>
+              Nenhum assistente disponível
+            </SelectItem>
+          ) : (
+            assistants.map((assistant) => (
+              <SelectItem key={assistant.id} value={assistant.id || "default-assistant"}>
+                <div className="flex items-center">
+                  {assistant.name}
+                  {assistant.model && (
+                    <Badge variant="outline" className="ml-2 text-xs">
+                      {assistant.model}
+                    </Badge>
+                  )}
+                </div>
+              </SelectItem>
+            ))
+          )}
+        </SelectContent>
+      </Select>
+      <p className="text-sm text-muted-foreground">
+        Escolha um assistente especializado para melhorar os resultados.
+      </p>
+    </div>
+  );
+}
+
+export type AIAssistantType = 'openai' | 'claude' | 'gemini';
 
 interface AIAssistantSelectorProps {
   selectedAssistant: AIAssistantType;
-  onChange: (assistant: AIAssistantType) => void;
-  openAIAssistant?: string;
-  onOpenAIAssistantChange?: (id: string) => void;
+  onChange: (type: AIAssistantType) => void;
+  openAIAssistant: string;
+  onOpenAIAssistantChange: (id: string) => void;
 }
 
 export function AIAssistantSelector({
   selectedAssistant,
   onChange,
   openAIAssistant,
-  onOpenAIAssistantChange
+  onOpenAIAssistantChange,
 }: AIAssistantSelectorProps) {
-  const { assistants, loading, refetch: loadAssistants, error } = useOpenAIAssistants();
-
   return (
     <div className="space-y-4">
       <div>
-        <h3 className="text-lg font-medium mb-2">Selecione o tipo de assistente</h3>
-        <RadioGroup
-          value={selectedAssistant}
+        <Label>Provedor de IA</Label>
+        <Select 
+          value={selectedAssistant} 
           onValueChange={(value) => onChange(value as AIAssistantType)}
-          className="grid grid-cols-1 md:grid-cols-4 gap-4"
         >
-          <div>
-            <div className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-              <RadioGroupItem value="general" id="general" className="mb-3" />
-              <Label htmlFor="general" className="text-center font-medium">Geral</Label>
-              <span className="text-center text-sm text-muted-foreground mt-1">
-                Checklists para uso geral e diversos propósitos
-              </span>
-            </div>
-          </div>
-
-          <div>
-            <div className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-              <RadioGroupItem value="workplace-safety" id="workplace-safety" className="mb-3" />
-              <Label htmlFor="workplace-safety" className="text-center font-medium">Segurança</Label>
-              <span className="text-center text-sm text-muted-foreground mt-1">
-                Segurança do trabalho, prevenção de acidentes
-              </span>
-            </div>
-          </div>
-
-          <div>
-            <div className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-              <RadioGroupItem value="compliance" id="compliance" className="mb-3" />
-              <Label htmlFor="compliance" className="text-center font-medium">Conformidade</Label>
-              <span className="text-center text-sm text-muted-foreground mt-1">
-                Auditorias, normas e requisitos regulatórios
-              </span>
-            </div>
-          </div>
-
-          <div>
-            <div className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-              <RadioGroupItem value="quality" id="quality" className="mb-3" />
-              <Label htmlFor="quality" className="text-center font-medium">Qualidade</Label>
-              <span className="text-center text-sm text-muted-foreground mt-1">
-                Controle de qualidade e processos
-              </span>
-            </div>
-          </div>
-        </RadioGroup>
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione um provedor" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="openai">OpenAI (GPT-4)</SelectItem>
+            <SelectItem value="claude" disabled>Claude (Em breve)</SelectItem>
+            <SelectItem value="gemini" disabled>Google Gemini (Em breve)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      {onOpenAIAssistantChange && (
-        <div className="mt-6">
-          <div className="flex items-center justify-between mb-2">
-            <Label htmlFor="openai-assistant" className="text-lg font-medium">
-              Assistentes OpenAI
-            </Label>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => loadAssistants()}
-              disabled={loading}
-            >
-              {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-              <span className="ml-1">Atualizar lista</span>
-            </Button>
-          </div>
-          
-          {error && (
-            <Alert variant="destructive" className="mb-2">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription className="text-sm">
-                {error} <br />
-                Você pode continuar usando o assistente padrão ou tente novamente mais tarde.
-              </AlertDescription>
-            </Alert>
-          )}
-          
-          <Select
-            value={openAIAssistant || "none"}
-            onValueChange={(value) => {
-              onOpenAIAssistantChange(value === "none" ? "" : value);
-            }}
-            disabled={loading}
-          >
-            <SelectTrigger id="openai-assistant" className="w-full">
-              <SelectValue placeholder={loading ? "Carregando assistentes..." : "Selecione um assistente especializado (opcional)"} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">Nenhum assistente específico</SelectItem>
-              {assistants.map((assistant) => (
-                <SelectItem key={assistant.id} value={assistant.id}>
-                  {assistant.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          {assistants.length > 0 ? (
-            <p className="text-sm text-muted-foreground mt-1">
-              {assistants.length} assistentes encontrados. Selecione um para gerar checklists mais específicos.
-            </p>
-          ) : !loading && (
-            <p className="text-sm text-muted-foreground mt-1">
-              Nenhum assistente encontrado. Crie assistentes em platform.openai.com/assistants
-            </p>
-          )}
-        </div>
+      {selectedAssistant === 'openai' && (
+        <OpenAIAssistantSelector 
+          selectedAssistant={openAIAssistant}
+          setSelectedAssistant={onOpenAIAssistantChange}
+        />
       )}
     </div>
   );

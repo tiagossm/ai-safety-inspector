@@ -11,18 +11,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { CompanyListItem } from "@/types/CompanyListItem";
 import { Bot, Sparkles, RefreshCw } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { CompanySelector } from "@/components/inspection/CompanySelector";
-import { useOpenAIAssistants } from "@/hooks/useOpenAIAssistants";
-import { Badge } from "@/components/ui/badge";
+import { OpenAIAssistantSelector } from "./AIAssistantSelector";
+import { QuestionCountSelector } from "./QuestionCountSelector";
 import { supabase } from "@/integrations/supabase/client";
 import { Company, CompanyMetadata } from "@/types/company";
 import { toast } from "sonner";
-import { Slider } from "@/components/ui/slider";
 
 interface AICreateFormProps {
   form: NewChecklist;
@@ -43,116 +41,6 @@ interface AICreateFormProps {
   setOpenAIAssistant: React.Dispatch<React.SetStateAction<string>>;
   assistants: any[];
   loadingAssistants: boolean;
-}
-
-function OpenAIAssistantSelector({ 
-  selectedAssistant, 
-  setSelectedAssistant,
-  required = true
-}: { 
-  selectedAssistant: string,
-  setSelectedAssistant: (value: string) => void,
-  required?: boolean
-}) {
-  const { assistants, loading, error, refetch } = useOpenAIAssistants();
-
-  if (loading) {
-    return <Skeleton className="h-9 w-full" />;
-  }
-
-  if (error) {
-    return (
-      <div className="text-sm text-red-500">
-        <p>Erro ao carregar assistentes: {error}</p>
-        <p>Verifique se a chave da API da OpenAI está configurada corretamente.</p>
-        <Button variant="outline" size="sm" onClick={refetch} className="mt-2">
-          Tentar novamente
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-2">
-      <Label htmlFor="openai-assistant" className="flex items-center">
-        Assistente de IA
-        {required && <span className="text-red-500 ml-1">*</span>}
-      </Label>
-      <Select
-        value={selectedAssistant || ""}
-        onValueChange={setSelectedAssistant}
-      >
-        <SelectTrigger id="openai-assistant">
-          <SelectValue placeholder="Selecione um assistente da OpenAI" />
-        </SelectTrigger>
-        <SelectContent>
-          {assistants.length === 0 ? (
-            <SelectItem value="no-assistants-available" disabled>Nenhum assistente disponível</SelectItem>
-          ) : (
-            assistants.map((assistant) => (
-              <SelectItem key={assistant.id} value={assistant.id || "default-assistant"}>
-                <div className="flex items-center">
-                  {assistant.name}
-                  {assistant.model && (
-                    <Badge variant="outline" className="ml-2 text-xs">
-                      {assistant.model}
-                    </Badge>
-                  )}
-                </div>
-              </SelectItem>
-            ))
-          )}
-        </SelectContent>
-      </Select>
-      <p className="text-sm text-muted-foreground">
-        Escolha um assistente especializado para melhorar os resultados.
-      </p>
-    </div>
-  );
-}
-
-function QuestionCountSelector({ 
-  questionCount, 
-  setQuestionCount 
-}: {
-  questionCount: number;
-  setQuestionCount: React.Dispatch<React.SetStateAction<number>>;
-}) {
-  return (
-    <div className="space-y-2">
-      <Label htmlFor="question-count" className="flex items-center justify-between">
-        <span>Quantidade de Perguntas</span>
-        <span className="text-sm text-muted-foreground">{questionCount}</span>
-      </Label>
-      <div className="flex items-center gap-4">
-        <Slider
-          id="question-count"
-          value={[questionCount]}
-          min={1}
-          max={50}
-          step={1}
-          onValueChange={(values) => setQuestionCount(values[0])}
-          className="flex-1"
-        />
-        <Input
-          type="number"
-          min={1}
-          max={50}
-          value={questionCount}
-          onChange={(e) => {
-            const value = parseInt(e.target.value);
-            if (!isNaN(value) && value >= 1 && value <= 50) {
-              setQuestionCount(value);
-            }
-          }}
-          className="w-16"
-        />
-      </div>
-      <p className="text-sm text-muted-foreground">
-        Defina quantas perguntas o assistente deve gerar (de 1 a 50)
-      </p>
-    </div>
-  );
 }
 
 export function AICreateFormContent(props: AICreateFormProps) {
