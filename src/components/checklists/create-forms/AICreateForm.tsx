@@ -1,9 +1,7 @@
-
 import React, { useEffect, useState } from "react";
 import { NewChecklist } from "@/types/checklist";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -11,16 +9,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { CompanyListItem } from "@/types/CompanyListItem";
-import { Bot, Sparkles, RefreshCw } from "lucide-react";
+import { Bot, Sparkles, RefreshCw, Paperclip } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { CompanySelector } from "@/components/inspection/CompanySelector";
-import { OpenAIAssistantSelector } from "./AIAssistantSelector";
-import { QuestionCountSelector } from "./QuestionCountSelector";
+import { useOpenAIAssistants } from "@/hooks/useOpenAIAssistants";
 import { supabase } from "@/integrations/supabase/client";
 import { Company, CompanyMetadata } from "@/types/company";
 import { toast } from "sonner";
+import { Slider } from "@/components/ui/slider";
 
 interface AICreateFormProps {
   form: NewChecklist;
@@ -46,17 +45,18 @@ interface AICreateFormProps {
 export function AICreateFormContent(props: AICreateFormProps) {
   const [companyData, setCompanyData] = useState<Company | null>(null);
   const [formattedPrompt, setFormattedPrompt] = useState<string>("");
-  const [customPrompt, setCustomPrompt] = useState<string>("");
+  const [contextType, setContextType] = useState<string>("Setor");
+  const [contextValue, setContextValue] = useState<string>("");
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
 
-  // Monitor changes to relevant form fields
   useEffect(() => {
     if (props.form.company_id) {
       fetchCompanyData(props.form.company_id.toString());
     } else {
       setCompanyData(null);
-      updateFormattedPrompt(null, props.form.category || "", customPrompt);
+      updateFormattedPrompt(null, props.form.category || "");
     }
-  }, [props.form.company_id, props.form.category, customPrompt]);
+  }, [props.form.company_id, props.form.category, contextType, contextValue]);
 
   const fetchCompanyData = async (companyId: string) => {
     try {
@@ -65,10 +65,7 @@ export function AICreateFormContent(props: AICreateFormProps) {
         .select('*')
         .eq('id', companyId)
         .single();
-      
       if (error) throw error;
-      
-      // Convert the Supabase data to the Company type
       const company: Company = {
         id: data.id,
         fantasy_name: data.fantasy_name,
@@ -84,63 +81,49 @@ export function AICreateFormContent(props: AICreateFormProps) {
         deactivated_at: data.deactivated_at,
         address: data.address
       };
-      
       setCompanyData(company);
-      updateFormattedPrompt(company, props.form.category || "", customPrompt);
+      updateFormattedPrompt(company, props.form.category || "");
     } catch (error) {
       console.error("Error fetching company data:", error);
       toast.error("Erro ao carregar dados da empresa");
     }
   };
 
-  const updateFormattedPrompt = (company: Company | null, category: string, description: string) => {
-    if (!company) {
-      const prompt = `Categoria: ${category || "Não especificada"}\nEmpresa: Não selecionada\nDescrição: ${description || ""}`;
-      setFormattedPrompt(prompt);
-      props.setAiPrompt(prompt);
-      return;
-    }
-
-    // Safely access metadata properties with proper type checking
-    const metadata = company.metadata as CompanyMetadata | null;
+  const updateFormattedPrompt = (company: Company | null, category: string) => {
+    const metadata = company?.metadata || null;
     const riskGrade = metadata?.risk_grade || "não informado";
-    const employeeCount = company.employee_count || "não informado";
-    
+    const employeeCount = company?.employee_count || "não informado";
+    const context = contextType && contextValue ? `${contextType}: ${contextValue}` : "";
+    const fileNote = attachedFile ? `Arquivo Anexado: ${attachedFile.name}` : "";
+
     const prompt = `Categoria: ${category || "Não especificada"}
-Empresa: ${company.fantasy_name || 'Empresa'} (CNPJ ${company.cnpj || 'não informado'}, CNAE ${company.cnae || 'não informado'}, Grau de Risco ${riskGrade}, Funcionários: ${employeeCount})
-Descrição: ${description || ""}`;
-    
+Empresa: ${company?.fantasy_name || 'Empresa'} (CNPJ ${company?.cnpj || 'não informado'}, CNAE ${company?.cnae || 'não informado'}, Grau de Risco ${riskGrade}, Funcionários: ${employeeCount})
+Contexto: ${context}
+${fileNote}`;
+
     setFormattedPrompt(prompt);
     props.setAiPrompt(prompt);
   };
 
-  const regeneratePrompt = () => {
-    updateFormattedPrompt(companyData, props.form.category || "", customPrompt);
-    toast.success("Prompt regenerado com sucesso!");
-  };
-
-  const handleCustomPromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setCustomPrompt(e.target.value);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setAttachedFile(file);
+    updateFormattedPrompt(companyData, props.form.category || "");
   };
 
   const handleGenerateClick = () => {
-    // Validation
     if (!props.form.category?.trim()) {
       toast.error("Por favor, informe a categoria do checklist");
       return;
     }
-
     if (!props.form.company_id) {
       toast.error("Por favor, selecione uma empresa");
       return;
     }
-
     if (!props.openAIAssistant) {
       toast.error("Por favor, selecione um assistente de IA");
       return;
     }
-
-    // Proceed with generation
     props.onGenerateAI();
   };
 
@@ -158,12 +141,9 @@ Descrição: ${description || ""}`;
                   id="category"
                   value={props.form.category || ""}
                   onChange={(e) => props.setForm({ ...props.form, category: e.target.value })}
-                  placeholder="Ex: NR-35, Inspeção de Equipamentos, Lista de Suprimentos"
+                  placeholder="Ex: NR-35, Inspeção de Equipamentos"
                   required
                 />
-                <p className="text-sm text-muted-foreground">
-                  Informe a categoria ou tipo do checklist (ex: NR-35, Inspeção de Equipamentos)
-                </p>
               </div>
 
               <div className="space-y-2">
@@ -179,34 +159,61 @@ Descrição: ${description || ""}`;
                     });
                   }}
                 />
-                <p className="text-sm text-muted-foreground">
-                  Selecione uma empresa para gerar um checklist específico para ela.
-                </p>
               </div>
 
               <OpenAIAssistantSelector
                 selectedAssistant={props.openAIAssistant}
                 setSelectedAssistant={props.setOpenAIAssistant}
               />
-              
-              {/* Question Count Selector */}
+
               <QuestionCountSelector 
                 questionCount={props.numQuestions}
                 setQuestionCount={props.setNumQuestions}
               />
 
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="contextType">Tipo de contexto</Label>
+                  <Select
+                    value={contextType}
+                    onValueChange={setContextType}
+                  >
+                    <SelectTrigger id="contextType">
+                      <SelectValue placeholder="Escolha o tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Setor">Setor</SelectItem>
+                      <SelectItem value="Cargo">Cargo</SelectItem>
+                      <SelectItem value="Atividade">Atividade</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="contextValue">Valor</Label>
+                  <Input
+                    id="contextValue"
+                    value={contextValue}
+                    onChange={(e) => setContextValue(e.target.value)}
+                    placeholder="Ex: Almoxarifado"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
-                <Label htmlFor="custom-prompt">Descreva o checklist que deseja gerar</Label>
-                <Textarea
-                  id="custom-prompt"
-                  value={customPrompt}
-                  onChange={handleCustomPromptChange}
-                  placeholder="Descreva o que o checklist deve conter, ex: Checklist para verificar EPIs e sinalização de perigos"
-                  rows={3}
+                <Label htmlFor="fileUpload">Anexar arquivo (opcional)</Label>
+                <Input
+                  id="fileUpload"
+                  type="file"
+                  onChange={handleFileChange}
                 />
+                {attachedFile && (
+                  <p className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Paperclip className="h-4 w-4" /> {attachedFile.name}
+                  </p>
+                )}
               </div>
             </div>
-            
+
             <div>
               <Card className="p-6 bg-slate-50">
                 <div className="flex items-center justify-between mb-4">
@@ -215,7 +222,7 @@ Descrição: ${description || ""}`;
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={regeneratePrompt}
+                    onClick={() => updateFormattedPrompt(companyData, props.form.category || "")}
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Regenerar
@@ -224,21 +231,10 @@ Descrição: ${description || ""}`;
                 <pre className="whitespace-pre-wrap bg-white border rounded-md p-4 text-sm font-mono">
                   {formattedPrompt}
                 </pre>
-                
-                <div className="mt-6">
-                  <h4 className="font-medium text-sm mt-4 mb-2">Como funciona:</h4>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    A IA combinará as informações da categoria, empresa e sua descrição para gerar um checklist personalizado.
-                  </p>
-                  
-                  <p className="text-xs text-muted-foreground">
-                    Você poderá revisar e editar o checklist gerado antes de salvá-lo.
-                  </p>
-                </div>
               </Card>
             </div>
           </div>
-          
+
           <Button
             type="button"
             onClick={handleGenerateClick}
