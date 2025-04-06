@@ -33,11 +33,10 @@ export default function CreateChecklist() {
     loadingCompanies
   } = useChecklistCreation();
 
-  // Create wrapper functions that adapt our boolean-returning handlers to void-returning handlers
-  // for components that expect void returns
-  const handleSubmitWrapper = async (e: React.FormEvent): Promise<void> => {
-    await handleSubmit(e);
-    // We ignore the boolean result since the component expects void
+  // Create wrapper functions that preserves the boolean return type expected by components
+  const handleSubmitWrapper = async (e: React.FormEvent): Promise<boolean> => {
+    const result = await handleSubmit(e);
+    return result; // Return the boolean result directly
   };
 
   return (
