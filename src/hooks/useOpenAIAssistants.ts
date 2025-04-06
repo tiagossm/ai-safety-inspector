@@ -68,7 +68,7 @@ export const useOpenAIAssistants = () => {
     loadAssistants();
   }, [loadAssistants]);
 
-  const refreshAssistants = () => {
+  const refetch = () => {
     loadAssistants();
   };
 
@@ -76,6 +76,6 @@ export const useOpenAIAssistants = () => {
     assistants,
     loading,
     error,
-    refreshAssistants
+    refetch
   };
 };

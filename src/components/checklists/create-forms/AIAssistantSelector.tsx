@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -120,7 +121,7 @@ export function AIAssistantSelector({
               <SelectItem value="none">Nenhum assistente específico</SelectItem>
               {assistants.map((assistant) => (
                 <SelectItem key={assistant.id} value={assistant.id}>
-                  {assistant.name}{assistant.model ? ` (${assistant.model})` : ''}
+                  {assistant.name}
                 </SelectItem>
               ))}
             </SelectContent>
