@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { NewChecklistPayload } from '@/types/newChecklist';
 
-export type AIAssistantType = 'general' | 'workplace-safety' | 'compliance' | 'quality';
+// Update AIAssistantType to include all possible values
+export type AIAssistantType = 'general' | 'workplace-safety' | 'compliance' | 'quality' | 'openai' | 'claude' | 'gemini';
 
 interface GenerateResult {
   success: boolean;

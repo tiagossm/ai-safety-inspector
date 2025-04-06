@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AIAssistantType } from "@/hooks/new-checklist/useChecklistAI";
+import { AIAssistantType } from "@/components/checklists/create-forms/AIAssistantSelector";
 import { AIAssistantSelector } from "./AIAssistantSelector";
 import { Card } from "@/components/ui/card";
 import { NewChecklist } from "@/types/checklist";
@@ -45,7 +44,6 @@ export function IntelligentChecklistForm({
     value: ""
   });
   
-  // Generate the prompt based on the form inputs
   useEffect(() => {
     const companyInfo = checklist.company_name 
       ? `para a empresa ${checklist.company_name}` 

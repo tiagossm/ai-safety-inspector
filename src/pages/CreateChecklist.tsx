@@ -34,11 +34,13 @@ export default function CreateChecklist() {
   } = useChecklistCreation();
 
   // Modify handleSubmit to match the expected type
-  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+  const handleSubmit = async (e: React.FormEvent): Promise<boolean> => {
     try {
       await originalHandleSubmit(e);
+      return true; // Return true on success
     } catch (error) {
       console.error("Error in handleSubmit:", error);
+      return false; // Return false on error
     }
   };
 

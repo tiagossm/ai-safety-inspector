@@ -83,7 +83,8 @@ export function OpenAIAssistantSelector({
   );
 }
 
-export type AIAssistantType = 'openai' | 'claude' | 'gemini';
+// Update the AIAssistantType to be compatible with useChecklistAI.ts
+export type AIAssistantType = 'general' | 'workplace-safety' | 'compliance' | 'quality' | 'openai' | 'claude' | 'gemini';
 
 interface AIAssistantSelectorProps {
   selectedAssistant: AIAssistantType;
@@ -110,14 +111,20 @@ export function AIAssistantSelector({
             <SelectValue placeholder="Selecione um provedor" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="openai">OpenAI (GPT-4)</SelectItem>
+            <SelectItem value="general">OpenAI - Geral</SelectItem>
+            <SelectItem value="workplace-safety">OpenAI - Segurança do Trabalho</SelectItem>
+            <SelectItem value="compliance">OpenAI - Compliance</SelectItem>
+            <SelectItem value="quality">OpenAI - Qualidade</SelectItem>
             <SelectItem value="claude" disabled>Claude (Em breve)</SelectItem>
             <SelectItem value="gemini" disabled>Google Gemini (Em breve)</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {selectedAssistant === 'openai' && (
+      {(selectedAssistant === 'general' || 
+        selectedAssistant === 'workplace-safety' || 
+        selectedAssistant === 'compliance' || 
+        selectedAssistant === 'quality') && (
         <OpenAIAssistantSelector 
           selectedAssistant={openAIAssistant}
           setSelectedAssistant={onOpenAIAssistantChange}
