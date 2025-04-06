@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { NewChecklist } from "@/types/checklist";
 import { Label } from "@/components/ui/label";
@@ -21,6 +22,7 @@ import { Company, CompanyMetadata } from "@/types/company";
 import { toast } from "sonner";
 import { Slider } from "@/components/ui/slider";
 import { OpenAIAssistantSelector } from "@/components/ai/OpenAIAssistantSelector";
+import QuestionCountSelector from "./QuestionCountSelector";
 
 interface AICreateFormProps {
   form: NewChecklist;
@@ -263,4 +265,4 @@ ${fileNote}`;
 
 export function AICreateForm(props: AICreateFormProps) {
   return <AICreateFormContent {...props} />;
-}x
+}
