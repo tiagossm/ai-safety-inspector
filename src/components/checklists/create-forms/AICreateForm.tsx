@@ -32,7 +32,7 @@ interface AICreateFormProps {
   setAiPrompt: React.Dispatch<React.SetStateAction<string>>;
   numQuestions: number;
   setNumQuestions: React.Dispatch<React.SetStateAction<number>>;
-  onGenerateAI: () => void;
+  onGenerateAI: (attachedFile?: File | null) => void;
   aiLoading: boolean;
   selectedAssistant: string;
   setSelectedAssistant: React.Dispatch<React.SetStateAction<string>>;
@@ -124,7 +124,7 @@ ${fileNote}`;
       toast.error("Por favor, selecione um assistente de IA");
       return;
     }
-    props.onGenerateAI();
+    props.onGenerateAI(attachedFile);
   };
 
   return (
