@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Company, CompanyMetadata } from "@/types/company";
 import { toast } from "sonner";
 import { Slider } from "@/components/ui/slider";
+import { OpenAIAssistantSelector } from "@/components/ai/OpenAIAssistantSelector";
 
 interface AICreateFormProps {
   form: NewChecklist;
