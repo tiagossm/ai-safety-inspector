@@ -33,6 +33,13 @@ export default function CreateChecklist() {
     loadingCompanies
   } = useChecklistCreation();
 
+  // Create wrapper functions that adapt our boolean-returning handlers to void-returning handlers
+  // for components that expect void returns
+  const handleSubmitWrapper = async (e: React.FormEvent): Promise<void> => {
+    await handleSubmit(e);
+    // We ignore the boolean result here since the component doesn't need it
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -95,7 +102,7 @@ export default function CreateChecklist() {
               onQuestionChange={handleQuestionChange}
               companies={companies}
               loadingCompanies={loadingCompanies}
-              onSubmit={handleSubmit}
+              onSubmit={handleSubmitWrapper}
               isSubmitting={isSubmitting}
             />
           </TabsContent>
@@ -104,7 +111,7 @@ export default function CreateChecklist() {
             <AIChecklistCreator 
               form={form}
               setForm={setForm}
-              onSubmit={handleSubmit}
+              onSubmit={handleSubmitWrapper}
               isSubmitting={isSubmitting}
               companies={companies}
               loadingCompanies={loadingCompanies}
@@ -121,7 +128,7 @@ export default function CreateChecklist() {
               onFileChange={handleFileChange}
               companies={companies}
               loadingCompanies={loadingCompanies}
-              onSubmit={handleSubmit}
+              onSubmit={handleSubmitWrapper}
               isSubmitting={isSubmitting}
             />
           </TabsContent>
