@@ -32,13 +32,14 @@ export default function CreateChecklist() {
     loadingCompanies
   } = useChecklistCreation();
 
-  // Modify handleSubmit to match the expected type (Promise<void>)
-  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+  // Modify handleSubmit to match the expected type (Promise<boolean>)
+  const handleSubmit = async (e: React.FormEvent): Promise<boolean> => {
     try {
       await originalHandleSubmit(e);
+      return true;
     } catch (error) {
       console.error("Error in handleSubmit:", error);
-      throw error; // Re-throw to maintain original error handling
+      return false; // Return false to indicate submission failure
     }
   };
 
