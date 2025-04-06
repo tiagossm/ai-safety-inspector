@@ -33,9 +33,15 @@ export default function CreateChecklist() {
     loadingCompanies
   } = useChecklistCreation();
 
-  // Create a wrapper function to adapt the return type
-  const handleSubmit = async (e: React.FormEvent) => {
-    await originalHandleSubmit(e);
+  // Create a wrapper function that returns a Promise<boolean> to match expected types
+  const handleSubmit = async (e: React.FormEvent): Promise<boolean> => {
+    try {
+      await originalHandleSubmit(e);
+      return true;
+    } catch (error) {
+      console.error("Error in handleSubmit:", error);
+      return false;
+    }
   };
 
   return (
