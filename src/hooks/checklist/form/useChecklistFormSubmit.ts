@@ -2,17 +2,17 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { NewChecklist } from "@/types/checklist";
-import { useAdvancedSubmit } from "./useAdvancedSubmit";
-import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
 import { useNavigate } from "react-router-dom";
-import { useManualSubmit } from "./useManualSubmit";
+import { useChecklistAISubmit } from "./useChecklistAISubmit";
+import { useChecklistManualSubmit } from "./useChecklistManualSubmit";
+import { useChecklistImportSubmit } from "./useChecklistImportSubmit";
 
 export function useChecklistFormSubmit() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { submitManualChecklist } = useManualSubmit();
-  const { submitImportChecklist, submitAIChecklist } = useAdvancedSubmit();
-  const createChecklist = useCreateChecklist();
   const navigate = useNavigate();
+  const { createChecklistWithAI } = useChecklistAISubmit();
+  const { createManualChecklist } = useChecklistManualSubmit();
+  const { importChecklist } = useChecklistImportSubmit();
 
   const handleFormSubmit = async (
     e: React.FormEvent,
@@ -37,38 +37,47 @@ export function useChecklistFormSubmit() {
       console.log("Processando formulário...", { activeTab, form });
       
       let success = false;
-      // Baseado na aba ativa, execute a função apropriada
+      let checklistId: string | null = null;
+      
+      // Based on active tab, execute the appropriate function
       if (activeTab === "manual") {
-        // Criação manual
-        success = await submitManualChecklist(form, questions);
-        console.log("Resultado da criação manual:", success);
+        // Manual creation
+        checklistId = await createManualChecklist(form, questions);
+        success = !!checklistId;
+        console.log("Manual creation result:", success, checklistId);
       } 
       else if (activeTab === "import") {
-        // Importação de planilha
+        // Import from spreadsheet
         if (!file) {
           toast.error("Por favor, selecione um arquivo para importar");
           return false;
         }
         
-        success = await submitImportChecklist(file, form);
-        console.log("Resultado da importação:", success);
+        checklistId = await importChecklist(file, form);
+        success = !!checklistId;
+        console.log("Import result:", success, checklistId);
       } 
       else if (activeTab === "ai") {
-        // Geração por IA
+        // AI generation
         if (!aiPrompt.trim()) {
           toast.error("Por favor, forneça um prompt para gerar o checklist");
           return false;
         }
         
-        success = await submitAIChecklist(form, aiPrompt);
-        console.log("Resultado da geração por IA:", success);
+        checklistId = await createChecklistWithAI(aiPrompt, form, openAIAssistant, numQuestions);
+        success = !!checklistId;
+        console.log("AI generation result:", success, checklistId);
       }
-      
-      // Se chegou aqui, algo deu errado...
+      // If we got here, something went wrong
       else {
-        console.error("Tab não reconhecida ou não implementada:", activeTab);
+        console.error("Tab not recognized or not implemented:", activeTab);
         toast.error("Operação não suportada");
         return false;
+      }
+      
+      if (success && checklistId) {
+        toast.success("Checklist criado com sucesso!");
+        navigate(`/new-checklists/${checklistId}`);
       }
       
       return success;

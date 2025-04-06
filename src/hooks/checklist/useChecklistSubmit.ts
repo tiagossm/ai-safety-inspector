@@ -3,20 +3,16 @@ import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
 import { NewChecklist } from "@/types/checklist";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useChecklistAI } from "@/hooks/checklist/form/useChecklistAI";
-import { useChecklistImport } from "@/hooks/checklist/form/useChecklistImport";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { AuthUser } from "@/hooks/auth/useAuthState";
 
-// This file is being replaced by the modular version in src/hooks/checklist/form/useChecklistSubmit.ts
+// This file is being replaced by the modular version in src/hooks/checklist/form/useChecklistFormSubmit.ts
 // Keeping this file for backward compatibility until all imports are updated
 export function useChecklistSubmit() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sessionChecked, setSessionChecked] = useState(false);
   const createChecklist = useCreateChecklist();
-  const { generateAIChecklist } = useChecklistAI();
-  const { importFromFile } = useChecklistImport();
   const navigate = useNavigate();
   const { user, refreshSession } = useAuth();
   const typedUser = user as AuthUser | null;

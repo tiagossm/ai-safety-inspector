@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { NewChecklist } from "@/types/checklist";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useChecklistSubmit } from "./form/useChecklistSubmit";
+import { useChecklistFormSubmit } from "./form/useChecklistFormSubmit";
 import { CompanyListItem } from "@/types/CompanyListItem";
 import { useChecklistCompanies } from "./form/useChecklistCompanies";
 
@@ -43,7 +43,7 @@ export function useChecklistCreation() {
   ]);
   
   // Submission handling
-  const { isSubmitting, handleSubmit } = useChecklistSubmit();
+  const { isSubmitting, handleSubmit } = useChecklistFormSubmit();
   
   // Fetch users
   useEffect(() => {
