@@ -54,7 +54,7 @@ function OpenAIAssistantSelector({
   setSelectedAssistant: (value: string) => void,
   required?: boolean
 }) {
-  const { assistants, loading, error, refreshAssistants } = useOpenAIAssistants();
+  const { assistants, loading, error, refetch } = useOpenAIAssistants();
 
   if (loading) {
     return <Skeleton className="h-9 w-full" />;
@@ -65,7 +65,7 @@ function OpenAIAssistantSelector({
       <div className="text-sm text-red-500">
         <p>Erro ao carregar assistentes: {error}</p>
         <p>Verifique se a chave da API da OpenAI está configurada corretamente.</p>
-        <Button variant="outline" size="sm" onClick={refreshAssistants} className="mt-2">
+        <Button variant="outline" size="sm" onClick={refetch} className="mt-2">
           Tentar novamente
         </Button>
       </div>

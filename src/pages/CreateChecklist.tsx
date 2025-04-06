@@ -28,10 +28,15 @@ export default function CreateChecklist() {
     handleAddQuestion,
     handleRemoveQuestion,
     handleQuestionChange,
-    handleSubmit,
+    handleSubmit: originalHandleSubmit,
     companies,
     loadingCompanies
   } = useChecklistCreation();
+
+  // Create a wrapper function to adapt the return type
+  const handleSubmit = async (e: React.FormEvent) => {
+    await originalHandleSubmit(e);
+  };
 
   return (
     <div className="space-y-6">

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { IntelligentChecklistForm } from "./IntelligentChecklistForm";
 import { supabase } from "@/integrations/supabase/client";
+import { NewChecklistPayload } from "@/types/newChecklist";
 
 interface AIChecklistCreatorProps {
   form: NewChecklist;
@@ -37,7 +38,7 @@ export function AIChecklistCreator({
     setSelectedAssistant,
     openAIAssistant,
     setOpenAIAssistant,
-    generateChecklistQuestions
+    generateChecklist
   } = useChecklistAI();
 
   useEffect(() => {
@@ -87,16 +88,23 @@ export function AIChecklistCreator({
     }
 
     try {
-      await generateChecklistQuestions({
-        prompt,
-        openAIAssistant,
-        assistantType: selectedAssistant,
-        companyId: form.company_id.toString(),
-        category: form.category
-      });
+      // Create the payload for the checklist
+      const checklistPayload: NewChecklistPayload = {
+        title: form.title || form.category || "Novo Checklist",
+        description: form.description || `Gerado por IA: ${prompt}`,
+        category: form.category,
+        isTemplate: form.is_template || false,
+        company_id: form.company_id
+      };
       
-      // Form submission is handled by the parent component
-      onSubmit(e);
+      const result = await generateChecklist(checklistPayload);
+      
+      if (result && result.success) {
+        // Form submission is handled by the parent component
+        await onSubmit(e);
+      } else {
+        toast.error("Erro ao gerar checklist com IA");
+      }
     } catch (error) {
       console.error("Error generating checklist:", error);
       toast.error("Erro ao gerar checklist com IA");
