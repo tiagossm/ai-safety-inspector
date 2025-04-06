@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,14 +32,13 @@ export default function CreateChecklist() {
     loadingCompanies
   } = useChecklistCreation();
 
-  // Create a wrapper function that returns a Promise<boolean> to match expected types
-  const handleSubmit = async (e: React.FormEvent): Promise<boolean> => {
+  // Modify handleSubmit to match the expected type (Promise<void>)
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     try {
       await originalHandleSubmit(e);
-      return true;
     } catch (error) {
       console.error("Error in handleSubmit:", error);
-      return false;
+      throw error; // Re-throw to maintain original error handling
     }
   };
 
