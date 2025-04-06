@@ -33,10 +33,17 @@ export default function CreateChecklist() {
     loadingCompanies
   } = useChecklistCreation();
 
-  // Create wrapper functions that preserves the boolean return type expected by components
-  const handleSubmitWrapper = async (e: React.FormEvent): Promise<boolean> => {
+  // Create wrapper functions that adapt to different component expectations
+  // ManualCreateForm and ImportCreateForm expect Promise<boolean>
+  const handleSubmitForManualAndImport = async (e: React.FormEvent): Promise<boolean> => {
     const result = await handleSubmit(e);
     return result; // Return the boolean result directly
+  };
+  
+  // AIChecklistCreator expects Promise<void>
+  const handleSubmitForAI = async (e: React.FormEvent): Promise<void> => {
+    await handleSubmit(e);
+    // No return value needed as the component expects void
   };
 
   return (
@@ -101,7 +108,7 @@ export default function CreateChecklist() {
               onQuestionChange={handleQuestionChange}
               companies={companies}
               loadingCompanies={loadingCompanies}
-              onSubmit={handleSubmitWrapper}
+              onSubmit={handleSubmitForManualAndImport}
               isSubmitting={isSubmitting}
             />
           </TabsContent>
@@ -110,7 +117,7 @@ export default function CreateChecklist() {
             <AIChecklistCreator 
               form={form}
               setForm={setForm}
-              onSubmit={handleSubmitWrapper}
+              onSubmit={handleSubmitForAI}
               isSubmitting={isSubmitting}
               companies={companies}
               loadingCompanies={loadingCompanies}
@@ -127,7 +134,7 @@ export default function CreateChecklist() {
               onFileChange={handleFileChange}
               companies={companies}
               loadingCompanies={loadingCompanies}
-              onSubmit={handleSubmitWrapper}
+              onSubmit={handleSubmitForManualAndImport}
               isSubmitting={isSubmitting}
             />
           </TabsContent>
