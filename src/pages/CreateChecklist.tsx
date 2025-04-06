@@ -28,20 +28,10 @@ export default function CreateChecklist() {
     handleAddQuestion,
     handleRemoveQuestion,
     handleQuestionChange,
-    handleSubmit: originalHandleSubmit,
+    handleSubmit,
     companies,
     loadingCompanies
   } = useChecklistCreation();
-
-  // Wrapper function to adapt return type for components expecting Promise<boolean>
-  const handleSubmit = async (e: React.FormEvent): Promise<boolean> => {
-    try {
-      return await originalHandleSubmit(e);
-    } catch (error) {
-      console.error("Error in handleSubmit wrapper:", error);
-      return false;
-    }
-  };
 
   return (
     <div className="space-y-6">

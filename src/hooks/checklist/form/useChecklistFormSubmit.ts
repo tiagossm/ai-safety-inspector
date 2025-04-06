@@ -21,7 +21,8 @@ export function useChecklistFormSubmit() {
     questions: any[],
     file: File | null,
     aiPrompt: string,
-    generateAIChecklist: (form: NewChecklist) => Promise<any>
+    openAIAssistant: string = "",
+    numQuestions: number = 10
   ): Promise<boolean> => {
     e.preventDefault();
     
