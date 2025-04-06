@@ -43,7 +43,7 @@ export function useChecklistCreation() {
   ]);
   
   // Submission handling
-  const { isSubmitting, handleFormSubmit } = useChecklistSubmit();
+  const { isSubmitting, handleSubmit } = useChecklistSubmit();
   
   // Fetch users
   useEffect(() => {
@@ -112,17 +112,23 @@ export function useChecklistCreation() {
   };
   
   // Handle form submission
-  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
-    await handleFormSubmit(
-      e, 
-      activeTab, 
-      form, 
-      questions, 
-      file, 
-      aiPrompt, 
-      openAIAssistant, 
-      numQuestions
-    );
+  const handleSubmit = async (e: React.FormEvent): Promise<boolean> => {
+    try {
+      return await handleSubmit(
+        e, 
+        activeTab, 
+        form, 
+        questions, 
+        file, 
+        aiPrompt, 
+        openAIAssistant, 
+        numQuestions
+      );
+    } catch (error) {
+      console.error("Error in handleSubmit:", error);
+      toast.error(`Error submitting form: ${error instanceof Error ? error.message : "Unknown error"}`);
+      return false;
+    }
   };
   
   return {

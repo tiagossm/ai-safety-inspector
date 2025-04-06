@@ -33,13 +33,13 @@ export default function CreateChecklist() {
     loadingCompanies
   } = useChecklistCreation();
 
-  // Modify handleSubmit to match the expected type in ManualCreateForm and other components
-  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+  // Wrapper function to adapt return type for components expecting Promise<boolean>
+  const handleSubmit = async (e: React.FormEvent): Promise<boolean> => {
     try {
-      await originalHandleSubmit(e);
-      // We don't need to return anything as the component props expect Promise<void>
+      return await originalHandleSubmit(e);
     } catch (error) {
-      console.error("Error in handleSubmit:", error);
+      console.error("Error in handleSubmit wrapper:", error);
+      return false;
     }
   };
 
