@@ -37,7 +37,7 @@ export function useOpenAIAssistants() {
         setError('No assistants data returned');
         console.error('No assistants data in response:', data);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Unexpected error fetching assistants:', err);
       setError(`Unexpected error: ${err.message || 'Unknown error'}`);
     } finally {
