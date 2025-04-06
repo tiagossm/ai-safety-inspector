@@ -44,13 +44,13 @@ export function useChecklistSubmit() {
     checkSession();
   }, [refreshSession, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     
     // Prevent multiple submissions
     if (isSubmitting) {
       console.log("Submission already in progress");
-      return false;
+      return;
     }
     
     setIsSubmitting(true);
@@ -67,7 +67,7 @@ export function useChecklistSubmit() {
         toast.error("Falha na autenticação. Por favor, faça login novamente.");
         setIsSubmitting(false);
         navigate("/auth");
-        return false;
+        return;
       }
       
       if (!sessionData.session) {
@@ -75,7 +75,7 @@ export function useChecklistSubmit() {
         toast.error("Você precisa estar autenticado para criar um checklist");
         setIsSubmitting(false);
         navigate("/auth");
-        return false;
+        return;
       }
       
       // Update checklist data
@@ -92,7 +92,7 @@ export function useChecklistSubmit() {
         toast.error("Não foi possível identificar o usuário. Por favor, faça login novamente.");
         setIsSubmitting(false);
         navigate("/auth");
-        return false;
+        return;
       }
 
       console.log("Submitting checklist with user ID:", form.user_id);
@@ -101,11 +101,9 @@ export function useChecklistSubmit() {
       if (result) {
         toast.success("Checklist criado com sucesso!");
         navigate(`/checklists/${result.id}`);
-        return true;
+      } else {
+        toast.error("Erro ao criar checklist. Tente novamente.");
       }
-      
-      toast.error("Erro ao criar checklist. Tente novamente.");
-      return false;
       
     } catch (error) {
       console.error("Error in form submission:", error);
@@ -116,7 +114,6 @@ export function useChecklistSubmit() {
       }
       
       toast.error(errorMessage);
-      return false;
     } finally {
       setIsSubmitting(false);
     }

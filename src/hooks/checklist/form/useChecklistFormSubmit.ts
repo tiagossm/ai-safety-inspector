@@ -22,12 +22,12 @@ export function useChecklistFormSubmit() {
     file: File | null,
     aiPrompt: string,
     generateAIChecklist: (form: NewChecklist) => Promise<any>
-  ) => {
+  ): Promise<void> => {
     e.preventDefault();
     
     if (isSubmitting) {
       console.warn("Já existe uma submissão em andamento...");
-      return false;
+      return;
     }
     
     setIsSubmitting(true);
@@ -40,46 +40,38 @@ export function useChecklistFormSubmit() {
         // Criação manual
         const success = await submitManualChecklist(form, questions);
         console.log("Resultado da criação manual:", success);
-        setIsSubmitting(false);
-        return success;
       } 
       else if (activeTab === "import") {
         // Importação de planilha
         if (!file) {
           toast.error("Por favor, selecione um arquivo para importar");
-          setIsSubmitting(false);
-          return false;
+          return;
         }
         
         const success = await submitImportChecklist(file, form);
         console.log("Resultado da importação:", success);
-        setIsSubmitting(false);
-        return success;
       } 
       else if (activeTab === "ai") {
         // Geração por IA
         if (!aiPrompt.trim()) {
           toast.error("Por favor, forneça um prompt para gerar o checklist");
-          setIsSubmitting(false);
-          return false;
+          return;
         }
         
         const success = await submitAIChecklist(form, aiPrompt);
         console.log("Resultado da geração por IA:", success);
-        setIsSubmitting(false);
-        return success;
       }
       
       // Se chegou aqui, algo deu errado...
-      console.error("Tab não reconhecida ou não implementada:", activeTab);
-      toast.error("Operação não suportada");
-      setIsSubmitting(false);
-      return false;
+      else {
+        console.error("Tab não reconhecida ou não implementada:", activeTab);
+        toast.error("Operação não suportada");
+      }
     } catch (error) {
       console.error("Erro ao processar formulário:", error);
       toast.error(`Erro ao criar checklist: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
+    } finally {
       setIsSubmitting(false);
-      return false;
     }
   };
 

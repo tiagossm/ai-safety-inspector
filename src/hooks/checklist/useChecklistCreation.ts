@@ -43,7 +43,7 @@ export function useChecklistCreation() {
   ]);
   
   // Submission handling
-  const { isSubmitting, handleSubmit: submitForm } = useChecklistSubmit();
+  const { isSubmitting, handleFormSubmit } = useChecklistSubmit();
   
   // Fetch users
   useEffect(() => {
@@ -112,8 +112,8 @@ export function useChecklistCreation() {
   };
   
   // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    return await submitForm(
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+    await handleFormSubmit(
       e, 
       activeTab, 
       form, 
