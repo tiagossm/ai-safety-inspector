@@ -41,7 +41,6 @@ export function useChecklistSubmit(): UseChecklistSubmitResult {
     numQuestions?: number
   ): Promise<string | null> => {
     try {
-      // Use the OpenAI assistant if provided
       const assistantParam = openAIAssistant ? { assistantId: openAIAssistant } : {};
       
       console.log("Generating checklist with AI:", {
@@ -70,7 +69,6 @@ export function useChecklistSubmit(): UseChecklistSubmitResult {
         throw new Error(data?.error || 'Failed to generate checklist');
       }
 
-      // Format data for database
       console.log("Successfully generated checklist:", data);
       const { id, error: saveError } = await saveChecklistDataFromAI(data, formData);
 
@@ -90,7 +88,6 @@ export function useChecklistSubmit(): UseChecklistSubmitResult {
     try {
       console.log("Saving AI generated data:", aiOutput);
       
-      // Prepare checklist data
       const checklistData = {
         title: aiOutput.checklistData?.title || formData.title || "Checklist sem título",
         description: aiOutput.checklistData?.description || formData.description || "Checklist gerado por IA",
@@ -104,7 +101,6 @@ export function useChecklistSubmit(): UseChecklistSubmitResult {
       
       console.log("Inserting checklist:", checklistData);
       
-      // Save checklist to database
       const { data, error } = await supabase
         .from('checklists')
         .insert(checklistData)
@@ -118,7 +114,6 @@ export function useChecklistSubmit(): UseChecklistSubmitResult {
 
       console.log("Checklist created with ID:", data.id);
       
-      // Save questions
       if (aiOutput.questions && aiOutput.questions.length > 0) {
         console.log(`Saving ${aiOutput.questions.length} questions`);
         
@@ -199,7 +194,6 @@ export function useChecklistSubmit(): UseChecklistSubmitResult {
       setIsSubmitting(true);
       console.log(`Processing ${activeTab} checklist creation`);
       
-      // Validate based on active tab
       if (activeTab === "manual" && !form.title?.trim()) {
         toast.error("O título é obrigatório");
         return false;
@@ -211,11 +205,9 @@ export function useChecklistSubmit(): UseChecklistSubmitResult {
         return false;
       }
       
-      // Process based on the active tab
       if (activeTab === "ai") {
         console.log("Creating AI checklist with prompt:", aiPrompt);
         
-        // Set a default title if empty
         const formData = { ...form };
         if (!formData.title) {
           const shortPrompt = aiPrompt.length > 40 ? 
@@ -225,12 +217,10 @@ export function useChecklistSubmit(): UseChecklistSubmitResult {
           formData.description = `Checklist gerado por IA com base em: ${aiPrompt}`;
         }
         
-        // Generate and create checklist with AI
         const checklistId = await createChecklistWithAI(aiPrompt, formData, openAIAssistant, numQuestions);
         
         if (checklistId) {
           toast.success("Checklist criado com sucesso!");
-          // Navigate to the edit page
           navigate(`/new-checklists/${checklistId}`);
           return true;
         } else {
@@ -239,8 +229,6 @@ export function useChecklistSubmit(): UseChecklistSubmitResult {
         }
       }
       
-      // For manual creation, import, or other methods...
-      // Manual checklist creation
       if (activeTab === "manual") {
         if (!form.title?.trim()) {
           toast.error("O título é obrigatório");
@@ -306,7 +294,6 @@ export function useChecklistSubmit(): UseChecklistSubmitResult {
         return true;
       }
       
-      // Import checklist from CSV
       if (activeTab === "import") {
         if (!file) {
           toast.error("Por favor, selecione um arquivo para importar");
@@ -338,10 +325,6 @@ export function useChecklistSubmit(): UseChecklistSubmitResult {
         
         const checklistId = data.id;
         console.log("Import checklist created with ID:", checklistId);
-        
-        // Parse and process CSV file
-        // Note: Implement CSV parsing logic here or use an existing implementation
-        // For demonstration, we'll just navigate to the checklist
         
         toast.success("Checklist criado com sucesso!");
         navigate(`/new-checklists/${checklistId}`);

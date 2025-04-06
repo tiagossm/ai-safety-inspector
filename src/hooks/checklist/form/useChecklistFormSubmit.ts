@@ -82,6 +82,6 @@ export function useChecklistFormSubmit() {
 
   return {
     isSubmitting,
-    handleFormSubmit
+    handleSubmit: handleFormSubmit
   };
 }
