@@ -5,6 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -15,7 +16,7 @@ import {
   Sparkle,
   Pen,
   FileDown,
-  Info
+  Trash2
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -28,6 +29,16 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ChecklistGridProps {
   checklists: ChecklistWithStats[];
@@ -36,6 +47,7 @@ interface ChecklistGridProps {
   onDelete: (id: string, title: string) => void;
   onOpen: (id: string) => void;
   onStatusChange?: () => void;
+  onBulkDelete?: (ids: string[]) => void;
 }
 
 export function ChecklistGrid({
@@ -44,8 +56,36 @@ export function ChecklistGrid({
   onEdit,
   onDelete,
   onOpen,
-  onStatusChange
+  onStatusChange,
+  onBulkDelete
 }: ChecklistGridProps) {
+  const [selectedChecklists, setSelectedChecklists] = useState<string[]>([]);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedChecklists(checklists.filter(c => !c.isSubChecklist).map(c => c.id));
+    } else {
+      setSelectedChecklists([]);
+    }
+  };
+
+  const handleSelectChecklist = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedChecklists([...selectedChecklists, id]);
+    } else {
+      setSelectedChecklists(selectedChecklists.filter(checklistId => checklistId !== id));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (onBulkDelete && selectedChecklists.length > 0) {
+      await onBulkDelete(selectedChecklists);
+      setSelectedChecklists([]);
+      setIsDeleteDialogOpen(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -81,18 +121,70 @@ export function ChecklistGrid({
     );
   }
 
+  // Filter out sub-checklists
+  const filteredChecklists = checklists.filter(
+    checklist => !checklist.isSubChecklist
+  );
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {checklists.map((checklist) => (
-        <ChecklistCard
-          key={checklist.id}
-          checklist={checklist}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onOpen={onOpen}
-          onStatusChange={onStatusChange}
-        />
-      ))}
+    <div className="space-y-4">
+      {selectedChecklists.length > 0 && (
+        <div className="flex justify-between items-center p-2 bg-muted/50 rounded-md">
+          <div className="flex items-center gap-2">
+            <Checkbox 
+              id="select-all" 
+              onCheckedChange={(checked) => handleSelectAll(!!checked)}
+              checked={selectedChecklists.length === filteredChecklists.length && filteredChecklists.length > 0}
+              indeterminate={selectedChecklists.length > 0 && selectedChecklists.length < filteredChecklists.length}
+            />
+            <label htmlFor="select-all" className="text-sm font-medium">
+              {selectedChecklists.length} {selectedChecklists.length === 1 ? 'checklist selecionado' : 'checklists selecionados'}
+            </label>
+          </div>
+          <Button 
+            variant="destructive" 
+            size="sm" 
+            onClick={() => setIsDeleteDialogOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Trash2 className="h-4 w-4" />
+            <span>Excluir selecionados</span>
+          </Button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredChecklists.map((checklist) => (
+          <ChecklistCard
+            key={checklist.id}
+            checklist={checklist}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onOpen={onOpen}
+            onStatusChange={onStatusChange}
+            isSelected={selectedChecklists.includes(checklist.id)}
+            onSelect={(checked) => handleSelectChecklist(checklist.id, checked)}
+          />
+        ))}
+      </div>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir checklists selecionados</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você está prestes a excluir {selectedChecklists.length} {selectedChecklists.length === 1 ? 'checklist' : 'checklists'}.
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -102,19 +194,23 @@ function ChecklistCard({
   onEdit,
   onDelete,
   onOpen,
-  onStatusChange
+  onStatusChange,
+  isSelected,
+  onSelect
 }: {
   checklist: ChecklistWithStats;
   onEdit: (id: string) => void;
   onDelete: (id: string, title: string) => void;
   onOpen: (id: string) => void;
   onStatusChange?: () => void;
+  isSelected: boolean;
+  onSelect: (checked: boolean) => void;
 }) {
   const [companyName, setCompanyName] = React.useState<string | null>(null);
   const [companyLoading, setCompanyLoading] = React.useState<boolean>(!!checklist.companyId);
   const [isToggling, setIsToggling] = useState(false);
   
-  // Determine checklist creation type based on metadata or description patterns
+  // Determine checklist creation type based on description patterns
   const getCreationTypeIcon = () => {
     // Check for AI generated (based on description patterns)
     if (checklist.description?.toLowerCase().includes("gerado por ia") || 
@@ -206,13 +302,17 @@ function ChecklistCard({
       
       const { error } = await supabase
         .from('checklists')
-        .update({ status: newStatus })
+        .update({ 
+          status: newStatus,
+          status_checklist: newStatus === 'active' ? 'ativo' : 'inativo'
+        })
         .eq('id', checklist.id);
         
       if (error) throw error;
       
       // Update the local state immediately without waiting for refetch
       checklist.status = newStatus;
+      checklist.status_checklist = newStatus === 'active' ? 'ativo' : 'inativo';
       
       toast.success(`Checklist ${newStatus === 'active' ? 'ativado' : 'desativado'} com sucesso`);
       
@@ -231,6 +331,11 @@ function ChecklistCard({
       <CardHeader className="pb-2">
         <div className="flex justify-between items-start">
           <div className="flex items-center gap-2">
+            <Checkbox 
+              checked={isSelected}
+              onCheckedChange={(checked) => onSelect(!!checked)}
+              onClick={(e) => e.stopPropagation()}
+            />
             <Badge variant={checklist.isTemplate ? "secondary" : checklist.status === "active" ? "default" : "outline"}>
               {checklist.isTemplate ? "Template" : checklist.status === "active" ? "Ativo" : "Inativo"}
             </Badge>

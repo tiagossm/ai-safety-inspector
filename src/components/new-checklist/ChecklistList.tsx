@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Building2, 
   FileText, 
@@ -18,6 +19,7 @@ import {
   Sparkle,
   Pen,
   FileDown,
+  Trash2
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -33,6 +35,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ChecklistListProps {
   checklists: ChecklistWithStats[];
@@ -41,6 +53,7 @@ interface ChecklistListProps {
   onDelete: (id: string, title: string) => void;
   onOpen: (id: string) => void;
   onStatusChange?: () => void;
+  onBulkDelete?: (ids: string[]) => void;
 }
 
 export function ChecklistList({
@@ -49,14 +62,48 @@ export function ChecklistList({
   onEdit,
   onDelete,
   onOpen,
-  onStatusChange
+  onStatusChange,
+  onBulkDelete
 }: ChecklistListProps) {
+  const [selectedChecklists, setSelectedChecklists] = useState<string[]>([]);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  // Reset selected checklists when the checklist list changes
+  useEffect(() => {
+    setSelectedChecklists([]);
+  }, [checklists]);
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedChecklists(checklists.filter(c => !c.isSubChecklist).map(c => c.id));
+    } else {
+      setSelectedChecklists([]);
+    }
+  };
+
+  const handleSelectChecklist = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedChecklists([...selectedChecklists, id]);
+    } else {
+      setSelectedChecklists(selectedChecklists.filter(checklistId => checklistId !== id));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (onBulkDelete && selectedChecklists.length > 0) {
+      await onBulkDelete(selectedChecklists);
+      setSelectedChecklists([]);
+      setIsDeleteDialogOpen(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="border rounded-md">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12"><Skeleton className="h-4 w-4" /></TableHead>
               <TableHead>Nome</TableHead>
               <TableHead>Empresa</TableHead>
               <TableHead>Categoria</TableHead>
@@ -68,6 +115,7 @@ export function ChecklistList({
           <TableBody>
             {Array(5).fill(0).map((_, index) => (
               <TableRow key={index}>
+                <TableCell><Skeleton className="h-4 w-4" /></TableCell>
                 <TableCell><Skeleton className="h-5 w-40" /></TableCell>
                 <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                 <TableCell><Skeleton className="h-5 w-20" /></TableCell>
@@ -100,31 +148,77 @@ export function ChecklistList({
   );
 
   return (
-    <div className="border rounded-md overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Nome</TableHead>
-            <TableHead>Empresa</TableHead>
-            <TableHead>Categoria</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Criado em</TableHead>
-            <TableHead className="text-right">Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filteredChecklists.map((checklist) => (
-            <ChecklistRow
-              key={checklist.id}
-              checklist={checklist}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onOpen={onOpen}
-              onStatusChange={onStatusChange}
-            />
-          ))}
-        </TableBody>
-      </Table>
+    <div className="space-y-4">
+      {selectedChecklists.length > 0 && (
+        <div className="flex justify-between items-center p-2 bg-muted/50 rounded-md">
+          <span className="text-sm font-medium">
+            {selectedChecklists.length} {selectedChecklists.length === 1 ? 'checklist selecionado' : 'checklists selecionados'}
+          </span>
+          <Button 
+            variant="destructive" 
+            size="sm" 
+            onClick={() => setIsDeleteDialogOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Trash2 className="h-4 w-4" />
+            <span>Excluir selecionados</span>
+          </Button>
+        </div>
+      )}
+      
+      <div className="border rounded-md overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-12">
+                <Checkbox 
+                  onCheckedChange={(checked) => handleSelectAll(!!checked)}
+                  checked={selectedChecklists.length === filteredChecklists.length && filteredChecklists.length > 0}
+                  indeterminate={selectedChecklists.length > 0 && selectedChecklists.length < filteredChecklists.length}
+                />
+              </TableHead>
+              <TableHead>Nome</TableHead>
+              <TableHead>Empresa</TableHead>
+              <TableHead>Categoria</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Criado em</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredChecklists.map((checklist) => (
+              <ChecklistRow
+                key={checklist.id}
+                checklist={checklist}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onOpen={onOpen}
+                onStatusChange={onStatusChange}
+                isSelected={selectedChecklists.includes(checklist.id)}
+                onSelect={(checked) => handleSelectChecklist(checklist.id, checked)}
+              />
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir checklists selecionados</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você está prestes a excluir {selectedChecklists.length} {selectedChecklists.length === 1 ? 'checklist' : 'checklists'}.
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -134,13 +228,17 @@ function ChecklistRow({
   onEdit,
   onDelete,
   onOpen,
-  onStatusChange
+  onStatusChange,
+  isSelected,
+  onSelect
 }: {
   checklist: ChecklistWithStats;
   onEdit: (id: string) => void;
   onDelete: (id: string, title: string) => void;
   onOpen: (id: string) => void;
   onStatusChange?: () => void;
+  isSelected: boolean;
+  onSelect: (checked: boolean) => void;
 }) {
   const [companyName, setCompanyName] = useState<string | null>(null);
   const [companyLoading, setCompanyLoading] = useState<boolean>(!!checklist.companyId);
@@ -238,13 +336,17 @@ function ChecklistRow({
       
       const { error } = await supabase
         .from('checklists')
-        .update({ status: newStatus })
+        .update({ 
+          status: newStatus,
+          status_checklist: newStatus === 'active' ? 'ativo' : 'inativo'
+        })
         .eq('id', checklist.id);
         
       if (error) throw error;
       
       // Update the local state immediately without waiting for refetch
       checklist.status = newStatus;
+      checklist.status_checklist = newStatus === 'active' ? 'ativo' : 'inativo';
       
       toast.success(`Checklist ${newStatus === 'active' ? 'ativado' : 'desativado'} com sucesso`);
       
@@ -263,6 +365,12 @@ function ChecklistRow({
       className="cursor-pointer hover:bg-accent/50"
       onClick={() => onOpen(checklist.id)}
     >
+      <TableCell className="py-2" onClick={(e) => e.stopPropagation()}>
+        <Checkbox 
+          checked={isSelected} 
+          onCheckedChange={(checked) => onSelect(!!checked)} 
+        />
+      </TableCell>
       <TableCell className="font-medium">
         <div className="flex items-center gap-2">
           {getCreationTypeIcon()}

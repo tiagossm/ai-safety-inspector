@@ -31,7 +31,7 @@ export function useChecklistAI() {
         return { success: false, error: "Prompt vazio" };
       }
 
-      if (!checklistData.company_id) {
+      if (!checklistData.company_id && !checklistData.companyId) {
         toast.error("É necessário selecionar uma empresa");
         return { success: false, error: "Empresa não selecionada" };
       }
@@ -73,11 +73,20 @@ export function useChecklistAI() {
         };
       }
 
+      // Ensure company_id is set
+      const enhancedChecklistData = {
+        ...checklistData,
+        company_id: checklistData.company_id || checklistData.companyId,
+        status: 'active',
+        created_by: 'ai',
+        description: checklistData.description || `Checklist gerado por IA com o prompt: ${prompt.slice(0, 100)}...`
+      };
+
       const { data, error } = await supabase.functions.invoke('generate-checklist', {
         body: {
           prompt,
           questionCount,
-          checklistData,
+          checklistData: enhancedChecklistData,
           assistantId: openAIAssistant
         }
       });
@@ -111,9 +120,9 @@ export function useChecklistAI() {
       return {
         success: true,
         checklistData: {
-          ...checklistData,
+          ...enhancedChecklistData,
           title: data.checklistData.title || checklistData.title,
-          description: data.checklistData.description || checklistData.description
+          description: data.checklistData.description || enhancedChecklistData.description
         },
         questions: data.questions || [],
         groups: data.groups || []

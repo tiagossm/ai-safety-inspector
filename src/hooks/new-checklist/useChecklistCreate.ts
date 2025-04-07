@@ -55,6 +55,14 @@ export function useChecklistCreate() {
       // Fix the status_checklist value to match the database constraint
       const status_checklist = getStatusChecklist(checklist.status || 'active');
       
+      // Ensure company_id is set correctly
+      const company_id = checklist.companyId || checklist.company_id;
+      
+      // Determine if this is an AI-generated checklist
+      const isAIGenerated = checklist.description?.toLowerCase().includes('gerado por ia') ||
+                            checklist.description?.toLowerCase().includes('checklist gerado por ia') ||
+                            checklist.description?.toLowerCase().includes('checklist: ');
+      
       // Insert the checklist
       const { data: newChecklist, error: createError } = await supabase
         .from("checklists")
@@ -62,12 +70,13 @@ export function useChecklistCreate() {
           title: checklist.title,
           description: checklist.description,
           is_template: checklist.isTemplate || false,
-          status_checklist: status_checklist, // Fixed value
-          status: checklist.status || 'active', // Keep status field as is
+          status_checklist: status_checklist,
+          status: checklist.status || 'active',
           category: checklist.category,
           responsible_id: checklist.responsibleId,
-          company_id: checklist.companyId,
-          due_date: checklist.dueDate
+          company_id: company_id,
+          due_date: checklist.dueDate,
+          created_by: isAIGenerated ? 'ai' : undefined
         })
         .select("id")
         .single();

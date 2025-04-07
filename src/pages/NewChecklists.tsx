@@ -10,6 +10,8 @@ import { ChecklistGrid } from "@/components/new-checklist/ChecklistGrid";
 import { ChecklistList } from "@/components/new-checklist/ChecklistList";
 import { DeleteChecklistDialog } from "@/components/new-checklist/DeleteChecklistDialog";
 import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export default function NewChecklists() {
   const navigate = useNavigate();
@@ -30,18 +32,25 @@ export default function NewChecklists() {
     companies,
     categories,
     isLoadingCompanies,
-    refetch
+    refetch,
+    deleteChecklist
   } = useNewChecklists();
   
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     checklistId: string;
     checklistTitle: string;
+    isMultiple: boolean;
+    selectedIds: string[];
   }>({
     open: false,
     checklistId: "",
     checklistTitle: "",
+    isMultiple: false,
+    selectedIds: []
   });
+  
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Count checklists by type - excluding subchecklist
   const filteredChecklists = allChecklists.filter(c => !c.isSubChecklist);
@@ -68,7 +77,53 @@ export default function NewChecklists() {
       open: true,
       checklistId: id,
       checklistTitle: title,
+      isMultiple: false,
+      selectedIds: []
     });
+  };
+
+  const handleBulkDelete = (ids: string[]) => {
+    console.log(`Preparing to delete ${ids.length} checklists`);
+    setDeleteDialog({
+      open: true,
+      checklistId: "",
+      checklistTitle: `${ids.length} checklists selecionados`,
+      isMultiple: true,
+      selectedIds: ids
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+    try {
+      if (deleteDialog.isMultiple) {
+        // Bulk delete
+        for (const id of deleteDialog.selectedIds) {
+          await deleteChecklist.mutateAsync(id);
+        }
+        toast.success(`${deleteDialog.selectedIds.length} checklists excluídos com sucesso`);
+      } else {
+        // Single delete
+        await deleteChecklist.mutateAsync(deleteDialog.checklistId);
+        toast.success("Checklist excluído com sucesso");
+      }
+      
+      // Important: refetch data after deletion
+      await refetch();
+      
+      setDeleteDialog({
+        open: false,
+        checklistId: "",
+        checklistTitle: "",
+        isMultiple: false,
+        selectedIds: []
+      });
+    } catch (error: any) {
+      console.error("Error deleting checklist(s):", error);
+      toast.error(`Erro ao excluir: ${error.message || "Falha na operação"}`);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleCreateNew = () => {
@@ -131,6 +186,7 @@ export default function NewChecklists() {
             onDelete={handleDelete}
             onOpen={handleOpenChecklist}
             onStatusChange={refetch}
+            onBulkDelete={handleBulkDelete}
           />
         </TabsContent>
 
@@ -143,6 +199,7 @@ export default function NewChecklists() {
               onDelete={handleDelete}
               onOpen={handleOpenChecklist}
               onStatusChange={refetch}
+              onBulkDelete={handleBulkDelete}
             />
           </ScrollArea>
         </TabsContent>
@@ -156,6 +213,7 @@ export default function NewChecklists() {
               onDelete={handleDelete}
               onOpen={handleOpenChecklist}
               onStatusChange={refetch}
+              onBulkDelete={handleBulkDelete}
             />
           </ScrollArea>
         </TabsContent>
@@ -169,17 +227,42 @@ export default function NewChecklists() {
               onDelete={handleDelete}
               onOpen={handleOpenChecklist}
               onStatusChange={refetch}
+              onBulkDelete={handleBulkDelete}
             />
           </ScrollArea>
         </TabsContent>
       </Tabs>
 
-      <DeleteChecklistDialog 
-        checklistId={deleteDialog.checklistId}
-        checklistTitle={deleteDialog.checklistTitle}
-        isOpen={deleteDialog.open}
-        onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
-      />
+      <AlertDialog 
+        open={deleteDialog.open} 
+        onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {deleteDialog.isMultiple ? "Excluir checklists selecionados" : "Excluir checklist"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteDialog.isMultiple
+                ? `Você está prestes a excluir ${deleteDialog.selectedIds.length} checklists. Esta ação não pode ser desfeita.`
+                : `Tem certeza que deseja excluir o checklist "${deleteDialog.checklistTitle}"? Esta ação não pode ser desfeita.`
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleConfirmDelete();
+              }}
+              className="bg-destructive hover:bg-destructive/90"
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
       <FloatingNavigation threshold={300} />
     </div>
