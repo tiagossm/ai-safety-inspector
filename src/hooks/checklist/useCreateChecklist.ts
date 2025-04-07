@@ -76,6 +76,9 @@ export function useCreateChecklist() {
           ? newChecklist.status 
           : 'pendente';
           
+        // Set the default origin if not provided
+        const origin = newChecklist.origin || 'manual';
+          
         // Prepare checklist data with all mandatory fields
         const checklistData = {
           title: newChecklist.title || "Checklist sem título",
@@ -87,7 +90,8 @@ export function useCreateChecklist() {
           company_id: newChecklist.company_id || null,
           due_date: newChecklist.due_date || null,
           user_id: userId, // Use the validated user ID
-          status: status // Ensure we're using a valid status value
+          status: status, // Ensure we're using a valid status value
+          origin: origin // Add origin field
         };
         
         console.log("Checklist prepared for insertion:", checklistData);

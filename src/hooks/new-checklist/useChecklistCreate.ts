@@ -109,7 +109,9 @@ export function useChecklistCreate() {
               questionOptions = question.options;
             } else if (typeof question.options === 'string') {
               try {
-                const optionsString = question.options;
+                // Create a local variable for the options string to ensure proper typing
+                const optionsString: string = question.options;
+                
                 if (optionsString.startsWith('[') && optionsString.endsWith(']')) {
                   try {
                     const parsedOptions = JSON.parse(optionsString);
@@ -117,9 +119,11 @@ export function useChecklistCreate() {
                       questionOptions = parsedOptions;
                     }
                   } catch (e) {
+                    // If JSON parsing fails, treat as comma-separated list
                     questionOptions = optionsString.split(',').map(o => o.trim());
                   }
                 } else {
+                  // Treat as comma-separated list
                   questionOptions = optionsString.split(',').map(o => o.trim());
                 }
               } catch (e) {
