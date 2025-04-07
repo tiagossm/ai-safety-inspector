@@ -123,17 +123,50 @@ function ChecklistCard({
     // Check for AI generated (based on metadata or description patterns)
     if (checklist.description?.includes("Gerado por IA") || 
         checklist.description?.includes("criado com Inteligência Artificial")) {
-      return <Sparkle className="h-4 w-4 text-purple-500" title="Gerado por IA" />;
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Sparkle className="h-4 w-4 text-purple-500" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Gerado por IA</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
     }
     
     // Check for import (based on metadata or patterns)
     if (checklist.description?.includes("Importado via CSV") ||
         checklist.description?.includes("importado de planilha")) {
-      return <FileDown className="h-4 w-4 text-blue-500" title="Importado via CSV" />;
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <FileDown className="h-4 w-4 text-blue-500" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Importado via CSV</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
     }
     
     // Default to manual creation
-    return <Pen className="h-4 w-4 text-slate-500" title="Criado manualmente" />;
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Pen className="h-4 w-4 text-slate-500" />
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Criado manualmente</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
   };
 
   // Fetch company name if we have companyId
