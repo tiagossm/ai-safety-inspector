@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { NewChecklist } from "@/types/checklist";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -10,17 +11,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { CompanyListItem } from "@/types/CompanyListItem";
-import { Bot, Sparkles, RefreshCw, Paperclip } from "lucide-react";
+import { Bot, Sparkles, RefreshCw } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { CompanySelector } from "@/components/inspection/CompanySelector";
-import { useOpenAIAssistants } from "@/hooks/useOpenAIAssistants";
 import { supabase } from "@/integrations/supabase/client";
 import { Company, CompanyMetadata } from "@/types/company";
 import { toast } from "sonner";
-import { Slider } from "@/components/ui/slider";
 import { OpenAIAssistantSelector } from "@/components/ai/OpenAIAssistantSelector";
 import QuestionCountSelector from "./QuestionCountSelector";
 
@@ -29,7 +26,7 @@ interface AICreateFormProps {
   setForm: React.Dispatch<React.SetStateAction<NewChecklist>>;
   users: any[];
   loadingUsers: boolean;
-  companies: CompanyListItem[];
+  companies: any[];
   loadingCompanies: boolean;
   aiPrompt: string;
   setAiPrompt: React.Dispatch<React.SetStateAction<string>>;
@@ -50,16 +47,18 @@ export function AICreateFormContent(props: AICreateFormProps) {
   const [formattedPrompt, setFormattedPrompt] = useState<string>("");
   const [contextType, setContextType] = useState<string>("Setor");
   const [contextValue, setContextValue] = useState<string>("");
-  const [attachedFile, setAttachedFile] = useState<File | null>(null);
+  const [description, setDescription] = useState<string>("");
+  const maxDescriptionLength = 500;
+  const minDescriptionLength = 5;
 
   useEffect(() => {
     if (props.form.company_id) {
       fetchCompanyData(props.form.company_id.toString());
     } else {
       setCompanyData(null);
-      updateFormattedPrompt(null, props.form.category || "");
+      updateFormattedPrompt(null, props.form.category || "", description);
     }
-  }, [props.form.company_id, props.form.category, contextType, contextValue]);
+  }, [props.form.company_id, props.form.category, contextType, contextValue, description]);
 
   const fetchCompanyData = async (companyId: string) => {
     try {
@@ -85,33 +84,32 @@ export function AICreateFormContent(props: AICreateFormProps) {
         address: data.address
       };
       setCompanyData(company);
-      updateFormattedPrompt(company, props.form.category || "");
+      updateFormattedPrompt(company, props.form.category || "", description);
     } catch (error) {
       console.error("Error fetching company data:", error);
       toast.error("Erro ao carregar dados da empresa");
     }
   };
 
-  const updateFormattedPrompt = (company: Company | null, category: string) => {
+  const updateFormattedPrompt = (company: Company | null, category: string, desc: string) => {
     const metadata = company?.metadata || null;
     const riskGrade = metadata?.risk_grade || "não informado";
     const employeeCount = company?.employee_count || "não informado";
     const context = contextType && contextValue ? `${contextType}: ${contextValue}` : "";
-    const fileNote = attachedFile ? `Arquivo Anexado: ${attachedFile.name}` : "";
 
     const prompt = `Categoria: ${category || "Não especificada"}
 Empresa: ${company?.fantasy_name || 'Empresa'} (CNPJ ${company?.cnpj || 'não informado'}, CNAE ${company?.cnae || 'não informado'}, Grau de Risco ${riskGrade}, Funcionários: ${employeeCount})
-Contexto: ${context}
-${fileNote}`;
+Descrição: ${desc}
+Contexto: ${context}`;
 
     setFormattedPrompt(prompt);
     props.setAiPrompt(prompt);
-  };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    setAttachedFile(file);
-    updateFormattedPrompt(companyData, props.form.category || "");
+    // Também atualiza a descrição no formulário
+    props.setForm({
+      ...props.form,
+      description: desc
+    });
   };
 
   const handleGenerateClick = () => {
@@ -119,16 +117,26 @@ ${fileNote}`;
       toast.error("Por favor, informe a categoria do checklist");
       return;
     }
+    
     if (!props.form.company_id) {
       toast.error("Por favor, selecione uma empresa");
       return;
     }
+    
     if (!props.openAIAssistant) {
       toast.error("Por favor, selecione um assistente de IA");
       return;
     }
-    props.onGenerateAI(attachedFile);
+
+    if (!description || description.length < minDescriptionLength) {
+      toast.error(`Por favor, forneça uma descrição com pelo menos ${minDescriptionLength} caracteres`);
+      return;
+    }
+    
+    props.onGenerateAI(null);
   };
+
+  const isDescriptionValid = description.length >= minDescriptionLength && description.length <= maxDescriptionLength;
 
   return (
     <div className="space-y-6">
@@ -147,6 +155,29 @@ ${fileNote}`;
                   placeholder="Ex: NR-35, Inspeção de Equipamentos"
                   required
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">
+                  Descrição <span className="text-red-500">*</span>
+                </Label>
+                <Textarea
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Descreva o propósito deste checklist"
+                  className="min-h-[80px]"
+                  maxLength={maxDescriptionLength}
+                  required
+                />
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span className={`${!isDescriptionValid && description.length > 0 ? "text-red-500" : ""}`}>
+                    Mínimo: {minDescriptionLength} caracteres
+                  </span>
+                  <span className={`${description.length > maxDescriptionLength ? "text-red-500" : ""}`}>
+                    {description.length}/{maxDescriptionLength} caracteres
+                  </span>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -201,20 +232,6 @@ ${fileNote}`;
                   />
                 </div>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="fileUpload">Anexar arquivo (opcional)</Label>
-                <Input
-                  id="fileUpload"
-                  type="file"
-                  onChange={handleFileChange}
-                />
-                {attachedFile && (
-                  <p className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Paperclip className="h-4 w-4" /> {attachedFile.name}
-                  </p>
-                )}
-              </div>
             </div>
 
             <div>
@@ -225,7 +242,7 @@ ${fileNote}`;
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => updateFormattedPrompt(companyData, props.form.category || "")}
+                    onClick={() => updateFormattedPrompt(companyData, props.form.category || "", description)}
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Regenerar
@@ -241,7 +258,13 @@ ${fileNote}`;
           <Button
             type="button"
             onClick={handleGenerateClick}
-            disabled={props.aiLoading || !props.form.category?.trim() || !props.form.company_id || !props.openAIAssistant}
+            disabled={
+              props.aiLoading || 
+              !props.form.category?.trim() || 
+              !props.form.company_id || 
+              !props.openAIAssistant || 
+              !isDescriptionValid
+            }
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 mt-4"
             size="lg"
           >

@@ -10,7 +10,6 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { useOpenAIAssistants } from "@/hooks/new-checklist/useOpenAIAssistants";
 
 interface OpenAIAssistantSelectorProps {
@@ -63,14 +62,7 @@ export function OpenAIAssistantSelector({
           ) : (
             assistants.map((assistant) => (
               <SelectItem key={assistant.id} value={assistant.id || "default-assistant"}>
-                <div className="flex items-center">
-                  {assistant.name}
-                  {assistant.model && (
-                    <Badge variant="outline" className="ml-2 text-xs">
-                      {assistant.model}
-                    </Badge>
-                  )}
-                </div>
+                {assistant.name}
               </SelectItem>
             ))
           )}
