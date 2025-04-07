@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
@@ -58,7 +59,7 @@ export function useChecklistCreate() {
                            checklist.description?.toLowerCase().includes('importado de planilha') ||
                            checklist.description?.toLowerCase().includes('importado de excel');
       
-      const origin = isAIGenerated ? 'ia' : (isCSVImported ? 'csv' : (checklist.origin || 'manual'));
+      const origin = checklist.origin || (isAIGenerated ? 'ia' : (isCSVImported ? 'csv' : 'manual'));
       
       const { data: newChecklist, error: createError } = await supabase
         .from("checklists")
@@ -107,17 +108,22 @@ export function useChecklistCreate() {
             if (Array.isArray(question.options)) {
               questionOptions = question.options;
             } else if (typeof question.options === 'string') {
-              if (optionsString.startsWith('[') && optionsString.endsWith(']')) {
-                try {
-                  const parsedOptions = JSON.parse(optionsString);
-                  if (Array.isArray(parsedOptions)) {
-                    questionOptions = parsedOptions;
+              try {
+                const optionsString = question.options;
+                if (optionsString.startsWith('[') && optionsString.endsWith(']')) {
+                  try {
+                    const parsedOptions = JSON.parse(optionsString);
+                    if (Array.isArray(parsedOptions)) {
+                      questionOptions = parsedOptions;
+                    }
+                  } catch (e) {
+                    questionOptions = optionsString.split(',').map(o => o.trim());
                   }
-                } catch (e) {
+                } else {
                   questionOptions = optionsString.split(',').map(o => o.trim());
                 }
-              } else {
-                questionOptions = optionsString.split(',').map(o => o.trim());
+              } catch (e) {
+                console.error("Error parsing options:", e);
               }
             }
           }

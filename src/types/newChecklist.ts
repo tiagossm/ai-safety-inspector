@@ -1,3 +1,4 @@
+
 export interface ChecklistGroup {
   id: string;
   title: string;
@@ -39,6 +40,7 @@ export interface Checklist {
   updatedAt?: string;
   dueDate?: string | null;
   isSubChecklist?: boolean;
+  origin?: 'manual' | 'ia' | 'csv';
 }
 
 export interface ChecklistWithStats extends Checklist {
@@ -48,6 +50,7 @@ export interface ChecklistWithStats extends Checklist {
   questions?: ChecklistQuestion[];
   is_sub_checklist?: boolean; // For backward compatibility
   isSubChecklist?: boolean;
+  origin?: 'manual' | 'ia' | 'csv';
 }
 
 export interface NewChecklistPayload {
