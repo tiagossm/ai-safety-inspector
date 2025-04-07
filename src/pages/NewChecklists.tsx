@@ -1,11 +1,10 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Clipboard, FileText, BarChart2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useChecklistFetch } from "@/hooks/new-checklist/useChecklistFetch";
-import { useChecklistFilter } from "@/hooks/new-checklist/useChecklistFilter";
+import { useNewChecklists } from "@/hooks/new-checklist/useNewChecklists";
 import { ChecklistFilters } from "@/components/new-checklist/ChecklistFilters";
 import { ChecklistGrid } from "@/components/new-checklist/ChecklistGrid";
 import { ChecklistList } from "@/components/new-checklist/ChecklistList";
@@ -14,19 +13,25 @@ import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 
 export default function NewChecklists() {
   const navigate = useNavigate();
-  const { data: checklists = [], isLoading } = useChecklistFetch();
-  
   const { 
+    checklists, 
+    allChecklists,
+    isLoading,
     searchTerm, 
     setSearchTerm, 
     filterType, 
     setFilterType,
     selectedCompanyId,
     setSelectedCompanyId,
+    selectedCategory,
+    setSelectedCategory,
+    sortOrder,
+    setSortOrder,
     companies,
+    categories,
     isLoadingCompanies,
-    filteredChecklists
-  } = useChecklistFilter(checklists);
+    refetch
+  } = useNewChecklists();
   
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
@@ -37,6 +42,14 @@ export default function NewChecklists() {
     checklistId: "",
     checklistTitle: "",
   });
+
+  // Count checklists by type
+  const counts = {
+    all: allChecklists.filter(c => !c.isSubChecklist).length,
+    active: allChecklists.filter(c => !c.isSubChecklist && c.status === "active" && !c.isTemplate).length,
+    inactive: allChecklists.filter(c => !c.isSubChecklist && c.status === "inactive" && !c.isTemplate).length,
+    template: allChecklists.filter(c => !c.isSubChecklist && c.isTemplate).length
+  };
 
   const handleOpenChecklist = (id: string) => {
     console.log(`Opening checklist: ${id}`);
@@ -74,43 +87,88 @@ export default function NewChecklists() {
         setFilterType={setFilterType}
         selectedCompanyId={selectedCompanyId}
         setSelectedCompanyId={setSelectedCompanyId}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        sortOrder={sortOrder}
+        setSortOrder={setSortOrder}
         companies={companies}
+        categories={categories}
         isLoadingCompanies={isLoadingCompanies}
-        totalChecklists={filteredChecklists.length}
+        totalChecklists={checklists.length}
         onCreateNew={handleCreateNew}
       />
 
-      <Tabs defaultValue="grid" className="space-y-4">
+      <Tabs defaultValue="template" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="grid" className="flex items-center gap-2">
+          <TabsTrigger value="template" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            <span>Grade</span>
+            <span>Templates</span>
+            {counts.template > 0 && <span className="ml-1 text-xs bg-primary/10 text-primary rounded-full px-2">{counts.template}</span>}
           </TabsTrigger>
-          <TabsTrigger value="list" className="flex items-center gap-2">
+          <TabsTrigger value="active" className="flex items-center gap-2">
             <Clipboard className="h-4 w-4" />
-            <span>Lista</span>
+            <span>Ativos</span>
+            {counts.active > 0 && <span className="ml-1 text-xs bg-primary/10 text-primary rounded-full px-2">{counts.active}</span>}
+          </TabsTrigger>
+          <TabsTrigger value="inactive" className="flex items-center gap-2">
+            <Clipboard className="h-4 w-4" />
+            <span>Inativos</span>
+            {counts.inactive > 0 && <span className="ml-1 text-xs bg-primary/10 text-primary rounded-full px-2">{counts.inactive}</span>}
+          </TabsTrigger>
+          <TabsTrigger value="all" className="flex items-center gap-2">
+            <Clipboard className="h-4 w-4" />
+            <span>Todos</span>
+            {counts.all > 0 && <span className="ml-1 text-xs bg-primary/10 text-primary rounded-full px-2">{counts.all}</span>}
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="grid">
+        <TabsContent value="template">
           <ScrollArea className="h-[calc(100vh-300px)]">
             <ChecklistGrid 
-              checklists={filteredChecklists} 
+              checklists={checklists.filter(c => c.isTemplate)} 
               isLoading={isLoading} 
               onEdit={handleEdit}
               onDelete={handleDelete}
               onOpen={handleOpenChecklist}
+              onStatusChange={refetch}
             />
           </ScrollArea>
         </TabsContent>
 
-        <TabsContent value="list">
+        <TabsContent value="active">
+          <ScrollArea className="h-[calc(100vh-300px)]">
+            <ChecklistGrid 
+              checklists={checklists.filter(c => c.status === "active" && !c.isTemplate)} 
+              isLoading={isLoading} 
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onOpen={handleOpenChecklist}
+              onStatusChange={refetch}
+            />
+          </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="inactive">
+          <ScrollArea className="h-[calc(100vh-300px)]">
+            <ChecklistGrid 
+              checklists={checklists.filter(c => c.status === "inactive" && !c.isTemplate)} 
+              isLoading={isLoading} 
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onOpen={handleOpenChecklist}
+              onStatusChange={refetch}
+            />
+          </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="all">
           <ChecklistList 
-            checklists={filteredChecklists} 
+            checklists={checklists} 
             isLoading={isLoading} 
             onEdit={handleEdit}
             onDelete={handleDelete}
             onOpen={handleOpenChecklist}
+            onStatusChange={refetch}
           />
         </TabsContent>
       </Tabs>

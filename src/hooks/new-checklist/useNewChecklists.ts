@@ -20,7 +20,12 @@ export function useNewChecklists() {
     setFilterType,
     selectedCompanyId,
     setSelectedCompanyId,
+    selectedCategory,
+    setSelectedCategory,
+    sortOrder,
+    setSortOrder,
     companies,
+    categories,
     isLoadingCompanies,
     filteredChecklists
   } = useChecklistFilter(checklists);
@@ -31,7 +36,7 @@ export function useNewChecklists() {
 
   return {
     // Data and loading states
-    checklists: filteredChecklists,
+    checklists: filteredChecklists.filter(c => !c.isSubChecklist),
     allChecklists: checklists,
     isLoading,
     error,
@@ -44,7 +49,12 @@ export function useNewChecklists() {
     setFilterType,
     selectedCompanyId,
     setSelectedCompanyId,
+    selectedCategory,
+    setSelectedCategory,
+    sortOrder,
+    setSortOrder,
     companies,
+    categories,
     isLoadingCompanies,
     
     // CRUD operations

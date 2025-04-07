@@ -8,11 +8,21 @@ export interface CompanyOption {
   name: string;
 }
 
+export interface CategoryOption {
+  value: string;
+  label: string;
+}
+
+export type SortOrder = "newest" | "oldest";
+
 export function useChecklistFilter(checklists: ChecklistWithStats[]) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState<"all" | "active" | "template">("all");
+  const [filterType, setFilterType] = useState<"all" | "active" | "inactive" | "template">("all");
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(false);
 
   // Fetch companies associated with checklists
@@ -91,22 +101,56 @@ export function useChecklistFilter(checklists: ChecklistWithStats[]) {
     }
   }, [checklists]);
 
+  // Extract unique categories from checklists
+  useEffect(() => {
+    const uniqueCategories = Array.from(
+      new Set(
+        checklists
+          .filter(c => c.category)
+          .map(c => c.category)
+      )
+    ).filter(Boolean) as string[];
+
+    const categoryOptions: CategoryOption[] = uniqueCategories.map(category => ({
+      value: category,
+      label: category
+    }));
+
+    // Sort categories alphabetically
+    categoryOptions.sort((a, b) => a.label.localeCompare(b.label));
+
+    setCategories(categoryOptions);
+  }, [checklists]);
+
   // Apply all filters at once
-  const filteredChecklists = checklists.filter(checklist => {
+  let filteredChecklists = checklists.filter(checklist => {
     // Search filter
     const matchesSearch = !searchTerm || 
       (checklist.title && checklist.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (checklist.description && checklist.description.toLowerCase().includes(searchTerm.toLowerCase()));
     
     // Type filter
-    const matchesType = filterType === "all" || 
-      (filterType === "active" && checklist.status === "active") ||
+    const matchesType = 
+      filterType === "all" || 
+      (filterType === "active" && checklist.status === "active" && !checklist.isTemplate) ||
+      (filterType === "inactive" && checklist.status === "inactive" && !checklist.isTemplate) ||
       (filterType === "template" && checklist.isTemplate);
     
     // Company filter
     const matchesCompany = !selectedCompanyId || checklist.companyId === selectedCompanyId;
     
-    return matchesSearch && matchesType && matchesCompany;
+    // Category filter
+    const matchesCategory = !selectedCategory || checklist.category === selectedCategory;
+    
+    return matchesSearch && matchesType && matchesCompany && matchesCategory;
+  });
+
+  // Apply sorting
+  filteredChecklists = filteredChecklists.sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    
+    return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
   });
 
   return {
@@ -116,7 +160,12 @@ export function useChecklistFilter(checklists: ChecklistWithStats[]) {
     setFilterType,
     selectedCompanyId,
     setSelectedCompanyId,
+    selectedCategory,
+    setSelectedCategory,
+    sortOrder,
+    setSortOrder,
     companies,
+    categories,
     isLoadingCompanies,
     filteredChecklists
   };

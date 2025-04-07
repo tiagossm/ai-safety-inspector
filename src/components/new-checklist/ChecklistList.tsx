@@ -1,70 +1,76 @@
 
 import React from "react";
-import { Link } from "react-router-dom";
 import { ChecklistWithStats } from "@/types/newChecklist";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PlusCircle, Edit, Trash, Copy, ClipboardCheck, Ban } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { 
+  Bot, 
+  Building2, 
+  MoreHorizontal, 
+  ToggleLeft, 
+  ToggleRight 
+} from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface ChecklistListProps {
   checklists: ChecklistWithStats[];
-  isLoading?: boolean;
-  onEdit?: (id: string) => void;
-  onDelete?: (id: string, title: string) => void;
-  onDuplicate?: (id: string) => void;
-  onOpen?: (id: string) => void;
+  isLoading: boolean;
+  onEdit: (id: string) => void;
+  onDelete: (id: string, title: string) => void;
+  onOpen: (id: string) => void;
+  onStatusChange?: () => void;
 }
 
-export function ChecklistList({ 
-  checklists, 
-  isLoading, 
-  onEdit, 
+export function ChecklistList({
+  checklists,
+  isLoading,
+  onEdit,
   onDelete,
-  onDuplicate,
-  onOpen 
+  onOpen,
+  onStatusChange
 }: ChecklistListProps) {
-  // Filtrar sub-checklists da exibição
-  const filteredChecklists = checklists.filter(
-    checklist => {
-      // Verificar ambas as propriedades para garantir compatibilidade
-      const isSubChecklist = checklist.isSubChecklist || checklist.is_sub_checklist;
-      return !isSubChecklist;
-    }
-  );
-  
   if (isLoading) {
     return (
-      <div className="rounded-md border">
+      <div className="border rounded-md">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Título</TableHead>
+              <TableHead>Nome</TableHead>
+              <TableHead>Empresa</TableHead>
               <TableHead>Categoria</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Data</TableHead>
+              <TableHead>Criado em</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {[1, 2, 3].map((_, i) => (
-              <TableRow key={i}>
-                <TableCell>
-                  <div className="h-5 w-32 bg-gray-200 animate-pulse rounded"></div>
-                </TableCell>
-                <TableCell>
-                  <div className="h-5 w-20 bg-gray-200 animate-pulse rounded"></div>
-                </TableCell>
-                <TableCell>
-                  <div className="h-5 w-16 bg-gray-200 animate-pulse rounded"></div>
-                </TableCell>
-                <TableCell>
-                  <div className="h-5 w-24 bg-gray-200 animate-pulse rounded"></div>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="h-9 w-20 bg-gray-200 animate-pulse rounded float-right"></div>
-                </TableCell>
+            {Array(5).fill(0).map((_, index) => (
+              <TableRow key={index}>
+                <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -73,113 +79,207 @@ export function ChecklistList({
     );
   }
 
-  if (filteredChecklists.length === 0) {
+  if (checklists.length === 0) {
     return (
-      <div className="text-center p-8 border rounded-lg">
-        <PlusCircle className="mx-auto h-8 w-8 text-muted-foreground" />
-        <h3 className="mt-4 text-lg font-medium">Nenhuma lista encontrada</h3>
-        <p className="mt-2 text-sm text-muted-foreground mb-4">
-          Crie sua primeira lista de verificação
+      <div className="text-center py-12 border rounded-md">
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          className="mx-auto h-12 w-12 text-gray-400" 
+          fill="none" 
+          viewBox="0 0 24 24" 
+          stroke="currentColor" 
+          strokeWidth={1}
+        >
+          <path 
+            strokeLinecap="round" 
+            strokeLinejoin="round" 
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
+          />
+        </svg>
+        <h3 className="mt-4 text-lg font-medium text-gray-900">Nenhum checklist encontrado</h3>
+        <p className="mt-2 text-sm text-gray-500">
+          Não foram encontrados checklists com os filtros atuais.
         </p>
-        <Button asChild>
-          <Link to="/new-checklists/create">Criar Lista</Link>
-        </Button>
       </div>
     );
   }
 
-  const formatDate = (date?: string) => {
-    if (!date) return "—";
-    return format(new Date(date), "dd/MM/yyyy");
-  };
+  // Filter out sub-checklists
+  const filteredChecklists = checklists.filter(
+    checklist => !checklist.isSubChecklist
+  );
 
   return (
-    <div className="rounded-md border">
+    <div className="border rounded-md overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[40%]">Título</TableHead>
+            <TableHead>Nome</TableHead>
+            <TableHead>Empresa</TableHead>
             <TableHead>Categoria</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Data</TableHead>
+            <TableHead>Criado em</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {filteredChecklists.map((checklist) => (
-            <TableRow key={checklist.id}>
-              <TableCell className="font-medium">
-                <Link
-                  to={`/new-checklists/${checklist.id}`}
-                  className="text-blue-600 hover:underline"
-                >
-                  {checklist.title}
-                </Link>
-              </TableCell>
-              <TableCell>
-                {checklist.category ? (
-                  <Badge variant="outline">{checklist.category}</Badge>
-                ) : (
-                  <span className="text-muted-foreground text-sm">Não definida</span>
-                )}
-              </TableCell>
-              <TableCell>
-                {checklist.status === "active" ? (
-                  <Badge variant="success" className="bg-green-100 text-green-800">
-                    <ClipboardCheck className="mr-1 h-3 w-3" />
-                    Ativo
-                  </Badge>
-                ) : (
-                  <Badge variant="secondary" className="bg-gray-100 text-gray-800">
-                    <Ban className="mr-1 h-3 w-3" />
-                    Inativo
-                  </Badge>
-                )}
-              </TableCell>
-              <TableCell>{formatDate(checklist.createdAt)}</TableCell>
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  {onEdit && (
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      asChild
-                      title="Editar"
-                    >
-                      <Link to={`/new-checklists/edit/${checklist.id}`}>
-                        <Edit className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                  )}
-                  
-                  {onDuplicate && (
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => onDuplicate(checklist.id)}
-                      title="Duplicar"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  )}
-                  
-                  {onDelete && (
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => onDelete(checklist.id, checklist.title)}
-                      title="Excluir"
-                      className="text-red-600"
-                    >
-                      <Trash className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              </TableCell>
-            </TableRow>
+            <ChecklistRow
+              key={checklist.id}
+              checklist={checklist}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onOpen={onOpen}
+              onStatusChange={onStatusChange}
+            />
           ))}
         </TableBody>
       </Table>
     </div>
+  );
+}
+
+function ChecklistRow({
+  checklist,
+  onEdit,
+  onDelete,
+  onOpen,
+  onStatusChange
+}: {
+  checklist: ChecklistWithStats;
+  onEdit: (id: string) => void;
+  onDelete: (id: string, title: string) => void;
+  onOpen: (id: string) => void;
+  onStatusChange?: () => void;
+}) {
+  const [companyName, setCompanyName] = React.useState<string | null>(null);
+  
+  // Determine if this was created by AI (based on metadata or description patterns)
+  const isAIGenerated = checklist.description?.includes("Gerado por IA") || 
+                        checklist.description?.includes("criado com Inteligência Artificial") ||
+                        false; // Add your own detection logic here
+
+  // Fetch company name if we have companyId
+  React.useEffect(() => {
+    if (checklist.companyId) {
+      fetchCompanyName(checklist.companyId);
+    }
+  }, [checklist.companyId]);
+
+  const fetchCompanyName = async (companyId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('fantasy_name')
+        .eq('id', companyId)
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setCompanyName(data.fantasy_name);
+      }
+    } catch (error) {
+      console.error("Error fetching company name:", error);
+    }
+  };
+  
+  // Handle status toggle
+  const handleToggleStatus = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const newStatus = checklist.status === 'active' ? 'inactive' : 'active';
+      const { error } = await supabase
+        .from('checklists')
+        .update({ status: newStatus })
+        .eq('id', checklist.id);
+        
+      if (error) throw error;
+      
+      toast.success(`Checklist ${newStatus === 'active' ? 'ativado' : 'desativado'} com sucesso`);
+      if (onStatusChange) onStatusChange();
+    } catch (error) {
+      console.error("Error toggling checklist status:", error);
+      toast.error("Erro ao alterar status do checklist");
+    }
+  };
+  
+  return (
+    <TableRow
+      className="cursor-pointer hover:bg-accent/50"
+      onClick={() => onOpen(checklist.id)}
+    >
+      <TableCell className="font-medium">
+        <div className="flex items-center gap-2">
+          {isAIGenerated && <Bot className="h-4 w-4 text-purple-500" />}
+          {checklist.title}
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-1 truncate max-w-[200px]">
+          <Building2 className="h-4 w-4 text-muted-foreground" />
+          <span>{companyName || "N/A"}</span>
+        </div>
+      </TableCell>
+      <TableCell>{checklist.category || "-"}</TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          {checklist.isTemplate ? (
+            <Badge variant="secondary">Template</Badge>
+          ) : (
+            <Badge variant={checklist.status === "active" ? "default" : "outline"}>
+              {checklist.status === "active" ? "Ativo" : "Inativo"}
+            </Badge>
+          )}
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-6 w-6" 
+            onClick={handleToggleStatus}
+          >
+            {checklist.status === 'active' ? (
+              <ToggleRight className="h-4 w-4 text-green-600" />
+            ) : (
+              <ToggleLeft className="h-4 w-4 text-gray-400" />
+            )}
+          </Button>
+        </div>
+      </TableCell>
+      <TableCell>
+        {checklist.createdAt && format(new Date(checklist.createdAt), "dd MMM yyyy", { locale: ptBR })}
+      </TableCell>
+      <TableCell className="text-right">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+            <Button variant="ghost" size="icon">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={(e) => {
+              e.stopPropagation();
+              onOpen(checklist.id);
+            }}>
+              Ver detalhes
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => {
+              e.stopPropagation();
+              onEdit(checklist.id);
+            }}>
+              Editar
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              className="text-destructive"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(checklist.id, checklist.title);
+              }}
+            >
+              Excluir
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </TableCell>
+    </TableRow>
   );
 }
