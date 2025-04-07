@@ -146,11 +146,13 @@ function ChecklistRow({
   const [companyLoading, setCompanyLoading] = useState<boolean>(!!checklist.companyId);
   const [isToggling, setIsToggling] = useState<boolean>(false);
   
-  // Determine checklist creation type based on metadata or description patterns
+  // Determine checklist creation type based on description patterns
   const getCreationTypeIcon = () => {
-    // Check for AI generated (based on metadata or description patterns)
-    if (checklist.description?.includes("Gerado por IA") || 
-        checklist.description?.includes("criado com Inteligência Artificial")) {
+    // Check for AI generated (based on description patterns)
+    if (checklist.description?.toLowerCase().includes("gerado por ia") || 
+        checklist.description?.toLowerCase().includes("criado com inteligência artificial") ||
+        checklist.description?.toLowerCase().includes("checklist gerado por ia") ||
+        checklist.description?.toLowerCase().includes("checklist: ")) {
       return (
         <TooltipProvider>
           <Tooltip>
@@ -165,9 +167,10 @@ function ChecklistRow({
       );
     }
     
-    // Check for import (based on metadata or patterns)
-    if (checklist.description?.includes("Importado via CSV") ||
-        checklist.description?.includes("importado de planilha")) {
+    // Check for import (based on description patterns)
+    if (checklist.description?.toLowerCase().includes("importado via csv") ||
+        checklist.description?.toLowerCase().includes("importado de planilha") ||
+        checklist.description?.toLowerCase().includes("importado de excel")) {
       return (
         <TooltipProvider>
           <Tooltip>
@@ -232,6 +235,7 @@ function ChecklistRow({
     setIsToggling(true);
     try {
       const newStatus = checklist.status === 'active' ? 'inactive' : 'active';
+      
       const { error } = await supabase
         .from('checklists')
         .update({ status: newStatus })
@@ -239,7 +243,12 @@ function ChecklistRow({
         
       if (error) throw error;
       
+      // Update the local state immediately without waiting for refetch
+      checklist.status = newStatus;
+      
       toast.success(`Checklist ${newStatus === 'active' ? 'ativado' : 'desativado'} com sucesso`);
+      
+      // Also call the onStatusChange callback to refetch data
       if (onStatusChange) onStatusChange();
     } catch (error) {
       console.error("Error toggling checklist status:", error);
