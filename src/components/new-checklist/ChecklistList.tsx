@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { ChecklistWithStats } from "@/types/newChecklist";
 import {
   Table,
@@ -12,7 +12,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
-  Bot, 
   Building2, 
   FileText, 
   MoreHorizontal, 
@@ -35,6 +34,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Switch } from "@/components/ui/switch";
 
 interface ChecklistListProps {
   checklists: ChecklistWithStats[];
@@ -87,22 +87,9 @@ export function ChecklistList({
   if (checklists.length === 0) {
     return (
       <div className="text-center py-12 border rounded-md">
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          className="mx-auto h-12 w-12 text-gray-400" 
-          fill="none" 
-          viewBox="0 0 24 24" 
-          stroke="currentColor" 
-          strokeWidth={1}
-        >
-          <path 
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
-            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
-          />
-        </svg>
-        <h3 className="mt-4 text-lg font-medium text-gray-900">Nenhum checklist encontrado</h3>
-        <p className="mt-2 text-sm text-gray-500">
+        <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+        <h3 className="text-lg font-medium mb-2">Nenhum checklist encontrado</h3>
+        <p className="text-muted-foreground mb-6">
           Não foram encontrados checklists com os filtros atuais.
         </p>
       </div>
@@ -157,8 +144,9 @@ function ChecklistRow({
   onOpen: (id: string) => void;
   onStatusChange?: () => void;
 }) {
-  const [companyName, setCompanyName] = React.useState<string | null>(null);
-  const [isToggling, setIsToggling] = React.useState(false);
+  const [companyName, setCompanyName] = useState<string | null>(null);
+  const [companyLoading, setCompanyLoading] = useState<boolean>(!!checklist.companyId);
+  const [isToggling, setIsToggling] = useState<boolean>(false);
   
   // Determine checklist creation type based on metadata or patterns
   const getCreationTypeIcon = () => {
@@ -212,7 +200,7 @@ function ChecklistRow({
   };
 
   // Fetch company name if we have companyId
-  React.useEffect(() => {
+  useEffect(() => {
     if (checklist.companyId) {
       fetchCompanyName(checklist.companyId);
     }
@@ -220,6 +208,7 @@ function ChecklistRow({
 
   const fetchCompanyName = async (companyId: string) => {
     try {
+      setCompanyLoading(true);
       const { data, error } = await supabase
         .from('companies')
         .select('fantasy_name')
@@ -232,11 +221,13 @@ function ChecklistRow({
       }
     } catch (error) {
       console.error("Error fetching company name:", error);
+    } finally {
+      setCompanyLoading(false);
     }
   };
   
   // Handle status toggle
-  const handleToggleStatus = async (e: React.MouseEvent) => {
+  const handleToggleStatus = async (e: React.MouseEvent | React.ChangeEvent) => {
     e.stopPropagation();
     if (isToggling) return;
     
@@ -281,7 +272,9 @@ function ChecklistRow({
         </div>
       </TableCell>
       <TableCell>
-        {companyName ? (
+        {companyLoading ? (
+          <Skeleton className="h-4 w-24" />
+        ) : companyName ? (
           <div className="flex items-center gap-1 truncate max-w-[200px]">
             <Building2 className="h-4 w-4 text-muted-foreground" />
             <TooltipProvider>
@@ -296,7 +289,7 @@ function ChecklistRow({
             </TooltipProvider>
           </div>
         ) : (
-          <span className="text-muted-foreground">N/A</span>
+          <span className="text-muted-foreground">-</span>
         )}
       </TableCell>
       <TableCell>
@@ -316,27 +309,24 @@ function ChecklistRow({
         )}
       </TableCell>
       <TableCell>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
           {checklist.isTemplate ? (
             <Badge variant="secondary">Template</Badge>
           ) : (
-            <Badge variant={checklist.status === "active" ? "default" : "outline"}>
-              {checklist.status === "active" ? "Ativo" : "Inativo"}
-            </Badge>
+            <>
+              <Badge variant={checklist.status === "active" ? "default" : "outline"}>
+                {checklist.status === "active" ? "Ativo" : "Inativo"}
+              </Badge>
+              <Switch 
+                checked={checklist.status === 'active'}
+                onCheckedChange={() => handleToggleStatus}
+                disabled={isToggling}
+                onClick={handleToggleStatus}
+                aria-label="Toggle status"
+                className="ml-1"
+              />
+            </>
           )}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-6 w-6" 
-            onClick={handleToggleStatus}
-            disabled={isToggling}
-          >
-            {checklist.status === 'active' ? (
-              <ToggleRight className="h-4 w-4 text-green-600" />
-            ) : (
-              <ToggleLeft className="h-4 w-4 text-gray-400" />
-            )}
-          </Button>
         </div>
       </TableCell>
       <TableCell>

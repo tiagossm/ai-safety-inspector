@@ -28,6 +28,7 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Switch } from "@/components/ui/switch";
 
 interface ChecklistGridProps {
   checklists: ChecklistWithStats[];
@@ -116,6 +117,7 @@ function ChecklistCard({
   onStatusChange?: () => void;
 }) {
   const [companyName, setCompanyName] = React.useState<string | null>(null);
+  const [companyLoading, setCompanyLoading] = React.useState<boolean>(!!checklist.companyId);
   const [isToggling, setIsToggling] = useState(false);
   
   // Determine checklist creation type based on metadata or patterns
@@ -178,6 +180,7 @@ function ChecklistCard({
 
   const fetchCompanyName = async (companyId: string) => {
     try {
+      setCompanyLoading(true);
       const { data, error } = await supabase
         .from('companies')
         .select('fantasy_name')
@@ -190,6 +193,8 @@ function ChecklistCard({
       }
     } catch (error) {
       console.error("Error fetching company name:", error);
+    } finally {
+      setCompanyLoading(false);
     }
   };
   
@@ -226,19 +231,15 @@ function ChecklistCard({
             <Badge variant={checklist.isTemplate ? "secondary" : checklist.status === "active" ? "default" : "outline"}>
               {checklist.isTemplate ? "Template" : checklist.status === "active" ? "Ativo" : "Inativo"}
             </Badge>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-6 w-6 p-0" 
-              onClick={handleToggleStatus}
-              disabled={isToggling}
-            >
-              {checklist.status === 'active' ? (
-                <ToggleRight className="h-4 w-4 text-green-600" />
-              ) : (
-                <ToggleLeft className="h-4 w-4 text-gray-400" />
-              )}
-            </Button>
+            {!checklist.isTemplate && (
+              <Switch 
+                checked={checklist.status === 'active'} 
+                onCheckedChange={() => {}} 
+                onClick={handleToggleStatus}
+                disabled={isToggling}
+                className="scale-75"
+              />
+            )}
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -303,7 +304,12 @@ function ChecklistCard({
             </Badge>
           )}
           
-          {companyName && (
+          {companyLoading ? (
+            <div className="flex items-center text-sm">
+              <Building2 className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          ) : companyName ? (
             <div className="flex items-center text-sm">
               <Building2 className="h-3.5 w-3.5 mr-1 text-muted-foreground" />
               <TooltipProvider>
@@ -317,7 +323,7 @@ function ChecklistCard({
                 </Tooltip>
               </TooltipProvider>
             </div>
-          )}
+          ) : null}
           
           <div className="flex items-center text-sm text-muted-foreground">
             <Calendar className="h-3.5 w-3.5 mr-1" />
