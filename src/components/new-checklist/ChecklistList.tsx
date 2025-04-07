@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { ChecklistWithStats } from "@/types/newChecklist";
 import {
@@ -19,7 +18,8 @@ import {
   Sparkle,
   Pen,
   FileDown,
-  Trash2
+  Trash2,
+  Bot
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -68,7 +68,6 @@ export function ChecklistList({
   const [selectedChecklists, setSelectedChecklists] = useState<string[]>([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  // Reset selected checklists when the checklist list changes
   useEffect(() => {
     setSelectedChecklists([]);
   }, [checklists]);
@@ -142,7 +141,6 @@ export function ChecklistList({
     );
   }
 
-  // Filter out sub-checklists
   const filteredChecklists = checklists.filter(
     checklist => !checklist.isSubChecklist
   );
@@ -174,7 +172,6 @@ export function ChecklistList({
                 <Checkbox 
                   onCheckedChange={(checked) => handleSelectAll(!!checked)}
                   checked={selectedChecklists.length === filteredChecklists.length && filteredChecklists.length > 0}
-                  // Remove the indeterminate prop and use aria-checked instead
                   aria-checked={selectedChecklists.length > 0 && selectedChecklists.length < filteredChecklists.length ? 'mixed' : undefined}
                 />
               </TableHead>
@@ -244,62 +241,52 @@ function ChecklistRow({
   const [companyName, setCompanyName] = useState<string | null>(null);
   const [companyLoading, setCompanyLoading] = useState<boolean>(!!checklist.companyId);
   const [isToggling, setIsToggling] = useState<boolean>(false);
-  
-  // Determine checklist creation type based on description patterns
+
   const getCreationTypeIcon = () => {
-    // Check for AI generated (based on description patterns)
-    if (checklist.description?.toLowerCase().includes("gerado por ia") || 
-        checklist.description?.toLowerCase().includes("criado com inteligência artificial") ||
-        checklist.description?.toLowerCase().includes("checklist gerado por ia") ||
-        checklist.description?.toLowerCase().includes("checklist: ")) {
-      return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Sparkle className="h-4 w-4 text-purple-500" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Gerado por IA</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
+    switch(checklist.origin) {
+      case 'ia':
+        return (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Bot className="h-4 w-4 text-purple-500" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Gerado por IA</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
+      case 'csv':
+        return (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <FileDown className="h-4 w-4 text-blue-500" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Importado via CSV</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
+      case 'manual':
+      default:
+        return (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Pen className="h-4 w-4 text-slate-500" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Criado manualmente</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        );
     }
-    
-    // Check for import (based on description patterns)
-    if (checklist.description?.toLowerCase().includes("importado via csv") ||
-        checklist.description?.toLowerCase().includes("importado de planilha") ||
-        checklist.description?.toLowerCase().includes("importado de excel")) {
-      return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <FileDown className="h-4 w-4 text-blue-500" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Importado via CSV</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      );
-    }
-    
-    // Default to manual creation
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Pen className="h-4 w-4 text-slate-500" />
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Criado manualmente</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
   };
 
-  // Fetch company name if we have companyId
   useEffect(() => {
     if (checklist.companyId) {
       fetchCompanyName(checklist.companyId);
@@ -325,8 +312,7 @@ function ChecklistRow({
       setCompanyLoading(false);
     }
   };
-  
-  // Handle status toggle
+
   const handleToggleStatus = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isToggling) return;
@@ -339,19 +325,16 @@ function ChecklistRow({
         .from('checklists')
         .update({ 
           status: newStatus,
-          // Fix: Use status directly instead of status_checklist
           status_checklist: newStatus === 'active' ? 'ativo' : 'inativo'
         })
         .eq('id', checklist.id);
         
       if (error) throw error;
       
-      // Update the local state immediately without waiting for refetch
       checklist.status = newStatus;
       
       toast.success(`Checklist ${newStatus === 'active' ? 'ativado' : 'desativado'} com sucesso`);
       
-      // Also call the onStatusChange callback to refetch data
       if (onStatusChange) onStatusChange();
     } catch (error) {
       console.error("Error toggling checklist status:", error);
@@ -360,7 +343,7 @@ function ChecklistRow({
       setIsToggling(false);
     }
   };
-  
+
   return (
     <TableRow
       className="cursor-pointer hover:bg-accent/50"

@@ -1,4 +1,3 @@
-
 export interface ChecklistGroup {
   id: string;
   title: string;
@@ -55,12 +54,13 @@ export interface NewChecklistPayload {
   title: string;
   description?: string;
   isTemplate?: boolean;
-  status?: 'active' | 'inactive';
+  status?: string;
   category?: string;
-  responsibleId?: string | null;
-  companyId?: string | null;
-  company_id?: string | null; // For backward compatibility
-  dueDate?: string | null;
+  responsibleId?: string;
+  companyId?: string;
+  company_id?: string;
+  dueDate?: string;
+  origin?: 'manual' | 'ia' | 'csv';
 }
 
 export interface InspectionDetails {

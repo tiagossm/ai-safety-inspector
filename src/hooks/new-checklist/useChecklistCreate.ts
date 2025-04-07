@@ -1,12 +1,9 @@
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { toast } from "sonner";
 
-// Convert UI friendly type to database type
 const getDatabaseType = (type: ChecklistQuestion['responseType']): string => {
-  // This is the critical fix - map the frontend types to the exact values allowed by the database constraint
   const typeMap: Record<string, string> = {
     'yes_no': 'sim/não',
     'multiple_choice': 'seleção múltipla',
@@ -14,7 +11,6 @@ const getDatabaseType = (type: ChecklistQuestion['responseType']): string => {
     'numeric': 'numérico',
     'photo': 'foto',
     'signature': 'assinatura',
-    // Also handle already-converted values
     'sim/não': 'sim/não',
     'seleção múltipla': 'seleção múltipla',
     'texto': 'texto',
@@ -24,10 +20,9 @@ const getDatabaseType = (type: ChecklistQuestion['responseType']): string => {
   };
   
   console.log("Converting response type:", type, "to:", typeMap[type] || 'texto');
-  return typeMap[type] || 'texto'; // Default to 'texto' if unknown type
+  return typeMap[type] || 'texto';
 };
 
-// Get the correct status value for database constraint
 const getStatusChecklist = (status: string): string => {
   return status === 'active' ? 'ativo' : 'inativo';
 };
@@ -47,23 +42,24 @@ export function useChecklistCreate() {
     }) => {
       console.log("Creating new checklist:", checklist);
       
-      // Ensure required fields have values
       if (!checklist.title) {
         throw new Error("Checklist title is required");
       }
       
-      // Fix the status_checklist value to match the database constraint
       const status_checklist = getStatusChecklist(checklist.status || 'active');
       
-      // Ensure company_id is set correctly
       const company_id = checklist.companyId || checklist.company_id;
       
-      // Determine if this is an AI-generated checklist
       const isAIGenerated = checklist.description?.toLowerCase().includes('gerado por ia') ||
                             checklist.description?.toLowerCase().includes('checklist gerado por ia') ||
                             checklist.description?.toLowerCase().includes('checklist: ');
       
-      // Insert the checklist
+      const isCSVImported = checklist.description?.toLowerCase().includes('importado via csv') ||
+                           checklist.description?.toLowerCase().includes('importado de planilha') ||
+                           checklist.description?.toLowerCase().includes('importado de excel');
+      
+      const origin = isAIGenerated ? 'ia' : (isCSVImported ? 'csv' : (checklist.origin || 'manual'));
+      
       const { data: newChecklist, error: createError } = await supabase
         .from("checklists")
         .insert({
@@ -76,7 +72,8 @@ export function useChecklistCreate() {
           responsible_id: checklist.responsibleId,
           company_id: company_id,
           due_date: checklist.dueDate,
-          created_by: isAIGenerated ? 'ai' : undefined
+          created_by: isAIGenerated ? 'ai' : undefined,
+          origin: origin
         })
         .select("id")
         .single();
@@ -89,16 +86,13 @@ export function useChecklistCreate() {
       const checklistId = newChecklist.id;
       console.log("Created checklist with ID:", checklistId);
       
-      // If we have questions, insert them
       if (questions && questions.length > 0) {
         const questionInserts = questions.map((question, index) => {
-          // For grouped questions, store group info in the hint field
           let questionHint = question.hint || "";
           
           if (question.groupId && groups) {
             const group = groups.find(g => g.id === question.groupId);
             if (group) {
-              // Store group info as JSON in the hint field
               questionHint = JSON.stringify({
                 groupId: group.id,
                 groupTitle: group.title,
@@ -107,16 +101,12 @@ export function useChecklistCreate() {
             }
           }
           
-          // Ensure options is an array when storing in the database
           let questionOptions: string[] = [];
           
           if (question.responseType === 'multiple_choice') {
-            // Handle the options field which might be a string or an array
             if (Array.isArray(question.options)) {
               questionOptions = question.options;
             } else if (typeof question.options === 'string') {
-              // If it's a string, attempt to parse it if it looks like JSON
-              const optionsString: string = question.options;
               if (optionsString.startsWith('[') && optionsString.endsWith(']')) {
                 try {
                   const parsedOptions = JSON.parse(optionsString);
@@ -124,11 +114,9 @@ export function useChecklistCreate() {
                     questionOptions = parsedOptions;
                   }
                 } catch (e) {
-                  // If parsing fails, split by commas
                   questionOptions = optionsString.split(',').map(o => o.trim());
                 }
               } else {
-                // If not JSON format, split by commas
                 questionOptions = optionsString.split(',').map(o => o.trim());
               }
             }
@@ -153,7 +141,6 @@ export function useChecklistCreate() {
           };
         });
         
-        // Log the first few questions for debugging
         console.log("Sample question data:", questionInserts.slice(0, 2));
         
         const { error: questionsError } = await supabase
@@ -162,7 +149,6 @@ export function useChecklistCreate() {
           
         if (questionsError) {
           console.error("Error adding questions:", questionsError);
-          // Don't throw, continue with just the checklist
           toast.warning("Checklist criado, mas houve erro ao adicionar algumas perguntas.");
         }
       }
@@ -170,7 +156,6 @@ export function useChecklistCreate() {
       return { id: checklistId };
     },
     onSuccess: () => {
-      // Invalidate queries to refresh the data
       queryClient.invalidateQueries({ queryKey: ["new-checklists"] });
       toast.success("Checklist criado com sucesso!");
     },

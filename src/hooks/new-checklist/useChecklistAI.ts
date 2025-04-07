@@ -79,6 +79,7 @@ export function useChecklistAI() {
         company_id: checklistData.company_id || checklistData.companyId,
         status: 'active',
         created_by: 'ai',
+        origin: 'ia', // Set the origin to 'ia' for AI-generated checklists
         description: checklistData.description || `Checklist gerado por IA com o prompt: ${prompt.slice(0, 100)}...`
       };
 
@@ -122,7 +123,8 @@ export function useChecklistAI() {
         checklistData: {
           ...enhancedChecklistData,
           title: data.checklistData.title || checklistData.title,
-          description: data.checklistData.description || enhancedChecklistData.description
+          description: data.checklistData.description || enhancedChecklistData.description,
+          origin: 'ia'
         },
         questions: data.questions || [],
         groups: data.groups || []
