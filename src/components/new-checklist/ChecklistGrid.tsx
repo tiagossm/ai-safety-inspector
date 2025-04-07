@@ -135,7 +135,8 @@ export function ChecklistGrid({
               id="select-all" 
               onCheckedChange={(checked) => handleSelectAll(!!checked)}
               checked={selectedChecklists.length === filteredChecklists.length && filteredChecklists.length > 0}
-              indeterminate={selectedChecklists.length > 0 && selectedChecklists.length < filteredChecklists.length}
+              // Remove the indeterminate prop as it's not supported
+              aria-checked={selectedChecklists.length > 0 && selectedChecklists.length < filteredChecklists.length ? 'mixed' : undefined}
             />
             <label htmlFor="select-all" className="text-sm font-medium">
               {selectedChecklists.length} {selectedChecklists.length === 1 ? 'checklist selecionado' : 'checklists selecionados'}
@@ -304,6 +305,8 @@ function ChecklistCard({
         .from('checklists')
         .update({ 
           status: newStatus,
+          // Fix: Use status directly instead of status_checklist
+          // status_checklist was removed from the type
           status_checklist: newStatus === 'active' ? 'ativo' : 'inativo'
         })
         .eq('id', checklist.id);
@@ -312,7 +315,6 @@ function ChecklistCard({
       
       // Update the local state immediately without waiting for refetch
       checklist.status = newStatus;
-      checklist.status_checklist = newStatus === 'active' ? 'ativo' : 'inativo';
       
       toast.success(`Checklist ${newStatus === 'active' ? 'ativado' : 'desativado'} com sucesso`);
       

@@ -12,6 +12,16 @@ import { DeleteChecklistDialog } from "@/components/new-checklist/DeleteChecklis
 import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function NewChecklists() {
   const navigate = useNavigate();
@@ -233,36 +243,13 @@ export default function NewChecklists() {
         </TabsContent>
       </Tabs>
 
-      <AlertDialog 
-        open={deleteDialog.open} 
-        onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {deleteDialog.isMultiple ? "Excluir checklists selecionados" : "Excluir checklist"}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {deleteDialog.isMultiple
-                ? `Você está prestes a excluir ${deleteDialog.selectedIds.length} checklists. Esta ação não pode ser desfeita.`
-                : `Tem certeza que deseja excluir o checklist "${deleteDialog.checklistTitle}"? Esta ação não pode ser desfeita.`
-              }
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                handleConfirmDelete();
-              }}
-              className="bg-destructive hover:bg-destructive/90"
-              disabled={isDeleting}
-            >
-              {isDeleting ? "Excluindo..." : "Excluir"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteChecklistDialog
+        checklistId={deleteDialog.checklistId}
+        checklistTitle={deleteDialog.checklistTitle}
+        isOpen={deleteDialog.open}
+        onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
+        onDeleted={handleConfirmDelete}
+      />
       
       <FloatingNavigation threshold={300} />
     </div>
