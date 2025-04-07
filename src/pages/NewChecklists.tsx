@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Clipboard, FileText, BarChart2 } from "lucide-react";
+import { Clipboard, FileText, Archive, CheckSquare } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNewChecklists } from "@/hooks/new-checklist/useNewChecklists";
@@ -43,12 +43,13 @@ export default function NewChecklists() {
     checklistTitle: "",
   });
 
-  // Count checklists by type
+  // Count checklists by type - excluding subchecklist
+  const filteredChecklists = allChecklists.filter(c => !c.isSubChecklist);
   const counts = {
-    all: allChecklists.filter(c => !c.isSubChecklist).length,
-    active: allChecklists.filter(c => !c.isSubChecklist && c.status === "active" && !c.isTemplate).length,
-    inactive: allChecklists.filter(c => !c.isSubChecklist && c.status === "inactive" && !c.isTemplate).length,
-    template: allChecklists.filter(c => !c.isSubChecklist && c.isTemplate).length
+    all: filteredChecklists.length,
+    active: filteredChecklists.filter(c => c.status === "active" && !c.isTemplate).length,
+    inactive: filteredChecklists.filter(c => c.status === "inactive" && !c.isTemplate).length,
+    template: filteredChecklists.filter(c => c.isTemplate).length
   };
 
   const handleOpenChecklist = (id: string) => {
@@ -94,7 +95,7 @@ export default function NewChecklists() {
         companies={companies}
         categories={categories}
         isLoadingCompanies={isLoadingCompanies}
-        totalChecklists={checklists.length}
+        totalChecklists={filteredChecklists.length}
         onCreateNew={handleCreateNew}
       />
 
@@ -111,12 +112,12 @@ export default function NewChecklists() {
             {counts.template > 0 && <span className="ml-1 text-xs bg-primary/10 text-primary rounded-full px-2">{counts.template}</span>}
           </TabsTrigger>
           <TabsTrigger value="active" className="flex items-center gap-2">
-            <Clipboard className="h-4 w-4" />
+            <CheckSquare className="h-4 w-4" />
             <span>Ativos</span>
             {counts.active > 0 && <span className="ml-1 text-xs bg-primary/10 text-primary rounded-full px-2">{counts.active}</span>}
           </TabsTrigger>
           <TabsTrigger value="inactive" className="flex items-center gap-2">
-            <Clipboard className="h-4 w-4" />
+            <Archive className="h-4 w-4" />
             <span>Inativos</span>
             {counts.inactive > 0 && <span className="ml-1 text-xs bg-primary/10 text-primary rounded-full px-2">{counts.inactive}</span>}
           </TabsTrigger>
@@ -124,7 +125,7 @@ export default function NewChecklists() {
 
         <TabsContent value="all">
           <ChecklistList 
-            checklists={checklists} 
+            checklists={filteredChecklists} 
             isLoading={isLoading} 
             onEdit={handleEdit}
             onDelete={handleDelete}
@@ -136,7 +137,7 @@ export default function NewChecklists() {
         <TabsContent value="template">
           <ScrollArea className="h-[calc(100vh-300px)]">
             <ChecklistGrid 
-              checklists={checklists.filter(c => c.isTemplate)} 
+              checklists={filteredChecklists.filter(c => c.isTemplate)} 
               isLoading={isLoading} 
               onEdit={handleEdit}
               onDelete={handleDelete}
@@ -149,7 +150,7 @@ export default function NewChecklists() {
         <TabsContent value="active">
           <ScrollArea className="h-[calc(100vh-300px)]">
             <ChecklistGrid 
-              checklists={checklists.filter(c => c.status === "active" && !c.isTemplate)} 
+              checklists={filteredChecklists.filter(c => c.status === "active" && !c.isTemplate)} 
               isLoading={isLoading} 
               onEdit={handleEdit}
               onDelete={handleDelete}
@@ -162,7 +163,7 @@ export default function NewChecklists() {
         <TabsContent value="inactive">
           <ScrollArea className="h-[calc(100vh-300px)]">
             <ChecklistGrid 
-              checklists={checklists.filter(c => c.status === "inactive" && !c.isTemplate)} 
+              checklists={filteredChecklists.filter(c => c.status === "inactive" && !c.isTemplate)} 
               isLoading={isLoading} 
               onEdit={handleEdit}
               onDelete={handleDelete}

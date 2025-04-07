@@ -18,8 +18,6 @@ import {
   Sparkle,
   Pen,
   FileDown,
-  ToggleLeft, 
-  ToggleRight 
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -148,7 +146,7 @@ function ChecklistRow({
   const [companyLoading, setCompanyLoading] = useState<boolean>(!!checklist.companyId);
   const [isToggling, setIsToggling] = useState<boolean>(false);
   
-  // Determine checklist creation type based on metadata or patterns
+  // Determine checklist creation type based on metadata or description patterns
   const getCreationTypeIcon = () => {
     // Check for AI generated (based on metadata or description patterns)
     if (checklist.description?.includes("Gerado por IA") || 
@@ -227,7 +225,7 @@ function ChecklistRow({
   };
   
   // Handle status toggle
-  const handleToggleStatus = async (e: React.MouseEvent | React.ChangeEvent) => {
+  const handleToggleStatus = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isToggling) return;
     
@@ -319,9 +317,8 @@ function ChecklistRow({
               </Badge>
               <Switch 
                 checked={checklist.status === 'active'}
-                onCheckedChange={() => handleToggleStatus}
-                disabled={isToggling}
                 onClick={handleToggleStatus}
+                disabled={isToggling}
                 aria-label="Toggle status"
                 className="ml-1"
               />

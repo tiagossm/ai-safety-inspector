@@ -15,8 +15,7 @@ import {
   Sparkle,
   Pen,
   FileDown,
-  ToggleLeft,
-  ToggleRight
+  Info
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -82,14 +81,9 @@ export function ChecklistGrid({
     );
   }
 
-  // Filter out sub-checklists
-  const filteredChecklists = checklists.filter(
-    checklist => !checklist.isSubChecklist
-  );
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {filteredChecklists.map((checklist) => (
+      {checklists.map((checklist) => (
         <ChecklistCard
           key={checklist.id}
           checklist={checklist}
@@ -234,7 +228,6 @@ function ChecklistCard({
             {!checklist.isTemplate && (
               <Switch 
                 checked={checklist.status === 'active'} 
-                onCheckedChange={() => {}} 
                 onClick={handleToggleStatus}
                 disabled={isToggling}
                 className="scale-75"
