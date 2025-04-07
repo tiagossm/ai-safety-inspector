@@ -98,8 +98,13 @@ export default function NewChecklists() {
         onCreateNew={handleCreateNew}
       />
 
-      <Tabs defaultValue="template" className="space-y-4">
+      <Tabs defaultValue="all" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="all" className="flex items-center gap-2">
+            <Clipboard className="h-4 w-4" />
+            <span>Todos</span>
+            {counts.all > 0 && <span className="ml-1 text-xs bg-primary/10 text-primary rounded-full px-2">{counts.all}</span>}
+          </TabsTrigger>
           <TabsTrigger value="template" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             <span>Templates</span>
@@ -115,12 +120,18 @@ export default function NewChecklists() {
             <span>Inativos</span>
             {counts.inactive > 0 && <span className="ml-1 text-xs bg-primary/10 text-primary rounded-full px-2">{counts.inactive}</span>}
           </TabsTrigger>
-          <TabsTrigger value="all" className="flex items-center gap-2">
-            <Clipboard className="h-4 w-4" />
-            <span>Todos</span>
-            {counts.all > 0 && <span className="ml-1 text-xs bg-primary/10 text-primary rounded-full px-2">{counts.all}</span>}
-          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="all">
+          <ChecklistList 
+            checklists={checklists} 
+            isLoading={isLoading} 
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onOpen={handleOpenChecklist}
+            onStatusChange={refetch}
+          />
+        </TabsContent>
 
         <TabsContent value="template">
           <ScrollArea className="h-[calc(100vh-300px)]">
@@ -159,17 +170,6 @@ export default function NewChecklists() {
               onStatusChange={refetch}
             />
           </ScrollArea>
-        </TabsContent>
-
-        <TabsContent value="all">
-          <ChecklistList 
-            checklists={checklists} 
-            isLoading={isLoading} 
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onOpen={handleOpenChecklist}
-            onStatusChange={refetch}
-          />
         </TabsContent>
       </Tabs>
 

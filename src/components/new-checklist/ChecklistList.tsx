@@ -14,7 +14,11 @@ import { Button } from "@/components/ui/button";
 import { 
   Bot, 
   Building2, 
+  FileText, 
   MoreHorizontal, 
+  Sparkle,
+  Pen,
+  FileDown,
   ToggleLeft, 
   ToggleRight 
 } from "lucide-react";
@@ -30,6 +34,7 @@ import { ptBR } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ChecklistListProps {
   checklists: ChecklistWithStats[];
@@ -153,11 +158,25 @@ function ChecklistRow({
   onStatusChange?: () => void;
 }) {
   const [companyName, setCompanyName] = React.useState<string | null>(null);
+  const [isToggling, setIsToggling] = React.useState(false);
   
-  // Determine if this was created by AI (based on metadata or description patterns)
-  const isAIGenerated = checklist.description?.includes("Gerado por IA") || 
-                        checklist.description?.includes("criado com Inteligência Artificial") ||
-                        false; // Add your own detection logic here
+  // Determine checklist creation type based on metadata or patterns
+  const getCreationTypeIcon = () => {
+    // Check for AI generated (based on metadata or description patterns)
+    if (checklist.description?.includes("Gerado por IA") || 
+        checklist.description?.includes("criado com Inteligência Artificial")) {
+      return <Sparkle className="h-4 w-4 text-purple-500" title="Gerado por IA" />;
+    }
+    
+    // Check for import (based on metadata or patterns)
+    if (checklist.description?.includes("Importado via CSV") ||
+        checklist.description?.includes("importado de planilha")) {
+      return <FileDown className="h-4 w-4 text-blue-500" title="Importado via CSV" />;
+    }
+    
+    // Default to manual creation
+    return <Pen className="h-4 w-4 text-slate-500" title="Criado manualmente" />;
+  };
 
   // Fetch company name if we have companyId
   React.useEffect(() => {
@@ -186,6 +205,9 @@ function ChecklistRow({
   // Handle status toggle
   const handleToggleStatus = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isToggling) return;
+    
+    setIsToggling(true);
     try {
       const newStatus = checklist.status === 'active' ? 'inactive' : 'active';
       const { error } = await supabase
@@ -200,6 +222,8 @@ function ChecklistRow({
     } catch (error) {
       console.error("Error toggling checklist status:", error);
       toast.error("Erro ao alterar status do checklist");
+    } finally {
+      setIsToggling(false);
     }
   };
   
@@ -210,17 +234,54 @@ function ChecklistRow({
     >
       <TableCell className="font-medium">
         <div className="flex items-center gap-2">
-          {isAIGenerated && <Bot className="h-4 w-4 text-purple-500" />}
-          {checklist.title}
+          {getCreationTypeIcon()}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="truncate max-w-[250px]">{checklist.title}</span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{checklist.title}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </TableCell>
       <TableCell>
-        <div className="flex items-center gap-1 truncate max-w-[200px]">
-          <Building2 className="h-4 w-4 text-muted-foreground" />
-          <span>{companyName || "N/A"}</span>
-        </div>
+        {companyName ? (
+          <div className="flex items-center gap-1 truncate max-w-[200px]">
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span>{companyName}</span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{companyName}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        ) : (
+          <span className="text-muted-foreground">N/A</span>
+        )}
       </TableCell>
-      <TableCell>{checklist.category || "-"}</TableCell>
+      <TableCell>
+        {checklist.category ? (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="truncate max-w-[150px] inline-block">{checklist.category}</span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{checklist.category}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          "-"
+        )}
+      </TableCell>
       <TableCell>
         <div className="flex items-center gap-2">
           {checklist.isTemplate ? (
@@ -235,6 +296,7 @@ function ChecklistRow({
             size="icon" 
             className="h-6 w-6" 
             onClick={handleToggleStatus}
+            disabled={isToggling}
           >
             {checklist.status === 'active' ? (
               <ToggleRight className="h-4 w-4 text-green-600" />
