@@ -319,9 +319,10 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
         status
       };
       
-      // Update checklist
+      // Update checklist - THIS IS THE FIX:
+      // Instead of passing a 'checklist' property, we directly pass the updatedChecklist object
       await updateChecklist.mutateAsync({
-        checklist: updatedChecklist,
+        ...updatedChecklist,
         questions: validQuestions,
         groups,
         deletedQuestionIds
