@@ -36,7 +36,7 @@ export const ChecklistListItem = ({
     : 0;
 
   return (
-    <div className={`grid grid-cols-10 items-center gap-4 p-3 rounded-md transition-all
+    <div className={`grid grid-cols-10 items-center gap-4 p-4 rounded-md transition-all border border-slate-200 shadow-sm min-h-[72px]
       ${isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
     >
       <div className="col-span-1 flex items-center">
@@ -44,16 +44,21 @@ export const ChecklistListItem = ({
           checked={isSelected}
           onCheckedChange={(checked) => onSelect(checklist.id, checked === true)}
           onClick={(e) => e.stopPropagation()}
+          className={`${isSelected ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'}`}
         />
       </div>
       <div className="col-span-4 flex flex-col">
-        <div className="font-medium text-sm flex items-center gap-2">
+        <div className="font-medium text-base flex items-center gap-2">
           {checklist.title}
           <ChecklistOriginBadge origin={checklist.origin} showLabel={false} className="ml-1" />
         </div>
-        {checklist.description && (
-          <div className="text-xs text-gray-500 truncate max-w-[400px]">
-            {checklist.description}
+        {checklist.companyName ? (
+          <div className="text-sm text-muted-foreground truncate max-w-[400px]">
+            {checklist.companyName}
+          </div>
+        ) : (
+          <div className="text-sm text-muted-foreground italic truncate max-w-[400px]">
+            Sem empresa associada
           </div>
         )}
       </div>

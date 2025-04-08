@@ -1,7 +1,7 @@
 
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { Clipboard, FileText, Archive, CheckSquare } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { FileText, Archive, CheckSquare } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNewChecklists } from "@/hooks/new-checklist/useNewChecklists";
@@ -14,6 +14,8 @@ import { toast } from "sonner";
 
 export default function NewChecklists() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  
   const { 
     checklists, 
     allChecklists,
@@ -37,6 +39,33 @@ export default function NewChecklists() {
     deleteChecklist
   } = useNewChecklists();
   
+  // Get tab from URL params or localStorage, default to "template"
+  const [activeTab, setActiveTab] = useState(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl && ['template', 'active', 'inactive'].includes(tabFromUrl)) {
+      return tabFromUrl;
+    }
+    
+    const savedTab = localStorage.getItem('checklist-active-tab');
+    return savedTab || 'template';
+  });
+  
+  // Update URL and localStorage when tab changes
+  useEffect(() => {
+    searchParams.set('tab', activeTab);
+    setSearchParams(searchParams);
+    localStorage.setItem('checklist-active-tab', activeTab);
+    
+    // Update filter type based on active tab
+    if (activeTab === 'template') {
+      setFilterType('template');
+    } else if (activeTab === 'active') {
+      setFilterType('active');
+    } else if (activeTab === 'inactive') {
+      setFilterType('inactive');
+    }
+  }, [activeTab, setSearchParams, searchParams, setFilterType]);
+  
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     checklistId: string;
@@ -56,24 +85,20 @@ export default function NewChecklists() {
   // Count checklists by type - excluding subchecklist
   const filteredChecklists = allChecklists.filter(c => !c.isSubChecklist);
   const counts = {
-    all: filteredChecklists.length,
+    template: filteredChecklists.filter(c => c.isTemplate).length,
     active: filteredChecklists.filter(c => c.status === "active" && !c.isTemplate).length,
-    inactive: filteredChecklists.filter(c => c.status === "inactive" && !c.isTemplate).length,
-    template: filteredChecklists.filter(c => c.isTemplate).length
+    inactive: filteredChecklists.filter(c => c.status === "inactive" && !c.isTemplate).length
   };
 
   const handleOpenChecklist = (id: string) => {
-    console.log(`Opening checklist: ${id}`);
     navigate(`/new-checklists/${id}`);
   };
 
   const handleEdit = (id: string) => {
-    console.log(`Editing checklist: ${id}`);
     navigate(`/new-checklists/edit/${id}`);
   };
 
   const handleDelete = (id: string, title: string) => {
-    console.log(`Preparing to delete checklist: ${id} (${title})`);
     setDeleteDialog({
       open: true,
       checklistId: id,
@@ -84,7 +109,6 @@ export default function NewChecklists() {
   };
 
   const handleBulkDelete = (ids: string[]) => {
-    console.log(`Preparing to delete ${ids.length} checklists`);
     setDeleteDialog({
       open: true,
       checklistId: "",
@@ -157,13 +181,8 @@ export default function NewChecklists() {
         onCreateNew={handleCreateNew}
       />
 
-      <Tabs defaultValue="all" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="all" className="flex items-center gap-2">
-            <Clipboard className="h-4 w-4" />
-            <span>Todos</span>
-            {counts.all > 0 && <span className="ml-1 text-xs bg-primary/10 text-primary rounded-full px-2">{counts.all}</span>}
-          </TabsTrigger>
           <TabsTrigger value="template" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             <span>Templates</span>
@@ -180,18 +199,6 @@ export default function NewChecklists() {
             {counts.inactive > 0 && <span className="ml-1 text-xs bg-primary/10 text-primary rounded-full px-2">{counts.inactive}</span>}
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="all">
-          <ChecklistList 
-            checklists={filteredChecklists} 
-            isLoading={isLoading} 
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onOpen={handleOpenChecklist}
-            onStatusChange={refetch}
-            onBulkDelete={handleBulkDelete}
-          />
-        </TabsContent>
 
         <TabsContent value="template">
           <ScrollArea className="h-[calc(100vh-300px)]">

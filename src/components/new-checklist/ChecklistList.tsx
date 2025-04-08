@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { ChecklistWithStats } from "@/types/newChecklist";
 import {
@@ -19,7 +20,9 @@ import {
   Pen,
   FileDown,
   Trash2,
-  Bot
+  Bot,
+  CheckSquare,
+  Archive
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -45,6 +48,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ChecklistOriginBadge } from "./ChecklistOriginBadge";
 
 interface ChecklistListProps {
   checklists: ChecklistWithStats[];
@@ -67,6 +71,7 @@ export function ChecklistList({
 }: ChecklistListProps) {
   const [selectedChecklists, setSelectedChecklists] = useState<string[]>([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     setSelectedChecklists([]);
@@ -90,9 +95,47 @@ export function ChecklistList({
 
   const handleBulkDelete = async () => {
     if (onBulkDelete && selectedChecklists.length > 0) {
-      await onBulkDelete(selectedChecklists);
+      setIsDeleting(true);
+      try {
+        await onBulkDelete(selectedChecklists);
+        toast.success(`${selectedChecklists.length} checklists excluídos com sucesso`);
+        setSelectedChecklists([]);
+      } catch (error) {
+        console.error("Error deleting checklists:", error);
+        toast.error("Erro ao excluir checklists");
+      } finally {
+        setIsDeleting(false);
+        setIsDeleteDialogOpen(false);
+      }
+    }
+  };
+
+  const handleBulkStatusChange = async (newStatus: 'active' | 'inactive') => {
+    if (selectedChecklists.length === 0) return;
+    
+    const statusText = newStatus === 'active' ? 'ativando' : 'desativando';
+    const loadingToast = toast.loading(`${statusText} ${selectedChecklists.length} checklists...`);
+    
+    try {
+      const { error } = await supabase
+        .from('checklists')
+        .update({ 
+          status: newStatus,
+          status_checklist: newStatus === 'active' ? 'ativo' : 'inativo' 
+        })
+        .in('id', selectedChecklists);
+      
+      if (error) throw error;
+      
+      toast.success(`${selectedChecklists.length} checklists ${newStatus === 'active' ? 'ativados' : 'desativados'} com sucesso`);
+      
+      if (onStatusChange) onStatusChange();
       setSelectedChecklists([]);
-      setIsDeleteDialogOpen(false);
+    } catch (error) {
+      console.error(`Error ${statusText} checklists:`, error);
+      toast.error(`Erro ao ${statusText.replace('ando', 'ar')} checklists`);
+    } finally {
+      toast.dismiss(loadingToast);
     }
   };
 
@@ -148,19 +191,37 @@ export function ChecklistList({
   return (
     <div className="space-y-4">
       {selectedChecklists.length > 0 && (
-        <div className="flex justify-between items-center p-2 bg-muted/50 rounded-md">
+        <div className="sticky top-0 z-50 flex justify-between items-center p-3 bg-background border border-slate-200 rounded-lg shadow-sm">
           <span className="text-sm font-medium">
             {selectedChecklists.length} {selectedChecklists.length === 1 ? 'checklist selecionado' : 'checklists selecionados'}
           </span>
-          <Button 
-            variant="destructive" 
-            size="sm" 
-            onClick={() => setIsDeleteDialogOpen(true)}
-            className="flex items-center gap-2"
-          >
-            <Trash2 className="h-4 w-4" />
-            <span>Excluir selecionados</span>
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => handleBulkStatusChange('active')}
+            >
+              <CheckSquare className="h-4 w-4 mr-1" />
+              Ativar selecionados
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => handleBulkStatusChange('inactive')}
+            >
+              <Archive className="h-4 w-4 mr-1" />
+              Inativar selecionados
+            </Button>
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              onClick={() => setIsDeleteDialogOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>Excluir selecionados</span>
+            </Button>
+          </div>
         </div>
       )}
       
@@ -210,9 +271,13 @@ export function ChecklistList({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Excluir
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleBulkDelete} 
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Excluindo..." : "Excluir"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -238,60 +303,16 @@ function ChecklistRow({
   isSelected: boolean;
   onSelect: (checked: boolean) => void;
 }) {
-  const [companyName, setCompanyName] = useState<string | null>(null);
-  const [companyLoading, setCompanyLoading] = useState<boolean>(!!checklist.companyId);
+  const [companyName, setCompanyName] = useState<string | null>(checklist.companyName || null);
+  const [companyLoading, setCompanyLoading] = useState<boolean>(!!checklist.companyId && !checklist.companyName);
   const [isToggling, setIsToggling] = useState<boolean>(false);
-
-  const getCreationTypeIcon = () => {
-    switch(checklist.origin) {
-      case 'ia':
-        return (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Bot className="h-4 w-4 text-purple-500" />
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Gerado por IA</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        );
-      case 'csv':
-        return (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <FileDown className="h-4 w-4 text-blue-500" />
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Importado via CSV</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        );
-      case 'manual':
-      default:
-        return (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Pen className="h-4 w-4 text-slate-500" />
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Criado manualmente</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        );
-    }
-  };
+  const [status, setStatus] = useState(checklist.status);
 
   useEffect(() => {
-    if (checklist.companyId) {
+    if (checklist.companyId && !companyName) {
       fetchCompanyName(checklist.companyId);
     }
-  }, [checklist.companyId]);
+  }, [checklist.companyId, companyName]);
 
   const fetchCompanyName = async (companyId: string) => {
     try {
@@ -317,10 +338,12 @@ function ChecklistRow({
     e.stopPropagation();
     if (isToggling) return;
     
+    // Optimistic UI update
+    const newStatus = status === 'active' ? 'inactive' : 'active';
+    setStatus(newStatus);
     setIsToggling(true);
+    
     try {
-      const newStatus = checklist.status === 'active' ? 'inactive' : 'active';
-      
       const { error } = await supabase
         .from('checklists')
         .update({ 
@@ -331,12 +354,12 @@ function ChecklistRow({
         
       if (error) throw error;
       
-      checklist.status = newStatus;
-      
       toast.success(`Checklist ${newStatus === 'active' ? 'ativado' : 'desativado'} com sucesso`);
       
       if (onStatusChange) onStatusChange();
     } catch (error) {
+      // Rollback on error
+      setStatus(status);
       console.error("Error toggling checklist status:", error);
       toast.error("Erro ao alterar status do checklist");
     } finally {
@@ -346,29 +369,28 @@ function ChecklistRow({
 
   return (
     <TableRow
-      className="cursor-pointer hover:bg-accent/50"
+      className="cursor-pointer hover:bg-accent/50 group"
       onClick={() => onOpen(checklist.id)}
     >
       <TableCell className="py-2" onClick={(e) => e.stopPropagation()}>
         <Checkbox 
           checked={isSelected} 
-          onCheckedChange={(checked) => onSelect(!!checked)} 
+          onCheckedChange={(checked) => onSelect(!!checked)}
+          className={`${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
         />
       </TableCell>
-      <TableCell className="font-medium">
-        <div className="flex items-center gap-2">
-          {getCreationTypeIcon()}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="truncate max-w-[250px]">{checklist.title}</span>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{checklist.title}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
+      <TableCell className="font-medium min-h-[56px] flex items-center gap-2 py-3">
+        <ChecklistOriginBadge origin={checklist.origin} showLabel={false} />
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="truncate max-w-[250px]">{checklist.title}</span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{checklist.title}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </TableCell>
       <TableCell>
         {companyLoading ? (
@@ -388,7 +410,7 @@ function ChecklistRow({
             </TooltipProvider>
           </div>
         ) : (
-          <span className="text-muted-foreground">-</span>
+          <span className="text-muted-foreground italic">Sem empresa</span>
         )}
       </TableCell>
       <TableCell>
@@ -404,7 +426,7 @@ function ChecklistRow({
             </Tooltip>
           </TooltipProvider>
         ) : (
-          "-"
+          <span className="text-muted-foreground italic">-</span>
         )}
       </TableCell>
       <TableCell>
@@ -413,11 +435,11 @@ function ChecklistRow({
             <Badge variant="secondary">Template</Badge>
           ) : (
             <>
-              <Badge variant={checklist.status === "active" ? "default" : "outline"}>
-                {checklist.status === "active" ? "Ativo" : "Inativo"}
+              <Badge variant={status === "active" ? "default" : "outline"}>
+                {status === "active" ? "Ativo" : "Inativo"}
               </Badge>
               <Switch 
-                checked={checklist.status === 'active'}
+                checked={status === 'active'}
                 onClick={handleToggleStatus}
                 disabled={isToggling}
                 aria-label="Toggle status"

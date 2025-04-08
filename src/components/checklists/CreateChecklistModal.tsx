@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
@@ -15,9 +16,14 @@ import { CompanyListItem } from "@/hooks/checklist/useFilterChecklists";
 interface CreateChecklistModalProps {
   isOpen: boolean;
   onClose: () => void;
+  creationMethod?: 'manual' | 'ia' | 'csv';
 }
 
-export function CreateChecklistModal({ isOpen, onClose }: CreateChecklistModalProps) {
+export function CreateChecklistModal({ 
+  isOpen, 
+  onClose,
+  creationMethod = 'manual'
+}: CreateChecklistModalProps) {
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -68,7 +74,8 @@ export function CreateChecklistModal({ isOpen, onClose }: CreateChecklistModalPr
         category,
         company_id: companyId || null,
         is_template: isTemplate,
-        status_checklist: "ativo" as "ativo" | "inativo"
+        status_checklist: "ativo" as "ativo" | "inativo",
+        origin: creationMethod // Ensure origin is set based on creation method
       };
       
       const result = await createChecklist.mutateAsync(newChecklist);
