@@ -81,7 +81,7 @@ export function useNewChecklists() {
         origin: item.origin,
         totalQuestions: item.checklist_itens?.length || 0,
         completedQuestions: 0,
-        companyName: item.companies?.fantasy_name,
+        companyName: item.companies?.fantasy_name, // Use fantasy_name from joined companies table
         responsibleName: item.users?.name
       }));
 

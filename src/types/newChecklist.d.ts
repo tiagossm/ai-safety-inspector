@@ -56,6 +56,7 @@ export interface ChecklistWithStats extends Checklist {
   createdAt?: string;
   updatedAt?: string;
   origin?: 'manual' | 'ia' | 'csv';
+  companyName?: string; // Added companyName property
 }
 
 export interface NewChecklistPayload {
