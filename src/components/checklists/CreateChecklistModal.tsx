@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
@@ -30,7 +29,6 @@ export function CreateChecklistModal({ isOpen, onClose }: CreateChecklistModalPr
   
   const createChecklist = useCreateChecklist();
   
-  // Fetch companies on mount
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
@@ -78,7 +76,6 @@ export function CreateChecklistModal({ isOpen, onClose }: CreateChecklistModalPr
       toast.success("Checklist criado com sucesso!");
       onClose();
       
-      // Add history entry
       try {
         await supabase.from('checklist_history').insert({
           checklist_id: result.id,
@@ -90,7 +87,6 @@ export function CreateChecklistModal({ isOpen, onClose }: CreateChecklistModalPr
         console.warn("Erro ao registrar histórico:", historyError);
       }
       
-      // Navigate to the checklist details page
       navigate(`/checklists/${result.id}`);
     } catch (error) {
       console.error("Error creating checklist:", error);
@@ -101,7 +97,6 @@ export function CreateChecklistModal({ isOpen, onClose }: CreateChecklistModalPr
   };
   
   const handleClose = () => {
-    // Reset form
     setTitle("");
     setDescription("");
     setCategory("");
@@ -202,4 +197,3 @@ export function CreateChecklistModal({ isOpen, onClose }: CreateChecklistModalPr
     </Dialog>
   );
 }
-
