@@ -1,31 +1,33 @@
 
 import React from "react";
-import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CompanyOption, CategoryOption, SortOrder } from "@/hooks/new-checklist/useChecklistFilter";
+import { Button } from "@/components/ui/button";
+import { CompanyListItem } from "@/hooks/checklist/useFilterChecklists";
+import { SearchX, Plus, Bot, FileSpreadsheet, FilePenLine, ArrowDownAZ, ArrowUpZA } from "lucide-react";
 
 interface ChecklistFiltersProps {
   searchTerm: string;
-  setSearchTerm: (value: string) => void;
-  filterType: "all" | "active" | "inactive" | "template";
-  setFilterType: (value: "all" | "active" | "inactive" | "template") => void;
-  selectedCompanyId: string | null;
-  setSelectedCompanyId: (value: string | null) => void;
-  selectedCategory: string | null;
-  setSelectedCategory: (value: string | null) => void;
-  sortOrder: SortOrder;
-  setSortOrder: (value: SortOrder) => void;
-  companies: CompanyOption[];
-  categories: CategoryOption[];
+  setSearchTerm: (term: string) => void;
+  filterType: string;
+  setFilterType: (type: string) => void;
+  selectedCompanyId: string;
+  setSelectedCompanyId: (id: string) => void;
+  selectedCategory: string;
+  setSelectedCategory: (category: string) => void;
+  selectedOrigin?: string;
+  setSelectedOrigin?: (origin: string) => void;
+  sortOrder: string;
+  setSortOrder: (order: string) => void;
+  companies: CompanyListItem[];
+  categories: string[];
   isLoadingCompanies: boolean;
   totalChecklists: number;
   onCreateNew: () => void;
@@ -40,85 +42,158 @@ export function ChecklistFilters({
   setSelectedCompanyId,
   selectedCategory,
   setSelectedCategory,
+  selectedOrigin = "all",
+  setSelectedOrigin,
   sortOrder,
   setSortOrder,
   companies,
   categories,
   isLoadingCompanies,
   totalChecklists,
-  onCreateNew
+  onCreateNew,
 }: ChecklistFiltersProps) {
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col md:flex-row justify-between gap-4">
-        <div className="relative flex-grow max-w-md">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+    <div className="flex flex-col gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="relative">
           <Input
-            placeholder="Buscar checklists..."
+            placeholder="Pesquisar checklists"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9"
+            className="pl-10"
           />
+          <SearchX className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
         </div>
-        
-        <div className="flex flex-wrap gap-2">
-          <Select
-            value={selectedCompanyId || "all"}
-            onValueChange={(value) => setSelectedCompanyId(value === "all" ? null : value)}
-            disabled={isLoadingCompanies || companies.length === 0}
-          >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Todas empresas" />
+
+        <div className="grid grid-cols-2 gap-2">
+          <Select value={filterType} onValueChange={setFilterType}>
+            <SelectTrigger className="col-span-1">
+              <SelectValue placeholder="Filtrar por tipo" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas empresas</SelectItem>
-              {companies.map((company) => (
-                <SelectItem key={company.id} value={company.id}>
-                  {company.name}
-                </SelectItem>
-              ))}
+              <SelectGroup>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="template">Templates</SelectItem>
+                <SelectItem value="active">Ativos</SelectItem>
+                <SelectItem value="inactive">Inativos</SelectItem>
+              </SelectGroup>
             </SelectContent>
           </Select>
           
-          <Select
-            value={selectedCategory || "all"}
-            onValueChange={(value) => setSelectedCategory(value === "all" ? null : value)}
-            disabled={categories.length === 0}
-          >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Todas categorias" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas categorias</SelectItem>
-              {categories.map((category) => (
-                <SelectItem key={category.value} value={category.value}>
-                  {category.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          <Select
-            value={sortOrder}
-            onValueChange={(value) => setSortOrder(value as SortOrder)}
-          >
-            <SelectTrigger className="w-[200px]">
+          <Select value={sortOrder} onValueChange={setSortOrder}>
+            <SelectTrigger className="col-span-1">
               <SelectValue placeholder="Ordenar por" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="newest">Mais recentes</SelectItem>
-              <SelectItem value="oldest">Mais antigos</SelectItem>
+              <SelectGroup>
+                <SelectItem value="created_desc">
+                  <div className="flex items-center">
+                    <ArrowUpZA className="mr-2 h-4 w-4" />
+                    Mais recentes
+                  </div>
+                </SelectItem>
+                <SelectItem value="created_asc">
+                  <div className="flex items-center">
+                    <ArrowDownAZ className="mr-2 h-4 w-4" />
+                    Mais antigos
+                  </div>
+                </SelectItem>
+                <SelectItem value="title_asc">
+                  <div className="flex items-center">
+                    <ArrowDownAZ className="mr-2 h-4 w-4" />
+                    Nome (A-Z)
+                  </div>
+                </SelectItem>
+                <SelectItem value="title_desc">
+                  <div className="flex items-center">
+                    <ArrowUpZA className="mr-2 h-4 w-4" />
+                    Nome (Z-A)
+                  </div>
+                </SelectItem>
+              </SelectGroup>
             </SelectContent>
           </Select>
-          
-          <Button onClick={onCreateNew}>Criar novo</Button>
+        </div>
+        
+        <div className="flex justify-end">
+          <Button onClick={onCreateNew} className="w-full md:w-auto">
+            <Plus className="h-4 w-4 mr-2" />
+            Criar Novo Checklist
+          </Button>
         </div>
       </div>
       
-      <div className="flex justify-between items-center">
-        <p className="text-sm text-muted-foreground">
-          {totalChecklists} {totalChecklists === 1 ? 'checklist' : 'checklists'} encontrados
-        </p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <Select
+          value={selectedCompanyId}
+          onValueChange={setSelectedCompanyId}
+          disabled={isLoadingCompanies}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Todas as empresas" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="all">Todas as empresas</SelectItem>
+              {companies.map((company) => (
+                <SelectItem key={company.id} value={company.id}>
+                  {company.fantasy_name}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+        
+        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+          <SelectTrigger>
+            <SelectValue placeholder="Todas as categorias" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="all">Todas as categorias</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category} value={category}>
+                  {category}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+        
+        {setSelectedOrigin && (
+          <Select value={selectedOrigin} onValueChange={setSelectedOrigin}>
+            <SelectTrigger>
+              <SelectValue placeholder="Todas as origens" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectItem value="all">Todas as origens</SelectItem>
+                <SelectItem value="manual">
+                  <div className="flex items-center">
+                    <FilePenLine className="mr-2 h-4 w-4" />
+                    Criação Manual
+                  </div>
+                </SelectItem>
+                <SelectItem value="ia">
+                  <div className="flex items-center">
+                    <Bot className="mr-2 h-4 w-4" />
+                    Gerado por IA
+                  </div>
+                </SelectItem>
+                <SelectItem value="csv">
+                  <div className="flex items-center">
+                    <FileSpreadsheet className="mr-2 h-4 w-4" />
+                    Importado de Planilha
+                  </div>
+                </SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        )}
+      </div>
+      
+      <div className="text-sm text-muted-foreground">
+        Exibindo {totalChecklists} {totalChecklists === 1 ? 'checklist' : 'checklists'}
       </div>
     </div>
   );

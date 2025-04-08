@@ -110,21 +110,21 @@ export function useChecklistCreate() {
             } else if (typeof question.options === 'string') {
               try {
                 // Create a local variable for the options string to ensure proper typing
-                const optionsString: string = question.options;
+                const optionsStr: string = question.options;
                 
-                if (optionsString.startsWith('[') && optionsString.endsWith(']')) {
+                if (optionsStr.startsWith('[') && optionsStr.endsWith(']')) {
                   try {
-                    const parsedOptions = JSON.parse(optionsString);
+                    const parsedOptions = JSON.parse(optionsStr);
                     if (Array.isArray(parsedOptions)) {
                       questionOptions = parsedOptions;
                     }
                   } catch (e) {
                     // If JSON parsing fails, treat as comma-separated list
-                    questionOptions = optionsString.split(',').map(o => o.trim());
+                    questionOptions = optionsStr.split(',').map(o => o.trim());
                   }
                 } else {
                   // Treat as comma-separated list
-                  questionOptions = optionsString.split(',').map(o => o.trim());
+                  questionOptions = optionsStr.split(',').map(o => o.trim());
                 }
               } catch (e) {
                 console.error("Error parsing options:", e);

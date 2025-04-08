@@ -52,16 +52,16 @@ export interface ChecklistItem {
 }
 
 export interface NewChecklist {
-  title?: string;
+  title: string;
   description?: string;
   is_template?: boolean;
-  status_checklist?: string;
+  status_checklist?: "ativo" | "inativo";
   status?: string;
   category?: string;
-  responsible_id?: string;
-  company_id?: string;
-  due_date?: string;
-  user_id?: string;
+  responsible_id?: string | null;
+  company_id?: string | null;
+  due_date?: string | null;
+  user_id?: string | null;
   origin?: 'manual' | 'ia' | 'csv';
 }
 

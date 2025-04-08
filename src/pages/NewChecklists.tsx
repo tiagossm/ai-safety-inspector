@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Clipboard, FileText, Archive, CheckSquare } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,18 +10,7 @@ import { ChecklistGrid } from "@/components/new-checklist/ChecklistGrid";
 import { ChecklistList } from "@/components/new-checklist/ChecklistList";
 import { DeleteChecklistDialog } from "@/components/new-checklist/DeleteChecklistDialog";
 import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 export default function NewChecklists() {
   const navigate = useNavigate();
@@ -37,6 +26,8 @@ export default function NewChecklists() {
     setSelectedCompanyId,
     selectedCategory,
     setSelectedCategory,
+    selectedOrigin,
+    setSelectedOrigin,
     sortOrder,
     setSortOrder,
     companies,
@@ -155,6 +146,8 @@ export default function NewChecklists() {
         setSelectedCompanyId={setSelectedCompanyId}
         selectedCategory={selectedCategory}
         setSelectedCategory={setSelectedCategory}
+        selectedOrigin={selectedOrigin}
+        setSelectedOrigin={setSelectedOrigin}
         sortOrder={sortOrder}
         setSortOrder={setSortOrder}
         companies={companies}
