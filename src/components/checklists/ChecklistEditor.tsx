@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { NewChecklist, Checklist } from "@/types/checklist";
@@ -263,7 +262,7 @@ export function ChecklistEditor({
         title: checklist.title,
         description: checklist.description,
         is_template: checklist.is_template,
-        status_checklist: checklist.status_checklist as string,
+        status_checklist: checklist.status_checklist as "ativo" | "inativo",
         category: checklist.category,
         responsible_id: processedResponsibleId,
         company_id: processedCompanyId,
@@ -298,9 +297,8 @@ export function ChecklistEditor({
       if (questionsToSave.length > 0) {
         console.log("Total questions to save:", questionsToSave.length);
         
-        // Create an array to hold all the question data objects
         const questionDataArray = questionsToSave
-          .filter(q => q.text.trim()) // Only process questions with text
+          .filter(q => q.text.trim())
           .map((q, i) => {
             const dbType = normalizeResponseType(q.type);
             
@@ -358,7 +356,6 @@ export function ChecklistEditor({
         
         console.log(`Prepared ${questionDataArray.length} questions for insertion`);
         
-        // Insert all questions at once using a single batch operation
         try {
           const { data, error } = await supabase
             .from("checklist_itens")
@@ -373,9 +370,6 @@ export function ChecklistEditor({
         } catch (batchError) {
           console.error("Exception during batch insert:", batchError);
           toast.error("Erro ao salvar perguntas em lote");
-          
-          // Fallback: Try to insert questions one by one if batch fails
-          console.log("Attempting individual inserts as fallback...");
           
           let insertedCount = 0;
           for (const questionData of questionDataArray) {

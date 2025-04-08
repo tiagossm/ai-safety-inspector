@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -144,7 +143,7 @@ export const ChecklistCard = ({
           )}
           
           <div className="text-xs text-muted-foreground mt-3">
-            Criado em {formatDate(checklist.createdAt || checklist.created_at || "")}
+            Criado em {formatDate(checklist.createdAt || "")}
           </div>
         </div>
       </CardContent>

@@ -70,7 +70,7 @@ export function CreateChecklistModal({ isOpen, onClose }: CreateChecklistModalPr
         category,
         company_id: companyId || null,
         is_template: isTemplate,
-        status_checklist: "ativo"
+        status_checklist: "ativo" as "ativo" | "inativo"
       };
       
       const result = await createChecklist.mutateAsync(newChecklist);

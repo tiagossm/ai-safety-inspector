@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { formatDate } from '@/utils/format';
 import { ChecklistWithStats } from '@/types/newChecklist';
@@ -68,7 +67,7 @@ export const ChecklistListItem = ({
         )}
       </div>
       <div className="col-span-1 text-xs text-gray-500">
-        {formatDate(checklist.createdAt || checklist.created_at || "")}
+        {formatDate(checklist.createdAt || "")}
       </div>
       <div className="col-span-1 pr-2">
         {checklist.totalQuestions > 0 && (
