@@ -1,5 +1,21 @@
-
 import { ChecklistGroup } from '@/types/newChecklist';
+
+export interface Checklist {
+  id: string;
+  title: string;
+  description?: string;
+  isTemplate: boolean;
+  status: 'active' | 'inactive';
+  category?: string;
+  responsibleId?: string | null;
+  companyId?: string | null;
+  userId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  dueDate?: string | null;
+  isSubChecklist?: boolean;
+  origin?: 'manual' | 'ia' | 'csv';
+}
 
 export interface ChecklistWithStats extends Checklist {
   totalQuestions?: number;
