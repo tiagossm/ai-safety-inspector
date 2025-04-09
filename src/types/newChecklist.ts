@@ -86,15 +86,17 @@ export interface ChecklistWithStats {
   completedQuestions: number;
   companyName: string | null;
   responsibleName: string | null;
+  questions?: ChecklistQuestion[];
+  groups?: ChecklistGroup[];
 }
 
-// Interface para grupos de perguntas em checklists
+// Interface for question groups in checklists
 export interface ChecklistGroup {
   id: string;
   title: string;
   description?: string;
   order: number;
-  questions: Array<ChecklistQuestion>;
+  questions?: Array<ChecklistQuestion>;
 }
 
 // Adding additional interfaces and types needed for the application
@@ -167,7 +169,7 @@ export interface NewChecklist {
   title: string;
   description?: string;
   is_template?: boolean;
-  status?: string;
+  status?: "active" | "inactive";
   status_checklist?: "ativo" | "inativo";
   category?: string;
   company_id?: string | null;

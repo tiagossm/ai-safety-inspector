@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { IntelligentChecklistForm } from "./IntelligentChecklistForm";
 import { supabase } from "@/integrations/supabase/client";
-import { NewChecklist } from "@/types/checklist";
+import { NewChecklist } from "@/types/newChecklist";
 import { useChecklistAI } from "@/hooks/new-checklist/useChecklistAI";
 
 interface AIChecklistCreatorProps {
@@ -108,7 +108,7 @@ export function AIChecklistCreator({
         category: form.category,
         is_template: form.is_template || false,
         company_id: form.company_id,
-        status: form.status || "active"
+        status: "active" // Fixed: Use "active" instead of form.status
       };
       
       const result = await generateChecklist(checklistPayload);

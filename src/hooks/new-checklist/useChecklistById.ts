@@ -84,6 +84,7 @@ export function useChecklistById(id: string) {
         isSubChecklist: checklistData.is_sub_checklist || false,
         origin: normalizedOrigin,
         parent_question_id: checklistData.parent_question_id,
+        parentQuestionId: checklistData.parent_question_id, // Added missing property
         totalQuestions: totalQuestions || 0,
         completedQuestions: 0,
         companyName: checklistData.companies?.fantasy_name || '',

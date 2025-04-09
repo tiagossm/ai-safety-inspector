@@ -76,6 +76,7 @@ export function useChecklistById(id: string) {
           allowsPhoto: item.permite_foto,
           allowsVideo: item.permite_video,
           allowsAudio: item.permite_audio,
+          allowsFiles: item.permite_files || false, // Add missing allowsFiles property
           weight: item.weight || 1,
           groupId: item.group_id,
           parentId: item.parent_item_id,
@@ -96,7 +97,7 @@ export function useChecklistById(id: string) {
         ...baseChecklist,
         responsibleName: responsibleName || baseChecklist.responsibleName,
         questions: questions,
-        groups: []
+        groups: [] as ChecklistGroup[]
       };
       
       setChecklist(formattedChecklist);

@@ -62,6 +62,7 @@ export const checklistFetchService = {
         isSubChecklist: item.is_sub_checklist || false,
         origin: (item.origin || 'manual') as ChecklistOrigin,
         parent_question_id: item.parent_question_id,
+        parentQuestionId: item.parent_question_id, // Add missing property
         totalQuestions: 0,
         completedQuestions: 0,
         companyName: item.companies?.fantasy_name || '',
@@ -133,6 +134,7 @@ export const checklistFetchService = {
         isSubChecklist: data.is_sub_checklist || false,
         origin: originValue,
         parent_question_id: data.parent_question_id,
+        parentQuestionId: data.parent_question_id, // Add missing property
         totalQuestions: 0,
         completedQuestions: 0,
         companyName: data.companies?.fantasy_name || '',
@@ -162,4 +164,3 @@ export const checklistFetchService = {
     }
   }
 };
-

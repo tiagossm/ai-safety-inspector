@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
@@ -51,7 +50,8 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
           const defaultGroup: ChecklistGroup = {
             id: "default",
             title: "Geral",
-            order: 0
+            order: 0,
+            questions: [] // Add empty questions array
           };
           
           const questionsWithDefaultGroup = checklist.questions.map((q: ChecklistQuestion) => ({
@@ -67,7 +67,8 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
         const defaultGroup: ChecklistGroup = {
           id: "default",
           title: "Geral",
-          order: 0
+          order: 0,
+          questions: [] // Add empty questions array
         };
         
         const defaultQuestion: ChecklistQuestion = {
@@ -138,7 +139,8 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
     const newGroup: ChecklistGroup = {
       id: `group-${Date.now()}`,
       title: "Novo Grupo",
-      order: groups.length
+      order: groups.length,
+      questions: [] // Add empty questions array
     };
     
     setGroups([...groups, newGroup]);
@@ -235,7 +237,8 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
       // Update order property
       const groupsWithUpdatedOrder = reorderedGroups.map((group, index) => ({
         ...group,
-        order: index
+        order: index,
+        questions: group.questions || [] // Ensure questions property exists
       }));
       
       setGroups(groupsWithUpdatedOrder);

@@ -22,7 +22,7 @@ const FIELD_MAPPINGS: FieldMapping[] = [
   { source: "created_at", target: "createdAt" },
   { source: "updated_at", target: "updatedAt" },
   { source: "due_date", target: "dueDate" },
-  { source: "parent_question_id", target: "parent_question_id" } // Fixed: using the correct property name that exists in ChecklistWithStats
+  { source: "parent_question_id", target: "parentQuestionId" }
 ];
 
 /**
@@ -41,7 +41,7 @@ export function transformDbChecklistsToStats(data: any[]): ChecklistWithStats[] 
  */
 export function transformDbChecklistToStats(item: any): ChecklistWithStats {
   // First ensure the required base fields exist in the object
-  const baseChecklist: Checklist = {
+  const baseChecklist: Partial<Checklist> = {
     id: item.id,
     title: item.title,
     description: item.description || '',
@@ -51,12 +51,27 @@ export function transformDbChecklistToStats(item: any): ChecklistWithStats {
     responsible_id: item.responsible_id,
     company_id: item.company_id,
     user_id: item.user_id,
-    origin: normalizeOrigin(item.origin)
+    origin: normalizeOrigin(item.origin),
+    created_at: item.created_at,
+    updated_at: item.updated_at,
+    due_date: item.due_date,
+    is_sub_checklist: Boolean(item.is_sub_checklist),
+    parent_question_id: item.parent_question_id,
+    status_checklist: item.status_checklist || "ativo"
   };
   
   // Start building the enhanced ChecklistWithStats object
-  const result: ChecklistWithStats = {
+  const result: Partial<ChecklistWithStats> = {
     ...baseChecklist,
+    isTemplate: Boolean(item.is_template),
+    isSubChecklist: Boolean(item.is_sub_checklist),
+    companyId: item.company_id,
+    responsibleId: item.responsible_id,
+    userId: item.user_id,
+    createdAt: item.created_at,
+    updatedAt: item.updated_at,
+    dueDate: item.due_date,
+    parentQuestionId: item.parent_question_id,
     totalQuestions: item.totalQuestions || 0,
     completedQuestions: item.completedQuestions || 0,
     companyName: item.companyName || getCompanyName(item),
@@ -72,7 +87,7 @@ export function transformDbChecklistToStats(item: any): ChecklistWithStats {
     }
   }
 
-  return result;
+  return result as ChecklistWithStats;
 }
 
 /**
