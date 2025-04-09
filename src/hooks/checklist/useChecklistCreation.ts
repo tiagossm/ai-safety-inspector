@@ -172,6 +172,7 @@ export function useChecklistCreation() {
     handleSubmit: submitForm,
     navigate,
     companies,
-    loadingCompanies
+    loadingCompanies,
+    normalizeStatus
   };
 }

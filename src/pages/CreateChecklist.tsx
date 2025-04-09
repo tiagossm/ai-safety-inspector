@@ -30,16 +30,9 @@ export default function CreateChecklist() {
     handleQuestionChange,
     handleSubmit,
     companies,
-    loadingCompanies
+    loadingCompanies,
+    normalizeStatus
   } = useChecklistCreation();
-
-  // Helper function to ensure status is "active" or "inactive"
-  const normalizeStatus = (status?: string): "active" | "inactive" => {
-    if (status === 'active' || status === 'inactive') {
-      return status;
-    }
-    return 'active';
-  };
 
   const handleSubmitForManualAndImport = async (e: React.FormEvent): Promise<boolean> => {
     const adaptedForm: NewChecklistType = {
