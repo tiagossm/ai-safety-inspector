@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { InspectionDetails, InspectionFilters } from "@/types/newChecklist";
 
@@ -10,8 +10,7 @@ const buildQuery = (filters: InspectionFilters) => {
     .select(`
       *,
       companies:company_id (id, fantasy_name),
-      users:user_id (id, name),
-      responsible:responsible_id (id, name)
+      checklist:checklist_id (id, title, description)
     `);
 
   if (filters.search) {
@@ -87,23 +86,49 @@ export function useOptimizedInspections(filters: InspectionFilters) {
         if (error) throw error;
         
         // Process and map the inspections
-        const inspectionsWithStats = await Promise.all((data || []).map(async (item) => {
+        const inspectionsWithStats = await Promise.all((data || []).map(async (item: any) => {
           // Get stats for each inspection
           const stats = await fetchInspectionStats(item.id);
           
+          // Safely access properties with fallbacks
+          const title = item.checklist?.title || `Inspeção ${item.id.substring(0, 8)}`;
+          const description = item.checklist?.description || '';
+          
+          // Normalize status to match the expected enum values
+          const statusMapping: Record<string, "pending" | "in_progress" | "completed"> = {
+            'pending': 'pending',
+            'Pendente': 'pending',
+            'in_progress': 'in_progress',
+            'Em andamento': 'in_progress',
+            'completed': 'completed',
+            'Concluído': 'completed',
+            'Concluido': 'completed'
+          };
+          
+          const normalizedStatus: "pending" | "in_progress" | "completed" = 
+            statusMapping[item.status] || 'pending';
+          
+          // Safely get responsible name with fallbacks
+          const responsibleName = (() => {
+            // Try to get name from 'users' table if available
+            if (typeof item.users === 'object' && item.users && 'name' in item.users) {
+              return item.users.name;
+            }
+            return 'Sem responsável';
+          })();
+
           return {
             id: item.id,
-            title: item.title || `Inspeção ${item.id.substring(0, 8)}`,
-            description: item.description || '',
+            title: title,
+            description: description,
             checklistId: item.checklist_id,
             companyId: item.company_id,
             responsibleId: item.responsible_id,
             scheduledDate: item.scheduled_date,
-            status: item.status === 'pending' ? 'pending' : 
-                   item.status === 'in_progress' ? 'in_progress' : 'completed',
+            status: normalizedStatus,
             createdAt: item.created_at,
-            updatedAt: item.updated_at,
-            priority: item.priority || 'medium',
+            updatedAt: item.updated_at || item.created_at,
+            priority: item.priority || 'medium' as 'low' | 'medium' | 'high',
             locationName: item.location,
             company: {
               id: item.company_id,
@@ -112,8 +137,8 @@ export function useOptimizedInspections(filters: InspectionFilters) {
             },
             responsible: {
               id: item.responsible_id,
-              name: item.responsible?.name || item.users?.name || 'Sem responsável',
-              email: item.responsible?.email || item.users?.email
+              name: responsibleName,
+              email: ''
             },
             progress: stats.totalItems > 0 ? Math.round((stats.completedItems / stats.totalItems) * 100) : 0,
             totalItems: stats.totalItems,
@@ -130,8 +155,8 @@ export function useOptimizedInspections(filters: InspectionFilters) {
             inspection_type: item.inspection_type,
             sync_status: item.sync_status,
             companyName: item.companies?.fantasy_name || 'Sem empresa',
-            responsibleName: item.responsible?.name || item.users?.name || 'Sem responsável'
-          };
+            responsibleName: responsibleName
+          } as InspectionDetails;
         }));
         
         setInspections(inspectionsWithStats);

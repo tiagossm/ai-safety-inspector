@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ChecklistWithStats } from '@/types/newChecklist';
-import { useCompanyQueries } from './useCompanyQueries';
 import { useChecklistMutations } from './useChecklistMutations';
 import { useChecklistFilters } from './useChecklistFilters';
 
@@ -19,17 +18,37 @@ export function useNewChecklists() {
   const [sortOrder, setSortOrder] = useState("created_desc");
   
   // Fetch all checklists
-  const fetchChecklists = async () => {
+  const fetchChecklists = async (): Promise<ChecklistWithStats[]> => {
     const { data, error } = await supabase
       .from('checklists')
       .select(`
         *,
-        companies:company_id (id, fantasy_name),
-        users:user_id (id, name)
+        companies:company_id (id, fantasy_name)
       `)
       .order('created_at', { ascending: false });
     
     if (error) throw error;
+    
+    // Also fetch user data separately for responsible names
+    const userIds = data
+      .filter(item => item.user_id)
+      .map(item => item.user_id);
+    
+    let userNameMap: Record<string, string> = {};
+    
+    if (userIds.length > 0) {
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id, name')
+        .in('id', userIds);
+      
+      if (!userError && userData) {
+        userNameMap = userData.reduce((acc: Record<string, string>, user: any) => {
+          acc[user.id] = user.name || '';
+          return acc;
+        }, {});
+      }
+    }
     
     return data.map(item => ({
       id: item.id,
@@ -59,7 +78,7 @@ export function useNewChecklists() {
       totalQuestions: 0,
       completedQuestions: 0,
       companyName: item.companies?.fantasy_name || '',
-      responsibleName: item.users ? item.users.name || '' : ''
+      responsibleName: item.user_id ? userNameMap[item.user_id] || '' : ''
     })) as ChecklistWithStats[];
   };
   
@@ -73,8 +92,30 @@ export function useNewChecklists() {
   const allChecklists = checklistsQuery.data || [];
   const isLoading = checklistsQuery.isLoading;
   
-  // Get company data
-  const { companies, isLoadingCompanies } = useCompanyQueries();
+  // Get company data for filtering
+  const [companies, setCompanies] = useState<any[]>([]);
+  const [isLoadingCompanies, setIsLoadingCompanies] = useState(false);
+  
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      setIsLoadingCompanies(true);
+      try {
+        const { data, error } = await supabase
+          .from('companies')
+          .select('id, fantasy_name');
+          
+        if (!error && data) {
+          setCompanies(data);
+        }
+      } catch (err) {
+        console.error("Error fetching companies:", err);
+      } finally {
+        setIsLoadingCompanies(false);
+      }
+    };
+    
+    fetchCompanies();
+  }, []);
   
   // Get mutations
   const { deleteChecklist, updateStatus, updateBulkStatus, refetch } = useChecklistMutations();

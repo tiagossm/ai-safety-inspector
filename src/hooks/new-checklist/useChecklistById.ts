@@ -20,13 +20,26 @@ export function useChecklistById(id: string) {
         .from('checklists')
         .select(`
           *,
-          companies:company_id (id, fantasy_name),
-          users:user_id (id, name)
+          companies:company_id (id, fantasy_name)
         `)
         .eq('id', id)
         .single();
       
       if (error) throw error;
+      
+      // Also fetch user data separately to avoid join errors
+      let responsibleName = '';
+      if (data.user_id) {
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('name')
+          .eq('id', data.user_id)
+          .single();
+          
+        if (!userError && userData) {
+          responsibleName = userData.name || '';
+        }
+      }
 
       // Get questions for this checklist
       const { data: questionsData, error: questionsError } = await supabase
@@ -66,14 +79,18 @@ export function useChecklistById(id: string) {
         };
       });
 
+      // TypeScript safeguards for enum types
+      const statusValue = data.status === 'active' ? 'active' : 'inactive' as "active" | "inactive";
+      const originValue = (data.origin || 'manual') as ChecklistOrigin;
+
       // Transform to the expected format and ensure the status is of correct type
       const formattedChecklist: ChecklistWithStats = {
         id: data.id,
         title: data.title,
         description: data.description || '',
-        status: data.status === 'active' ? 'active' : 'inactive' as "active" | "inactive",
         is_template: data.is_template || false,
         isTemplate: data.is_template || false,
+        status: statusValue,
         category: data.category || '',
         responsible_id: data.responsible_id,
         responsibleId: data.responsible_id,
@@ -89,13 +106,13 @@ export function useChecklistById(id: string) {
         dueDate: data.due_date,
         is_sub_checklist: data.is_sub_checklist || false,
         isSubChecklist: data.is_sub_checklist || false,
-        origin: (data.origin || 'manual') as ChecklistOrigin,
+        origin: originValue,
         parent_question_id: data.parent_question_id,
         parentQuestionId: data.parent_question_id,
         totalQuestions: questionsData.length,
         completedQuestions: 0,
         companyName: data.companies?.fantasy_name || '',
-        responsibleName: data.users ? data.users.name || '' : '',
+        responsibleName: responsibleName,
         questions: questions,
         groups: []
       };
