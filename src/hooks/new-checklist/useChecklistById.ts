@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ChecklistWithStats } from "@/types/newChecklist";
+import { ChecklistWithStats, ChecklistOrigin } from "@/types/newChecklist";
 
 export function useChecklistById(id: string) {
   const [checklist, setChecklist] = useState<ChecklistWithStats | null>(null);
@@ -56,6 +56,9 @@ export function useChecklistById(id: string) {
         }
       }
       
+      // Normalize the origin value to ensure it matches ChecklistOrigin type
+      const normalizedOrigin = normalizeOrigin(checklistData.origin);
+      
       // Transform data to match the ChecklistWithStats type
       const result: ChecklistWithStats = {
         id: checklistData.id,
@@ -79,7 +82,7 @@ export function useChecklistById(id: string) {
         dueDate: checklistData.due_date,
         is_sub_checklist: checklistData.is_sub_checklist || false,
         isSubChecklist: checklistData.is_sub_checklist || false,
-        origin: checklistData.origin || 'manual',
+        origin: normalizedOrigin,
         parent_question_id: checklistData.parent_question_id,
         parentQuestionId: checklistData.parent_question_id,
         totalQuestions: totalQuestions || 0,
@@ -95,6 +98,14 @@ export function useChecklistById(id: string) {
     } finally {
       setLoading(false);
     }
+  };
+  
+  // Helper function to ensure origin is a valid ChecklistOrigin type
+  const normalizeOrigin = (origin: any): ChecklistOrigin => {
+    if (origin === 'ia' || origin === 'csv') {
+      return origin;
+    }
+    return 'manual';
   };
   
   useEffect(() => {
