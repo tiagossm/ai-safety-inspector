@@ -1,3 +1,4 @@
+
 import { ChecklistGroup } from '@/types/newChecklist';
 
 export interface Checklist {
