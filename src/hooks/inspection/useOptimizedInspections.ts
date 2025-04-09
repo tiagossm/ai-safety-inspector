@@ -107,13 +107,13 @@ export function useOptimizedInspections() {
       ]);
       
       // Process the data into maps for quick lookup
-      const usersMap = (usersData.data || []).reduce((acc, user) => {
+      const usersMap = (usersData.data || []).reduce((acc: Record<string, any>, user) => {
         acc[user.id] = user;
         return acc;
       }, {});
       
       // Convert the array of count queries into a map for checklist questions
-      const questionsCountMap = checklistIds.reduce((acc, checklistId, index) => {
+      const questionsCountMap = checklistIds.reduce((acc: Record<string, number>, checklistId, index) => {
         if (questionsCountData[index] && questionsCountData[index].count !== null) {
           acc[checklistId] = questionsCountData[index].count;
         } else {
@@ -123,7 +123,7 @@ export function useOptimizedInspections() {
       }, {});
       
       // Convert the array of count queries into a map for inspection responses
-      const responsesCountMap = inspectionIds.reduce((acc, inspectionId, index) => {
+      const responsesCountMap = inspectionIds.reduce((acc: Record<string, number>, inspectionId, index) => {
         if (responsesCountData[index] && responsesCountData[index].count !== null) {
           acc[inspectionId] = responsesCountData[index].count;
         } else {
@@ -133,11 +133,11 @@ export function useOptimizedInspections() {
       }, {});
       
       // Now build the final inspections array with all the data
-      const processedInspections: InspectionDetails[] = inspectionsData.map(inspection => {
-        const totalQuestions = questionsCountMap[inspection.checklist_id] || 0;
-        const answeredQuestions = responsesCountMap[inspection.id] || 0;
-        const progress = totalQuestions > 0 
-          ? Math.round((answeredQuestions / totalQuestions) * 100) 
+      const processedInspections = inspectionsData.map(inspection => {
+        const totalItems = questionsCountMap[inspection.checklist_id] || 0;
+        const completedItems = responsesCountMap[inspection.id] || 0;
+        const progress = totalItems > 0 
+          ? Math.round((completedItems / totalItems) * 100) 
           : 0;
           
         // Convert metadata from JSON to Record<string, any> or provide an empty object
@@ -161,6 +161,8 @@ export function useOptimizedInspections() {
           company: inspection.companies || null,
           responsible: inspection.responsible_id ? usersMap[inspection.responsible_id] : null,
           progress,
+          totalItems,
+          completedItems,
           // Additional fields from the database schema
           approval_notes: inspection.approval_notes,
           approval_status: inspection.approval_status,
@@ -169,11 +171,13 @@ export function useOptimizedInspections() {
           photos: inspection.photos || [],
           report_url: inspection.report_url,
           unit_id: inspection.unit_id,
-          metadata, // Use the converted metadata
+          metadata,
           cnae: inspection.cnae,
           inspection_type: inspection.inspection_type,
-          sync_status: inspection.sync_status
-        };
+          sync_status: inspection.sync_status,
+          companyName: inspection.companies?.fantasy_name,
+          responsibleName: inspection.responsible_id ? usersMap[inspection.responsible_id]?.name : null
+        } as InspectionDetails;
       });
       
       setInspections(processedInspections);
@@ -218,9 +222,14 @@ export function useOptimizedInspections() {
         
         if (scheduledDate) {
           // Remove time component for date comparison
-          const dateOnly = new Date(scheduledDate.setHours(0, 0, 0, 0));
-          const startDateOnly = new Date(startDate.setHours(0, 0, 0, 0));
-          const endDateOnly = new Date(endDate.setHours(23, 59, 59, 999));
+          const dateOnly = new Date(scheduledDate);
+          dateOnly.setHours(0, 0, 0, 0);
+          
+          const startDateOnly = new Date(startDate);
+          startDateOnly.setHours(0, 0, 0, 0);
+          
+          const endDateOnly = new Date(endDate);
+          endDateOnly.setHours(23, 59, 59, 999);
           
           matchesDate = dateOnly >= startDateOnly && dateOnly <= endDateOnly;
         } else {

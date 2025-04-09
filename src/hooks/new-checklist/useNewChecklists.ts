@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useChecklistQueries } from './useChecklistQueries';
+import { useChecklistsQuery } from './useChecklistQueries';
 import { useCompanyQueries } from './useCompanyQueries';
 import { useChecklistMutations } from './useChecklistMutations';
 import { useChecklistFilters } from './useChecklistFilters';
@@ -21,7 +21,7 @@ export function useNewChecklists() {
     checklists, 
     allChecklists, 
     isLoading 
-  } = useChecklistQueries(filterType, selectedCompanyId, selectedCategory, selectedOrigin, sortOrder);
+  } = useChecklistsQuery(filterType, selectedCompanyId, selectedCategory, selectedOrigin, sortOrder);
   
   // Get company data
   const { companies, isLoadingCompanies } = useCompanyQueries();

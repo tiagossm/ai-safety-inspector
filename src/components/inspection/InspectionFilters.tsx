@@ -16,10 +16,11 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { CompanySelector } from "./CompanySelector";
 import { InspectionFilters as InspectionFiltersType } from "@/types/newChecklist";
+import { DateRange } from "react-day-picker";
 
 export interface InspectionFiltersProps {
-  filters: InspectionFilters;
-  setFilters: (filters: InspectionFilters) => void;
+  filters: InspectionFiltersType;
+  setFilters: (filters: InspectionFiltersType) => void;
 }
 
 export function InspectionFilters({ 
@@ -28,10 +29,7 @@ export function InspectionFilters({
 }: InspectionFiltersProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [tempFilters, setTempFilters] = useState<InspectionFiltersType>(filters);
-  const [dateRange, setDateRange] = useState<{
-    from: Date | undefined;
-    to: Date | undefined;
-  }>({
+  const [dateRange, setDateRange] = useState<DateRange>({
     from: filters.startDate,
     to: filters.endDate
   });
@@ -195,16 +193,10 @@ export function InspectionFilters({
                     initialFocus
                     mode="range"
                     defaultMonth={dateRange.from}
-                    selected={{
-                      from: dateRange.from,
-                      to: dateRange.to
-                    }}
+                    selected={dateRange}
                     onSelect={(range) => {
                       if (range) {
-                        setDateRange({
-                          from: range.from,
-                          to: range.to
-                        });
+                        setDateRange(range);
                       }
                     }}
                     numberOfMonths={2}
@@ -221,6 +213,7 @@ export function InspectionFilters({
             <CompanySelector 
               value={tempFilters.companyId}
               onSelect={(value) => setTempFilters({...tempFilters, companyId: value})}
+              includeEmptyOption={true}
             />
           </div>
 

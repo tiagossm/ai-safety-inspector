@@ -24,7 +24,6 @@ export function useChecklistCreate() {
         description: checklistData.description || '',
         is_template: checklistData.is_template || false,
         status: checklistData.status || 'active',
-        status_checklist: checklistData.status_checklist || 'ativo',
         category: checklistData.category || '',
         company_id: checklistData.company_id || null,
         responsible_id: checklistData.responsible_id || null,

@@ -39,9 +39,9 @@ export const checklistService = {
         dueDate: item.due_date,
         is_sub_checklist: item.is_sub_checklist || false,
         isSubChecklist: item.is_sub_checklist || false,
-        origin: item.origin as ChecklistOrigin || 'manual',
+        origin: item.origin || 'manual',
         parent_question_id: item.parent_question_id,
-        parentQuestionId: item.parent_question_id,
+        parent_question_id: item.parent_question_id,
         totalQuestions: 0,
         completedQuestions: 0,
         companyName: item.companies?.fantasy_name || '',
@@ -78,7 +78,7 @@ export const checklistService = {
         description: data.description || '',
         is_template: data.is_template || false,
         isTemplate: data.is_template || false,
-        status: data.status as "active" | "inactive",
+        status: data.status || 'active',
         category: data.category || '',
         responsible_id: data.responsible_id,
         responsibleId: data.responsible_id,
@@ -94,7 +94,7 @@ export const checklistService = {
         dueDate: data.due_date,
         is_sub_checklist: data.is_sub_checklist || false,
         isSubChecklist: data.is_sub_checklist || false,
-        origin: data.origin as ChecklistOrigin || 'manual',
+        origin: data.origin || 'manual',
         parent_question_id: data.parent_question_id,
         parentQuestionId: data.parent_question_id,
         totalQuestions: 0,
@@ -135,19 +135,21 @@ export const checklistService = {
         throw new Error("Checklist title is required");
       }
 
+      const payload = {
+        title: checklistData.title,
+        description: checklistData.description || '',
+        is_template: checklistData.is_template || false,
+        status: checklistData.status || 'active',
+        category: checklistData.category || '',
+        responsible_id: checklistData.responsible_id || null,
+        company_id: checklistData.company_id || null,
+        user_id: checklistData.user_id || null,
+        origin: checklistData.origin || 'manual'
+      };
+
       const { data, error } = await supabase
         .from('checklists')
-        .insert({
-          title: checklistData.title,
-          description: checklistData.description || '',
-          is_template: checklistData.is_template || false,
-          status: checklistData.status || 'active',
-          category: checklistData.category || '',
-          responsible_id: checklistData.responsible_id || null,
-          company_id: checklistData.company_id || null,
-          user_id: checklistData.user_id || null,
-          origin: checklistData.origin || 'manual'
-        })
+        .insert(payload)
         .select()
         .single();
       
