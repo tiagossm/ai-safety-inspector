@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats, ChecklistQuestion, ChecklistGroup, ChecklistOrigin } from '@/types/newChecklist';
@@ -108,7 +107,6 @@ export function useChecklistById(id: string) {
         isSubChecklist: data.is_sub_checklist || false,
         origin: originValue,
         parent_question_id: data.parent_question_id,
-        parentQuestionId: data.parent_question_id,
         totalQuestions: questionsData.length,
         completedQuestions: 0,
         companyName: data.companies?.fantasy_name || '',

@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats, Checklist, ChecklistQuestion, ChecklistGroup, ChecklistOrigin } from "@/types/newChecklist";
 import { toast } from "sonner";
@@ -227,7 +226,6 @@ export const checklistService = {
     }
   },
 
-  // Add the missing methods referenced in ChecklistRow
   fetchCompanyNameById: async (companyId: string): Promise<string | null> => {
     try {
       const { data, error } = await supabase
