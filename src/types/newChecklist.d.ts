@@ -1,4 +1,3 @@
-
 import { ChecklistGroup } from '@/types/newChecklist';
 
 export interface Checklist {
@@ -25,10 +24,6 @@ export interface ChecklistWithStats extends Checklist {
   questions?: ChecklistQuestion[];
   is_sub_checklist?: boolean; // For backward compatibility
   isSubChecklist?: boolean;
-  created_at?: string;
-  updated_at?: string;
-  createdAt?: string;
-  updatedAt?: string;
   origin?: 'manual' | 'ia' | 'csv';
   companyName?: string; // Added company name property
   companyId?: string; // Added company ID for potential future use
