@@ -16,12 +16,15 @@ export const ChecklistCardBadges: React.FC<ChecklistCardBadgesProps> = ({
   checklist, 
   status 
 }) => {
+  // Ensure origin is cast to a valid ChecklistOrigin type
+  const safeOrigin = (checklist.origin || 'manual') as ChecklistOrigin;
+  
   return (
     <div className="flex items-center gap-2 mb-1">
       <Badge variant={checklist.isTemplate ? "secondary" : "default"} className="px-2 py-0">
         {checklist.isTemplate ? "Template" : status === 'active' ? "Ativo" : "Inativo"}
       </Badge>
-      <ChecklistOriginBadge origin={checklist.origin as ChecklistOrigin} />
+      <ChecklistOriginBadge origin={safeOrigin} />
     </div>
   );
 };

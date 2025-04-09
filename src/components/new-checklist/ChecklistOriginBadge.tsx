@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { ChecklistOrigin } from "@/types/newChecklist";
 
 interface ChecklistOriginBadgeProps {
-  origin?: ChecklistOrigin;
+  origin?: ChecklistOrigin | string;
   className?: string;
   showLabel?: boolean;
 }
@@ -16,8 +16,13 @@ export const ChecklistOriginBadge = ({
   className = "",
   showLabel = true
 }: ChecklistOriginBadgeProps) => {
+  // Ensure origin is a valid value
+  const safeOrigin = (origin === 'manual' || origin === 'ia' || origin === 'csv') 
+    ? origin as ChecklistOrigin 
+    : 'manual' as ChecklistOrigin;
+
   const getOriginDetails = () => {
-    switch (origin) {
+    switch (safeOrigin) {
       case 'manual':
         return {
           icon: <FilePenLine className="h-3 w-3" />,

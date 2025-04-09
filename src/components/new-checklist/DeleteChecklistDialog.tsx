@@ -20,7 +20,8 @@ interface DeleteChecklistDialogProps {
   checklistTitle: string;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onDeleted?: () => void;
+  onDeleted?: () => Promise<void>;
+  isDeleting?: boolean; // Added isDeleting prop
 }
 
 export function DeleteChecklistDialog({
@@ -28,12 +29,16 @@ export function DeleteChecklistDialog({
   checklistTitle,
   isOpen,
   onOpenChange,
-  onDeleted
+  onDeleted,
+  isDeleting: externalIsDeleting // Use external isDeleting if provided
 }: DeleteChecklistDialogProps) {
   const deleteChecklist = useChecklistDelete();
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [internalIsDeleting, setInternalIsDeleting] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Use external isDeleting if provided, otherwise use internal state
+  const isDeleting = externalIsDeleting !== undefined ? externalIsDeleting : internalIsDeleting;
 
   const handleDelete = async () => {
     if (!checklistId) {
@@ -42,7 +47,10 @@ export function DeleteChecklistDialog({
       return;
     }
     
-    setIsDeleting(true);
+    if (!externalIsDeleting) {
+      setInternalIsDeleting(true);
+    }
+    
     try {
       await deleteChecklist.mutateAsync(checklistId);
       
@@ -68,7 +76,9 @@ export function DeleteChecklistDialog({
       console.error("Erro ao excluir checklist:", error);
       toast.error("Erro ao excluir checklist");
     } finally {
-      setIsDeleting(false);
+      if (!externalIsDeleting) {
+        setInternalIsDeleting(false);
+      }
     }
   };
 

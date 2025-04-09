@@ -90,6 +90,7 @@ export interface ChecklistQuestion {
   order: number;
   groupId?: string;
   parentQuestionId?: string;
+  conditionValue?: string;
   subChecklistId?: string | null;
   hasSubChecklist?: boolean;
   displayNumber?: string;
@@ -122,6 +123,7 @@ export interface BatchUpdateResult {
   count: number;
 }
 
+// Added InspectionDetails interface
 export interface InspectionDetails {
   id: string;
   title: string;
@@ -137,9 +139,15 @@ export interface InspectionDetails {
   responsibleName?: string;
   totalItems: number;
   completedItems: number;
+  progress?: number;
+  scheduledDate?: string;
+  company?: { id: string; name: string };
+  responsible?: { id: string; name: string };
   priority?: 'high' | 'medium' | 'low';
+  checklistId?: string;
 }
 
+// Added InspectionFilters interface
 export interface InspectionFilters {
   status?: string;
   dateRange?: [Date | null, Date | null];
@@ -147,6 +155,10 @@ export interface InspectionFilters {
   companyId?: string;
   responsibleId?: string;
   searchTerm?: string;
+  startDate?: string;
+  endDate?: string;
+  checklistId?: string;
+  search?: string;
 }
 
 export interface DeleteChecklistDialogProps {
@@ -157,3 +169,6 @@ export interface DeleteChecklistDialogProps {
   onDeleted: () => Promise<void>;
   isDeleting?: boolean;
 }
+
+// AIAssistantType
+export type AIAssistantType = 'general' | 'workplace-safety' | 'compliance' | 'quality' | 'checklist';

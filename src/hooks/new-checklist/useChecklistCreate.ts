@@ -1,3 +1,4 @@
+
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { checklistService } from "@/services/checklist/checklistService";
@@ -8,8 +9,8 @@ import { handleApiError } from "@/utils/errors";
  * Hook for creating a new checklist
  */
 export function useChecklistCreate() {
-  const mutation = useMutation(
-    async ({ 
+  const mutation = useMutation({
+    mutationFn: async ({ 
       checklist, 
       questions,
       groups 
@@ -69,15 +70,13 @@ export function useChecklistCreate() {
         throw new Error(errorMessage);
       }
     },
-    {
-      onSuccess: () => {
-        toast.success("Checklist created successfully!");
-      },
-      onError: (error: any) => {
-        handleApiError(error, "Failed to create checklist");
-      },
-    }
-  );
+    onSuccess: () => {
+      toast.success("Checklist created successfully!");
+    },
+    onError: (error: any) => {
+      handleApiError(error, "Failed to create checklist");
+    },
+  });
 
   return mutation;
 }

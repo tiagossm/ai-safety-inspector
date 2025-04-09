@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useNewChecklists } from "@/hooks/new-checklist/useNewChecklists";
@@ -120,7 +121,7 @@ export default function NewChecklists() {
   };
 
   // Handle status update for multiple checklists
-  const handleBulkStatusChange = async (ids: string[], newStatus: "active" | "inactive"): Promise<void> => {
+  const handleBulkStatusChange = async (ids: string[], newStatus: "active" | "inactive") => {
     try {
       setIsActionLoading(true);
       
@@ -130,12 +131,15 @@ export default function NewChecklists() {
         toast.success(`${result.count} checklists updated successfully`);
         await refetch();
         setSelectedIds([]);
+        return true;
       } else {
         toast.error("Failed to update checklists");
+        return false;
       }
     } catch (error) {
       console.error("Error updating checklists:", error);
       toast.error("An error occurred while updating checklists");
+      return false;
     } finally {
       setIsActionLoading(false);
     }
@@ -243,11 +247,10 @@ export default function NewChecklists() {
         isOpen={deleteDialog.open}
         onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
         onDeleted={handleDeleteComplete}
-        isDeleting={isActionLoading}
+        isDeleting={isDeleting}
       />
       
       <FloatingNavigation threshold={300} />
     </div>
   );
 }
-
