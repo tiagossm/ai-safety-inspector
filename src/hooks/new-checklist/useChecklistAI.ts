@@ -3,8 +3,8 @@
 import { useChecklistAIGeneration } from './ai/useChecklistAIGeneration';
 import { AIAssistantType } from "@/types/newChecklist"; // Import from the types file
 
-// Export the AIAssistantType for backward compatibility
-export { AIAssistantType }; 
+// Export the AIAssistantType for backward compatibility using export type
+export type { AIAssistantType }; 
 
 // Export for backward compatibility
 export { useChecklistAIGeneration as useChecklistAI };
