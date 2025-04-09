@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -14,9 +15,9 @@ export function useInspections() {
     search: "",
     status: "all",
     priority: "all",
-    companyId: "all",
-    responsibleId: "all", 
-    checklistId: "all",
+    companyId: "",
+    responsibleId: "", 
+    checklistId: "",
     startDate: undefined,
     endDate: undefined
   });
@@ -58,7 +59,7 @@ export function useInspections() {
         .map(inspection => inspection.responsible_id)
         .filter(id => id !== null && id !== undefined);
       
-      let responsiblesData = {};
+      let responsiblesData: Record<string, any> = {};
       
       if (userIds.length > 0) {
         const { data: usersData, error: usersError } = await supabase
@@ -67,7 +68,7 @@ export function useInspections() {
           .in("id", userIds);
           
         if (!usersError && usersData) {
-          responsiblesData = usersData.reduce((acc, user) => {
+          responsiblesData = usersData.reduce((acc: Record<string, any>, user) => {
             acc[user.id] = user;
             return acc;
           }, {});
@@ -116,6 +117,8 @@ export function useInspections() {
           company: inspection.companies || null,
           responsible: inspection.responsible_id ? responsiblesData[inspection.responsible_id] : null,
           progress,
+          totalItems: totalQuestions || 0,
+          completedItems: answeredQuestions || 0,
           // Additional fields from the database schema
           approval_notes: inspection.approval_notes,
           approval_status: inspection.approval_status,
@@ -127,8 +130,10 @@ export function useInspections() {
           metadata: inspection.metadata,
           cnae: inspection.cnae,
           inspection_type: inspection.inspection_type,
-          sync_status: inspection.sync_status
-        };
+          sync_status: inspection.sync_status,
+          companyName: inspection.companies?.fantasy_name,
+          responsibleName: inspection.responsible_id ? responsiblesData[inspection.responsible_id]?.name : null
+        } as InspectionDetails;
       }));
       
       setInspections(inspectionsWithProgress);
@@ -180,15 +185,10 @@ export function useInspections() {
         const endDate = filters.endDate || startDate;
         
         if (scheduledDate) {
-          // Remove time component for date comparison
-          const dateOnly = scheduledDate;
-          dateOnly.setHours(0, 0, 0, 0);
-          
-          const startDateOnly = new Date(startDate);
-          startDateOnly.setHours(0, 0, 0, 0);
-          
-          const endDateOnly = new Date(endDate);
-          endDateOnly.setHours(23, 59, 59, 999);
+          // Use date comparisons without modifying the Date objects
+          const dateOnly = scheduledDate.toISOString().split('T')[0];
+          const startDateOnly = startDate.toISOString().split('T')[0];
+          const endDateOnly = endDate.toISOString().split('T')[0];
           
           matchesDate = dateOnly >= startDateOnly && dateOnly <= endDateOnly;
         } else {

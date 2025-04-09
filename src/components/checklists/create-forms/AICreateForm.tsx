@@ -18,7 +18,7 @@ import { CompanySelector } from "@/components/inspection/CompanySelector";
 import { supabase } from "@/integrations/supabase/client";
 import { Company, CompanyMetadata } from "@/types/company";
 import { toast } from "sonner";
-import { OpenAIAssistantSelector } from "@/components/ai/OpenAIAssistantSelector";
+import { AIAssistantSelector } from "@/components/ai/OpenAIAssistantSelector";
 import QuestionCountSelector from "./QuestionCountSelector";
 
 interface AICreateFormProps {

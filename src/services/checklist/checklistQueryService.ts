@@ -1,102 +1,64 @@
 
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats } from "@/types/newChecklist";
-import { transformChecklistData, transformBasicChecklistData } from "./checklistTransformers";
+import { transformDbChecklistsToStats } from "./checklistTransformers";
 
-/**
- * Fetches checklists with filters and sorting
- */
-export async function fetchChecklists(
-  filterType: string,
-  selectedCompanyId: string,
-  selectedCategory: string,
-  sortOrder: string
-) {
-  let query = supabase
-    .from("checklists")
-    .select(`
-      *,
-      checklist_itens(count),
-      companies(fantasy_name),
-      users!checklists_responsible_id_fkey(name)
-    `);
+export const useChecklistsQuery = () => {
+  return useQuery({
+    queryKey: ["checklists"],
+    queryFn: async (): Promise<ChecklistWithStats[]> => {
+      const { data, error } = await supabase
+        .from("checklists")
+        .select(`
+          *,
+          companies:company_id (id, fantasy_name)
+        `)
+        .order("created_at", { ascending: false });
 
-  // Apply filters
-  if (filterType === "template") {
-    query = query.eq("is_template", true);
-  } else if (filterType === "active") {
-    query = query.eq("status", "active").eq("is_template", false);
-  } else if (filterType === "inactive") {
-    query = query.eq("status", "inactive").eq("is_template", false);
-  }
+      if (error) throw error;
+      
+      // Transform the data to match the expected format
+      return transformDbChecklistsToStats(data || []);
+    }
+  });
+};
 
-  if (selectedCompanyId !== "all") {
-    query = query.eq("company_id", selectedCompanyId);
-  }
+export const useChecklistByIdQuery = (id: string) => {
+  return useQuery({
+    queryKey: ["checklist", id],
+    queryFn: async (): Promise<ChecklistWithStats> => {
+      const { data, error } = await supabase
+        .from("checklists")
+        .select(`
+          *,
+          companies:company_id (id, fantasy_name)
+        `)
+        .eq("id", id)
+        .single();
 
-  if (selectedCategory !== "all") {
-    query = query.eq("category", selectedCategory);
-  }
+      if (error) throw error;
+      
+      // Get question count
+      const { count: totalQuestions, error: countError } = await supabase
+        .from("checklist_itens")
+        .select("*", { count: "exact", head: true })
+        .eq("checklist_id", id);
 
-  // Apply sorting
-  if (sortOrder === "created_desc") {
-    query = query.order("created_at", { ascending: false });
-  } else if (sortOrder === "created_asc") {
-    query = query.order("created_at", { ascending: true });
-  } else if (sortOrder === "title_asc") {
-    query = query.order("title", { ascending: true });
-  } else if (sortOrder === "title_desc") {
-    query = query.order("title", { ascending: false });
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    console.error("Error fetching checklists:", error);
-    throw error;
-  }
-
-  return transformChecklistData(data);
-}
-
-/**
- * Fetches all checklist data for filtering
- */
-export async function fetchAllChecklistsData() {
-  const { data, error } = await supabase
-    .from("checklists")
-    .select(`
-      id, title, description, is_template, status, category, 
-      company_id, created_at, updated_at, is_sub_checklist, origin
-    `);
-
-  if (error) {
-    console.error("Error fetching all checklists data:", error);
-    throw error;
-  }
-
-  return transformBasicChecklistData(data);
-}
-
-/**
- * Fetches a specific checklist by ID
- */
-export async function fetchChecklistById(id: string) {
-  const { data, error } = await supabase
-    .from("checklists")
-    .select(`
-      *,
-      checklist_itens(count),
-      companies(fantasy_name),
-      users!checklists_responsible_id_fkey(name)
-    `)
-    .eq("id", id)
-    .single();
-
-  if (error) {
-    console.error(`Error fetching checklist ${id}:`, error);
-    throw error;
-  }
-
-  return transformChecklistData([data])[0];
-}
+      if (countError) {
+        console.error("Error fetching question count:", countError);
+      }
+      
+      // Transform to the expected format
+      const result = {
+        ...data,
+        totalQuestions: totalQuestions || 0,
+        completedQuestions: 0,
+        companyName: data.companies?.fantasy_name || "",
+      };
+      
+      return transformDbChecklistsToStats([result])[0];
+    },
+    enabled: !!id
+  });
+};

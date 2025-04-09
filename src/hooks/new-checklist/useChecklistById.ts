@@ -1,142 +1,145 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ChecklistWithStats, ChecklistQuestion, ChecklistGroup, ChecklistOrigin } from "@/types/newChecklist";
+import { ChecklistWithStats, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
+import { toast } from "sonner";
 
-export function useChecklistById(checklistId: string | undefined) {
+export function useChecklistById(checklistId: string) {
+  const [checklist, setChecklist] = useState<ChecklistWithStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [checklist, setChecklist] = useState<ChecklistWithStats | null>(null);
-  
+
   useEffect(() => {
-    if (!checklistId) {
-      setLoading(false);
-      return;
-    }
-    
-    async function fetchChecklist() {
+    const fetchChecklist = async () => {
       try {
         setLoading(true);
-        
-        // Fetch the checklist
+        setError(null);
+
+        // Fetch the checklist details
         const { data: checklistData, error: checklistError } = await supabase
           .from("checklists")
           .select(`
-            id, title, description, is_template, status, category, 
-            status_checklist, responsible_id, company_id, user_id, 
-            created_at, updated_at, due_date, is_sub_checklist,
-            origin, parent_question_id,
-            companies:company_id(id, fantasy_name),
-            users:responsible_id(id, name)
+            *,
+            companies:company_id (id, fantasy_name)
           `)
           .eq("id", checklistId)
           .single();
-        
+
         if (checklistError) {
-          setError(new Error(checklistError.message));
-          setLoading(false);
-          return;
+          throw checklistError;
         }
-        
-        // Fetch questions for this checklist
+
+        if (!checklistData) {
+          throw new Error("Checklist not found");
+        }
+
+        // Fetch questions
         const { data: questionsData, error: questionsError } = await supabase
           .from("checklist_itens")
           .select("*")
           .eq("checklist_id", checklistId)
           .order("ordem", { ascending: true });
-        
+
         if (questionsError) {
-          setError(new Error(questionsError.message));
-          setLoading(false);
-          return;
+          console.error("Error fetching questions:", questionsError);
+          toast.error("Error loading checklist questions");
         }
-        
-        // Transform the questions data
-        const transformedQuestions: ChecklistQuestion[] = questionsData.map((q: any) => ({
-          id: q.id,
-          text: q.pergunta,
-          responseType: mapResponseType(q.tipo_resposta),
-          isRequired: q.obrigatorio,
-          options: Array.isArray(q.opcoes) ? q.opcoes : [],
-          order: q.ordem,
-          allowsPhoto: q.permite_foto,
-          allowsVideo: q.permite_video,
-          allowsAudio: q.permite_audio,
-          allowsFiles: false, // Default value
-          weight: q.weight || 1,
-          groupId: "default", // Default group
-          parentId: q.parent_item_id,
-          conditionValue: q.condition_value,
-          parentQuestionId: q.parent_item_id,
-          hint: q.hint,
-          hasSubChecklist: q.has_subchecklist || false,
-          subChecklistId: q.sub_checklist_id
+
+        // Transform questions to match expected format
+        const questions: ChecklistQuestion[] = (questionsData || []).map(item => ({
+          id: item.id,
+          text: item.pergunta,
+          responseType: item.tipo_resposta as "yes_no" | "numeric" | "text" | "multiple_choice" | "photo" | "signature",
+          isRequired: item.obrigatorio,
+          options: item.opcoes as string[] || [],
+          order: item.ordem,
+          allowsPhoto: item.permite_foto,
+          allowsVideo: item.permite_video,
+          allowsAudio: item.permite_audio,
+          weight: item.weight || 1,
+          parentId: item.parent_item_id,
+          parentQuestionId: item.parent_item_id,
+          conditionValue: item.condition_value,
+          displayNumber: `${item.ordem + 1}`,
+          hint: item.hint,
+          hasSubChecklist: item.has_subchecklist,
+          subChecklistId: item.sub_checklist_id
         }));
-        
-        // Create the checklist with stats
-        const transformedChecklist: ChecklistWithStats = {
+
+        // Extract group data from question hints
+        const groupsMap = new Map<string, ChecklistGroup>();
+        questions.forEach(q => {
+          try {
+            if (q.hint && q.hint.startsWith("{")) {
+              const hintData = JSON.parse(q.hint);
+              if (hintData.groupId && hintData.groupTitle) {
+                if (!groupsMap.has(hintData.groupId)) {
+                  groupsMap.set(hintData.groupId, {
+                    id: hintData.groupId,
+                    title: hintData.groupTitle,
+                    order: hintData.groupIndex || 0,
+                    description: ""
+                  });
+                }
+              }
+            }
+          } catch (e) {
+            // Invalid JSON in hint, ignore
+          }
+        });
+
+        // Convert the checklist data to the required format
+        const formattedChecklist: ChecklistWithStats = {
           id: checklistData.id,
           title: checklistData.title,
-          description: checklistData.description,
-          is_template: checklistData.is_template,
+          description: checklistData.description || "",
+          is_template: checklistData.is_template || false,
           status: checklistData.status as "active" | "inactive",
-          category: checklistData.category,
+          category: checklistData.category || "",
           responsible_id: checklistData.responsible_id,
           company_id: checklistData.company_id,
           user_id: checklistData.user_id,
           created_at: checklistData.created_at,
           updated_at: checklistData.updated_at,
           due_date: checklistData.due_date,
-          is_sub_checklist: checklistData.is_sub_checklist,
-          origin: (checklistData.origin || "manual") as ChecklistOrigin,
+          is_sub_checklist: checklistData.is_sub_checklist || false,
+          origin: checklistData.origin as "manual" | "ia" | "csv",
           parent_question_id: checklistData.parent_question_id,
-          totalQuestions: transformedQuestions.length,
+          totalQuestions: questions.length,
           completedQuestions: 0,
           companyName: checklistData.companies?.fantasy_name,
-          responsibleName: checklistData.users?.name,
-          questions: transformedQuestions,
-          groups: [{
-            id: "default",
-            title: "Geral",
-            order: 0
-          }],
-          // For backward compatibility
-          isTemplate: checklistData.is_template,
-          isSubChecklist: checklistData.is_sub_checklist,
+          questions,
+          groups: Array.from(groupsMap.values()),
+          
+          // Backward compatibility fields
+          isTemplate: checklistData.is_template || false,
+          isSubChecklist: checklistData.is_sub_checklist || false,
           companyId: checklistData.company_id,
           responsibleId: checklistData.responsible_id,
           userId: checklistData.user_id,
           createdAt: checklistData.created_at,
           updatedAt: checklistData.updated_at,
-          dueDate: checklistData.due_date
+          dueDate: checklistData.due_date,
+          responsibleName: ""
         };
-        
-        setChecklist(transformedChecklist);
-        setLoading(false);
+
+        setChecklist(formattedChecklist);
       } catch (err: any) {
+        console.error("Error loading checklist:", err);
         setError(err);
+        toast.error(`Error loading checklist: ${err.message || "Unknown error"}`);
+      } finally {
         setLoading(false);
       }
-    }
-    
-    fetchChecklist();
-  }, [checklistId]);
-  
-  // Helper function to map response types
-  function mapResponseType(type: string): "yes_no" | "numeric" | "text" | "multiple_choice" | "photo" | "signature" {
-    const typeMap: Record<string, any> = {
-      "sim/não": "yes_no",
-      "numérico": "numeric",
-      "texto": "text",
-      "seleção múltipla": "multiple_choice",
-      "foto": "photo",
-      "assinatura": "signature"
     };
-    
-    return typeMap[type] || "yes_no";
-  }
-  
+
+    if (checklistId) {
+      fetchChecklist();
+    } else {
+      setLoading(false);
+      setError(new Error("No checklist ID provided"));
+    }
+  }, [checklistId]);
+
   return { checklist, loading, error, setChecklist };
 }
-
-export default useChecklistById;

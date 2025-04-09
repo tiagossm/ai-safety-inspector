@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { DeleteChecklistDialog } from "@/components/new-checklist/DeleteChecklistDialog";
-import { checklistService } from "@/services/checklist/checklistService";
+import { supabase } from "@/integrations/supabase/client";
 
 const NewChecklists: React.FC = () => {
   const [isActionLoading, setIsActionLoading] = useState(false);
@@ -13,10 +13,14 @@ const NewChecklists: React.FC = () => {
   const handleBulkStatusChange = async (ids: string[], newStatus: "active" | "inactive"): Promise<void> => {
     try {
       setIsActionLoading(true);
-      const { success, count } = await checklistService.updateStatus(ids, newStatus);
       
-      if (success) {
-        toast.success(`${count} checklists updated successfully`);
+      const { data, error, count } = await supabase
+        .from('checklists')
+        .update({ status: newStatus })
+        .in('id', ids);
+      
+      if (!error) {
+        toast.success(`${ids.length} checklists updated successfully`);
         // You can add refetch logic here
         setSelectedIds([]);
       } else {

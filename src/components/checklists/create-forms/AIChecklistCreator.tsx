@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { IntelligentChecklistForm } from "./IntelligentChecklistForm";
 import { supabase } from "@/integrations/supabase/client";
 import { NewChecklist } from "@/types/checklist";
+import { useChecklistAI } from "@/hooks/new-checklist/useChecklistAI";
 
 interface AIChecklistCreatorProps {
   form: NewChecklist;
@@ -161,10 +162,10 @@ export function AIChecklistCreator({
           </div>
 
           <IntelligentChecklistForm
-            selectedAssistant={selectedAssistant as AIAssistantType}
+            selectedAssistant={selectedAssistant}
             onAssistantTypeChange={(type) => setSelectedAssistant(type as AIType)}
-            openAIAssistant={openAIAssistant || ""}
-            onOpenAIAssistantChange={(id) => setOpenAIAssistant(id)}
+            openAIAssistant={openAIAssistant}
+            onOpenAIAssistantChange={setOpenAIAssistant}
             onPromptChange={setPrompt}
             checklist={{
               ...form,

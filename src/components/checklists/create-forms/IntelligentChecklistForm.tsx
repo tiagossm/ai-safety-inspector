@@ -1,22 +1,22 @@
 
 import React from 'react';
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card } from "@/components/ui/card";
-import { AIAssistantType } from '@/types/newChecklist';
-import { AIAssistantSelector } from '@/components/ai/OpenAIAssistantSelector';
+import { Label } from "@/components/ui/label";
+import { AIAssistantSelector } from "@/components/ai/OpenAIAssistantSelector";
 import QuestionCountSelector from './QuestionCountSelector';
+import { AIAssistantType } from '@/hooks/new-checklist/useChecklistAI';
+import { NewChecklist } from '@/types/checklist';
 
 interface IntelligentChecklistFormProps {
   selectedAssistant: AIAssistantType;
   onAssistantTypeChange: (type: AIAssistantType) => void;
   openAIAssistant: string;
   onOpenAIAssistantChange: (id: string) => void;
-  onPromptChange: (value: string) => void;
+  onPromptChange: (prompt: string) => void;
   checklist: any;
-  setChecklist: React.Dispatch<React.SetStateAction<any>>;
-  numQuestions?: number;
-  setNumQuestions?: React.Dispatch<React.SetStateAction<number>>;
+  setChecklist: React.Dispatch<React.SetStateAction<NewChecklist>>;
+  numQuestions: number;
+  setNumQuestions: (count: number) => void;
 }
 
 export function IntelligentChecklistForm({
@@ -27,52 +27,56 @@ export function IntelligentChecklistForm({
   onPromptChange,
   checklist,
   setChecklist,
-  numQuestions = 10,
+  numQuestions,
   setNumQuestions
 }: IntelligentChecklistFormProps) {
   return (
-    <div className="space-y-6">
-      <Card className="p-4 bg-gray-50">
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="description">
-              Descreva o que você deseja no checklist
-            </Label>
-            <Textarea
-              id="description"
-              value={checklist.description || ''}
-              onChange={(e) => {
-                setChecklist({ ...checklist, description: e.target.value });
-                onPromptChange(e.target.value);
-              }}
-              placeholder="Ex: Criar um checklist para inspeção de equipamentos de proteção individual conforme NR-6"
-              className="min-h-[100px]"
-            />
-            <p className="text-xs text-gray-500">
-              Descreva em detalhes o objetivo do checklist, o que deve ser verificado, e quaisquer normas ou regulamentos que devem ser seguidos.
-            </p>
-          </div>
-          
-          <div className="space-y-2">
-            <Label>Assistente de IA</Label>
-            <AIAssistantSelector
-              selectedAssistant={selectedAssistant}
-              onAssistantTypeChange={onAssistantTypeChange}
-              openAIAssistant={openAIAssistant}
-              onOpenAIAssistantChange={onOpenAIAssistantChange}
-            />
-          </div>
-          
-          {setNumQuestions && (
-            <div className="space-y-2">
-              <QuestionCountSelector 
-                questionCount={numQuestions} 
-                setQuestionCount={(count) => setNumQuestions(count)} 
-              />
-            </div>
-          )}
+    <div className="space-y-4 pt-4">
+      <div className="space-y-2">
+        <Label htmlFor="description">Descrição do Checklist</Label>
+        <Textarea
+          id="description"
+          value={checklist.description || ""}
+          onChange={(e) => {
+            setChecklist({ ...checklist, description: e.target.value });
+            onPromptChange(e.target.value);
+          }}
+          placeholder="Descreva o propósito deste checklist ou digite instruções para o assistente de IA"
+          rows={4}
+          className="resize-none"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <AIAssistantSelector
+            selectedAssistant={selectedAssistant}
+            setSelectedAssistant={onAssistantTypeChange}
+          />
         </div>
-      </Card>
+
+        <div>
+          <QuestionCountSelector
+            questionCount={numQuestions}
+            setQuestionCount={setNumQuestions}
+          />
+        </div>
+      </div>
+
+      {/* Only show OpenAI Assistant ID field if "openai" is selected */}
+      {selectedAssistant === "openai" && (
+        <div className="space-y-2">
+          <Label htmlFor="openaiAssistantId">ID do Assistente OpenAI</Label>
+          <input
+            id="openaiAssistantId"
+            type="text"
+            className="w-full p-2 border rounded"
+            value={openAIAssistant}
+            onChange={(e) => onOpenAIAssistantChange(e.target.value)}
+            placeholder="asst_..."
+          />
+        </div>
+      )}
     </div>
   );
 }

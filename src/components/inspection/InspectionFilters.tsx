@@ -15,7 +15,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { CompanySelector } from "./CompanySelector";
-import type { InspectionFilters as InspectionFiltersType } from "@/types/newChecklist";
+import { InspectionFilters as InspectionFiltersType } from "@/types/newChecklist";
 
 export interface InspectionFiltersProps {
   filters: InspectionFiltersType;
@@ -195,8 +195,18 @@ export function InspectionFilters({
                     initialFocus
                     mode="range"
                     defaultMonth={dateRange.from}
-                    selected={dateRange}
-                    onSelect={setDateRange}
+                    selected={{
+                      from: dateRange.from,
+                      to: dateRange.to
+                    }}
+                    onSelect={(range) => {
+                      if (range) {
+                        setDateRange({
+                          from: range.from,
+                          to: range.to
+                        });
+                      }
+                    }}
                     numberOfMonths={2}
                     locale={ptBR}
                   />
@@ -211,7 +221,6 @@ export function InspectionFilters({
             <CompanySelector 
               value={tempFilters.companyId}
               onSelect={(value) => setTempFilters({...tempFilters, companyId: value})}
-              includeEmptyOption
             />
           </div>
 

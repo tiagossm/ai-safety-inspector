@@ -2,9 +2,9 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup, AIAssistantType } from "@/types/newChecklist";
+import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 
-export { AIAssistantType };
+export type AIAssistantType = "general" | "workplace-safety" | "compliance" | "quality" | "checklist" | "openai";
 
 export function useChecklistAI() {
   const [isGenerating, setIsGenerating] = useState<boolean>(false);

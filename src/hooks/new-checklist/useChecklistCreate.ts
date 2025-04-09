@@ -1,9 +1,9 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { checklistService } from "@/services/checklist/checklistService";
 import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { handleApiError } from "@/utils/errors";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Hook for creating a new checklist
@@ -11,13 +11,9 @@ import { handleApiError } from "@/utils/errors";
 export function useChecklistCreate() {
   const mutation = useMutation({
     mutationFn: async ({ 
-      checklist, 
-      questions,
-      groups 
+      checklist
     }: {
       checklist: NewChecklistPayload;
-      questions: ChecklistQuestion[];
-      groups: ChecklistGroup[];
     }): Promise<{ id: string }> => {
       try {
         // Prepare data for API
@@ -25,7 +21,6 @@ export function useChecklistCreate() {
           title: checklist.title,
           description: checklist.description || "",
           status: checklist.status || "active",
-          status_checklist: checklist.status_checklist || "ativo",
         };
 
         // Add optional fields if they exist
@@ -53,15 +48,23 @@ export function useChecklistCreate() {
           normalizedChecklist.due_date = checklist.due_date;
         }
 
-        // Call the service to create the checklist
-        const result = await checklistService.createChecklist(
-          normalizedChecklist,
-          questions,
-          groups
-        );
+        if (checklist.status_checklist) {
+          normalizedChecklist.status_checklist = checklist.status_checklist;
+        }
 
-        console.log("Checklist created:", result);
-        return { id: result.id };
+        // Call Supabase directly to create the checklist
+        const { data, error } = await supabase
+          .from("checklists")
+          .insert(normalizedChecklist)
+          .select()
+          .single();
+
+        if (error) {
+          throw error;
+        }
+
+        console.log("Checklist created:", data);
+        return { id: data.id };
       } catch (error) {
         const errorMessage = handleApiError(
           error,
