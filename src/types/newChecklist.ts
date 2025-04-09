@@ -1,3 +1,4 @@
+
 export interface NewChecklistPayload {
   title: string;
   description: string;
@@ -78,7 +79,7 @@ export interface ChecklistWithStats {
   dueDate: string | null;
   is_sub_checklist: boolean;
   isSubChecklist: boolean;
-  origin: 'manual' | 'ia' | 'csv';
+  origin: ChecklistOrigin;
   parent_question_id: string | null;
   parentQuestionId: string | null;
   totalQuestions: number;
@@ -92,19 +93,86 @@ export interface ChecklistGroup {
   id: string;
   title: string;
   description?: string;
-  questions: Array<{
-    id?: string;
-    text: string;
-    type: string;
-    required: boolean;
-    allowPhoto?: boolean;
-    allowVideo?: boolean;
-    allowAudio?: boolean;
-    options?: string[];
-    hint?: string;
-    weight?: number;
-    parentId?: string;
-    conditionValue?: string;
-    groupId?: string;
-  }>;
+  order: number;
+  questions: Array<ChecklistQuestion>;
+}
+
+// Adding additional interfaces and types needed for the application
+
+export type ChecklistOrigin = 'manual' | 'ia' | 'csv';
+
+export interface Checklist {
+  id: string;
+  title: string;
+  description: string;
+  is_template: boolean;
+  status: "active" | "inactive";
+  category: string;
+  responsible_id: string | null;
+  company_id: string | null;
+  user_id: string | null;
+  created_at: string;
+  updated_at: string;
+  due_date: string | null;
+  is_sub_checklist: boolean;
+  parent_question_id: string | null;
+  origin: ChecklistOrigin;
+  status_checklist: "ativo" | "inativo";
+}
+
+export interface ChecklistQuestion {
+  id: string;
+  text: string;
+  responseType: string;
+  isRequired: boolean;
+  weight: number;
+  order: number;
+  allowsPhoto: boolean;
+  allowsVideo: boolean;
+  allowsAudio: boolean;
+  allowsFiles: boolean;
+  options?: string[];
+  hint?: string | null;
+  groupId?: string;
+  parentQuestionId?: string | null;
+  hasSubChecklist?: boolean;
+  subChecklistId?: string | null;
+  displayNumber?: string;
+  conditionValue?: string | null;
+}
+
+export interface DeleteChecklistDialogProps {
+  checklistId: string;
+  checklistTitle: string;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onDeleted: () => Promise<void>;
+  isDeleting?: boolean;
+}
+
+export interface InspectionFilters {
+  search: string;
+  status: string;
+  priority: string;
+  companyId: string;
+  responsibleId: string;
+  checklistId: string;
+  startDate?: Date;
+  endDate?: Date;
+}
+
+export type AIAssistantType = 'general' | 'workplace-safety' | 'compliance' | 'quality' | 'checklist' | 'openai';
+
+export interface NewChecklist {
+  title: string;
+  description?: string;
+  is_template?: boolean;
+  status?: string;
+  status_checklist?: "ativo" | "inativo";
+  category?: string;
+  company_id?: string | null;
+  responsible_id?: string | null;
+  due_date?: string | null;
+  user_id?: string | null;
+  origin?: ChecklistOrigin;
 }
