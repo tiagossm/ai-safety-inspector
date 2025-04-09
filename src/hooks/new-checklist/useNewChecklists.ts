@@ -72,7 +72,7 @@ export function useNewChecklists() {
       dueDate: item.due_date,
       is_sub_checklist: item.is_sub_checklist || false,
       isSubChecklist: item.is_sub_checklist || false,
-      origin: item.origin || 'manual',
+      origin: (item.origin || 'manual'),
       parent_question_id: item.parent_question_id,
       parentQuestionId: item.parent_question_id,
       totalQuestions: 0,

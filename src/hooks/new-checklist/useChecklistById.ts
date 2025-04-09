@@ -72,7 +72,7 @@ export function useChecklistById(id: string) {
           parentId: item.parent_item_id,
           conditionValue: item.condition_value,
           displayNumber: `${item.ordem + 1}`,
-          parentQuestionId: item.parent_item_id,
+          parent_question_id: item.parent_item_id,
           hint: item.hint,
           hasSubChecklist: item.has_subchecklist || false,
           subChecklistId: item.sub_checklist_id

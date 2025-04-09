@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { InspectionDetails, InspectionFilters } from "@/types/newChecklist";
@@ -90,9 +89,14 @@ export function useOptimizedInspections(filters: InspectionFilters) {
           // Get stats for each inspection
           const stats = await fetchInspectionStats(item.id);
           
-          // Safely access properties with fallbacks
-          const title = item.checklist?.title || `Inspeção ${item.id.substring(0, 8)}`;
-          const description = item.checklist?.description || '';
+          // Extract title and description from checklist object or use fallbacks
+          const title = item.checklist && typeof item.checklist === 'object' && item.checklist.title
+            ? item.checklist.title
+            : `Inspeção ${item.id.substring(0, 8)}`;
+            
+          const description = item.checklist && typeof item.checklist === 'object' && item.checklist.description
+            ? item.checklist.description
+            : '';
           
           // Normalize status to match the expected enum values
           const statusMapping: Record<string, "pending" | "in_progress" | "completed"> = {
@@ -108,15 +112,9 @@ export function useOptimizedInspections(filters: InspectionFilters) {
           const normalizedStatus: "pending" | "in_progress" | "completed" = 
             statusMapping[item.status] || 'pending';
           
-          // Safely get responsible name with fallbacks
-          const responsibleName = (() => {
-            // Try to get name from 'users' table if available
-            if (typeof item.users === 'object' && item.users && 'name' in item.users) {
-              return item.users.name;
-            }
-            return 'Sem responsável';
-          })();
-
+          // Safe responsible handling
+          const responsibleName = 'Sem responsável'; // Default value
+          
           return {
             id: item.id,
             title: title,
