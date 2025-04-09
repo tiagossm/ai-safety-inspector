@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,7 +14,6 @@ export default function CreateChecklist() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>("ai");
   
-  // Use the hook for checklist creation logic
   const {
     form,
     setForm,
@@ -34,29 +32,30 @@ export default function CreateChecklist() {
     loadingCompanies
   } = useChecklistCreation();
 
-  // Create wrapper functions that adapt to different component expectations
-  // ManualCreateForm and ImportCreateForm expect Promise<boolean>
+  const normalizeStatus = (status?: string): "active" | "inactive" => {
+    if (status === 'active' || status === 'inactive') {
+      return status;
+    }
+    return 'active';
+  };
+
   const handleSubmitForManualAndImport = async (e: React.FormEvent): Promise<boolean> => {
-    // Ensure the status property conforms to the stricter type before submitting
     const adaptedForm = {
       ...form,
-      status: (form.status === 'active' || form.status === 'inactive') ? form.status : 'active'
+      status: normalizeStatus(form.status)
     } as NewChecklistType;
     
     const result = await handleSubmit(e);
-    return result; // Return the boolean result directly
+    return result;
   };
   
-  // AIChecklistCreator expects Promise<void>
   const handleSubmitForAI = async (e: React.FormEvent): Promise<void> => {
-    // Ensure the status property conforms to the stricter type before submitting
     const adaptedForm = {
       ...form,
-      status: (form.status === 'active' || form.status === 'inactive') ? form.status : 'active'
+      status: normalizeStatus(form.status)
     } as NewChecklistType;
     
     await handleSubmit(e);
-    // No return value needed as the component expects void
   };
 
   return (
@@ -68,7 +67,6 @@ export default function CreateChecklist() {
         </div>
       </div>
 
-      {/* Quick navigation buttons at the top */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <Card 
           className={`p-4 cursor-pointer hover:border-gray-400 transition-all ${activeTab === "manual" ? "bg-gray-50" : "bg-white"}`}
