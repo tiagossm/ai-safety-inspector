@@ -6,7 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useChecklistFormSubmit } from "./form/useChecklistFormSubmit";
 import { CompanyListItem } from "@/types/CompanyListItem";
-import { useChecklistCompanies } from "./form/useChecklistCompanies";
 import { NewChecklist as NewChecklistType } from "@/types/newChecklist";
 
 export type AIAssistantType = 'general' | 'workplace-safety' | 'compliance' | 'quality';
