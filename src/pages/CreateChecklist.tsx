@@ -9,7 +9,7 @@ import { AIChecklistCreator } from "@/components/checklists/create-forms/AICheck
 import { ManualCreateForm } from "@/components/checklists/create-forms/ManualCreateForm";
 import { ImportCreateForm } from "@/components/checklists/create-forms/ImportCreateForm";
 import { useChecklistCreation } from "@/hooks/checklist/useChecklistCreation";
-import { NewChecklist as NewChecklistType } from "@/types/newChecklist";
+import { NewChecklist } from "@/types/newChecklist";
 
 export default function CreateChecklist() {
   const navigate = useNavigate();
@@ -35,18 +35,18 @@ export default function CreateChecklist() {
   } = useChecklistCreation();
 
   const handleSubmitForManualAndImport = async (e: React.FormEvent): Promise<boolean> => {
-    // Use the NewChecklistType from newChecklist.ts instead of the one from checklist.ts
-    const adaptedForm: NewChecklistType = {
+    // Use the NewChecklist type from newChecklist.ts and ensure correct status type
+    const adaptedForm: NewChecklist = {
       title: form.title,
       description: form.description || "",
       is_template: form.is_template || false,
-      status: normalizeStatus(form.status), // Use normalizeStatus to ensure correct type
+      status: normalizeStatus(form.status), // Explicitly normalize to "active" | "inactive"
       category: form.category || "",
       responsible_id: form.responsible_id,
       company_id: form.company_id,
       due_date: form.due_date,
       user_id: form.user_id,
-      origin: activeTab === "import" ? "csv" : "manual",  // Corrigindo a origem baseada na aba
+      origin: activeTab === "import" ? "csv" : "manual",
       status_checklist: form.status_checklist || "ativo"
     };
     
@@ -54,18 +54,18 @@ export default function CreateChecklist() {
   };
   
   const handleSubmitForAI = async (e: React.FormEvent): Promise<void> => {
-    // Use the NewChecklistType from newChecklist.ts instead of the one from checklist.ts
-    const adaptedForm: NewChecklistType = {
+    // Use the NewChecklist type from newChecklist.ts and ensure correct status type
+    const adaptedForm: NewChecklist = {
       title: form.title,
       description: form.description || "",
       is_template: form.is_template || false,
-      status: normalizeStatus(form.status), // Use normalizeStatus to ensure correct type
+      status: normalizeStatus(form.status), // Explicitly normalize to "active" | "inactive"
       category: form.category || "",
       responsible_id: form.responsible_id,
       company_id: form.company_id,
       due_date: form.due_date,
       user_id: form.user_id,
-      origin: "ia",  // Garantindo que a origem seja "ia" quando criado pela aba IA
+      origin: "ia",
       status_checklist: form.status_checklist || "ativo"
     };
     
