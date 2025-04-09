@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useChecklistFormSubmit } from "./form/useChecklistFormSubmit";
 import { CompanyListItem } from "@/types/CompanyListItem";
 import { NewChecklist as NewChecklistType } from "@/types/newChecklist";
+import { useChecklistCompanies } from "./form/useChecklistCompanies";
 
 export type AIAssistantType = 'general' | 'workplace-safety' | 'compliance' | 'quality';
 
