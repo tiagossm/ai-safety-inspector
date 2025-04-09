@@ -1,36 +1,109 @@
 
-import { ChecklistWithStats, ChecklistOrigin } from "@/types/newChecklist";
+import { ChecklistWithStats, ChecklistOrigin, Checklist } from "@/types/newChecklist";
 
+/**
+ * Maps database field names to their client-side equivalents to maintain 
+ * backward compatibility with legacy code
+ */
+interface FieldMapping {
+  source: keyof any;
+  target: keyof ChecklistWithStats;
+}
+
+/**
+ * Field mappings for backward compatibility
+ */
+const FIELD_MAPPINGS: FieldMapping[] = [
+  { source: "is_template", target: "isTemplate" },
+  { source: "is_sub_checklist", target: "isSubChecklist" },
+  { source: "company_id", target: "companyId" },
+  { source: "responsible_id", target: "responsibleId" },
+  { source: "user_id", target: "userId" },
+  { source: "created_at", target: "createdAt" },
+  { source: "updated_at", target: "updatedAt" },
+  { source: "due_date", target: "dueDate" },
+  { source: "parent_question_id", target: "parentQuestionId" }
+];
+
+/**
+ * Transforms database checklist data to the client-side ChecklistWithStats type
+ * @param data - Raw checklist data from database
+ * @returns Array of checklist objects with computed stats
+ */
 export function transformDbChecklistsToStats(data: any[]): ChecklistWithStats[] {
-  return data.map((item: any) => ({
+  return data.map(transformDbChecklistToStats);
+}
+
+/**
+ * Transforms a single checklist record from the database to a ChecklistWithStats object
+ * @param item - Raw checklist data from database
+ * @returns A properly typed ChecklistWithStats object
+ */
+export function transformDbChecklistToStats(item: any): ChecklistWithStats {
+  // First ensure the required base fields exist in the object
+  const baseChecklist: Checklist = {
     id: item.id,
     title: item.title,
     description: item.description || '',
-    is_template: item.is_template || false,
-    isTemplate: item.is_template || false,
-    status: item.status === 'active' ? 'active' : 'inactive',
+    is_template: Boolean(item.is_template),
+    status: normalizeStatus(item.status),
     category: item.category || '',
     responsible_id: item.responsible_id,
-    responsibleId: item.responsible_id,
     company_id: item.company_id,
-    companyId: item.company_id,
     user_id: item.user_id,
-    userId: item.user_id,
-    created_at: item.created_at,
-    createdAt: item.created_at,
-    updated_at: item.updated_at,
-    updatedAt: item.updated_at,
-    due_date: item.due_date,
-    dueDate: item.due_date,
-    is_sub_checklist: item.is_sub_checklist || false,
-    isSubChecklist: item.is_sub_checklist || false,
-    origin: (item.origin || 'manual') as ChecklistOrigin,
-    parent_question_id: item.parent_question_id,
-    parentQuestionId: item.parent_question_id,
+    origin: normalizeOrigin(item.origin)
+  };
+  
+  // Start building the enhanced ChecklistWithStats object
+  const result: ChecklistWithStats = {
+    ...baseChecklist,
     totalQuestions: item.totalQuestions || 0,
     completedQuestions: item.completedQuestions || 0,
-    companyName: item.companyName || item.companies?.fantasy_name || '',
-    responsibleName: item.responsibleName || (item.users ? item.users.name || '' : '')
-  }));
+    companyName: item.companyName || getCompanyName(item),
+    responsibleName: item.responsibleName || getResponsibleName(item)
+  };
+  
+  // Apply mappings for backward compatibility
+  for (const mapping of FIELD_MAPPINGS) {
+    if (mapping.source in item) {
+      result[mapping.target] = item[mapping.source];
+    }
+  }
+
+  return result;
 }
 
+/**
+ * Normalizes the status field to ensure it conforms to the required type
+ */
+function normalizeStatus(status: any): "active" | "inactive" {
+  return status === 'active' ? 'active' : 'inactive';
+}
+
+/**
+ * Normalizes the origin field to ensure it conforms to the required type
+ */
+function normalizeOrigin(origin: any): ChecklistOrigin {
+  if (origin === 'ia' || origin === 'csv') {
+    return origin;
+  }
+  return 'manual';
+}
+
+/**
+ * Extracts company name from various possible locations in the data
+ */
+function getCompanyName(item: any): string {
+  if (item.companyName) return item.companyName;
+  if (item.companies?.fantasy_name) return item.companies.fantasy_name;
+  return '';
+}
+
+/**
+ * Extracts responsible name from various possible locations in the data
+ */
+function getResponsibleName(item: any): string {
+  if (item.responsibleName) return item.responsibleName;
+  if (item.users?.name) return item.users.name;
+  return '';
+}
