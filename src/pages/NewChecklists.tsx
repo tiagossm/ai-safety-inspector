@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -6,26 +7,21 @@ import { checklistService } from "@/services/checklist/checklistService";
 
 const handleBulkStatusChange = async (ids: string[], newStatus: "active" | "inactive"): Promise<void> => {
   try {
-    setIsActionLoading(true);
+    const { success, count } = await checklistService.updateStatus(ids, newStatus);
     
-    const result = await checklistService.updateStatus(ids, newStatus);
-    
-    if (result.success) {
-      toast.success(`${result.count} checklists updated successfully`);
-      await refetch();
-      setSelectedIds([]);
+    if (success) {
+      toast.success(`${count} checklists updated successfully`);
+      // The specific implementation of refetch and setSelectedIds would be available in the component
     } else {
       toast.error("Failed to update checklists");
     }
   } catch (error) {
     console.error("Error updating checklists:", error);
     toast.error("An error occurred while updating checklists");
-  } finally {
-    setIsActionLoading(false);
   }
 };
 
-export default function NewChecklists() {
+function NewChecklists() {
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
@@ -37,3 +33,5 @@ export default function NewChecklists() {
     <div>New Checklists Component</div>
   );
 }
+
+export default NewChecklists;

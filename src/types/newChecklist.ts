@@ -27,6 +27,16 @@ export interface ChecklistWithStats extends Checklist {
   responsibleName?: string;
   questions?: ChecklistQuestion[];
   groups?: ChecklistGroup[];
+  
+  // These are for backward compatibility with existing code
+  isTemplate?: boolean;
+  isSubChecklist?: boolean;
+  companyId?: string;
+  responsibleId?: string;
+  userId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  dueDate?: string;
 }
 
 // Question and group types
@@ -46,6 +56,12 @@ export interface ChecklistQuestion {
   parentId?: string | null;
   conditionValue?: string | null;
   displayNumber?: string;
+  
+  // Additional properties needed by components
+  parentQuestionId?: string | null;
+  hint?: string;
+  hasSubChecklist?: boolean;
+  subChecklistId?: string;
 }
 
 export interface ChecklistGroup {
@@ -85,6 +101,8 @@ export interface InspectionDetails {
   cnae?: string;
   inspection_type?: string;
   sync_status?: string;
+  companyName?: string;
+  responsibleName?: string;
 }
 
 export interface InspectionFilters {
@@ -94,8 +112,8 @@ export interface InspectionFilters {
   companyId: string;
   responsibleId: string;
   checklistId: string;
-  startDate?: string;
-  endDate?: string;
+  startDate?: Date;
+  endDate?: Date;
 }
 
 // Delete dialog props
@@ -114,6 +132,7 @@ export interface NewChecklistPayload {
   description?: string;
   is_template: boolean;
   status: string;
+  status_checklist?: "ativo" | "inativo";
   category?: string;
   company_id?: string | null;
   responsible_id?: string | null;
@@ -123,4 +142,4 @@ export interface NewChecklistPayload {
 }
 
 // Define AI Assistant type used across components
-export type AIAssistantType = "general" | "workplace-safety" | "compliance" | "quality" | "checklist";
+export type AIAssistantType = "general" | "workplace-safety" | "compliance" | "quality" | "checklist" | "openai";

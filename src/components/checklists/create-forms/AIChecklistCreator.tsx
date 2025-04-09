@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { NewChecklistPayload } from "@/types/newChecklist";
+import { NewChecklistPayload, AIAssistantType } from "@/types/newChecklist";
 import { CompanyListItem } from "@/types/CompanyListItem";
 import { Bot, Sparkles } from "lucide-react";
-import { AIAssistantType, useChecklistAI } from "@/hooks/new-checklist/useChecklistAI";
+import { AIAssistantType as AIType, useChecklistAI } from "@/hooks/new-checklist/useChecklistAI";
 import { CompanySelector } from "@/components/inspection/CompanySelector";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -40,12 +40,16 @@ export function AIChecklistCreator({
     setOpenAIAssistant,
     generateChecklist
   } = useChecklistAI();
+  const [questionCount, setQuestionCount] = useState<number>(10);
 
   useEffect(() => {
     if (form.company_id) {
       fetchCompanyName(form.company_id.toString());
+    } else {
+      setSelectedCompanyName("");
+      updateFormattedPrompt(null, form.category || "", form.description || "");
     }
-  }, [form.company_id]);
+  }, [form.company_id, form.category, form.description]);
 
   const fetchCompanyName = async (companyId: string) => {
     try {
@@ -55,10 +59,7 @@ export function AIChecklistCreator({
         .eq('id', companyId)
         .single();
       
-      if (error) {
-        console.error("Error fetching company name:", error);
-        return;
-      }
+      if (error) throw error;
       
       if (data) {
         setSelectedCompanyName(data.fantasy_name);
@@ -66,6 +67,17 @@ export function AIChecklistCreator({
     } catch (error) {
       console.error("Error in fetchCompanyName:", error);
     }
+  };
+
+  const updateFormattedPrompt = (company: any | null, category: string, desc: string) => {
+    // Update the prompt based on the selected company, category and description
+    setPrompt(desc);
+    
+    // Also update the description in form
+    setForm({
+      ...form,
+      description: desc
+    });
   };
 
   const handleGenerateWithAI = async (e: React.FormEvent) => {
@@ -150,15 +162,17 @@ export function AIChecklistCreator({
 
           <IntelligentChecklistForm
             selectedAssistant={selectedAssistant as string}
-            onAssistantTypeChange={type => setSelectedAssistant(type as AIAssistantType)}
+            onAssistantTypeChange={(type) => setSelectedAssistant(type as AIType)}
             openAIAssistant={openAIAssistant as string}
-            onOpenAIAssistantChange={id => setOpenAIAssistant(id as boolean)}
+            onOpenAIAssistantChange={(id) => setOpenAIAssistant(id)}
             onPromptChange={setPrompt}
             checklist={{
               ...form,
               company_name: selectedCompanyName
             }}
             setChecklist={setForm}
+            numQuestions={questionCount}
+            setNumQuestions={setQuestionCount}
           />
           
           <Button

@@ -1,76 +1,69 @@
 
-import React from "react";
+import React from 'react';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import { useOpenAIAssistants } from "@/hooks/new-checklist/useOpenAIAssistants";
 
-interface OpenAIAssistantSelectorProps {
-  selectedAssistant: string;
-  setSelectedAssistant: (value: string) => void;
-  required?: boolean;
+export type AIAssistantType = "general" | "workplace-safety" | "compliance" | "quality" | "checklist" | "openai";
+
+export interface AIAssistantSelectorProps {
+  selectedAssistant: AIAssistantType;
+  onAssistantTypeChange: (type: AIAssistantType) => void;
+  openAIAssistant: string;
+  onOpenAIAssistantChange: (id: string) => void;
 }
 
-export function OpenAIAssistantSelector({ 
-  selectedAssistant, 
-  setSelectedAssistant,
-  required = true
-}: OpenAIAssistantSelectorProps) {
-  const { assistants, loading, error, refetch } = useOpenAIAssistants();
-
-  if (loading) {
-    return <Skeleton className="h-9 w-full" />;
-  }
-
-  if (error) {
-    return (
-      <div className="text-sm text-red-500">
-        <p>Erro ao carregar assistentes: {error}</p>
-        <p>Verifique se a chave da API da OpenAI está configurada corretamente.</p>
-        <Button variant="outline" size="sm" onClick={refetch} className="mt-2">
-          Tentar novamente
-        </Button>
-      </div>
-    );
-  }
-
+export function AIAssistantSelector({
+  selectedAssistant,
+  onAssistantTypeChange,
+  openAIAssistant,
+  onOpenAIAssistantChange
+}: AIAssistantSelectorProps) {
   return (
-    <div className="space-y-2">
-      <Label htmlFor="openai-assistant" className="flex items-center">
-        Assistente de IA
-        {required && <span className="text-red-500 ml-1">*</span>}
-      </Label>
-      <Select
-        value={selectedAssistant || ""}
-        onValueChange={setSelectedAssistant}
+    <div className="space-y-4">
+      <RadioGroup
+        value={selectedAssistant}
+        onValueChange={(value) => onAssistantTypeChange(value as AIAssistantType)}
+        className="grid grid-cols-2 gap-4"
       >
-        <SelectTrigger id="openai-assistant">
-          <SelectValue placeholder="Selecione um assistente da OpenAI" />
-        </SelectTrigger>
-        <SelectContent>
-          {assistants.length === 0 ? (
-            <SelectItem value="no-assistants-available" disabled>
-              Nenhum assistente disponível
-            </SelectItem>
-          ) : (
-            assistants.map((assistant) => (
-              <SelectItem key={assistant.id} value={assistant.id || "default-assistant"}>
-                {assistant.name}
-              </SelectItem>
-            ))
-          )}
-        </SelectContent>
-      </Select>
-      <p className="text-sm text-muted-foreground">
-        Escolha um assistente especializado para melhorar os resultados.
-      </p>
+        <div className="flex items-center space-x-2">
+          <RadioGroupItem value="general" id="general" />
+          <Label htmlFor="general">Assistente Geral</Label>
+        </div>
+        <div className="flex items-center space-x-2">
+          <RadioGroupItem value="workplace-safety" id="workplace-safety" />
+          <Label htmlFor="workplace-safety">Segurança do Trabalho</Label>
+        </div>
+        <div className="flex items-center space-x-2">
+          <RadioGroupItem value="compliance" id="compliance" />
+          <Label htmlFor="compliance">Compliance</Label>
+        </div>
+        <div className="flex items-center space-x-2">
+          <RadioGroupItem value="quality" id="quality" />
+          <Label htmlFor="quality">Qualidade</Label>
+        </div>
+        <div className="flex items-center space-x-2">
+          <RadioGroupItem value="checklist" id="checklist" />
+          <Label htmlFor="checklist">Checklist Especialista</Label>
+        </div>
+        <div className="flex items-center space-x-2">
+          <RadioGroupItem value="openai" id="openai" />
+          <Label htmlFor="openai">OpenAI</Label>
+        </div>
+      </RadioGroup>
+      
+      {selectedAssistant === "openai" && (
+        <div className="pt-2">
+          <Label htmlFor="openai-assistant-id">ID do Assistente OpenAI</Label>
+          <input
+            id="openai-assistant-id"
+            type="text"
+            value={openAIAssistant}
+            onChange={(e) => onOpenAIAssistantChange(e.target.value)}
+            placeholder="asst_123..."
+            className="w-full p-2 border rounded mt-1"
+          />
+        </div>
+      )}
     </div>
   );
 }
