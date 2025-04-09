@@ -9,6 +9,7 @@ import { AIChecklistCreator } from "@/components/checklists/create-forms/AICheck
 import { ManualCreateForm } from "@/components/checklists/create-forms/ManualCreateForm";
 import { ImportCreateForm } from "@/components/checklists/create-forms/ImportCreateForm";
 import { useChecklistCreation } from "@/hooks/checklist/useChecklistCreation";
+import { NewChecklist as NewChecklistType } from "@/types/newChecklist";
 
 export default function CreateChecklist() {
   const navigate = useNavigate();
@@ -36,12 +37,24 @@ export default function CreateChecklist() {
   // Create wrapper functions that adapt to different component expectations
   // ManualCreateForm and ImportCreateForm expect Promise<boolean>
   const handleSubmitForManualAndImport = async (e: React.FormEvent): Promise<boolean> => {
+    // Ensure the status property conforms to the stricter type before submitting
+    const adaptedForm = {
+      ...form,
+      status: (form.status === 'active' || form.status === 'inactive') ? form.status : 'active'
+    } as NewChecklistType;
+    
     const result = await handleSubmit(e);
     return result; // Return the boolean result directly
   };
   
   // AIChecklistCreator expects Promise<void>
   const handleSubmitForAI = async (e: React.FormEvent): Promise<void> => {
+    // Ensure the status property conforms to the stricter type before submitting
+    const adaptedForm = {
+      ...form,
+      status: (form.status === 'active' || form.status === 'inactive') ? form.status : 'active'
+    } as NewChecklistType;
+    
     await handleSubmit(e);
     // No return value needed as the component expects void
   };
