@@ -1,3 +1,4 @@
+
 // Base checklist types
 export interface Checklist {
   id: string;
@@ -15,6 +16,7 @@ export interface Checklist {
   is_sub_checklist?: boolean;
   origin?: ChecklistOrigin;
   parent_question_id?: string | null;
+  parentQuestionId?: string | null;
 }
 
 export type ChecklistOrigin = "manual" | "ia" | "csv";
@@ -36,6 +38,7 @@ export interface ChecklistWithStats extends Checklist {
   createdAt?: string;
   updatedAt?: string;
   dueDate?: string;
+  parentQuestionId?: string | null;
 }
 
 // Question and group types
