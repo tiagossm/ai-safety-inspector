@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -40,20 +41,40 @@ export default function CreateChecklist() {
   };
 
   const handleSubmitForManualAndImport = async (e: React.FormEvent): Promise<boolean> => {
-    const adaptedForm = {
-      ...form,
-      status: normalizeStatus(form.status)
-    } as NewChecklistType;
+    // Create a new object with the correct type, explicitly casting status to the required type
+    const adaptedForm: NewChecklistType = {
+      title: form.title,
+      description: form.description,
+      is_template: form.is_template,
+      status: normalizeStatus(form.status),
+      category: form.category,
+      responsible_id: form.responsible_id,
+      company_id: form.company_id,
+      due_date: form.due_date,
+      user_id: form.user_id,
+      origin: form.origin,
+      status_checklist: form.status_checklist
+    };
     
     const result = await handleSubmit(e);
     return result;
   };
   
   const handleSubmitForAI = async (e: React.FormEvent): Promise<void> => {
-    const adaptedForm = {
-      ...form,
-      status: normalizeStatus(form.status)
-    } as NewChecklistType;
+    // Create a new object with the correct type, explicitly casting status to the required type
+    const adaptedForm: NewChecklistType = {
+      title: form.title,
+      description: form.description,
+      is_template: form.is_template,
+      status: normalizeStatus(form.status),
+      category: form.category,
+      responsible_id: form.responsible_id,
+      company_id: form.company_id,
+      due_date: form.due_date,
+      user_id: form.user_id,
+      origin: form.origin,
+      status_checklist: form.status_checklist
+    };
     
     await handleSubmit(e);
   };
