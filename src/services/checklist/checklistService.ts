@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats, Checklist, ChecklistQuestion, ChecklistGroup, ChecklistOrigin } from "@/types/newChecklist";
 import { toast } from "sonner";
@@ -133,7 +134,6 @@ export const checklistService = {
         isSubChecklist: data.is_sub_checklist || false,
         origin: originValue,
         parent_question_id: data.parent_question_id,
-        parentQuestionId: data.parent_question_id,
         totalQuestions: 0,
         completedQuestions: 0,
         companyName: data.companies?.fantasy_name || '',
