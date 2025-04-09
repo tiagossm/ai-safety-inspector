@@ -62,7 +62,6 @@ export const checklistService = {
         isSubChecklist: item.is_sub_checklist || false,
         origin: (item.origin || 'manual') as ChecklistOrigin,
         parent_question_id: item.parent_question_id,
-        parentQuestionId: item.parent_question_id,
         totalQuestions: 0,
         completedQuestions: 0,
         companyName: item.companies?.fantasy_name || '',
