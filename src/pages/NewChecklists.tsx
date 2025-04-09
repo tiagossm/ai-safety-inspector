@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { DeleteChecklistDialog } from "@/components/new-checklist/DeleteChecklistDialog";
-import { supabase } from "@/integrations/supabase/client";
 import { ChecklistGrid } from "@/components/new-checklist/ChecklistGrid";
 import { ChecklistList } from "@/components/new-checklist/ChecklistList";
 import { useNewChecklists } from "@/hooks/new-checklist/useNewChecklists";
@@ -19,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChecklistTabs } from "@/components/new-checklist/ChecklistTabs";
+import { ChecklistOriginFilter } from "@/components/new-checklist/ChecklistOriginFilter";
 
 const NewChecklists: React.FC = () => {
   const [isActionLoading, setIsActionLoading] = useState(false);
@@ -41,6 +41,8 @@ const NewChecklists: React.FC = () => {
     setFilterType,
     selectedCompanyId,
     setSelectedCompanyId,
+    selectedOrigin,
+    setSelectedOrigin,
     companies,
     deleteChecklist,
     updateStatus,
@@ -151,7 +153,7 @@ const NewChecklists: React.FC = () => {
       </div>
 
       <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
-        <div className="flex flex-1 items-center gap-2">
+        <div className="flex flex-1 items-center gap-2 flex-wrap">
           <Input
             placeholder="Buscar checklists..."
             value={searchTerm}
@@ -163,7 +165,7 @@ const NewChecklists: React.FC = () => {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
                 <Filter className="mr-2 h-4 w-4" />
-                Filtrar
+                Status
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
@@ -178,6 +180,11 @@ const NewChecklists: React.FC = () => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          
+          <ChecklistOriginFilter 
+            selectedOrigin={selectedOrigin}
+            setSelectedOrigin={setSelectedOrigin}
+          />
 
           {companies.length > 0 && (
             <DropdownMenu>

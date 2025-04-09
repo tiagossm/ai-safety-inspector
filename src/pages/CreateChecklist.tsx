@@ -45,7 +45,7 @@ export default function CreateChecklist() {
       company_id: form.company_id,
       due_date: form.due_date,
       user_id: form.user_id,
-      origin: form.origin || "manual",
+      origin: activeTab === "import" ? "csv" : "manual",  // Corrigindo a origem baseada na aba
       status_checklist: form.status_checklist || "ativo"
     };
     
@@ -63,7 +63,7 @@ export default function CreateChecklist() {
       company_id: form.company_id,
       due_date: form.due_date,
       user_id: form.user_id,
-      origin: "ia",
+      origin: "ia",  // Garantindo que a origem seja "ia" quando criado pela aba IA
       status_checklist: form.status_checklist || "ativo"
     };
     

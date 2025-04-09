@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useChecklistCreation } from "@/hooks/checklist/useChecklistCreation";
+import { ChecklistOrigin } from "@/types/newChecklist";
 
 export default function NewChecklistCreate() {
   const navigate = useNavigate();
@@ -42,7 +43,8 @@ export default function NewChecklistCreate() {
     handleQuestionChange,
     handleSubmit,
     companies,
-    loadingCompanies
+    loadingCompanies,
+    normalizeStatus
   } = useChecklistCreation();
 
   const handleSubmitWrapper = async (e: React.FormEvent) => {
@@ -53,7 +55,18 @@ export default function NewChecklistCreate() {
     }
     
     try {
-      const success = await handleSubmit(e);
+      // Determine a origem com base na aba ativa
+      const origin: ChecklistOrigin = activeTab === "ai" ? "ia" : 
+                                     activeTab === "import" ? "csv" : "manual";
+                                     
+      // Criar o objeto adaptado com as propriedades corretas
+      const adaptedForm: NewChecklist = {
+        ...form,
+        status: normalizeStatus(form.status),
+        origin
+      };
+      
+      const success = await handleSubmit(e, adaptedForm);
       if (success) {
         toast.success("Checklist criado com sucesso!");
       }
@@ -209,7 +222,8 @@ export default function NewChecklistCreate() {
                           checked={form.status_checklist !== "inativo"}
                           onCheckedChange={(checked) => setForm({ 
                             ...form, 
-                            status_checklist: checked ? "ativo" : "inativo"
+                            status_checklist: checked ? "ativo" : "inativo",
+                            status: checked ? "active" : "inactive"
                           })}
                         />
                         <Label htmlFor="active" className="cursor-pointer">
@@ -240,31 +254,176 @@ export default function NewChecklistCreate() {
           </TabsContent>
           
           <TabsContent value="ai" className="py-4">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex flex-col items-center justify-center py-8">
-                  <Bot className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-xl font-medium">Geração por IA</h3>
-                  <p className="text-muted-foreground text-center max-w-md mt-2">
-                    Esta funcionalidade está em desenvolvimento. Em breve você poderá gerar checklists automaticamente com IA.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <form onSubmit={handleSubmitWrapper}>
+              <Card>
+                <CardContent className="p-6 space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="title">Título*</Label>
+                        <Input
+                          id="title"
+                          value={form.title}
+                          onChange={(e) => setForm({ ...form, title: e.target.value })}
+                          placeholder="Título do checklist"
+                          required
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="company">Empresa</Label>
+                        <CompanySelector
+                          value={form.company_id?.toString() || ""}
+                          onSelect={(companyId, companyData) => setForm({ 
+                            ...form, 
+                            company_id: companyId === "all" ? undefined : companyId 
+                          })}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="description">Prompt para IA</Label>
+                        <Textarea
+                          id="description"
+                          value={form.description || ""}
+                          onChange={(e) => setForm({ ...form, description: e.target.value })}
+                          placeholder="Descreva o que você deseja que a IA gere"
+                          rows={5}
+                        />
+                      </div>
+                      
+                      <div className="flex items-center space-x-2 pt-4">
+                        <Switch
+                          id="is_template"
+                          checked={form.is_template || false}
+                          onCheckedChange={(checked) => setForm({ ...form, is_template: checked })}
+                        />
+                        <Label htmlFor="is_template" className="cursor-pointer">
+                          Criar como modelo
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-4 flex justify-end gap-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => navigate("/new-checklists")}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? "Gerando..." : "Gerar com IA"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </form>
           </TabsContent>
           
           <TabsContent value="import" className="py-4">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex flex-col items-center justify-center py-8">
-                  <Upload className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-xl font-medium">Importação de Planilha</h3>
-                  <p className="text-muted-foreground text-center max-w-md mt-2">
-                    Esta funcionalidade está em desenvolvimento. Em breve você poderá importar checklists de planilhas Excel ou CSV.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <form onSubmit={handleSubmitWrapper}>
+              <Card>
+                <CardContent className="p-6 space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="title">Título*</Label>
+                        <Input
+                          id="title"
+                          value={form.title}
+                          onChange={(e) => setForm({ ...form, title: e.target.value })}
+                          placeholder="Título do checklist"
+                          required
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="company">Empresa</Label>
+                        <CompanySelector
+                          value={form.company_id?.toString() || ""}
+                          onSelect={(companyId, companyData) => setForm({ 
+                            ...form, 
+                            company_id: companyId === "all" ? undefined : companyId 
+                          })}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="file">Arquivo CSV/Excel</Label>
+                        <Input
+                          id="file"
+                          type="file"
+                          onChange={handleFileChange}
+                          accept=".csv,.xlsx,.xls"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="description">Descrição</Label>
+                        <Textarea
+                          id="description"
+                          value={form.description || ""}
+                          onChange={(e) => setForm({ ...form, description: e.target.value })}
+                          placeholder="Descrição detalhada do checklist"
+                          rows={3}
+                        />
+                      </div>
+                      
+                      <div className="flex items-center space-x-2 pt-4">
+                        <Switch
+                          id="is_template"
+                          checked={form.is_template || false}
+                          onCheckedChange={(checked) => setForm({ ...form, is_template: checked })}
+                        />
+                        <Label htmlFor="is_template" className="cursor-pointer">
+                          Criar como modelo
+                        </Label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="active"
+                          checked={form.status_checklist !== "inativo"}
+                          onCheckedChange={(checked) => setForm({ 
+                            ...form, 
+                            status_checklist: checked ? "ativo" : "inativo",
+                            status: checked ? "active" : "inactive"
+                          })}
+                        />
+                        <Label htmlFor="active" className="cursor-pointer">
+                          Checklist ativo
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-4 flex justify-end gap-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => navigate("/new-checklists")}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting || !file}
+                    >
+                      {isSubmitting ? "Importando..." : "Importar Checklist"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </form>
           </TabsContent>
         </Tabs>
       </div>

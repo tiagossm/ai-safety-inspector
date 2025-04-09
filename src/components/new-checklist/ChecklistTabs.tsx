@@ -1,16 +1,18 @@
 
 import React from "react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChecklistWithStats } from "@/types/newChecklist";
 import { ChecklistGrid } from "./ChecklistGrid";
 import { ChecklistList } from "./ChecklistList";
 import { Button } from "@/components/ui/button";
-import { List, Grid } from "lucide-react";
-import { ChecklistWithStats } from "@/types/newChecklist";
+import { Grid2x2, List } from "lucide-react";
 
 interface ChecklistTabsProps {
+  activeTab: string;
+  onTabChange: (value: string) => void;
   checklistCounts: {
-    template: number;
     active: number;
+    template: number;
     inactive: number;
   };
   allChecklists: ChecklistWithStats[];
@@ -19,17 +21,14 @@ interface ChecklistTabsProps {
   onDelete: (id: string, title: string) => void;
   onOpen: (id: string) => void;
   onStatusChange: () => void;
-  onBulkDelete: (ids: string[]) => void;
-  onBulkStatusChange: (ids: string[], newStatus: 'active' | 'inactive') => Promise<void>;
-  onTabChange: (tab: string) => void;
-  activeTab: string;
-  onChecklistStatusChange: (id: string, newStatus: 'active' | 'inactive') => Promise<boolean>;
+  onBulkDelete?: (ids: string[]) => Promise<boolean>;
+  onBulkStatusChange: (ids: string[], newStatus: "active" | "inactive") => Promise<void>;
+  onChecklistStatusChange: (id: string, newStatus: "active" | "inactive") => Promise<boolean>;
 }
 
-/**
- * Component that handles all tab views for checklists
- */
 export function ChecklistTabs({
+  activeTab,
+  onTabChange,
   checklistCounts,
   allChecklists,
   isLoading,
@@ -39,76 +38,100 @@ export function ChecklistTabs({
   onStatusChange,
   onBulkDelete,
   onBulkStatusChange,
-  onTabChange,
-  activeTab,
   onChecklistStatusChange
 }: ChecklistTabsProps) {
   const [viewMode, setViewMode] = React.useState<"grid" | "list">("grid");
 
-  // Save tab preference to localStorage
   React.useEffect(() => {
-    localStorage.setItem('checklist-active-tab', activeTab);
+    if (activeTab) {
+      localStorage.setItem('checklist-active-tab', activeTab);
+    }
   }, [activeTab]);
+
+  const handleViewModeChange = (mode: "grid" | "list") => {
+    setViewMode(mode);
+  };
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
+      <Tabs value={activeTab} onValueChange={onTabChange} className="space-y-4">
+        <div className="flex justify-between items-center">
           <TabsList>
-            <TabsTrigger value="template">
-              Templates ({checklistCounts.template})
+            <TabsTrigger value="all" className="min-w-[100px]">
+              Todos
+              <span className="ml-2 text-xs bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded-full">
+                {checklistCounts.active + checklistCounts.template + checklistCounts.inactive}
+              </span>
             </TabsTrigger>
-            <TabsTrigger value="active">
-              Ativos ({checklistCounts.active})
+            <TabsTrigger value="active" className="min-w-[100px]">
+              Ativos
+              <span className="ml-2 text-xs bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded-full">
+                {checklistCounts.active}
+              </span>
             </TabsTrigger>
-            <TabsTrigger value="inactive">
-              Inativos ({checklistCounts.inactive})
+            <TabsTrigger value="inactive" className="min-w-[100px]">
+              Inativos
+              <span className="ml-2 text-xs bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded-full">
+                {checklistCounts.inactive}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="template" className="min-w-[100px]">
+              Templates
+              <span className="ml-2 text-xs bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded-full">
+                {checklistCounts.template}
+              </span>
             </TabsTrigger>
           </TabsList>
-        </Tabs>
-        
-        <div className="flex items-center border rounded-md ml-4">
-          <Button
-            variant={viewMode === "grid" ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => setViewMode("grid")}
-            className="rounded-r-none"
-          >
-            <Grid className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={viewMode === "list" ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => setViewMode("list")}
-            className="rounded-l-none"
-          >
-            <List className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
 
-      {viewMode === "grid" ? (
-        <ChecklistGrid
-          checklists={allChecklists}
-          isLoading={isLoading}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onOpen={onOpen}
-          onStatusChange={onStatusChange}
-          onBulkDelete={onBulkDelete}
-        />
-      ) : (
-        <ChecklistList
-          checklists={allChecklists}
-          isLoading={isLoading}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onOpen={onOpen}
-          onStatusChange={onStatusChange}
-          onBulkStatusChange={onBulkStatusChange}
-          onBulkDelete={onBulkDelete}
-        />
-      )}
+          <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center rounded-md border bg-muted/50">
+              <Button
+                variant={viewMode === "grid" ? "default" : "ghost"}
+                size="sm"
+                className={`rounded-none ${viewMode === "grid" ? "" : "bg-transparent text-muted-foreground"}`}
+                onClick={() => handleViewModeChange("grid")}
+              >
+                <Grid2x2 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === "list" ? "default" : "ghost"}
+                size="sm"
+                className={`rounded-none ${viewMode === "list" ? "" : "bg-transparent text-muted-foreground"}`}
+                onClick={() => handleViewModeChange("list")}
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Conteúdo das Tabs */}
+        {["all", "active", "inactive", "template"].map((tab) => (
+          <TabsContent key={tab} value={tab} className="space-y-4">
+            {viewMode === "grid" ? (
+              <ChecklistGrid
+                checklists={allChecklists}
+                isLoading={isLoading}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onOpen={onOpen}
+                onChecklistStatusChange={onChecklistStatusChange}
+              />
+            ) : (
+              <ChecklistList
+                checklists={allChecklists}
+                isLoading={isLoading}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onOpen={onOpen}
+                onStatusChange={onStatusChange}
+                onBulkStatusChange={onBulkStatusChange}
+                onBulkDelete={onBulkDelete}
+              />
+            )}
+          </TabsContent>
+        ))}
+      </Tabs>
     </div>
   );
 }
