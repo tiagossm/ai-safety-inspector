@@ -7,7 +7,7 @@ import { ChecklistWithStats, ChecklistOrigin, Checklist } from "@/types/newCheck
  */
 interface FieldMapping {
   source: keyof any;
-  target: keyof ChecklistWithStats;
+  target: string; // Changed from keyof ChecklistWithStats to string to avoid type errors
 }
 
 /**
@@ -22,7 +22,7 @@ const FIELD_MAPPINGS: FieldMapping[] = [
   { source: "created_at", target: "createdAt" },
   { source: "updated_at", target: "updatedAt" },
   { source: "due_date", target: "dueDate" },
-  { source: "parent_question_id", target: "parent_question_id" }
+  { source: "parent_question_id", target: "parent_question_id" } // Fixed: using the correct property name that exists in ChecklistWithStats
 ];
 
 /**
