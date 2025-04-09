@@ -66,12 +66,12 @@ export function useChecklistById(id: string) {
         };
       });
 
-      // Transform to the expected format
+      // Transform to the expected format and ensure the status is of correct type
       const formattedChecklist: ChecklistWithStats = {
         id: data.id,
         title: data.title,
         description: data.description || '',
-        status: data.status || 'active',
+        status: data.status === 'active' ? 'active' : 'inactive' as "active" | "inactive",
         is_template: data.is_template || false,
         isTemplate: data.is_template || false,
         category: data.category || '',
@@ -89,13 +89,13 @@ export function useChecklistById(id: string) {
         dueDate: data.due_date,
         is_sub_checklist: data.is_sub_checklist || false,
         isSubChecklist: data.is_sub_checklist || false,
-        origin: data.origin || 'manual',
+        origin: (data.origin || 'manual') as ChecklistOrigin,
         parent_question_id: data.parent_question_id,
         parentQuestionId: data.parent_question_id,
         totalQuestions: questionsData.length,
         completedQuestions: 0,
         companyName: data.companies?.fantasy_name || '',
-        responsibleName: data.users?.name || '',
+        responsibleName: data.users ? data.users.name || '' : '',
         questions: questions,
         groups: []
       };

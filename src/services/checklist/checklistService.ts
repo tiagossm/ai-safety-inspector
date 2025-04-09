@@ -23,7 +23,7 @@ export const checklistService = {
         description: item.description || '',
         is_template: item.is_template || false,
         isTemplate: item.is_template || false,
-        status: item.status || 'active',
+        status: item.status === 'active' ? 'active' : 'inactive' as "active" | "inactive",
         category: item.category || '',
         responsible_id: item.responsible_id,
         responsibleId: item.responsible_id,
@@ -39,9 +39,9 @@ export const checklistService = {
         dueDate: item.due_date,
         is_sub_checklist: item.is_sub_checklist || false,
         isSubChecklist: item.is_sub_checklist || false,
-        origin: item.origin || 'manual',
+        origin: (item.origin || 'manual') as ChecklistOrigin,
         parent_question_id: item.parent_question_id,
-        parent_question_id: item.parent_question_id,
+        parentQuestionId: item.parent_question_id,
         totalQuestions: 0,
         completedQuestions: 0,
         companyName: item.companies?.fantasy_name || '',
@@ -78,7 +78,7 @@ export const checklistService = {
         description: data.description || '',
         is_template: data.is_template || false,
         isTemplate: data.is_template || false,
-        status: data.status || 'active',
+        status: data.status === 'active' ? 'active' : 'inactive' as "active" | "inactive",
         category: data.category || '',
         responsible_id: data.responsible_id,
         responsibleId: data.responsible_id,
@@ -94,13 +94,13 @@ export const checklistService = {
         dueDate: data.due_date,
         is_sub_checklist: data.is_sub_checklist || false,
         isSubChecklist: data.is_sub_checklist || false,
-        origin: data.origin || 'manual',
+        origin: (data.origin || 'manual') as ChecklistOrigin,
         parent_question_id: data.parent_question_id,
         parentQuestionId: data.parent_question_id,
         totalQuestions: 0,
         completedQuestions: 0,
         companyName: data.companies?.fantasy_name || '',
-        responsibleName: data.users?.name || ''
+        responsibleName: data.users ? data.users.name || '' : ''
       };
       
       return checklist;
@@ -139,12 +139,12 @@ export const checklistService = {
         title: checklistData.title,
         description: checklistData.description || '',
         is_template: checklistData.is_template || false,
-        status: checklistData.status || 'active',
+        status: checklistData.status === 'active' ? 'active' : 'inactive' as "active" | "inactive",
         category: checklistData.category || '',
         responsible_id: checklistData.responsible_id || null,
         company_id: checklistData.company_id || null,
         user_id: checklistData.user_id || null,
-        origin: checklistData.origin || 'manual'
+        origin: (checklistData.origin || 'manual') as ChecklistOrigin
       };
 
       const { data, error } = await supabase

@@ -1,253 +1,165 @@
 
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { InspectionDetails, InspectionFilters } from "@/types/newChecklist";
-import { useAuth } from "@/components/AuthProvider";
 
-export function useOptimizedInspections() {
+// Helper function to build the query based on filters
+const buildQuery = (filters: InspectionFilters) => {
+  let query = supabase
+    .from('inspections')
+    .select(`
+      *,
+      companies:company_id (id, fantasy_name),
+      users:user_id (id, name),
+      responsible:responsible_id (id, name)
+    `);
+
+  if (filters.search) {
+    query = query.ilike('id', `%${filters.search}%`);
+  }
+
+  if (filters.status && filters.status !== 'all') {
+    query = query.eq('status', filters.status);
+  }
+
+  if (filters.priority && filters.priority !== 'all') {
+    query = query.eq('priority', filters.priority);
+  }
+
+  if (filters.companyId && filters.companyId !== 'all') {
+    query = query.eq('company_id', filters.companyId);
+  }
+
+  if (filters.responsibleId && filters.responsibleId !== 'all') {
+    query = query.eq('responsible_id', filters.responsibleId);
+  }
+
+  if (filters.checklistId && filters.checklistId !== 'all') {
+    query = query.eq('checklist_id', filters.checklistId);
+  }
+
+  if (filters.startDate && filters.endDate) {
+    query = query.gte('created_at', filters.startDate.toISOString())
+                 .lte('created_at', filters.endDate.toISOString());
+  }
+
+  return query.order('created_at', { ascending: false });
+};
+
+// Function to fetch inspection response stats
+async function fetchInspectionStats(inspectionId: string) {
+  try {
+    const { data, error, count } = await supabase
+      .from('inspection_responses')
+      .select('*', { count: 'exact' })
+      .eq('inspection_id', inspectionId);
+    
+    if (error) throw error;
+    
+    // Count completed items
+    const completedItems = data ? data.filter(response => 
+      response.completed_at !== null
+    ).length : 0;
+    
+    return {
+      totalItems: count || 0,
+      completedItems: completedItems
+    };
+  } catch (err) {
+    console.error(`Error fetching stats for inspection ${inspectionId}:`, err);
+    return { totalItems: 0, completedItems: 0 };
+  }
+}
+
+export function useOptimizedInspections(filters: InspectionFilters) {
   const [inspections, setInspections] = useState<InspectionDetails[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
   
-  const [filters, setFilters] = useState<InspectionFilters>({
-    search: "",
-    status: "all",
-    priority: "all",
-    companyId: "all",
-    responsibleId: "all", 
-    checklistId: "all",
-    startDate: undefined,
-    endDate: undefined
-  });
-
-  const fetchInspections = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      if (!user) {
-        throw new Error("Usuário não autenticado");
-      }
-
-      // Fetch inspections without trying to join on responsible_id directly
-      let query = supabase
-        .from("inspections")
-        .select(`
-          *,
-          companies:company_id(id, fantasy_name),
-          checklist:checklist_id(id, title, description, total_questions)
-        `);
-      
-      // Super admins see all inspections, others only see their own or company's
-      if (user.tier !== "super_admin") {
-        query = query.or(`user_id.eq.${user.id},responsible_id.eq.${user.id}`);
-      }
-      
-      const { data: inspectionsData, error } = await query.order("created_at", { ascending: false });
-      
-      if (error) throw error;
-      
-      if (!inspectionsData || inspectionsData.length === 0) {
-        setInspections([]);
-        return;
-      }
-      
-      // Get unique user IDs from responsible_id to fetch in a single query
-      const userIds = inspectionsData
-        .map(inspection => inspection.responsible_id)
-        .filter((id, index, self) => id !== null && id !== undefined && self.indexOf(id) === index);
-      
-      // Get unique checklist IDs to fetch all question counts at once
-      const checklistIds = inspectionsData
-        .map(inspection => inspection.checklist_id)
-        .filter((id, index, self) => id !== null && id !== undefined && self.indexOf(id) === index);
-      
-      // Get unique inspection IDs for response counts
-      const inspectionIds = inspectionsData
-        .map(inspection => inspection.id)
-        .filter((id, index, self) => id !== null && id !== undefined && self.indexOf(id) === index);
-      
-      // Fetch all required data in parallel
-      const [usersData, questionsCountData, responsesCountData] = await Promise.all([
-        // Fetch user data for all responsible users in one query
-        userIds.length > 0 
-          ? supabase
-              .from("users")
-              .select("id, name, email, phone")
-              .in("id", userIds)
-          : Promise.resolve({ data: [], error: null }),
-        
-        // Fetch total questions counts for all checklists at once
-        // Use count aggregate and filter by checklist_id instead of group
-        checklistIds.length > 0 
-          ? Promise.all(
-              checklistIds.map(checklistId => 
-                supabase
-                  .from('checklist_itens')
-                  .select('*', { count: 'exact', head: true })
-                  .eq('checklist_id', checklistId)
-              )
-            )
-          : Promise.resolve([]),
-          
-        // Fetch answered questions counts for all inspections at once
-        // Use count aggregate and filter by inspection_id instead of group
-        inspectionIds.length > 0
-          ? Promise.all(
-              inspectionIds.map(inspectionId => 
-                supabase
-                  .from('inspection_responses')
-                  .select('*', { count: 'exact', head: true })
-                  .eq('inspection_id', inspectionId)
-              )
-            )
-          : Promise.resolve([])
-      ]);
-      
-      // Process the data into maps for quick lookup
-      const usersMap = (usersData.data || []).reduce((acc: Record<string, any>, user) => {
-        acc[user.id] = user;
-        return acc;
-      }, {});
-      
-      // Convert the array of count queries into a map for checklist questions
-      const questionsCountMap = checklistIds.reduce((acc: Record<string, number>, checklistId, index) => {
-        if (questionsCountData[index] && questionsCountData[index].count !== null) {
-          acc[checklistId] = questionsCountData[index].count;
-        } else {
-          acc[checklistId] = 0;
-        }
-        return acc;
-      }, {});
-      
-      // Convert the array of count queries into a map for inspection responses
-      const responsesCountMap = inspectionIds.reduce((acc: Record<string, number>, inspectionId, index) => {
-        if (responsesCountData[index] && responsesCountData[index].count !== null) {
-          acc[inspectionId] = responsesCountData[index].count;
-        } else {
-          acc[inspectionId] = 0;
-        }
-        return acc;
-      }, {});
-      
-      // Now build the final inspections array with all the data
-      const processedInspections = inspectionsData.map(inspection => {
-        const totalItems = questionsCountMap[inspection.checklist_id] || 0;
-        const completedItems = responsesCountMap[inspection.id] || 0;
-        const progress = totalItems > 0 
-          ? Math.round((completedItems / totalItems) * 100) 
-          : 0;
-          
-        // Convert metadata from JSON to Record<string, any> or provide an empty object
-        const metadata = typeof inspection.metadata === 'object' 
-          ? inspection.metadata as Record<string, any> 
-          : {};
-          
-        return {
-          id: inspection.id,
-          title: inspection.checklist?.title || "Sem título",
-          description: inspection.checklist?.description,
-          checklistId: inspection.checklist_id,
-          companyId: inspection.company_id,
-          responsibleId: inspection.responsible_id,
-          scheduledDate: inspection.scheduled_date,
-          status: (inspection.status || 'pending') as 'pending' | 'in_progress' | 'completed',
-          createdAt: inspection.created_at,
-          updatedAt: inspection.created_at,
-          priority: (inspection.priority || 'medium') as 'low' | 'medium' | 'high',
-          locationName: inspection.location,
-          company: inspection.companies || null,
-          responsible: inspection.responsible_id ? usersMap[inspection.responsible_id] : null,
-          progress,
-          totalItems,
-          completedItems,
-          // Additional fields from the database schema
-          approval_notes: inspection.approval_notes,
-          approval_status: inspection.approval_status,
-          approved_by: inspection.approved_by,
-          audio_url: inspection.audio_url,
-          photos: inspection.photos || [],
-          report_url: inspection.report_url,
-          unit_id: inspection.unit_id,
-          metadata,
-          cnae: inspection.cnae,
-          inspection_type: inspection.inspection_type,
-          sync_status: inspection.sync_status,
-          companyName: inspection.companies?.fantasy_name,
-          responsibleName: inspection.responsible_id ? usersMap[inspection.responsible_id]?.name : null
-        } as InspectionDetails;
-      });
-      
-      setInspections(processedInspections);
-    } catch (error: any) {
-      console.error("Error fetching inspections:", error);
-      setError(error.message);
-      toast.error("Erro ao carregar inspeções", {
-        description: error.message
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchInspections();
-  }, [user]);
-
-  // Apply filters with memoization to avoid unnecessary recalculations
-  const filteredInspections = useMemo(() => {
-    return inspections.filter(inspection => {
-      // Search filter (case insensitive)
-      const searchLower = filters.search.toLowerCase();
-      const matchesSearch = !filters.search || 
-        (inspection.title?.toLowerCase().includes(searchLower)) ||
-        (inspection.company?.fantasy_name?.toLowerCase().includes(searchLower)) ||
-        (inspection.responsible?.name?.toLowerCase().includes(searchLower));
-      
-      // Other filters
-      const matchesStatus = filters.status === "all" || inspection.status === filters.status;
-      const matchesPriority = filters.priority === "all" || inspection.priority === filters.priority;
-      const matchesCompany = filters.companyId === "all" || inspection.companyId === filters.companyId;
-      const matchesResponsible = filters.responsibleId === "all" || inspection.responsibleId === filters.responsibleId;
-      const matchesChecklist = filters.checklistId === "all" || inspection.checklistId === filters.checklistId;
-      
-      // Date filter
-      let matchesDate = true;
-      if (filters.startDate) {
-        const scheduledDate = inspection.scheduledDate ? new Date(inspection.scheduledDate) : null;
-        const startDate = filters.startDate;
-        const endDate = filters.endDate || startDate;
+    const fetchInspections = async () => {
+      try {
+        setLoading(true);
         
-        if (scheduledDate) {
-          // Remove time component for date comparison
-          const dateOnly = new Date(scheduledDate);
-          dateOnly.setHours(0, 0, 0, 0);
+        const query = buildQuery(filters);
+        const { data, error } = await query;
+        
+        if (error) throw error;
+        
+        // Process and map the inspections
+        const inspectionsWithStats = await Promise.all((data || []).map(async (item) => {
+          // Get stats for each inspection
+          const stats = await fetchInspectionStats(item.id);
           
-          const startDateOnly = new Date(startDate);
-          startDateOnly.setHours(0, 0, 0, 0);
-          
-          const endDateOnly = new Date(endDate);
-          endDateOnly.setHours(23, 59, 59, 999);
-          
-          matchesDate = dateOnly >= startDateOnly && dateOnly <= endDateOnly;
-        } else {
-          matchesDate = false;
-        }
+          return {
+            id: item.id,
+            title: item.title || `Inspeção ${item.id.substring(0, 8)}`,
+            description: item.description || '',
+            checklistId: item.checklist_id,
+            companyId: item.company_id,
+            responsibleId: item.responsible_id,
+            scheduledDate: item.scheduled_date,
+            status: item.status === 'pending' ? 'pending' : 
+                   item.status === 'in_progress' ? 'in_progress' : 'completed',
+            createdAt: item.created_at,
+            updatedAt: item.updated_at,
+            priority: item.priority || 'medium',
+            locationName: item.location,
+            company: {
+              id: item.company_id,
+              name: item.companies?.fantasy_name || 'Sem empresa',
+              fantasy_name: item.companies?.fantasy_name
+            },
+            responsible: {
+              id: item.responsible_id,
+              name: item.responsible?.name || item.users?.name || 'Sem responsável',
+              email: item.responsible?.email || item.users?.email
+            },
+            progress: stats.totalItems > 0 ? Math.round((stats.completedItems / stats.totalItems) * 100) : 0,
+            totalItems: stats.totalItems,
+            completedItems: stats.completedItems,
+            approval_notes: item.approval_notes,
+            approval_status: item.approval_status,
+            approved_by: item.approved_by,
+            audio_url: item.audio_url,
+            photos: item.photos || [],
+            report_url: item.report_url,
+            unit_id: item.unit_id,
+            metadata: item.metadata,
+            cnae: item.cnae,
+            inspection_type: item.inspection_type,
+            sync_status: item.sync_status,
+            companyName: item.companies?.fantasy_name || 'Sem empresa',
+            responsibleName: item.responsible?.name || item.users?.name || 'Sem responsável'
+          };
+        }));
+        
+        setInspections(inspectionsWithStats);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching inspections:", err);
+        setError(err as Error);
+        setInspections([]);
+      } finally {
+        setLoading(false);
       }
-      
-      return matchesSearch && matchesStatus && matchesPriority && 
-        matchesCompany && matchesResponsible && matchesChecklist && matchesDate;
-    });
-  }, [inspections, filters]);
-
+    };
+    
+    fetchInspections();
+    
+    // Set up a polling interval to refresh data
+    const interval = setInterval(() => {
+      fetchInspections();
+    }, 30000);
+    
+    return () => clearInterval(interval);
+  }, [filters]);
+  
   return {
-    inspections: filteredInspections,
+    inspections,
     loading,
-    error,
-    fetchInspections,
-    filters,
-    setFilters
+    error
   };
 }
+
+export default useOptimizedInspections;
