@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats, ChecklistQuestion, ChecklistGroup, ChecklistOrigin } from "@/types/newChecklist";
 
@@ -69,7 +69,7 @@ export function useChecklistById(checklistId: string | undefined) {
           conditionValue: q.condition_value,
           parentQuestionId: q.parent_item_id,
           hint: q.hint,
-          hasSubChecklist: q.has_subchecklist,
+          hasSubChecklist: q.has_subchecklist || false,
           subChecklistId: q.sub_checklist_id
         }));
         

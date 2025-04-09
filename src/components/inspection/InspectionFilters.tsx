@@ -1,309 +1,239 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card } from "@/components/ui/card";
-import { DateRange } from "react-day-picker";
-import { format } from "date-fns";
-import { Calendar as CalendarIcon, X, Filter, Search as SearchIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { 
+  Dialog, DialogContent, DialogHeader, 
+  DialogTitle, DialogTrigger 
+} from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { InspectionFilters } from "@/types/newChecklist";
+import { Input } from "@/components/ui/input";
+import { FilterX, CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { CompanySelector } from "./CompanySelector";
+import type { InspectionFilters as InspectionFiltersType } from "@/types/newChecklist";
 
-interface InspectionFiltersProps {
-  filters: InspectionFilters;
-  onFilterChange: (filters: InspectionFilters) => void;
-  companies: { id: string; name: string }[];
-  responsibles: { id: string; name: string }[];
-  checklists: { id: string; title: string }[];
-  loading?: boolean;
-  onClearFilters?: () => void;
+export interface InspectionFiltersProps {
+  filters: InspectionFiltersType;
+  onFilterChange: (filters: InspectionFiltersType) => void;
 }
 
-interface DateRangeExtended {
-  from: Date | undefined;
-  to: Date | undefined;
-}
-
-export function InspectionFiltersComponent({
-  filters,
-  onFilterChange,
-  companies,
-  responsibles,
-  checklists,
-  loading,
-  onClearFilters
+export function InspectionFilters({ 
+  filters, 
+  onFilterChange 
 }: InspectionFiltersProps) {
-  const [showFilters, setShowFilters] = useState(false);
-  const [localDateRange, setLocalDateRange] = useState<DateRangeExtended | undefined>(
-    filters.startDate && filters.endDate
-      ? {
-          from: new Date(filters.startDate),
-          to: new Date(filters.endDate)
-        }
-      : undefined
-  );
+  const [isOpen, setIsOpen] = useState(false);
+  const [tempFilters, setTempFilters] = useState<InspectionFiltersType>(filters);
+  const [dateRange, setDateRange] = useState<{
+    from: Date | undefined;
+    to: Date | undefined;
+  }>({
+    from: filters.startDate,
+    to: filters.endDate
+  });
 
-  const handleDateRangeChange = (range: DateRangeExtended | undefined) => {
-    setLocalDateRange(range);
-    if (range?.from) {
-      onFilterChange({
-        ...filters,
-        startDate: format(range.from, "yyyy-MM-dd"),
-        endDate: range.to ? format(range.to, "yyyy-MM-dd") : format(range.from, "yyyy-MM-dd")
-      });
-    } else {
-      onFilterChange({
-        ...filters,
-        startDate: undefined,
-        endDate: undefined
+  // Function to apply filters and close dialog
+  const applyFilters = () => {
+    // Convert date range to filters
+    const updatedFilters = {
+      ...tempFilters,
+      startDate: dateRange.from,
+      endDate: dateRange.to
+    };
+    onFilterChange(updatedFilters);
+    setIsOpen(false);
+  };
+
+  // Function to clear all filters
+  const clearFilters = () => {
+    const clearedFilters: InspectionFiltersType = {
+      search: "",
+      status: "",
+      priority: "",
+      companyId: "",
+      responsibleId: "",
+      checklistId: "",
+      startDate: undefined,
+      endDate: undefined
+    };
+    setTempFilters(clearedFilters);
+    setDateRange({ from: undefined, to: undefined });
+  };
+
+  // Handle dialog open state
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      // When opening, copy current filters to temp
+      setTempFilters(filters);
+      setDateRange({
+        from: filters.startDate,
+        to: filters.endDate
       });
     }
-  };
-
-  const handleCompanyChange = (companyId: string) => {
-    onFilterChange({ ...filters, companyId });
-  };
-
-  const handleResponsibleChange = (responsibleId: string) => {
-    onFilterChange({ ...filters, responsibleId });
-  };
-
-  const handleStatusChange = (status: string) => {
-    onFilterChange({ ...filters, status });
-  };
-
-  const handlePriorityChange = (priority: string) => {
-    onFilterChange({ ...filters, priority });
-  };
-
-  const handleChecklistChange = (checklistId: string) => {
-    onFilterChange({ ...filters, checklistId });
-  };
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onFilterChange({ ...filters, search: e.target.value });
-  };
-
-  const clearAllFilters = () => {
-    setLocalDateRange(undefined);
-    if (onClearFilters) {
-      onClearFilters();
-    }
-  };
-
-  const hasActiveFilters = (): boolean => {
-    return (
-      filters.search !== "" ||
-      filters.status !== "all" ||
-      filters.priority !== "all" ||
-      filters.companyId !== "all" ||
-      filters.responsibleId !== "all" ||
-      filters.checklistId !== "all" ||
-      !!filters.startDate
-    );
+    setIsOpen(open);
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex-1 relative">
-          <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Buscar inspeções por título, empresa..."
-            className="pl-10"
-            value={filters.search}
-            onChange={handleSearchChange}
-          />
-        </div>
-
-        <div className="flex gap-2">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "justify-start text-left font-normal",
-                  localDateRange && "text-primary"
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {localDateRange?.from ? (
-                  localDateRange.to ? (
-                    <>
-                      {format(localDateRange.from, "dd/MM/yyyy")} -{" "}
-                      {format(localDateRange.to, "dd/MM/yyyy")}
-                    </>
-                  ) : (
-                    format(localDateRange.from, "dd/MM/yyyy")
-                  )
-                ) : (
-                  <span>Período</span>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                initialFocus
-                mode="range"
-                defaultMonth={localDateRange?.from}
-                selected={{
-                  from: localDateRange?.from,
-                  to: localDateRange?.to
-                }}
-                onSelect={(range) => handleDateRangeChange(range as DateRangeExtended)}
-                numberOfMonths={2}
-              />
-              <div className="flex items-center justify-end gap-2 p-3 border-t">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDateRangeChange(undefined)}
-                >
-                  Limpar
-                </Button>
-                <Button 
-                  size="sm" 
-                  onClick={() => document.body.click()} // Close the popover
-                >
-                  Aplicar
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          <Button
-            variant="outline"
-            className={cn(hasActiveFilters() && "border-primary text-primary")}
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            Filtros
-            {hasActiveFilters() && (
-              <span className="ml-2 text-xs bg-primary text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center">
-                !
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <div className="flex gap-2 items-center">
+        <DialogTrigger asChild>
+          <Button variant="outline" size="sm" className="h-8 gap-1">
+            <span>Filtros</span>
+            {Object.values(filters).some(val => val !== "" && val !== undefined) && (
+              <span className="bg-primary text-primary-foreground rounded-full h-5 w-5 text-xs flex items-center justify-center">
+                {Object.values(filters).filter(val => val !== "" && val !== undefined).length}
               </span>
             )}
           </Button>
+        </DialogTrigger>
 
-          {hasActiveFilters() && (
-            <Button variant="ghost" size="icon" onClick={clearAllFilters}>
-              <X className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
+        {Object.values(filters).some(val => val !== "" && val !== undefined) && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 px-2" 
+            onClick={() => {
+              onFilterChange({
+                search: "",
+                status: "",
+                priority: "",
+                companyId: "",
+                responsibleId: "",
+                checklistId: "",
+                startDate: undefined,
+                endDate: undefined
+              });
+            }}
+          >
+            <FilterX className="h-4 w-4" />
+            <span className="sr-only">Clear filters</span>
+          </Button>
+        )}
       </div>
 
-      {showFilters && (
-        <Card className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Filtrar Inspeções</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          {/* Status filter */}
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Status</label>
-              <Select
-                value={filters.status}
-                onValueChange={handleStatusChange}
-                disabled={loading}
+              <Select 
+                value={tempFilters.status}
+                onValueChange={(value) => setTempFilters({...tempFilters, status: value})}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Todos os status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="pending">Pendentes</SelectItem>
-                  <SelectItem value="in_progress">Em andamento</SelectItem>
-                  <SelectItem value="completed">Concluídos</SelectItem>
+                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="pending">Pendente</SelectItem>
+                  <SelectItem value="in_progress">Em Andamento</SelectItem>
+                  <SelectItem value="completed">Concluído</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            
+
+            {/* Priority filter */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Prioridade</label>
-              <Select
-                value={filters.priority}
-                onValueChange={handlePriorityChange}
-                disabled={loading}
+              <Select 
+                value={tempFilters.priority}
+                onValueChange={(value) => setTempFilters({...tempFilters, priority: value})}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Todas as prioridades" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="">Todas</SelectItem>
                   <SelectItem value="low">Baixa</SelectItem>
                   <SelectItem value="medium">Média</SelectItem>
                   <SelectItem value="high">Alta</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Empresa</label>
-              <Select
-                value={filters.companyId}
-                onValueChange={handleCompanyChange}
-                disabled={loading || companies.length === 0}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Todas as empresas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  {companies.map((company) => (
-                    <SelectItem key={company.id} value={company.id}>
-                      {company.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Responsável</label>
-              <Select
-                value={filters.responsibleId}
-                onValueChange={handleResponsibleChange}
-                disabled={loading || responsibles.length === 0}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos os responsáveis" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  {responsibles.map((responsible) => (
-                    <SelectItem key={responsible.id} value={responsible.id}>
-                      {responsible.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2 md:col-span-2 lg:col-span-1">
-              <label className="text-sm font-medium">Checklist</label>
-              <Select
-                value={filters.checklistId}
-                onValueChange={handleChecklistChange}
-                disabled={loading || checklists.length === 0}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos os checklists" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  {checklists.map((checklist) => (
-                    <SelectItem key={checklist.id} value={checklist.id}>
-                      {checklist.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          </div>
+
+          {/* Date range filter */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Período</label>
+            <div className="grid gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="date"
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !dateRange.from && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateRange.from ? (
+                      dateRange.to ? (
+                        <>
+                          {format(dateRange.from, "PPP", { locale: ptBR })} -{" "}
+                          {format(dateRange.to, "PPP", { locale: ptBR })}
+                        </>
+                      ) : (
+                        format(dateRange.from, "PPP", { locale: ptBR })
+                      )
+                    ) : (
+                      <span>Selecione um período</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={dateRange.from}
+                    selected={dateRange}
+                    onSelect={setDateRange}
+                    numberOfMonths={2}
+                    locale={ptBR}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
-        </Card>
-      )}
-    </div>
+
+          {/* Company filter */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Empresa</label>
+            <CompanySelector 
+              value={tempFilters.companyId}
+              onSelect={(value) => setTempFilters({...tempFilters, companyId: value})}
+              includeEmptyOption
+            />
+          </div>
+
+          {/* Other filters can be added here */}
+          
+          <div className="flex justify-between pt-4">
+            <Button 
+              variant="outline" 
+              onClick={clearFilters}
+              type="button"
+            >
+              Limpar Filtros
+            </Button>
+            <Button 
+              onClick={applyFilters}
+              type="button"
+            >
+              Aplicar Filtros
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
-
-export const InspectionFilters = InspectionFiltersComponent;

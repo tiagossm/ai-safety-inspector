@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { NewChecklistPayload, AIAssistantType } from "@/types/newChecklist";
 import { CompanyListItem } from "@/types/CompanyListItem";
 import { Bot, Sparkles } from "lucide-react";
-import { AIAssistantType as AIType, useChecklistAI } from "@/hooks/new-checklist/useChecklistAI";
+import { AIAssistantType as AIType } from "@/hooks/new-checklist/useChecklistAI";
 import { CompanySelector } from "@/components/inspection/CompanySelector";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -161,9 +161,9 @@ export function AIChecklistCreator({
           </div>
 
           <IntelligentChecklistForm
-            selectedAssistant={selectedAssistant as string}
+            selectedAssistant={selectedAssistant as AIAssistantType}
             onAssistantTypeChange={(type) => setSelectedAssistant(type as AIType)}
-            openAIAssistant={openAIAssistant as string}
+            openAIAssistant={openAIAssistant || ""}
             onOpenAIAssistantChange={(id) => setOpenAIAssistant(id)}
             onPromptChange={setPrompt}
             checklist={{

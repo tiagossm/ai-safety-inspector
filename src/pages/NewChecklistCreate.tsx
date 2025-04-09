@@ -2,12 +2,11 @@
 import React, { useState } from "react";
 import { NewChecklistPayload } from "@/types/newChecklist";
 
-// Fix for NewChecklistPayload to NewChecklist conversion
 function NewChecklistCreate() {
   const [checklist, setChecklist] = useState<NewChecklistPayload>({
     title: "",
     description: "",
-    is_template: false,  // Changed from isTemplate to is_template
+    is_template: false,
     status: "active",
     category: ""
   });

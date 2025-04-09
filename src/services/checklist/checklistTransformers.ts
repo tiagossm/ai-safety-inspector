@@ -1,51 +1,62 @@
 
+import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats } from "@/types/newChecklist";
 
-/**
- * Transforms raw checklist data to the application format
- */
-export function transformChecklistData(data: any[]): ChecklistWithStats[] {
-  return data.map((item) => ({
+export const transformDbChecklistsToStats = (data: any[]): ChecklistWithStats[] => {
+  return data.map(item => ({
     id: item.id,
     title: item.title,
     description: item.description,
-    isTemplate: item.is_template,
+    is_template: item.isTemplate,
     status: item.status,
     category: item.category,
-    responsibleId: item.responsible_id,
-    companyId: item.company_id,
-    userId: item.user_id,
-    createdAt: item.created_at,
-    updatedAt: item.updated_at,
-    dueDate: item.due_date,
-    isSubChecklist: item.is_sub_checklist,
+    responsible_id: item.responsibleId,
+    company_id: item.companyId,
+    user_id: item.userId,
+    created_at: item.createdAt,
+    updated_at: item.updatedAt,
+    due_date: item.dueDate,
+    is_sub_checklist: item.isSubChecklist,
     origin: item.origin,
-    totalQuestions: item.checklist_itens?.[0]?.count || 0,
-    completedQuestions: 0,
-    companyName: item.companies?.fantasy_name,
-    responsibleName: item.users?.name
+    parent_question_id: item.parentQuestionId,
+    totalQuestions: item.totalQuestions || 0,
+    completedQuestions: item.completedQuestions || 0,
+    companyName: item.companyName,
+    responsibleName: item.responsibleName,
+    // For backward compatibility
+    isTemplate: item.isTemplate,
+    isSubChecklist: item.isSubChecklist,
+    companyId: item.companyId,
+    responsibleId: item.responsibleId,
+    userId: item.userId,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+    dueDate: item.dueDate
   }));
-}
+};
 
-/**
- * Transforms basic checklist data (without joins)
- */
-export function transformBasicChecklistData(data: any[]): ChecklistWithStats[] {
-  return data.map((item) => ({
+export const transformChecklistsForUI = (data: any[]): ChecklistWithStats[] => {
+  return data.map(item => ({
     id: item.id,
     title: item.title,
     description: item.description,
-    isTemplate: item.is_template,
+    is_template: item.isTemplate,
     status: item.status,
-    isSubChecklist: item.is_sub_checklist,
+    is_sub_checklist: item.isSubChecklist,
     category: item.category,
-    companyId: item.company_id,
-    createdAt: item.created_at,
-    updatedAt: item.updated_at,
+    company_id: item.companyId,
+    created_at: item.createdAt,
+    updated_at: item.updatedAt,
     origin: item.origin,
-    totalQuestions: 0,
-    completedQuestions: 0,
-    companyName: undefined,
-    responsibleName: undefined
+    totalQuestions: item.totalQuestions || 0,
+    completedQuestions: item.completedQuestions || 0,
+    companyName: item.companyName,
+    responsibleName: item.responsibleName,
+    // For backward compatibility
+    isTemplate: item.isTemplate,
+    isSubChecklist: item.isSubChecklist,
+    companyId: item.companyId,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt
   }));
-}
+};

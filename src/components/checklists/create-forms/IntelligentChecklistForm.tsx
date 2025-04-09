@@ -8,7 +8,7 @@ import { AIAssistantSelector } from '@/components/ai/OpenAIAssistantSelector';
 import QuestionCountSelector from './QuestionCountSelector';
 
 interface IntelligentChecklistFormProps {
-  selectedAssistant: string;
+  selectedAssistant: AIAssistantType;
   onAssistantTypeChange: (type: AIAssistantType) => void;
   openAIAssistant: string;
   onOpenAIAssistantChange: (id: string) => void;
@@ -56,7 +56,7 @@ export function IntelligentChecklistForm({
           <div className="space-y-2">
             <Label>Assistente de IA</Label>
             <AIAssistantSelector
-              selectedAssistant={selectedAssistant as AIAssistantType}
+              selectedAssistant={selectedAssistant}
               onAssistantTypeChange={onAssistantTypeChange}
               openAIAssistant={openAIAssistant}
               onOpenAIAssistantChange={onOpenAIAssistantChange}

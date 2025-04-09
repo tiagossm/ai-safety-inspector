@@ -2,8 +2,7 @@
 import React from 'react';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-
-export type AIAssistantType = "general" | "workplace-safety" | "compliance" | "quality" | "checklist" | "openai";
+import { AIAssistantType } from '@/types/newChecklist';
 
 export interface AIAssistantSelectorProps {
   selectedAssistant: AIAssistantType;

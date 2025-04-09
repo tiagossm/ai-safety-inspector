@@ -1,5 +1,5 @@
 
-import React from "react";
+import React from 'react';
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 
@@ -15,21 +15,20 @@ const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({
   return (
     <div className="space-y-2">
       <div className="flex justify-between items-center">
-        <Label htmlFor="question-count">Número de Perguntas</Label>
+        <Label htmlFor="question-count">Número de perguntas</Label>
         <span className="text-sm font-medium">{questionCount}</span>
       </div>
       <Slider
         id="question-count"
-        defaultValue={[questionCount]}
         min={5}
-        max={50}
-        step={5}
-        onValueChange={(value) => setQuestionCount(value[0])}
-        className="py-2"
+        max={30}
+        step={1}
+        value={[questionCount]}
+        onValueChange={(values) => setQuestionCount(values[0])}
       />
-      <div className="flex justify-between text-xs text-muted-foreground">
+      <div className="flex justify-between text-xs text-gray-500">
         <span>5</span>
-        <span>50</span>
+        <span>30</span>
       </div>
     </div>
   );

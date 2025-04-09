@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
@@ -17,7 +18,7 @@ import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 export default function NewChecklistEdit() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { data: checklist, isLoading, error, refetch } = useChecklistById(id || "");
+  const { checklist, loading, error } = useChecklistById(id || "");
   const [enableAllMedia, setEnableAllMedia] = useState(false);
   
   const {
@@ -51,11 +52,11 @@ export default function NewChecklistEdit() {
     handleSubmit
   } = useChecklistEdit(checklist, id);
 
-  // Função para aplicar opções de mídia para todas as perguntas
+  // Function to apply media options to all questions
   const toggleAllMediaOptions = (enabled: boolean) => {
     setEnableAllMedia(enabled);
     
-    // Aplicar a configuração a todas as perguntas
+    // Apply the configuration to all questions
     const updatedQuestions = questions.map(question => ({
       ...question,
       allowsPhoto: enabled,
@@ -72,11 +73,11 @@ export default function NewChecklistEdit() {
   };
 
   const handleStartInspection = async () => {
-    // Primeiro salvar o checklist
+    // First save the checklist
     const success = await handleSubmit();
     
     if (success && id) {
-      // Redirecionar para a página de criação de inspeção com o checklist selecionado
+      // Redirect to the inspection creation page with the checklist selected
       navigate(`/inspections/new?checklist=${id}`);
     }
   };
@@ -88,14 +89,19 @@ export default function NewChecklistEdit() {
     }
   };
   
-  // Inicializar formulário com dados do checklist quando ele for carregado
+  const refetch = async () => {
+    // Manually refresh by reloading the page for now
+    window.location.reload();
+  };
+  
+  // Initialize form with checklist data when loaded
   useEffect(() => {
     if (checklist) {
       console.log("Checklist data loaded for edit:", checklist);
     }
   }, [checklist]);
   
-  // Lidar com erros
+  // Handle errors
   useEffect(() => {
     if (error) {
       toast.error("Erro ao carregar checklist. Verifique o ID ou tente novamente.");
@@ -122,7 +128,7 @@ export default function NewChecklistEdit() {
     }
   }, [checklist]);
   
-  if (isLoading) {
+  if (loading) {
     return <LoadingState />;
   }
   
@@ -138,7 +144,7 @@ export default function NewChecklistEdit() {
         }}
       />
       
-      {/* Botões de ação no topo */}
+      {/* Action buttons at the top */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-4">
           <Switch
