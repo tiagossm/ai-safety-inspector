@@ -1,3 +1,4 @@
+
 // Base checklist types
 export interface Checklist {
   id: string;
@@ -61,6 +62,14 @@ export interface ChecklistQuestion {
   hint?: string;
   hasSubChecklist?: boolean;
   subChecklistId?: string;
+}
+
+// Define the ChecklistGroup interface that was missing
+export interface ChecklistGroup {
+  id: string;
+  title: string;
+  order: number;
+  description?: string;
 }
 
 // Inspection types
