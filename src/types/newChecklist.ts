@@ -51,19 +51,9 @@ export interface ChecklistWithStats extends Checklist {
   is_sub_checklist?: boolean; // For backward compatibility
   isSubChecklist?: boolean;
   origin?: 'manual' | 'ia' | 'csv';
-}
-
-export interface NewChecklistPayload {
-  title: string;
-  description?: string;
-  isTemplate?: boolean;
-  status?: string;
-  category?: string;
-  responsibleId?: string;
-  companyId?: string;
-  company_id?: string;
-  dueDate?: string;
-  origin?: 'manual' | 'ia' | 'csv';
+  companyName?: string; // Added company name property
+  companyId?: string; // Added company ID for potential future use
+  responsibleName?: string; // Optional responsible name
 }
 
 export interface InspectionDetails {
