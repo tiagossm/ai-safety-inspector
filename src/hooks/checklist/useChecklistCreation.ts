@@ -112,13 +112,26 @@ export function useChecklistCreation() {
     setQuestions(newQuestions);
   };
   
+  // Helper function to ensure status is "active" or "inactive"
+  const normalizeStatus = (status?: string): "active" | "inactive" => {
+    if (status === 'active' || status === 'inactive') {
+      return status;
+    }
+    return 'active';
+  };
+  
   // Handle form submission - modified to accept adaptedForm parameter
   const submitForm = async (e: React.FormEvent, adaptedForm?: NewChecklistType): Promise<boolean> => {
     try {
+      const formToSubmit = adaptedForm || {
+        ...form,
+        status: normalizeStatus(form.status)
+      };
+      
       return await formSubmitHandler(
         e, 
         activeTab, 
-        adaptedForm || form, // Use adaptedForm if provided, otherwise use the original form
+        formToSubmit,
         questions, 
         file, 
         aiPrompt, 
