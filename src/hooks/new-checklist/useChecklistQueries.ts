@@ -3,16 +3,19 @@ import { useQuery } from "@tanstack/react-query";
 import { 
   fetchChecklists, 
   fetchAllChecklistsData 
-} from "@/services/checklist/checklistService";
+} from "@/services/checklist/checklistQueryService";
 
+/**
+ * Hook for querying checklists with filters
+ */
 export function useChecklistQueries(
   filterType: string, 
   selectedCompanyId: string, 
-  selectedCategory: string, 
-  selectedOrigin: string, 
+  selectedCategory: string,
+  selectedOrigin: string,
   sortOrder: string
 ) {
-  // Fetch checklists
+  // Fetch checklists with applied filters
   const { data: checklists = [], isLoading } = useQuery({
     queryKey: ["new-checklists", filterType, selectedCompanyId, selectedCategory, selectedOrigin, sortOrder],
     queryFn: async () => {

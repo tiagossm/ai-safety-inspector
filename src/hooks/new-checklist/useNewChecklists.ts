@@ -1,11 +1,15 @@
 
+import { useState, useEffect } from 'react';
 import { useChecklistQueries } from './useChecklistQueries';
 import { useCompanyQueries } from './useCompanyQueries';
 import { useChecklistMutations } from './useChecklistMutations';
 import { useChecklistFilters } from './useChecklistFilters';
 
+/**
+ * Main hook that composes all checklist functionality
+ */
 export function useNewChecklists() {
-  // Get filter state
+  // Filter state
   const [filterType, setFilterType] = useState("all");
   const [selectedCompanyId, setSelectedCompanyId] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -23,7 +27,7 @@ export function useNewChecklists() {
   const { companies, isLoadingCompanies } = useCompanyQueries();
   
   // Get mutations
-  const { deleteChecklist, refetch } = useChecklistMutations();
+  const { deleteChecklist, updateStatus, updateBulkStatus, refetch } = useChecklistMutations();
   
   // Apply filters
   const {
@@ -83,10 +87,9 @@ export function useNewChecklists() {
     companies,
     categories,
     isLoadingCompanies,
-    refetch,
-    deleteChecklist
+    deleteChecklist,
+    updateStatus,
+    updateBulkStatus,
+    refetch
   };
 }
-
-// Add missing imports
-import { useState, useEffect } from 'react';

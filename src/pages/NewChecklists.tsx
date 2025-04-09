@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useNewChecklists } from "@/hooks/new-checklist/useNewChecklists";
 import { ChecklistFilters } from "@/components/new-checklist/ChecklistFilters";
@@ -7,11 +7,13 @@ import { DeleteChecklistDialog } from "@/components/new-checklist/DeleteChecklis
 import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 import { toast } from "sonner";
 import { ChecklistTabs } from "@/components/new-checklist/ChecklistTabs";
+import { ChecklistWithStats } from "@/types/newChecklist";
 
 export default function NewChecklists() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   
+  // Use the refactored hook to get all checklist functionality
   const { 
     checklists, 
     allChecklists,
@@ -31,8 +33,10 @@ export default function NewChecklists() {
     companies,
     categories,
     isLoadingCompanies,
-    refetch,
-    deleteChecklist
+    deleteChecklist,
+    updateStatus,
+    updateBulkStatus,
+    refetch
   } = useNewChecklists();
   
   // Get tab from URL params or localStorage, default to "template"
@@ -57,6 +61,7 @@ export default function NewChecklists() {
     }
   }, [activeTab, setFilterType]);
   
+  // Delete dialog state
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     checklistId: string;
@@ -74,17 +79,17 @@ export default function NewChecklists() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Count checklists by type - excluding subchecklist
-  const filteredChecklists = useMemo(() => 
-    allChecklists.filter(c => !c.isSubChecklist),
-    [allChecklists]
-  );
-  
-  const checklistCounts = useMemo(() => ({
-    template: filteredChecklists.filter(c => c.isTemplate).length,
-    active: filteredChecklists.filter(c => c.status === "active" && !c.isTemplate).length,
-    inactive: filteredChecklists.filter(c => c.status === "inactive" && !c.isTemplate).length
-  }), [filteredChecklists]);
+  const checklistCounts = React.useMemo(() => {
+    const filtered = allChecklists.filter(c => !c.isSubChecklist);
+    
+    return {
+      template: filtered.filter(c => c.isTemplate).length,
+      active: filtered.filter(c => c.status === "active" && !c.isTemplate).length,
+      inactive: filtered.filter(c => c.status === "inactive" && !c.isTemplate).length
+    };
+  }, [allChecklists]);
 
+  // Navigation handlers
   const handleOpenChecklist = (id: string) => {
     navigate(`/new-checklists/${id}`);
   };
@@ -113,6 +118,18 @@ export default function NewChecklists() {
     });
   };
 
+  // Handle status update for multiple checklists
+  const handleBulkStatusChange = async (ids: string[], newStatus: 'active' | 'inactive') => {
+    try {
+      await updateBulkStatus.mutateAsync({ checklistIds: ids, newStatus });
+      return true;
+    } catch (error) {
+      console.error("Error updating status for multiple checklists:", error);
+      throw error;
+    }
+  };
+
+  // Handle delete confirmation
   const handleConfirmDelete = async () => {
     setIsDeleting(true);
     try {
@@ -128,7 +145,7 @@ export default function NewChecklists() {
         toast.success("Checklist excluído com sucesso");
       }
       
-      // Important: refetch data after deletion
+      // Refetch data after deletion
       await refetch();
       
       setDeleteDialog({
@@ -154,6 +171,17 @@ export default function NewChecklists() {
     setActiveTab(tab);
   };
 
+  // Handle status change for a single checklist
+  const handleStatusChange = async (id: string, newStatus: 'active' | 'inactive') => {
+    try {
+      await updateStatus.mutateAsync({ checklistId: id, newStatus });
+      return true;
+    } catch (error) {
+      console.error("Error updating checklist status:", error);
+      throw error;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -176,7 +204,7 @@ export default function NewChecklists() {
         companies={companies}
         categories={categories}
         isLoadingCompanies={isLoadingCompanies}
-        totalChecklists={filteredChecklists.length}
+        totalChecklists={allChecklists.filter(c => !c.isSubChecklist).length}
         onCreateNew={handleCreateNew}
       />
 
@@ -189,8 +217,10 @@ export default function NewChecklists() {
         onOpen={handleOpenChecklist}
         onStatusChange={refetch}
         onBulkDelete={handleBulkDelete}
+        onBulkStatusChange={handleBulkStatusChange}
         onTabChange={handleTabChange}
         activeTab={activeTab}
+        onChecklistStatusChange={handleStatusChange}
       />
 
       <DeleteChecklistDialog
@@ -199,6 +229,7 @@ export default function NewChecklists() {
         isOpen={deleteDialog.open}
         onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
         onDeleted={handleConfirmDelete}
+        isDeleting={isDeleting}
       />
       
       <FloatingNavigation threshold={300} />

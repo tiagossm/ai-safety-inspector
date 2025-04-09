@@ -24,7 +24,6 @@ import { ChecklistLoadingSkeleton } from "./ChecklistLoadingSkeleton";
 import { ChecklistEmptyState } from "./ChecklistEmptyState";
 import { ChecklistRow } from "./ChecklistRow";
 import { BulkActionsToolbar } from "./BulkActionsToolbar";
-import { updateBulkChecklistStatus } from "@/services/checklist/checklistService";
 
 interface ChecklistListProps {
   checklists: ChecklistWithStats[];
@@ -32,10 +31,14 @@ interface ChecklistListProps {
   onEdit: (id: string) => void;
   onDelete: (id: string, title: string) => void;
   onOpen: (id: string) => void;
-  onStatusChange?: () => void;
+  onStatusChange: () => void;
+  onBulkStatusChange: (ids: string[], newStatus: 'active' | 'inactive') => Promise<void>;
   onBulkDelete?: (ids: string[]) => void;
 }
 
+/**
+ * Component for displaying checklists in a table view
+ */
 export function ChecklistList({
   checklists,
   isLoading,
@@ -43,12 +46,14 @@ export function ChecklistList({
   onDelete,
   onOpen,
   onStatusChange,
+  onBulkStatusChange,
   onBulkDelete
 }: ChecklistListProps) {
   const [selectedChecklists, setSelectedChecklists] = useState<string[]>([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Clear selections when checklist data changes
   useEffect(() => {
     setSelectedChecklists([]);
   }, [checklists]);
@@ -86,23 +91,29 @@ export function ChecklistList({
     }
   };
 
-  const handleBulkStatusChange = async (newStatus: 'active' | 'inactive') => {
+  const handleBulkActivate = async () => {
     if (selectedChecklists.length === 0) return;
     
-    const statusText = newStatus === 'active' ? 'ativando' : 'desativando';
-    const loadingToast = toast.loading(`${statusText} ${selectedChecklists.length} checklists...`);
-    
     try {
-      await updateBulkChecklistStatus(selectedChecklists, newStatus);
-      toast.success(`${selectedChecklists.length} checklists ${newStatus === 'active' ? 'ativados' : 'desativados'} com sucesso`);
-      
-      if (onStatusChange) onStatusChange();
+      await onBulkStatusChange(selectedChecklists, 'active');
+      toast.success(`${selectedChecklists.length} checklists ativados com sucesso`);
       setSelectedChecklists([]);
     } catch (error) {
-      console.error(`Error ${statusText} checklists:`, error);
-      toast.error(`Erro ao ${statusText.replace('ando', 'ar')} checklists`);
-    } finally {
-      toast.dismiss(loadingToast);
+      console.error("Error activating checklists:", error);
+      toast.error("Erro ao ativar checklists");
+    }
+  };
+
+  const handleBulkDeactivate = async () => {
+    if (selectedChecklists.length === 0) return;
+    
+    try {
+      await onBulkStatusChange(selectedChecklists, 'inactive');
+      toast.success(`${selectedChecklists.length} checklists desativados com sucesso`);
+      setSelectedChecklists([]);
+    } catch (error) {
+      console.error("Error deactivating checklists:", error);
+      toast.error("Erro ao desativar checklists");
     }
   };
 
@@ -122,9 +133,10 @@ export function ChecklistList({
     <div className="space-y-4">
       <BulkActionsToolbar 
         selectedCount={selectedChecklists.length}
-        onBulkActivate={() => handleBulkStatusChange('active')}
-        onBulkDeactivate={() => handleBulkStatusChange('inactive')}
+        onBulkActivate={handleBulkActivate}
+        onBulkDeactivate={handleBulkDeactivate}
         onBulkDelete={() => setIsDeleteDialogOpen(true)}
+        isDeleting={isDeleting}
       />
       
       <div className="border rounded-md overflow-hidden">

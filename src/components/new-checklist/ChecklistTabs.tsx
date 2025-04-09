@@ -1,11 +1,11 @@
 
-import { FileText, Archive, CheckSquare } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { ChecklistGrid } from "@/components/new-checklist/ChecklistGrid";
+import React from "react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ChecklistGrid } from "./ChecklistGrid";
+import { ChecklistList } from "./ChecklistList";
+import { Button } from "@/components/ui/button";
+import { List, Grid } from "lucide-react";
 import { ChecklistWithStats } from "@/types/newChecklist";
-import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
 
 interface ChecklistTabsProps {
   checklistCounts: {
@@ -20,10 +20,15 @@ interface ChecklistTabsProps {
   onOpen: (id: string) => void;
   onStatusChange: () => void;
   onBulkDelete: (ids: string[]) => void;
+  onBulkStatusChange: (ids: string[], newStatus: 'active' | 'inactive') => Promise<void>;
   onTabChange: (tab: string) => void;
   activeTab: string;
+  onChecklistStatusChange: (id: string, newStatus: 'active' | 'inactive') => Promise<boolean>;
 }
 
+/**
+ * Component that handles all tab views for checklists
+ */
 export function ChecklistTabs({
   checklistCounts,
   allChecklists,
@@ -33,80 +38,77 @@ export function ChecklistTabs({
   onOpen,
   onStatusChange,
   onBulkDelete,
+  onBulkStatusChange,
   onTabChange,
-  activeTab
+  activeTab,
+  onChecklistStatusChange
 }: ChecklistTabsProps) {
-  const [searchParams, setSearchParams] = useSearchParams();
-  
-  useEffect(() => {
-    searchParams.set('tab', activeTab);
-    setSearchParams(searchParams);
+  const [viewMode, setViewMode] = React.useState<"grid" | "list">("grid");
+
+  // Save tab preference to localStorage
+  React.useEffect(() => {
     localStorage.setItem('checklist-active-tab', activeTab);
-  }, [activeTab, setSearchParams, searchParams]);
+  }, [activeTab]);
 
-  const filteredChecklists = allChecklists.filter(c => !c.isSubChecklist);
-  
   return (
-    <Tabs value={activeTab} onValueChange={onTabChange} className="space-y-4">
-      <TabsList>
-        <TabsTrigger value="template" className="flex items-center gap-2">
-          <FileText className="h-4 w-4" />
-          <span>Templates</span>
-          {checklistCounts.template > 0 && <span className="ml-1 text-xs bg-primary/10 text-primary rounded-full px-2">{checklistCounts.template}</span>}
-        </TabsTrigger>
-        <TabsTrigger value="active" className="flex items-center gap-2">
-          <CheckSquare className="h-4 w-4" />
-          <span>Ativos</span>
-          {checklistCounts.active > 0 && <span className="ml-1 text-xs bg-primary/10 text-primary rounded-full px-2">{checklistCounts.active}</span>}
-        </TabsTrigger>
-        <TabsTrigger value="inactive" className="flex items-center gap-2">
-          <Archive className="h-4 w-4" />
-          <span>Inativos</span>
-          {checklistCounts.inactive > 0 && <span className="ml-1 text-xs bg-primary/10 text-primary rounded-full px-2">{checklistCounts.inactive}</span>}
-        </TabsTrigger>
-      </TabsList>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
+          <TabsList>
+            <TabsTrigger value="template">
+              Templates ({checklistCounts.template})
+            </TabsTrigger>
+            <TabsTrigger value="active">
+              Ativos ({checklistCounts.active})
+            </TabsTrigger>
+            <TabsTrigger value="inactive">
+              Inativos ({checklistCounts.inactive})
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+        
+        <div className="flex items-center border rounded-md ml-4">
+          <Button
+            variant={viewMode === "grid" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setViewMode("grid")}
+            className="rounded-r-none"
+          >
+            <Grid className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === "list" ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setViewMode("list")}
+            className="rounded-l-none"
+          >
+            <List className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
 
-      <TabsContent value="template">
-        <ScrollArea className="h-[calc(100vh-300px)]">
-          <ChecklistGrid 
-            checklists={filteredChecklists.filter(c => c.isTemplate)} 
-            isLoading={isLoading} 
-            onEdit={onEdit}
-            onDelete={onDelete}
-            onOpen={onOpen}
-            onStatusChange={onStatusChange}
-            onBulkDelete={onBulkDelete}
-          />
-        </ScrollArea>
-      </TabsContent>
-
-      <TabsContent value="active">
-        <ScrollArea className="h-[calc(100vh-300px)]">
-          <ChecklistGrid 
-            checklists={filteredChecklists.filter(c => c.status === "active" && !c.isTemplate)} 
-            isLoading={isLoading} 
-            onEdit={onEdit}
-            onDelete={onDelete}
-            onOpen={onOpen}
-            onStatusChange={onStatusChange}
-            onBulkDelete={onBulkDelete}
-          />
-        </ScrollArea>
-      </TabsContent>
-
-      <TabsContent value="inactive">
-        <ScrollArea className="h-[calc(100vh-300px)]">
-          <ChecklistGrid 
-            checklists={filteredChecklists.filter(c => c.status === "inactive" && !c.isTemplate)} 
-            isLoading={isLoading} 
-            onEdit={onEdit}
-            onDelete={onDelete}
-            onOpen={onOpen}
-            onStatusChange={onStatusChange}
-            onBulkDelete={onBulkDelete}
-          />
-        </ScrollArea>
-      </TabsContent>
-    </Tabs>
+      {viewMode === "grid" ? (
+        <ChecklistGrid
+          checklists={allChecklists}
+          isLoading={isLoading}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onOpen={onOpen}
+          onStatusChange={onStatusChange}
+          onBulkDelete={onBulkDelete}
+        />
+      ) : (
+        <ChecklistList
+          checklists={allChecklists}
+          isLoading={isLoading}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onOpen={onOpen}
+          onStatusChange={onStatusChange}
+          onBulkStatusChange={onBulkStatusChange}
+          onBulkDelete={onBulkDelete}
+        />
+      )}
+    </div>
   );
 }

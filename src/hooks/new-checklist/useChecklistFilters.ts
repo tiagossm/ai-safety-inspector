@@ -1,9 +1,12 @@
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from 'react';
 import { ChecklistWithStats } from "@/types/newChecklist";
-import { determineChecklistOrigin } from "@/utils/checklist-utils";
 
+/**
+ * Hook for managing checklist filters and search
+ */
 export function useChecklistFilters(checklists: ChecklistWithStats[], allChecklists: ChecklistWithStats[]) {
+  // Filter state
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [selectedCompanyId, setSelectedCompanyId] = useState("all");
@@ -11,42 +14,34 @@ export function useChecklistFilters(checklists: ChecklistWithStats[], allCheckli
   const [selectedOrigin, setSelectedOrigin] = useState("all");
   const [sortOrder, setSortOrder] = useState("created_desc");
 
-  // Extract unique categories from all checklists
+  // Extract unique categories from checklists
   const categories = useMemo(() => {
     const uniqueCategories = new Set<string>();
-    allChecklists.forEach((checklist) => {
+    
+    allChecklists.forEach(checklist => {
       if (checklist.category) {
         uniqueCategories.add(checklist.category);
       }
     });
+    
     return Array.from(uniqueCategories).sort();
   }, [allChecklists]);
 
-  // Filter checklists based on search term and origin
+  // Apply search filter on top of API filters
   const filteredChecklists = useMemo(() => {
-    let filtered = [...checklists];
-
-    // Apply search filter
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      filtered = filtered.filter(
-        (checklist) =>
-          checklist.title.toLowerCase().includes(search) ||
-          (checklist.description && checklist.description.toLowerCase().includes(search)) ||
-          (checklist.category && checklist.category.toLowerCase().includes(search))
-      );
+    if (!searchTerm.trim()) {
+      return checklists;
     }
-
-    // Apply origin filter
-    if (selectedOrigin !== "all") {
-      filtered = filtered.filter(checklist => {
-        const origin = checklist.origin || determineChecklistOrigin(checklist);
-        return origin === selectedOrigin;
-      });
-    }
-
-    return filtered;
-  }, [checklists, searchTerm, selectedOrigin]);
+    
+    const normalized = searchTerm.trim().toLowerCase();
+    
+    return checklists.filter(checklist => 
+      checklist.title.toLowerCase().includes(normalized) ||
+      checklist.description?.toLowerCase().includes(normalized) ||
+      checklist.category?.toLowerCase().includes(normalized) ||
+      checklist.companyName?.toLowerCase().includes(normalized)
+    );
+  }, [checklists, searchTerm]);
 
   return {
     searchTerm,
