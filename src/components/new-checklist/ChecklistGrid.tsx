@@ -23,7 +23,7 @@ export function ChecklistGrid({
   onChecklistStatusChange
 }: ChecklistGridProps) {
   if (isLoading) {
-    return <ChecklistLoadingSkeleton view="grid" />;
+    return <ChecklistLoadingSkeleton />;
   }
 
   if (checklists.length === 0) {

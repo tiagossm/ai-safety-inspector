@@ -35,11 +35,12 @@ export default function CreateChecklist() {
   } = useChecklistCreation();
 
   const handleSubmitForManualAndImport = async (e: React.FormEvent): Promise<boolean> => {
+    // Use the NewChecklistType from newChecklist.ts instead of the one from checklist.ts
     const adaptedForm: NewChecklistType = {
       title: form.title,
       description: form.description || "",
       is_template: form.is_template || false,
-      status: normalizeStatus(form.status),
+      status: normalizeStatus(form.status), // Use normalizeStatus to ensure correct type
       category: form.category || "",
       responsible_id: form.responsible_id,
       company_id: form.company_id,
@@ -53,11 +54,12 @@ export default function CreateChecklist() {
   };
   
   const handleSubmitForAI = async (e: React.FormEvent): Promise<void> => {
+    // Use the NewChecklistType from newChecklist.ts instead of the one from checklist.ts
     const adaptedForm: NewChecklistType = {
       title: form.title,
       description: form.description || "",
       is_template: form.is_template || false,
-      status: normalizeStatus(form.status),
+      status: normalizeStatus(form.status), // Use normalizeStatus to ensure correct type
       category: form.category || "",
       responsible_id: form.responsible_id,
       company_id: form.company_id,
