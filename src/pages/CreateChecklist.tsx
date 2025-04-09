@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -41,42 +40,38 @@ export default function CreateChecklist() {
   };
 
   const handleSubmitForManualAndImport = async (e: React.FormEvent): Promise<boolean> => {
-    // Create a new object with the correct type, explicitly casting status to the required type
     const adaptedForm: NewChecklist = {
       title: form.title,
-      description: form.description,
-      is_template: form.is_template,
+      description: form.description || "",
+      is_template: form.is_template || false,
       status: normalizeStatus(form.status),
-      category: form.category,
+      category: form.category || "",
       responsible_id: form.responsible_id,
       company_id: form.company_id,
       due_date: form.due_date,
       user_id: form.user_id,
-      origin: form.origin,
-      status_checklist: form.status_checklist
+      origin: form.origin || "manual",
+      status_checklist: form.status_checklist || "ativo"
     };
     
-    // Pass the adapted form to handleSubmit instead of using the original form
     return await handleSubmit(e, adaptedForm);
   };
   
   const handleSubmitForAI = async (e: React.FormEvent): Promise<void> => {
-    // Create a new object with the correct type, explicitly casting status to the required type
     const adaptedForm: NewChecklist = {
       title: form.title,
-      description: form.description,
-      is_template: form.is_template,
+      description: form.description || "",
+      is_template: form.is_template || false,
       status: normalizeStatus(form.status),
-      category: form.category,
+      category: form.category || "",
       responsible_id: form.responsible_id,
       company_id: form.company_id,
       due_date: form.due_date,
       user_id: form.user_id,
-      origin: form.origin,
-      status_checklist: form.status_checklist
+      origin: "ia",
+      status_checklist: form.status_checklist || "ativo"
     };
     
-    // Pass the adapted form to handleSubmit instead of using the original form
     await handleSubmit(e, adaptedForm);
   };
 
