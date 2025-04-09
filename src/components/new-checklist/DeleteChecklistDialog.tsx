@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,19 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useChecklistDelete } from "@/hooks/new-checklist/useChecklistDelete";
-import { toast } from "sonner";
-import { useNavigate, useLocation } from "react-router-dom";
-import { Loader2 } from "lucide-react";
-
-interface DeleteChecklistDialogProps {
-  checklistId: string;
-  checklistTitle: string;
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onDeleted?: () => Promise<void>;
-  isDeleting?: boolean; // Added isDeleting prop
-}
+import { DeleteChecklistDialogProps } from "@/types/newChecklist";
 
 export function DeleteChecklistDialog({
   checklistId,
@@ -30,87 +18,30 @@ export function DeleteChecklistDialog({
   isOpen,
   onOpenChange,
   onDeleted,
-  isDeleting: externalIsDeleting // Use external isDeleting if provided
+  isDeleting = false,
 }: DeleteChecklistDialogProps) {
-  const deleteChecklist = useChecklistDelete();
-  const [internalIsDeleting, setInternalIsDeleting] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
-  
-  // Use external isDeleting if provided, otherwise use internal state
-  const isDeleting = externalIsDeleting !== undefined ? externalIsDeleting : internalIsDeleting;
-
   const handleDelete = async () => {
-    if (!checklistId) {
-      toast.error("ID do checklist não fornecido");
-      onOpenChange(false);
-      return;
-    }
-    
-    if (!externalIsDeleting) {
-      setInternalIsDeleting(true);
-    }
-    
-    try {
-      await deleteChecklist.mutateAsync(checklistId);
-      
-      // Check if we're on the details page of the checklist being deleted
-      const isOnDetailsPage = location.pathname.includes(`/new-checklists/${checklistId}`);
-      
-      // Close the dialog before navigating
-      onOpenChange(false);
-      
-      // If we're on the details page of the deleted checklist, navigate to the checklists page
-      if (isOnDetailsPage) {
-        console.log("Navegando para a lista de checklists após exclusão");
-        navigate("/new-checklists", { replace: true });
-      }
-      
-      // Call the onDeleted callback if provided
-      if (onDeleted) {
-        await onDeleted();
-      }
-      
-      // Success message is shown by the mutation
-    } catch (error) {
-      console.error("Erro ao excluir checklist:", error);
-      toast.error("Erro ao excluir checklist");
-    } finally {
-      if (!externalIsDeleting) {
-        setInternalIsDeleting(false);
-      }
-    }
+    await onDeleted();
   };
 
   return (
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Excluir Checklist</AlertDialogTitle>
+          <AlertDialogTitle>Excluir checklist</AlertDialogTitle>
           <AlertDialogDescription>
-            Tem certeza que deseja excluir o checklist "{checklistTitle}"?
-            <br />
-            Esta ação não pode ser desfeita e todos os itens associados serão removidos.
+            Você tem certeza que deseja excluir o checklist "{checklistTitle}"?
+            Esta ação não pode ser desfeita.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
-            onClick={(e) => {
-              e.preventDefault();
-              handleDelete();
-            }}
-            className="bg-destructive hover:bg-destructive/90"
+            onClick={handleDelete}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             disabled={isDeleting}
           >
-            {isDeleting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Excluindo...
-              </>
-            ) : (
-              "Excluir"
-            )}
+            {isDeleting ? "Excluindo..." : "Excluir"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

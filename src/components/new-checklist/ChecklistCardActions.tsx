@@ -1,16 +1,14 @@
 
 import React from "react";
-import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Edit, Trash2, CheckSquare, Archive } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import { Switch } from "@/components/ui/switch";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
+import { MoreHorizontal, Edit, Trash2, PowerOff, Power } from "lucide-react";
 
 interface ChecklistCardActionsProps {
   id: string;
@@ -23,10 +21,7 @@ interface ChecklistCardActionsProps {
   onDelete: (id: string, title: string) => void;
 }
 
-/**
- * Component for rendering checklist action buttons and dropdown
- */
-export const ChecklistCardActions: React.FC<ChecklistCardActionsProps> = ({
+export function ChecklistCardActions({
   id,
   title,
   status,
@@ -35,70 +30,53 @@ export const ChecklistCardActions: React.FC<ChecklistCardActionsProps> = ({
   onToggleStatus,
   onEdit,
   onDelete
-}) => {
+}: ChecklistCardActionsProps) {
   return (
-    <div className="flex items-center">
-      {!isTemplate && (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Switch 
-                checked={status === 'active'}
-                onClick={onToggleStatus}
-                disabled={isToggling}
-                className="mr-2"
-              />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{status === 'active' ? 'Desativar' : 'Ativar'} checklist</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      )}
-      
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={(e) => {
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+        <Button variant="ghost" className="h-8 w-8 p-0">
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={(e) => {
+          e.stopPropagation();
+          onEdit(id);
+        }}>
+          <Edit className="mr-2 h-4 w-4" />
+          <span>Editar</span>
+        </DropdownMenuItem>
+        
+        <DropdownMenuItem 
+          onClick={onToggleStatus}
+          disabled={isToggling}
+        >
+          {status === 'active' ? (
+            <>
+              <PowerOff className="mr-2 h-4 w-4" />
+              <span>Desativar</span>
+            </>
+          ) : (
+            <>
+              <Power className="mr-2 h-4 w-4" />
+              <span>Ativar</span>
+            </>
+          )}
+        </DropdownMenuItem>
+        
+        <DropdownMenuSeparator />
+        
+        <DropdownMenuItem 
+          onClick={(e) => {
             e.stopPropagation();
-            onEdit(id);
-          }}>
-            <Edit className="mr-2 h-4 w-4" />
-            <span>Editar</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={(e) => {
-            e.stopPropagation();
-            onToggleStatus(e);
-          }}>
-            {status === 'active' ? (
-              <>
-                <Archive className="mr-2 h-4 w-4" />
-                <span>Desativar</span>
-              </>
-            ) : (
-              <>
-                <CheckSquare className="mr-2 h-4 w-4" />
-                <span>Ativar</span>
-              </>
-            )}
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem 
-            className="text-red-600" 
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(id, title);
-            }}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            <span>Excluir</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+            onDelete(id, title);
+          }}
+          className="text-destructive focus:text-destructive"
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          <span>Excluir</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
-};
+}

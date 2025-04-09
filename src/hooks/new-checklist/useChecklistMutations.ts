@@ -1,60 +1,99 @@
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { 
-  deleteChecklistById, 
-  updateChecklistStatus,
-  updateBulkChecklistStatus
-} from "@/services/checklist/checklistMutationService";
+import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
-/**
- * Hook for checklist mutations (delete, update)
- */
 export function useChecklistMutations() {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const queryClient = useQueryClient();
 
-  // Delete checklist mutation
-  const deleteChecklist = useMutation({
-    mutationFn: async (checklistId: string) => {
-      return deleteChecklistById(checklistId);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["new-checklists"] });
-      queryClient.invalidateQueries({ queryKey: ["all-checklists-data"] });
-    }
-  });
-  
-  // Update checklist status mutation
-  const updateStatus = useMutation({
-    mutationFn: async ({ checklistId, newStatus }: { checklistId: string, newStatus: 'active' | 'inactive' }) => {
-      return updateChecklistStatus(checklistId, newStatus);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["new-checklists"] });
-      queryClient.invalidateQueries({ queryKey: ["all-checklists-data"] });
-    }
-  });
+  const deleteChecklist = async (id: string): Promise<void> => {
+    setIsDeleting(true);
+    try {
+      // First delete related items
+      const { error: itemsError } = await supabase
+        .from('checklist_itens')
+        .delete()
+        .eq('checklist_id', id);
 
-  // Update multiple checklists status mutation
-  const updateBulkStatus = useMutation({
-    mutationFn: async ({ checklistIds, newStatus }: { checklistIds: string[], newStatus: 'active' | 'inactive' }) => {
-      return updateBulkChecklistStatus(checklistIds, newStatus);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["new-checklists"] });
-      queryClient.invalidateQueries({ queryKey: ["all-checklists-data"] });
-    }
-  });
+      if (itemsError) {
+        console.error("Error deleting checklist items:", itemsError);
+        throw itemsError;
+      }
 
-  // Refetch function
+      // Then delete the checklist itself
+      const { error } = await supabase
+        .from('checklists')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error("Error deleting checklist:", error);
+        throw error;
+      }
+
+      // Invalidate relevant queries
+      await queryClient.invalidateQueries({ queryKey: ['checklists'] });
+    } catch (error) {
+      console.error("Failed to delete checklist:", error);
+      throw error;
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const updateStatus = async (id: string, status: 'active' | 'inactive'): Promise<void> => {
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase
+        .from('checklists')
+        .update({ status })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      await queryClient.invalidateQueries({ queryKey: ['checklists'] });
+    } catch (error) {
+      console.error("Failed to update checklist status:", error);
+      throw error;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const updateBulkStatus = async (ids: string[], status: 'active' | 'inactive'): Promise<void> => {
+    setIsUpdating(true);
+    try {
+      if (ids.length === 0) return;
+
+      const { error } = await supabase
+        .from('checklists')
+        .update({ status })
+        .in('id', ids);
+
+      if (error) throw error;
+
+      await queryClient.invalidateQueries({ queryKey: ['checklists'] });
+    } catch (error) {
+      console.error("Failed to update bulk checklist status:", error);
+      throw error;
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const refetch = async () => {
-    await queryClient.invalidateQueries({ queryKey: ["new-checklists"] });
-    await queryClient.invalidateQueries({ queryKey: ["all-checklists-data"] });
+    await queryClient.invalidateQueries({ queryKey: ['checklists'] });
   };
 
   return {
     deleteChecklist,
     updateStatus,
     updateBulkStatus,
-    refetch
+    refetch,
+    isDeleting,
+    isUpdating
   };
 }

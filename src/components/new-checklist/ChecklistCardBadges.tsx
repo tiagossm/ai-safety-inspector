@@ -1,32 +1,33 @@
 
 import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { ChecklistWithStats, ChecklistOrigin } from "@/types/newChecklist";
-import { ChecklistOriginBadge } from "./ChecklistOriginBadge";
+import { ChecklistWithStats } from "@/types/newChecklist";
 
 interface ChecklistCardBadgesProps {
   checklist: ChecklistWithStats;
-  status: string;
+  status: "active" | "inactive";
 }
 
-/**
- * Component for rendering checklist badges (status, template, origin)
- */
-export const ChecklistCardBadges: React.FC<ChecklistCardBadgesProps> = ({ 
-  checklist, 
-  status 
-}) => {
-  // Ensure origin is cast to a valid ChecklistOrigin type
-  const safeOrigin = (checklist.origin === 'manual' || checklist.origin === 'ia' || checklist.origin === 'csv')
-    ? (checklist.origin as ChecklistOrigin)
-    : 'manual' as ChecklistOrigin;
-  
+export function ChecklistCardBadges({ checklist, status }: ChecklistCardBadgesProps) {
   return (
-    <div className="flex items-center gap-2 mb-1">
-      <Badge variant={checklist.isTemplate ? "secondary" : "default"} className="px-2 py-0">
-        {checklist.isTemplate ? "Template" : status === 'active' ? "Ativo" : "Inativo"}
-      </Badge>
-      <ChecklistOriginBadge origin={safeOrigin} />
+    <div className="flex items-center gap-1">
+      {checklist.is_template && (
+        <Badge variant="secondary" className="text-xs font-normal">
+          Template
+        </Badge>
+      )}
+
+      {status === "inactive" && (
+        <Badge variant="outline" className="text-xs font-normal border-red-200 text-red-500 bg-red-50">
+          Inativo
+        </Badge>
+      )}
+
+      {status === "active" && (
+        <Badge variant="outline" className="text-xs font-normal border-green-200 text-green-600 bg-green-50">
+          Ativo
+        </Badge>
+      )}
     </div>
   );
-};
+}
