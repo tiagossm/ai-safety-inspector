@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { DeleteChecklistDialog } from "@/components/new-checklist/DeleteChecklistDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistGrid } from "@/components/new-checklist/ChecklistGrid";
+import { ChecklistList } from "@/components/new-checklist/ChecklistList";
 import { useNewChecklists } from "@/hooks/new-checklist/useNewChecklists";
 import { Button } from "@/components/ui/button";
 import { Plus, Filter, ArrowDownUp } from "lucide-react";
@@ -17,16 +18,22 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChecklistTabs } from "@/components/new-checklist/ChecklistTabs";
 
 const NewChecklists: React.FC = () => {
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [checklistToDelete, setChecklistToDelete] = useState({ id: "", title: "" });
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [activeTab, setActiveTab] = useState(() => {
+    return localStorage.getItem('checklist-active-tab') || "active";
+  });
   const navigate = useNavigate();
   
   const {
     checklists,
+    allChecklists,
     isLoading,
     searchTerm,
     setSearchTerm,
@@ -36,7 +43,9 @@ const NewChecklists: React.FC = () => {
     setSelectedCompanyId,
     companies,
     deleteChecklist,
-    updateBulkStatus
+    updateStatus,
+    updateBulkStatus,
+    refetch
   } = useNewChecklists();
 
   const handleBulkStatusChange = async (ids: string[], newStatus: "active" | "inactive"): Promise<void> => {
@@ -92,6 +101,44 @@ const NewChecklists: React.FC = () => {
       setIsActionLoading(false);
     }
   };
+
+  const handleChecklistStatusChange = async (id: string, newStatus: 'active' | 'inactive'): Promise<boolean> => {
+    try {
+      await updateStatus(id, newStatus);
+      toast.success(`Checklist ${newStatus === 'active' ? 'ativado' : 'desativado'} com sucesso`);
+      return true;
+    } catch (error) {
+      console.error("Error updating checklist status:", error);
+      toast.error("Erro ao atualizar status do checklist");
+      return false;
+    }
+  };
+
+  const getCounts = () => {
+    const templateCount = allChecklists.filter(c => c.is_template).length;
+    const activeCount = allChecklists.filter(c => !c.is_template && c.status === 'active').length;
+    const inactiveCount = allChecklists.filter(c => !c.is_template && c.status === 'inactive').length;
+    
+    return {
+      template: templateCount,
+      active: activeCount,
+      inactive: inactiveCount
+    };
+  };
+
+  const filteredChecklists = React.useMemo(() => {
+    let result = [...checklists];
+    
+    if (activeTab === "template") {
+      result = result.filter(c => c.is_template);
+    } else if (activeTab === "active") {
+      result = result.filter(c => !c.is_template && c.status === 'active');
+    } else if (activeTab === "inactive") {
+      result = result.filter(c => !c.is_template && c.status === 'inactive');
+    }
+    
+    return result;
+  }, [checklists, activeTab]);
 
   return (
     <div className="space-y-6">
@@ -160,30 +207,20 @@ const NewChecklists: React.FC = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="grid" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="grid">Grade</TabsTrigger>
-          <TabsTrigger value="list">Lista</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="grid" className="space-y-4">
-          <ChecklistGrid
-            checklists={checklists}
-            isLoading={isLoading}
-            onEdit={handleEditChecklist}
-            onDelete={handleDeleteDialog}
-            onOpen={handleOpenChecklist}
-            onStatusChange={() => {}} // Refetch is handled by the mutation
-            onBulkDelete={handleBulkDelete}
-          />
-        </TabsContent>
-        
-        <TabsContent value="list">
-          <div className="text-center py-6 text-muted-foreground">
-            Visualização em lista estará disponível em breve.
-          </div>
-        </TabsContent>
-      </Tabs>
+      <ChecklistTabs
+        checklistCounts={getCounts()}
+        allChecklists={filteredChecklists}
+        isLoading={isLoading}
+        onEdit={handleEditChecklist}
+        onDelete={handleDeleteDialog}
+        onOpen={handleOpenChecklist}
+        onStatusChange={refetch}
+        onBulkDelete={handleBulkDelete}
+        onBulkStatusChange={handleBulkStatusChange}
+        onTabChange={setActiveTab}
+        activeTab={activeTab}
+        onChecklistStatusChange={handleChecklistStatusChange}
+      />
 
       <DeleteChecklistDialog
         checklistId={checklistToDelete.id}

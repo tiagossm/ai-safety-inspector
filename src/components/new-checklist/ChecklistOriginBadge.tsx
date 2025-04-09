@@ -1,74 +1,66 @@
 
 import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { FilePenLine, Bot, FileSpreadsheet } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ChecklistOrigin } from "@/types/newChecklist";
+import { Bot, FileSpreadsheet, Users } from "lucide-react";
 
 interface ChecklistOriginBadgeProps {
-  origin?: ChecklistOrigin | string;
-  className?: string;
+  origin: ChecklistOrigin;
   showLabel?: boolean;
+  className?: string;
 }
 
-export const ChecklistOriginBadge = ({
-  origin = "manual",
-  className = "",
-  showLabel = true
-}: ChecklistOriginBadgeProps) => {
-  // Ensure origin is a valid value
-  const safeOrigin = (origin === 'manual' || origin === 'ia' || origin === 'csv') 
-    ? origin as ChecklistOrigin 
-    : 'manual' as ChecklistOrigin;
-
-  const getOriginDetails = () => {
-    switch (safeOrigin) {
+export function ChecklistOriginBadge({ 
+  origin, 
+  showLabel = true,
+  className = ""
+}: ChecklistOriginBadgeProps) {
+  const getOriginLabel = (origin: ChecklistOrigin): string => {
+    switch (origin) {
       case 'manual':
-        return {
-          icon: <FilePenLine className="h-3 w-3" />,
-          label: "Manual",
-          tooltip: "Criado manualmente",
-          classes: "bg-gray-100 text-gray-700 border-gray-200"
-        };
+        return 'Manual';
       case 'ia':
-        return {
-          icon: <Bot className="h-3 w-3" />,
-          label: "IA",
-          tooltip: "Gerado por IA",
-          classes: "bg-indigo-100 text-indigo-700 border-indigo-200"
-        };
+        return 'IA';
       case 'csv':
-        return {
-          icon: <FileSpreadsheet className="h-3 w-3" />,
-          label: "Planilha",
-          tooltip: "Importado de planilha",
-          classes: "bg-emerald-100 text-emerald-700 border-emerald-200"
-        };
+        return 'Importado';
       default:
-        return {
-          icon: <FilePenLine className="h-3 w-3" />,
-          label: "Manual",
-          tooltip: "Criado manualmente",
-          classes: "bg-gray-100 text-gray-700 border-gray-200"
-        };
+        return 'Manual';
     }
   };
-
-  const { icon, label, tooltip, classes } = getOriginDetails();
-
+  
+  const getOriginIcon = (origin: ChecklistOrigin) => {
+    switch (origin) {
+      case 'manual':
+        return <Users className="h-3.5 w-3.5" />;
+      case 'ia':
+        return <Bot className="h-3.5 w-3.5" />;
+      case 'csv':
+        return <FileSpreadsheet className="h-3.5 w-3.5" />;
+      default:
+        return <Users className="h-3.5 w-3.5" />;
+    }
+  };
+  
+  const getOriginVariant = (origin: ChecklistOrigin): "default" | "outline" | "secondary" | "destructive" => {
+    switch (origin) {
+      case 'manual':
+        return 'outline';
+      case 'ia':
+        return 'secondary';
+      case 'csv':
+        return 'outline';
+      default:
+        return 'outline';
+    }
+  };
+  
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Badge variant="outline" className={`flex items-center gap-1 ${classes} ${className}`}>
-            {icon}
-            {showLabel && <span>{label}</span>}
-          </Badge>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>{tooltip}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Badge 
+      variant={getOriginVariant(origin)} 
+      className={`flex items-center gap-1 text-xs font-normal ${className}`}
+    >
+      {getOriginIcon(origin)}
+      {showLabel && <span>{getOriginLabel(origin)}</span>}
+    </Badge>
   );
-};
+}

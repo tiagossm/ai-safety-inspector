@@ -13,52 +13,58 @@ export function useChecklistFilters(
   const [selectedOrigin, setSelectedOrigin] = useState('all');
   const [sortOrder, setSortOrder] = useState('created_desc');
 
-  // Extract unique categories from the checklists
+  // Extract all unique categories from checklists
   const categories = useMemo(() => {
     const uniqueCategories = new Set<string>();
+    
     allChecklists.forEach(checklist => {
       if (checklist.category) {
         uniqueCategories.add(checklist.category);
       }
     });
+    
     return Array.from(uniqueCategories).sort();
   }, [allChecklists]);
 
-  // Apply filters to the checklists
+  // Apply filters to checklists
   const filteredChecklists = useMemo(() => {
-    return checklists.filter(checklist => {
-      // Apply search filter
-      if (searchTerm && !checklist.title.toLowerCase().includes(searchTerm.toLowerCase())) {
-        return false;
-      }
-
-      // Apply type filter
-      if (filterType === 'template' && !checklist.is_template) {
-        return false;
-      }
-
-      if (filterType === 'active' && checklist.status !== 'active') {
-        return false;
-      }
-
-      // Apply company filter
-      if (selectedCompanyId !== 'all' && checklist.company_id !== selectedCompanyId) {
-        return false;
-      }
-
-      // Apply category filter
-      if (selectedCategory !== 'all' && checklist.category !== selectedCategory) {
-        return false;
-      }
-
-      // Apply origin filter
-      if (selectedOrigin !== 'all' && checklist.origin !== selectedOrigin) {
-        return false;
-      }
-
-      return true;
-    }).sort((a, b) => {
-      // Apply sorting
+    let result = [...checklists];
+    
+    // Apply search filter
+    if (searchTerm.trim() !== '') {
+      const searchLower = searchTerm.toLowerCase();
+      result = result.filter(checklist => 
+        checklist.title.toLowerCase().includes(searchLower) || 
+        (checklist.description && checklist.description.toLowerCase().includes(searchLower)) ||
+        (checklist.companyName && checklist.companyName.toLowerCase().includes(searchLower)) ||
+        (checklist.category && checklist.category.toLowerCase().includes(searchLower))
+      );
+    }
+    
+    // Apply filter type
+    if (filterType === 'active') {
+      result = result.filter(checklist => !checklist.is_template && checklist.status === 'active');
+    } else if (filterType === 'template') {
+      result = result.filter(checklist => checklist.is_template);
+    }
+    
+    // Apply company filter
+    if (selectedCompanyId !== 'all') {
+      result = result.filter(checklist => checklist.company_id === selectedCompanyId);
+    }
+    
+    // Apply category filter
+    if (selectedCategory !== 'all') {
+      result = result.filter(checklist => checklist.category === selectedCategory);
+    }
+    
+    // Apply origin filter
+    if (selectedOrigin !== 'all') {
+      result = result.filter(checklist => checklist.origin === selectedOrigin);
+    }
+    
+    // Apply sorting
+    result.sort((a, b) => {
       switch (sortOrder) {
         case 'title_asc':
           return a.title.localeCompare(b.title);
@@ -71,13 +77,15 @@ export function useChecklistFilters(
           return new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime();
       }
     });
+    
+    return result;
   }, [
-    checklists,
-    searchTerm,
-    filterType,
-    selectedCompanyId,
-    selectedCategory,
-    selectedOrigin,
+    checklists, 
+    searchTerm, 
+    filterType, 
+    selectedCompanyId, 
+    selectedCategory, 
+    selectedOrigin, 
     sortOrder
   ]);
 
