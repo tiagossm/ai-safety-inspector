@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { NewChecklist } from "@/types/checklist";
+import { NewChecklistPayload } from "@/types/newChecklist";
 import { CompanyListItem } from "@/types/CompanyListItem";
 import { Bot, Sparkles } from "lucide-react";
 import { AIAssistantType, useChecklistAI } from "@/hooks/new-checklist/useChecklistAI";
@@ -10,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { IntelligentChecklistForm } from "./IntelligentChecklistForm";
 import { supabase } from "@/integrations/supabase/client";
-import { NewChecklistPayload } from "@/types/newChecklist";
+import { NewChecklist } from "@/types/checklist";
 
 interface AIChecklistCreatorProps {
   form: NewChecklist;
@@ -93,7 +94,8 @@ export function AIChecklistCreator({
         description: form.description || `Gerado por IA: ${prompt}`,
         category: form.category,
         is_template: form.is_template || false,
-        company_id: form.company_id
+        company_id: form.company_id,
+        status: form.status || "active"
       };
       
       const result = await generateChecklist(checklistPayload);
@@ -147,10 +149,10 @@ export function AIChecklistCreator({
           </div>
 
           <IntelligentChecklistForm
-            selectedAssistant={selectedAssistant}
-            onAssistantTypeChange={(type) => setSelectedAssistant(type)}
-            openAIAssistant={openAIAssistant}
-            onOpenAIAssistantChange={setOpenAIAssistant}
+            selectedAssistant={selectedAssistant as string}
+            onAssistantTypeChange={type => setSelectedAssistant(type as AIAssistantType)}
+            openAIAssistant={openAIAssistant as string}
+            onOpenAIAssistantChange={id => setOpenAIAssistant(id as boolean)}
             onPromptChange={setPrompt}
             checklist={{
               ...form,

@@ -1,3 +1,5 @@
+import React, { useState } from "react";
+import { NewChecklistPayload } from "@/types/newChecklist";
 
 // Fix for NewChecklistPayload to NewChecklist conversion
 const [checklist, setChecklist] = useState<NewChecklistPayload>({
@@ -7,3 +9,10 @@ const [checklist, setChecklist] = useState<NewChecklistPayload>({
   status: "active",
   category: ""
 });
+
+// Convert to a default export
+export default function NewChecklistCreate() {
+  return (
+    <div>New Checklist Create Component</div>
+  );
+}

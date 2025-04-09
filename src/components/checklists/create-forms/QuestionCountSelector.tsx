@@ -5,37 +5,34 @@ import { Slider } from "@/components/ui/slider";
 
 interface QuestionCountSelectorProps {
   questionCount: number;
-  setQuestionCount: React.Dispatch<React.SetStateAction<number>>;
-  min?: number;
-  max?: number;
+  setQuestionCount: (count: number) => void;
 }
 
-export function QuestionCountSelector({
-  questionCount,
-  setQuestionCount,
-  min = 5,
-  max = 30
-}: QuestionCountSelectorProps) {
+const QuestionCountSelector: React.FC<QuestionCountSelectorProps> = ({ 
+  questionCount, 
+  setQuestionCount 
+}) => {
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Label htmlFor="question-count">Número de perguntas</Label>
+    <div className="space-y-2">
+      <div className="flex justify-between items-center">
+        <Label htmlFor="question-count">Número de Perguntas</Label>
         <span className="text-sm font-medium">{questionCount}</span>
       </div>
       <Slider
         id="question-count"
-        min={min}
-        max={max}
-        step={1}
-        value={[questionCount]}
-        onValueChange={(values) => setQuestionCount(values[0])}
-        className="my-4"
+        defaultValue={[questionCount]}
+        min={5}
+        max={50}
+        step={5}
+        onValueChange={(value) => setQuestionCount(value[0])}
+        className="py-2"
       />
-      <p className="text-sm text-muted-foreground">
-        Defina a quantidade aproximada de perguntas que o checklist deve conter.
-      </p>
+      <div className="flex justify-between text-xs text-muted-foreground">
+        <span>5</span>
+        <span>50</span>
+      </div>
     </div>
   );
-}
+};
 
 export default QuestionCountSelector;
