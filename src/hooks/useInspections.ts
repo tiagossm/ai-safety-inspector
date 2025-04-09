@@ -13,8 +13,8 @@ export function useInspections() {
   
   const [filters, setFilters] = useState<InspectionFilters>({
     search: "",
-    status: "all",
-    priority: "all",
+    status: "all",  // Valor não-vazio para evitar erros de SelectItem
+    priority: "all", // Valor não-vazio para evitar erros de SelectItem
     companyId: "",
     responsibleId: "", 
     checklistId: "",
@@ -169,13 +169,13 @@ export function useInspections() {
       const matchesPriority = filters.priority === "all" || inspection.priority === filters.priority;
       
       // Company filter
-      const matchesCompany = filters.companyId === "all" || inspection.companyId === filters.companyId;
+      const matchesCompany = !filters.companyId || filters.companyId === "all" || inspection.companyId === filters.companyId;
       
       // Responsible filter
-      const matchesResponsible = filters.responsibleId === "all" || inspection.responsibleId === filters.responsibleId;
+      const matchesResponsible = !filters.responsibleId || filters.responsibleId === "all" || inspection.responsibleId === filters.responsibleId;
       
       // Checklist filter
-      const matchesChecklist = filters.checklistId === "all" || inspection.checklistId === filters.checklistId;
+      const matchesChecklist = !filters.checklistId || filters.checklistId === "all" || inspection.checklistId === filters.checklistId;
       
       // Date filter
       let matchesDate = true;

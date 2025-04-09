@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -105,7 +106,7 @@ export function InspectionDetailsForm({
           <div className="mt-1.5">
             <CompanySelector
               value={companyId}
-              onSelect={(id) => handleCompanySelect(id, null)}
+              onSelect={handleCompanySelect}
             />
             {errors.company && (
               <span className="text-sm text-destructive">{errors.company}</span>
@@ -255,6 +256,7 @@ export function InspectionDetailsForm({
         </Button>
         <Button
           type="submit"
+          onClick={handleSubmit}
           disabled={submitting || !isFormValid()}
         >
           {submitting ? "Processando..." : "Iniciar Inspeção"}

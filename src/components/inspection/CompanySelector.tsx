@@ -11,7 +11,7 @@ import {
 
 export interface CompanySelectorProps {
   value: string;
-  onSelect: (companyId: string) => void;
+  onSelect: (companyId: string, companyData?: any) => void;
   includeEmptyOption?: boolean;
 }
 
@@ -30,7 +30,7 @@ export function CompanySelector({
         
         const { data, error } = await supabase
           .from('companies')
-          .select('id, fantasy_name')
+          .select('id, fantasy_name, address, cnae')
           .eq('status', 'active')
           .order('fantasy_name', { ascending: true });
           
@@ -47,8 +47,22 @@ export function CompanySelector({
     fetchCompanies();
   }, []);
 
+  // Handler para passar os dados da empresa junto com o ID
+  const handleCompanySelection = (companyId: string) => {
+    if (companyId === "all") {
+      onSelect(companyId);
+      return;
+    }
+    
+    // Encontrar os dados da empresa selecionada
+    const selectedCompany = companies.find(company => company.id === companyId);
+    
+    // Passa o ID e os dados completos da empresa
+    onSelect(companyId, selectedCompany);
+  };
+
   return (
-    <Select value={value} onValueChange={onSelect}>
+    <Select value={value} onValueChange={handleCompanySelection}>
       <SelectTrigger className="w-full">
         <SelectValue placeholder="Selecione uma empresa" />
       </SelectTrigger>
