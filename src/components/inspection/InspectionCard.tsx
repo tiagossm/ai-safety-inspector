@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +9,7 @@ import { Building2, Calendar, AlertTriangle, CheckCircle, ArrowRight } from "luc
 
 interface InspectionCardProps {
   inspection: InspectionDetails;
-  onViewClick: (id: string) => void;
+  onView?: () => void;
 }
 
 const getPriorityColor = (priority: string) => {
@@ -52,7 +51,7 @@ const getStatusDisplayText = (status: string) => {
   }
 };
 
-export const InspectionCard = ({ inspection, onViewClick }: InspectionCardProps) => {
+export const InspectionCard = ({ inspection, onView }: InspectionCardProps) => {
   const formattedDate = inspection.scheduledDate 
     ? format(new Date(inspection.scheduledDate), 'dd/MM/yyyy')
     : "Não agendada";
@@ -99,7 +98,7 @@ export const InspectionCard = ({ inspection, onViewClick }: InspectionCardProps)
             variant="outline"
             size="sm"
             className="w-full mt-2"
-            onClick={() => onViewClick(inspection.id)}
+            onClick={() => onView && onView()}
           >
             Ver detalhes
             <ArrowRight className="ml-2 h-4 w-4" />

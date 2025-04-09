@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -106,7 +105,7 @@ export function InspectionDetailsForm({
           <div className="mt-1.5">
             <CompanySelector
               value={companyId}
-              onSelect={handleCompanySelect}
+              onSelect={(id) => handleCompanySelect(id, null)}
             />
             {errors.company && (
               <span className="text-sm text-destructive">{errors.company}</span>

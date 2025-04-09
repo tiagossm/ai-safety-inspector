@@ -18,13 +18,13 @@ import { CompanySelector } from "./CompanySelector";
 import { InspectionFilters as InspectionFiltersType } from "@/types/newChecklist";
 
 export interface InspectionFiltersProps {
-  filters: InspectionFiltersType;
-  onFilterChange: (filters: InspectionFiltersType) => void;
+  filters: InspectionFilters;
+  setFilters: (filters: InspectionFilters) => void;
 }
 
 export function InspectionFilters({ 
   filters, 
-  onFilterChange 
+  setFilters 
 }: InspectionFiltersProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [tempFilters, setTempFilters] = useState<InspectionFiltersType>(filters);
@@ -44,7 +44,7 @@ export function InspectionFilters({
       startDate: dateRange.from,
       endDate: dateRange.to
     };
-    onFilterChange(updatedFilters);
+    setFilters(updatedFilters);
     setIsOpen(false);
   };
 
@@ -97,7 +97,7 @@ export function InspectionFilters({
             size="sm" 
             className="h-8 px-2" 
             onClick={() => {
-              onFilterChange({
+              setFilters({
                 search: "",
                 status: "",
                 priority: "",

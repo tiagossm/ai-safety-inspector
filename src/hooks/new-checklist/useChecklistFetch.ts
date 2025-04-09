@@ -1,115 +1,98 @@
 
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { Checklist, ChecklistWithStats } from "@/types/newChecklist";
-import { toast } from "sonner";
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Checklist, ChecklistWithStats, ChecklistOrigin } from '@/types/newChecklist';
 
-// Define types for database responses to avoid TypeScript errors
-type ChecklistDBResponse = {
-  id: string;
-  title: string;
-  description: string | null;
-  isTemplate: boolean;
-  status: string;
-  category: string | null;
-  responsibleId: string | null;
-  companyId: string | null;
-  userId: string | null;
-  createdAt: string;
-  updatedAt: string;
-  dueDate: string | null;
-};
-
-/**
- * Hook to fetch all checklists with optional stats
- */
 export function useChecklistFetch() {
-  return useQuery({
-    queryKey: ["new-checklists"],
-    queryFn: async (): Promise<ChecklistWithStats[]> => {
-      console.log("Fetching all checklists");
+  const [checklists, setChecklists] = useState<ChecklistWithStats[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchChecklists = async () => {
+    try {
+      setLoading(true);
       
       const { data, error } = await supabase
-        .from("checklists")
+        .from('checklists')
         .select(`
-          id,
-          title,
-          description,
-          is_template,
-          status_checklist,
-          category,
-          responsible_id,
-          company_id,
-          user_id,
-          created_at,
-          updated_at,
-          due_date
+          *,
+          companies:company_id (id, fantasy_name),
+          users:user_id (id, name)
         `)
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching checklists:", error);
-        toast.error("Erro ao carregar checklists");
-        throw error;
-      }
-
-      if (!data || data.length === 0) {
-        return [];
-      }
-
-      // Transform the database results to match our types
-      const checklistItems: ChecklistDBResponse[] = data.map(item => ({
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Get question counts for each checklist
+      const checklistIds = data.map((c: any) => c.id);
+      const questionsCountPromises = checklistIds.map((id: string) => 
+        supabase
+          .from('checklist_itens')
+          .select('*', { count: 'exact', head: true })
+          .eq('checklist_id', id)
+      );
+      
+      const questionsCountResults = await Promise.all(questionsCountPromises);
+      const questionCountsMap: Record<string, number> = {};
+      
+      questionsCountResults.forEach((result, index) => {
+        questionCountsMap[checklistIds[index]] = result.count || 0;
+      });
+      
+      // Transform data to match the expected format
+      const formattedChecklists: ChecklistWithStats[] = data.map((item: any) => ({
         id: item.id,
         title: item.title,
-        description: item.description,
-        isTemplate: item.is_template,
-        status: item.status_checklist,
-        category: item.category,
+        description: item.description || '',
+        is_template: item.is_template || false,
+        isTemplate: item.is_template || false,
+        status: item.status || 'active',
+        category: item.category || '',
+        responsible_id: item.responsible_id,
         responsibleId: item.responsible_id,
+        company_id: item.company_id,
         companyId: item.company_id,
+        user_id: item.user_id,
         userId: item.user_id,
+        created_at: item.created_at,
         createdAt: item.created_at,
+        updated_at: item.updated_at,
         updatedAt: item.updated_at,
-        dueDate: item.due_date
+        due_date: item.due_date,
+        dueDate: item.due_date,
+        is_sub_checklist: item.is_sub_checklist || false,
+        isSubChecklist: item.is_sub_checklist || false,
+        origin: item.origin as ChecklistOrigin || 'manual',
+        parent_question_id: item.parent_question_id,
+        parentQuestionId: item.parent_question_id,
+        totalQuestions: questionCountsMap[item.id] || 0,
+        completedQuestions: 0,
+        companyName: item.companies?.fantasy_name || '',
+        responsibleName: item.users?.name || ''
       }));
+      
+      setChecklists(formattedChecklists);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching checklists:", err);
+      setError(err as Error);
+      setChecklists([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      // Transform the data to our new format
-      const checklists: ChecklistWithStats[] = await Promise.all(
-        checklistItems.map(async (checklistItem) => {
-          // Get count of questions for each checklist
-          const { count: totalQuestions, error: countError } = await supabase
-            .from("checklist_itens")
-            .select("*", { count: "exact", head: true })
-            .eq("checklist_id", checklistItem.id);
+  // Initial fetch
+  useEffect(() => {
+    fetchChecklists();
+  }, []);
 
-          if (countError) {
-            console.error(`Error counting questions for checklist ${checklistItem.id}:`, countError);
-          }
-
-          const checklistWithStats: ChecklistWithStats = {
-            id: checklistItem.id,
-            title: checklistItem.title,
-            description: checklistItem.description || undefined,
-            isTemplate: checklistItem.isTemplate,
-            status: (checklistItem.status || 'inactive') as 'active' | 'inactive',
-            category: checklistItem.category || undefined,
-            responsibleId: checklistItem.responsibleId || undefined,
-            companyId: checklistItem.companyId || undefined,
-            userId: checklistItem.userId || undefined,
-            createdAt: checklistItem.createdAt,
-            updatedAt: checklistItem.updatedAt,
-            dueDate: checklistItem.dueDate || undefined,
-            totalQuestions: totalQuestions || 0,
-            completedQuestions: 0 // We'll need another query for this in a real app
-          };
-
-          return checklistWithStats;
-        })
-      );
-
-      return checklists;
-    },
-    staleTime: 60000, // 1 minute
-    gcTime: 300000, // 5 minutes
-  });
+  return {
+    checklists,
+    loading,
+    error,
+    refetch: fetchChecklists
+  };
 }
+
+export default useChecklistFetch;

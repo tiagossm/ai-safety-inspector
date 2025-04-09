@@ -1,4 +1,3 @@
-
 // Base checklist types
 export interface Checklist {
   id: string;
