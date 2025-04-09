@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { NewChecklist } from "@/types/checklist";
@@ -93,7 +92,7 @@ export function AIChecklistCreator({
         title: form.title || form.category || "Novo Checklist",
         description: form.description || `Gerado por IA: ${prompt}`,
         category: form.category,
-        isTemplate: form.is_template || false,
+        is_template: form.is_template || false,
         company_id: form.company_id
       };
       

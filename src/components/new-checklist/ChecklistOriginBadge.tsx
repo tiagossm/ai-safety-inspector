@@ -3,9 +3,10 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { FilePenLine, Bot, FileSpreadsheet } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ChecklistOrigin } from "@/types/newChecklist";
 
 interface ChecklistOriginBadgeProps {
-  origin?: 'manual' | 'ia' | 'csv';
+  origin?: ChecklistOrigin;
   className?: string;
   showLabel?: boolean;
 }

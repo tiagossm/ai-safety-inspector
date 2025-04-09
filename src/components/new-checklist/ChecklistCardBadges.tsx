@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { ChecklistWithStats } from "@/types/newChecklist";
+import { ChecklistWithStats, ChecklistOrigin } from "@/types/newChecklist";
 import { ChecklistOriginBadge } from "./ChecklistOriginBadge";
 
 interface ChecklistCardBadgesProps {
@@ -21,7 +21,7 @@ export const ChecklistCardBadges: React.FC<ChecklistCardBadgesProps> = ({
       <Badge variant={checklist.isTemplate ? "secondary" : "default"} className="px-2 py-0">
         {checklist.isTemplate ? "Template" : status === 'active' ? "Ativo" : "Inativo"}
       </Badge>
-      <ChecklistOriginBadge origin={checklist.origin} />
+      <ChecklistOriginBadge origin={checklist.origin as ChecklistOrigin} />
     </div>
   );
 };

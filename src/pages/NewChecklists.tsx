@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useNewChecklists } from "@/hooks/new-checklist/useNewChecklists";
@@ -8,6 +7,7 @@ import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 import { toast } from "sonner";
 import { ChecklistTabs } from "@/components/new-checklist/ChecklistTabs";
 import { ChecklistWithStats } from "@/types/newChecklist";
+import { checklistService } from "@/services/checklist/checklistService";
 
 export default function NewChecklists() {
   const navigate = useNavigate();
@@ -77,6 +77,7 @@ export default function NewChecklists() {
   });
   
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isActionLoading, setIsActionLoading] = useState(false);
 
   // Count checklists by type - excluding subchecklist
   const checklistCounts = React.useMemo(() => {
@@ -119,18 +120,29 @@ export default function NewChecklists() {
   };
 
   // Handle status update for multiple checklists
-  const handleBulkStatusChange = async (ids: string[], newStatus: 'active' | 'inactive') => {
+  const handleBulkStatusChange = async (ids: string[], newStatus: "active" | "inactive"): Promise<void> => {
     try {
-      await updateBulkStatus.mutateAsync({ checklistIds: ids, newStatus });
-      return true;
+      setIsActionLoading(true);
+      
+      const result = await checklistService.updateStatus(ids, newStatus);
+      
+      if (result.success) {
+        toast.success(`${result.count} checklists updated successfully`);
+        await refetch();
+        setSelectedIds([]);
+      } else {
+        toast.error("Failed to update checklists");
+      }
     } catch (error) {
-      console.error("Error updating status for multiple checklists:", error);
-      throw error;
+      console.error("Error updating checklists:", error);
+      toast.error("An error occurred while updating checklists");
+    } finally {
+      setIsActionLoading(false);
     }
   };
 
   // Handle delete confirmation
-  const handleConfirmDelete = async () => {
+  const handleDeleteComplete = async () => {
     setIsDeleting(true);
     try {
       if (deleteDialog.isMultiple) {
@@ -182,6 +194,8 @@ export default function NewChecklists() {
     }
   };
 
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -223,16 +237,17 @@ export default function NewChecklists() {
         onChecklistStatusChange={handleStatusChange}
       />
 
-      <DeleteChecklistDialog
-        checklistId={deleteDialog.checklistId}
-        checklistTitle={deleteDialog.checklistTitle}
+      <DeleteChecklistDialog 
+        checklistId={deleteDialog.checklistId || ""}
+        checklistTitle={deleteDialog.checklistTitle || ""}
         isOpen={deleteDialog.open}
         onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
-        onDeleted={handleConfirmDelete}
-        isDeleting={isDeleting}
+        onDeleted={handleDeleteComplete}
+        isDeleting={isActionLoading}
       />
       
       <FloatingNavigation threshold={300} />
     </div>
   );
 }
+

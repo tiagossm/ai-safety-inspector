@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +19,53 @@ export default function NewChecklistDetails() {
     checklistTitle: ""
   });
   
+  const [viewMode, setViewMode] = useState("flat");
+  const [questionsByGroup, setQuestionsByGroup] = useState(new Map());
+  const [nonEmptyGroups, setNonEmptyGroups] = useState([]);
+  const [totalQuestions, setTotalQuestions] = useState(0);
+
+  useEffect(() => {
+    if (data) {
+      const checklistWithGroupsAndQuestions = data as any;
+      
+      setChecklist(checklistWithGroupsAndQuestions);
+      
+      if (Array.isArray(checklistWithGroupsAndQuestions?.questions)) {
+        setTotalQuestions(checklistWithGroupsAndQuestions.questions.length);
+      }
+      
+      // Calculate if we have any questions with groups
+      const hasGroupedQuestions = Array.isArray(checklistWithGroupsAndQuestions?.questions) && 
+        checklistWithGroupsAndQuestions.questions.some((q: any) => q.groupId);
+      
+      // Set the view mode based on if we have groups
+      if (hasGroupedQuestions && Array.isArray(checklistWithGroupsAndQuestions?.groups)) {
+        setViewMode("grouped");
+        
+        // Prepare questions by group
+        const questionsByGroup = new Map();
+        checklistWithGroupsAndQuestions.questions.forEach((q: any) => {
+          if (q.groupId) {
+            const groupQuestions = questionsByGroup.get(q.groupId) || [];
+            groupQuestions.push(q);
+            questionsByGroup.set(q.groupId, groupQuestions);
+          }
+        });
+        
+        // Filter groups that have questions
+        const groupsWithQuestions = checklistWithGroupsAndQuestions.groups.filter(
+          (g: any) => questionsByGroup.has(g.id)
+        );
+        
+        setQuestionsByGroup(questionsByGroup);
+        setNonEmptyGroups(groupsWithQuestions);
+      } else {
+        setViewMode("flat");
+        setNonEmptyGroups([]);
+      }
+    }
+  }, [data]);
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-[50vh]">
@@ -68,86 +114,196 @@ export default function NewChecklistDetails() {
     toast.info("Funcionalidade de duplicação será implementada em breve");
   };
   
-  // Process questions and organize into groups
-  const processQuestions = () => {
-    if (!checklist.questions || checklist.questions.length === 0) {
-      return { groups: [], ungroupedQuestions: [] };
+  const renderQuestionsSection = () => {
+    if (isLoading) {
+      return <div className="p-8 text-center">Loading questions...</div>;
+    }
+
+    if (!checklist) {
+      return null;
     }
     
-    console.log("Processing questions:", checklist.questions.length);
-    
-    const questionsByGroup = new Map();
-    const ungroupedQuestions = [];
-    
-    // First organize questions by group
-    checklist.questions.forEach(question => {
-      if (question.groupId) {
-        if (!questionsByGroup.has(question.groupId)) {
-          questionsByGroup.set(question.groupId, []);
-        }
-        questionsByGroup.get(question.groupId).push(question);
-      } else {
-        ungroupedQuestions.push(question);
+    const checklistWithQuestionsAndGroups = checklist as any;
+    const allQuestions = checklistWithQuestionsAndGroups?.questions || [];
+    const allGroups = checklistWithQuestionsAndGroups?.groups || [];
+
+    const processQuestions = () => {
+      if (!allQuestions || allQuestions.length === 0) {
+        return { groups: [], ungroupedQuestions: [] };
       }
-    });
-    
-    // Then create the groups array using metadata from the defined groups
-    const groups = [];
-    
-    if (checklist.groups && checklist.groups.length > 0) {
-      checklist.groups.forEach(group => {
-        const questionsForGroup = questionsByGroup.get(group.id) || [];
-        if (questionsForGroup.length > 0 || group.id === 'default') {
+      
+      console.log("Processing questions:", allQuestions.length);
+      
+      const questionsByGroup = new Map();
+      const ungroupedQuestions = [];
+      
+      // First organize questions by group
+      allQuestions.forEach(question => {
+        if (question.groupId) {
+          if (!questionsByGroup.has(question.groupId)) {
+            questionsByGroup.set(question.groupId, []);
+          }
+          questionsByGroup.get(question.groupId).push(question);
+        } else {
+          ungroupedQuestions.push(question);
+        }
+      });
+      
+      // Then create the groups array using metadata from the defined groups
+      const groups = [];
+      
+      if (allGroups && allGroups.length > 0) {
+        allGroups.forEach(group => {
+          const questionsForGroup = questionsByGroup.get(group.id) || [];
+          if (questionsForGroup.length > 0 || group.id === 'default') {
+            groups.push({
+              ...group,
+              questions: questionsForGroup.sort((a, b) => a.order - b.order)
+            });
+          }
+        });
+      }
+      
+      // If there are grouped questions but no defined groups, create default groups
+      questionsByGroup.forEach((questions, groupId) => {
+        if (!allGroups || !allGroups.some(g => g.id === groupId)) {
+          // Try to extract title from the first question's hint
+          let groupTitle = `Grupo ${groups.length + 1}`;
+          if (questions[0].hint) {
+            try {
+              const hintData = JSON.parse(questions[0].hint);
+              if (hintData.groupTitle) {
+                groupTitle = hintData.groupTitle;
+              }
+            } catch (e) {}
+          }
+          
           groups.push({
-            ...group,
-            questions: questionsForGroup.sort((a, b) => a.order - b.order)
+            id: groupId,
+            title: groupTitle,
+            questions: questions.sort((a, b) => a.order - b.order)
           });
         }
       });
-    }
+      
+      return { groups, ungroupedQuestions };
+    };
     
-    // If there are grouped questions but no defined groups, create default groups
-    questionsByGroup.forEach((questions, groupId) => {
-      if (!checklist.groups || !checklist.groups.some(g => g.id === groupId)) {
-        // Try to extract title from the first question's hint
-        let groupTitle = `Grupo ${groups.length + 1}`;
-        if (questions[0].hint) {
-          try {
-            const hintData = JSON.parse(questions[0].hint);
-            if (hintData.groupTitle) {
-              groupTitle = hintData.groupTitle;
-            }
-          } catch (e) {}
-        }
-        
-        groups.push({
-          id: groupId,
-          title: groupTitle,
-          questions: questions.sort((a, b) => a.order - b.order)
-        });
-      }
-    });
+    const { groups, ungroupedQuestions } = processQuestions();
     
-    return { groups, ungroupedQuestions };
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-2">
+          {groups.length === 0 && ungroupedQuestions.length === 0 ? (
+            <p className="text-muted-foreground">Este checklist não possui perguntas.</p>
+          ) : (
+            <div className="space-y-6">
+              {/* Display grouped questions */}
+              {groups.map(group => (
+                <div key={group.id} className="mb-6">
+                  <h3 className="text-lg font-medium mb-2 pb-1 border-b">
+                    {group.title}
+                  </h3>
+                  
+                  <div className="space-y-3 pl-2">
+                    {group.questions.length === 0 ? (
+                      <p className="text-sm text-muted-foreground italic">
+                        Nenhuma pergunta neste grupo
+                      </p>
+                    ) : (
+                      group.questions.map((question, index) => (
+                        <div key={question.id} className="border-l-2 border-gray-200 pl-3 py-1">
+                          <p className="font-medium mb-1">{index + 1}. {question.text}</p>
+                          <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+                            <Badge variant="outline" className="font-normal">
+                              {question.responseType === "sim/não" ? "Sim/Não" :
+                               question.responseType === "seleção múltipla" ? "Múltipla escolha" :
+                               question.responseType === "texto" ? "Texto" :
+                               question.responseType === "numérico" ? "Numérico" :
+                               question.responseType === "foto" ? "Foto" : "Assinatura"}
+                            </Badge>
+                            
+                            {question.isRequired && (
+                              <Badge variant="outline" className="bg-red-50 font-normal">Obrigatório</Badge>
+                            )}
+                            
+                            {(question.allowsPhoto || question.allowsVideo || question.allowsAudio) && (
+                              <Badge variant="outline" className="bg-green-50 font-normal">
+                                {[
+                                  question.allowsPhoto ? "Foto" : null,
+                                  question.allowsVideo ? "Vídeo" : null,
+                                  question.allowsAudio ? "Áudio" : null
+                                ].filter(Boolean).join(", ")}
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          {question.options && question.options.length > 0 && (
+                            <div className="mt-2 pl-3 border-l border-dashed border-gray-200">
+                              <p className="text-sm font-medium mb-1">Opções:</p>
+                              <ul className="text-sm space-y-1">
+                                {question.options.map((option, idx) => (
+                                  <li key={idx}>• {option}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              ))}
+              
+              {/* Display ungrouped questions if any */}
+              {ungroupedQuestions.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-medium mb-2 pb-1 border-b">
+                    Perguntas Gerais
+                  </h3>
+                  
+                  <div className="space-y-3 pl-2">
+                    {ungroupedQuestions.map((question, index) => (
+                      <div key={question.id} className="border-l-2 border-gray-200 pl-3 py-1">
+                        <p className="font-medium mb-1">{index + 1}. {question.text}</p>
+                        <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+                          <Badge variant="outline" className="font-normal">
+                            {question.responseType === "sim/não" ? "Sim/Não" :
+                             question.responseType === "seleção múltipla" ? "Múltipla escolha" :
+                             question.responseType === "texto" ? "Texto" :
+                             question.responseType === "numérico" ? "Numérico" :
+                             question.responseType === "foto" ? "Foto" : "Assinatura"}
+                          </Badge>
+                          
+                          {question.isRequired && (
+                            <Badge variant="outline" className="bg-red-50 font-normal">Obrigatório</Badge>
+                          )}
+                        </div>
+                        
+                        {question.options && question.options.length > 0 && (
+                          <div className="mt-2 pl-3 border-l border-dashed border-gray-200">
+                            <p className="text-sm font-medium mb-1">Opções:</p>
+                            <ul className="text-sm space-y-1">
+                              {question.options.map((option, idx) => (
+                                <li key={idx}>• {option}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
-  
-  const { groups, ungroupedQuestions } = processQuestions();
-  
-  // Format dates
-  const createdAt = checklist.createdAt 
-    ? new Date(checklist.createdAt).toLocaleDateString("pt-BR", { 
-        day: "2-digit", month: "2-digit", year: "numeric",
-        hour: "2-digit", minute: "2-digit"
-      })
-    : "Data desconhecida";
-    
-  const updatedAt = checklist.updatedAt 
-    ? new Date(checklist.updatedAt).toLocaleDateString("pt-BR", { 
-        day: "2-digit", month: "2-digit", year: "numeric",
-        hour: "2-digit", minute: "2-digit"
-      })
-    : "Data desconhecida";
-    
+
+  const { createdAt, updatedAt } = checklist;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -228,109 +384,7 @@ export default function NewChecklistDetails() {
               <h2 className="text-xl font-semibold">Perguntas</h2>
             </CardHeader>
             <CardContent>
-              {groups.length === 0 && ungroupedQuestions.length === 0 ? (
-                <p className="text-muted-foreground">Este checklist não possui perguntas.</p>
-              ) : (
-                <div className="space-y-6">
-                  {/* Display grouped questions */}
-                  {groups.map(group => (
-                    <div key={group.id} className="mb-6">
-                      <h3 className="text-lg font-medium mb-2 pb-1 border-b">
-                        {group.title}
-                      </h3>
-                      
-                      <div className="space-y-3 pl-2">
-                        {group.questions.length === 0 ? (
-                          <p className="text-sm text-muted-foreground italic">
-                            Nenhuma pergunta neste grupo
-                          </p>
-                        ) : (
-                          group.questions.map((question, index) => (
-                            <div key={question.id} className="border-l-2 border-gray-200 pl-3 py-1">
-                              <p className="font-medium mb-1">{index + 1}. {question.text}</p>
-                              <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                                <Badge variant="outline" className="font-normal">
-                                  {question.responseType === "sim/não" ? "Sim/Não" :
-                                   question.responseType === "seleção múltipla" ? "Múltipla escolha" :
-                                   question.responseType === "texto" ? "Texto" :
-                                   question.responseType === "numérico" ? "Numérico" :
-                                   question.responseType === "foto" ? "Foto" : "Assinatura"}
-                                </Badge>
-                                
-                                {question.isRequired && (
-                                  <Badge variant="outline" className="bg-red-50 font-normal">Obrigatório</Badge>
-                                )}
-                                
-                                {(question.allowsPhoto || question.allowsVideo || question.allowsAudio) && (
-                                  <Badge variant="outline" className="bg-green-50 font-normal">
-                                    {[
-                                      question.allowsPhoto ? "Foto" : null,
-                                      question.allowsVideo ? "Vídeo" : null,
-                                      question.allowsAudio ? "Áudio" : null
-                                    ].filter(Boolean).join(", ")}
-                                  </Badge>
-                                )}
-                              </div>
-                              
-                              {question.options && question.options.length > 0 && (
-                                <div className="mt-2 pl-3 border-l border-dashed border-gray-200">
-                                  <p className="text-sm font-medium mb-1">Opções:</p>
-                                  <ul className="text-sm space-y-1">
-                                    {question.options.map((option, idx) => (
-                                      <li key={idx}>• {option}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {/* Display ungrouped questions if any */}
-                  {ungroupedQuestions.length > 0 && (
-                    <div className="mb-6">
-                      <h3 className="text-lg font-medium mb-2 pb-1 border-b">
-                        Perguntas Gerais
-                      </h3>
-                      
-                      <div className="space-y-3 pl-2">
-                        {ungroupedQuestions.map((question, index) => (
-                          <div key={question.id} className="border-l-2 border-gray-200 pl-3 py-1">
-                            <p className="font-medium mb-1">{index + 1}. {question.text}</p>
-                            <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                              <Badge variant="outline" className="font-normal">
-                                {question.responseType === "sim/não" ? "Sim/Não" :
-                                 question.responseType === "seleção múltipla" ? "Múltipla escolha" :
-                                 question.responseType === "texto" ? "Texto" :
-                                 question.responseType === "numérico" ? "Numérico" :
-                                 question.responseType === "foto" ? "Foto" : "Assinatura"}
-                              </Badge>
-                              
-                              {question.isRequired && (
-                                <Badge variant="outline" className="bg-red-50 font-normal">Obrigatório</Badge>
-                              )}
-                            </div>
-                            
-                            {question.options && question.options.length > 0 && (
-                              <div className="mt-2 pl-3 border-l border-dashed border-gray-200">
-                                <p className="text-sm font-medium mb-1">Opções:</p>
-                                <ul className="text-sm space-y-1">
-                                  {question.options.map((option, idx) => (
-                                    <li key={idx}>• {option}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+              {renderQuestionsSection()}
             </CardContent>
           </Card>
         </div>
