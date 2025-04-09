@@ -56,7 +56,8 @@ export default function CreateChecklist() {
       status_checklist: form.status_checklist
     };
     
-    const result = await handleSubmit(e);
+    // Pass the adapted form to handleSubmit instead of using the original form
+    const result = await handleSubmit(e, adaptedForm);
     return result;
   };
   
@@ -76,7 +77,8 @@ export default function CreateChecklist() {
       status_checklist: form.status_checklist
     };
     
-    await handleSubmit(e);
+    // Pass the adapted form to handleSubmit instead of using the original form
+    await handleSubmit(e, adaptedForm);
   };
 
   return (

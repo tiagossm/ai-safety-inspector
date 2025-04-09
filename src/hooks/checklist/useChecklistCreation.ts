@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { NewChecklist } from "@/types/checklist";
@@ -7,6 +6,7 @@ import { toast } from "sonner";
 import { useChecklistFormSubmit } from "./form/useChecklistFormSubmit";
 import { CompanyListItem } from "@/types/CompanyListItem";
 import { useChecklistCompanies } from "./form/useChecklistCompanies";
+import { NewChecklist as NewChecklistType } from "@/types/newChecklist";
 
 export type AIAssistantType = 'general' | 'workplace-safety' | 'compliance' | 'quality';
 
@@ -43,7 +43,7 @@ export function useChecklistCreation() {
   ]);
   
   // Submission handling
-  const { isSubmitting, handleSubmit } = useChecklistFormSubmit();
+  const { isSubmitting, handleSubmit: formSubmitHandler } = useChecklistFormSubmit();
   
   // Fetch users
   useEffect(() => {
@@ -111,13 +111,13 @@ export function useChecklistCreation() {
     setQuestions(newQuestions);
   };
   
-  // Handle form submission
-  const submitForm = async (e: React.FormEvent): Promise<boolean> => {
+  // Handle form submission - modified to accept adaptedForm parameter
+  const submitForm = async (e: React.FormEvent, adaptedForm?: NewChecklistType): Promise<boolean> => {
     try {
-      return await handleSubmit(
+      return await formSubmitHandler(
         e, 
         activeTab, 
-        form, 
+        adaptedForm || form, // Use adaptedForm if provided, otherwise use the original form
         questions, 
         file, 
         aiPrompt, 

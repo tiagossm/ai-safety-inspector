@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useChecklistAISubmit } from "./useChecklistAISubmit";
 import { useChecklistManualSubmit } from "./useChecklistManualSubmit";
 import { useChecklistImportSubmit } from "./useChecklistImportSubmit";
+import { NewChecklist as NewChecklistType } from "@/types/newChecklist";
 
 export function useChecklistFormSubmit() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,7 +18,7 @@ export function useChecklistFormSubmit() {
   const handleFormSubmit = async (
     e: React.FormEvent,
     activeTab: string,
-    form: NewChecklist,
+    form: NewChecklist | NewChecklistType,
     questions: any[],
     file: File | null,
     aiPrompt: string,
