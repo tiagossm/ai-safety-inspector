@@ -120,7 +120,7 @@ export function useChecklistCreation() {
     return 'active';
   };
   
-  // Handle form submission - modified to accept adaptedForm parameter
+  // Handle form submission - accepts an optional adaptedForm parameter
   const submitForm = async (e: React.FormEvent, adaptedForm?: NewChecklistType): Promise<boolean> => {
     try {
       const formToSubmit = adaptedForm || {

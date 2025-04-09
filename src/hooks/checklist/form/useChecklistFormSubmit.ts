@@ -15,7 +15,7 @@ export function useChecklistFormSubmit() {
   const { createManualChecklist } = useChecklistManualSubmit();
   const { importChecklist } = useChecklistImportSubmit();
 
-  // Helper function to ensure status is "active" or "inactive"
+  // Helper function to ensure status is "active" | "inactive"
   const normalizeStatus = (status?: string): "active" | "inactive" => {
     if (status === 'active' || status === 'inactive') {
       return status;
@@ -47,9 +47,9 @@ export function useChecklistFormSubmit() {
       
       let success = false;
       let checklistId: string | null = null;
-      
-      // Ensure the status is normalized to "active" or "inactive" if coming from a different type
-      const formWithNormalizedStatus = {
+
+      // Make sure we're using the correct status type
+      const processedForm = {
         ...form,
         status: normalizeStatus(form.status)
       };
@@ -57,7 +57,7 @@ export function useChecklistFormSubmit() {
       // Based on active tab, execute the appropriate function
       if (activeTab === "manual") {
         // Manual creation
-        checklistId = await createManualChecklist(formWithNormalizedStatus, questions);
+        checklistId = await createManualChecklist(processedForm, questions);
         success = !!checklistId;
         console.log("Manual creation result:", success, checklistId);
       } 
@@ -68,7 +68,7 @@ export function useChecklistFormSubmit() {
           return false;
         }
         
-        checklistId = await importChecklist(file, formWithNormalizedStatus);
+        checklistId = await importChecklist(file, processedForm);
         success = !!checklistId;
         console.log("Import result:", success, checklistId);
       } 
@@ -79,7 +79,7 @@ export function useChecklistFormSubmit() {
           return false;
         }
         
-        checklistId = await createChecklistWithAI(aiPrompt, formWithNormalizedStatus, openAIAssistant, numQuestions);
+        checklistId = await createChecklistWithAI(aiPrompt, processedForm, openAIAssistant, numQuestions);
         success = !!checklistId;
         console.log("AI generation result:", success, checklistId);
       }

@@ -9,8 +9,7 @@ import { AIChecklistCreator } from "@/components/checklists/create-forms/AICheck
 import { ManualCreateForm } from "@/components/checklists/create-forms/ManualCreateForm";
 import { ImportCreateForm } from "@/components/checklists/create-forms/ImportCreateForm";
 import { useChecklistCreation } from "@/hooks/checklist/useChecklistCreation";
-import { NewChecklist as ChecklistType } from "@/types/checklist";
-import { NewChecklist } from "@/types/newChecklist";
+import { NewChecklist as NewChecklistType } from "@/types/newChecklist";
 
 export default function CreateChecklist() {
   const navigate = useNavigate();
@@ -43,7 +42,7 @@ export default function CreateChecklist() {
   };
 
   const handleSubmitForManualAndImport = async (e: React.FormEvent): Promise<boolean> => {
-    const adaptedForm: NewChecklist = {
+    const adaptedForm: NewChecklistType = {
       title: form.title,
       description: form.description || "",
       is_template: form.is_template || false,
@@ -61,7 +60,7 @@ export default function CreateChecklist() {
   };
   
   const handleSubmitForAI = async (e: React.FormEvent): Promise<void> => {
-    const adaptedForm: NewChecklist = {
+    const adaptedForm: NewChecklistType = {
       title: form.title,
       description: form.description || "",
       is_template: form.is_template || false,
