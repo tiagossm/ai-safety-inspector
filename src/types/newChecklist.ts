@@ -56,6 +56,19 @@ export interface ChecklistWithStats extends Checklist {
   responsibleName?: string; // Optional responsible name
 }
 
+export interface NewChecklistPayload {
+  title: string;
+  description?: string;
+  isTemplate?: boolean;
+  status?: string;
+  category?: string;
+  responsibleId?: string;
+  companyId?: string;
+  company_id?: string;
+  dueDate?: string;
+  origin?: 'manual' | 'ia' | 'csv';
+}
+
 export interface InspectionDetails {
   id: string;
   title: string;
