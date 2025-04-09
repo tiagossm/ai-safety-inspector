@@ -57,8 +57,7 @@ export default function CreateChecklist() {
     };
     
     // Pass the adapted form to handleSubmit instead of using the original form
-    const result = await handleSubmit(e, adaptedForm);
-    return result;
+    return await handleSubmit(e, adaptedForm);
   };
   
   const handleSubmitForAI = async (e: React.FormEvent): Promise<void> => {
