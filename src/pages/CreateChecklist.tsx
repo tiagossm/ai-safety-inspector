@@ -34,6 +34,7 @@ export default function CreateChecklist() {
     loadingCompanies
   } = useChecklistCreation();
 
+  // Helper function to ensure status is "active" or "inactive"
   const normalizeStatus = (status?: string): "active" | "inactive" => {
     if (status === 'active' || status === 'inactive') {
       return status;
