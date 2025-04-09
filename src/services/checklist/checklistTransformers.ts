@@ -22,7 +22,7 @@ const FIELD_MAPPINGS: FieldMapping[] = [
   { source: "created_at", target: "createdAt" },
   { source: "updated_at", target: "updatedAt" },
   { source: "due_date", target: "dueDate" },
-  { source: "parent_question_id", target: "parentQuestionId" }
+  { source: "parent_question_id", target: "parent_question_id" }
 ];
 
 /**
@@ -66,7 +66,9 @@ export function transformDbChecklistToStats(item: any): ChecklistWithStats {
   // Apply mappings for backward compatibility
   for (const mapping of FIELD_MAPPINGS) {
     if (mapping.source in item) {
-      result[mapping.target] = item[mapping.source];
+      // Use type assertion to overcome TypeScript's type checking here
+      // since we're dynamically setting properties based on mapping
+      (result as any)[mapping.target] = item[mapping.source];
     }
   }
 
