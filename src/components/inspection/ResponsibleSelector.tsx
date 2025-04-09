@@ -55,8 +55,11 @@ export function ResponsibleSelector({ value, onSelect }: ResponsibleSelectorProp
     onSelect(userId, selectedUser);
   };
 
+  // Garantir que value seja sempre uma string válida
+  const safeValue = value || "none";
+
   return (
-    <Select value={value} onValueChange={handleUserSelection}>
+    <Select value={safeValue} onValueChange={handleUserSelection}>
       <SelectTrigger className="w-full">
         <SelectValue placeholder="Selecione um responsável" />
       </SelectTrigger>

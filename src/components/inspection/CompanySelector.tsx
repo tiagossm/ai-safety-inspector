@@ -61,8 +61,11 @@ export function CompanySelector({
     onSelect(companyId, selectedCompany);
   };
 
+  // Garantir que value seja sempre uma string válida
+  const safeValue = value || (includeEmptyOption ? "all" : companies[0]?.id || "loading");
+
   return (
-    <Select value={value} onValueChange={handleCompanySelection}>
+    <Select value={safeValue} onValueChange={handleCompanySelection}>
       <SelectTrigger className="w-full">
         <SelectValue placeholder="Selecione uma empresa" />
       </SelectTrigger>
@@ -70,12 +73,17 @@ export function CompanySelector({
         {includeEmptyOption && (
           <SelectItem value="all">Todas as empresas</SelectItem>
         )}
-        {companies.map((company) => (
-          <SelectItem key={company.id} value={company.id}>
-            {company.fantasy_name}
-          </SelectItem>
-        ))}
-        {loading && <SelectItem value="loading" disabled>Carregando...</SelectItem>}
+        {companies.length > 0 ? (
+          companies.map((company) => (
+            <SelectItem key={company.id} value={company.id}>
+              {company.fantasy_name}
+            </SelectItem>
+          ))
+        ) : loading ? (
+          <SelectItem value="loading" disabled>Carregando...</SelectItem>
+        ) : (
+          <SelectItem value="no-companies">Nenhuma empresa encontrada</SelectItem>
+        )}
       </SelectContent>
     </Select>
   );

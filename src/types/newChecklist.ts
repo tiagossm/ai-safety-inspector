@@ -1,112 +1,18 @@
-
-// Base checklist types
-export interface Checklist {
-  id: string;
+export interface NewChecklistPayload {
   title: string;
-  description?: string;
+  description: string;
   is_template: boolean;
   status: "active" | "inactive";
-  category?: string;
-  responsible_id?: string | null;
+  category: string;
   company_id?: string | null;
-  user_id?: string | null;
-  created_at?: string;
-  updated_at?: string;
+  responsible_id?: string | null;
   due_date?: string | null;
-  is_sub_checklist?: boolean;
-  origin?: ChecklistOrigin;
-  parent_question_id?: string | null;
+  user_id?: string | null;
+  status_checklist?: "ativo" | "inativo";
+  origin?: 'manual' | 'ia' | 'csv';
 }
 
-export type ChecklistOrigin = "manual" | "ia" | "csv";
-
-export interface ChecklistWithStats extends Checklist {
-  totalQuestions: number;
-  completedQuestions: number;
-  companyName?: string;
-  responsibleName?: string;
-  questions?: ChecklistQuestion[];
-  groups?: ChecklistGroup[];
-  
-  // These are for backward compatibility with existing code
-  isTemplate?: boolean;
-  isSubChecklist?: boolean;
-  companyId?: string;
-  responsibleId?: string;
-  userId?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  dueDate?: string;
-}
-
-// Question and group types
-export interface ChecklistQuestion {
-  id: string;
-  text: string;
-  responseType: "yes_no" | "numeric" | "text" | "multiple_choice" | "photo" | "signature";
-  isRequired: boolean;
-  options?: string[];
-  order: number;
-  allowsPhoto?: boolean;
-  allowsVideo?: boolean;
-  allowsAudio?: boolean;
-  allowsFiles?: boolean;
-  weight?: number;
-  groupId?: string;
-  parentId?: string | null;
-  conditionValue?: string | null;
-  displayNumber?: string;
-  
-  // Additional properties needed by components
-  parentQuestionId?: string | null;
-  hint?: string;
-  hasSubChecklist?: boolean;
-  subChecklistId?: string;
-}
-
-// Define the ChecklistGroup interface that was missing
-export interface ChecklistGroup {
-  id: string;
-  title: string;
-  order: number;
-  description?: string;
-}
-
-// Inspection types
-export interface InspectionDetails {
-  id: string;
-  title: string;
-  description?: string;
-  checklistId: string;
-  companyId: string;
-  responsibleId?: string;
-  scheduledDate?: string;
-  status: "pending" | "in_progress" | "completed";
-  createdAt: string;
-  updatedAt: string;
-  priority: "low" | "medium" | "high";
-  locationName?: string;
-  company?: { id: string; name: string; fantasy_name?: string };
-  responsible?: { id: string; name: string; email?: string };
-  progress: number;
-  totalItems: number;
-  completedItems: number;
-  approval_notes?: string;
-  approval_status?: string;
-  approved_by?: string;
-  audio_url?: string;
-  photos?: string[];
-  report_url?: string;
-  unit_id?: string;
-  metadata?: any;
-  cnae?: string;
-  inspection_type?: string;
-  sync_status?: string;
-  companyName?: string;
-  responsibleName?: string;
-}
-
-export interface InspectionFilters {
+export interface ChecklistFilters {
   search: string;
   status: string;
   priority: string;
@@ -117,30 +23,88 @@ export interface InspectionFilters {
   endDate?: Date;
 }
 
-// Delete dialog props
-export interface DeleteChecklistDialogProps {
+export interface InspectionDetails {
+  id: string;
+  title: string;
+  description: string;
   checklistId: string;
-  checklistTitle: string;
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onDeleted: () => Promise<void>;
-  isDeleting: boolean;
+  companyId: string;
+  responsibleId: string;
+  scheduledDate: string;
+  status: 'pending' | 'in_progress' | 'completed';
+  createdAt: string;
+  updatedAt: string;
+  priority: 'low' | 'medium' | 'high';
+  locationName: string;
+  company: any | null;
+  responsible: any | null;
+  progress: number;
+  totalItems: number;
+  completedItems: number;
+  approval_notes: string | null;
+  approval_status: string | null;
+  approved_by: string | null;
+  audio_url: string | null;
+  photos: string[];
+  report_url: string | null;
+  unit_id: string | null;
+  metadata: any | null;
+  cnae: string | null;
+  inspection_type: string | null;
+  sync_status: string | null;
+  companyName: string | null;
+  responsibleName: string | null;
 }
 
-// Checklist creation payload
-export interface NewChecklistPayload {
+export interface ChecklistWithStats {
+  id: string;
+  title: string;
+  description: string;
+  is_template: boolean;
+  isTemplate: boolean;
+  status: "active" | "inactive";
+  category: string;
+  responsible_id: string | null;
+  responsibleId: string | null;
+  company_id: string | null;
+  companyId: string | null;
+  user_id: string | null;
+  userId: string | null;
+  created_at: string;
+  createdAt: string;
+  updated_at: string;
+  updatedAt: string;
+  due_date: string | null;
+  dueDate: string | null;
+  is_sub_checklist: boolean;
+  isSubChecklist: boolean;
+  origin: 'manual' | 'ia' | 'csv';
+  parent_question_id: string | null;
+  parentQuestionId: string | null;
+  totalQuestions: number;
+  completedQuestions: number;
+  companyName: string | null;
+  responsibleName: string | null;
+}
+
+// Interface para grupos de perguntas em checklists
+export interface ChecklistGroup {
+  id: string;
   title: string;
   description?: string;
-  is_template: boolean;
-  status: string;
-  status_checklist?: "ativo" | "inativo";
-  category?: string;
-  company_id?: string | null;
-  responsible_id?: string | null;
-  due_date?: string | null;
-  user_id?: string | null;
-  origin?: ChecklistOrigin;
+  questions: Array<{
+    id?: string;
+    text: string;
+    type: string;
+    required: boolean;
+    allowPhoto?: boolean;
+    allowVideo?: boolean;
+    allowAudio?: boolean;
+    options?: string[];
+    hint?: string;
+    weight?: number;
+    parentId?: string;
+    conditionValue?: string;
+    groupId?: string;
+  }>;
 }
-
-// Define AI Assistant type used across components
-export type AIAssistantType = "general" | "workplace-safety" | "compliance" | "quality" | "checklist" | "openai";
