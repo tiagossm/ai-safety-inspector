@@ -131,7 +131,7 @@ export function InspectionFilters({
                   <SelectValue placeholder="Todos os status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="pending">Pendente</SelectItem>
                   <SelectItem value="in_progress">Em Andamento</SelectItem>
                   <SelectItem value="completed">Concluído</SelectItem>
@@ -150,7 +150,7 @@ export function InspectionFilters({
                   <SelectValue placeholder="Todas as prioridades" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas</SelectItem>
+                  <SelectItem value="all">Todas</SelectItem>
                   <SelectItem value="low">Baixa</SelectItem>
                   <SelectItem value="medium">Média</SelectItem>
                   <SelectItem value="high">Alta</SelectItem>

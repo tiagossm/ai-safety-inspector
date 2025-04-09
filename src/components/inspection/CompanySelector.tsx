@@ -54,14 +54,14 @@ export function CompanySelector({
       </SelectTrigger>
       <SelectContent>
         {includeEmptyOption && (
-          <SelectItem value="">Todas as empresas</SelectItem>
+          <SelectItem value="all">Todas as empresas</SelectItem>
         )}
         {companies.map((company) => (
           <SelectItem key={company.id} value={company.id}>
             {company.fantasy_name}
           </SelectItem>
         ))}
-        {loading && <SelectItem value="" disabled>Carregando...</SelectItem>}
+        {loading && <SelectItem value="loading" disabled>Carregando...</SelectItem>}
       </SelectContent>
     </Select>
   );
