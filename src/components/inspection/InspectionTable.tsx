@@ -64,10 +64,10 @@ export function InspectionTable({
                   {inspection.title}
                 </TableCell>
                 <TableCell>
-                  {inspection.company?.fantasy_name || "N/A"}
+                  {inspection.companyName || "N/A"}
                 </TableCell>
                 <TableCell>
-                  {inspection.responsible?.name || "N/A"}
+                  {inspection.responsibleName || "N/A"}
                 </TableCell>
                 <TableCell>
                   {formatDate(inspection.scheduledDate)}

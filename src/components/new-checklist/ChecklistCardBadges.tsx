@@ -17,7 +17,9 @@ export const ChecklistCardBadges: React.FC<ChecklistCardBadgesProps> = ({
   status 
 }) => {
   // Ensure origin is cast to a valid ChecklistOrigin type
-  const safeOrigin = (checklist.origin || 'manual') as ChecklistOrigin;
+  const safeOrigin = (checklist.origin === 'manual' || checklist.origin === 'ia' || checklist.origin === 'csv')
+    ? (checklist.origin as ChecklistOrigin)
+    : 'manual' as ChecklistOrigin;
   
   return (
     <div className="flex items-center gap-2 mb-1">

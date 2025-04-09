@@ -122,8 +122,8 @@ export function InspectionFilters({ filters, setFilters }: InspectionFiltersProp
                   onSelect={(range) => {
                     setFilters({
                       ...filters,
-                      startDate: range?.from,
-                      endDate: range?.to
+                      startDate: range?.from || undefined,
+                      endDate: range?.to || undefined
                     });
                   }}
                 />

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -182,9 +181,14 @@ export function useInspections() {
         
         if (scheduledDate) {
           // Remove time component for date comparison
-          const dateOnly = new Date(scheduledDate.setHours(0, 0, 0, 0));
-          const startDateOnly = new Date(startDate.setHours(0, 0, 0, 0));
-          const endDateOnly = new Date(endDate.setHours(23, 59, 59, 999));
+          const dateOnly = scheduledDate;
+          dateOnly.setHours(0, 0, 0, 0);
+          
+          const startDateOnly = new Date(startDate);
+          startDateOnly.setHours(0, 0, 0, 0);
+          
+          const endDateOnly = new Date(endDate);
+          endDateOnly.setHours(23, 59, 59, 999);
           
           matchesDate = dateOnly >= startDateOnly && dateOnly <= endDateOnly;
         } else {

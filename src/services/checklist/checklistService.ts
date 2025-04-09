@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats, Checklist, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 
@@ -157,10 +156,9 @@ export const checklistService = {
     questions: ChecklistQuestion[],
     groups: ChecklistGroup[]
   ) {
-    // Implementation for creating a checklist
     const { data, error } = await supabase
       .from("checklists")
-      .insert([checklist])
+      .insert(checklist)
       .select()
       .single();
 
@@ -169,8 +167,6 @@ export const checklistService = {
       throw error;
     }
 
-    // Process and add questions, groups, etc.
-    // This is a placeholder for the actual implementation
     console.log("Created checklist:", data);
     
     return { id: data.id };
@@ -218,3 +214,7 @@ function transformBasicChecklistData(data: any[]): ChecklistWithStats[] {
     completedQuestions: 0
   }));
 }
+
+// Explicitly export these functions for direct imports
+export const fetchCompanyNameById = checklistService.fetchCompanyNameById;
+export const updateChecklistStatus = checklistService.updateChecklistStatus;

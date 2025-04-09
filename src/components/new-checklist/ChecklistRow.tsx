@@ -23,7 +23,7 @@ import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChecklistOriginBadge } from "./ChecklistOriginBadge";
-import { fetchCompanyNameById, updateChecklistStatus } from "@/services/checklist/checklistService";
+import { checklistService } from "@/services/checklist/checklistService";
 
 interface ChecklistRowProps {
   checklist: ChecklistWithStats;
@@ -58,7 +58,7 @@ export function ChecklistRow({
   const loadCompanyName = async (companyId: string) => {
     try {
       setCompanyLoading(true);
-      const name = await fetchCompanyNameById(companyId);
+      const name = await checklistService.fetchCompanyNameById(companyId);
       setCompanyName(name);
     } catch (error) {
       console.error("Error fetching company name:", error);
@@ -77,7 +77,7 @@ export function ChecklistRow({
     setIsToggling(true);
     
     try {
-      await updateChecklistStatus(checklist.id, newStatus);
+      await checklistService.updateChecklistStatus(checklist.id, newStatus);
       toast.success(`Checklist ${newStatus === 'active' ? 'ativado' : 'desativado'} com sucesso`);
       
       if (onStatusChange) onStatusChange();

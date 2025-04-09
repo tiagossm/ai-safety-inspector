@@ -67,7 +67,7 @@ export function AIChecklistCreator({
     }
   };
 
-  const handleGenerate = async (e: React.FormEvent) => {
+  const handleGenerateWithAI = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validation
@@ -112,7 +112,7 @@ export function AIChecklistCreator({
 
   return (
     <div className="space-y-6">
-      <form onSubmit={handleGenerate}>
+      <form onSubmit={handleGenerateWithAI}>
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
@@ -148,7 +148,7 @@ export function AIChecklistCreator({
 
           <IntelligentChecklistForm
             selectedAssistant={selectedAssistant}
-            onAssistantTypeChange={setSelectedAssistant}
+            onAssistantTypeChange={(type) => setSelectedAssistant(type)}
             openAIAssistant={openAIAssistant}
             onOpenAIAssistantChange={setOpenAIAssistant}
             onPromptChange={setPrompt}
