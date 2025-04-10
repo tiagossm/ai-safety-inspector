@@ -116,7 +116,7 @@ export function useNewInspectionForm(checklistId: string | undefined) {
     }
     
     // Validate company_id is a valid UUID
-    if (companyId && companyId !== "all" && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(companyId)) {
+    if (companyId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(companyId)) {
       newErrors.company = "ID da empresa inválido";
     }
     
@@ -228,40 +228,14 @@ export function useNewInspectionForm(checklistId: string | undefined) {
   // Handle company selection
   const handleCompanySelect = (id: string, data: any) => {
     setCompanyId(id);
-    
-    // Se temos dados da empresa, usamos eles
-    if (data) {
-      setCompanyData(data);
-      if (data.address) {
-        setLocation(data.address);
-      }
-      
-      // Clear CNAE error if valid
-      if (data.cnae && /^\d{2}\.\d{2}-\d$/.test(data.cnae)) {
-        setErrors(prev => ({...prev, cnae: ""}));
-      }
+    setCompanyData(data);
+    if (data.address) {
+      setLocation(data.address);
     }
-    // Se não temos dados e o ID é válido, precisamos buscar
-    else if (id && id !== "all" && id !== "loading") {
-      // Buscar dados da empresa selecionada
-      supabase
-        .from("companies")
-        .select("*")
-        .eq("id", id)
-        .single()
-        .then(({ data, error }) => {
-          if (!error && data) {
-            setCompanyData(data);
-            if (data.address) {
-              setLocation(data.address);
-            }
-          } else {
-            console.error("Error fetching company data:", error);
-          }
-        });
-    } else {
-      // Limpar dados se nenhuma empresa ou opção "all" foi selecionada
-      setCompanyData(null);
+    
+    // Clear CNAE error if valid
+    if (data.cnae && /^\d{2}\.\d{2}-\d$/.test(data.cnae)) {
+      setErrors(prev => ({...prev, cnae: ""}));
     }
   };
   

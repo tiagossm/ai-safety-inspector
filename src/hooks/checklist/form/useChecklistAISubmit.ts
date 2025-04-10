@@ -2,8 +2,11 @@
 import { toast } from "sonner";
 import { NewChecklist } from "@/types/checklist";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 export function useChecklistAISubmit() {
+  const navigate = useNavigate();
+
   const createChecklistWithAI = async (
     aiPrompt: string,
     formData: NewChecklist,
@@ -66,9 +69,7 @@ export function useChecklistAISubmit() {
         category: formData.category || "general",
         company_id: formData.company_id || null,
         responsible_id: formData.responsible_id || null,
-        origin: 'ia', // Explicitly set the origin to 'ia'
-        status: 'active',
-        theme: formData.theme || formData.category || null // Add theme property with fallback to category
+        status: 'active'
       };
       
       console.log("Inserting checklist:", checklistData);

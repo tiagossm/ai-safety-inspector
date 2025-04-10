@@ -6,7 +6,6 @@ import { useNavigate } from "react-router-dom";
 import { useChecklistAISubmit } from "./useChecklistAISubmit";
 import { useChecklistManualSubmit } from "./useChecklistManualSubmit";
 import { useChecklistImportSubmit } from "./useChecklistImportSubmit";
-import { NewChecklist as NewChecklistType, ChecklistOrigin } from "@/types/newChecklist";
 
 export function useChecklistFormSubmit() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -15,26 +14,10 @@ export function useChecklistFormSubmit() {
   const { createManualChecklist } = useChecklistManualSubmit();
   const { importChecklist } = useChecklistImportSubmit();
 
-  // Helper function to ensure status is "active" | "inactive"
-  const normalizeStatus = (status?: string): "active" | "inactive" => {
-    if (status === 'active' || status === 'inactive') {
-      return status;
-    }
-    return 'active';
-  };
-  
-  // Helper to ensure origin is a valid ChecklistOrigin type
-  const normalizeOrigin = (origin?: string): ChecklistOrigin => {
-    if (origin === 'manual' || origin === 'ia' || origin === 'csv') {
-      return origin as ChecklistOrigin;
-    }
-    return 'manual';
-  };
-
   const handleFormSubmit = async (
     e: React.FormEvent,
     activeTab: string,
-    form: NewChecklist | NewChecklistType,
+    form: NewChecklist,
     questions: any[],
     file: File | null,
     aiPrompt: string,
@@ -56,30 +39,10 @@ export function useChecklistFormSubmit() {
       let success = false;
       let checklistId: string | null = null;
       
-      // Set the origin based on the active tab
-      let origin: ChecklistOrigin = 'manual';
-      
-      // Map tab to origin type
-      if (activeTab === 'ai') {
-        origin = 'ia';
-      } else if (activeTab === 'import') {
-        origin = 'csv';
-      }
-
-      // Make sure we're using the correct status type and preserving the origin
-      const processedForm = {
-        ...form,
-        status: normalizeStatus(form.status),
-        origin: form.origin ? normalizeOrigin(form.origin) : origin,
-        company_id: form.company_id === "none" ? null : form.company_id
-      };
-      
-      console.log("Processed form with origin:", processedForm);
-      
       // Based on active tab, execute the appropriate function
       if (activeTab === "manual") {
         // Manual creation
-        checklistId = await createManualChecklist(processedForm, questions);
+        checklistId = await createManualChecklist(form, questions);
         success = !!checklistId;
         console.log("Manual creation result:", success, checklistId);
       } 
@@ -90,7 +53,7 @@ export function useChecklistFormSubmit() {
           return false;
         }
         
-        checklistId = await importChecklist(file, processedForm);
+        checklistId = await importChecklist(file, form);
         success = !!checklistId;
         console.log("Import result:", success, checklistId);
       } 
@@ -101,7 +64,7 @@ export function useChecklistFormSubmit() {
           return false;
         }
         
-        checklistId = await createChecklistWithAI(aiPrompt, processedForm, openAIAssistant, numQuestions);
+        checklistId = await createChecklistWithAI(aiPrompt, form, openAIAssistant, numQuestions);
         success = !!checklistId;
         console.log("AI generation result:", success, checklistId);
       }

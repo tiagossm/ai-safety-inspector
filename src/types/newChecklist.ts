@@ -1,182 +1,96 @@
-export interface NewChecklistPayload {
-  title: string;
-  description: string;
-  is_template: boolean;
-  status: "active" | "inactive";
-  category: string;
-  company_id?: string | null;
-  responsible_id?: string | null;
-  due_date?: string | null;
-  user_id?: string | null;
-  status_checklist?: "ativo" | "inativo";
-  origin?: 'manual' | 'ia' | 'csv';
-  theme?: string | null; // Add theme property
-}
-
-export interface ChecklistFilters {
-  search: string;
-  status: string;
-  priority: string;
-  companyId: string;
-  responsibleId: string;
-  checklistId: string;
-  startDate?: Date;
-  endDate?: Date;
-}
-
-export interface InspectionDetails {
-  id: string;
-  title: string;
-  description: string;
-  checklistId: string;
-  companyId: string;
-  responsibleId: string;
-  scheduledDate: string;
-  status: 'pending' | 'in_progress' | 'completed';
-  createdAt: string;
-  updatedAt: string;
-  priority: 'low' | 'medium' | 'high';
-  locationName: string;
-  company: any | null;
-  responsible: any | null;
-  progress: number;
-  totalItems: number;
-  completedItems: number;
-  approval_notes: string | null;
-  approval_status: string | null;
-  approved_by: string | null;
-  audio_url: string | null;
-  photos: string[];
-  report_url: string | null;
-  unit_id: string | null;
-  metadata: any | null;
-  cnae: string | null;
-  inspection_type: string | null;
-  sync_status: string | null;
-  companyName: string | null;
-  responsibleName: string | null;
-}
 
 export interface ChecklistWithStats {
   id: string;
   title: string;
-  description: string;
-  is_template: boolean;
+  description?: string;
   isTemplate: boolean;
-  status: "active" | "inactive";
-  category: string;
-  responsible_id: string | null;
-  responsibleId: string | null;
-  company_id: string | null;
-  companyId: string | null;
-  user_id: string | null;
-  userId: string | null;
-  created_at: string;
-  createdAt: string;
-  updated_at: string;
-  updatedAt: string;
-  due_date: string | null;
-  dueDate: string | null;
-  is_sub_checklist: boolean;
-  isSubChecklist: boolean;
-  origin: ChecklistOrigin;
-  parent_question_id: string | null;
-  parentQuestionId: string | null;
+  status: string;
+  category?: string;
+  responsibleId?: string;
+  companyId?: string;
+  userId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  dueDate?: string;
+  isSubChecklist?: boolean;
+  origin?: string;
   totalQuestions: number;
-  completedQuestions: number;
-  companyName: string | null;
-  responsibleName: string | null;
-  questions?: ChecklistQuestion[];
-  groups?: ChecklistGroup[];
+  completedQuestions?: number;
+  companyName?: string;
+  responsibleName?: string;
 }
 
-// Interface for question groups in checklists
-export interface ChecklistGroup {
-  id: string;
+export interface NewChecklistPayload {
   title: string;
   description?: string;
-  order: number;
-  questions?: Array<ChecklistQuestion>;
+  is_template?: boolean;
+  status_checklist?: string;
+  status?: string;
+  category?: string;
+  company_id?: string;
+  responsible_id?: string;
 }
-
-// Adding additional interfaces and types needed for the application
-
-export type ChecklistOrigin = 'manual' | 'ia' | 'csv';
 
 export interface Checklist {
   id: string;
   title: string;
-  description: string;
-  is_template: boolean;
-  status: "active" | "inactive";
-  category: string;
-  responsible_id: string | null;
-  company_id: string | null;
-  user_id: string | null;
-  created_at: string;
-  updated_at: string;
-  due_date: string | null;
-  is_sub_checklist: boolean;
-  parent_question_id: string | null;
-  origin: ChecklistOrigin;
-  status_checklist: "ativo" | "inativo";
-  theme?: string | null; // Add theme property
-}
-
-export interface ChecklistQuestion {
-  id: string;
-  text: string;
-  responseType: string;
-  isRequired: boolean;
-  weight: number;
-  order: number;
-  allowsPhoto: boolean;
-  allowsVideo: boolean;
-  allowsAudio: boolean;
-  allowsFiles: boolean;
-  options?: string[];
-  hint?: string | null;
-  groupId?: string;
-  parentQuestionId?: string | null;
-  hasSubChecklist?: boolean;
-  subChecklistId?: string | null;
-  displayNumber?: string;
-  conditionValue?: string | null;
-}
-
-export interface DeleteChecklistDialogProps {
-  checklistId: string;
-  checklistTitle: string;
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onDeleted: () => Promise<void>;
-  isDeleting?: boolean;
-}
-
-export interface InspectionFilters {
-  search: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
   status: string;
-  priority: string;
-  companyId: string;
-  responsibleId: string;
-  checklistId: string;
-  startDate?: Date;
-  endDate?: Date;
+  status_checklist?: string;
+  is_template: boolean;
+  user_id?: string;
+  company_id?: string;
+  responsible_id?: string;
+  category?: string;
+  questions?: ChecklistItem[];
+  groups?: ChecklistGroup[];
+  responsibleName?: string;
 }
 
-export type AIAssistantType = 'general' | 'workplace-safety' | 'compliance' | 'quality' | 'checklist' | 'openai';
+export interface ChecklistItem {
+  id: string;
+  ordem: number;
+  pergunta: string;
+  tipo_resposta: string;
+  opcoes?: string[] | null;
+  obrigatorio: boolean;
+  permite_foto?: boolean;
+  permite_video?: boolean;
+  permite_audio?: boolean;
+  weight?: number;
+  hint?: string;
+  groupId?: string | null;
+  parent_item_id?: string | null;
+  condition_value?: string | null;
+  sub_checklist_id?: string | null;
+  hasSubChecklist?: boolean;
+}
+
+export interface ChecklistGroup {
+  id: string;
+  title: string;
+  order: number;
+}
+
+export interface ChecklistSortOption {
+  label: string;
+  value: string;
+}
 
 export interface NewChecklist {
-  title: string;
+  title?: string;
   description?: string;
   is_template?: boolean;
-  status?: "active" | "inactive";
-  status_checklist?: "ativo" | "inativo";
+  status_checklist?: string;
   category?: string;
   company_id?: string | null;
   responsible_id?: string | null;
-  due_date?: string | null;
-  user_id?: string | null;
-  origin?: ChecklistOrigin;
-  theme?: string | null; // Add theme property
+  status?: string;
+}
+
+export interface BatchUpdateResult {
+  success: boolean;
+  count: number;
 }

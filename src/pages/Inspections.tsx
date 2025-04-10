@@ -85,26 +85,21 @@ export default function Inspections() {
             variant="outline"
             size="sm"
             className="h-9"
-            onClick={() => {
-              setFilters({
-                search: "",
-                status: "all",
-                priority: "all",
-                companyId: "all",
-                responsibleId: "all",
-                checklistId: "all",
-                startDate: undefined,
-                endDate: undefined
-              });
-            }}
+            onClick={() => setFilters({
+              search: "",
+              status: "all",
+              priority: "all",
+              companyId: "all",
+              responsibleId: "all",
+              checklistId: "all",
+              startDate: undefined,
+              endDate: undefined
+            })}
           >
             Limpar Filtros
           </Button>
           
-          <InspectionFilters 
-            filters={filters} 
-            setFilters={setFilters} 
-          />
+          <InspectionFilters filters={filters} setFilters={setFilters} />
           
           <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleRetry}>
             <RefreshCw className="h-4 w-4" />

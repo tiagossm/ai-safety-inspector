@@ -1,108 +1,135 @@
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Card } from "@/components/ui/card";
-import { AIAssistantType } from "@/types/newChecklist";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { useOpenAIAssistants } from "@/hooks/new-checklist/useOpenAIAssistants";
 
-interface AIAssistantOption {
-  id: string;
-  value: string;
-  label: string;
-  description: string;
-  icon: React.ReactNode;
-}
-
-interface AIAssistantSelectorProps {
+interface OpenAIAssistantSelectorProps {
   selectedAssistant: string;
   setSelectedAssistant: (value: string) => void;
+  required?: boolean;
 }
 
-export function AIAssistantSelector({
-  selectedAssistant,
-  setSelectedAssistant
-}: AIAssistantSelectorProps) {
-  // Predefined assistant types
-  const assistantOptions: AIAssistantOption[] = [
-    {
-      id: "workplace-safety",
-      value: "workplace-safety",
-      label: "Segurança do Trabalho",
-      description: "Especialista em normas de segurança do trabalho (NRs)",
-      icon: "🛡️"
-    },
-    {
-      id: "compliance",
-      value: "compliance",
-      label: "Compliance",
-      description: "Especialista em conformidade legal e regulatória",
-      icon: "📋"
-    },
-    {
-      id: "quality",
-      value: "quality",
-      label: "Qualidade",
-      description: "Especialista em processos e controle de qualidade",
-      icon: "✅"
-    },
-    {
-      id: "checklist",
-      value: "checklist",
-      label: "Checklist Geral",
-      description: "Assistente geral para criação de checklists diversos",
-      icon: "📝"
-    },
-    {
-      id: "openai",
-      value: "openai",
-      label: "Modelo GPT-4",
-      description: "Assistente de IA generativa avançada (recomendado)",
-      icon: "🤖"
-    }
-  ];
+export function OpenAIAssistantSelector({ 
+  selectedAssistant, 
+  setSelectedAssistant,
+  required = true
+}: OpenAIAssistantSelectorProps) {
+  const { assistants, loading, error, refetch } = useOpenAIAssistants();
 
-  // Select default if nothing is selected
-  useEffect(() => {
-    if (!selectedAssistant) {
-      setSelectedAssistant("openai");
-    }
-  }, [selectedAssistant, setSelectedAssistant]);
+  if (loading) {
+    return <Skeleton className="h-9 w-full" />;
+  }
+
+  if (error) {
+    return (
+      <div className="text-sm text-red-500">
+        <p>Erro ao carregar assistentes: {error}</p>
+        <p>Verifique se a chave da API da OpenAI está configurada corretamente.</p>
+        <Button variant="outline" size="sm" onClick={refetch} className="mt-2">
+          Tentar novamente
+        </Button>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-3">
-      <Label>Assistente de IA</Label>
-      <RadioGroup
-        value={selectedAssistant}
+    <div className="space-y-2">
+      <Label htmlFor="openai-assistant" className="flex items-center">
+        Assistente de IA
+        {required && <span className="text-red-500 ml-1">*</span>}
+      </Label>
+      <Select
+        value={selectedAssistant || ""}
         onValueChange={setSelectedAssistant}
-        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"
       >
-        {assistantOptions.map((option) => (
-          <Card 
-            key={option.id} 
-            className={`relative p-4 cursor-pointer transition-colors border hover:bg-gray-50 ${
-              selectedAssistant === option.value ? "border-primary bg-primary/5" : "border-gray-200"
-            }`}
-            onClick={() => setSelectedAssistant(option.value)}
-          >
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 text-lg w-8 h-8 flex items-center justify-center">
-                {option.icon}
-              </div>
-              <div className="flex-grow">
-                <div className="font-medium">{option.label}</div>
-                <div className="text-sm text-muted-foreground">{option.description}</div>
-              </div>
-              <RadioGroupItem 
-                value={option.value}
-                id={option.id}
-                className="flex-shrink-0"
-              />
-            </div>
-          </Card>
-        ))}
-      </RadioGroup>
+        <SelectTrigger id="openai-assistant">
+          <SelectValue placeholder="Selecione um assistente da OpenAI" />
+        </SelectTrigger>
+        <SelectContent>
+          {assistants.length === 0 ? (
+            <SelectItem value="no-assistants-available" disabled>
+              Nenhum assistente disponível
+            </SelectItem>
+          ) : (
+            assistants.map((assistant) => (
+              <SelectItem key={assistant.id} value={assistant.id || "default-assistant"}>
+                <div className="flex items-center">
+                  {assistant.name}
+                  {assistant.model && (
+                    <Badge variant="outline" className="ml-2 text-xs">
+                      {assistant.model}
+                    </Badge>
+                  )}
+                </div>
+              </SelectItem>
+            ))
+          )}
+        </SelectContent>
+      </Select>
+      <p className="text-sm text-muted-foreground">
+        Escolha um assistente especializado para melhorar os resultados.
+      </p>
     </div>
   );
 }
 
-export default AIAssistantSelector;
+// Update the AIAssistantType to be compatible with useChecklistAI.ts
+export type AIAssistantType = 'general' | 'workplace-safety' | 'compliance' | 'quality' | 'openai' | 'claude' | 'gemini';
+
+interface AIAssistantSelectorProps {
+  selectedAssistant: AIAssistantType;
+  onChange: (type: AIAssistantType) => void;
+  openAIAssistant: string;
+  onOpenAIAssistantChange: (id: string) => void;
+}
+
+export function AIAssistantSelector({
+  selectedAssistant,
+  onChange,
+  openAIAssistant,
+  onOpenAIAssistantChange,
+}: AIAssistantSelectorProps) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <Label>Provedor de IA</Label>
+        <Select 
+          value={selectedAssistant} 
+          onValueChange={(value) => onChange(value as AIAssistantType)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione um provedor" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="general">OpenAI - Geral</SelectItem>
+            <SelectItem value="workplace-safety">OpenAI - Segurança do Trabalho</SelectItem>
+            <SelectItem value="compliance">OpenAI - Compliance</SelectItem>
+            <SelectItem value="quality">OpenAI - Qualidade</SelectItem>
+            <SelectItem value="claude" disabled>Claude (Em breve)</SelectItem>
+            <SelectItem value="gemini" disabled>Google Gemini (Em breve)</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {(selectedAssistant === 'general' || 
+        selectedAssistant === 'workplace-safety' || 
+        selectedAssistant === 'compliance' || 
+        selectedAssistant === 'quality') && (
+        <OpenAIAssistantSelector 
+          selectedAssistant={openAIAssistant}
+          setSelectedAssistant={onOpenAIAssistantChange}
+        />
+      )}
+    </div>
+  );
+}

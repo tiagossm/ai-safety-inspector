@@ -1,137 +1,113 @@
-
-import React from 'react';
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
+import { CalendarClock, Building2, User, Flag, CheckCircle2 } from "lucide-react";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { Eye, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
-import { InspectionDetails } from '@/types/newChecklist';
-import { cn } from '@/lib/utils';
+import { Button } from "@/components/ui/button";
+import { formatInspectionStatus } from "@/utils/formatInspectionStatus";
+import { InspectionDetails } from "@/types/newChecklist";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface InspectionCardProps {
   inspection: InspectionDetails;
-  onView?: () => void;
+  onView?: (id: string) => void;
 }
 
 export function InspectionCard({ inspection, onView }: InspectionCardProps) {
-  // Status badge styling and icon
-  const statusConfig = {
-    pending: {
-      label: 'Pendente',
-      color: 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200',
-      icon: <Clock className="h-3.5 w-3.5 mr-1" />
-    },
-    in_progress: {
-      label: 'Em Andamento',
-      color: 'bg-blue-100 text-blue-800 hover:bg-blue-200',
-      icon: <AlertTriangle className="h-3.5 w-3.5 mr-1" />
-    },
-    completed: {
-      label: 'Concluído',
-      color: 'bg-green-100 text-green-800 hover:bg-green-200',
-      icon: <CheckCircle className="h-3.5 w-3.5 mr-1" />
+  const statusInfo = formatInspectionStatus(inspection.status);
+  
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "Não agendada";
+    try {
+      return format(new Date(dateString), "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+    } catch (e) {
+      return "Data inválida";
     }
   };
-
-  // Priority badge styling
-  const priorityConfig = {
-    low: {
-      label: 'Baixa',
-      color: 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-    },
-    medium: {
-      label: 'Média',
-      color: 'bg-amber-100 text-amber-800 hover:bg-amber-200'
-    },
-    high: {
-      label: 'Alta',
-      color: 'bg-red-100 text-red-800 hover:bg-red-200'
+  
+  const getPriorityColor = (priority?: string) => {
+    switch (priority?.toLowerCase()) {
+      case "high": return "bg-red-500";
+      case "medium": return "bg-amber-500";
+      case "low": return "bg-green-500";
+      default: return "bg-gray-500";
     }
   };
-
-  const status = statusConfig[inspection.status] || statusConfig.pending;
-  const priority = priorityConfig[inspection.priority] || priorityConfig.medium;
-
+  
+  const handleOpenInspection = () => {
+    if (onView) {
+      onView(inspection.id);
+    }
+  };
+  
   return (
     <Card className="h-full flex flex-col">
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <div className="flex space-x-2">
-            <Badge variant="outline" className={status.color}>
-              {status.icon}
-              {status.label}
-            </Badge>
-            
-            <Badge variant="outline" className={priority.color}>
-              {priority.label}
-            </Badge>
-          </div>
+      <CardContent className="pt-6 flex-1">
+        <div className="flex items-start justify-between mb-3">
+          <h3 className="font-semibold text-lg">{inspection.title}</h3>
+          <Badge 
+            variant={statusInfo.label === "Concluído" ? "default" : "outline"}
+            className={`${statusInfo.label === "Concluído" ? "" : `text-${statusInfo.color}-500 border-${statusInfo.color}-200`}`}
+          >
+            {statusInfo.label}
+          </Badge>
         </div>
         
-        <h3 className="font-semibold text-lg line-clamp-2 mt-2">
-          {inspection.title}
-        </h3>
-        
-        {inspection.description && (
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {inspection.description}
-          </p>
-        )}
-      </CardHeader>
-      
-      <CardContent className="text-sm space-y-3 flex-grow">
-        {inspection.companyName && (
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Empresa:</span>
-            <span className="font-medium">{inspection.companyName}</span>
+        <div className="space-y-2 text-sm">
+          {inspection.company && (
+            <div className="flex items-center text-muted-foreground">
+              <Building2 className="h-3.5 w-3.5 mr-2" />
+              <span>{inspection.company.fantasy_name || "Empresa não especificada"}</span>
+            </div>
+          )}
+          
+          {inspection.responsible && (
+            <div className="flex items-center text-muted-foreground">
+              <User className="h-3.5 w-3.5 mr-2" />
+              <span>{inspection.responsible.name || "Responsável não especificado"}</span>
+            </div>
+          )}
+          
+          <div className="flex items-center text-muted-foreground">
+            <CalendarClock className="h-3.5 w-3.5 mr-2" />
+            <span>{formatDate(inspection.scheduledDate)}</span>
           </div>
-        )}
-        
-        {inspection.responsibleName && (
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Responsável:</span>
-            <span className="font-medium">{inspection.responsibleName}</span>
-          </div>
-        )}
-        
-        {inspection.scheduledDate && (
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Data:</span>
-            <span className="font-medium">
-              {format(new Date(inspection.scheduledDate), 'dd/MM/yyyy', { locale: ptBR })}
-            </span>
-          </div>
-        )}
-        
-        {inspection.locationName && (
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Local:</span>
-            <span className="font-medium line-clamp-1">{inspection.locationName}</span>
-          </div>
-        )}
-        
-        <div className="pt-2">
-          <div className="flex justify-between mb-1">
-            <span className="text-xs font-medium">Progresso</span>
-            <span className="text-xs font-medium">{inspection.progress}%</span>
-          </div>
-          <Progress value={inspection.progress} className={cn(
-            inspection.progress >= 100 ? "bg-green-100" : "bg-blue-100",
-            "h-2"
-          )} />
+          
+          {inspection.priority && (
+            <div className="flex items-center text-muted-foreground">
+              <Flag className="h-3.5 w-3.5 mr-2" />
+              <div className="flex items-center gap-2">
+                <span>Prioridade:</span>
+                <span className={`w-2 h-2 rounded-full ${getPriorityColor(inspection.priority)}`}></span>
+                <span className="capitalize">{inspection.priority}</span>
+              </div>
+            </div>
+          )}
         </div>
+        
+        {typeof inspection.progress === 'number' && (
+          <div className="mt-4">
+            <div className="flex justify-between text-xs mb-1">
+              <span>Progresso</span>
+              <span>{inspection.progress}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-1.5">
+              <div 
+                className="bg-primary h-1.5 rounded-full" 
+                style={{ width: `${inspection.progress}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
       </CardContent>
       
-      <CardFooter className="border-t pt-4">
+      <CardFooter className="pt-2 pb-4">
         <Button 
-          variant="outline" 
+          variant="default" 
           className="w-full"
-          onClick={onView}
+          onClick={handleOpenInspection}
         >
-          <Eye className="mr-2 h-4 w-4" />
-          Ver Detalhes
+          <CheckCircle2 className="h-4 w-4 mr-2" />
+          {inspection.status === "completed" ? "Ver Resultados" : "Continuar Inspeção"}
         </Button>
       </CardFooter>
     </Card>

@@ -29,7 +29,6 @@ export interface Checklist {
   comments?: ChecklistComment[];
   attachments?: ChecklistAttachment[];
   history?: ChecklistHistory[];
-  theme?: string | null; // Theme property is properly defined
 }
 
 export interface ChecklistItem {
@@ -64,7 +63,6 @@ export interface NewChecklist {
   due_date?: string | null;
   user_id?: string | null;
   origin?: 'manual' | 'ia' | 'csv';
-  theme?: string | null; // Theme property is defined in NewChecklist as well
 }
 
 export interface ChecklistComment {

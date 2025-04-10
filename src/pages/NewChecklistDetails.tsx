@@ -1,325 +1,408 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  ArrowLeft, 
-  Edit, 
-  Trash2, 
-  PlayCircle, 
-  Power, 
-  PowerOff,
-  FileText,
-  CheckCheck,
-  Clock
-} from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Edit2, Copy, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { ChecklistProgressBar } from "@/components/new-checklist/ChecklistProgressBar";
-import { DeleteChecklistDialog } from "@/components/new-checklist/DeleteChecklistDialog";
-import { formatDate } from "@/utils/format";
 import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
-import { useChecklistMutations } from "@/hooks/new-checklist/useChecklistMutations";
+import { DeleteChecklistDialog } from "@/components/new-checklist/DeleteChecklistDialog";
 
 export default function NewChecklistDetails() {
-  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("overview");
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const { id } = useParams<{ id: string }>();
+  const { data: checklist, isLoading, error } = useChecklistById(id || "");
   
-  const { checklist, loading, error, refetch } = useChecklistById(id || "");
-  const { deleteChecklist, updateStatus } = useChecklistMutations();
+  const [deleteDialog, setDeleteDialog] = useState({
+    open: false,
+    checklistId: "",
+    checklistTitle: ""
+  });
   
-  useEffect(() => {
-    if (error) {
-      toast.error("Erro ao carregar checklist");
-      navigate("/new-checklists");
-    }
-  }, [error, navigate]);
-  
-  const handleStatusToggle = async () => {
-    if (!checklist || isUpdatingStatus) return;
-    
-    setIsUpdatingStatus(true);
-    try {
-      const newStatus = checklist.status === "active" ? "inactive" : "active";
-      await updateStatus(checklist.id, newStatus);
-      toast.success(
-        newStatus === "active" 
-          ? "Checklist ativado com sucesso" 
-          : "Checklist desativado com sucesso"
-      );
-      refetch();
-    } catch (error) {
-      console.error("Error updating checklist status:", error);
-      toast.error("Erro ao alterar status do checklist");
-    } finally {
-      setIsUpdatingStatus(false);
-    }
-  };
-  
-  const handleDeleteChecklist = async () => {
-    if (!checklist) return;
-    
-    try {
-      await deleteChecklist(checklist.id);
-      toast.success("Checklist excluído com sucesso");
-      navigate("/new-checklists");
-    } catch (error) {
-      console.error("Error deleting checklist:", error);
-      toast.error("Erro ao excluir checklist");
-    }
-  };
-  
-  const handleNewInspection = () => {
-    if (!checklist) return;
-    navigate(`/inspections/new/${checklist.id}`);
-  };
-  
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-[60vh]">
+      <div className="flex justify-center items-center h-[50vh]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-lg">Carregando checklist...</p>
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p>Carregando checklist...</p>
         </div>
       </div>
     );
   }
   
-  if (!checklist) {
+  if (error || !checklist) {
     return (
-      <div className="flex flex-col items-center justify-center h-[60vh]">
-        <FileText className="h-16 w-16 text-muted-foreground mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Checklist não encontrado</h2>
-        <p className="text-muted-foreground mb-6">
-          O checklist solicitado não existe ou foi removido.
+      <div className="flex flex-col items-center justify-center h-[50vh]">
+        <h2 className="text-xl font-semibold mb-2">Checklist não encontrado</h2>
+        <p className="text-muted-foreground mb-4">
+          Não foi possível encontrar o checklist solicitado.
         </p>
-        <Button onClick={() => navigate("/new-checklists")}>
-          Voltar para Checklists
+        <Button 
+          variant="default" 
+          onClick={() => navigate("/new-checklists")}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" /> Voltar para Checklists
         </Button>
       </div>
     );
   }
   
+  const handleDelete = () => {
+    setDeleteDialog({
+      open: true,
+      checklistId: checklist.id,
+      checklistTitle: checklist.title
+    });
+  };
+  
+  const handleEdit = () => {
+    navigate(`/new-checklists/edit/${checklist.id}`);
+  };
+
+  const handleStartInspection = () => {
+    navigate(`/inspections/new/${checklist.id}`);
+  };
+  
+  const handleDuplicate = () => {
+    toast.info("Funcionalidade de duplicação será implementada em breve");
+  };
+  
+  // Process questions and organize into groups
+  const processQuestions = () => {
+    if (!checklist.questions || checklist.questions.length === 0) {
+      return { groups: [], ungroupedQuestions: [] };
+    }
+    
+    console.log("Processing questions:", checklist.questions.length);
+    
+    const questionsByGroup = new Map();
+    const ungroupedQuestions = [];
+    
+    // First organize questions by group
+    checklist.questions.forEach(question => {
+      if (question.groupId) {
+        if (!questionsByGroup.has(question.groupId)) {
+          questionsByGroup.set(question.groupId, []);
+        }
+        questionsByGroup.get(question.groupId).push(question);
+      } else {
+        ungroupedQuestions.push(question);
+      }
+    });
+    
+    // Then create the groups array using metadata from the defined groups
+    const groups = [];
+    
+    if (checklist.groups && checklist.groups.length > 0) {
+      checklist.groups.forEach(group => {
+        const questionsForGroup = questionsByGroup.get(group.id) || [];
+        if (questionsForGroup.length > 0 || group.id === 'default') {
+          groups.push({
+            ...group,
+            questions: questionsForGroup.sort((a, b) => a.order - b.order)
+          });
+        }
+      });
+    }
+    
+    // If there are grouped questions but no defined groups, create default groups
+    questionsByGroup.forEach((questions, groupId) => {
+      if (!checklist.groups || !checklist.groups.some(g => g.id === groupId)) {
+        // Try to extract title from the first question's hint
+        let groupTitle = `Grupo ${groups.length + 1}`;
+        if (questions[0].hint) {
+          try {
+            const hintData = JSON.parse(questions[0].hint);
+            if (hintData.groupTitle) {
+              groupTitle = hintData.groupTitle;
+            }
+          } catch (e) {}
+        }
+        
+        groups.push({
+          id: groupId,
+          title: groupTitle,
+          questions: questions.sort((a, b) => a.order - b.order)
+        });
+      }
+    });
+    
+    return { groups, ungroupedQuestions };
+  };
+  
+  const { groups, ungroupedQuestions } = processQuestions();
+  
+  // Format dates
+  const createdAt = checklist.createdAt 
+    ? new Date(checklist.createdAt).toLocaleDateString("pt-BR", { 
+        day: "2-digit", month: "2-digit", year: "numeric",
+        hour: "2-digit", minute: "2-digit"
+      })
+    : "Data desconhecida";
+    
+  const updatedAt = checklist.updatedAt 
+    ? new Date(checklist.updatedAt).toLocaleDateString("pt-BR", { 
+        day: "2-digit", month: "2-digit", year: "numeric",
+        hour: "2-digit", minute: "2-digit"
+      })
+    : "Data desconhecida";
+    
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/new-checklists")}>
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/new-checklists")}
+          >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold">Detalhes do Checklist</h1>
-        </div>
-        
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={handleStatusToggle}
-            disabled={isUpdatingStatus}
-          >
-            {checklist.status === "active" ? (
-              <>
-                <PowerOff className="mr-2 h-4 w-4" />
-                <span>Desativar</span>
-              </>
-            ) : (
-              <>
-                <Power className="mr-2 h-4 w-4" />
-                <span>Ativar</span>
-              </>
-            )}
-          </Button>
-          
-          <Button
-            variant="outline"
-            onClick={() => navigate(`/new-checklists/edit/${checklist.id}`)}
-          >
-            <Edit className="mr-2 h-4 w-4" />
-            <span>Editar</span>
-          </Button>
-          
-          <Button
-            variant="destructive"
-            onClick={() => setIsDeleteDialogOpen(true)}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            <span>Excluir</span>
-          </Button>
-          
-          {checklist.status === "active" && !checklist.is_template && (
-            <Button onClick={handleNewInspection}>
-              <PlayCircle className="mr-2 h-4 w-4" />
-              <span>Iniciar Inspeção</span>
-            </Button>
-          )}
-        </div>
-      </div>
-      
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-2xl">{checklist.title}</CardTitle>
-              {checklist.description && (
-                <CardDescription className="mt-2">
-                  {checklist.description}
-                </CardDescription>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              {checklist.is_template && (
-                <Badge variant="secondary">Template</Badge>
-              )}
-              
-              <Badge
-                variant="outline"
-                className={
-                  checklist.status === "active"
-                    ? "bg-green-50 text-green-600 border-green-200"
-                    : "bg-red-50 text-red-500 border-red-200"
-                }
-              >
+          <div>
+            <h1 className="text-2xl font-bold">{checklist.title}</h1>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge variant={checklist.status === "active" ? "default" : "secondary"}>
                 {checklist.status === "active" ? "Ativo" : "Inativo"}
               </Badge>
+              
+              {checklist.isTemplate && (
+                <Badge variant="outline" className="bg-blue-50">Template</Badge>
+              )}
               
               {checklist.category && (
                 <Badge variant="outline">{checklist.category}</Badge>
               )}
             </div>
           </div>
-        </CardHeader>
+        </div>
         
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <h3 className="font-medium mb-2">Informações Gerais</h3>
-              <dl className="space-y-2">
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Empresa:</dt>
-                  <dd className="font-medium">
-                    {checklist.companyName || "Não atribuído"}
-                  </dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Categoria:</dt>
-                  <dd className="font-medium">
-                    {checklist.category || "Não categorizado"}
-                  </dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Responsável:</dt>
-                  <dd className="font-medium">
-                    {checklist.responsibleName || "Não atribuído"}
-                  </dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Data de vencimento:</dt>
-                  <dd className="font-medium">
-                    {checklist.due_date ? formatDate(checklist.due_date) : "Sem vencimento"}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-            
-            <div>
-              <h3 className="font-medium mb-2">Estatísticas</h3>
-              <dl className="space-y-2">
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Total de perguntas:</dt>
-                  <dd className="font-medium">{checklist.totalQuestions}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Criado em:</dt>
-                  <dd className="font-medium">
-                    {checklist.created_at ? formatDate(checklist.created_at) : "-"}
-                  </dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Atualizado em:</dt>
-                  <dd className="font-medium">
-                    {checklist.updated_at ? formatDate(checklist.updated_at) : "-"}
-                  </dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Progresso:</dt>
-                  <dd className="font-medium">
-                    {checklist.completedQuestions || 0}/{checklist.totalQuestions}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-          </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleEdit}
+          >
+            <Edit2 className="h-4 w-4 mr-2" />
+            Editar
+          </Button>
           
-          <ChecklistProgressBar
-            totalQuestions={checklist.totalQuestions}
-            completedQuestions={checklist.completedQuestions || 0}
-          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDuplicate}
+          >
+            <Copy className="h-4 w-4 mr-2" />
+            Duplicar
+          </Button>
           
-          <div className="mt-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="mb-4">
-                <TabsTrigger value="overview" className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  <span>Visão Geral</span>
-                </TabsTrigger>
-                <TabsTrigger value="history" className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  <span>Histórico</span>
-                </TabsTrigger>
-                <TabsTrigger value="inspections" className="flex items-center gap-2">
-                  <CheckCheck className="h-4 w-4" />
-                  <span>Inspeções</span>
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="overview" className="space-y-4">
-                <p className="text-muted-foreground">
-                  Visualize e gerencie todos os detalhes do checklist. Para editar o checklist ou adicionar perguntas,
-                  clique no botão "Editar" acima. Para executar uma inspeção com este checklist, clique em "Iniciar Inspeção".
-                </p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            onClick={handleDelete}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Excluir
+          </Button>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="md:col-span-2 space-y-6">
+          {/* Checklist Description */}
+          <Card>
+            <CardHeader className="pb-2">
+              <h2 className="text-xl font-semibold">Descrição</h2>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-700">
+                {checklist.description || "Sem descrição"}
+              </p>
+            </CardContent>
+          </Card>
+          
+          {/* Checklist Questions */}
+          <Card>
+            <CardHeader className="pb-2">
+              <h2 className="text-xl font-semibold">Perguntas</h2>
+            </CardHeader>
+            <CardContent>
+              {groups.length === 0 && ungroupedQuestions.length === 0 ? (
+                <p className="text-muted-foreground">Este checklist não possui perguntas.</p>
+              ) : (
+                <div className="space-y-6">
+                  {/* Display grouped questions */}
+                  {groups.map(group => (
+                    <div key={group.id} className="mb-6">
+                      <h3 className="text-lg font-medium mb-2 pb-1 border-b">
+                        {group.title}
+                      </h3>
+                      
+                      <div className="space-y-3 pl-2">
+                        {group.questions.length === 0 ? (
+                          <p className="text-sm text-muted-foreground italic">
+                            Nenhuma pergunta neste grupo
+                          </p>
+                        ) : (
+                          group.questions.map((question, index) => (
+                            <div key={question.id} className="border-l-2 border-gray-200 pl-3 py-1">
+                              <p className="font-medium mb-1">{index + 1}. {question.text}</p>
+                              <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+                                <Badge variant="outline" className="font-normal">
+                                  {question.responseType === "sim/não" ? "Sim/Não" :
+                                   question.responseType === "seleção múltipla" ? "Múltipla escolha" :
+                                   question.responseType === "texto" ? "Texto" :
+                                   question.responseType === "numérico" ? "Numérico" :
+                                   question.responseType === "foto" ? "Foto" : "Assinatura"}
+                                </Badge>
+                                
+                                {question.isRequired && (
+                                  <Badge variant="outline" className="bg-red-50 font-normal">Obrigatório</Badge>
+                                )}
+                                
+                                {(question.allowsPhoto || question.allowsVideo || question.allowsAudio) && (
+                                  <Badge variant="outline" className="bg-green-50 font-normal">
+                                    {[
+                                      question.allowsPhoto ? "Foto" : null,
+                                      question.allowsVideo ? "Vídeo" : null,
+                                      question.allowsAudio ? "Áudio" : null
+                                    ].filter(Boolean).join(", ")}
+                                  </Badge>
+                                )}
+                              </div>
+                              
+                              {question.options && question.options.length > 0 && (
+                                <div className="mt-2 pl-3 border-l border-dashed border-gray-200">
+                                  <p className="text-sm font-medium mb-1">Opções:</p>
+                                  <ul className="text-sm space-y-1">
+                                    {question.options.map((option, idx) => (
+                                      <li key={idx}>• {option}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Display ungrouped questions if any */}
+                  {ungroupedQuestions.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="text-lg font-medium mb-2 pb-1 border-b">
+                        Perguntas Gerais
+                      </h3>
+                      
+                      <div className="space-y-3 pl-2">
+                        {ungroupedQuestions.map((question, index) => (
+                          <div key={question.id} className="border-l-2 border-gray-200 pl-3 py-1">
+                            <p className="font-medium mb-1">{index + 1}. {question.text}</p>
+                            <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
+                              <Badge variant="outline" className="font-normal">
+                                {question.responseType === "sim/não" ? "Sim/Não" :
+                                 question.responseType === "seleção múltipla" ? "Múltipla escolha" :
+                                 question.responseType === "texto" ? "Texto" :
+                                 question.responseType === "numérico" ? "Numérico" :
+                                 question.responseType === "foto" ? "Foto" : "Assinatura"}
+                              </Badge>
+                              
+                              {question.isRequired && (
+                                <Badge variant="outline" className="bg-red-50 font-normal">Obrigatório</Badge>
+                              )}
+                            </div>
+                            
+                            {question.options && question.options.length > 0 && (
+                              <div className="mt-2 pl-3 border-l border-dashed border-gray-200">
+                                <p className="text-sm font-medium mb-1">Opções:</p>
+                                <ul className="text-sm space-y-1">
+                                  {question.options.map((option, idx) => (
+                                    <li key={idx}>• {option}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+        
+        {/* Sidebar - Checklist Info */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader className="pb-2">
+              <h2 className="text-xl font-semibold">Informações</h2>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Criado em:</span>
+                  <span>{createdAt}</span>
+                </div>
                 
-                {checklist.totalQuestions === 0 && (
-                  <div className="border border-dashed rounded-lg p-6 text-center">
-                    <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                    <h3 className="text-lg font-medium mb-2">Nenhuma pergunta adicionada</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Este checklist não possui perguntas. Adicione perguntas para começar a usá-lo em inspeções.
-                    </p>
-                    <Button onClick={() => navigate(`/new-checklists/edit/${checklist.id}`)}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Adicionar Perguntas
-                    </Button>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Atualizado em:</span>
+                  <span>{updatedAt}</span>
+                </div>
+                
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Perguntas:</span>
+                  <span>{checklist.questions ? checklist.questions.length : 0}</span>
+                </div>
+                
+                {checklist.responsibleId && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Responsável:</span>
+                    <span>ID: {checklist.responsibleId.substring(0, 8)}...</span>
                   </div>
                 )}
-              </TabsContent>
-              
-              <TabsContent value="history" className="space-y-4">
-                <p className="text-muted-foreground">
-                  O histórico de alterações deste checklist estará disponível em breve.
-                </p>
-              </TabsContent>
-              
-              <TabsContent value="inspections" className="space-y-4">
-                <p className="text-muted-foreground">
-                  A lista de inspeções realizadas com este checklist estará disponível em breve.
-                </p>
-              </TabsContent>
-            </Tabs>
-          </div>
-        </CardContent>
-      </Card>
+                
+                {checklist.companyId && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Empresa:</span>
+                    <span>ID: {checklist.companyId.substring(0, 8)}...</span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <h2 className="text-lg font-semibold">Ações</h2>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Button 
+                  variant="default" 
+                  className="w-full"
+                  onClick={handleStartInspection}
+                >
+                  Iniciar inspeção
+                </Button>
+                
+                <Button variant="outline" className="w-full">
+                  Exportar checklist
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
       
       <DeleteChecklistDialog
-        checklistId={checklist.id}
-        checklistTitle={checklist.title}
-        isOpen={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        onDeleted={handleDeleteChecklist}
-        isDeleting={false}
+        checklistId={deleteDialog.checklistId}
+        checklistTitle={deleteDialog.checklistTitle}
+        isOpen={deleteDialog.open}
+        onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
       />
     </div>
   );

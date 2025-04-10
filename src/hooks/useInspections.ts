@@ -13,11 +13,11 @@ export function useInspections() {
   
   const [filters, setFilters] = useState<InspectionFilters>({
     search: "",
-    status: "all",  // Valor não-vazio para evitar erros de SelectItem
-    priority: "all", // Valor não-vazio para evitar erros de SelectItem
-    companyId: "",
-    responsibleId: "", 
-    checklistId: "",
+    status: "all",
+    priority: "all",
+    companyId: "all",
+    responsibleId: "all", 
+    checklistId: "all",
     startDate: undefined,
     endDate: undefined
   });
@@ -59,7 +59,7 @@ export function useInspections() {
         .map(inspection => inspection.responsible_id)
         .filter(id => id !== null && id !== undefined);
       
-      let responsiblesData: Record<string, any> = {};
+      let responsiblesData = {};
       
       if (userIds.length > 0) {
         const { data: usersData, error: usersError } = await supabase
@@ -68,7 +68,7 @@ export function useInspections() {
           .in("id", userIds);
           
         if (!usersError && usersData) {
-          responsiblesData = usersData.reduce((acc: Record<string, any>, user) => {
+          responsiblesData = usersData.reduce((acc, user) => {
             acc[user.id] = user;
             return acc;
           }, {});
@@ -117,8 +117,6 @@ export function useInspections() {
           company: inspection.companies || null,
           responsible: inspection.responsible_id ? responsiblesData[inspection.responsible_id] : null,
           progress,
-          totalItems: totalQuestions || 0,
-          completedItems: answeredQuestions || 0,
           // Additional fields from the database schema
           approval_notes: inspection.approval_notes,
           approval_status: inspection.approval_status,
@@ -130,10 +128,8 @@ export function useInspections() {
           metadata: inspection.metadata,
           cnae: inspection.cnae,
           inspection_type: inspection.inspection_type,
-          sync_status: inspection.sync_status,
-          companyName: inspection.companies?.fantasy_name,
-          responsibleName: inspection.responsible_id ? responsiblesData[inspection.responsible_id]?.name : null
-        } as InspectionDetails;
+          sync_status: inspection.sync_status
+        };
       }));
       
       setInspections(inspectionsWithProgress);
@@ -169,13 +165,13 @@ export function useInspections() {
       const matchesPriority = filters.priority === "all" || inspection.priority === filters.priority;
       
       // Company filter
-      const matchesCompany = !filters.companyId || filters.companyId === "all" || inspection.companyId === filters.companyId;
+      const matchesCompany = filters.companyId === "all" || inspection.companyId === filters.companyId;
       
       // Responsible filter
-      const matchesResponsible = !filters.responsibleId || filters.responsibleId === "all" || inspection.responsibleId === filters.responsibleId;
+      const matchesResponsible = filters.responsibleId === "all" || inspection.responsibleId === filters.responsibleId;
       
       // Checklist filter
-      const matchesChecklist = !filters.checklistId || filters.checklistId === "all" || inspection.checklistId === filters.checklistId;
+      const matchesChecklist = filters.checklistId === "all" || inspection.checklistId === filters.checklistId;
       
       // Date filter
       let matchesDate = true;
@@ -185,10 +181,10 @@ export function useInspections() {
         const endDate = filters.endDate || startDate;
         
         if (scheduledDate) {
-          // Use date comparisons without modifying the Date objects
-          const dateOnly = scheduledDate.toISOString().split('T')[0];
-          const startDateOnly = startDate.toISOString().split('T')[0];
-          const endDateOnly = endDate.toISOString().split('T')[0];
+          // Remove time component for date comparison
+          const dateOnly = new Date(scheduledDate.setHours(0, 0, 0, 0));
+          const startDateOnly = new Date(startDate.setHours(0, 0, 0, 0));
+          const endDateOnly = new Date(endDate.setHours(23, 59, 59, 999));
           
           matchesDate = dateOnly >= startDateOnly && dateOnly <= endDateOnly;
         } else {

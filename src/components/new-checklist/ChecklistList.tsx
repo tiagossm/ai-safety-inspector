@@ -1,11 +1,29 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ChecklistWithStats } from "@/types/newChecklist";
-import { ChecklistListItem } from "./ChecklistListItem";
-import { ChecklistEmptyState } from "./ChecklistEmptyState";
-import { BulkActionsToolbar } from "./BulkActionsToolbar";
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ChecklistLoadingSkeleton } from "./ChecklistLoadingSkeleton";
+import { ChecklistEmptyState } from "./ChecklistEmptyState";
+import { ChecklistRow } from "./ChecklistRow";
+import { BulkActionsToolbar } from "./BulkActionsToolbar";
 
 interface ChecklistListProps {
   checklists: ChecklistWithStats[];
@@ -14,10 +32,13 @@ interface ChecklistListProps {
   onDelete: (id: string, title: string) => void;
   onOpen: (id: string) => void;
   onStatusChange: () => void;
-  onBulkDelete?: (ids: string[]) => Promise<boolean>;
-  onBulkStatusChange: (ids: string[], newStatus: "active" | "inactive") => Promise<void>;
+  onBulkStatusChange: (ids: string[], newStatus: 'active' | 'inactive') => Promise<void>;
+  onBulkDelete?: (ids: string[]) => void;
 }
 
+/**
+ * Component for displaying checklists in a table view
+ */
 export function ChecklistList({
   checklists,
   isLoading,
@@ -25,130 +46,152 @@ export function ChecklistList({
   onDelete,
   onOpen,
   onStatusChange,
-  onBulkDelete,
-  onBulkStatusChange
+  onBulkStatusChange,
+  onBulkDelete
 }: ChecklistListProps) {
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
-  const [bulkAction, setBulkAction] = useState<string | null>(null);
-  const [isBulkActing, setIsBulkActing] = useState(false);
+  const [selectedChecklists, setSelectedChecklists] = useState<string[]>([]);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Clear selections when checklist data changes
+  useEffect(() => {
+    setSelectedChecklists([]);
+  }, [checklists]);
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedChecklists(checklists.filter(c => !c.isSubChecklist).map(c => c.id));
+    } else {
+      setSelectedChecklists([]);
+    }
+  };
+
+  const handleSelectChecklist = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedChecklists([...selectedChecklists, id]);
+    } else {
+      setSelectedChecklists(selectedChecklists.filter(checklistId => checklistId !== id));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (onBulkDelete && selectedChecklists.length > 0) {
+      setIsDeleting(true);
+      try {
+        await onBulkDelete(selectedChecklists);
+        toast.success(`${selectedChecklists.length} checklists excluídos com sucesso`);
+        setSelectedChecklists([]);
+      } catch (error) {
+        console.error("Error deleting checklists:", error);
+        toast.error("Erro ao excluir checklists");
+      } finally {
+        setIsDeleting(false);
+        setIsDeleteDialogOpen(false);
+      }
+    }
+  };
+
+  const handleBulkActivate = async () => {
+    if (selectedChecklists.length === 0) return;
+    
+    try {
+      await onBulkStatusChange(selectedChecklists, 'active');
+      toast.success(`${selectedChecklists.length} checklists ativados com sucesso`);
+      setSelectedChecklists([]);
+    } catch (error) {
+      console.error("Error activating checklists:", error);
+      toast.error("Erro ao ativar checklists");
+    }
+  };
+
+  const handleBulkDeactivate = async () => {
+    if (selectedChecklists.length === 0) return;
+    
+    try {
+      await onBulkStatusChange(selectedChecklists, 'inactive');
+      toast.success(`${selectedChecklists.length} checklists desativados com sucesso`);
+      setSelectedChecklists([]);
+    } catch (error) {
+      console.error("Error deactivating checklists:", error);
+      toast.error("Erro ao desativar checklists");
+    }
+  };
 
   if (isLoading) {
-    return <div className="space-y-4">
-      {Array(5).fill(0).map((_, i) => (
-        <div key={i} className="h-[72px] bg-gray-100 animate-pulse rounded-md"></div>
-      ))}
-    </div>;
+    return <ChecklistLoadingSkeleton />;
   }
 
   if (checklists.length === 0) {
     return <ChecklistEmptyState message="Não foram encontrados checklists com os filtros atuais." />;
   }
 
-  const handleSelectChecklist = (id: string, selected: boolean) => {
-    setSelectedIds(prev => {
-      if (selected) {
-        return [...prev, id];
-      } else {
-        return prev.filter(i => i !== id);
-      }
-    });
-  };
-
-  const handleBulkDelete = async () => {
-    if (!onBulkDelete || selectedIds.length === 0) return;
-    
-    setBulkAction("delete");
-    setIsConfirmDialogOpen(true);
-  };
-
-  const handleBulkActivate = () => {
-    if (selectedIds.length === 0) return;
-    
-    setBulkAction("activate");
-    setIsConfirmDialogOpen(true);
-  };
-
-  const handleBulkDeactivate = () => {
-    if (selectedIds.length === 0) return;
-    
-    setBulkAction("deactivate");
-    setIsConfirmDialogOpen(true);
-  };
-
-  const executeBulkAction = async () => {
-    setIsBulkActing(true);
-    try {
-      if (bulkAction === "delete" && onBulkDelete) {
-        const success = await onBulkDelete(selectedIds);
-        if (success) {
-          toast.success(`${selectedIds.length} checklists excluídos com sucesso`);
-          setSelectedIds([]);
-        } else {
-          toast.error("Houve um erro ao excluir alguns checklists");
-        }
-      } else if (bulkAction === "activate") {
-        await onBulkStatusChange(selectedIds, "active");
-        toast.success(`${selectedIds.length} checklists ativados com sucesso`);
-        setSelectedIds([]);
-      } else if (bulkAction === "deactivate") {
-        await onBulkStatusChange(selectedIds, "inactive");
-        toast.success(`${selectedIds.length} checklists desativados com sucesso`);
-        setSelectedIds([]);
-      }
-    } catch (error) {
-      console.error("Error in bulk action:", error);
-      toast.error(`Erro ao executar ação em massa`);
-    } finally {
-      setIsBulkActing(false);
-      setIsConfirmDialogOpen(false);
-    }
-  };
+  const filteredChecklists = checklists.filter(
+    checklist => !checklist.isSubChecklist
+  );
 
   return (
     <div className="space-y-4">
-      <BulkActionsToolbar
-        selectedCount={selectedIds.length}
+      <BulkActionsToolbar 
+        selectedCount={selectedChecklists.length}
         onBulkActivate={handleBulkActivate}
         onBulkDeactivate={handleBulkDeactivate}
-        onBulkDelete={handleBulkDelete}
-        isDeleting={isBulkActing}
+        onBulkDelete={() => setIsDeleteDialogOpen(true)}
+        isDeleting={isDeleting}
       />
+      
+      <div className="border rounded-md overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-12">
+                <Checkbox 
+                  onCheckedChange={(checked) => handleSelectAll(!!checked)}
+                  checked={selectedChecklists.length === filteredChecklists.length && filteredChecklists.length > 0}
+                  aria-checked={selectedChecklists.length > 0 && selectedChecklists.length < filteredChecklists.length ? 'mixed' : undefined}
+                />
+              </TableHead>
+              <TableHead>Nome</TableHead>
+              <TableHead>Empresa</TableHead>
+              <TableHead>Categoria</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Criado em</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredChecklists.map((checklist) => (
+              <ChecklistRow
+                key={checklist.id}
+                checklist={checklist}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onOpen={onOpen}
+                onStatusChange={onStatusChange}
+                isSelected={selectedChecklists.includes(checklist.id)}
+                onSelect={(checked) => handleSelectChecklist(checklist.id, checked)}
+              />
+            ))}
+          </TableBody>
+        </Table>
+      </div>
 
-      {checklists.filter(c => !c.isSubChecklist).map((checklist) => (
-        <ChecklistListItem
-          key={checklist.id}
-          checklist={checklist}
-          isSelected={selectedIds.includes(checklist.id)}
-          onSelect={handleSelectChecklist}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onOpen={onOpen}
-        />
-      ))}
-
-      <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {bulkAction === "delete" ? "Excluir checklists selecionados" : 
-               bulkAction === "activate" ? "Ativar checklists selecionados" : 
-               "Desativar checklists selecionados"}
-            </AlertDialogTitle>
+            <AlertDialogTitle>Excluir checklists selecionados</AlertDialogTitle>
             <AlertDialogDescription>
-              {bulkAction === "delete" ? 
-                `Tem certeza que deseja excluir ${selectedIds.length} checklists? Esta ação não pode ser desfeita.` : 
-                `Tem certeza que deseja ${bulkAction === "activate" ? "ativar" : "desativar"} ${selectedIds.length} checklists?`}
+              Você está prestes a excluir {selectedChecklists.length} {selectedChecklists.length === 1 ? 'checklist' : 'checklists'}.
+              Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isBulkActing}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={executeBulkAction}
-              disabled={isBulkActing}
-              className={bulkAction === "delete" ? "bg-destructive hover:bg-destructive/90" : ""}
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleBulkDelete} 
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isBulkActing ? "Processando..." : bulkAction === "delete" ? "Excluir" : bulkAction === "activate" ? "Ativar" : "Desativar"}
+              {isDeleting ? "Excluindo..." : "Excluir"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

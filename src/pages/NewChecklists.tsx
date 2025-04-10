@@ -1,271 +1,238 @@
 
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { DeleteChecklistDialog } from "@/components/new-checklist/DeleteChecklistDialog";
-import { ChecklistGrid } from "@/components/new-checklist/ChecklistGrid";
-import { ChecklistList } from "@/components/new-checklist/ChecklistList";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useNewChecklists } from "@/hooks/new-checklist/useNewChecklists";
-import { Button } from "@/components/ui/button";
-import { Plus, Filter, ArrowDownUp } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChecklistFilters } from "@/components/new-checklist/ChecklistFilters";
+import { DeleteChecklistDialog } from "@/components/new-checklist/DeleteChecklistDialog";
+import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
+import { toast } from "sonner";
 import { ChecklistTabs } from "@/components/new-checklist/ChecklistTabs";
-import { ChecklistOriginFilter } from "@/components/new-checklist/ChecklistOriginFilter";
+import { ChecklistWithStats } from "@/types/newChecklist";
 
-const NewChecklists: React.FC = () => {
-  const [isActionLoading, setIsActionLoading] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [checklistToDelete, setChecklistToDelete] = useState({ id: "", title: "" });
-  const [viewMode, setViewMode] = useState<"grid" | "list">(() => {
-    return localStorage.getItem('checklist-view-mode') as "grid" | "list" || "grid";
-  });
-  const [activeTab, setActiveTab] = useState(() => {
-    return localStorage.getItem('checklist-active-tab') || "template";
-  });
+export default function NewChecklists() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   
-  const {
-    checklists,
+  // Use the refactored hook to get all checklist functionality
+  const { 
+    checklists, 
     allChecklists,
     isLoading,
-    searchTerm,
-    setSearchTerm,
-    filterType,
+    searchTerm, 
+    setSearchTerm, 
+    filterType, 
     setFilterType,
     selectedCompanyId,
     setSelectedCompanyId,
+    selectedCategory,
+    setSelectedCategory,
     selectedOrigin,
     setSelectedOrigin,
+    sortOrder,
+    setSortOrder,
     companies,
     categories,
+    isLoadingCompanies,
     deleteChecklist,
     updateStatus,
     updateBulkStatus,
     refetch
   } = useNewChecklists();
-
-  // Persist view mode in localStorage
-  useEffect(() => {
-    localStorage.setItem('checklist-view-mode', viewMode);
-  }, [viewMode]);
-
-  // Persist active tab in localStorage
-  useEffect(() => {
-    localStorage.setItem('checklist-active-tab', activeTab);
-  }, [activeTab]);
-
-  const handleBulkStatusChange = async (ids: string[], newStatus: "active" | "inactive"): Promise<void> => {
-    try {
-      setIsActionLoading(true);
-      await updateBulkStatus(ids, newStatus);
-      toast.success(`${ids.length} checklists atualizados com sucesso`);
-      setSelectedIds([]);
-    } catch (error) {
-      console.error("Error updating checklists:", error);
-      toast.error("Falha ao atualizar checklists");
-    } finally {
-      setIsActionLoading(false);
+  
+  // Get tab from URL params or localStorage, default to "template"
+  const [activeTab, setActiveTab] = useState(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl && ['template', 'active', 'inactive'].includes(tabFromUrl)) {
+      return tabFromUrl;
     }
-  };
+    
+    const savedTab = localStorage.getItem('checklist-active-tab');
+    return savedTab || 'template';
+  });
+  
+  // Update filter type based on active tab
+  useEffect(() => {
+    if (activeTab === 'template') {
+      setFilterType('template');
+    } else if (activeTab === 'active') {
+      setFilterType('active');
+    } else if (activeTab === 'inactive') {
+      setFilterType('inactive');
+    }
+  }, [activeTab, setFilterType]);
+  
+  // Delete dialog state
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    checklistId: string;
+    checklistTitle: string;
+    isMultiple: boolean;
+    selectedIds: string[];
+  }>({
+    open: false,
+    checklistId: "",
+    checklistTitle: "",
+    isMultiple: false,
+    selectedIds: []
+  });
+  
+  const [isDeleting, setIsDeleting] = useState(false);
 
+  // Count checklists by type - excluding subchecklist
+  const checklistCounts = React.useMemo(() => {
+    const filtered = allChecklists.filter(c => !c.isSubChecklist);
+    
+    return {
+      template: filtered.filter(c => c.isTemplate).length,
+      active: filtered.filter(c => c.status === "active" && !c.isTemplate).length,
+      inactive: filtered.filter(c => c.status === "inactive" && !c.isTemplate).length
+    };
+  }, [allChecklists]);
+
+  // Navigation handlers
   const handleOpenChecklist = (id: string) => {
     navigate(`/new-checklists/${id}`);
   };
 
-  const handleEditChecklist = (id: string) => {
+  const handleEdit = (id: string) => {
     navigate(`/new-checklists/edit/${id}`);
   };
 
-  const handleDeleteDialog = (id: string, title: string) => {
-    setChecklistToDelete({ id, title });
-    setIsDeleteDialogOpen(true);
+  const handleDelete = (id: string, title: string) => {
+    setDeleteDialog({
+      open: true,
+      checklistId: id,
+      checklistTitle: title,
+      isMultiple: false,
+      selectedIds: []
+    });
   };
 
-  const handleDeleteConfirm = async () => {
-    try {
-      await deleteChecklist(checklistToDelete.id);
-      toast.success("Checklist excluído com sucesso");
-    } catch (error) {
-      console.error("Error deleting checklist:", error);
-      toast.error("Erro ao excluir checklist");
-    } finally {
-      setIsDeleteDialogOpen(false);
-    }
+  const handleBulkDelete = (ids: string[]) => {
+    setDeleteDialog({
+      open: true,
+      checklistId: "",
+      checklistTitle: `${ids.length} checklists selecionados`,
+      isMultiple: true,
+      selectedIds: ids
+    });
   };
 
-  const handleBulkDelete = async (ids: string[]) => {
+  // Handle status update for multiple checklists
+  const handleBulkStatusChange = async (ids: string[], newStatus: 'active' | 'inactive') => {
     try {
-      setIsActionLoading(true);
-      for (const id of ids) {
-        await deleteChecklist(id);
-      }
+      await updateBulkStatus.mutateAsync({ checklistIds: ids, newStatus });
       return true;
     } catch (error) {
-      console.error("Error in bulk delete:", error);
-      return false;
-    } finally {
-      setIsActionLoading(false);
+      console.error("Error updating status for multiple checklists:", error);
+      throw error;
     }
   };
 
-  const handleChecklistStatusChange = async (id: string, newStatus: 'active' | 'inactive'): Promise<boolean> => {
+  // Handle delete confirmation
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
     try {
-      await updateStatus(id, newStatus);
-      toast.success(`Checklist ${newStatus === 'active' ? 'ativado' : 'desativado'} com sucesso`);
+      if (deleteDialog.isMultiple) {
+        // Bulk delete
+        for (const id of deleteDialog.selectedIds) {
+          await deleteChecklist.mutateAsync(id);
+        }
+        toast.success(`${deleteDialog.selectedIds.length} checklists excluídos com sucesso`);
+      } else {
+        // Single delete
+        await deleteChecklist.mutateAsync(deleteDialog.checklistId);
+        toast.success("Checklist excluído com sucesso");
+      }
+      
+      // Refetch data after deletion
+      await refetch();
+      
+      setDeleteDialog({
+        open: false,
+        checklistId: "",
+        checklistTitle: "",
+        isMultiple: false,
+        selectedIds: []
+      });
+    } catch (error: any) {
+      console.error("Error deleting checklist(s):", error);
+      toast.error(`Erro ao excluir: ${error.message || "Falha na operação"}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCreateNew = () => {
+    navigate("/new-checklists/create");
+  };
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+  };
+
+  // Handle status change for a single checklist
+  const handleStatusChange = async (id: string, newStatus: 'active' | 'inactive') => {
+    try {
+      await updateStatus.mutateAsync({ checklistId: id, newStatus });
       return true;
     } catch (error) {
       console.error("Error updating checklist status:", error);
-      toast.error("Erro ao atualizar status do checklist");
-      return false;
+      throw error;
     }
   };
 
-  const getCounts = () => {
-    const templateCount = allChecklists.filter(c => c.is_template).length;
-    const activeCount = allChecklists.filter(c => !c.is_template && c.status === 'active').length;
-    const inactiveCount = allChecklists.filter(c => !c.is_template && c.status === 'inactive').length;
-    
-    return {
-      template: templateCount,
-      active: activeCount,
-      inactive: inactiveCount
-    };
-  };
-
-  const filteredChecklists = React.useMemo(() => checklists, [checklists]);
-
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Listas de Verificação</h1>
-        <Button onClick={() => navigate("/new-checklists/create")}>
-          <Plus className="mr-2 h-4 w-4" />
-          Criar Novo
-        </Button>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Checklists</h1>
       </div>
 
-      <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
-        <div className="flex flex-1 items-center gap-2 flex-wrap">
-          <Input
-            placeholder="Buscar checklists..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-xs"
-          />
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Filter className="mr-2 h-4 w-4" />
-                Status
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={() => setFilterType("all")} className={filterType === "all" ? "bg-accent" : ""}>
-                Todos
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setFilterType("active")} className={filterType === "active" ? "bg-accent" : ""}>
-                Ativos
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setFilterType("template")} className={filterType === "template" ? "bg-accent" : ""}>
-                Templates
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          <ChecklistOriginFilter 
-            selectedOrigin={selectedOrigin}
-            setSelectedOrigin={setSelectedOrigin}
-          />
-
-          {companies.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <ArrowDownUp className="mr-2 h-4 w-4" />
-                  Empresa
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="max-h-60 overflow-y-auto">
-                <DropdownMenuItem onClick={() => setSelectedCompanyId("all")} className={selectedCompanyId === "all" ? "bg-accent" : ""}>
-                  Todas as Empresas
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                {companies.map((company) => (
-                  <DropdownMenuItem
-                    key={company.id}
-                    onClick={() => setSelectedCompanyId(company.id)}
-                    className={selectedCompanyId === company.id ? "bg-accent" : ""}
-                  >
-                    {company.fantasy_name || "Empresa sem nome"}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-
-          {categories.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Filter className="mr-2 h-4 w-4" />
-                  Categoria
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="max-h-60 overflow-y-auto">
-                <DropdownMenuItem onClick={() => setFilterType("all")} className={filterType === "all" ? "bg-accent" : ""}>
-                  Todas as Categorias
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                {categories.map((category) => (
-                  <DropdownMenuItem
-                    key={category}
-                    onClick={() => setFilterType(category)}
-                    className={filterType === category ? "bg-accent" : ""}
-                  >
-                    {category}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-      </div>
+      <ChecklistFilters 
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        filterType={filterType}
+        setFilterType={setFilterType}
+        selectedCompanyId={selectedCompanyId}
+        setSelectedCompanyId={setSelectedCompanyId}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        selectedOrigin={selectedOrigin}
+        setSelectedOrigin={setSelectedOrigin}
+        sortOrder={sortOrder}
+        setSortOrder={setSortOrder}
+        companies={companies}
+        categories={categories}
+        isLoadingCompanies={isLoadingCompanies}
+        totalChecklists={allChecklists.filter(c => !c.isSubChecklist).length}
+        onCreateNew={handleCreateNew}
+      />
 
       <ChecklistTabs
-        checklistCounts={getCounts()}
-        allChecklists={filteredChecklists}
+        checklistCounts={checklistCounts}
+        allChecklists={checklists}
         isLoading={isLoading}
-        onEdit={handleEditChecklist}
-        onDelete={handleDeleteDialog}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
         onOpen={handleOpenChecklist}
         onStatusChange={refetch}
         onBulkDelete={handleBulkDelete}
         onBulkStatusChange={handleBulkStatusChange}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         activeTab={activeTab}
-        onChecklistStatusChange={handleChecklistStatusChange}
+        onChecklistStatusChange={handleStatusChange}
       />
 
       <DeleteChecklistDialog
-        checklistId={checklistToDelete.id}
-        checklistTitle={checklistToDelete.title}
-        isOpen={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        onDeleted={handleDeleteConfirm}
-        isDeleting={isActionLoading}
+        checklistId={deleteDialog.checklistId}
+        checklistTitle={deleteDialog.checklistTitle}
+        isOpen={deleteDialog.open}
+        onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
+        onDeleted={handleConfirmDelete}
+        isDeleting={isDeleting}
       />
+      
+      <FloatingNavigation threshold={300} />
     </div>
   );
-};
-
-export default NewChecklists;
+}

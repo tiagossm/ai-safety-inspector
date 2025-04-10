@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { NewChecklist } from "@/types/checklist";
 import { Label } from "@/components/ui/label";
@@ -17,8 +18,8 @@ import { CompanySelector } from "@/components/inspection/CompanySelector";
 import { supabase } from "@/integrations/supabase/client";
 import { Company, CompanyMetadata } from "@/types/company";
 import { toast } from "sonner";
-import { AIAssistantSelector } from "@/components/checklists/create-forms/AIAssistantSelector";
-import { QuestionCountSelector } from "@/components/checklists/create-forms/QuestionCountSelector";
+import { OpenAIAssistantSelector } from "@/components/ai/OpenAIAssistantSelector";
+import QuestionCountSelector from "./QuestionCountSelector";
 
 interface AICreateFormProps {
   form: NewChecklist;
@@ -46,18 +47,9 @@ export function AICreateFormContent(props: AICreateFormProps) {
   const [formattedPrompt, setFormattedPrompt] = useState<string>("");
   const [contextType, setContextType] = useState<string>("Setor");
   const [contextValue, setContextValue] = useState<string>("");
-  const [description, setDescription] = useState<string>(props.form.description || "");
+  const [description, setDescription] = useState<string>("");
   const maxDescriptionLength = 500;
   const minDescriptionLength = 5;
-
-  useEffect(() => {
-    if (!props.form.origin) {
-      props.setForm(prev => ({
-        ...prev,
-        origin: 'ia'
-      }));
-    }
-  }, [props.form.origin]);
 
   useEffect(() => {
     if (props.form.company_id) {
@@ -113,11 +105,11 @@ Contexto: ${context}`;
     setFormattedPrompt(prompt);
     props.setAiPrompt(prompt);
 
-    props.setForm(prev => ({
-      ...prev,
-      description: desc,
-      origin: 'ia'
-    }));
+    // Também atualiza a descrição no formulário
+    props.setForm({
+      ...props.form,
+      description: desc
+    });
   };
 
   const handleGenerateClick = () => {
@@ -125,12 +117,12 @@ Contexto: ${context}`;
       toast.error("Por favor, informe a categoria do checklist");
       return;
     }
-
+    
     if (!props.form.company_id) {
       toast.error("Por favor, selecione uma empresa");
       return;
     }
-
+    
     if (!props.openAIAssistant) {
       toast.error("Por favor, selecione um assistente de IA");
       return;
@@ -140,7 +132,7 @@ Contexto: ${context}`;
       toast.error(`Por favor, forneça uma descrição com pelo menos ${minDescriptionLength} caracteres`);
       return;
     }
-
+    
     props.onGenerateAI(null);
   };
 
@@ -197,14 +189,13 @@ Contexto: ${context}`;
                   onSelect={(companyId) => {
                     props.setForm({ 
                       ...props.form, 
-                      company_id: companyId,
-                      origin: 'ia'
+                      company_id: companyId 
                     });
                   }}
                 />
               </div>
 
-              <AIAssistantSelector
+              <OpenAIAssistantSelector
                 selectedAssistant={props.openAIAssistant}
                 setSelectedAssistant={props.setOpenAIAssistant}
               />

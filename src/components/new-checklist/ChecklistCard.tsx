@@ -1,159 +1,135 @@
 
 import React, { useState } from "react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChecklistWithStats, ChecklistOrigin } from "@/types/newChecklist";
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { ChecklistOriginBadge } from "./ChecklistOriginBadge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ChecklistWithStats } from "@/types/newChecklist";
+import { formatDate } from "@/utils/format";
+import { toast } from "sonner";
+import { ChecklistCardBadges } from "./ChecklistCardBadges";
+import { ChecklistProgressBar } from "./ChecklistProgressBar";
 import { ChecklistCardActions } from "./ChecklistCardActions";
 
 interface ChecklistCardProps {
   checklist: ChecklistWithStats;
-  onDelete: (id: string, title: string) => void;
   onEdit: (id: string) => void;
+  onDelete: (id: string, title: string) => void;
   onOpen: (id: string) => void;
-  onStatusChange: (id: string, newStatus: "active" | "inactive") => Promise<boolean>;
+  onStatusChange?: () => void;
   isSelected?: boolean;
   onSelect?: (id: string, selected: boolean) => void;
-  showCheckbox?: boolean;
 }
 
-export function ChecklistCard({
+export const ChecklistCard = ({
   checklist,
-  onDelete,
   onEdit,
+  onDelete,
   onOpen,
   onStatusChange,
   isSelected = false,
-  onSelect,
-  showCheckbox = false
-}: ChecklistCardProps) {
+  onSelect
+}: ChecklistCardProps) => {
   const [isToggling, setIsToggling] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
-
-  const handleToggleStatus = async (e: React.MouseEvent) => {
+  const [status, setStatus] = useState(checklist.status);
+  
+  const toggleStatus = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isToggling) return;
+    
+    // Optimistic UI update
+    const newStatus = status === 'active' ? 'inactive' : 'active';
+    setStatus(newStatus);
     setIsToggling(true);
     
     try {
-      const newStatus = checklist.status === "active" ? "inactive" : "active";
-      const success = await onStatusChange(checklist.id, newStatus);
-      if (!success) {
-        console.error("Falha ao alterar status do checklist");
+      const { data, error } = await supabase
+        .from('checklists')
+        .update({ status: newStatus })
+        .eq('id', checklist.id);
+      
+      if (error) throw error;
+      
+      toast.success(newStatus === 'active' ? "Checklist ativado" : "Checklist desativado");
+      
+      if (onStatusChange) {
+        onStatusChange();
       }
+    } catch (error) {
+      // Rollback on error
+      setStatus(status);
+      console.error("Error toggling checklist status:", error);
+      toast.error("Erro ao alterar status do checklist");
     } finally {
       setIsToggling(false);
     }
   };
-  
-  const formattedDate = checklist.createdAt 
-    ? format(new Date(checklist.createdAt), "dd/MM/yyyy", { locale: ptBR }) 
-    : "";
-  
-  // Ensure origin is a valid ChecklistOrigin
-  const safeOrigin = (checklist.origin || 'manual') as ChecklistOrigin;
-  
-  const handleSelect = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (onSelect) {
-      onSelect(checklist.id, !isSelected);
-    }
-  };
-  
+
   return (
     <Card 
-      className={cn(
-        "h-full flex flex-col transition-all hover:shadow-md cursor-pointer border border-slate-200",
-        checklist.status === "inactive" && "opacity-70"
-      )}
+      className={`h-full flex flex-col border border-slate-200 shadow-sm rounded-xl transition-all
+        ${isSelected ? 'bg-blue-50 border-blue-200' : 'hover:shadow-md'}`}
       onClick={() => onOpen(checklist.id)}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
-      <CardHeader className="pb-2 relative">
-        {(showCheckbox || isHovered || isSelected) && onSelect && (
-          <div 
-            className="absolute left-3 top-3 z-10"
-            onClick={handleSelect}
-          >
-            <input 
-              type="checkbox" 
-              checked={isSelected} 
-              readOnly
-              className="h-4 w-4 rounded border-gray-300 cursor-pointer"
-            />
-          </div>
-        )}
-        
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-lg line-clamp-2 pl-0" title={checklist.title}>
-            {checklist.title}
-          </CardTitle>
-          
-          <div className="flex items-center gap-1">
-            <ChecklistOriginBadge origin={safeOrigin} />
-            {checklist.isTemplate && (
-              <Badge variant="outline" className="bg-purple-50 text-purple-800 border-purple-200">
-                Template
-              </Badge>
+      <CardContent className="p-5 flex flex-col h-full">
+        <div className="flex justify-between items-start">
+          <div className="flex flex-col mb-2">
+            <div className="flex items-center gap-2 mb-1">
+              {onSelect && (
+                <Checkbox
+                  checked={isSelected}
+                  onCheckedChange={(checked) => onSelect(checklist.id, checked === true)}
+                  onClick={(e) => e.stopPropagation()}
+                  className={`${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                />
+              )}
+              
+              <ChecklistCardBadges checklist={checklist} status={status} />
+            </div>
+            
+            <h3 className="text-base font-medium line-clamp-2 mb-1">{checklist.title}</h3>
+            
+            {checklist.companyName ? (
+              <p className="text-sm text-muted-foreground truncate">
+                {checklist.companyName}
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">
+                Sem empresa associada
+              </p>
             )}
           </div>
+          
+          <ChecklistCardActions 
+            id={checklist.id}
+            title={checklist.title}
+            status={status}
+            isTemplate={checklist.isTemplate}
+            isToggling={isToggling}
+            onToggleStatus={toggleStatus}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
         </div>
         
-        <CardDescription className="line-clamp-2 min-h-[40px]">
-          {checklist.description || "Sem descrição"}
-        </CardDescription>
-      </CardHeader>
-      
-      <CardContent className="pb-2 flex-grow">
-        <div className="grid gap-2 text-sm">
-          {checklist.companyName ? (
-            <div>
-              <span className="text-muted-foreground">Empresa:</span>{" "}
-              <span className="font-medium">{checklist.companyName}</span>
-            </div>
-          ) : (
-            <div>
-              <span className="text-muted-foreground">Empresa:</span>{" "}
-              <span className="font-medium text-gray-500 italic">Sem empresa associada</span>
-            </div>
-          )}
-          
+        <div className="mt-auto">
           {checklist.category && (
-            <div>
-              <span className="text-muted-foreground">Categoria:</span>{" "}
-              <span className="font-medium">{checklist.category}</span>
+            <div className="mt-2">
+              <Badge variant="outline" className="text-xs font-normal">
+                {checklist.category}
+              </Badge>
             </div>
           )}
           
-          <div>
-            <span className="text-muted-foreground">Criado em:</span>{" "}
-            <span className="font-medium">{formattedDate}</span>
-          </div>
+          <ChecklistProgressBar 
+            totalQuestions={checklist.totalQuestions} 
+            completedQuestions={checklist.completedQuestions || 0} 
+          />
           
-          <div>
-            <span className="text-muted-foreground">Status:</span>{" "}
-            <Badge variant={checklist.status === "active" ? "default" : "secondary"} className="mt-1">
-              {checklist.status === "active" ? "Ativo" : "Inativo"}
-            </Badge>
+          <div className="text-xs text-muted-foreground mt-3">
+            Criado em {formatDate(checklist.createdAt || "")}
           </div>
         </div>
       </CardContent>
-      
-      <CardFooter className="pt-2 flex justify-end border-t">
-        <ChecklistCardActions 
-          id={checklist.id}
-          title={checklist.title}
-          status={checklist.status}
-          isTemplate={checklist.isTemplate || false}
-          isToggling={isToggling}
-          onToggleStatus={handleToggleStatus}
-          onEdit={() => onEdit(checklist.id)}
-          onDelete={() => onDelete(checklist.id, checklist.title)}
-        />
-      </CardFooter>
     </Card>
   );
-}
+};

@@ -1,12 +1,11 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 
 interface QuestionCountSelectorProps {
   questionCount: number;
-  setQuestionCount: (count: number) => void;
+  setQuestionCount: React.Dispatch<React.SetStateAction<number>>;
   min?: number;
   max?: number;
 }
@@ -14,55 +13,27 @@ interface QuestionCountSelectorProps {
 export function QuestionCountSelector({
   questionCount,
   setQuestionCount,
-  min = 3,
+  min = 5,
   max = 30
 }: QuestionCountSelectorProps) {
-  const handleSliderChange = (values: number[]) => {
-    setQuestionCount(values[0]);
-  };
-
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(event.target.value);
-    if (!isNaN(value)) {
-      if (value < min) {
-        setQuestionCount(min);
-      } else if (value > max) {
-        setQuestionCount(max);
-      } else {
-        setQuestionCount(value);
-      }
-    }
-  };
-
   return (
-    <div className="space-y-2">
-      <div className="flex justify-between items-center">
-        <Label htmlFor="questionCount">Quantidade de perguntas</Label>
-        <Input
-          id="questionCount"
-          type="number"
-          min={min}
-          max={max}
-          value={questionCount}
-          onChange={handleInputChange}
-          className="w-20 text-right"
-        />
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <Label htmlFor="question-count">Número de perguntas</Label>
+        <span className="text-sm font-medium">{questionCount}</span>
       </div>
-
       <Slider
-        value={[questionCount]}
+        id="question-count"
         min={min}
         max={max}
         step={1}
-        onValueChange={handleSliderChange}
-        className="pt-2 pb-4"
+        value={[questionCount]}
+        onValueChange={(values) => setQuestionCount(values[0])}
+        className="my-4"
       />
-
-      <div className="flex justify-between text-xs text-muted-foreground">
-        <span>Min: {min}</span>
-        <span>Recomendado: 15</span>
-        <span>Max: {max}</span>
-      </div>
+      <p className="text-sm text-muted-foreground">
+        Defina a quantidade aproximada de perguntas que o checklist deve conter.
+      </p>
     </div>
   );
 }

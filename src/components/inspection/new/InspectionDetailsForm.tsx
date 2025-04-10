@@ -256,7 +256,6 @@ export function InspectionDetailsForm({
         </Button>
         <Button
           type="submit"
-          onClick={handleSubmit}
           disabled={submitting || !isFormValid()}
         >
           {submitting ? "Processando..." : "Iniciar Inspeção"}

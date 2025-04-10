@@ -1,241 +1,274 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { 
-  Dialog, DialogContent, DialogHeader, 
-  DialogTitle, DialogTrigger 
-} from "@/components/ui/dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
-} from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
-import { FilterX, CalendarIcon } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useCompanies } from "@/hooks/useCompanies";
+import { useUsers } from "@/hooks/useUsers";
+import { useChecklists } from "@/hooks/useChecklists";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { cn } from "@/lib/utils";
-import { CompanySelector } from "./CompanySelector";
-import { InspectionFilters as InspectionFiltersType } from "@/types/newChecklist";
-import { DateRange } from "react-day-picker";
+import { Search, CalendarIcon, X, Filter, Building2, User2, ClipboardList, AlertTriangle, CheckCircle } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { InspectionFilters as IInspectionFilters } from "@/types/newChecklist";
 
-export interface InspectionFiltersProps {
-  filters: InspectionFiltersType;
-  setFilters: (filters: InspectionFiltersType) => void;
+interface InspectionFiltersProps {
+  filters: IInspectionFilters;
+  setFilters: (filters: IInspectionFilters) => void;
 }
 
-export function InspectionFilters({ 
-  filters, 
-  setFilters 
-}: InspectionFiltersProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [tempFilters, setTempFilters] = useState<InspectionFiltersType>(filters);
-  const [dateRange, setDateRange] = useState<DateRange>({
-    from: filters.startDate,
-    to: filters.endDate
-  });
+export function InspectionFilters({ filters, setFilters }: InspectionFiltersProps) {
+  const { companies } = useCompanies();
+  const { users } = useUsers();
+  const { checklists } = useChecklists();
+  const [showDateRange, setShowDateRange] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
-  // Function to apply filters and close dialog
-  const applyFilters = () => {
-    // Convert date range to filters
-    const updatedFilters = {
-      ...tempFilters,
-      startDate: dateRange.from,
-      endDate: dateRange.to
-    };
-    setFilters(updatedFilters);
-    setIsOpen(false);
-  };
-
-  // Function to clear all filters
-  const clearFilters = () => {
-    const clearedFilters: InspectionFiltersType = {
+  const handleClearFilters = () => {
+    setFilters({
       search: "",
-      status: "",
-      priority: "",
-      companyId: "",
-      responsibleId: "",
-      checklistId: "",
+      status: "all",
+      priority: "all",
+      companyId: "all",
+      responsibleId: "all",
+      checklistId: "all",
       startDate: undefined,
-      endDate: undefined
-    };
-    setTempFilters(clearedFilters);
-    setDateRange({ from: undefined, to: undefined });
+      endDate: undefined,
+    });
   };
 
-  // Handle dialog open state
-  const handleOpenChange = (open: boolean) => {
-    if (open) {
-      // When opening, copy current filters to temp
-      setTempFilters(filters);
-      setDateRange({
-        from: filters.startDate,
-        to: filters.endDate
-      });
-    }
-    setIsOpen(open);
+  const hasActiveFilters = () => {
+    return (
+      filters.status !== "all" ||
+      filters.priority !== "all" ||
+      filters.companyId !== "all" ||
+      filters.responsibleId !== "all" ||
+      filters.checklistId !== "all" ||
+      filters.startDate !== undefined ||
+      filters.endDate !== undefined
+    );
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <div className="flex gap-2 items-center">
-        <DialogTrigger asChild>
-          <Button variant="outline" size="sm" className="h-8 gap-1">
-            <span>Filtros</span>
-            {Object.values(filters).some(val => val !== "" && val !== undefined) && (
-              <span className="bg-primary text-primary-foreground rounded-full h-5 w-5 text-xs flex items-center justify-center">
-                {Object.values(filters).filter(val => val !== "" && val !== undefined).length}
-              </span>
-            )}
-          </Button>
-        </DialogTrigger>
-
-        {Object.values(filters).some(val => val !== "" && val !== undefined) && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="h-8 px-2" 
-            onClick={() => {
-              setFilters({
-                search: "",
-                status: "",
-                priority: "",
-                companyId: "",
-                responsibleId: "",
-                checklistId: "",
-                startDate: undefined,
-                endDate: undefined
-              });
-            }}
-          >
-            <FilterX className="h-4 w-4" />
-            <span className="sr-only">Clear filters</span>
-          </Button>
-        )}
-      </div>
-
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Filtrar Inspeções</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4 py-4">
-          {/* Status filter */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Status</label>
-              <Select 
-                value={tempFilters.status}
-                onValueChange={(value) => setTempFilters({...tempFilters, status: value})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos os status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="pending">Pendente</SelectItem>
-                  <SelectItem value="in_progress">Em Andamento</SelectItem>
-                  <SelectItem value="completed">Concluído</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Priority filter */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Prioridade</label>
-              <Select 
-                value={tempFilters.priority}
-                onValueChange={(value) => setTempFilters({...tempFilters, priority: value})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Todas as prioridades" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="low">Baixa</SelectItem>
-                  <SelectItem value="medium">Média</SelectItem>
-                  <SelectItem value="high">Alta</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Date range filter */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Período</label>
-            <div className="grid gap-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    id="date"
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !dateRange.from && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateRange.from ? (
-                      dateRange.to ? (
-                        <>
-                          {format(dateRange.from, "PPP", { locale: ptBR })} -{" "}
-                          {format(dateRange.to, "PPP", { locale: ptBR })}
-                        </>
-                      ) : (
-                        format(dateRange.from, "PPP", { locale: ptBR })
-                      )
-                    ) : (
-                      <span>Selecione um período</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    initialFocus
-                    mode="range"
-                    defaultMonth={dateRange.from}
-                    selected={dateRange}
-                    onSelect={(range) => {
-                      if (range) {
-                        setDateRange(range);
-                      }
-                    }}
-                    numberOfMonths={2}
-                    locale={ptBR}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-          </div>
-
-          {/* Company filter */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Empresa</label>
-            <CompanySelector 
-              value={tempFilters.companyId}
-              onSelect={(value) => setTempFilters({...tempFilters, companyId: value})}
-              includeEmptyOption={true}
+    <div className="space-y-4">
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por título, empresa ou responsável..."
+              className="pl-8"
+              value={filters.search}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
             />
+            {filters.search && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute right-1 top-1.5 h-6 w-6 p-0"
+                onClick={() => setFilters({ ...filters, search: "" })}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
-
-          {/* Other filters can be added here */}
           
-          <div className="flex justify-between pt-4">
-            <Button 
-              variant="outline" 
-              onClick={clearFilters}
-              type="button"
+          <div className="flex gap-2">
+            <Button
+              variant={showFilters ? "default" : "outline"}
+              onClick={() => setShowFilters(!showFilters)}
+              size="sm"
+              className="flex-shrink-0"
             >
-              Limpar Filtros
+              <Filter className="mr-2 h-4 w-4" />
+              Filtros
+              {hasActiveFilters() && (
+                <span className="ml-1 flex h-2 w-2 rounded-full bg-primary-foreground" />
+              )}
             </Button>
-            <Button 
-              onClick={applyFilters}
-              type="button"
-            >
-              Aplicar Filtros
-            </Button>
+            
+            <Popover open={showDateRange} onOpenChange={setShowDateRange}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={filters.startDate ? "default" : "outline"}
+                  size="sm"
+                  className="flex-shrink-0"
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {filters.startDate ? (
+                    filters.endDate ? (
+                      <>
+                        {format(filters.startDate, "dd/MM/yyyy")} -&nbsp;
+                        {format(filters.endDate, "dd/MM/yyyy")}
+                      </>
+                    ) : (
+                      format(filters.startDate, "dd/MM/yyyy")
+                    )
+                  ) : (
+                    "Período"
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  locale={ptBR}
+                  mode="range"
+                  selected={{
+                    from: filters.startDate || undefined,
+                    to: filters.endDate || undefined
+                  }}
+                  onSelect={(range) => {
+                    setFilters({
+                      ...filters,
+                      startDate: range?.from,
+                      endDate: range?.to
+                    });
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+            
+            {(hasActiveFilters() || filters.search) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearFilters}
+                className="flex-shrink-0"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Limpar
+              </Button>
+            )}
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+        
+        {showFilters && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 p-4 border rounded-md bg-muted/20">
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <Building2 className="h-4 w-4 mr-2 text-muted-foreground" />
+                <span className="text-sm font-medium">Empresa</span>
+              </div>
+              <Select
+                value={filters.companyId}
+                onValueChange={(value) =>
+                  setFilters({ ...filters, companyId: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas empresas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas empresas</SelectItem>
+                  {companies.map((company) => (
+                    <SelectItem key={company.id} value={company.id}>
+                      {company.fantasy_name || "Empresa sem nome"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <User2 className="h-4 w-4 mr-2 text-muted-foreground" />
+                <span className="text-sm font-medium">Responsável</span>
+              </div>
+              <Select
+                value={filters.responsibleId}
+                onValueChange={(value) =>
+                  setFilters({ ...filters, responsibleId: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos responsáveis" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos responsáveis</SelectItem>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <ClipboardList className="h-4 w-4 mr-2 text-muted-foreground" />
+                <span className="text-sm font-medium">Checklist</span>
+              </div>
+              <Select
+                value={filters.checklistId}
+                onValueChange={(value) =>
+                  setFilters({ ...filters, checklistId: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos checklists" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos checklists</SelectItem>
+                  {checklists.map((checklist) => (
+                    <SelectItem key={checklist.id} value={checklist.id}>
+                      {checklist.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <AlertTriangle className="h-4 w-4 mr-2 text-muted-foreground" />
+                <span className="text-sm font-medium">Prioridade</span>
+              </div>
+              <Select
+                value={filters.priority}
+                onValueChange={(value: "all" | "low" | "medium" | "high") =>
+                  setFilters({ ...filters, priority: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Todas prioridades" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas prioridades</SelectItem>
+                  <SelectItem value="high">Alta</SelectItem>
+                  <SelectItem value="medium">Média</SelectItem>
+                  <SelectItem value="low">Baixa</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <CheckCircle className="h-4 w-4 mr-2 text-muted-foreground" />
+                <span className="text-sm font-medium">Status</span>
+              </div>
+              <Select
+                value={filters.status}
+                onValueChange={(value: "all" | "pending" | "in_progress" | "completed") =>
+                  setFilters({ ...filters, status: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Todos status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos status</SelectItem>
+                  <SelectItem value="pending">Pendente</SelectItem>
+                  <SelectItem value="in_progress">Em progresso</SelectItem>
+                  <SelectItem value="completed">Concluída</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

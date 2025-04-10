@@ -1,38 +1,38 @@
 
-import { format, isValid } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { format, isValid, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 /**
  * Formats a date string to a localized format
- * 
- * @param dateStr Date string to format
- * @param formatStr Optional format string (defaults to dd/MM/yyyy)
- * @returns Formatted date string or empty string if invalid
  */
-export const formatDate = (dateStr: string, formatStr: string = 'dd/MM/yyyy'): string => {
-  if (!dateStr) return '';
+export function formatDate(dateString: string): string {
+  if (!dateString) return "";
   
-  const date = new Date(dateStr);
-  
-  if (!isValid(date)) return '';
-  
-  return format(date, formatStr, { locale: ptBR });
-};
+  try {
+    const date = typeof dateString === "string" ? parseISO(dateString) : dateString;
+    
+    if (!isValid(date)) {
+      return "Data inválida";
+    }
+    
+    return format(date, "dd MMM yyyy", { locale: ptBR });
+  } catch (error) {
+    console.error("Error formatting date:", error);
+    return "Data inválida";
+  }
+}
 
 /**
- * Formats currency values to BRL format
+ * Formats a number as a percentage
  */
-export const formatCurrency = (value: number): string => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  }).format(value);
-};
+export function formatPercent(value: number): string {
+  return `${Math.round(value)}%`;
+}
 
 /**
- * Truncates text with ellipsis
+ * Truncates text to a maximum length
  */
-export const truncateText = (text: string, maxLength: number): string => {
+export function truncateText(text: string, maxLength: number): string {
   if (!text || text.length <= maxLength) return text;
-  return `${text.substring(0, maxLength)}...`;
-};
+  return `${text.slice(0, maxLength)}...`;
+}

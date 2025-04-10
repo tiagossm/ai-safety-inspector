@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,12 +9,12 @@ import { AIChecklistCreator } from "@/components/checklists/create-forms/AICheck
 import { ManualCreateForm } from "@/components/checklists/create-forms/ManualCreateForm";
 import { ImportCreateForm } from "@/components/checklists/create-forms/ImportCreateForm";
 import { useChecklistCreation } from "@/hooks/checklist/useChecklistCreation";
-import { NewChecklist, ChecklistOrigin } from "@/types/newChecklist";
 
 export default function CreateChecklist() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>("ai");
   
+  // Use the hook for checklist creation logic
   const {
     form,
     setForm,
@@ -29,44 +30,20 @@ export default function CreateChecklist() {
     handleQuestionChange,
     handleSubmit,
     companies,
-    loadingCompanies,
-    normalizeStatus
+    loadingCompanies
   } = useChecklistCreation();
 
+  // Create wrapper functions that adapt to different component expectations
+  // ManualCreateForm and ImportCreateForm expect Promise<boolean>
   const handleSubmitForManualAndImport = async (e: React.FormEvent): Promise<boolean> => {
-    const adaptedForm: NewChecklist = {
-      title: form.title,
-      description: form.description || "",
-      is_template: form.is_template || false,
-      status: normalizeStatus(form.status) as "active" | "inactive",
-      category: form.category || "",
-      responsible_id: form.responsible_id,
-      company_id: form.company_id,
-      due_date: form.due_date,
-      user_id: form.user_id,
-      origin: (activeTab === "import" ? "csv" : "manual") as ChecklistOrigin,
-      status_checklist: form.status_checklist || "ativo"
-    };
-    
-    return await handleSubmit(e, adaptedForm);
+    const result = await handleSubmit(e);
+    return result; // Return the boolean result directly
   };
   
+  // AIChecklistCreator expects Promise<void>
   const handleSubmitForAI = async (e: React.FormEvent): Promise<void> => {
-    const adaptedForm: NewChecklist = {
-      title: form.title,
-      description: form.description || "",
-      is_template: form.is_template || false,
-      status: normalizeStatus(form.status) as "active" | "inactive",
-      category: form.category || "",
-      responsible_id: form.responsible_id,
-      company_id: form.company_id,
-      due_date: form.due_date,
-      user_id: form.user_id,
-      origin: "ia" as ChecklistOrigin,
-      status_checklist: form.status_checklist || "ativo"
-    };
-    
-    await handleSubmit(e, adaptedForm);
+    await handleSubmit(e);
+    // No return value needed as the component expects void
   };
 
   return (
@@ -78,6 +55,7 @@ export default function CreateChecklist() {
         </div>
       </div>
 
+      {/* Quick navigation buttons at the top */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <Card 
           className={`p-4 cursor-pointer hover:border-gray-400 transition-all ${activeTab === "manual" ? "bg-gray-50" : "bg-white"}`}

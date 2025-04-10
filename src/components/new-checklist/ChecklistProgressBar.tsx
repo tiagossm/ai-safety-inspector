@@ -7,23 +7,26 @@ interface ChecklistProgressBarProps {
   completedQuestions: number;
 }
 
-export function ChecklistProgressBar({
-  totalQuestions,
-  completedQuestions
-}: ChecklistProgressBarProps) {
-  const progressPercentage = totalQuestions > 0
-    ? Math.round((completedQuestions / totalQuestions) * 100)
+/**
+ * Component for rendering checklist completion progress
+ */
+export const ChecklistProgressBar: React.FC<ChecklistProgressBarProps> = ({ 
+  totalQuestions, 
+  completedQuestions 
+}) => {
+  const progress = totalQuestions > 0 
+    ? Math.round((completedQuestions / totalQuestions) * 100) 
     : 0;
 
+  if (totalQuestions === 0) return null;
+
   return (
-    <div className="mt-3">
-      <div className="flex justify-between text-xs text-muted-foreground mb-1">
+    <div className="mt-3 space-y-1">
+      <div className="flex justify-between text-xs text-muted-foreground">
         <span>Progresso</span>
-        <span>
-          {completedQuestions}/{totalQuestions} ({progressPercentage}%)
-        </span>
+        <span>{completedQuestions || 0} de {totalQuestions} itens</span>
       </div>
-      <Progress value={progressPercentage} className="h-1" />
+      <Progress value={progress} className="h-1" />
     </div>
   );
-}
+};

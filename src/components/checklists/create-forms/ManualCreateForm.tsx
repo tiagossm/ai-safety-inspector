@@ -1,4 +1,5 @@
-import React, { useEffect } from "react";
+
+import React from "react";
 import { NewChecklist } from "@/types/checklist";
 import { BasicInfoSection } from "./BasicInfoSection";
 import { QuestionsSection } from "./QuestionsSection";
@@ -48,16 +49,6 @@ export function ManualCreateForm({
   isSubmitting
 }: ManualCreateFormProps) {
   const navigate = useNavigate();
-
-  useEffect(() => {
-    // Seta origin como 'manual' se ainda não estiver definido
-    if (!form.origin) {
-      setForm((prev) => ({
-        ...prev,
-        origin: "manual"
-      }));
-    }
-  }, [form.origin, setForm]);
 
   return (
     <form onSubmit={onSubmit} className="space-y-6">

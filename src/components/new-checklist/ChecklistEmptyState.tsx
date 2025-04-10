@@ -1,26 +1,31 @@
 
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { ClipboardX } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { FC } from "react";
+import { FileText } from "lucide-react";
 
 interface ChecklistEmptyStateProps {
-  message: string;
+  message?: string;
+  icon?: React.ReactNode;
+  title?: string;
+  action?: React.ReactNode;
 }
 
-export function ChecklistEmptyState({ message }: ChecklistEmptyStateProps) {
-  const navigate = useNavigate();
-
+/**
+ * Displays an empty state for checklists when no data is available
+ */
+export const ChecklistEmptyState: FC<ChecklistEmptyStateProps> = ({ 
+  message = "Nenhum checklist encontrado", 
+  icon,
+  title = "Nenhum checklist encontrado",
+  action
+}) => {
   return (
-    <div className="flex flex-col items-center justify-center p-8 text-center bg-gray-50 rounded-lg border border-dashed border-gray-300">
-      <ClipboardX className="h-12 w-12 text-gray-400 mb-4" />
-      <h3 className="text-lg font-medium mb-2">Nenhum checklist encontrado</h3>
-      <p className="text-muted-foreground mb-6 max-w-md">
+    <div className="text-center py-12 border rounded-md">
+      {icon || <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />}
+      <h3 className="text-lg font-medium mb-2">{title}</h3>
+      <p className="text-muted-foreground mb-6">
         {message}
       </p>
-      <Button onClick={() => navigate("/new-checklists/create")}>
-        Criar Novo Checklist
-      </Button>
+      {action && <div className="flex justify-center">{action}</div>}
     </div>
   );
-}
+};
