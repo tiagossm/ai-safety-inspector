@@ -1,12 +1,10 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { NewChecklist } from "@/types/checklist";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useChecklistFormSubmit } from "./form/useChecklistFormSubmit";
 import { CompanyListItem } from "@/types/CompanyListItem";
-import { NewChecklist as NewChecklistType } from "@/types/newChecklist";
+import { NewChecklist, ChecklistOrigin } from "@/types/newChecklist";
 import { useChecklistCompanies } from "./form/useChecklistCompanies";
 
 export type AIAssistantType = 'general' | 'workplace-safety' | 'compliance' | 'quality';
@@ -20,7 +18,7 @@ export function useChecklistCreation() {
     is_template: false,
     status_checklist: "ativo",
     category: "",
-    status: "active"
+    status: "active" as "active" | "inactive"
   });
   
   // Form data
@@ -121,7 +119,7 @@ export function useChecklistCreation() {
   };
   
   // Handle form submission - accepts an optional adaptedForm parameter
-  const submitForm = async (e: React.FormEvent, adaptedForm?: NewChecklistType): Promise<boolean> => {
+  const submitForm = async (e: React.FormEvent, adaptedForm?: NewChecklist): Promise<boolean> => {
     try {
       const formToSubmit = adaptedForm || {
         ...form,
