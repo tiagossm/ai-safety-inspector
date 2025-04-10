@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { NewChecklist } from "@/types/checklist";
 import { Label } from "@/components/ui/label";
@@ -47,9 +46,18 @@ export function AICreateFormContent(props: AICreateFormProps) {
   const [formattedPrompt, setFormattedPrompt] = useState<string>("");
   const [contextType, setContextType] = useState<string>("Setor");
   const [contextValue, setContextValue] = useState<string>("");
-  const [description, setDescription] = useState<string>("");
+  const [description, setDescription] = useState<string>(props.form.description || "");
   const maxDescriptionLength = 500;
   const minDescriptionLength = 5;
+
+  useEffect(() => {
+    if (!props.form.origin) {
+      props.setForm(prev => ({
+        ...prev,
+        origin: 'ia'
+      }));
+    }
+  }, [props.form.origin]);
 
   useEffect(() => {
     if (props.form.company_id) {
@@ -105,12 +113,11 @@ Contexto: ${context}`;
     setFormattedPrompt(prompt);
     props.setAiPrompt(prompt);
 
-    // Também atualiza a descrição no formulário
-    props.setForm({
-      ...props.form,
+    props.setForm(prev => ({
+      ...prev,
       description: desc,
       origin: 'ia'
-    });
+    }));
   };
 
   const handleGenerateClick = () => {
@@ -118,12 +125,12 @@ Contexto: ${context}`;
       toast.error("Por favor, informe a categoria do checklist");
       return;
     }
-    
+
     if (!props.form.company_id) {
       toast.error("Por favor, selecione uma empresa");
       return;
     }
-    
+
     if (!props.openAIAssistant) {
       toast.error("Por favor, selecione um assistente de IA");
       return;
@@ -133,7 +140,7 @@ Contexto: ${context}`;
       toast.error(`Por favor, forneça uma descrição com pelo menos ${minDescriptionLength} caracteres`);
       return;
     }
-    
+
     props.onGenerateAI(null);
   };
 
