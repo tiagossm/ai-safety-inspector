@@ -42,3 +42,8 @@ export const transformDbChecklistsToStats = (dbChecklists: any[]): ChecklistWith
     };
   });
 };
+
+// Add the singular version of the function for when we need to transform a single checklist
+export const transformDbChecklistToStats = (dbChecklist: any): ChecklistWithStats => {
+  return transformDbChecklistsToStats([dbChecklist])[0];
+};

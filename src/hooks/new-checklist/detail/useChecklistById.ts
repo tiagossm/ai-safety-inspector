@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats, ChecklistQuestion, ChecklistGroup, ChecklistOrigin } from '@/types/newChecklist';
-import { transformDbChecklistToStats } from '@/services/checklist/checklistTransformers';
+import { transformDbChecklistsToStats } from '@/services/checklist/checklistTransformers';
 
 /**
  * Hook for fetching a checklist by ID with full details
@@ -89,8 +89,20 @@ export function useChecklistById(id: string) {
         };
       });
 
+      // Ensure origin is a valid ChecklistOrigin
+      const origin = data.origin || 'manual';
+      const validOrigin: ChecklistOrigin = ['manual', 'ia', 'csv'].includes(origin) 
+        ? origin as ChecklistOrigin 
+        : 'manual';
+      
+      // Create a processed version of the data with the correct origin
+      const processedData = {
+        ...data,
+        origin: validOrigin
+      };
+      
       // Convert basic checklist data using the transformer
-      const baseChecklist = transformDbChecklistToStats(data);
+      const baseChecklist = transformDbChecklistsToStats([processedData])[0];
       
       // Add questions and additional fields
       const formattedChecklist: ChecklistWithStats = {

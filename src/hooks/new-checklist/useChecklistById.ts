@@ -1,7 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ChecklistWithStats } from "@/types/newChecklist";
+import { ChecklistWithStats, ChecklistOrigin } from "@/types/newChecklist";
 import { transformDbChecklistsToStats } from "@/services/checklist/checklistTransformers";
 
 export function useChecklistById(id: string) {
@@ -85,6 +85,12 @@ export function useChecklistById(id: string) {
       }
 
       // Transform data and ensure origin is set correctly
+      const origin = checklistData.origin || 'manual';
+      // Validate that origin is a valid ChecklistOrigin
+      const validOrigin: ChecklistOrigin = ['manual', 'ia', 'csv'].includes(origin) 
+        ? origin as ChecklistOrigin 
+        : 'manual';
+
       const checklist: ChecklistWithStats = {
         id: checklistData.id,
         title: checklistData.title,
@@ -107,7 +113,7 @@ export function useChecklistById(id: string) {
         dueDate: checklistData.due_date,
         is_sub_checklist: checklistData.is_sub_checklist || false,
         isSubChecklist: checklistData.is_sub_checklist || false,
-        origin: checklistData.origin || 'manual',
+        origin: validOrigin,
         parent_question_id: checklistData.parent_question_id,
         parentQuestionId: checklistData.parent_question_id,
         totalQuestions: questions.length,

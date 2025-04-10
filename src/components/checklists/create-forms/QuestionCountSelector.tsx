@@ -2,12 +2,7 @@
 import React, { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import {
-  Slider,
-  SliderTrack,
-  SliderRange,
-  SliderThumb,
-} from "@/components/ui/slider";
+import { Slider } from "@/components/ui/slider";
 
 interface QuestionCountSelectorProps {
   questionCount: number;
@@ -61,12 +56,7 @@ export function QuestionCountSelector({
         step={1}
         onValueChange={handleSliderChange}
         className="pt-2 pb-4"
-      >
-        <SliderTrack>
-          <SliderRange />
-        </SliderTrack>
-        <SliderThumb />
-      </Slider>
+      />
 
       <div className="flex justify-between text-xs text-muted-foreground">
         <span>Min: {min}</span>
