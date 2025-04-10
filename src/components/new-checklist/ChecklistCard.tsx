@@ -15,6 +15,9 @@ interface ChecklistCardProps {
   onEdit: (id: string) => void;
   onOpen: (id: string) => void;
   onStatusChange: (id: string, newStatus: "active" | "inactive") => Promise<boolean>;
+  isSelected?: boolean;
+  onSelect?: (id: string, selected: boolean) => void;
+  showCheckbox?: boolean;
 }
 
 export function ChecklistCard({
@@ -22,9 +25,13 @@ export function ChecklistCard({
   onDelete,
   onEdit,
   onOpen,
-  onStatusChange
+  onStatusChange,
+  isSelected = false,
+  onSelect,
+  showCheckbox = false
 }: ChecklistCardProps) {
   const [isToggling, setIsToggling] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   const handleToggleStatus = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -48,6 +55,13 @@ export function ChecklistCard({
   // Ensure origin is a valid ChecklistOrigin
   const safeOrigin = (checklist.origin || 'manual') as ChecklistOrigin;
   
+  const handleSelect = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onSelect) {
+      onSelect(checklist.id, !isSelected);
+    }
+  };
+  
   return (
     <Card 
       className={cn(
@@ -55,10 +69,26 @@ export function ChecklistCard({
         checklist.status === "inactive" && "opacity-70"
       )}
       onClick={() => onOpen(checklist.id)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-2 relative">
+        {(showCheckbox || isHovered || isSelected) && onSelect && (
+          <div 
+            className="absolute left-3 top-3 z-10"
+            onClick={handleSelect}
+          >
+            <input 
+              type="checkbox" 
+              checked={isSelected} 
+              readOnly
+              className="h-4 w-4 rounded border-gray-300 cursor-pointer"
+            />
+          </div>
+        )}
+        
         <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-lg line-clamp-2" title={checklist.title}>
+          <CardTitle className="text-lg line-clamp-2 pl-0" title={checklist.title}>
             {checklist.title}
           </CardTitle>
           
@@ -71,6 +101,7 @@ export function ChecklistCard({
             )}
           </div>
         </div>
+        
         <CardDescription className="line-clamp-2 min-h-[40px]">
           {checklist.description || "Sem descrição"}
         </CardDescription>

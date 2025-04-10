@@ -1,119 +1,108 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card } from "@/components/ui/card";
-import { Bot, ShieldCheck, Briefcase, BarChart } from "lucide-react";
+import { AIAssistantType } from "@/types/newChecklist";
 
-// Match the AIAssistantType from useChecklistAI.ts
-export type AIAssistantType = "general" | "workplace-safety" | "compliance" | "quality";
+interface AIAssistantOption {
+  id: string;
+  value: string;
+  label: string;
+  description: string;
+  icon: React.ReactNode;
+}
 
 interface AIAssistantSelectorProps {
-  selectedAssistant: string; 
-  onAssistantTypeChange: (type: string) => void;
+  selectedAssistant: string;
+  setSelectedAssistant: (value: string) => void;
 }
 
 export function AIAssistantSelector({
   selectedAssistant,
-  onAssistantTypeChange
+  setSelectedAssistant
 }: AIAssistantSelectorProps) {
+  // Predefined assistant types
+  const assistantOptions: AIAssistantOption[] = [
+    {
+      id: "workplace-safety",
+      value: "workplace-safety",
+      label: "Segurança do Trabalho",
+      description: "Especialista em normas de segurança do trabalho (NRs)",
+      icon: "🛡️"
+    },
+    {
+      id: "compliance",
+      value: "compliance",
+      label: "Compliance",
+      description: "Especialista em conformidade legal e regulatória",
+      icon: "📋"
+    },
+    {
+      id: "quality",
+      value: "quality",
+      label: "Qualidade",
+      description: "Especialista em processos e controle de qualidade",
+      icon: "✅"
+    },
+    {
+      id: "checklist",
+      value: "checklist",
+      label: "Checklist Geral",
+      description: "Assistente geral para criação de checklists diversos",
+      icon: "📝"
+    },
+    {
+      id: "openai",
+      value: "openai",
+      label: "Modelo GPT-4",
+      description: "Assistente de IA generativa avançada (recomendado)",
+      icon: "🤖"
+    }
+  ];
+
+  // Select default if nothing is selected
+  useEffect(() => {
+    if (!selectedAssistant) {
+      setSelectedAssistant("openai");
+    }
+  }, [selectedAssistant, setSelectedAssistant]);
+
   return (
-    <div className="space-y-4">
-      <Label>Tipo de Assistente</Label>
+    <div className="space-y-3">
+      <Label>Assistente de IA</Label>
       <RadioGroup
         value={selectedAssistant}
-        onValueChange={onAssistantTypeChange}
-        className="grid grid-cols-1 md:grid-cols-4 gap-4"
+        onValueChange={setSelectedAssistant}
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"
       >
-        <Label
-          htmlFor="assistant-general"
-          className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 cursor-pointer ${
-            selectedAssistant === "general" ? "border-primary bg-primary/5" : "border-muted"
-          } hover:border-primary/50 transition-all`}
-        >
-          <RadioGroupItem value="general" id="assistant-general" className="sr-only" />
-          <Bot className="h-8 w-8 mb-2" />
-          <span className="font-medium">Geral</span>
-          <p className="text-xs text-muted-foreground text-center mt-1">
-            Checklist genérico para uso geral
-          </p>
-        </Label>
-
-        <Label
-          htmlFor="assistant-safety"
-          className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 cursor-pointer ${
-            selectedAssistant === "workplace-safety" ? "border-primary bg-primary/5" : "border-muted"
-          } hover:border-primary/50 transition-all`}
-        >
-          <RadioGroupItem value="workplace-safety" id="assistant-safety" className="sr-only" />
-          <ShieldCheck className="h-8 w-8 mb-2" />
-          <span className="font-medium">Segurança</span>
-          <p className="text-xs text-muted-foreground text-center mt-1">
-            Checklist de segurança do trabalho e NRs
-          </p>
-        </Label>
-
-        <Label
-          htmlFor="assistant-compliance"
-          className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 cursor-pointer ${
-            selectedAssistant === "compliance" ? "border-primary bg-primary/5" : "border-muted"
-          } hover:border-primary/50 transition-all`}
-        >
-          <RadioGroupItem value="compliance" id="assistant-compliance" className="sr-only" />
-          <Briefcase className="h-8 w-8 mb-2" />
-          <span className="font-medium">Compliance</span>
-          <p className="text-xs text-muted-foreground text-center mt-1">
-            Checklist para conformidade regulatória
-          </p>
-        </Label>
-
-        <Label
-          htmlFor="assistant-quality"
-          className={`flex flex-col items-center justify-center p-4 rounded-lg border-2 cursor-pointer ${
-            selectedAssistant === "quality" ? "border-primary bg-primary/5" : "border-muted"
-          } hover:border-primary/50 transition-all`}
-        >
-          <RadioGroupItem value="quality" id="assistant-quality" className="sr-only" />
-          <BarChart className="h-8 w-8 mb-2" />
-          <span className="font-medium">Qualidade</span>
-          <p className="text-xs text-muted-foreground text-center mt-1">
-            Checklist para controle de qualidade
-          </p>
-        </Label>
+        {assistantOptions.map((option) => (
+          <Card 
+            key={option.id} 
+            className={`relative p-4 cursor-pointer transition-colors border hover:bg-gray-50 ${
+              selectedAssistant === option.value ? "border-primary bg-primary/5" : "border-gray-200"
+            }`}
+            onClick={() => setSelectedAssistant(option.value)}
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 text-lg w-8 h-8 flex items-center justify-center">
+                {option.icon}
+              </div>
+              <div className="flex-grow">
+                <div className="font-medium">{option.label}</div>
+                <div className="text-sm text-muted-foreground">{option.description}</div>
+              </div>
+              <RadioGroupItem 
+                value={option.value}
+                id={option.id}
+                className="flex-shrink-0"
+              />
+            </div>
+          </Card>
+        ))}
       </RadioGroup>
     </div>
   );
 }
 
-export function OpenAIAssistantSelector({
-  selectedAssistant,
-  setSelectedAssistant
-}: {
-  selectedAssistant: string;
-  setSelectedAssistant: (id: string) => void;
-}) {
-  return (
-    <div className="space-y-2">
-      <Label htmlFor="openAI">Assistente AI</Label>
-      <Card className="p-4">
-        <div className="flex items-center space-x-2">
-          <Bot className="h-5 w-5 text-primary" />
-          <div className="flex-1">
-            <h4 className="text-sm font-medium">Assistente OpenAI</h4>
-            <p className="text-xs text-muted-foreground">
-              Gera checklists utilizando modelos avançados de linguagem
-            </p>
-          </div>
-          <input
-            type="radio"
-            id="openAI"
-            value="openai"
-            checked={selectedAssistant === "openai"}
-            onChange={() => setSelectedAssistant("openai")}
-            className="rounded-full"
-          />
-        </div>
-      </Card>
-    </div>
-  );
-}
+export default AIAssistantSelector;

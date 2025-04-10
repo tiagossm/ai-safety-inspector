@@ -1,43 +1,34 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { NewChecklistPayload } from "@/types/newChecklist";
 
 export const checklistCreateService = {
-  createChecklist: async (checklistData: { 
-    title: string;
-    [key: string]: any;
-  }): Promise<{ id: string; error: any }> => {
+  createChecklist: async (checklistData: NewChecklistPayload): Promise<string | null> => {
     try {
-      // Ensure title is present
-      if (!checklistData.title) {
-        throw new Error("Checklist title is required");
-      }
-
-      const payload = {
-        title: checklistData.title,
-        description: checklistData.description || '',
-        is_template: checklistData.is_template || false,
-        status: checklistData.status === 'active' ? 'active' : 'inactive',
-        category: checklistData.category || '',
-        responsible_id: checklistData.responsible_id || null,
-        company_id: checklistData.company_id || null,
-        user_id: checklistData.user_id || null,
-        origin: (checklistData.origin || 'manual')
+      console.log("Creating new checklist with data:", checklistData);
+      
+      // Make sure origin is set with a valid default
+      const finalChecklistData = {
+        ...checklistData,
+        origin: checklistData.origin || 'manual'
       };
-
+      
       const { data, error } = await supabase
         .from('checklists')
-        .insert(payload)
-        .select()
+        .insert(finalChecklistData)
+        .select('id')
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error creating checklist:", error);
+        throw error;
+      }
       
-      return { id: data.id, error: null };
+      console.log("Successfully created checklist with ID:", data.id);
+      return data.id;
     } catch (error) {
-      console.error("Error creating checklist:", error);
-      return { id: '', error };
+      console.error("Error in checklist creation service:", error);
+      return null;
     }
   }
 };
-

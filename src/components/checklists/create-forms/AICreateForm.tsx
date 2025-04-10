@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { NewChecklist } from "@/types/checklist";
 import { Label } from "@/components/ui/label";
@@ -17,8 +18,8 @@ import { CompanySelector } from "@/components/inspection/CompanySelector";
 import { supabase } from "@/integrations/supabase/client";
 import { Company, CompanyMetadata } from "@/types/company";
 import { toast } from "sonner";
-import { AIAssistantSelector } from "@/components/ai/OpenAIAssistantSelector";
-import QuestionCountSelector from "./QuestionCountSelector";
+import { AIAssistantSelector } from "@/components/checklists/create-forms/AIAssistantSelector";
+import { QuestionCountSelector } from "@/components/checklists/create-forms/QuestionCountSelector";
 
 interface AICreateFormProps {
   form: NewChecklist;
@@ -107,7 +108,8 @@ Contexto: ${context}`;
     // Também atualiza a descrição no formulário
     props.setForm({
       ...props.form,
-      description: desc
+      description: desc,
+      origin: 'ia'
     });
   };
 
@@ -188,7 +190,8 @@ Contexto: ${context}`;
                   onSelect={(companyId) => {
                     props.setForm({ 
                       ...props.form, 
-                      company_id: companyId 
+                      company_id: companyId,
+                      origin: 'ia'
                     });
                   }}
                 />

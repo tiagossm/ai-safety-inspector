@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { DeleteChecklistDialog } from "@/components/new-checklist/DeleteChecklistDialog";
@@ -25,7 +25,9 @@ const NewChecklists: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [checklistToDelete, setChecklistToDelete] = useState({ id: "", title: "" });
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "list">(() => {
+    return localStorage.getItem('checklist-view-mode') as "grid" | "list" || "grid";
+  });
   const [activeTab, setActiveTab] = useState(() => {
     return localStorage.getItem('checklist-active-tab') || "template";
   });
@@ -44,11 +46,22 @@ const NewChecklists: React.FC = () => {
     selectedOrigin,
     setSelectedOrigin,
     companies,
+    categories,
     deleteChecklist,
     updateStatus,
     updateBulkStatus,
     refetch
   } = useNewChecklists();
+
+  // Persist view mode in localStorage
+  useEffect(() => {
+    localStorage.setItem('checklist-view-mode', viewMode);
+  }, [viewMode]);
+
+  // Persist active tab in localStorage
+  useEffect(() => {
+    localStorage.setItem('checklist-active-tab', activeTab);
+  }, [activeTab]);
 
   const handleBulkStatusChange = async (ids: string[], newStatus: "active" | "inactive"): Promise<void> => {
     try {
@@ -128,19 +141,7 @@ const NewChecklists: React.FC = () => {
     };
   };
 
-  const filteredChecklists = React.useMemo(() => {
-    let result = [...checklists];
-    
-    if (activeTab === "template") {
-      result = result.filter(c => c.is_template);
-    } else if (activeTab === "active") {
-      result = result.filter(c => !c.is_template && c.status === 'active');
-    } else if (activeTab === "inactive") {
-      result = result.filter(c => !c.is_template && c.status === 'inactive');
-    }
-    
-    return result;
-  }, [checklists, activeTab]);
+  const filteredChecklists = React.useMemo(() => checklists, [checklists]);
 
   return (
     <div className="space-y-6">
@@ -206,6 +207,32 @@ const NewChecklists: React.FC = () => {
                     className={selectedCompanyId === company.id ? "bg-accent" : ""}
                   >
                     {company.fantasy_name || "Empresa sem nome"}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {categories.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Filter className="mr-2 h-4 w-4" />
+                  Categoria
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="max-h-60 overflow-y-auto">
+                <DropdownMenuItem onClick={() => setFilterType("all")} className={filterType === "all" ? "bg-accent" : ""}>
+                  Todas as Categorias
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {categories.map((category) => (
+                  <DropdownMenuItem
+                    key={category}
+                    onClick={() => setFilterType(category)}
+                    className={filterType === category ? "bg-accent" : ""}
+                  >
+                    {category}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>

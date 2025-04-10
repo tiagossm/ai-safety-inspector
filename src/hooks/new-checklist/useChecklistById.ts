@@ -1,48 +1,60 @@
 
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ChecklistWithStats, ChecklistOrigin } from "@/types/newChecklist";
+import { ChecklistWithStats } from "@/types/newChecklist";
+import { transformDbChecklistsToStats } from "@/services/checklist/checklistTransformers";
 
 export function useChecklistById(id: string) {
-  const [checklist, setChecklist] = useState<ChecklistWithStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  
-  const fetchChecklistDetails = async () => {
+  const fetchChecklistById = async (checklistId: string): Promise<ChecklistWithStats | null> => {
     try {
-      setLoading(true);
-      setError(null);
-      
-      if (!id) {
-        setLoading(false);
-        return;
-      }
-      
-      // Fetch checklist data
+      // Fetch basic checklist data with company name
       const { data: checklistData, error: checklistError } = await supabase
         .from('checklists')
         .select(`
           *,
           companies:company_id (id, fantasy_name)
         `)
-        .eq('id', id)
+        .eq('id', checklistId)
         .single();
       
       if (checklistError) {
-        throw checklistError;
+        console.error("Error fetching checklist by ID:", checklistError);
+        return null;
       }
-      
-      // Fetch questions count
-      const { count: totalQuestions, error: countError } = await supabase
+
+      // Fetch questions for this checklist
+      const { data: questionData, error: questionsError } = await supabase
         .from('checklist_itens')
-        .select('*', { count: 'exact', head: true })
-        .eq('checklist_id', id);
+        .select('*')
+        .eq('checklist_id', checklistId)
+        .order('ordem', { ascending: true });
       
-      if (countError) {
-        console.error("Error fetching questions count:", countError);
+      if (questionsError) {
+        console.error("Error fetching checklist questions:", questionsError);
       }
-      
-      // Fetch responsible user if exists
+
+      const questions = questionsError ? [] : questionData.map((q: any) => ({
+        id: q.id,
+        text: q.pergunta,
+        responseType: q.tipo_resposta || 'sim/não',
+        isRequired: q.obrigatorio || true,
+        weight: q.weight || 1,
+        order: q.ordem || 0,
+        allowsPhoto: q.permite_foto || false,
+        allowsVideo: q.permite_video || false,
+        allowsAudio: q.permite_audio || false,
+        allowsFiles: false,
+        options: q.opcoes || [],
+        hint: q.hint || null,
+        groupId: null,
+        displayNumber: `${(q.ordem || 0) + 1}`,
+        parentQuestionId: q.parent_item_id || null,
+        hasSubChecklist: q.has_subchecklist || false,
+        subChecklistId: q.sub_checklist_id || null,
+        conditionValue: q.condition_value || null
+      }));
+
+      // Also fetch user info for the responsible name if needed
       let responsibleName = '';
       if (checklistData.user_id) {
         const { data: userData, error: userError } = await supabase
@@ -50,17 +62,30 @@ export function useChecklistById(id: string) {
           .select('name')
           .eq('id', checklistData.user_id)
           .single();
-        
+          
         if (!userError && userData) {
           responsibleName = userData.name || '';
         }
       }
       
-      // Normalize the origin value to ensure it matches ChecklistOrigin type
-      const normalizedOrigin = normalizeOrigin(checklistData.origin);
+      // Fix any potential issues with company name
+      let companyName = checklistData.companies?.fantasy_name || null;
       
-      // Transform data to match the ChecklistWithStats type
-      const result: ChecklistWithStats = {
+      if (checklistData.company_id && !companyName) {
+        // Try to fetch company name directly if relation didn't work
+        const { data: companyData, error: companyError } = await supabase
+          .from('companies')
+          .select('fantasy_name')
+          .eq('id', checklistData.company_id)
+          .single();
+          
+        if (!companyError && companyData) {
+          companyName = companyData.fantasy_name;
+        }
+      }
+
+      // Transform data and ensure origin is set correctly
+      const checklist: ChecklistWithStats = {
         id: checklistData.id,
         title: checklistData.title,
         description: checklistData.description || '',
@@ -82,40 +107,34 @@ export function useChecklistById(id: string) {
         dueDate: checklistData.due_date,
         is_sub_checklist: checklistData.is_sub_checklist || false,
         isSubChecklist: checklistData.is_sub_checklist || false,
-        origin: normalizedOrigin,
+        origin: checklistData.origin || 'manual',
         parent_question_id: checklistData.parent_question_id,
-        parentQuestionId: checklistData.parent_question_id, // Added missing property
-        totalQuestions: totalQuestions || 0,
+        parentQuestionId: checklistData.parent_question_id,
+        totalQuestions: questions.length,
         completedQuestions: 0,
-        companyName: checklistData.companies?.fantasy_name || '',
-        responsibleName
+        companyName: companyName,
+        responsibleName: responsibleName,
+        questions: questions,
+        groups: [] // No groups yet
       };
-      
-      setChecklist(result);
-    } catch (err) {
-      console.error("Error fetching checklist:", err);
-      setError(err instanceof Error ? err : new Error('Erro ao carregar checklist'));
-    } finally {
-      setLoading(false);
+
+      return checklist;
+    } catch (error) {
+      console.error("Error in useChecklistById:", error);
+      return null;
     }
   };
-  
-  // Helper function to ensure origin is a valid ChecklistOrigin type
-  const normalizeOrigin = (origin: any): ChecklistOrigin => {
-    if (origin === 'ia' || origin === 'csv') {
-      return origin;
-    }
-    return 'manual';
-  };
-  
-  useEffect(() => {
-    fetchChecklistDetails();
-  }, [id]);
-  
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['checklist', id],
+    queryFn: () => fetchChecklistById(id),
+    enabled: !!id
+  });
+
   return {
-    checklist,
-    loading,
+    checklist: data,
+    loading: isLoading,
     error,
-    refetch: fetchChecklistDetails
+    refetch
   };
 }
