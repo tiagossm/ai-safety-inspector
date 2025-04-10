@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { NewChecklist } from "@/types/checklist";
 import { Card } from "@/components/ui/card";
@@ -39,7 +38,6 @@ export function AIChecklistCreator({
   const [recentThemes, setRecentThemes] = useState<string[]>([]);
   const [customTheme, setCustomTheme] = useState("");
   
-  // Fetch recent themes from existing checklists
   useEffect(() => {
     const fetchRecentThemes = async () => {
       try {
@@ -52,7 +50,6 @@ export function AIChecklistCreator({
           
         if (error) throw error;
         
-        // Extract unique themes
         const themes = [...new Set(data
           .filter(item => item.category && item.category.trim() !== '')
           .map(item => item.category))];
@@ -82,7 +79,6 @@ export function AIChecklistCreator({
     setIsGenerating(true);
     
     try {
-      // Update form with current theme field
       setForm(prev => ({
         ...prev,
         theme: form.category || customTheme,

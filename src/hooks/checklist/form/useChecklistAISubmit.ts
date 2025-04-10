@@ -63,12 +63,12 @@ export function useChecklistAISubmit() {
         description: aiOutput.checklistData?.description || formData.description || "Checklist gerado por IA",
         is_template: formData.is_template || false,
         status_checklist: formData.status_checklist || "ativo",
-        category: formData.category || "general", // Keep only one category property
+        category: formData.category || "general",
         company_id: formData.company_id || null,
         responsible_id: formData.responsible_id || null,
         origin: 'ia', // Explicitly set the origin to 'ia'
         status: 'active',
-        theme: formData.theme || null // Add theme property
+        theme: formData.theme || null // Add theme property with proper fallback
       };
       
       console.log("Inserting checklist:", checklistData);
@@ -138,4 +138,3 @@ export function useChecklistAISubmit() {
     createChecklistWithAI
   };
 }
-

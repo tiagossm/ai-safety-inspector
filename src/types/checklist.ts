@@ -1,3 +1,4 @@
+
 export interface CollaboratorType {
   id: string;
   name: string;
@@ -29,6 +30,7 @@ export interface Checklist {
   comments?: ChecklistComment[];
   attachments?: ChecklistAttachment[];
   history?: ChecklistHistory[];
+  theme?: string | null; // Add theme property to match the other interfaces
 }
 
 export interface ChecklistItem {
@@ -63,6 +65,7 @@ export interface NewChecklist {
   due_date?: string | null;
   user_id?: string | null;
   origin?: 'manual' | 'ia' | 'csv';
+  theme?: string | null; // Add theme property to match the other interfaces
 }
 
 export interface ChecklistComment {
