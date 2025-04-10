@@ -11,11 +11,30 @@ import { useChecklistFilters } from './useChecklistFilters';
  */
 export function useNewChecklists() {
   // Filter state
-  const [filterType, setFilterType] = useState("all");
-  const [selectedCompanyId, setSelectedCompanyId] = useState("all");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedOrigin, setSelectedOrigin] = useState("all");
-  const [sortOrder, setSortOrder] = useState("created_desc");
+  const [filterType, setFilterType] = useState(() => {
+    return localStorage.getItem('checklist-filter-type') || 'template';
+  });
+  const [selectedCompanyId, setSelectedCompanyId] = useState(() => {
+    return localStorage.getItem('checklist-company-filter') || 'all';
+  });
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedOrigin, setSelectedOrigin] = useState(() => {
+    return localStorage.getItem('checklist-origin-filter') || 'all';
+  });
+  const [sortOrder, setSortOrder] = useState('created_desc');
+  
+  // Persist filter selections
+  useEffect(() => {
+    localStorage.setItem('checklist-filter-type', filterType);
+  }, [filterType]);
+  
+  useEffect(() => {
+    localStorage.setItem('checklist-company-filter', selectedCompanyId);
+  }, [selectedCompanyId]);
+  
+  useEffect(() => {
+    localStorage.setItem('checklist-origin-filter', selectedOrigin);
+  }, [selectedOrigin]);
   
   // Fetch all checklists
   const fetchChecklists = async (): Promise<ChecklistWithStats[]> => {
@@ -141,23 +160,23 @@ export function useNewChecklists() {
   // Ensure our state stays in sync
   useEffect(() => {
     setDerivedFilterType(filterType);
-  }, [filterType]);
+  }, [filterType, setDerivedFilterType]);
 
   useEffect(() => {
     setDerivedSelectedCompanyId(selectedCompanyId);
-  }, [selectedCompanyId]);
+  }, [selectedCompanyId, setDerivedSelectedCompanyId]);
 
   useEffect(() => {
     setDerivedSelectedCategory(selectedCategory);
-  }, [selectedCategory]);
+  }, [selectedCategory, setDerivedSelectedCategory]);
 
   useEffect(() => {
     setDerivedSelectedOrigin(selectedOrigin);
-  }, [selectedOrigin]);
+  }, [selectedOrigin, setDerivedSelectedOrigin]);
 
   useEffect(() => {
     setDerivedSortOrder(sortOrder);
-  }, [sortOrder]);
+  }, [sortOrder, setDerivedSortOrder]);
 
   return {
     checklists: filteredChecklists,

@@ -10,7 +10,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { DeleteChecklistDialogProps } from "@/types/newChecklist";
+import { Loader2 } from "lucide-react";
+
+interface DeleteChecklistDialogProps {
+  checklistId: string;
+  checklistTitle: string;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onDeleted?: () => void;
+  isDeleting?: boolean;
+}
 
 export function DeleteChecklistDialog({
   checklistId,
@@ -18,30 +27,39 @@ export function DeleteChecklistDialog({
   isOpen,
   onOpenChange,
   onDeleted,
-  isDeleting = false,
+  isDeleting = false
 }: DeleteChecklistDialogProps) {
-  const handleDelete = async () => {
-    await onDeleted();
+  const handleDeleteClick = async () => {
+    if (onDeleted) {
+      onDeleted();
+    }
   };
 
   return (
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Excluir checklist</AlertDialogTitle>
+          <AlertDialogTitle>Excluir Checklist</AlertDialogTitle>
           <AlertDialogDescription>
-            Você tem certeza que deseja excluir o checklist "{checklistTitle}"?
-            Esta ação não pode ser desfeita.
+            Tem certeza que deseja excluir o checklist "{checklistTitle}"? 
+            Esta ação não pode ser desfeita e todos os dados associados serão perdidos.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
-            onClick={handleDelete}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={handleDeleteClick}
+            className="bg-destructive hover:bg-destructive/90"
             disabled={isDeleting}
           >
-            {isDeleting ? "Excluindo..." : "Excluir"}
+            {isDeleting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Excluindo...
+              </>
+            ) : (
+              "Excluir"
+            )}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

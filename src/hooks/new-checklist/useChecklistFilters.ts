@@ -46,6 +46,8 @@ export function useChecklistFilters(
       result = result.filter(checklist => !checklist.is_template && checklist.status === 'active');
     } else if (filterType === 'template') {
       result = result.filter(checklist => checklist.is_template);
+    } else if (filterType === 'inactive') {
+      result = result.filter(checklist => !checklist.is_template && checklist.status === 'inactive');
     }
     
     // Apply company filter

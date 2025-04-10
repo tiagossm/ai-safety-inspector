@@ -2,7 +2,7 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { ChecklistOrigin } from "@/types/newChecklist";
-import { Bot, FileSpreadsheet, Users } from "lucide-react";
+import { FileText, Bot, FileSpreadsheet } from "lucide-react";
 
 interface ChecklistOriginBadgeProps {
   origin: ChecklistOrigin;
@@ -31,13 +31,13 @@ export function ChecklistOriginBadge({
   const getOriginIcon = (origin: ChecklistOrigin) => {
     switch (origin) {
       case 'manual':
-        return <Users className="h-3.5 w-3.5" />;
+        return <FileText className="h-3.5 w-3.5" />;
       case 'ia':
         return <Bot className="h-3.5 w-3.5" />;
       case 'csv':
         return <FileSpreadsheet className="h-3.5 w-3.5" />;
       default:
-        return <Users className="h-3.5 w-3.5" />;
+        return <FileText className="h-3.5 w-3.5" />;
     }
   };
   

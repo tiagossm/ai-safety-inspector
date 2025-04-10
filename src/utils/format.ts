@@ -1,49 +1,38 @@
 
-import { format, parseISO } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { format, isValid } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 /**
  * Formats a date string to a localized format
+ * 
+ * @param dateStr Date string to format
+ * @param formatStr Optional format string (defaults to dd/MM/yyyy)
+ * @returns Formatted date string or empty string if invalid
  */
-export const formatDate = (dateString: string): string => {
-  if (!dateString) return "-";
+export const formatDate = (dateStr: string, formatStr: string = 'dd/MM/yyyy'): string => {
+  if (!dateStr) return '';
   
-  try {
-    const date = parseISO(dateString);
-    return format(date, "dd/MM/yyyy", { locale: ptBR });
-  } catch (error) {
-    console.error("Error parsing date:", error);
-    return dateString;
-  }
-};
-
-/**
- * Formats a date string to a localized format with time
- */
-export const formatDateTime = (dateString: string): string => {
-  if (!dateString) return "-";
+  const date = new Date(dateStr);
   
-  try {
-    const date = parseISO(dateString);
-    return format(date, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
-  } catch (error) {
-    console.error("Error parsing date:", error);
-    return dateString;
-  }
+  if (!isValid(date)) return '';
+  
+  return format(date, formatStr, { locale: ptBR });
 };
 
 /**
- * Formats a number as a percentage
+ * Formats currency values to BRL format
  */
-export const formatPercent = (value: number): string => {
-  return `${Math.round(value)}%`;
+export const formatCurrency = (value: number): string => {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(value);
 };
 
 /**
- * Truncates a string if it exceeds the maximum length
+ * Truncates text with ellipsis
  */
-export const truncateString = (str: string, maxLength: number): string => {
-  if (!str) return "";
-  if (str.length <= maxLength) return str;
-  return `${str.substring(0, maxLength)}...`;
+export const truncateText = (text: string, maxLength: number): string => {
+  if (!text || text.length <= maxLength) return text;
+  return `${text.substring(0, maxLength)}...`;
 };

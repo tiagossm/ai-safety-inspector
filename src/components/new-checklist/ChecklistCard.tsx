@@ -51,7 +51,7 @@ export function ChecklistCard({
   return (
     <Card 
       className={cn(
-        "h-full flex flex-col transition-all hover:shadow-md cursor-pointer",
+        "h-full flex flex-col transition-all hover:shadow-md cursor-pointer border border-slate-200",
         checklist.status === "inactive" && "opacity-70"
       )}
       onClick={() => onOpen(checklist.id)}
@@ -78,10 +78,15 @@ export function ChecklistCard({
       
       <CardContent className="pb-2 flex-grow">
         <div className="grid gap-2 text-sm">
-          {checklist.companyName && (
+          {checklist.companyName ? (
             <div>
               <span className="text-muted-foreground">Empresa:</span>{" "}
               <span className="font-medium">{checklist.companyName}</span>
+            </div>
+          ) : (
+            <div>
+              <span className="text-muted-foreground">Empresa:</span>{" "}
+              <span className="font-medium text-gray-500 italic">Sem empresa associada</span>
             </div>
           )}
           

@@ -27,7 +27,7 @@ const NewChecklists: React.FC = () => {
   const [checklistToDelete, setChecklistToDelete] = useState({ id: "", title: "" });
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [activeTab, setActiveTab] = useState(() => {
-    return localStorage.getItem('checklist-active-tab') || "active";
+    return localStorage.getItem('checklist-active-tab') || "template";
   });
   const navigate = useNavigate();
   

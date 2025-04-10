@@ -40,7 +40,11 @@ export function ChecklistTabs({
   onBulkStatusChange,
   onChecklistStatusChange
 }: ChecklistTabsProps) {
-  const [viewMode, setViewMode] = React.useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = React.useState<"grid" | "list">(() => {
+    // Try to retrieve from localStorage
+    const savedMode = localStorage.getItem("checklist-view-mode");
+    return savedMode === "list" ? "list" : "grid";
+  });
 
   React.useEffect(() => {
     if (activeTab) {
@@ -50,6 +54,7 @@ export function ChecklistTabs({
 
   const handleViewModeChange = (mode: "grid" | "list") => {
     setViewMode(mode);
+    localStorage.setItem("checklist-view-mode", mode);
   };
 
   return (
@@ -57,10 +62,10 @@ export function ChecklistTabs({
       <Tabs value={activeTab} onValueChange={onTabChange} className="space-y-4">
         <div className="flex justify-between items-center">
           <TabsList>
-            <TabsTrigger value="all" className="min-w-[100px]">
-              Todos
+            <TabsTrigger value="template" className="min-w-[100px]">
+              Templates
               <span className="ml-2 text-xs bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded-full">
-                {checklistCounts.active + checklistCounts.template + checklistCounts.inactive}
+                {checklistCounts.template}
               </span>
             </TabsTrigger>
             <TabsTrigger value="active" className="min-w-[100px]">
@@ -75,10 +80,10 @@ export function ChecklistTabs({
                 {checklistCounts.inactive}
               </span>
             </TabsTrigger>
-            <TabsTrigger value="template" className="min-w-[100px]">
-              Templates
+            <TabsTrigger value="all" className="min-w-[100px]">
+              Todos
               <span className="ml-2 text-xs bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded-full">
-                {checklistCounts.template}
+                {checklistCounts.active + checklistCounts.template + checklistCounts.inactive}
               </span>
             </TabsTrigger>
           </TabsList>
@@ -106,7 +111,7 @@ export function ChecklistTabs({
         </div>
 
         {/* Conteúdo das Tabs */}
-        {["all", "active", "inactive", "template"].map((tab) => (
+        {["template", "active", "inactive", "all"].map((tab) => (
           <TabsContent key={tab} value={tab} className="space-y-4">
             {viewMode === "grid" ? (
               <ChecklistGrid
