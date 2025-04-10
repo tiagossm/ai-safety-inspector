@@ -1,7 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { ChecklistWithStats } from '@/types/newChecklist';
-import { fetchChecklists } from './queries/useChecklistQueries';
+import { supabase } from '@/integrations/supabase/client';
+import { transformDbChecklistsToStats } from '@/services/checklist/checklistTransformers';
 
 /**
  * @deprecated Use useChecklistsQuery instead
@@ -15,8 +16,19 @@ export function useChecklistFetch() {
   const fetchChecklistsData = async () => {
     try {
       setLoading(true);
-      const data = await fetchChecklists();
-      setChecklists(data);
+      
+      const { data, error } = await supabase
+        .from('checklists')
+        .select(`
+          *,
+          companies:company_id (id, fantasy_name)
+        `)
+        .order('created_at', { ascending: false });
+        
+      if (error) throw error;
+      
+      const transformedData = transformDbChecklistsToStats(data || []);
+      setChecklists(transformedData);
       setError(null);
     } catch (err) {
       console.error("Error fetching checklists:", err);

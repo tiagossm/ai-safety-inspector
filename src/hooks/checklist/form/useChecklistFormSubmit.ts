@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useChecklistAISubmit } from "./useChecklistAISubmit";
 import { useChecklistManualSubmit } from "./useChecklistManualSubmit";
 import { useChecklistImportSubmit } from "./useChecklistImportSubmit";
-import { NewChecklist as NewChecklistType } from "@/types/newChecklist";
+import { NewChecklist as NewChecklistType, ChecklistOrigin } from "@/types/newChecklist";
 
 export function useChecklistFormSubmit() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -21,6 +21,14 @@ export function useChecklistFormSubmit() {
       return status;
     }
     return 'active';
+  };
+  
+  // Helper to ensure origin is a valid ChecklistOrigin type
+  const normalizeOrigin = (origin?: string): ChecklistOrigin => {
+    if (origin === 'manual' || origin === 'ia' || origin === 'csv') {
+      return origin as ChecklistOrigin;
+    }
+    return 'manual';
   };
 
   const handleFormSubmit = async (
@@ -47,12 +55,26 @@ export function useChecklistFormSubmit() {
       
       let success = false;
       let checklistId: string | null = null;
+      
+      // Set the origin based on the active tab
+      let origin: ChecklistOrigin = 'manual';
+      
+      // Map tab to origin type
+      if (activeTab === 'ai') {
+        origin = 'ia';
+      } else if (activeTab === 'import') {
+        origin = 'csv';
+      }
 
-      // Make sure we're using the correct status type
+      // Make sure we're using the correct status type and preserving the origin
       const processedForm = {
         ...form,
-        status: normalizeStatus(form.status)
+        status: normalizeStatus(form.status),
+        origin: form.origin ? normalizeOrigin(form.origin) : origin,
+        company_id: form.company_id === "none" ? null : form.company_id
       };
+      
+      console.log("Processed form with origin:", processedForm);
       
       // Based on active tab, execute the appropriate function
       if (activeTab === "manual") {

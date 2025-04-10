@@ -2,11 +2,8 @@
 import { toast } from "sonner";
 import { NewChecklist } from "@/types/checklist";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
 
 export function useChecklistAISubmit() {
-  const navigate = useNavigate();
-
   const createChecklistWithAI = async (
     aiPrompt: string,
     formData: NewChecklist,
@@ -67,9 +64,11 @@ export function useChecklistAISubmit() {
         is_template: formData.is_template || false,
         status_checklist: formData.status_checklist || "ativo",
         category: formData.category || "general",
-        company_id: formData.company_id || null,
+        company_id: formData.company_id || null, // Ensure company_id is always included
         responsible_id: formData.responsible_id || null,
-        status: 'active'
+        origin: 'ia', // Explicitly set the origin to 'ia'
+        status: 'active',
+        theme: formData.theme || null, // Add theme field from formData
       };
       
       console.log("Inserting checklist:", checklistData);

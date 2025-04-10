@@ -2,65 +2,56 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { ChecklistOrigin } from "@/types/newChecklist";
-import { FileText, Bot, FileSpreadsheet } from "lucide-react";
+import { FileText, Bot, Upload } from "lucide-react";
 
 interface ChecklistOriginBadgeProps {
   origin: ChecklistOrigin;
-  showLabel?: boolean;
-  className?: string;
 }
 
-export function ChecklistOriginBadge({ 
-  origin, 
-  showLabel = true,
-  className = ""
-}: ChecklistOriginBadgeProps) {
-  const getOriginLabel = (origin: ChecklistOrigin): string => {
-    switch (origin) {
-      case 'manual':
-        return 'Manual';
-      case 'ia':
-        return 'IA';
-      case 'csv':
-        return 'Importado';
-      default:
-        return 'Manual';
-    }
-  };
-  
-  const getOriginIcon = (origin: ChecklistOrigin) => {
-    switch (origin) {
-      case 'manual':
-        return <FileText className="h-3.5 w-3.5" />;
-      case 'ia':
-        return <Bot className="h-3.5 w-3.5" />;
-      case 'csv':
-        return <FileSpreadsheet className="h-3.5 w-3.5" />;
-      default:
-        return <FileText className="h-3.5 w-3.5" />;
-    }
-  };
-  
-  const getOriginVariant = (origin: ChecklistOrigin): "default" | "outline" | "secondary" | "destructive" => {
-    switch (origin) {
-      case 'manual':
-        return 'outline';
-      case 'ia':
-        return 'secondary';
-      case 'csv':
-        return 'outline';
-      default:
-        return 'outline';
-    }
-  };
-  
-  return (
-    <Badge 
-      variant={getOriginVariant(origin)} 
-      className={`flex items-center gap-1 text-xs font-normal ${className}`}
-    >
-      {getOriginIcon(origin)}
-      {showLabel && <span>{getOriginLabel(origin)}</span>}
-    </Badge>
-  );
+export function ChecklistOriginBadge({ origin }: ChecklistOriginBadgeProps) {
+  // Safely handle origin values
+  const safeOrigin = (origin || 'manual') as ChecklistOrigin;
+
+  switch (safeOrigin) {
+    case "manual":
+      return (
+        <Badge 
+          variant="outline" 
+          className="bg-slate-50 text-slate-700 border-slate-200 flex items-center gap-1"
+        >
+          <FileText className="h-3 w-3" />
+          <span>Manual</span>
+        </Badge>
+      );
+    case "ia":
+      return (
+        <Badge 
+          variant="outline" 
+          className="bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1"
+        >
+          <Bot className="h-3 w-3" />
+          <span>IA</span>
+        </Badge>
+      );
+    case "csv":
+      return (
+        <Badge 
+          variant="outline" 
+          className="bg-green-50 text-green-700 border-green-200 flex items-center gap-1"
+        >
+          <Upload className="h-3 w-3" />
+          <span>CSV</span>
+        </Badge>
+      );
+    default:
+      return (
+        <Badge 
+          variant="outline" 
+          className="bg-slate-50 text-slate-700 border-slate-200"
+        >
+          <FileText className="h-3 w-3 mr-1" />
+          Manual
+        </Badge>
+      );
+  }
 }
