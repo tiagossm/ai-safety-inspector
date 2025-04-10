@@ -1,7 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ChecklistWithStats } from "@/types/newChecklist";
+import { ChecklistWithStats, ChecklistOrigin } from "@/types/newChecklist";
 
 // Helper function to transform the database results into our expected format
 const transformChecklistData = (data: any[]): ChecklistWithStats[] => {
@@ -13,6 +13,7 @@ const transformChecklistData = (data: any[]): ChecklistWithStats[] => {
     isTemplate: item.is_template || false,
     status: item.status || 'active',
     category: item.category || '',
+    theme: item.theme || item.category || '', // Add theme property with fallback to category
     responsible_id: item.responsible_id,
     responsibleId: item.responsible_id,
     company_id: item.company_id,
@@ -27,14 +28,13 @@ const transformChecklistData = (data: any[]): ChecklistWithStats[] => {
     dueDate: item.due_date,
     is_sub_checklist: item.is_sub_checklist || false,
     isSubChecklist: item.is_sub_checklist || false,
-    origin: item.origin || 'manual',
+    origin: item.origin as ChecklistOrigin || 'manual',
     parent_question_id: item.parent_question_id,
     parentQuestionId: item.parent_question_id,
     totalQuestions: 0,
     completedQuestions: 0,
     companyName: item.companies?.fantasy_name || '',
-    responsibleName: item.responsible?.name || '',
-    theme: item.theme || null
+    responsibleName: item.responsible?.name || '' // Use responsible instead of users
   }));
 };
 
@@ -44,7 +44,7 @@ export const fetchChecklists = async (): Promise<ChecklistWithStats[]> => {
     .select(`
       *,
       companies:company_id (id, fantasy_name),
-      responsible:responsible_id (id, name)
+      responsible:responsible_id (id, name) 
     `)
     .order('created_at', { ascending: false });
   
