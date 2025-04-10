@@ -68,7 +68,8 @@ export function useChecklistAISubmit() {
         responsible_id: formData.responsible_id || null,
         origin: 'ia', // Explicitly set the origin to 'ia'
         status: 'active',
-        theme: formData.theme || null, // Add theme field from formData
+        // Store category as theme if needed for backward compatibility
+        category: formData.category || null, 
       };
       
       console.log("Inserting checklist:", checklistData);

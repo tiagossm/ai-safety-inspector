@@ -1,111 +1,119 @@
 
-import { supabase } from '@/integrations/supabase/client';
-import { ChecklistWithStats } from '@/types/newChecklist';
-import { transformDbChecklistsToStats } from '@/services/checklist/checklistTransformers';
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { ChecklistWithStats, ChecklistOrigin } from "@/types/newChecklist";
 
-/**
- * Fetch all checklists with related data
- */
+// Helper function to transform the database results into our expected format
+const transformChecklistData = (data: any[]): ChecklistWithStats[] => {
+  return data.map((item: any) => ({
+    id: item.id,
+    title: item.title,
+    description: item.description || '',
+    is_template: item.is_template || false,
+    isTemplate: item.is_template || false,
+    status: item.status || 'active',
+    category: item.category || '',
+    responsible_id: item.responsible_id,
+    responsibleId: item.responsible_id,
+    company_id: item.company_id,
+    companyId: item.company_id,
+    user_id: item.user_id,
+    userId: item.user_id,
+    created_at: item.created_at,
+    createdAt: item.created_at,
+    updated_at: item.updated_at,
+    updatedAt: item.updated_at,
+    due_date: item.due_date,
+    dueDate: item.due_date,
+    is_sub_checklist: item.is_sub_checklist || false,
+    isSubChecklist: item.is_sub_checklist || false,
+    origin: item.origin as ChecklistOrigin || 'manual',
+    parent_question_id: item.parent_question_id,
+    parentQuestionId: item.parent_question_id,
+    totalQuestions: 0,
+    completedQuestions: 0,
+    companyName: item.companies?.fantasy_name || '',
+    responsibleName: item.users?.name || ''
+  }));
+};
+
 export const fetchChecklists = async (): Promise<ChecklistWithStats[]> => {
   const { data, error } = await supabase
     .from('checklists')
     .select(`
       *,
-      companies:company_id (id, fantasy_name)
+      companies:company_id (id, fantasy_name),
+      users:user_id (id, name)
     `)
     .order('created_at', { ascending: false });
-    
-  if (error) throw error;
   
-  // Also fetch question counts for each checklist
-  const checklistsWithCounts = await Promise.all(
-    data.map(async (checklist) => {
-      const { count, error: countError } = await supabase
-        .from('checklist_itens')
-        .select('*', { count: 'exact', head: true })
-        .eq('checklist_id', checklist.id);
-        
-      return {
-        ...checklist,
-        totalQuestions: count || 0
-      };
-    })
+  if (error) {
+    console.error("Error fetching checklists:", error);
+    throw error;
+  }
+  
+  return transformChecklistData(data || []);
+};
+
+export const fetchAllChecklistsData = async (): Promise<ChecklistWithStats[]> => {
+  const checklists = await fetchChecklists();
+  
+  // Get question counts for each checklist
+  const checklistIds = checklists.map(c => c.id);
+  const questionsCountPromises = checklistIds.map((id: string) => 
+    supabase
+      .from('checklist_itens')
+      .select('*', { count: 'exact', head: true })
+      .eq('checklist_id', id)
   );
   
-  return transformDbChecklistsToStats(checklistsWithCounts);
+  const questionsCountResults = await Promise.all(questionsCountPromises);
+  
+  // Add question counts to checklists
+  return checklists.map((checklist, index) => ({
+    ...checklist,
+    totalQuestions: questionsCountResults[index].count || 0
+  }));
 };
 
-/**
- * Fetch a single checklist by ID
- */
-export const fetchChecklistById = async (id: string): Promise<ChecklistWithStats | null> => {
-  const { data, error } = await supabase
-    .from('checklists')
-    .select(`
-      *,
-      companies:company_id (id, fantasy_name)
-    `)
-    .eq('id', id)
-    .single();
-    
-  if (error) return null;
-  
-  // Get question count
-  const { count, error: countError } = await supabase
-    .from('checklist_itens')
-    .select('*', { count: 'exact', head: true })
-    .eq('checklist_id', id);
-  
-  const checklistWithCount = {
-    ...data,
-    totalQuestions: count || 0
-  };
-  
-  const [transformedChecklist] = transformDbChecklistsToStats([checklistWithCount]);
-  return transformedChecklist;
+// Export the query hooks with the correct names
+export const useChecklistsQuery = () => {
+  return useQuery({
+    queryKey: ['checklists'],
+    queryFn: fetchAllChecklistsData
+  });
 };
 
-/**
- * Update a checklist's status
- */
-export const updateChecklistStatus = async (id: string, status: 'active' | 'inactive'): Promise<boolean> => {
-  const { error } = await supabase
-    .from('checklists')
-    .update({ status })
-    .eq('id', id);
-    
-  return !error;
-};
-
-/**
- * Update multiple checklists' statuses at once
- */
-export const updateChecklistsStatus = async (ids: string[], status: 'active' | 'inactive'): Promise<boolean> => {
-  const { error } = await supabase
-    .from('checklists')
-    .update({ status })
-    .in('id', ids);
-    
-  return !error;
-};
-
-/**
- * Delete a checklist
- */
-export const deleteChecklist = async (id: string): Promise<boolean> => {
-  // First delete dependent records (questions)
-  const { error: itemsError } = await supabase
-    .from('checklist_itens')
-    .delete()
-    .eq('checklist_id', id);
-  
-  if (itemsError) return false;
-  
-  // Then delete the checklist itself
-  const { error } = await supabase
-    .from('checklists')
-    .delete()
-    .eq('id', id);
-    
-  return !error;
+export const useChecklistQuery = (id: string) => {
+  return useQuery({
+    queryKey: ['checklist', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('checklists')
+        .select(`
+          *,
+          companies:company_id (id, fantasy_name),
+          users:user_id (id, name)
+        `)
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      
+      // Get questions for this checklist
+      const { data: questions, error: questionsError } = await supabase
+        .from('checklist_itens')
+        .select('*')
+        .eq('checklist_id', id)
+        .order('ordem', { ascending: true });
+      
+      if (questionsError) throw questionsError;
+      
+      const checklist = transformChecklistData([data])[0];
+      checklist.totalQuestions = questions ? questions.length : 0;
+      
+      return checklist;
+    },
+    enabled: !!id
+  });
 };

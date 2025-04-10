@@ -128,7 +128,6 @@ export function AIChecklistCreator({
                 <CompanySelector
                   value={form.company_id?.toString() || ""}
                   onSelect={(companyId) => setForm({ ...form, company_id: companyId })}
-                  placeholder="Selecione uma empresa (opcional)"
                 />
               </div>
               

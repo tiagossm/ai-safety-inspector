@@ -1,4 +1,3 @@
-
 export interface NewChecklistPayload {
   title: string;
   description: string;
@@ -11,6 +10,7 @@ export interface NewChecklistPayload {
   user_id?: string | null;
   status_checklist?: "ativo" | "inativo";
   origin?: 'manual' | 'ia' | 'csv';
+  theme?: string | null; // Add theme property
 }
 
 export interface ChecklistFilters {
@@ -120,6 +120,7 @@ export interface Checklist {
   parent_question_id: string | null;
   origin: ChecklistOrigin;
   status_checklist: "ativo" | "inativo";
+  theme?: string | null; // Add theme property
 }
 
 export interface ChecklistQuestion {
@@ -177,4 +178,5 @@ export interface NewChecklist {
   due_date?: string | null;
   user_id?: string | null;
   origin?: ChecklistOrigin;
+  theme?: string | null; // Add theme property
 }

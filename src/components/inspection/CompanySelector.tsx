@@ -13,12 +13,14 @@ export interface CompanySelectorProps {
   value: string;
   onSelect: (companyId: string, companyData?: any) => void;
   includeEmptyOption?: boolean;
+  placeholder?: string; // Add the placeholder prop
 }
 
 export function CompanySelector({ 
   value, 
   onSelect,
-  includeEmptyOption = false
+  includeEmptyOption = false,
+  placeholder = "Selecione uma empresa" // Set a default value
 }: CompanySelectorProps) {
   const [companies, setCompanies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,7 +69,7 @@ export function CompanySelector({
   return (
     <Select value={safeValue} onValueChange={handleCompanySelection}>
       <SelectTrigger className="w-full">
-        <SelectValue placeholder="Selecione uma empresa" />
+        <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
         {includeEmptyOption && (
