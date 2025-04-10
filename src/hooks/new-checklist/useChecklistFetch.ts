@@ -1,8 +1,7 @@
 
-// This file will be replaced by our more focused hooks
 import { useState, useEffect } from 'react';
 import { ChecklistWithStats } from '@/types/newChecklist';
-import { fetchAllChecklistsData } from './queries/useChecklistQueries';
+import { fetchChecklists } from './queries/useChecklistQueries';
 
 /**
  * @deprecated Use useChecklistsQuery instead
@@ -13,10 +12,10 @@ export function useChecklistFetch() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchChecklists = async () => {
+  const fetchChecklistsData = async () => {
     try {
       setLoading(true);
-      const data = await fetchAllChecklistsData();
+      const data = await fetchChecklists();
       setChecklists(data);
       setError(null);
     } catch (err) {
@@ -30,14 +29,14 @@ export function useChecklistFetch() {
 
   // Initial fetch
   useEffect(() => {
-    fetchChecklists();
+    fetchChecklistsData();
   }, []);
 
   return {
     checklists,
     loading,
     error,
-    refetch: fetchChecklists
+    refetch: fetchChecklistsData
   };
 }
 
