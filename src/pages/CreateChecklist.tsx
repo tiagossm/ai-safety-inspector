@@ -10,6 +10,7 @@ import { ManualCreateForm } from "@/components/checklists/create-forms/ManualCre
 import { ImportCreateForm } from "@/components/checklists/create-forms/ImportCreateForm";
 import { useChecklistCreation } from "@/hooks/checklist/useChecklistCreation";
 import { NewChecklist } from "@/types/newChecklist";
+import { ChecklistOrigin } from "@/types/newChecklist";
 
 export default function CreateChecklist() {
   const navigate = useNavigate();
@@ -40,13 +41,13 @@ export default function CreateChecklist() {
       title: form.title,
       description: form.description || "",
       is_template: form.is_template || false,
-      status: normalizeStatus(form.status), // Explicitly normalize to "active" | "inactive"
+      status: normalizeStatus(form.status) as "active" | "inactive", // Force the type assertion
       category: form.category || "",
       responsible_id: form.responsible_id,
       company_id: form.company_id,
       due_date: form.due_date,
       user_id: form.user_id,
-      origin: activeTab === "import" ? "csv" : "manual",
+      origin: activeTab === "import" ? "csv" : "manual" as ChecklistOrigin,
       status_checklist: form.status_checklist || "ativo"
     };
     
@@ -59,13 +60,13 @@ export default function CreateChecklist() {
       title: form.title,
       description: form.description || "",
       is_template: form.is_template || false,
-      status: normalizeStatus(form.status), // Explicitly normalize to "active" | "inactive"
+      status: normalizeStatus(form.status) as "active" | "inactive", // Force the type assertion
       category: form.category || "",
       responsible_id: form.responsible_id,
       company_id: form.company_id,
       due_date: form.due_date,
       user_id: form.user_id,
-      origin: "ia",
+      origin: "ia" as ChecklistOrigin,
       status_checklist: form.status_checklist || "ativo"
     };
     
