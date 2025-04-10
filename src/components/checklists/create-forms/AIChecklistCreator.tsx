@@ -92,13 +92,14 @@ export function AIChecklistCreator({
   };
   
   const handleThemeSelect = (theme: string) => {
-    setForm({ ...form, category: theme });
-    setCustomTheme("");
+    setForm({ ...form, category: theme, theme: theme });
+    setCustomTheme(theme);
   };
   
   const handleCustomThemeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCustomTheme(e.target.value);
-    setForm({ ...form, category: e.target.value });
+    const value = e.target.value;
+    setCustomTheme(value);
+    setForm({ ...form, category: value, theme: value });
   };
 
   return (

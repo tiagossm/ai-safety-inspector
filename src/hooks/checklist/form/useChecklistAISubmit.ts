@@ -68,7 +68,7 @@ export function useChecklistAISubmit() {
         responsible_id: formData.responsible_id || null,
         origin: 'ia', // Explicitly set the origin to 'ia'
         status: 'active',
-        theme: formData.theme || null // Add theme property with proper fallback
+        theme: formData.theme || formData.category || null // Add theme property with fallback to category
       };
       
       console.log("Inserting checklist:", checklistData);
