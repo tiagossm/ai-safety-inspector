@@ -33,13 +33,13 @@ export function useChecklists(filters: ChecklistsFilter = {}) {
 
   const queryFn = async (): Promise<ChecklistsResult> => {
     try {
-      // Build base query
+      // Build base query with specified relationship columns
       let query = supabase
         .from('checklists')
         .select(`
           *,
           companies(*),
-          users:responsible_id(*)
+          users:responsible_id(id, name, email)
         `, { count: 'exact' });
 
       // Apply filters
