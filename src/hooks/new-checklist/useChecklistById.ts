@@ -134,11 +134,11 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
         groups.push(defaultGroup);
       }
       
-      // Extract responsible name safely from the users object returned by Supabase
+      // Extract responsible name from the name property returned by the query
+      // The name is now directly accessible from users object
       let responsibleName = "";
-      
-      if (checklist.responsible_id && checklist.users) {
-        responsibleName = checklist.users.name || "";
+      if (checklist.users) {
+        responsibleName = checklist.users || "";
       }
       
       // Prepare checklist data

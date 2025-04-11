@@ -24,7 +24,7 @@ export const transformChecklists = (data: any[]) => {
     totalQuestions: item.total_questions || 0,
     completedQuestions: item.completed_questions || 0,
     companyName: item.companies?.fantasy_name,
-    responsibleName: item.responsibleName || item.users?.name || ""
+    responsibleName: item.responsibleName || item.users || ""
   })) as ChecklistWithStats[];
 };
 
@@ -55,11 +55,11 @@ export const transformChecklistsStats = (data: any[]) => {
  * Safely transforms a raw database response to a ChecklistWithStats object
  */
 export const transformResponseToChecklistWithStats = (item: any): ChecklistWithStats => {
-  // Extract responsible name safely from the pre-extracted value or relationship object
+  // Extract responsible name safely from the pre-extracted value
   let responsibleName = item.responsibleName || "";
   
-  if (!responsibleName && item.users && typeof item.users === 'object') {
-    responsibleName = item.users.name || "";
+  if (!responsibleName && item.users) {
+    responsibleName = item.users || "";
   }
   
   return {
