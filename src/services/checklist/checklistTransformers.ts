@@ -1,4 +1,3 @@
-
 import { ChecklistWithStats } from "@/types/newChecklist";
 
 export const transformChecklists = (data: any[]) => {
@@ -55,12 +54,12 @@ export const transformChecklistsStats = (data: any[]) => {
  * Safely transforms a raw database response to a ChecklistWithStats object
  */
 export const transformResponseToChecklistWithStats = (item: any): ChecklistWithStats => {
-  // Extract responsible name safely from the pre-extracted value
+  // Extract responsible name safely with additional null checks
   let responsibleName = item.responsibleName || "";
   
   // If no responsibleName was provided but users object exists
   if (!responsibleName && item?.users && typeof item?.users === 'object') {
-    responsibleName = item.users?.name || "";
+    responsibleName = item.users?.name ?? "";
   }
   
   return {
