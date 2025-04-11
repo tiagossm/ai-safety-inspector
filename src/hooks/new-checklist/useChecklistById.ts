@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats } from "@/types/newChecklist";
@@ -135,7 +136,9 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
       
       // Get responsible name safely
       let responsibleName = "";
-      if (checklist.responsible_id && checklist.users && typeof checklist.users === 'object') {
+      
+      // Add null checks and use optional chaining for safer access
+      if (checklist.responsible_id) {
         responsibleName = checklist.users?.name ?? "";
       }
       

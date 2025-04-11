@@ -1,4 +1,3 @@
-
 import { ChecklistWithStats } from "@/types/newChecklist";
 
 export const transformChecklists = (data: any[]) => {
@@ -49,4 +48,37 @@ export const transformChecklistsStats = (data: any[]) => {
     companyName: item.company_name,
     responsibleName: item.responsible_name
   })) as ChecklistWithStats[];
+};
+
+/**
+ * Safely transforms a raw database response to a ChecklistWithStats object
+ */
+export const transformResponseToChecklistWithStats = (item: any): ChecklistWithStats => {
+  // Extract responsible name safely
+  let responsibleName = "";
+  
+  if (item.users && typeof item.users === 'object') {
+    responsibleName = item.users?.name ?? "";
+  }
+  
+  return {
+    id: item.id,
+    title: item.title,
+    description: item.description || "",
+    isTemplate: item.is_template,
+    is_template: item.is_template, // Include both for compatibility
+    status: item.status || "active",
+    category: item.category || "",
+    origin: item.origin || "manual",
+    responsibleId: item.responsible_id || "",
+    companyId: item.company_id || "",
+    userId: item.user_id || "",
+    createdAt: item.created_at,
+    updatedAt: item.updated_at,
+    dueDate: item.due_date,
+    isSubChecklist: item.is_sub_checklist || false,
+    totalQuestions: 0, // We'll need another query to get this info
+    companyName: item.companies?.fantasy_name || "",
+    responsibleName: responsibleName,
+  };
 };
