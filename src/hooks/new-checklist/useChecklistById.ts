@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats } from "@/types/newChecklist";
 import { UiGroup, UiQuestion } from "@/types/editorTypes";
@@ -27,7 +26,6 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
       setLoading(true);
       setError(null);
 
-      // Fetch checklist data with explicit relationship paths to avoid ambiguity
       const { data: checklist, error: checklistError } = await supabase
         .from("checklists")
         .select(`
@@ -42,7 +40,6 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
         throw checklistError;
       }
 
-      // Fetch checklist items
       const { data: questionItems, error: questionsError } = await supabase
         .from("checklist_itens")
         .select(`*`)
@@ -53,12 +50,10 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
         throw questionsError;
       }
 
-      // Process questions to get groups
       const processedItems = questionItems || [];
       const groups: UiGroup[] = [];
       const questions: UiQuestion[] = [];
       
-      // First pass: extract group information from hints
       processedItems.forEach(item => {
         let groupId = null;
         let groupTitle = "General";
@@ -70,7 +65,6 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
               groupId = hintData.groupId;
               groupTitle = hintData.groupTitle || "General";
               
-              // Add group if it doesn't exist
               if (!groups.some(g => g.id === groupId)) {
                 groups.push({
                   id: groupId,
@@ -85,12 +79,10 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
           console.error("Error parsing hint:", e);
         }
         
-        // Convert opcoes to string array if it exists
         let options: string[] = [];
         if (item.opcoes) {
           try {
             if (Array.isArray(item.opcoes)) {
-              // Convert each item to string, even if they might be numbers or other types
               options = item.opcoes.map(opt => String(opt));
             }
           } catch (e) {
@@ -120,10 +112,8 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
         questions.push(question);
       });
       
-      // Sort groups by their order
       groups.sort((a, b) => a.order - b.order);
       
-      // If no groups were found but there are questions, create a default group
       if (groups.length === 0 && questions.length > 0) {
         const defaultGroup: UiGroup = {
           id: "default",
@@ -134,14 +124,11 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
         groups.push(defaultGroup);
       }
       
-      // Get user data from the users object - with proper null check
       let responsibleName = "";
       if (checklist?.users && typeof checklist?.users === 'object') {
-        // Extract name from users object, ensuring we handle it safely
-        responsibleName = checklist.users?.name || "";
+        responsibleName = checklist?.users?.name ?? "";
       }
       
-      // Prepare checklist data
       const checklistData: ChecklistWithStats = {
         id: checklist.id,
         title: checklist.title,

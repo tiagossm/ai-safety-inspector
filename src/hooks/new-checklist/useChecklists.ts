@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats } from "@/types/newChecklist";
@@ -86,7 +85,9 @@ export function useChecklists(filters: ChecklistsFilter = {}) {
       // Transform the response data to match ChecklistWithStats type
       const transformedData = data.map(item => {
         // Extract responsible name safely with proper null check
-        const responsibleName = item?.users && typeof item?.users === 'object' ? item?.users?.name || "" : "";
+        const responsibleName = item?.users && typeof item?.users === 'object' 
+          ? item?.users?.name ?? "" 
+          : "";
         
         return transformResponseToChecklistWithStats({
           ...item,
