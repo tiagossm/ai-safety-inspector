@@ -1,3 +1,4 @@
+
 import { ChecklistWithStats } from "@/types/newChecklist";
 
 export const transformChecklists = (data: any[]) => {
@@ -23,7 +24,7 @@ export const transformChecklists = (data: any[]) => {
     totalQuestions: item.total_questions || 0,
     completedQuestions: item.completed_questions || 0,
     companyName: item.companies?.fantasy_name,
-    responsibleName: item.users?.name
+    responsibleName: item.responsible?.name || item.responsibleName || ""
   })) as ChecklistWithStats[];
 };
 
@@ -54,11 +55,11 @@ export const transformChecklistsStats = (data: any[]) => {
  * Safely transforms a raw database response to a ChecklistWithStats object
  */
 export const transformResponseToChecklistWithStats = (item: any): ChecklistWithStats => {
-  // Extract responsible name safely
-  let responsibleName = "";
+  // Extract responsible name safely using the new property name from Supabase query
+  let responsibleName = item.responsibleName || "";
   
-  if (item.users && typeof item.users === 'object') {
-    responsibleName = item.users?.name ?? "";
+  if (!responsibleName && item.responsible && typeof item.responsible === 'object') {
+    responsibleName = item.responsible.name || "";
   }
   
   return {

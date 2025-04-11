@@ -27,13 +27,13 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
       setLoading(true);
       setError(null);
 
-      // Fetch checklist data - specifying the column relationships explicitly
+      // Fetch checklist data with fully qualified relationship paths
       const { data: checklist, error: checklistError } = await supabase
         .from("checklists")
         .select(`
           *,
-          companies(*),
-          users:responsible_id(id, name, email)
+          companies:company_id(*),
+          responsible:responsible_id(id, name, email)
         `)
         .eq("id", id)
         .single();
@@ -137,9 +137,9 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
       // Get responsible name safely
       let responsibleName = "";
       
-      // Add proper type checking
-      if (checklist.responsible_id && checklist.users) {
-        responsibleName = checklist.users.name || "";
+      // Add proper type checking with the new relationship name
+      if (checklist.responsible_id && checklist.responsible) {
+        responsibleName = checklist.responsible.name || "";
       }
       
       // Prepare checklist data
