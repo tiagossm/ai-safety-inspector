@@ -27,7 +27,7 @@ export async function fetchChecklistData(id: string): Promise<FetchedChecklistDa
       .select(`
         *,
         companies:company_id(*),
-        users:responsible_id(id, name, email)
+        users!checklists_responsible_id_fkey(id, name, email)
       `)
       .eq("id", id)
       .single();

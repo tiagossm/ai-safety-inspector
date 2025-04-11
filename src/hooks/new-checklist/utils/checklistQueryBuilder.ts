@@ -25,7 +25,7 @@ export function buildChecklistsQuery(filters: {
     .select(`
       *,
       companies:company_id(*),
-      users:responsible_id(id, name, email)
+      users!checklists_responsible_id_fkey(id, name, email)
     `, { count: 'exact' });
 
   // Apply filters
