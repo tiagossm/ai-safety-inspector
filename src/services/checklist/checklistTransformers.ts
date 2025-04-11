@@ -24,7 +24,7 @@ export const transformChecklists = (data: any[]) => {
     totalQuestions: item.total_questions || 0,
     completedQuestions: item.completed_questions || 0,
     companyName: item.companies?.fantasy_name,
-    responsibleName: item.users && typeof item.users === 'object' ? item.users.name || "" : ""
+    responsibleName: item.users && typeof item.users === 'object' ? item.users?.name || "" : ""
   })) as ChecklistWithStats[];
 };
 
@@ -59,8 +59,8 @@ export const transformResponseToChecklistWithStats = (item: any): ChecklistWithS
   let responsibleName = item.responsibleName || "";
   
   // If no responsibleName was provided but users object exists
-  if (!responsibleName && item.users && typeof item.users === 'object') {
-    responsibleName = item.users.name || "";
+  if (!responsibleName && item?.users && typeof item?.users === 'object') {
+    responsibleName = item.users?.name || "";
   }
   
   return {
