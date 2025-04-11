@@ -20,6 +20,6 @@ export interface UiQuestion {
   weight: number;
   parentId?: string | null;
   conditionValue?: string | null;
-  hasSubchecklist?: boolean;
+  hasSubChecklist?: boolean;
   subChecklistId?: string | null;
 }

@@ -148,7 +148,7 @@ export default function NewChecklists() {
     }
   };
 
-  const handleBulkStatusChange = async (ids: string[], newStatus: 'active' | 'inactive') => {
+  const handleBulkStatusChange = async (ids: string[], newStatus: 'active' | 'inactive'): Promise<void> => {
     try {
       const { error } = await supabase
         .from("checklists")
@@ -160,7 +160,6 @@ export default function NewChecklists() {
       }
 
       refreshAllChecklists();
-      return true;
     } catch (error) {
       console.error(`Error changing status to ${newStatus}:`, error);
       throw error; // Rethrow to be caught by the calling component

@@ -67,9 +67,9 @@ export function useChecklists(filters: ChecklistsFilter = {}) {
       // Handle SelectQueryError case safely
       let responsibleName = "";
       
-      if (item.users) {
+      if (item.users && typeof item.users === 'object') {
         try {
-          // @ts-ignore - We handle the error if this fails
+          // Access name safely
           responsibleName = item.users?.name || "";
         } catch (e) {
           console.error("Error accessing user name:", e);
@@ -109,9 +109,7 @@ export function useChecklists(filters: ChecklistsFilter = {}) {
 
   const result = useQuery({
     queryKey: ['checklists', page, pageSize, search, isTemplate],
-    queryFn,
-    staleTime: 60000, // 1 minute
-    gcTime: 300000    // 5 minutes
+    queryFn
   });
 
   const refreshChecklists = async () => {

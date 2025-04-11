@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -230,7 +229,7 @@ export default function NewChecklistDetails() {
                 type={question.responseType}
                 required={question.isRequired}
                 order={index + 1}
-                hasSubchecklist={question.hasSubchecklist}
+                hasSubchecklist={question.hasSubChecklist}
                 options={question.options}
               />
             ))}

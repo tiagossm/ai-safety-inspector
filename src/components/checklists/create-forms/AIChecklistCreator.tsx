@@ -1,8 +1,6 @@
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { NewChecklist } from "@/types/checklist";
-import { CompanyListItem } from "@/types/CompanyListItem";
 import { Bot, Sparkles } from "lucide-react";
 import { useChecklistAI } from "@/hooks/new-checklist/useChecklistAI";
 import { CompanySelector } from "@/components/inspection/CompanySelector";
@@ -13,11 +11,11 @@ import { IntelligentChecklistForm } from "./IntelligentChecklistForm";
 import { supabase } from "@/integrations/supabase/client";
 
 interface AIChecklistCreatorProps {
-  form: NewChecklist;
-  setForm: React.Dispatch<React.SetStateAction<NewChecklist>>;
+  form: any;
+  setForm: React.Dispatch<React.SetStateAction<any>>;
   onSubmit: (e: React.FormEvent) => Promise<void>;
   isSubmitting: boolean;
-  companies: CompanyListItem[];
+  companies: any[];
   loadingCompanies: boolean;
 }
 

@@ -95,11 +95,11 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
           allowsPhoto: item.permite_foto,
           allowsVideo: item.permite_video,
           allowsAudio: item.permite_audio,
-          options: item.opcoes || [],
+          options: Array.isArray(item.opcoes) ? item.opcoes : [], // Ensure it's an array
           weight: item.weight || 1,
           parentId: item.parent_item_id,
           conditionValue: item.condition_value,
-          hasSubchecklist: item.has_subchecklist || false,
+          hasSubChecklist: item.has_subchecklist || false,
           subChecklistId: item.sub_checklist_id || null
         };
         
@@ -124,11 +124,8 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
       let responsibleName = "";
       if (checklist.responsible_id && typeof checklist.users === 'object' && checklist.users !== null) {
         // Access name safely with type checking
-        // We can't directly access .name due to the SelectQueryError
-        // Instead, use a safer approach
         try {
-          // @ts-ignore - We handle the error if this fails
-          responsibleName = checklist.users.name || "";
+          responsibleName = checklist.users?.name || "";
         } catch (e) {
           console.error("Error accessing user name:", e);
           responsibleName = "";

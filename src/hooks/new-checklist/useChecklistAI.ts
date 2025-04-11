@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -26,7 +25,7 @@ interface QuestionGroup {
 // Interface for NewChecklistPayload
 export interface NewChecklistPayload {
   title: string;
-  description: string;
+  description?: string; // Make description optional to match the other interface
   category: string;
   is_template: boolean;
   company_id: string | null;
