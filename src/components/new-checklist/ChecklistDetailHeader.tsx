@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, PlayCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 
@@ -34,6 +34,13 @@ export function ChecklistDetailHeader({
       </div>
       
       <div className="flex gap-2">
+        <Button 
+          variant="default"
+          onClick={() => navigate(`/inspections/new?checklist=${id}`)}
+        >
+          <PlayCircle className="h-4 w-4 mr-2" />
+          Iniciar Inspeção
+        </Button>
         <Button variant="outline" onClick={() => navigate(`/new-checklists/${id}/edit`)}>
           <Pencil className="h-4 w-4 mr-2" />
           Editar
