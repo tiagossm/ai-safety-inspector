@@ -102,7 +102,7 @@ export const InspectionQuestion = ({
         {parentInfo && (
           <div className="mb-2">
             <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
-              Subitem da pergunta: "{parentInfo.text.substring(0, 60)}{parentInfo.text.length > 60 ? "..." : ""}"
+              Subitem da pergunta: "{parentInfo.text?.substring(0, 60)}{parentInfo.text && parentInfo.text.length > 60 ? "..." : ""}"
               {parentInfo.conditionValue && (
                 <span className="ml-1">
                   {" "}
@@ -173,6 +173,7 @@ export const InspectionQuestion = ({
             onOpenCommentDialog={onOpenCommentDialog}
             onOpenActionPlanDialog={onOpenActionPlanDialog}
             setIsActionPlanOpen={setIsActionPlanOpen}
+            onOpenSubChecklist={onOpenSubChecklist}
           />
         )}
       </div>

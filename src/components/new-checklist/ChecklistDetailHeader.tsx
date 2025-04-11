@@ -27,7 +27,7 @@ export function ChecklistDetailHeader({
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/checklists')}>
+        <Button variant="ghost" size="icon" onClick={() => navigate('/new-checklists')}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-2xl font-bold">{title}</h1>

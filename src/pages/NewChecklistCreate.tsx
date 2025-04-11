@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -131,6 +132,7 @@ export default function CreateChecklist() {
               loadingUsers={loadingUsers}
               file={file}
               onFileChange={handleFileChange}
+              clearFile={clearFile}
               companies={companies}
               loadingCompanies={loadingCompanies}
               onSubmit={handleSubmitForManualAndImport}

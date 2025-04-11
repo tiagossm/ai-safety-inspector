@@ -46,10 +46,32 @@ export function QuestionsPanel({
     : { id: "default-group", title: "Perguntas", order: 0 };
   
   // Se não temos perguntas para mostrar, exibir o estado vazio
-  if (loading || !currentGroupId || !currentGroup || filteredQuestions.length === 0) {
+  if (loading) {
     return (
       <QuestionsEmptyState 
-        loading={loading}
+        loading={true}
+        currentGroupId={currentGroupId}
+        currentGroup={currentGroup}
+        questionsCount={questions.length}
+      />
+    );
+  }
+  
+  if (!currentGroupId || !currentGroup) {
+    return (
+      <QuestionsEmptyState 
+        loading={false}
+        currentGroupId={currentGroupId}
+        currentGroup={{ id: "no-group", title: "Nenhum grupo selecionado", order: 0 }}
+        questionsCount={questions.length}
+      />
+    );
+  }
+  
+  if (filteredQuestions.length === 0) {
+    return (
+      <QuestionsEmptyState 
+        loading={false}
         currentGroupId={currentGroupId}
         currentGroup={currentGroup}
         questionsCount={questions.length}

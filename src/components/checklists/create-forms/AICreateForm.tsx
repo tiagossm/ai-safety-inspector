@@ -48,6 +48,8 @@ export function AICreateFormContent(props: AICreateFormProps) {
   const [contextType, setContextType] = useState<string>("Setor");
   const [contextValue, setContextValue] = useState<string>("");
   const [description, setDescription] = useState<string>("");
+  const [useCustomPrompt, setUseCustomPrompt] = useState<boolean>(false);
+  const [customPrompt, setCustomPrompt] = useState<string>("");
   const maxDescriptionLength = 500;
   const minDescriptionLength = 5;
 
@@ -56,9 +58,9 @@ export function AICreateFormContent(props: AICreateFormProps) {
       fetchCompanyData(props.form.company_id.toString());
     } else {
       setCompanyData(null);
-      updateFormattedPrompt(null, props.form.category || "", description);
+      updateFormattedPrompt(null, props.form.category || "", description, useCustomPrompt, customPrompt);
     }
-  }, [props.form.company_id, props.form.category, contextType, contextValue, description]);
+  }, [props.form.company_id, props.form.category, contextType, contextValue, description, useCustomPrompt, customPrompt]);
 
   const fetchCompanyData = async (companyId: string) => {
     try {
@@ -84,14 +86,26 @@ export function AICreateFormContent(props: AICreateFormProps) {
         address: data.address
       };
       setCompanyData(company);
-      updateFormattedPrompt(company, props.form.category || "", description);
+      updateFormattedPrompt(company, props.form.category || "", description, useCustomPrompt, customPrompt);
     } catch (error) {
       console.error("Error fetching company data:", error);
       toast.error("Erro ao carregar dados da empresa");
     }
   };
 
-  const updateFormattedPrompt = (company: Company | null, category: string, desc: string) => {
+  const updateFormattedPrompt = (
+    company: Company | null, 
+    category: string, 
+    desc: string,
+    useCustom: boolean,
+    customPromptText: string
+  ) => {
+    if (useCustom) {
+      setFormattedPrompt(customPromptText);
+      props.setAiPrompt(customPromptText);
+      return;
+    }
+    
     const metadata = company?.metadata || null;
     const riskGrade = metadata?.risk_grade || "não informado";
     const employeeCount = company?.employee_count || "não informado";
@@ -128,8 +142,13 @@ Contexto: ${context}`;
       return;
     }
 
-    if (!description || description.length < minDescriptionLength) {
+    if (!useCustomPrompt && (!description || description.length < minDescriptionLength)) {
       toast.error(`Por favor, forneça uma descrição com pelo menos ${minDescriptionLength} caracteres`);
+      return;
+    }
+    
+    if (useCustomPrompt && (!customPrompt || customPrompt.trim().length < 10)) {
+      toast.error("Por favor, forneça um prompt personalizado com pelo menos 10 caracteres");
       return;
     }
     
@@ -137,6 +156,7 @@ Contexto: ${context}`;
   };
 
   const isDescriptionValid = description.length >= minDescriptionLength && description.length <= maxDescriptionLength;
+  const isCustomPromptValid = customPrompt.length >= 10;
 
   return (
     <div className="space-y-6">
@@ -157,28 +177,58 @@ Contexto: ${context}`;
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="description">
-                  Descrição <span className="text-red-500">*</span>
-                </Label>
-                <Textarea
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Descreva o propósito deste checklist"
-                  className="min-h-[80px]"
-                  maxLength={maxDescriptionLength}
-                  required
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="use-custom-prompt"
+                  checked={useCustomPrompt}
+                  onChange={(e) => setUseCustomPrompt(e.target.checked)}
+                  className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
                 />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span className={`${!isDescriptionValid && description.length > 0 ? "text-red-500" : ""}`}>
-                    Mínimo: {minDescriptionLength} caracteres
-                  </span>
-                  <span className={`${description.length > maxDescriptionLength ? "text-red-500" : ""}`}>
-                    {description.length}/{maxDescriptionLength} caracteres
-                  </span>
-                </div>
+                <Label htmlFor="use-custom-prompt">Usar prompt personalizado</Label>
               </div>
+
+              {useCustomPrompt ? (
+                <div className="space-y-2">
+                  <Label htmlFor="custom-prompt">
+                    Prompt personalizado <span className="text-red-500">*</span>
+                  </Label>
+                  <Textarea
+                    id="custom-prompt"
+                    value={customPrompt}
+                    onChange={(e) => setCustomPrompt(e.target.value)}
+                    placeholder="Digite instruções detalhadas para a IA gerar seu checklist..."
+                    className="min-h-[120px]"
+                    maxLength={2000}
+                  />
+                  <div className="text-xs text-muted-foreground">
+                    Escreva instruções específicas para a IA gerar o checklist.
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="description">
+                    Descrição <span className="text-red-500">*</span>
+                  </Label>
+                  <Textarea
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Descreva o propósito deste checklist"
+                    className="min-h-[80px]"
+                    maxLength={maxDescriptionLength}
+                    required
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span className={`${!isDescriptionValid && description.length > 0 ? "text-red-500" : ""}`}>
+                      Mínimo: {minDescriptionLength} caracteres
+                    </span>
+                    <span className={`${description.length > maxDescriptionLength ? "text-red-500" : ""}`}>
+                      {description.length}/{maxDescriptionLength} caracteres
+                    </span>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="company_id">
@@ -205,33 +255,35 @@ Contexto: ${context}`;
                 setQuestionCount={props.setNumQuestions}
               />
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="contextType">Tipo de contexto</Label>
-                  <Select
-                    value={contextType}
-                    onValueChange={setContextType}
-                  >
-                    <SelectTrigger id="contextType">
-                      <SelectValue placeholder="Escolha o tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Setor">Setor</SelectItem>
-                      <SelectItem value="Cargo">Cargo</SelectItem>
-                      <SelectItem value="Atividade">Atividade</SelectItem>
-                    </SelectContent>
-                  </Select>
+              {!useCustomPrompt && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="contextType">Tipo de contexto</Label>
+                    <Select
+                      value={contextType}
+                      onValueChange={setContextType}
+                    >
+                      <SelectTrigger id="contextType">
+                        <SelectValue placeholder="Escolha o tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Setor">Setor</SelectItem>
+                        <SelectItem value="Cargo">Cargo</SelectItem>
+                        <SelectItem value="Atividade">Atividade</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="contextValue">Valor</Label>
+                    <Input
+                      id="contextValue"
+                      value={contextValue}
+                      onChange={(e) => setContextValue(e.target.value)}
+                      placeholder="Ex: Almoxarifado"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="contextValue">Valor</Label>
-                  <Input
-                    id="contextValue"
-                    value={contextValue}
-                    onChange={(e) => setContextValue(e.target.value)}
-                    placeholder="Ex: Almoxarifado"
-                  />
-                </div>
-              </div>
+              )}
             </div>
 
             <div>
@@ -242,7 +294,13 @@ Contexto: ${context}`;
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => updateFormattedPrompt(companyData, props.form.category || "", description)}
+                    onClick={() => updateFormattedPrompt(
+                      companyData, 
+                      props.form.category || "", 
+                      description,
+                      useCustomPrompt,
+                      customPrompt
+                    )}
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Regenerar
@@ -263,7 +321,7 @@ Contexto: ${context}`;
               !props.form.category?.trim() || 
               !props.form.company_id || 
               !props.openAIAssistant || 
-              !isDescriptionValid
+              (useCustomPrompt ? !isCustomPromptValid : !isDescriptionValid)
             }
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 mt-4"
             size="lg"

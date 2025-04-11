@@ -78,6 +78,7 @@ export interface ChecklistItem {
   permite_foto?: boolean;
   permite_video?: boolean;
   permite_audio?: boolean;
+  permite_files?: boolean; // Added for file uploads
   weight?: number;
   hint?: string;
   groupId?: string | null;
