@@ -39,7 +39,7 @@ export function useChecklists(filters: ChecklistsFilter = {}) {
         .select(`
           *,
           companies:company_id(*),
-          users:responsible_id(name)
+          users:responsible_id(id, name, email)
         `, { count: 'exact' });
 
       // Apply filters
@@ -85,8 +85,8 @@ export function useChecklists(filters: ChecklistsFilter = {}) {
 
       // Transform the response data to match ChecklistWithStats type
       const transformedData = data.map(item => {
-        // The name is now directly accessible from users
-        const responsibleName = item.users || "";
+        // Extract responsible name safely
+        const responsibleName = item.users && typeof item.users === 'object' ? item.users.name || "" : "";
         
         return transformResponseToChecklistWithStats({
           ...item,
