@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -5,21 +6,41 @@ import { NewChecklist } from "@/types/checklist";
 import { useAuth } from "@/components/AuthProvider";
 import { AuthUser } from "@/hooks/auth/useAuthState";
 
-// Align this with the type in AIAssistantSelector.tsx
-export type AIAssistantType = "general" | "workplace-safety" | "compliance" | "quality" | "openai" | "claude" | "gemini";
+// Função para validar UUIDs
+function isValidUUID(id: string | null | undefined): boolean {
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return typeof id === "string" && uuidRegex.test(id);
+}
 
-// Interface for groups of perguntas
+// Tipos de assistentes de IA disponíveis
+export type AIAssistantType = "workplace-safety" | "compliance" | "quality" | "general" | "openai" | "claude" | "gemini";
+
+// Interface para grupos de perguntas
 interface QuestionGroup {
   id: string;
   title: string;
   questions: any[];
 }
 
+// Interface for NewChecklistPayload
+export interface NewChecklistPayload {
+  title: string;
+  description: string;
+  category: string;
+  is_template: boolean;
+  company_id: string | null;
+  origin?: string;
+}
+
 export function useChecklistAI() {
   const [aiPrompt, setAiPrompt] = useState<string>("");
   const [numQuestions, setNumQuestions] = useState<number>(5);
   const [aiLoading, setAiLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [selectedAssistant, setSelectedAssistant] = useState<AIAssistantType>("general");
+  const [openAIAssistant, setOpenAIAssistant] = useState<string>("");
   const [questionGroups, setQuestionGroups] = useState<QuestionGroup[]>([]);
   const { user, refreshSession } = useAuth();
   const typedUser = user as AuthUser | null;
@@ -52,6 +73,15 @@ export function useChecklistAI() {
         break;
       case "quality":
         categories = ["Controle de Processo", "Inspeção", "Não-conformidades", "Melhorias"];
+        break;
+      case "openai":
+        categories = ["Geral", "Específico", "Avançado"];
+        break;
+      case "claude":
+        categories = ["Principal", "Secundário", "Opcional"];
+        break;
+      case "gemini":
+        categories = ["Prioritário", "Regular", "Ocasional"];
         break;
       default:
         categories = ["Geral", "Específico", "Opcional"];
@@ -122,6 +152,42 @@ export function useChecklistAI() {
         "A comunicação entre as equipes é eficaz?",
         "O feedback dos clientes é coletado e analisado?",
         "Os objetivos e metas estão claros para todos?"
+      ],
+      "openai": [
+        "O modelo está configurado com os parâmetros corretos?",
+        "A temperatura está adequada para o tipo de resposta esperada?",
+        "O sistema de rate limiting está funcionando corretamente?",
+        "Os prompts estão bem estruturados e claros?",
+        "A API está respondendo dentro do tempo esperado?",
+        "Os tokens estão sendo contabilizados corretamente?",
+        "A qualidade das respostas atende às expectativas?",
+        "O sistema de fallback está implementado?",
+        "O monitoramento de custos está ativo?",
+        "O modelo está atualizado para a versão mais recente?"
+      ],
+      "claude": [
+        "O modelo Claude está configurado corretamente?",
+        "Os limites de contexto estão sendo respeitados?",
+        "A qualidade das respostas é satisfatória?",
+        "O processamento de imagens está funcionando?",
+        "Os custos de API estão dentro do orçamento?",
+        "O sistema de cache está otimizado?",
+        "As credenciais de API estão seguras?",
+        "O tempo de resposta está dentro do esperado?",
+        "O tratamento de erros está implementado?",
+        "Os logs de uso estão sendo armazenados?"
+      ],
+      "gemini": [
+        "A integração com o Gemini está funcionando corretamente?",
+        "A qualidade de geração multimodal é satisfatória?",
+        "Os limites de requisições estão configurados?",
+        "O processamento de diferentes formatos está correto?",
+        "Os resultados são consistentes entre requisições?",
+        "O sistema de retry está implementado?",
+        "A latência está dentro dos parâmetros aceitáveis?",
+        "Os filtros de conteúdo estão ativos?",
+        "A documentação da implementação está atualizada?",
+        "O monitoramento de uso está funcionando?"
       ]
     };
     
@@ -205,77 +271,54 @@ export function useChecklistAI() {
     return questions;
   };
 
-  const generateAIChecklist = async (form: NewChecklist) => {
+  const generateChecklist = async (prompt: string, checklistData: NewChecklistPayload, openAIAssistant: string) => {
     try {
-      setAiLoading(true);
+      setIsGenerating(true);
+      setIsLoading(true);
 
       // 🔄 Atualiza a sessão para garantir um token válido
       await refreshSession();
 
       // 🔍 Obtém a sessão atualizada
-      const sessionResponse = await supabase.auth.getSession();
-      
-      if (sessionResponse.error || !sessionResponse.data.session) {
-        console.error("❌ Erro de sessão:", sessionResponse.error);
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError || !sessionData.session) {
+        console.error("❌ Erro de sessão:", sessionError);
         toast.error("Sessão inválida. Faça login novamente.");
-        setAiLoading(false);
+        setIsLoading(false);
+        setIsGenerating(false);
         return false;
       }
 
       // Log form details for debugging
       console.log("🔹 Preparando requisição para IA:", {
-        prompt: aiPrompt,
+        prompt: prompt,
         num_questions: numQuestions,
-        category: form.category || "general",
+        category: checklistData.category || "general",
         user_id: typedUser?.id,
-        company_id: form.company_id,
+        company_id: checklistData.company_id,
       });
 
       // ✅ Garante que user_id está definido
-      if (!form.user_id && typedUser?.id) {
-        form.user_id = typedUser.id;
-      }
-
-      if (!isValidUUID(form.user_id)) {
-        console.error("❌ ID do usuário inválido:", form.user_id);
-        toast.error("Erro ao validar usuário. Faça login novamente.");
-        setAiLoading(false);
+      if (!checklistData.company_id || !isValidUUID(checklistData.company_id)) {
+        toast.error("Selecione uma empresa válida");
+        setIsLoading(false);
+        setIsGenerating(false);
         return false;
-      }
-
-      // Validate company_id if present
-      if (form.company_id) {
-        if (!isValidUUID(form.company_id)) {
-          console.warn("⚠️ ID da empresa inválido:", form.company_id);
-          form.company_id = null;
-        } else {
-          // Verify the company exists before continuing
-          const { data: companyData, error: companyError } = await supabase
-            .from('companies')
-            .select('id')
-            .eq('id', form.company_id)
-            .single();
-            
-          if (companyError || !companyData) {
-            console.warn("⚠️ Empresa não encontrada. Continuando sem empresa...");
-            form.company_id = null;
-          } else {
-            console.log("✅ Empresa validada:", companyData.id);
-          }
-        }
       }
 
       // 📌 Criar checklist na base de dados
       const { data: checklist, error: checklistError } = await supabase
         .from("checklists")
         .insert({
-          title: form.title || `Checklist: ${aiPrompt.substring(0, 50)}`,
-          description: `Gerado por IA: ${aiPrompt}`,
-          category: form.category || "general",
-          user_id: form.user_id,
-          company_id: form.company_id,
+          title: checklistData.title || `Checklist: ${prompt.substring(0, 50)}`,
+          description: `Gerado por IA: ${prompt}`,
+          category: checklistData.category || "general",
+          user_id: typedUser?.id,
+          company_id: checklistData.company_id,
           status_checklist: "ativo",
-          is_template: form.is_template || false,
+          is_template: checklistData.is_template || false,
+          origin: checklistData.origin || 'ia'
         })
         .select()
         .single();
@@ -283,14 +326,16 @@ export function useChecklistAI() {
       if (checklistError || !checklist) {
         console.error("❌ Erro ao criar checklist:", checklistError);
         toast.error(`Erro ao criar checklist: ${checklistError?.message}`);
-        setAiLoading(false);
+        setIsLoading(false);
+        setIsGenerating(false);
         return false;
       }
 
       if (!isValidUUID(checklist?.id)) {
         console.error("❌ ID do checklist inválido retornado:", checklist?.id);
         toast.error("Erro inesperado ao criar checklist.");
-        setAiLoading(false);
+        setIsLoading(false);
+        setIsGenerating(false);
         return false;
       }
 
@@ -299,7 +344,7 @@ export function useChecklistAI() {
       // Generate questions based on the assistant type
       const questions = generateQuestionsForAssistant(
         selectedAssistant,
-        aiPrompt,
+        prompt,
         numQuestions
       );
       
@@ -371,8 +416,8 @@ export function useChecklistAI() {
       toast.success(`Checklist gerado com sucesso! Revise antes de salvar.`);
       
       // Prepare the data for the editor - with UI-friendly response types
-      const checklistData = {
-        ...form,
+      const checklistData2 = {
+        ...checklistData,
         id: checklist.id,
         title: checklist.title,
         description: checklist.description,
@@ -384,10 +429,13 @@ export function useChecklistAI() {
       // Update the state of groups
       setQuestionGroups(groupedQuestions);
       
+      setIsLoading(false);
+      setIsGenerating(false);
+      
       return {
         success: true,
         checklistId: checklist.id,
-        checklistData: checklistData,
+        checklistData: checklistData2,
         questions: questions,
         groups: groupedQuestions,
         mode: "ai-review",
@@ -395,18 +443,11 @@ export function useChecklistAI() {
     } catch (err) {
       console.error("❌ Erro ao gerar checklist:", err);
       toast.error("Erro ao gerar checklist. Tente novamente.");
+      setIsLoading(false);
+      setIsGenerating(false);
       return false;
-    } finally {
-      setAiLoading(false);
     }
   };
-
-  // Função para validar UUIDs
-  function isValidUUID(id: string | null | undefined): boolean {
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    return typeof id === "string" && uuidRegex.test(id);
-  }
 
   return {
     aiPrompt,
@@ -414,11 +455,16 @@ export function useChecklistAI() {
     numQuestions,
     setNumQuestions,
     aiLoading,
+    isLoading,
+    isGenerating,
     selectedAssistant,
     setSelectedAssistant,
+    openAIAssistant,
+    setOpenAIAssistant,
     questionGroups,
     setQuestionGroups,
-    generateAIChecklist,
-    getDefaultGroups
+    generateAIChecklist: generateAIChecklist,
+    getDefaultGroups,
+    generateChecklist
   };
 }

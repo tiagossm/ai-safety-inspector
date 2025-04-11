@@ -34,6 +34,7 @@ export function AIChecklistCreator({
   const [selectedCompanyName, setSelectedCompanyName] = useState<string>("");
   
   const {
+    aiLoading,
     isLoading,
     isGenerating,
     selectedAssistant,

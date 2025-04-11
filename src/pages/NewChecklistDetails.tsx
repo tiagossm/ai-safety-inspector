@@ -388,12 +388,17 @@ export default function NewChecklistDetails() {
         </div>
       </div>
       
-      <DeleteChecklistDialog
-        checklistId={deleteDialog.checklistId}
-        checklistTitle={deleteDialog.checklistTitle}
-        isOpen={deleteDialog.open}
-        onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
-      />
+      {isDeleteDialogOpen && selectedChecklist && (
+        <DeleteChecklistDialog
+          checklistId={deleteDialog.checklistId}
+          checklistTitle={deleteDialog.checklistTitle}
+          isOpen={deleteDialog.open}
+          onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
+          onDeleted={async () => {
+            navigate("/new-checklists", { replace: true });
+          }}
+        />
+      )}
     </div>
   );
 }

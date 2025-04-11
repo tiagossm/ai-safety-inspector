@@ -1,100 +1,108 @@
 
-import React from "react";
-import { Link } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Copy, Edit, Eye, Trash2 } from "lucide-react";
+import React from 'react';
+import { TableCell, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal } from "lucide-react";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
-import { cn, formatDate, truncateText } from "@/lib/utils";
+import { Eye, Edit, Trash2, Copy } from "lucide-react";
 import { ChecklistWithStats } from "@/types/newChecklist";
-import { ChecklistOriginBadge } from "./ChecklistOriginBadge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { ptBR } from "date-fns/locale";
 
-interface ChecklistRowProps {
+export interface ChecklistRowProps {
   checklist: ChecklistWithStats;
-  onSelect?: (id: string) => void;
-  isSelected?: boolean;
+  onEdit: (id: string) => void;
+  onDelete: (id: string) => void;
   onView?: (id: string) => void;
-  onEdit?: (id: string) => void;
-  onDelete?: (id: string) => void;
+  onStatusChange?: () => void;
   onDuplicate?: (id: string) => void;
+  isSelected?: boolean;
+  onSelect?: (checked: boolean) => void;
 }
 
-export const ChecklistRow: React.FC<ChecklistRowProps> = ({ checklist, onSelect, isSelected, onView, onEdit, onDelete, onDuplicate }) => {
-  const rowClasses = cn(
-    "grid grid-cols-[40px_1fr_120px_140px_100px] items-center gap-4 py-3 px-4 rounded-md border text-sm transition-colors hover:bg-accent hover:text-accent-foreground",
-    isSelected && "bg-primary/5 border-primary/30"
-  );
-  
+export function ChecklistRow({
+  checklist,
+  onEdit,
+  onDelete,
+  onView,
+  onStatusChange,
+  onDuplicate,
+  isSelected = false,
+  onSelect
+}: ChecklistRowProps) {
+  const formattedDate = checklist.createdAt 
+    ? format(new Date(checklist.createdAt), 'dd/MM/yyyy', { locale: ptBR })
+    : 'Data desconhecida';
+
   return (
-    <div className={`${rowClasses} ${isSelected ? 'bg-primary/5 border-primary/30' : ''}`}>
+    <TableRow className={cn(isSelected && "bg-muted/50")}>
       {onSelect && (
-        <input 
-          type="checkbox" 
-          className="w-4 h-4 rounded-sm border-gray-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
-          checked={isSelected}
-          onChange={() => onSelect(checklist.id)}
-        />
+        <TableCell className="w-12">
+          <Checkbox 
+            checked={isSelected} 
+            onCheckedChange={onSelect}
+          />
+        </TableCell>
       )}
       
-      <div className="flex-1 sm:flex-[1.8] min-w-0">
-        <h3 className="font-medium mb-1 truncate" title={checklist.title}>{checklist.title}</h3>
-        <div className="flex flex-wrap gap-1.5">
-          <Badge variant={checklist.isTemplate ? "secondary" : "default"} className="text-xs">
-            {checklist.isTemplate ? "Template" : "Checklist"}
-          </Badge>
-          <ChecklistOriginBadge origin={checklist.origin} />
+      <TableCell className="font-medium">
+        <div className="max-w-xs truncate">
+          {checklist.title}
+        </div>
+        <div className="flex gap-2 mt-1">
+          {checklist.isTemplate && (
+            <Badge variant="outline" className="bg-blue-50 text-xs">Template</Badge>
+          )}
           {checklist.category && (
             <Badge variant="outline" className="text-xs">{checklist.category}</Badge>
           )}
         </div>
-      </div>
+      </TableCell>
+
+      <TableCell>{checklist.companyName || "-"}</TableCell>
       
-      <div className="text-muted-foreground">{formatDate(checklist.createdAt)}</div>
-      <div className="text-muted-foreground">{checklist.companyName || "-"}</div>
+      <TableCell>{checklist.category || "-"}</TableCell>
       
-      <div className="flex justify-end gap-2">
-        {onView && (
-          <Button variant="ghost" size="icon" onClick={() => onView(checklist.id)}>
-            <Eye className="h-4 w-4" />
+      <TableCell>
+        <Badge 
+          variant={checklist.status === "active" ? "default" : "secondary"}
+          className="capitalize"
+        >
+          {checklist.status === "active" ? "Ativo" : "Inativo"}
+        </Badge>
+      </TableCell>
+      
+      <TableCell>{formattedDate}</TableCell>
+      
+      <TableCell className="text-right">
+        <div className="flex justify-end gap-2">
+          {onView && (
+            <Button variant="ghost" size="icon" onClick={() => onView(checklist.id)}>
+              <Eye className="h-4 w-4" />
+            </Button>
+          )}
+          
+          <Button variant="ghost" size="icon" onClick={() => onEdit(checklist.id)}>
+            <Edit className="h-4 w-4" />
           </Button>
-        )}
-        
-        {(onEdit || onDelete || onDuplicate) && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {onEdit && (
-                <DropdownMenuItem onClick={() => onEdit(checklist.id)}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  <span>Editar</span>
-                </DropdownMenuItem>
-              )}
-              {onDuplicate && (
-                <DropdownMenuItem onClick={() => onDuplicate(checklist.id)}>
-                  <Copy className="mr-2 h-4 w-4" />
-                  <span>Duplicar</span>
-                </DropdownMenuItem>
-              )}
-              {onDelete && (
-                <DropdownMenuItem onClick={() => onDelete(checklist.id)} className="text-red-500 focus:text-red-500">
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  <span>Excluir</span>
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </div>
-    </div>
+          
+          {onDuplicate && (
+            <Button variant="ghost" size="icon" onClick={() => onDuplicate(checklist.id)}>
+              <Copy className="h-4 w-4" />
+            </Button>
+          )}
+          
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => onDelete(checklist.id)}
+            className="text-destructive hover:bg-destructive/10"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
   );
-};
+}

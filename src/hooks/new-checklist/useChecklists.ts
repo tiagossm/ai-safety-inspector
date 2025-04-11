@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats } from "@/types/newChecklist";
@@ -63,6 +64,11 @@ export function useChecklists(filters: ChecklistsFilter = {}) {
 
     // Transform the data to match ChecklistWithStats
     const transformedData: ChecklistWithStats[] = data.map(item => {
+      // Handle SelectQueryError case safely
+      const responsibleName = typeof item.users === 'object' && item.users !== null && 'name' in item.users
+        ? item.users.name
+        : "";
+      
       return {
         id: item.id,
         title: item.title,
@@ -81,7 +87,7 @@ export function useChecklists(filters: ChecklistsFilter = {}) {
         isSubChecklist: item.is_sub_checklist || false,
         totalQuestions: 0, // We'll need another query to get this info
         companyName: item.companies?.fantasy_name || "",
-        responsibleName: item.users?.name || "",
+        responsibleName: responsibleName,
       };
     });
 

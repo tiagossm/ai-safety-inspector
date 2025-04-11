@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { useChecklistDuplicate } from "@/hooks/new-checklist/useChecklistDuplicate";
 import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const PAGE_SIZE = 10;
 
@@ -33,7 +35,7 @@ export default function NewChecklists() {
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [isTemplateFilterEnabled, setIsTemplateFilterEnabled] = useState(false);
   
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
   
   const { data: checklistsData, isLoading, error, refreshChecklists } = useChecklists({
     page: page,
@@ -57,13 +59,13 @@ export default function NewChecklists() {
     setIsDuplicating(true);
     try {
       await duplicateChecklist(checklistId);
-      toast({
+      uiToast({
         title: "Checklist Duplicado",
         description: "O checklist foi duplicado com sucesso."
       });
       await refreshChecklists();
     } catch (error) {
-      toast({
+      uiToast({
         variant: "destructive",
         title: "Erro ao Duplicar",
         description: "Houve um erro ao duplicar o checklist."
@@ -90,22 +92,14 @@ export default function NewChecklists() {
       const { error } = await supabase.from("checklists").delete().eq("id", selectedChecklist.id);
       if (error) {
         console.error("Error deleting checklist:", error);
-        toast({
-          variant: "destructive",
-          title: "Erro ao excluir checklist"
-        });
+        toast.error("Erro ao excluir checklist");
       } else {
-        toast({
-          title: "Checklist excluído com sucesso"
-        });
+        toast.success("Checklist excluído com sucesso");
         await refreshChecklists();
       }
     } catch (error) {
       console.error("Error deleting checklist:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro ao excluir checklist"
-      });
+      toast.error("Erro ao excluir checklist");
     } finally {
       setIsDeletingChecklist(false);
       handleCloseDeleteDialog();
