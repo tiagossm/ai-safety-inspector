@@ -1,44 +1,45 @@
 
 import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { FileSpreadsheet, Brain, PenTool } from "lucide-react";
+
+// Define allowed origin types that match the backend values
+export type ChecklistOriginType = "manual" | "ia" | "csv" | string;
 
 interface ChecklistOriginBadgeProps {
-  origin?: string;
+  origin: ChecklistOriginType;
 }
 
 export const ChecklistOriginBadge: React.FC<ChecklistOriginBadgeProps> = ({ origin }) => {
-  if (!origin) return null;
-  
-  // Handle the origin based on its value
-  switch(origin.toLowerCase()) {
-    case "manual":
-      return (
-        <Badge variant="outline" className="flex gap-1 items-center px-2 py-0.5 text-xs">
-          <PenTool className="w-3 h-3" />
-          <span>Manual</span>
-        </Badge>
-      );
-    case "ia":
-      return (
-        <Badge variant="outline" className="flex gap-1 items-center px-2 py-0.5 text-xs bg-purple-50 text-purple-700 border-purple-200">
-          <Brain className="w-3 h-3" />
-          <span>IA</span>
-        </Badge>
-      );
-    case "csv":
-      return (
-        <Badge variant="outline" className="flex gap-1 items-center px-2 py-0.5 text-xs bg-blue-50 text-blue-700 border-blue-200">
-          <FileSpreadsheet className="w-3 h-3" />
-          <span>Planilha</span>
-        </Badge>
-      );
-    default:
-      // Handle any other origin value
-      return (
-        <Badge variant="outline" className="px-2 py-0.5 text-xs">
-          {origin}
-        </Badge>
-      );
-  }
+  // Map the backend origin values to user-friendly display names
+  const getDisplayName = (origin: ChecklistOriginType) => {
+    switch (origin) {
+      case "manual":
+        return "Manual";
+      case "ia":
+        return "IA";
+      case "csv":
+        return "Importado";
+      default:
+        return origin || "Manual";
+    }
+  };
+
+  // Map the backend origin values to badge variants
+  const getBadgeVariant = (origin: ChecklistOriginType): "outline" | "secondary" | "default" => {
+    switch (origin) {
+      case "ia":
+        return "secondary";
+      case "csv":
+        return "outline";
+      case "manual":
+      default:
+        return "outline";
+    }
+  };
+
+  return (
+    <Badge variant={getBadgeVariant(origin)} className="text-xs">
+      {getDisplayName(origin)}
+    </Badge>
+  );
 };

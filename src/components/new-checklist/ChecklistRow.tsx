@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +11,7 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { cn, formatDate, truncateText } from "@/utils/utils";
+import { cn, formatDate, truncateText } from "@/lib/utils";
 import { ChecklistWithStats } from "@/types/newChecklist";
 import { ChecklistOriginBadge } from "./ChecklistOriginBadge";
 
