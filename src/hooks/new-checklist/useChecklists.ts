@@ -33,13 +33,13 @@ export function useChecklists(filters: ChecklistsFilter = {}) {
 
   const queryFn = async (): Promise<ChecklistsResult> => {
     try {
-      // Build base query with clear, explicit relationship paths
+      // Build base query with explicit relationship paths to avoid ambiguity
       let query = supabase
         .from('checklists')
         .select(`
           *,
           companies:company_id(*),
-          responsible:responsible_id(id, name, email)
+          responsible:responsible_id(*)
         `, { count: 'exact' });
 
       // Apply filters
@@ -84,11 +84,15 @@ export function useChecklists(filters: ChecklistsFilter = {}) {
       }
 
       // Transform the response data to match ChecklistWithStats type
-      const transformedData = data.map(item => transformResponseToChecklistWithStats({
-        ...item,
-        // Ensure consistent property naming
-        responsibleName: item.responsible?.name || ""
-      }));
+      const transformedData = data.map(item => {
+        // Extract responsible name from the relationship object
+        const responsibleName = item.responsible?.name || "";
+        
+        return transformResponseToChecklistWithStats({
+          ...item,
+          responsibleName
+        });
+      });
 
       return {
         data: transformedData,

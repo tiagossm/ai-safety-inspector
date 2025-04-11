@@ -27,13 +27,13 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
       setLoading(true);
       setError(null);
 
-      // Fetch checklist data with fully qualified relationship paths
+      // Fetch checklist data with explicit relationship paths to avoid ambiguity
       const { data: checklist, error: checklistError } = await supabase
         .from("checklists")
         .select(`
           *,
           companies:company_id(*),
-          responsible:responsible_id(id, name, email)
+          responsible:responsible_id(*)
         `)
         .eq("id", id)
         .single();
@@ -109,7 +109,7 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
           allowsPhoto: item.permite_foto,
           allowsVideo: item.permite_video,
           allowsAudio: item.permite_audio,
-          options: options, // Use the properly converted string array
+          options: options,
           weight: item.weight || 1,
           parentId: item.parent_item_id,
           conditionValue: item.condition_value,
@@ -134,11 +134,11 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
         groups.push(defaultGroup);
       }
       
-      // Get responsible name safely
+      // Extract responsible name safely - avoid the property access that causes TypeScript errors
       let responsibleName = "";
       
-      // Add proper type checking with the new relationship name
       if (checklist.responsible_id && checklist.responsible) {
+        // Access the name from the responsible object returned by Supabase
         responsibleName = checklist.responsible.name || "";
       }
       
