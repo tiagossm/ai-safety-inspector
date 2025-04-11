@@ -26,7 +26,9 @@ export const fetchChecklists = async () => {
   }
 };
 
-// Add the fetchChecklistById function
+/**
+ * Fetches a checklist by ID
+ */
 export const fetchChecklistById = async (id: string) => {
   try {
     const { data, error } = await supabase

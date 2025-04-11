@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -10,17 +10,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useChecklistDelete } from "@/hooks/new-checklist/useChecklistDelete";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useNavigate, useLocation } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { useState } from "react";
 
 interface DeleteChecklistDialogProps {
   checklistId: string;
   checklistTitle: string;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onDeleted?: () => void;
+  onDeleted?: () => Promise<void> | void;
+  isDeleting?: boolean; // Make this prop optional
 }
 
 export function DeleteChecklistDialog({
@@ -28,12 +28,13 @@ export function DeleteChecklistDialog({
   checklistTitle,
   isOpen,
   onOpenChange,
-  onDeleted
+  onDeleted,
+  isDeleting: externalIsDeleting,
 }: DeleteChecklistDialogProps) {
-  const deleteChecklist = useChecklistDelete();
-  const [isDeleting, setIsDeleting] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
+  const [internalIsDeleting, setInternalIsDeleting] = useState(false);
+  
+  // Use external state if provided, otherwise use internal state
+  const isDeleting = externalIsDeleting !== undefined ? externalIsDeleting : internalIsDeleting;
 
   const handleDelete = async () => {
     if (!checklistId) {
@@ -42,33 +43,27 @@ export function DeleteChecklistDialog({
       return;
     }
     
-    setIsDeleting(true);
+    setInternalIsDeleting(true);
     try {
-      await deleteChecklist.mutateAsync(checklistId);
+      const { error } = await supabase
+        .from("checklists")
+        .delete()
+        .eq("id", checklistId);
       
-      // Check if we're on the details page of the checklist being deleted
-      const isOnDetailsPage = location.pathname.includes(`/new-checklists/${checklistId}`);
+      if (error) throw error;
       
-      // Close the dialog before navigating
+      // Close dialog before calling onDeleted
       onOpenChange(false);
       
-      // If we're on the details page of the deleted checklist, navigate to the checklists page
-      if (isOnDetailsPage) {
-        console.log("Navegando para a lista de checklists após exclusão");
-        navigate("/new-checklists", { replace: true });
-      }
+      // Call callback after successful deletion
+      if (onDeleted) await onDeleted();
       
-      // Call the onDeleted callback if provided
-      if (onDeleted) {
-        await onDeleted();
-      }
-      
-      // Success message is shown by the mutation
+      toast.success("Checklist excluído com sucesso");
     } catch (error) {
       console.error("Erro ao excluir checklist:", error);
       toast.error("Erro ao excluir checklist");
     } finally {
-      setIsDeleting(false);
+      setInternalIsDeleting(false);
     }
   };
 
@@ -93,14 +88,7 @@ export function DeleteChecklistDialog({
             className="bg-destructive hover:bg-destructive/90"
             disabled={isDeleting}
           >
-            {isDeleting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Excluindo...
-              </>
-            ) : (
-              "Excluir"
-            )}
+            {isDeleting ? "Excluindo..." : "Excluir"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
