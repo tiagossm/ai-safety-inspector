@@ -1,20 +1,22 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, ClipboardList } from "lucide-react";
+import { MessageSquare, ClipboardList, List } from "lucide-react";
 
 interface QuestionActionsProps {
   response: any;
   onOpenCommentDialog: () => void;
   onOpenActionPlanDialog: () => void;
   setIsActionPlanOpen: (isOpen: boolean) => void;
+  onOpenSubChecklist?: () => void;
 }
 
 export function QuestionActions({
   response,
   onOpenCommentDialog,
   onOpenActionPlanDialog,
-  setIsActionPlanOpen
+  setIsActionPlanOpen,
+  onOpenSubChecklist
 }: QuestionActionsProps) {
   return (
     <div className="flex flex-wrap justify-end gap-2 mt-3">
@@ -40,6 +42,18 @@ export function QuestionActions({
         >
           <ClipboardList className="h-3.5 w-3.5 mr-1" />
           {response?.actionPlan ? "Editar plano de ação" : "Adicionar plano de ação"}
+        </Button>
+      )}
+      
+      {onOpenSubChecklist && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 text-xs"
+          onClick={onOpenSubChecklist}
+        >
+          <List className="h-3.5 w-3.5 mr-1" />
+          Abrir Sub-Checklist
         </Button>
       )}
     </div>
