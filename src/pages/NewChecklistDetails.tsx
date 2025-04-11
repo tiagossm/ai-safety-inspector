@@ -1,404 +1,256 @@
+
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Edit2, Copy, Trash2 } from "lucide-react";
-import { toast } from "sonner";
+import { Card, CardContent } from "@/components/ui/card";
+import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
+import { ChecklistItem } from "@/components/new-checklist/ChecklistItem";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { DeleteChecklistDialog } from "@/components/new-checklist/DeleteChecklistDialog";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export default function NewChecklistDetails() {
-  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { data: checklist, loading, error, refetch } = useChecklistById(id || "");
-  
-  const [deleteDialog, setDeleteDialog] = useState({
-    open: false,
+  const navigate = useNavigate();
+  const { data: checklist, loading, refetch } = useChecklistById(id || "");
+  const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; checklistId: string; checklistTitle: string }>({
+    isOpen: false,
     checklistId: "",
     checklistTitle: ""
   });
-  
-  const isLoading = loading;
-  
-  if (isLoading) {
+
+  const handleDelete = (checklistId: string, checklistTitle: string) => {
+    setDeleteDialog({
+      isOpen: true,
+      checklistId,
+      checklistTitle
+    });
+  };
+
+  const handleDeleteConfirmed = async () => {
+    try {
+      const { error } = await supabase
+        .from('checklists')
+        .delete()
+        .eq('id', deleteDialog.checklistId);
+      
+      if (error) throw error;
+      
+      toast.success('Checklist excluído com sucesso');
+      navigate('/checklists');
+    } catch (error) {
+      console.error('Error deleting checklist:', error);
+      toast.error('Erro ao excluir checklist');
+    } finally {
+      setDeleteDialog(prev => ({ ...prev, isOpen: false }));
+    }
+  };
+
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Data não definida';
+    try {
+      return format(new Date(dateString), 'dd/MM/yyyy', { locale: ptBR });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Data inválida';
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="flex justify-center items-center h-[50vh]">
-        <div className="text-center">
-          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p>Carregando checklist...</p>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" disabled>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <Skeleton className="h-8 w-64" />
+          </div>
+        </div>
+
+        <Card>
+          <CardContent className="p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-7 w-48" />
+              <div className="flex gap-2">
+                <Skeleton className="h-10 w-28" />
+                <Skeleton className="h-10 w-28" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+              <div>
+                <p className="text-sm text-gray-500">Empresa</p>
+                <Skeleton className="h-6 w-40 mt-1" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Categoria</p>
+                <Skeleton className="h-6 w-32 mt-1" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Responsável</p>
+                <Skeleton className="h-6 w-36 mt-1" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+              <div>
+                <p className="text-sm text-gray-500">Status</p>
+                <Skeleton className="h-6 w-24 mt-1" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Criado em</p>
+                <Skeleton className="h-6 w-32 mt-1" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Data de vencimento</p>
+                <Skeleton className="h-6 w-32 mt-1" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="space-y-4">
+          <h2 className="text-xl font-medium">Questões do Checklist</h2>
+          <div className="space-y-3">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <Card key={i}>
+                <CardContent className="p-4">
+                  <Skeleton className="h-6 w-full" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
     );
   }
-  
-  if (error || !checklist) {
+
+  if (!checklist) {
     return (
-      <div className="flex flex-col items-center justify-center h-[50vh]">
-        <h2 className="text-xl font-semibold mb-2">Checklist não encontrado</h2>
-        <p className="text-muted-foreground mb-4">
-          Não foi possível encontrar o checklist solicitado.
-        </p>
-        <Button 
-          variant="default" 
-          onClick={() => navigate("/new-checklists")}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" /> Voltar para Checklists
+      <div className="flex flex-col items-center justify-center mt-24">
+        <h2 className="text-2xl font-bold text-gray-700">Checklist não encontrado</h2>
+        <p className="text-gray-500 mt-2">O checklist solicitado não existe ou foi removido.</p>
+        <Button className="mt-6" onClick={() => navigate('/checklists')}>
+          Voltar para Checklists
         </Button>
       </div>
     );
   }
-  
-  const handleDelete = () => {
-    setDeleteDialog({
-      open: true,
-      checklistId: checklist.id,
-      checklistTitle: checklist.title
-    });
-  };
-  
-  const handleEdit = () => {
-    navigate(`/new-checklists/edit/${checklist.id}`);
-  };
 
-  const handleStartInspection = () => {
-    navigate(`/inspections/new/${checklist.id}`);
-  };
-  
-  const handleDuplicate = () => {
-    toast.info("Funcionalidade de duplicação será implementada em breve");
-  };
-  
-  const processQuestions = () => {
-    if (!checklist.questions || checklist.questions.length === 0) {
-      return { groups: [], ungroupedQuestions: [] };
-    }
-    
-    console.log("Processing questions:", checklist.questions.length);
-    
-    const questionsByGroup = new Map();
-    const ungroupedQuestions = [];
-    
-    checklist.questions.forEach(question => {
-      if (question.groupId) {
-        if (!questionsByGroup.has(question.groupId)) {
-          questionsByGroup.set(question.groupId, []);
-        }
-        questionsByGroup.get(question.groupId).push(question);
-      } else {
-        ungroupedQuestions.push(question);
-      }
-    });
-    
-    const groups = [];
-    
-    if (checklist.groups && checklist.groups.length > 0) {
-      checklist.groups.forEach(group => {
-        const questionsForGroup = questionsByGroup.get(group.id) || [];
-        if (questionsForGroup.length > 0 || group.id === 'default') {
-          groups.push({
-            ...group,
-            questions: questionsForGroup.sort((a, b) => a.order - b.order)
-          });
-        }
-      });
-    }
-    
-    questionsByGroup.forEach((questions, groupId) => {
-      if (!checklist.groups || !checklist.groups.some(g => g.id === groupId)) {
-        let groupTitle = `Grupo ${groups.length + 1}`;
-        if (questions[0].hint) {
-          try {
-            const hintData = JSON.parse(questions[0].hint);
-            if (hintData.groupTitle) {
-              groupTitle = hintData.groupTitle;
-            }
-          } catch (e) {}
-        }
-        
-        groups.push({
-          id: groupId,
-          title: groupTitle,
-          questions: questions.sort((a, b) => a.order - b.order)
-        });
-      }
-    });
-    
-    return { groups, ungroupedQuestions };
-  };
-  
-  const { groups, ungroupedQuestions } = processQuestions();
-  
-  const createdAt = checklist.createdAt 
-    ? new Date(checklist.createdAt).toLocaleDateString("pt-BR", { 
-        day: "2-digit", month: "2-digit", year: "numeric",
-        hour: "2-digit", minute: "2-digit"
-      })
-    : "Data desconhecida";
-    
-  const updatedAt = checklist.updatedAt 
-    ? new Date(checklist.updatedAt).toLocaleDateString("pt-BR", { 
-        day: "2-digit", month: "2-digit", year: "numeric",
-        hour: "2-digit", minute: "2-digit"
-      })
-    : "Data desconhecida";
-    
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button 
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/new-checklists")}
-          >
+          <Button variant="ghost" size="icon" onClick={() => navigate('/checklists')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <h1 className="text-2xl font-bold">{checklist.title}</h1>
-            <div className="flex items-center gap-2 mt-1">
-              <Badge variant={checklist.status === "active" ? "default" : "secondary"}>
-                {checklist.status === "active" ? "Ativo" : "Inativo"}
+          <h1 className="text-2xl font-bold">{checklist.title}</h1>
+        </div>
+      </div>
+
+      <Card>
+        <CardContent className="p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Badge variant={checklist.isTemplate ? "outline" : "default"}>
+                {checklist.isTemplate ? "Template" : "Checklist"}
               </Badge>
-              
-              {checklist.isTemplate && (
-                <Badge variant="outline" className="bg-blue-50">Template</Badge>
-              )}
-              
-              {checklist.category && (
-                <Badge variant="outline">{checklist.category}</Badge>
+              <Badge variant="secondary">{checklist.status}</Badge>
+              {checklist.origin && (
+                <Badge variant="outline" className="capitalize">
+                  {checklist.origin}
+                </Badge>
               )}
             </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => navigate(`/new-checklists/${checklist.id}/edit`)}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Editar
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => handleDelete(checklist.id, checklist.title)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Excluir
+              </Button>
+            </div>
           </div>
-        </div>
-        
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleEdit}
-          >
-            <Edit2 className="h-4 w-4 mr-2" />
-            Editar
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDuplicate}
-          >
-            <Copy className="h-4 w-4 mr-2" />
-            Duplicar
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-destructive hover:text-destructive"
-            onClick={handleDelete}
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Excluir
-          </Button>
-        </div>
+
+          {checklist.description && (
+            <p className="text-gray-600 mt-2">{checklist.description}</p>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+            <div>
+              <p className="text-sm text-gray-500">Empresa</p>
+              <p className="font-medium">{checklist.companyName || "Não definido"}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Categoria</p>
+              <p className="font-medium">{checklist.category || "Não definido"}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Responsável</p>
+              <p className="font-medium">{checklist.responsibleName || "Não definido"}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+            <div>
+              <p className="text-sm text-gray-500">Status</p>
+              <p className="font-medium capitalize">{checklist.status || "Não definido"}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Criado em</p>
+              <p className="font-medium">{formatDate(checklist.createdAt)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Data de vencimento</p>
+              <p className="font-medium">{checklist.dueDate ? formatDate(checklist.dueDate) : "Não definido"}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="space-y-4">
+        <h2 className="text-xl font-medium">Questões do Checklist</h2>
+        {checklist.questions && checklist.questions.length > 0 ? (
+          <div className="space-y-3">
+            {checklist.questions.map((question, index) => (
+              <ChecklistItem 
+                key={question.id}
+                title={question.text}
+                type={question.responseType}
+                required={question.isRequired}
+                order={index + 1}
+                hasSubchecklist={question.hasSubchecklist}
+                options={question.options}
+              />
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="p-6 text-center">
+              <p className="text-gray-500">Este checklist não possui questões.</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 space-y-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <h2 className="text-xl font-semibold">Descrição</h2>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-700">
-                {checklist.description || "Sem descrição"}
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <h2 className="text-xl font-semibold">Perguntas</h2>
-            </CardHeader>
-            <CardContent>
-              {groups.length === 0 && ungroupedQuestions.length === 0 ? (
-                <p className="text-muted-foreground">Este checklist não possui perguntas.</p>
-              ) : (
-                <div className="space-y-6">
-                  {groups.map(group => (
-                    <div key={group.id} className="mb-6">
-                      <h3 className="text-lg font-medium mb-2 pb-1 border-b">
-                        {group.title}
-                      </h3>
-                      
-                      <div className="space-y-3 pl-2">
-                        {group.questions.length === 0 ? (
-                          <p className="text-sm text-muted-foreground italic">
-                            Nenhuma pergunta neste grupo
-                          </p>
-                        ) : (
-                          group.questions.map((question, index) => (
-                            <div key={question.id} className="border-l-2 border-gray-200 pl-3 py-1">
-                              <p className="font-medium mb-1">{index + 1}. {question.text}</p>
-                              <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                                <Badge variant="outline" className="font-normal">
-                                  {question.responseType === "sim/não" ? "Sim/Não" :
-                                   question.responseType === "seleção múltipla" ? "Múltipla escolha" :
-                                   question.responseType === "texto" ? "Texto" :
-                                   question.responseType === "numérico" ? "Numérico" :
-                                   question.responseType === "foto" ? "Foto" : "Assinatura"}
-                                </Badge>
-                                
-                                {question.isRequired && (
-                                  <Badge variant="outline" className="bg-red-50 font-normal">Obrigatório</Badge>
-                                )}
-                                
-                                {(question.allowsPhoto || question.allowsVideo || question.allowsAudio) && (
-                                  <Badge variant="outline" className="bg-green-50 font-normal">
-                                    {[
-                                      question.allowsPhoto ? "Foto" : null,
-                                      question.allowsVideo ? "Vídeo" : null,
-                                      question.allowsAudio ? "Áudio" : null
-                                    ].filter(Boolean).join(", ")}
-                                  </Badge>
-                                )}
-                              </div>
-                              
-                              {question.options && question.options.length > 0 && (
-                                <div className="mt-2 pl-3 border-l border-dashed border-gray-200">
-                                  <p className="text-sm font-medium mb-1">Opções:</p>
-                                  <ul className="text-sm space-y-1">
-                                    {question.options.map((option, idx) => (
-                                      <li key={idx}>• {option}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {ungroupedQuestions.length > 0 && (
-                    <div className="mb-6">
-                      <h3 className="text-lg font-medium mb-2 pb-1 border-b">
-                        Perguntas Gerais
-                      </h3>
-                      
-                      <div className="space-y-3 pl-2">
-                        {ungroupedQuestions.map((question, index) => (
-                          <div key={question.id} className="border-l-2 border-gray-200 pl-3 py-1">
-                            <p className="font-medium mb-1">{index + 1}. {question.text}</p>
-                            <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                              <Badge variant="outline" className="font-normal">
-                                {question.responseType === "sim/não" ? "Sim/Não" :
-                                 question.responseType === "seleção múltipla" ? "Múltipla escolha" :
-                                 question.responseType === "texto" ? "Texto" :
-                                 question.responseType === "numérico" ? "Numérico" :
-                                 question.responseType === "foto" ? "Foto" : "Assinatura"}
-                              </Badge>
-                              
-                              {question.isRequired && (
-                                <Badge variant="outline" className="bg-red-50 font-normal">Obrigatório</Badge>
-                              )}
-                            </div>
-                            
-                            {question.options && question.options.length > 0 && (
-                              <div className="mt-2 pl-3 border-l border-dashed border-gray-200">
-                                <p className="text-sm font-medium mb-1">Opções:</p>
-                                <ul className="text-sm space-y-1">
-                                  {question.options.map((option, idx) => (
-                                    <li key={idx}>• {option}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-        
-        <div className="space-y-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <h2 className="text-xl font-semibold">Informações</h2>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Criado em:</span>
-                  <span>{createdAt}</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Atualizado em:</span>
-                  <span>{updatedAt}</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Perguntas:</span>
-                  <span>{checklist.questions ? checklist.questions.length : 0}</span>
-                </div>
-                
-                {checklist.responsibleId && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Responsável:</span>
-                    <span>ID: {checklist.responsibleId.substring(0, 8)}...</span>
-                  </div>
-                )}
-                
-                {checklist.companyId && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Empresa:</span>
-                    <span>ID: {checklist.companyId.substring(0, 8)}...</span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="pb-2">
-              <h2 className="text-lg font-semibold">Ações</h2>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Button 
-                  variant="default" 
-                  className="w-full"
-                  onClick={handleStartInspection}
-                >
-                  Iniciar inspeção
-                </Button>
-                
-                <Button variant="outline" className="w-full">
-                  Exportar checklist
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-      
-      {isDeleteDialogOpen && selectedChecklist && (
-        <DeleteChecklistDialog
-          checklistId={deleteDialog.checklistId}
-          checklistTitle={deleteDialog.checklistTitle}
-          isOpen={deleteDialog.open}
-          onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
-          onDeleted={async () => {
-            navigate("/new-checklists", { replace: true });
-          }}
-        />
-      )}
+
+      <DeleteChecklistDialog
+        checklistId={deleteDialog.checklistId}
+        checklistTitle={deleteDialog.checklistTitle}
+        isOpen={deleteDialog.isOpen}
+        onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, isOpen: open }))}
+        onDeleted={handleDeleteConfirmed}
+      />
     </div>
   );
 }

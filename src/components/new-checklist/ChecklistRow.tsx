@@ -41,7 +41,7 @@ export function ChecklistRow({
         <TableCell className="w-12">
           <Checkbox 
             checked={isSelected} 
-            onCheckedChange={onSelect}
+            onCheckedChange={(checked) => onSelect(checked === true)}
           />
         </TableCell>
       )}

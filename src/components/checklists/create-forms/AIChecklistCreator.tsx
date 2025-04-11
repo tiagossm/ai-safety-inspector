@@ -11,7 +11,6 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { IntelligentChecklistForm } from "./IntelligentChecklistForm";
 import { supabase } from "@/integrations/supabase/client";
-import { NewChecklistPayload } from "@/types/newChecklist";
 
 interface AIChecklistCreatorProps {
   form: NewChecklist;
@@ -92,7 +91,7 @@ export function AIChecklistCreator({
 
     try {
       // Create the payload for the checklist
-      const checklistPayload: NewChecklistPayload = {
+      const checklistPayload = {
         title: form.title || form.category || "Novo Checklist",
         description: form.description || `Gerado por IA: ${prompt}`,
         category: form.category,

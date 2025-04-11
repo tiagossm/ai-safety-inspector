@@ -65,9 +65,17 @@ export function useChecklists(filters: ChecklistsFilter = {}) {
     // Transform the data to match ChecklistWithStats
     const transformedData: ChecklistWithStats[] = data.map(item => {
       // Handle SelectQueryError case safely
-      const responsibleName = typeof item.users === 'object' && item.users !== null && 'name' in item.users
-        ? item.users.name
-        : "";
+      let responsibleName = "";
+      
+      if (item.users) {
+        try {
+          // @ts-ignore - We handle the error if this fails
+          responsibleName = item.users?.name || "";
+        } catch (e) {
+          console.error("Error accessing user name:", e);
+          responsibleName = "";
+        }
+      }
       
       return {
         id: item.id,

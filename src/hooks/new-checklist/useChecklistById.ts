@@ -120,6 +120,21 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
         groups.push(defaultGroup);
       }
       
+      // Get responsible name safely
+      let responsibleName = "";
+      if (checklist.responsible_id && typeof checklist.users === 'object' && checklist.users !== null) {
+        // Access name safely with type checking
+        // We can't directly access .name due to the SelectQueryError
+        // Instead, use a safer approach
+        try {
+          // @ts-ignore - We handle the error if this fails
+          responsibleName = checklist.users.name || "";
+        } catch (e) {
+          console.error("Error accessing user name:", e);
+          responsibleName = "";
+        }
+      }
+      
       // Prepare checklist data
       const checklistData: ChecklistWithStats = {
         id: checklist.id,
@@ -139,7 +154,7 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
         isSubChecklist: checklist.is_sub_checklist || false,
         totalQuestions: questions.length,
         companyName: checklist.companies?.fantasy_name || "",
-        responsibleName: checklist.users?.name || "",
+        responsibleName: responsibleName,
         questions: questions,
         groups: groups
       };

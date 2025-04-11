@@ -312,7 +312,7 @@ export function useChecklistAI() {
         .from("checklists")
         .insert({
           title: checklistData.title || `Checklist: ${prompt.substring(0, 50)}`,
-          description: `Gerado por IA: ${prompt}`,
+          description: checklistData.description || `Gerado por IA: ${prompt}`,
           category: checklistData.category || "general",
           user_id: typedUser?.id,
           company_id: checklistData.company_id,
@@ -463,8 +463,7 @@ export function useChecklistAI() {
     setOpenAIAssistant,
     questionGroups,
     setQuestionGroups,
-    generateAIChecklist: generateAIChecklist,
-    getDefaultGroups,
-    generateChecklist
+    generateChecklist,
+    getDefaultGroups
   };
 }
