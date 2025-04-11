@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats } from "@/types/newChecklist";
@@ -67,14 +66,9 @@ export function useChecklists(filters: ChecklistsFilter = {}) {
       // Handle SelectQueryError case safely
       let responsibleName = "";
       
+      // Add null and type checks before accessing name
       if (item.users && typeof item.users === 'object') {
-        try {
-          // Access name safely with null checking
-          responsibleName = item.users?.name || "";
-        } catch (e) {
-          console.error("Error accessing user name:", e);
-          responsibleName = "";
-        }
+        responsibleName = (item.users as any)?.name ?? "";
       }
       
       return {
