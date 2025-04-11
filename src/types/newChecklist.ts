@@ -1,3 +1,10 @@
+export type QuestionType = 
+  | 'sim/não' 
+  | 'múltipla escolha' 
+  | 'texto' 
+  | 'numérico' 
+  | 'foto' 
+  | 'assinatura';
 
 export interface ChecklistWithStats {
   id: string;
