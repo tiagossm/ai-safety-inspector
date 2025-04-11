@@ -33,7 +33,7 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
         .select(`
           *,
           companies:company_id(*),
-          users:responsible_id(name)
+          users:responsible_id(*)
         `)
         .eq("id", id)
         .single();
@@ -134,11 +134,11 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
         groups.push(defaultGroup);
       }
       
-      // Extract responsible name from the name property returned by the query
-      // The name is now directly accessible from users object
+      // Get user data from the users object
       let responsibleName = "";
       if (checklist.users) {
-        responsibleName = checklist.users || "";
+        // Extract name from users object, ensuring we handle it as a possibly null value
+        responsibleName = checklist.users.name || "";
       }
       
       // Prepare checklist data
