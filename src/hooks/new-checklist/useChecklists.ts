@@ -1,7 +1,8 @@
+
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats } from "@/types/newChecklist";
-import { transformResponseToChecklistWithStats } from "@/services/checklist/checklistTransformers";
+import { buildChecklistsQuery } from "./utils/checklistQueryBuilder";
+import { transformChecklistsData } from "./utils/checklistsTransformer";
 
 interface ChecklistsFilter {
   page?: number;
@@ -32,39 +33,15 @@ export function useChecklists(filters: ChecklistsFilter = {}) {
 
   const queryFn = async (): Promise<ChecklistsResult> => {
     try {
-      // Build base query with explicit relationship paths to avoid ambiguity
-      let query = supabase
-        .from('checklists')
-        .select(`
-          *,
-          companies:company_id(*),
-          users:responsible_id(id, name, email)
-        `, { count: 'exact' });
-
-      // Apply filters
-      if (search) {
-        query = query.ilike('title', `%${search}%`);
-      }
-
-      if (isTemplate !== undefined) {
-        query = query.eq('is_template', isTemplate);
-      }
-
-      if (status) {
-        query = query.eq('status', status);
-      }
-
-      // Skip templates that are sub-checklists
-      query = query.eq('is_sub_checklist', false);
-
-      // Add pagination
-      const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
+      // Build and execute the Supabase query
+      const query = buildChecklistsQuery({
+        page,
+        pageSize,
+        search,
+        isTemplate,
+        status
+      });
       
-      query = query
-        .order('created_at', { ascending: false })
-        .range(from, to);
-
       // Execute query
       const { data, error, count } = await query;
 
@@ -82,19 +59,8 @@ export function useChecklists(filters: ChecklistsFilter = {}) {
         };
       }
 
-      // Transform the response data to match ChecklistWithStats type
-      const transformedData = data.map(item => {
-        // Safely extract responsible name with null check
-        const responsibleName = 
-          item?.users && typeof item.users === 'object' 
-            ? item.users?.name ?? "" 
-            : "";
-        
-        return transformResponseToChecklistWithStats({
-          ...item,
-          responsibleName
-        });
-      });
+      // Transform the response data
+      const transformedData = transformChecklistsData(data);
 
       return {
         data: transformedData,
