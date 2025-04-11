@@ -3,6 +3,7 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { ChecklistWithStats } from "@/types/newChecklist";
 import { ChecklistOriginBadge } from "./ChecklistOriginBadge";
+import { ChecklistThemeBadge } from "./ChecklistThemeBadge";
 
 interface ChecklistCardBadgesProps {
   checklist: ChecklistWithStats;
@@ -10,18 +11,19 @@ interface ChecklistCardBadgesProps {
 }
 
 /**
- * Component for rendering checklist badges (status, template, origin)
+ * Component for rendering checklist badges (status, template, origin, theme)
  */
 export const ChecklistCardBadges: React.FC<ChecklistCardBadgesProps> = ({ 
   checklist, 
   status 
 }) => {
   return (
-    <div className="flex items-center gap-2 mb-1">
+    <div className="flex flex-wrap items-center gap-2 mb-1">
       <Badge variant={checklist.isTemplate ? "secondary" : "default"} className="px-2 py-0">
         {checklist.isTemplate ? "Template" : status === 'active' ? "Ativo" : "Inativo"}
       </Badge>
       <ChecklistOriginBadge origin={checklist.origin} />
+      {checklist.theme && <ChecklistThemeBadge theme={checklist.theme} />}
     </div>
   );
 };

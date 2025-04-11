@@ -1,11 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats } from "@/types/newChecklist";
-import { transformChecklistData, transformBasicChecklistData } from "./checklistTransformers";
 
-/**
- * Fetches checklists with filters and sorting
- */
 export async function fetchChecklists(
   filterType: string,
   selectedCompanyId: string,
@@ -59,9 +55,6 @@ export async function fetchChecklists(
   return transformChecklistData(data);
 }
 
-/**
- * Fetches all checklist data for filtering
- */
 export async function fetchAllChecklistsData() {
   const { data, error } = await supabase
     .from("checklists")
@@ -78,25 +71,48 @@ export async function fetchAllChecklistsData() {
   return transformBasicChecklistData(data);
 }
 
-/**
- * Fetches a specific checklist by ID
- */
-export async function fetchChecklistById(id: string) {
-  const { data, error } = await supabase
-    .from("checklists")
-    .select(`
-      *,
-      checklist_itens(count),
-      companies(fantasy_name),
-      users!checklists_responsible_id_fkey(name)
-    `)
-    .eq("id", id)
-    .single();
+// Helper functions to transform data
+function transformChecklistData(data: any[]): ChecklistWithStats[] {
+  return data.map((item) => ({
+    id: item.id,
+    title: item.title,
+    description: item.description,
+    isTemplate: item.is_template,
+    is_template: item.is_template, // Adding this to satisfy type requirement
+    status: item.status,
+    category: item.category,
+    theme: item.theme || item.category, // Using theme with category fallback
+    responsibleId: item.responsible_id,
+    companyId: item.company_id,
+    userId: item.user_id,
+    createdAt: item.created_at,
+    updatedAt: item.updated_at,
+    dueDate: item.due_date,
+    isSubChecklist: item.is_sub_checklist,
+    origin: item.origin,
+    totalQuestions: item.checklist_itens?.length || 0,
+    completedQuestions: 0,
+    companyName: item.companies?.fantasy_name,
+    responsibleName: item.users?.name
+  }));
+}
 
-  if (error) {
-    console.error(`Error fetching checklist ${id}:`, error);
-    throw error;
-  }
-
-  return transformChecklistData([data])[0];
+function transformBasicChecklistData(data: any[]): ChecklistWithStats[] {
+  return data.map((item) => ({
+    id: item.id,
+    title: item.title,
+    description: item.description,
+    isTemplate: item.is_template,
+    is_template: item.is_template, // Adding this to satisfy type requirement
+    status: item.status,
+    theme: item.theme || item.category, // Using theme with category fallback
+    isSubChecklist: item.is_sub_checklist,
+    category: item.category,
+    companyId: item.company_id,
+    createdAt: item.created_at,
+    updatedAt: item.updated_at,
+    origin: item.origin,
+    totalQuestions: 0,
+    completedQuestions: 0
+  }));
 }

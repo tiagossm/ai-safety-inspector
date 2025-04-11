@@ -4,8 +4,10 @@ export interface ChecklistWithStats {
   title: string;
   description?: string;
   isTemplate: boolean;
+  is_template: boolean; // Added to satisfy transformation requirements
   status: string;
   category?: string;
+  theme?: string; // Added theme property
   responsibleId?: string;
   companyId?: string;
   userId?: string;
@@ -27,6 +29,7 @@ export interface NewChecklistPayload {
   status_checklist?: string;
   status?: string;
   category?: string;
+  theme?: string; // Added theme property
   company_id?: string;
   responsible_id?: string;
 }
@@ -44,6 +47,7 @@ export interface Checklist {
   company_id?: string;
   responsible_id?: string;
   category?: string;
+  theme?: string; // Added theme property
   questions?: ChecklistItem[];
   groups?: ChecklistGroup[];
   responsibleName?: string;
@@ -85,6 +89,7 @@ export interface NewChecklist {
   is_template?: boolean;
   status_checklist?: string;
   category?: string;
+  theme?: string; // Added theme property
   company_id?: string | null;
   responsible_id?: string | null;
   status?: string;
