@@ -1,141 +1,141 @@
 
+import { useState } from "react";
 import { toast } from "sonner";
 import { NewChecklist } from "@/types/checklist";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
 
 export function useChecklistAISubmit() {
-  const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const createChecklistWithAI = async (
-    aiPrompt: string,
-    formData: NewChecklist,
-    openAIAssistant?: string,
-    numQuestions?: number
+    prompt: string,
+    form: NewChecklist,
+    assistantType: string = "general",
+    numQuestions: number = 10
   ): Promise<string | null> => {
     try {
-      const assistantParam = openAIAssistant ? { assistantId: openAIAssistant } : {};
+      setIsSubmitting(true);
       
-      console.log("Generating checklist with AI:", {
-        prompt: aiPrompt,
-        checklistData: formData,
-        questionCount: numQuestions || 10,
-        assistantId: openAIAssistant
-      });
+      // Validate inputs
+      if (!prompt.trim()) {
+        toast.error("O prompt para o assistente é obrigatório");
+        return null;
+      }
       
-      const { data, error } = await supabase.functions.invoke('generate-checklist', {
-        body: {
-          prompt: aiPrompt,
-          checklistData: formData,
-          questionCount: numQuestions || 10,
-          ...assistantParam
-        }
-      });
-
-      if (error) {
-        console.error("Error in AI generation:", error);
-        throw new Error(`Error generating checklist: ${error.message}`);
+      if (!form.title?.trim()) {
+        toast.error("O título é obrigatório");
+        return null;
       }
-
-      if (!data || !data.success) {
-        console.error("AI generation failed:", data);
-        throw new Error(data?.error || 'Failed to generate checklist');
-      }
-
-      console.log("Successfully generated checklist:", data);
-      const { id, error: saveError } = await saveChecklistDataFromAI(data, formData);
-
-      if (saveError) {
-        throw saveError;
-      }
-
-      return id;
-    } catch (error) {
-      console.error('Error in AI generation:', error);
-      toast.error(`Erro na geração por IA: ${error.message}`);
-      return null;
-    }
-  };
-
-  const saveChecklistDataFromAI = async (aiOutput: any, formData: NewChecklist) => {
-    try {
-      console.log("Saving AI generated data:", aiOutput);
       
-      const checklistData = {
-        title: aiOutput.checklistData?.title || formData.title || "Checklist sem título",
-        description: aiOutput.checklistData?.description || formData.description || "Checklist gerado por IA",
-        is_template: formData.is_template || false,
-        status_checklist: formData.status_checklist || "ativo",
-        category: formData.category || "general",
-        company_id: formData.company_id || null,
-        responsible_id: formData.responsible_id || null,
-        status: 'active'
+      // Store original prompt for history
+      const promptRequest = {
+        prompt: prompt.trim(),
+        assistantType: assistantType || "general",
+        numQuestions
       };
       
-      console.log("Inserting checklist:", checklistData);
+      // Create loading toast
+      toast.loading("Gerando checklist com IA...", { id: "ai-generation" });
       
-      const { data, error } = await supabase
-        .from('checklists')
-        .insert(checklistData)
-        .select('id')
-        .single();
-
-      if (error) {
-        console.error("Error creating checklist:", error);
-        throw error;
-      }
-
-      console.log("Checklist created with ID:", data.id);
-      
-      if (aiOutput.questions && aiOutput.questions.length > 0) {
-        console.log(`Saving ${aiOutput.questions.length} questions`);
+      try {
+        // Call the edge function to generate questions with AI
+        const { data: aiData, error: aiError } = await supabase.functions.invoke("generate-checklist-items", {
+          body: {
+            prompt: promptRequest.prompt,
+            assistant: promptRequest.assistantType,
+            numQuestions: promptRequest.numQuestions,
+          }
+        });
         
-        const questionsToSave = aiOutput.questions.map((q: any, index: number) => ({
-          checklist_id: data.id,
-          pergunta: q.text,
-          tipo_resposta: mapResponseType(q.responseType || "sim/não"),
-          obrigatorio: q.isRequired !== false,
-          ordem: index,
-          permite_foto: q.allowsPhoto || false,
-          permite_video: q.allowsVideo || false,
-          permite_audio: q.allowsAudio || false,
-          opcoes: q.options || null,
-          weight: q.weight || 1
-        }));
-
-        const { error: questionsError } = await supabase
-          .from('checklist_itens')
-          .insert(questionsToSave);
-
-        if (questionsError) {
-          console.error('Error saving questions:', questionsError);
-          toast.warning('Algumas perguntas não puderam ser salvas.');
-        } else {
-          console.log("Questions saved successfully");
+        if (aiError) {
+          console.error("Error generating checklist with AI:", aiError);
+          toast.error("Erro ao gerar checklist com IA", { id: "ai-generation" });
+          return null;
         }
+        
+        if (!aiData || !Array.isArray(aiData.questions) || aiData.questions.length === 0) {
+          toast.error("O assistente não conseguiu gerar perguntas. Por favor, tente um prompt diferente.", { id: "ai-generation" });
+          return null;
+        }
+        
+        // Create checklist
+        const { data: checklistData, error: checklistError } = await supabase
+          .from("checklists")
+          .insert({
+            title: form.title.trim(),
+            description: form.description || `Checklist gerado por IA com base no prompt: "${promptRequest.prompt.substring(0, 100)}${promptRequest.prompt.length > 100 ? '...' : ''}"`,
+            is_template: form.is_template || false,
+            status_checklist: form.status_checklist || "ativo",
+            category: form.category || "",
+            responsible_id: form.responsible_id || null,
+            company_id: form.company_id || null,
+            status: form.status || "active",
+            origin: "ia" // Explicitly set the origin
+          })
+          .select("id")
+          .single();
+        
+        if (checklistError) {
+          console.error("Error creating checklist:", checklistError);
+          toast.error("Erro ao criar checklist", { id: "ai-generation" });
+          return null;
+        }
+        
+        const checklistId = checklistData.id;
+        
+        // Prepare questions for insertion
+        const questionsToInsert = aiData.questions.map((q: any, index: number) => ({
+          checklist_id: checklistId,
+          pergunta: q.text.trim(),
+          tipo_resposta: q.type || "sim/não",
+          obrigatorio: q.required !== undefined ? q.required : true,
+          ordem: index,
+          permite_foto: q.allowPhoto || false,
+          permite_video: q.allowVideo || false,
+          permite_audio: q.allowAudio || false,
+          opcoes: q.options && q.options.length > 0 ? q.options : null,
+          hint: q.hint || null,
+          weight: q.weight || 1,
+          parent_item_id: q.parentId || null,
+          condition_value: q.conditionValue || null
+        }));
+        
+        // Insert questions
+        const { error: questionsError } = await supabase
+          .from("checklist_itens")
+          .insert(questionsToInsert);
+        
+        if (questionsError) {
+          console.error("Error adding questions:", questionsError);
+          toast.warning("Checklist criado, mas houve um erro ao adicionar algumas perguntas", { id: "ai-generation" });
+        }
+        
+        // Add to history
+        await supabase.from("checklist_history").insert({
+          checklist_id: checklistId,
+          user_id: (await supabase.auth.getUser()).data.user?.id,
+          action: "create",
+          details: `Checklist gerado por IA usando o assistente "${assistantType}" com ${aiData.questions.length} perguntas`
+        });
+        
+        toast.success("Checklist gerado com sucesso!", { id: "ai-generation" });
+        return checklistId;
+      } catch (error) {
+        console.error("Error in AI generation:", error);
+        toast.error(`Erro na geração por IA: ${error instanceof Error ? error.message : "Erro desconhecido"}`, { id: "ai-generation" });
+        return null;
       }
-
-      return { id: data.id, error: null };
     } catch (error) {
-      console.error('Error saving AI-generated checklist:', error);
-      return { id: null, error };
+      console.error("Error in createChecklistWithAI:", error);
+      toast.error(`Erro ao criar checklist: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
+      return null;
+    } finally {
+      setIsSubmitting(false);
     }
   };
-
-  const mapResponseType = (type: string): string => {
-    const typeMap: Record<string, string> = {
-      'yes_no': 'sim/não',
-      'multiple_choice': 'seleção múltipla',
-      'numeric': 'numérico',
-      'text': 'texto',
-      'photo': 'foto',
-      'signature': 'assinatura'
-    };
-
-    return typeMap[type] || 'sim/não';
-  };
-
+  
   return {
+    isSubmitting,
     createChecklistWithAI
   };
 }
