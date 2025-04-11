@@ -1,3 +1,4 @@
+
 export interface ChecklistWithStats {
   id: string;
   title: string;
@@ -56,7 +57,7 @@ export interface Checklist {
   questions?: ChecklistItem[];
   groups?: ChecklistGroup[];
   responsibleName?: string;
-  origin?: 'manual' | 'ia' | 'csv' | string; // Changed to union type
+  origin?: 'manual' | 'ia' | 'csv' | string; // Updated to accept string
 }
 
 export interface ChecklistItem {
@@ -106,7 +107,7 @@ export interface BatchUpdateResult {
   count: number;
 }
 
-// Update InspectionDetails to include all needed properties
+// Updated InspectionDetails to include all missing properties
 export interface InspectionDetails {
   id: string;
   title: string;
@@ -131,7 +132,7 @@ export interface InspectionDetails {
   responsible?: { name?: string };
 }
 
-// Update InspectionFilters to include all needed properties
+// Updated InspectionFilters to include all needed properties
 export interface InspectionFilters {
   status?: string;
   dateRange?: [Date | null, Date | null];
@@ -149,7 +150,7 @@ export interface InspectionFilters {
   endDate?: Date;
 }
 
-// Add ChecklistQuestion interface
+// Updated ChecklistQuestion interface
 export interface ChecklistQuestion {
   id: string;
   text: string;
@@ -179,5 +180,5 @@ export interface DeleteChecklistDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onDeleted: () => Promise<void>;
-  isDeleting?: boolean;
+  isDeleting?: boolean; // Made optional
 }

@@ -11,7 +11,7 @@ export const ChecklistOriginBadge: React.FC<ChecklistOriginBadgeProps> = ({ orig
   if (!origin) return null;
   
   // Handle the origin based on its value
-  switch(origin) {
+  switch(origin.toLowerCase()) {
     case "manual":
       return (
         <Badge variant="outline" className="flex gap-1 items-center px-2 py-0.5 text-xs">

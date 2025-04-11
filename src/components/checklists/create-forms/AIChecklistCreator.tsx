@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { NewChecklist } from "@/types/checklist";
 import { CompanyListItem } from "@/types/CompanyListItem";
 import { Bot, Sparkles } from "lucide-react";
-import { AIAssistantType, useChecklistAI } from "@/hooks/new-checklist/useChecklistAI";
+import { useChecklistAI } from "@/hooks/new-checklist/useChecklistAI";
 import { CompanySelector } from "@/components/inspection/CompanySelector";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -32,7 +32,9 @@ export function AIChecklistCreator({
 }: AIChecklistCreatorProps) {
   const [prompt, setPrompt] = useState<string>("");
   const [selectedCompanyName, setSelectedCompanyName] = useState<string>("");
+  
   const {
+    isLoading,
     isGenerating,
     selectedAssistant,
     setSelectedAssistant,
@@ -93,11 +95,12 @@ export function AIChecklistCreator({
         title: form.title || form.category || "Novo Checklist",
         description: form.description || `Gerado por IA: ${prompt}`,
         category: form.category,
-        is_template: form.is_template || false, // Fix property name
-        company_id: form.company_id
+        is_template: form.is_template || false,
+        company_id: form.company_id,
+        origin: 'ia'
       };
       
-      const result = await generateChecklist(checklistPayload);
+      const result = await generateChecklist(prompt, checklistPayload, openAIAssistant);
       
       if (result && result.success) {
         // Form submission is handled by the parent component
@@ -162,11 +165,11 @@ export function AIChecklistCreator({
           
           <Button
             type="submit"
-            disabled={isGenerating || isSubmitting || !form.category?.trim() || !form.company_id || !openAIAssistant}
+            disabled={isLoading || isSubmitting || !form.category?.trim() || !form.company_id || !openAIAssistant}
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 mt-4"
             size="lg"
           >
-            {isGenerating || isSubmitting ? (
+            {isLoading || isSubmitting ? (
               <>
                 <Sparkles className="mr-2 h-5 w-5 animate-spin" />
                 Gerando...

@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -25,7 +26,7 @@ export const fetchChecklists = async () => {
   }
 };
 
-// Add the missing fetchChecklistById function
+// Add the fetchChecklistById function
 export const fetchChecklistById = async (id: string) => {
   try {
     const { data, error } = await supabase

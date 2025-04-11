@@ -33,7 +33,7 @@ export default function Inspections() {
   // Handle search with debounce
   useEffect(() => {
     const timer = setTimeout(() => {
-      setFilters(prev => ({ ...prev, search: searchTerm }));
+      setFilters({ ...filters, search: searchTerm });
     }, 500);
     
     return () => clearTimeout(timer);
@@ -86,6 +86,7 @@ export default function Inspections() {
             size="sm"
             className="h-9"
             onClick={() => setFilters({
+              ...filters,
               search: "",
               status: "all",
               priority: "all",
