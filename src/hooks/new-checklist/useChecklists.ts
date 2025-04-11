@@ -85,7 +85,7 @@ export function useChecklists(filters: ChecklistsFilter = {}) {
 
       // Transform the response data to match ChecklistWithStats type
       const transformedData = data.map(item => {
-        // Extract responsible name safely
+        // Extract responsible name safely with proper null check
         const responsibleName = item.users && typeof item.users === 'object' ? item.users.name || "" : "";
         
         return transformResponseToChecklistWithStats({

@@ -134,9 +134,10 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
         groups.push(defaultGroup);
       }
       
-      // Extract responsible name safely
+      // Get user data from the users object - with proper null check
       let responsibleName = "";
       if (checklist.users && typeof checklist.users === 'object') {
+        // Extract name from users object, ensuring we handle it safely
         responsibleName = checklist.users.name || "";
       }
       
