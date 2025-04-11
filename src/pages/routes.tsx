@@ -33,7 +33,7 @@ export const checklistRoutes = [
   <Route key="inspections-id" path="/inspections/:id" element={<RequireAuth><InspectionExecutionPage /></RequireAuth>} />,
   <Route key="inspections-id-view" path="/inspections/:id/view" element={<RequireAuth><InspectionExecutionPage /></RequireAuth>} />,
   
-  {/* Adicionar rota para página 404 */}
+  // Fixed comment syntax for the 404 route
   <Route key="not-found" path="*" element={<NotFound />} />
 ];
 
