@@ -69,7 +69,7 @@ export function useChecklists(filters: ChecklistsFilter = {}) {
       
       if (item.users && typeof item.users === 'object') {
         try {
-          // Access name safely
+          // Access name safely with null checking
           responsibleName = item.users?.name || "";
         } catch (e) {
           console.error("Error accessing user name:", e);

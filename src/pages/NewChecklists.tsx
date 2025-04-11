@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -28,7 +27,6 @@ export default function NewChecklists() {
     checklistTitle: "",
   });
 
-  // Query different checklist types based on the active tab
   const {
     data: templates,
     isLoading: templatesLoading,
@@ -64,14 +62,12 @@ export default function NewChecklists() {
     pageSize: 100
   });
 
-  // Combine all refreshes into one function
   const refreshAllChecklists = () => {
     refreshTemplates();
     refreshActive();
     refreshInactive();
   };
 
-  // Determine which data to show based on active tab
   const getActiveChecklists = (): ChecklistWithStats[] => {
     switch (activeTab) {
       case "template":
@@ -88,7 +84,6 @@ export default function NewChecklists() {
   const isLoading = templatesLoading || activeLoading || inactiveLoading;
   const displayedChecklists = getActiveChecklists();
 
-  // Count checklist types
   const checklistCounts = {
     template: templates?.data?.length || 0,
     active: activeChecklists?.data?.length || 0,
@@ -144,7 +139,7 @@ export default function NewChecklists() {
     } catch (error) {
       console.error("Error bulk deleting checklists:", error);
       toast.error("Erro ao excluir checklists em massa");
-      throw error; // Rethrow to be caught by the calling component
+      throw error;
     }
   };
 
@@ -162,7 +157,7 @@ export default function NewChecklists() {
       refreshAllChecklists();
     } catch (error) {
       console.error(`Error changing status to ${newStatus}:`, error);
-      throw error; // Rethrow to be caught by the calling component
+      throw error;
     }
   };
 
@@ -218,7 +213,7 @@ export default function NewChecklists() {
             allChecklists={displayedChecklists}
             isLoading={isLoading}
             onEdit={(id) => navigate(`/new-checklists/${id}/edit`)}
-            onDelete={handleDeleteChecklist}
+            onDelete={(id) => handleDeleteChecklist(id, "")}
             onOpen={(id) => navigate(`/new-checklists/${id}`)}
             onStatusChange={refreshAllChecklists}
             onBulkDelete={handleBulkDelete}

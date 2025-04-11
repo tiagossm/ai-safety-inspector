@@ -85,6 +85,20 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
           console.error("Error parsing hint:", e);
         }
         
+        // Convert opcoes to string array if it exists
+        let options: string[] = [];
+        if (item.opcoes) {
+          try {
+            if (Array.isArray(item.opcoes)) {
+              // Convert each item to string, even if they might be numbers or other types
+              options = item.opcoes.map(opt => String(opt));
+            }
+          } catch (e) {
+            console.error("Error processing options:", e);
+            options = [];
+          }
+        }
+        
         const question: UiQuestion = {
           id: item.id,
           text: item.pergunta,
@@ -95,7 +109,7 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
           allowsPhoto: item.permite_foto,
           allowsVideo: item.permite_video,
           allowsAudio: item.permite_audio,
-          options: Array.isArray(item.opcoes) ? item.opcoes : [], // Ensure it's an array
+          options: options, // Use the properly converted string array
           weight: item.weight || 1,
           parentId: item.parent_item_id,
           conditionValue: item.condition_value,
@@ -122,9 +136,10 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
       
       // Get responsible name safely
       let responsibleName = "";
-      if (checklist.responsible_id && typeof checklist.users === 'object' && checklist.users !== null) {
-        // Access name safely with type checking
+      if (checklist.responsible_id && checklist.users && typeof checklist.users === 'object') {
+        // Access name safely with type checking and null checking
         try {
+          // Use optional chaining to handle possible null/undefined
           responsibleName = checklist.users?.name || "";
         } catch (e) {
           console.error("Error accessing user name:", e);
