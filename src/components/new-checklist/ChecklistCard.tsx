@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +8,7 @@ import { toast } from "sonner";
 import { ChecklistCardBadges } from "./ChecklistCardBadges";
 import { ChecklistProgressBar } from "./ChecklistProgressBar";
 import { ChecklistCardActions } from "./ChecklistCardActions";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ChecklistCardProps {
   checklist: ChecklistWithStats;

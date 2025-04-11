@@ -1,4 +1,3 @@
-
 import { ChecklistWithStats } from "@/types/newChecklist";
 
 /**
@@ -49,3 +48,52 @@ export function transformBasicChecklistData(data: any[]): ChecklistWithStats[] {
     responsibleName: undefined
   }));
 }
+
+// Fix type conversion by adding is_template property
+export const transformToChecklistWithStats = (items: any[]): ChecklistWithStats[] => {
+  return items.map(item => ({
+    id: item.id,
+    title: item.title,
+    description: item.description,
+    isTemplate: item.isTemplate,
+    is_template: item.isTemplate, // Add this property to match required type
+    status: item.status,
+    category: item.category,
+    theme: item.theme,
+    responsibleId: item.responsibleId,
+    companyId: item.companyId,
+    userId: item.userId,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+    dueDate: item.dueDate,
+    isSubChecklist: item.isSubChecklist,
+    origin: item.origin,
+    totalQuestions: item.totalQuestions || 0,
+    completedQuestions: item.completedQuestions || 0,
+    companyName: item.companyName,
+    responsibleName: item.responsibleName
+  }));
+};
+
+// Similarly fix the other transformer function
+export const transformToChecklistWithStatsCompact = (items: any[]): ChecklistWithStats[] => {
+  return items.map(item => ({
+    id: item.id,
+    title: item.title,
+    description: item.description,
+    isTemplate: item.isTemplate,
+    is_template: item.isTemplate, // Add this property to match required type
+    status: item.status,
+    isSubChecklist: item.isSubChecklist,
+    category: item.category,
+    theme: item.theme,
+    companyId: item.companyId,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+    origin: item.origin,
+    totalQuestions: item.totalQuestions || 0,
+    completedQuestions: item.completedQuestions || 0,
+    companyName: item.companyName,
+    responsibleName: item.responsibleName
+  }));
+};

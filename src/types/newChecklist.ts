@@ -7,7 +7,7 @@ export interface ChecklistWithStats {
   is_template: boolean; // Added to satisfy transformation requirements
   status: string;
   category?: string;
-  theme?: string; // Added theme property
+  theme?: string;
   responsibleId?: string;
   companyId?: string;
   userId?: string;
@@ -20,6 +20,10 @@ export interface ChecklistWithStats {
   completedQuestions?: number;
   companyName?: string;
   responsibleName?: string;
+  
+  // Add these properties to fix errors
+  questions?: ChecklistQuestion[];
+  groups?: ChecklistGroup[];
 }
 
 export interface NewChecklistPayload {
@@ -29,9 +33,11 @@ export interface NewChecklistPayload {
   status_checklist?: string;
   status?: string;
   category?: string;
-  theme?: string; // Added theme property
+  theme?: string;
   company_id?: string;
   responsible_id?: string;
+  origin?: string;
+  dueDate?: string;
 }
 
 export interface Checklist {
@@ -47,10 +53,11 @@ export interface Checklist {
   company_id?: string;
   responsible_id?: string;
   category?: string;
-  theme?: string; // Added theme property
+  theme?: string;
   questions?: ChecklistItem[];
   groups?: ChecklistGroup[];
   responsibleName?: string;
+  origin?: string; // Add origin property to Checklist
 }
 
 export interface ChecklistItem {
@@ -87,9 +94,9 @@ export interface NewChecklist {
   title?: string;
   description?: string;
   is_template?: boolean;
-  status_checklist?: string;
+  status_checklist?: "ativo" | "inativo";
   category?: string;
-  theme?: string; // Added theme property
+  theme?: string;
   company_id?: string | null;
   responsible_id?: string | null;
   status?: string;
@@ -98,4 +105,58 @@ export interface NewChecklist {
 export interface BatchUpdateResult {
   success: boolean;
   count: number;
+}
+
+// Add ChecklistQuestion type
+export interface ChecklistQuestion {
+  id: string;
+  text: string;
+  responseType: string;
+  isRequired: boolean;
+  allowsPhoto?: boolean;
+  allowsVideo?: boolean;
+  allowsAudio?: boolean;
+  allowsFiles?: boolean;
+  options?: string[];
+  hint?: string;
+  weight?: number;
+  order: number;
+  groupId?: string;
+  parentQuestionId?: string;
+  subChecklistId?: string;
+  hasSubChecklist?: boolean;
+  displayNumber?: string;
+  parentId?: string;
+  conditionValue?: string;
+}
+
+// Add inspection related types
+export interface InspectionDetails {
+  id: string;
+  title: string;
+  status: string;
+  date: string;
+  company: string;
+  location?: string;
+  inspector?: string;
+  completedItems?: number;
+  totalItems: number;
+}
+
+export interface InspectionFilters {
+  status?: string;
+  dateRange?: [Date | null, Date | null];
+  company?: string;
+  location?: string;
+  inspector?: string;
+}
+
+// Fix DeleteChecklistDialogProps interface
+export interface DeleteChecklistDialogProps {
+  checklistId: string;
+  checklistTitle: string;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onDeleted: () => Promise<void>;
+  isDeleting?: boolean;
 }

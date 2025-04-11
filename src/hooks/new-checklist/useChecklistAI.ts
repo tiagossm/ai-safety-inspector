@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -22,7 +21,7 @@ export function useChecklistAI() {
   const [openAIAssistant, setOpenAIAssistant] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
 
-  const generateChecklist = async (checklistData: NewChecklistPayload): Promise<GenerateResult> => {
+  const generateChecklist = async (checklistData: NewChecklistPayload) => {
     setIsGenerating(true);
 
     try {
@@ -83,13 +82,15 @@ export function useChecklistAI() {
         description: checklistData.description || `Checklist gerado por IA com o prompt: ${prompt.slice(0, 100)}...`
       };
 
+      const payload = {
+        company_id: checklistData.company_id,
+        questionCount,
+        checklistData: enhancedChecklistData,
+        assistantId: openAIAssistant
+      };
+
       const { data, error } = await supabase.functions.invoke('generate-checklist', {
-        body: {
-          prompt,
-          questionCount,
-          checklistData: enhancedChecklistData,
-          assistantId: openAIAssistant
-        }
+        body: payload
       });
 
       if (error) {

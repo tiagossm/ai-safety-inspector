@@ -1,4 +1,3 @@
-
 import {
   Select,
   SelectContent,
@@ -49,7 +48,7 @@ export default function NewChecklistCreate() {
   const [checklist, setChecklist] = useState<NewChecklistPayload>({
     title: "",
     description: "",
-    isTemplate: false,
+    is_template: false,
     status: "active",
     category: ""
   });
@@ -152,7 +151,7 @@ export default function NewChecklistCreate() {
       }
       
       const result = await createChecklist.mutateAsync({
-        checklist,
+        checklist: checklist as any,
         questions: validQuestions,
         groups
       });
@@ -169,7 +168,6 @@ export default function NewChecklistCreate() {
   };
   
   const handleGenerateWithAI = async () => {
-    // Validation
     if (!checklist.category?.trim()) {
       toast.error("A categoria do checklist é obrigatória.");
       return;
@@ -377,8 +375,8 @@ export default function NewChecklistCreate() {
                     <div className="flex items-center space-x-2">
                       <Switch
                         id="template"
-                        checked={checklist.isTemplate || false}
-                        onCheckedChange={(checked) => setChecklist({ ...checklist, isTemplate: checked })}
+                        checked={checklist.is_template || false}
+                        onCheckedChange={(checked) => setChecklist({ ...checklist, is_template: checked })}
                       />
                       <Label htmlFor="template">Salvar como template</Label>
                     </div>

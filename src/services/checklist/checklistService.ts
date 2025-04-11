@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats, Checklist } from "@/types/newChecklist";
 
@@ -147,6 +146,7 @@ function transformChecklistData(data: any[]): ChecklistWithStats[] {
     title: item.title,
     description: item.description,
     isTemplate: item.is_template,
+    is_template: item.is_template,
     status: item.status,
     category: item.category,
     responsibleId: item.responsible_id,
@@ -160,7 +160,9 @@ function transformChecklistData(data: any[]): ChecklistWithStats[] {
     totalQuestions: item.checklist_itens?.length || 0,
     completedQuestions: 0,
     companyName: item.companies?.fantasy_name,
-    responsibleName: item.users?.name
+    responsibleName: item.users?.name,
+    questions: [],
+    groups: []
   }));
 }
 
@@ -170,6 +172,7 @@ function transformBasicChecklistData(data: any[]): ChecklistWithStats[] {
     title: item.title,
     description: item.description,
     isTemplate: item.is_template,
+    is_template: item.is_template,
     status: item.status,
     isSubChecklist: item.is_sub_checklist,
     category: item.category,
@@ -178,6 +181,8 @@ function transformBasicChecklistData(data: any[]): ChecklistWithStats[] {
     updatedAt: item.updated_at,
     origin: item.origin,
     totalQuestions: 0,
-    completedQuestions: 0
+    completedQuestions: 0,
+    questions: [],
+    groups: []
   }));
 }

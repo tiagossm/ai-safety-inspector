@@ -1,4 +1,3 @@
-
 import { Checklist } from "@/types/newChecklist";
 
 /**
@@ -53,3 +52,18 @@ export function truncateText(text: string | undefined | null, maxLength: number 
   if (text.length <= maxLength) return text;
   return `${text.substring(0, maxLength)}...`;
 }
+
+export const getOriginIcon = (checklist?: Checklist) => {
+  if (!checklist || !checklist.origin) return null;
+  
+  switch(checklist.origin) {
+    case 'manual':
+      return 'manual-icon';
+    case 'ia':
+      return 'ia-icon';
+    case 'csv':
+      return 'csv-icon';
+    default:
+      return null;
+  }
+};

@@ -93,7 +93,7 @@ export function AIChecklistCreator({
         title: form.title || form.category || "Novo Checklist",
         description: form.description || `Gerado por IA: ${prompt}`,
         category: form.category,
-        isTemplate: form.is_template || false,
+        is_template: form.is_template || false, // Fix property name
         company_id: form.company_id
       };
       
