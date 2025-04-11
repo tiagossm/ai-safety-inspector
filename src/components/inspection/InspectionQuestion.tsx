@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { ResponseInputRenderer } from "./question-parts/ResponseInputRenderer";
 import { Textarea } from "@/components/ui/textarea";
-import { ActionPlanInput } from "./question-parts/ActionPlanInput";
+import { ActionPlanSection } from "@/components/new-checklist/ActionPlanSection";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronRight, Pencil, List } from "lucide-react";
@@ -61,7 +60,6 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
   const allowsVideo = question.allowsVideo || question.permite_video || false;
   const allowsAudio = question.allowsAudio || question.permite_audio || false;
   
-  // Reduzir chamadas ao console em produção
   useEffect(() => {
     if (process.env.NODE_ENV !== 'production') {
       console.log(`Question ${question.id} media capabilities:`, { 
@@ -129,6 +127,8 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
   if (!shouldBeVisible()) {
     return null;
   }
+  
+  const hasNegativeResponse = normalizedType === 'yes_no' && response?.value === 'não';
   
   return (
     <div className={`relative ${!isValid && response.value !== undefined ? 'border-l-4 border-l-red-500 pl-2' : ''}`}>
@@ -213,9 +213,12 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
           
           {isActionPlanOpen && (
             <div className="mt-3 pt-3 border-t">
-              <ActionPlanInput
-                value={response?.actionPlan || ""}
-                onChange={handleActionPlanChange}
+              <ActionPlanSection
+                isOpen={isActionPlanOpen}
+                onOpenChange={setIsActionPlanOpen}
+                actionPlan={response?.actionPlan || ""}
+                onActionPlanChange={handleActionPlanChange}
+                hasNegativeResponse={hasNegativeResponse}
               />
             </div>
           )}
