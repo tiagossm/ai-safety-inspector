@@ -1,214 +1,99 @@
-
-import React, { useState, useEffect } from "react";
-import { ChecklistWithStats } from "@/types/newChecklist";
-import {
-  TableCell,
-  TableRow,
-} from "@/components/ui/table";
+import React from "react";
+import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { CheckCircle2, Copy, Edit, Eye, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Building2, MoreHorizontal } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+import { MoreHorizontal } from "lucide-react";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Switch } from "@/components/ui/switch";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { cn, formatDate, truncateText } from "@/utils/utils";
+import { ChecklistWithStats } from "@/types/newChecklist";
 import { ChecklistOriginBadge } from "./ChecklistOriginBadge";
-import { fetchCompanyNameById, updateChecklistStatus } from "@/services/checklist/checklistService";
 
 interface ChecklistRowProps {
   checklist: ChecklistWithStats;
-  onEdit: (id: string) => void;
-  onDelete: (id: string, title: string) => void;
-  onOpen: (id: string) => void;
-  onStatusChange?: () => void;
-  isSelected: boolean;
-  onSelect: (checked: boolean) => void;
+  onSelect?: (id: string) => void;
+  isSelected?: boolean;
+  onView?: (id: string) => void;
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
+  onDuplicate?: (id: string) => void;
 }
 
-export function ChecklistRow({
-  checklist,
-  onEdit,
-  onDelete,
-  onOpen,
-  onStatusChange,
-  isSelected,
-  onSelect
-}: ChecklistRowProps) {
-  const [companyName, setCompanyName] = useState<string | null>(checklist.companyName || null);
-  const [companyLoading, setCompanyLoading] = useState<boolean>(!!checklist.companyId && !checklist.companyName);
-  const [isToggling, setIsToggling] = useState<boolean>(false);
-  const [status, setStatus] = useState(checklist.status);
-
-  useEffect(() => {
-    if (checklist.companyId && !companyName) {
-      loadCompanyName(checklist.companyId);
-    }
-  }, [checklist.companyId, companyName]);
-
-  const loadCompanyName = async (companyId: string) => {
-    try {
-      setCompanyLoading(true);
-      const name = await fetchCompanyNameById(companyId);
-      setCompanyName(name);
-    } catch (error) {
-      console.error("Error fetching company name:", error);
-    } finally {
-      setCompanyLoading(false);
-    }
-  };
-
-  const handleToggleStatus = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (isToggling) return;
-    
-    // Optimistic UI update
-    const newStatus = status === 'active' ? 'inactive' : 'active';
-    setStatus(newStatus);
-    setIsToggling(true);
-    
-    try {
-      await updateChecklistStatus(checklist.id, newStatus);
-      toast.success(`Checklist ${newStatus === 'active' ? 'ativado' : 'desativado'} com sucesso`);
-      
-      if (onStatusChange) onStatusChange();
-    } catch (error) {
-      // Rollback on error
-      setStatus(status);
-      console.error("Error toggling checklist status:", error);
-      toast.error("Erro ao alterar status do checklist");
-    } finally {
-      setIsToggling(false);
-    }
-  };
-
+export const ChecklistRow: React.FC<ChecklistRowProps> = ({ checklist, onSelect, isSelected, onView, onEdit, onDelete, onDuplicate }) => {
+  const rowClasses = cn(
+    "grid grid-cols-[40px_1fr_120px_140px_100px] items-center gap-4 py-3 px-4 rounded-md border text-sm transition-colors hover:bg-accent hover:text-accent-foreground",
+    isSelected && "bg-primary/5 border-primary/30"
+  );
+  
   return (
-    <TableRow
-      className="cursor-pointer hover:bg-accent/50 group"
-      onClick={() => onOpen(checklist.id)}
-    >
-      <TableCell className="py-2" onClick={(e) => e.stopPropagation()}>
-        <Checkbox 
-          checked={isSelected} 
-          onCheckedChange={(checked) => onSelect(!!checked)}
-          className={`${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+    <div className={`${rowClasses} ${isSelected ? 'bg-primary/5 border-primary/30' : ''}`}>
+      {onSelect && (
+        <input 
+          type="checkbox" 
+          className="w-4 h-4 rounded-sm border-gray-200 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+          checked={isSelected}
+          onChange={() => onSelect(checklist.id)}
         />
-      </TableCell>
-      <TableCell className="font-medium min-h-[56px] flex items-center gap-2 py-3">
-        <ChecklistOriginBadge origin={checklist.origin} showLabel={false} />
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="truncate max-w-[250px]">{checklist.title}</span>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{checklist.title}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </TableCell>
-      <TableCell>
-        {companyLoading ? (
-          <Skeleton className="h-4 w-24" />
-        ) : companyName ? (
-          <div className="flex items-center gap-1 truncate max-w-[200px]">
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span>{companyName}</span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{companyName}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        ) : (
-          <span className="text-muted-foreground italic">Sem empresa</span>
-        )}
-      </TableCell>
-      <TableCell>
-        {checklist.category ? (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="truncate max-w-[150px] inline-block">{checklist.category}</span>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{checklist.category}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ) : (
-          <span className="text-muted-foreground italic">-</span>
-        )}
-      </TableCell>
-      <TableCell>
-        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-          {checklist.isTemplate ? (
-            <Badge variant="secondary">Template</Badge>
-          ) : (
-            <>
-              <Badge variant={status === "active" ? "default" : "outline"}>
-                {status === "active" ? "Ativo" : "Inativo"}
-              </Badge>
-              <Switch 
-                checked={status === 'active'}
-                onClick={handleToggleStatus}
-                disabled={isToggling}
-                aria-label="Toggle status"
-                className="ml-1"
-              />
-            </>
+      )}
+      
+      <div className="flex-1 sm:flex-[1.8] min-w-0">
+        <h3 className="font-medium mb-1 truncate" title={checklist.title}>{checklist.title}</h3>
+        <div className="flex flex-wrap gap-1.5">
+          <Badge variant={checklist.isTemplate ? "secondary" : "default"} className="text-xs">
+            {checklist.isTemplate ? "Template" : "Checklist"}
+          </Badge>
+          <ChecklistOriginBadge origin={checklist.origin} />
+          {checklist.category && (
+            <Badge variant="outline" className="text-xs">{checklist.category}</Badge>
           )}
         </div>
-      </TableCell>
-      <TableCell>
-        {checklist.createdAt && format(new Date(checklist.createdAt), "dd MMM yyyy", { locale: ptBR })}
-      </TableCell>
-      <TableCell className="text-right">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-            <Button variant="ghost" size="icon">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={(e) => {
-              e.stopPropagation();
-              onOpen(checklist.id);
-            }}>
-              Ver detalhes
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => {
-              e.stopPropagation();
-              onEdit(checklist.id);
-            }}>
-              Editar
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem 
-              className="text-destructive"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(checklist.id, checklist.title);
-              }}
-            >
-              Excluir
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </TableCell>
-    </TableRow>
+      </div>
+      
+      <div className="text-muted-foreground">{formatDate(checklist.createdAt)}</div>
+      <div className="text-muted-foreground">{checklist.companyName || "-"}</div>
+      
+      <div className="flex justify-end gap-2">
+        {onView && (
+          <Button variant="ghost" size="icon" onClick={() => onView(checklist.id)}>
+            <Eye className="h-4 w-4" />
+          </Button>
+        )}
+        
+        {(onEdit || onDelete || onDuplicate) && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {onEdit && (
+                <DropdownMenuItem onClick={() => onEdit(checklist.id)}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  <span>Editar</span>
+                </DropdownMenuItem>
+              )}
+              {onDuplicate && (
+                <DropdownMenuItem onClick={() => onDuplicate(checklist.id)}>
+                  <Copy className="mr-2 h-4 w-4" />
+                  <span>Duplicar</span>
+                </DropdownMenuItem>
+              )}
+              {onDelete && (
+                <DropdownMenuItem onClick={() => onDelete(checklist.id)} className="text-red-500 focus:text-red-500">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  <span>Excluir</span>
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+    </div>
   );
-}
+};

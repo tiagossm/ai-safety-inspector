@@ -1,3 +1,4 @@
+
 import { ChecklistWithStats } from "@/types/newChecklist";
 
 /**
@@ -9,8 +10,10 @@ export function transformChecklistData(data: any[]): ChecklistWithStats[] {
     title: item.title,
     description: item.description,
     isTemplate: item.is_template,
+    is_template: item.is_template, // Add this to match required type
     status: item.status,
     category: item.category,
+    theme: item.theme,
     responsibleId: item.responsible_id,
     companyId: item.company_id,
     userId: item.user_id,
@@ -35,9 +38,11 @@ export function transformBasicChecklistData(data: any[]): ChecklistWithStats[] {
     title: item.title,
     description: item.description,
     isTemplate: item.is_template,
+    is_template: item.is_template, // Add this to match required type
     status: item.status,
     isSubChecklist: item.is_sub_checklist,
     category: item.category,
+    theme: item.theme,
     companyId: item.company_id,
     createdAt: item.created_at,
     updatedAt: item.updated_at,
@@ -55,8 +60,8 @@ export const transformToChecklistWithStats = (items: any[]): ChecklistWithStats[
     id: item.id,
     title: item.title,
     description: item.description,
-    isTemplate: item.isTemplate,
-    is_template: item.isTemplate, // Add this property to match required type
+    isTemplate: item.isTemplate || item.is_template,
+    is_template: item.isTemplate || item.is_template, // Add this to match required type
     status: item.status,
     category: item.category,
     theme: item.theme,
@@ -81,8 +86,8 @@ export const transformToChecklistWithStatsCompact = (items: any[]): ChecklistWit
     id: item.id,
     title: item.title,
     description: item.description,
-    isTemplate: item.isTemplate,
-    is_template: item.isTemplate, // Add this property to match required type
+    isTemplate: item.isTemplate || item.is_template,
+    is_template: item.isTemplate || item.is_template, // Add this to match required type
     status: item.status,
     isSubChecklist: item.isSubChecklist,
     category: item.category,

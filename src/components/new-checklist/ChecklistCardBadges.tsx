@@ -22,8 +22,8 @@ export const ChecklistCardBadges: React.FC<ChecklistCardBadgesProps> = ({
       <Badge variant={checklist.isTemplate ? "secondary" : "default"} className="px-2 py-0">
         {checklist.isTemplate ? "Template" : status === 'active' ? "Ativo" : "Inativo"}
       </Badge>
-      {/* Cast the origin to the expected type */}
-      <ChecklistOriginBadge origin={checklist.origin as "manual" | "ia" | "csv" | undefined} />
+      {/* Accept any string for origin */}
+      <ChecklistOriginBadge origin={checklist.origin} />
       {checklist.theme && <ChecklistThemeBadge theme={checklist.theme} />}
     </div>
   );

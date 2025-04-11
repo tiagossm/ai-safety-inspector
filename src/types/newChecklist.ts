@@ -1,4 +1,3 @@
-
 export interface ChecklistWithStats {
   id: string;
   title: string;
@@ -15,7 +14,7 @@ export interface ChecklistWithStats {
   updatedAt?: string;
   dueDate?: string;
   isSubChecklist?: boolean;
-  origin?: string;
+  origin?: 'manual' | 'ia' | 'csv' | string;
   totalQuestions: number;
   completedQuestions?: number;
   companyName?: string;
@@ -36,7 +35,7 @@ export interface NewChecklistPayload {
   theme?: string;
   company_id?: string;
   responsible_id?: string;
-  origin?: string;
+  origin?: 'manual' | 'ia' | 'csv' | string;
   dueDate?: string;
 }
 
@@ -57,7 +56,7 @@ export interface Checklist {
   questions?: ChecklistItem[];
   groups?: ChecklistGroup[];
   responsibleName?: string;
-  origin?: string; // Add origin property to Checklist
+  origin?: 'manual' | 'ia' | 'csv' | string; // Changed to union type
 }
 
 export interface ChecklistItem {
@@ -107,7 +106,50 @@ export interface BatchUpdateResult {
   count: number;
 }
 
-// Add ChecklistQuestion type
+// Update InspectionDetails to include all needed properties
+export interface InspectionDetails {
+  id: string;
+  title: string;
+  status: string;
+  date: string;
+  company: string | { fantasy_name?: string };
+  location?: string;
+  inspector?: string;
+  completedItems?: number;
+  totalItems: number;
+  
+  // Add missing properties that are used in components
+  description?: string;
+  checklistId?: string;
+  companyId?: string;
+  responsibleId?: string;
+  scheduledDate?: string;
+  priority?: string;
+  progress?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  responsible?: { name?: string };
+}
+
+// Update InspectionFilters to include all needed properties
+export interface InspectionFilters {
+  status?: string;
+  dateRange?: [Date | null, Date | null];
+  company?: string;
+  location?: string;
+  inspector?: string;
+  
+  // Add missing properties that are used in filters
+  search?: string;
+  priority?: string;
+  companyId?: string;
+  responsibleId?: string;
+  checklistId?: string;
+  startDate?: Date;
+  endDate?: Date;
+}
+
+// Add ChecklistQuestion interface
 export interface ChecklistQuestion {
   id: string;
   text: string;
@@ -117,7 +159,7 @@ export interface ChecklistQuestion {
   allowsVideo?: boolean;
   allowsAudio?: boolean;
   allowsFiles?: boolean;
-  options?: string[];
+  options?: string[] | any; // Using any to accommodate Json type
   hint?: string;
   weight?: number;
   order: number;
@@ -130,28 +172,7 @@ export interface ChecklistQuestion {
   conditionValue?: string;
 }
 
-// Add inspection related types
-export interface InspectionDetails {
-  id: string;
-  title: string;
-  status: string;
-  date: string;
-  company: string;
-  location?: string;
-  inspector?: string;
-  completedItems?: number;
-  totalItems: number;
-}
-
-export interface InspectionFilters {
-  status?: string;
-  dateRange?: [Date | null, Date | null];
-  company?: string;
-  location?: string;
-  inspector?: string;
-}
-
-// Fix DeleteChecklistDialogProps interface
+// Update DeleteChecklistDialogProps interface to include isDeleting
 export interface DeleteChecklistDialogProps {
   checklistId: string;
   checklistTitle: string;

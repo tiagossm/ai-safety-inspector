@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { toast } from "sonner";
 import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
@@ -71,6 +72,7 @@ export function useChecklistCreate() {
           order: index
         }));
         
+        // Check if checklist_groups table exists
         const { error: groupsError } = await supabase
           .from('checklist_groups')
           .insert(groupDataArray);
