@@ -33,7 +33,7 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
         .select(`
           *,
           companies:company_id(*),
-          responsible:responsible_id(*)
+          users:responsible_id(name)
         `)
         .eq("id", id)
         .single();
@@ -134,12 +134,11 @@ export function useChecklistById(id: string): UseChecklistByIdResult {
         groups.push(defaultGroup);
       }
       
-      // Extract responsible name safely - avoid the property access that causes TypeScript errors
+      // Extract responsible name safely from the users object returned by Supabase
       let responsibleName = "";
       
-      if (checklist.responsible_id && checklist.responsible) {
-        // Access the name from the responsible object returned by Supabase
-        responsibleName = checklist.responsible.name || "";
+      if (checklist.responsible_id && checklist.users) {
+        responsibleName = checklist.users.name || "";
       }
       
       // Prepare checklist data
