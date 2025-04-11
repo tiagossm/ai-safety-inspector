@@ -40,7 +40,7 @@ export default function NewChecklistEdit() {
     setDescription,
     setCategory,
     setIsTemplate,
-    setStatus,
+    setStatus: originalSetStatus,
     setQuestions,
     setGroups,
     setViewMode,
@@ -53,6 +53,14 @@ export default function NewChecklistEdit() {
     handleDragEnd,
     handleSubmit
   } = useChecklistEdit(checklist, id);
+
+  // Create a wrapper function to handle the type mismatch
+  const setStatus = (value: string) => {
+    // Ensure we only pass valid status values
+    if (value === "active" || value === "inactive") {
+      originalSetStatus(value);
+    }
+  };
 
   const toggleAllMediaOptions = (enabled: boolean) => {
     setEnableAllMedia(enabled);

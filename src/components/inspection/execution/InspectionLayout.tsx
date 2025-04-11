@@ -8,25 +8,19 @@ import {
   GroupsSidebar, 
   GroupsSidebarProps 
 } from "./GroupsSidebar";
-import { 
-  QuestionsPanel, 
-  QuestionsPanelProps 
-} from "../QuestionsPanel";
+import { QuestionsPanel } from "../QuestionsPanel";
 import { SaveIndicator } from "./SaveIndicator";
 import { InspectionFooterActions } from "./InspectionFooterActions";
 
 interface InspectionLayoutProps extends 
   InspectionHeaderProps,
-  Pick<GroupsSidebarProps, 'groups' | 'currentGroupId' | 'setCurrentGroupId' | 'stats'>,
-  Pick<QuestionsPanelProps, 
-    'loading' | 
-    'questions' | 
-    'responses' | 
-    'onResponseChange' | 
-    'onSaveSubChecklistResponses' |
-    'subChecklists'
-  > {
-  currentGroupId: string | null;
+  Pick<GroupsSidebarProps, 'groups' | 'currentGroupId' | 'setCurrentGroupId' | 'stats'> {
+  loading: boolean;
+  questions: any[];
+  responses: Record<string, any>;
+  subChecklists: Record<string, any>;
+  onResponseChange: (questionId: string, data: any) => void;
+  onSaveSubChecklistResponses: (questionId: string, responses: Record<string, any>) => Promise<void>;
   autoSave: boolean;
   saving: boolean;
   lastSaved: Date | null;

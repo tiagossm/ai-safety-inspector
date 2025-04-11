@@ -28,7 +28,7 @@ export function QuestionActions({
         {response?.comment ? "Editar comentário" : "Adicionar comentário"}
       </Button>
       
-      {response?.value === "não" && (
+      {response?.value === "Não" && (
         <Button
           variant="ghost"
           size="sm"

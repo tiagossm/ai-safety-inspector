@@ -20,6 +20,7 @@ interface InspectionQuestionProps {
   numberLabel?: string;
   onOpenSubChecklist?: () => void;
   onAddMedia?: () => void;
+  isSubQuestion?: boolean;
 }
 
 export const InspectionQuestion = ({
@@ -30,9 +31,11 @@ export const InspectionQuestion = ({
   allQuestions,
   numberLabel,
   onOpenSubChecklist,
-  onAddMedia
+  onAddMedia,
+  isSubQuestion = false
 }: InspectionQuestionProps) => {
   const [showActionPlan, setShowActionPlan] = useState(!!response?.actionPlan);
+  const [showCommentSection, setShowCommentSection] = useState(false);
   
   const toggleActionPlan = () => {
     setShowActionPlan(!showActionPlan);
@@ -72,6 +75,20 @@ export const InspectionQuestion = ({
   const isUnanswered = question.isRequired && (!response || response.value === undefined);
   const hasValidationError = response?.validated === false;
   
+  const isFollowUpQuestion = !!question.parentQuestionId;
+
+  const onOpenCommentDialog = () => {
+    setShowCommentSection(true);
+  };
+
+  const onOpenActionPlanDialog = () => {
+    setShowActionPlan(true);
+  };
+
+  const setIsActionPlanOpen = (isOpen: boolean) => {
+    setShowActionPlan(isOpen);
+  };
+  
   return (
     <Card 
       className={cn(
@@ -100,8 +117,10 @@ export const InspectionQuestion = ({
           question={question} 
           index={index}
           numberLabel={numberLabel}
-          hasResponse={!!response?.value}
-          isRequired={question.isRequired}
+          response={response}
+          isFollowUpQuestion={isFollowUpQuestion}
+          showCommentSection={showCommentSection}
+          setShowCommentSection={setShowCommentSection}
         />
         
         <div className="mt-3">
@@ -150,8 +169,10 @@ export const InspectionQuestion = ({
         
         {question.hasSubChecklist && onOpenSubChecklist && (
           <QuestionActions 
-            onOpenSubChecklist={onOpenSubChecklist}
-            hasResponses={response?.subChecklistResponses ? true : false}
+            response={response}
+            onOpenCommentDialog={onOpenCommentDialog}
+            onOpenActionPlanDialog={onOpenActionPlanDialog}
+            setIsActionPlanOpen={setIsActionPlanOpen}
           />
         )}
       </div>

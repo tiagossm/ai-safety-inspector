@@ -6,7 +6,7 @@ import { useSubChecklistDialog } from "@/hooks/inspection/useSubChecklistDialog"
 import { QuestionsEmptyState } from "./questions-panel/QuestionsEmptyState";
 import { QuestionsList } from "./questions-panel/QuestionsList";
 
-interface QuestionsPanelProps {
+export interface QuestionsPanelProps {
   loading: boolean;
   currentGroupId: string | null;
   filteredQuestions: any[];

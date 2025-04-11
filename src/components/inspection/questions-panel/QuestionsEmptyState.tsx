@@ -16,34 +16,58 @@ export function QuestionsEmptyState({
   currentGroup,
   questionsCount
 }: QuestionsEmptyStateProps) {
-  let message = "";
-  let icon = <AlertCircle className="h-10 w-10 text-muted-foreground opacity-40" />;
-  
   if (loading) {
-    message = "Carregando perguntas...";
-    icon = <Loader2 className="h-10 w-10 text-primary opacity-40 animate-spin" />;
-  } else if (!currentGroupId) {
-    message = "Nenhum grupo selecionado";
-  } else if (!currentGroup) {
-    message = "Grupo não encontrado";
-  } else if (questionsCount === 0) {
-    message = "Nenhuma pergunta disponível neste checklist";
-  } else {
-    message = "Nenhuma pergunta disponível neste grupo";
+    return (
+      <Card>
+        <CardContent className="p-12 flex flex-col items-center justify-center">
+          <Loader2 className="h-10 w-10 text-primary animate-spin mb-4" />
+          <h3 className="text-lg font-medium">Carregando perguntas...</h3>
+          <p className="text-sm text-muted-foreground">Aguarde enquanto carregamos os dados da inspeção.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  if (!currentGroupId) {
+    return (
+      <Card>
+        <CardContent className="p-12 flex flex-col items-center justify-center">
+          <AlertCircle className="h-10 w-10 text-amber-500 mb-4" />
+          <h3 className="text-lg font-medium">Nenhum grupo selecionado</h3>
+          <p className="text-sm text-muted-foreground">
+            Selecione um grupo no menu lateral para visualizar as perguntas.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  if (questionsCount === 0) {
+    return (
+      <Card>
+        <CardContent className="p-12 flex flex-col items-center justify-center">
+          <AlertCircle className="h-10 w-10 text-gray-400 mb-4" />
+          <h3 className="text-lg font-medium">Checklist sem perguntas</h3>
+          <p className="text-sm text-muted-foreground">
+            Este checklist não possui perguntas cadastradas.
+          </p>
+        </CardContent>
+      </Card>
+    );
   }
   
   return (
     <Card>
-      <CardContent className="p-6 text-center">
-        <div className="flex flex-col items-center gap-2">
-          {icon}
-          <p className="text-muted-foreground">{message}</p>
-          {questionsCount > 0 && !currentGroupId && (
-            <p className="text-sm text-muted-foreground mt-2">
-              Selecione um grupo na barra lateral para ver as perguntas.
-            </p>
-          )}
-        </div>
+      <CardContent className="p-12 flex flex-col items-center justify-center">
+        <AlertCircle className="h-10 w-10 text-gray-400 mb-4" />
+        <h3 className="text-lg font-medium">
+          {currentGroup ? `Nenhuma pergunta no grupo ${currentGroup.title}` : "Nenhuma pergunta para exibir"}
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          {currentGroup
+            ? "Este grupo não possui perguntas cadastradas."
+            : "Selecione um grupo no menu lateral para visualizar as perguntas."}
+        </p>
       </CardContent>
     </Card>
   );

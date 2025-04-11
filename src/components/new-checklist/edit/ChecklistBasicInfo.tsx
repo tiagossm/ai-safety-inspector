@@ -12,7 +12,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { FileStack, Template, FileCheck, AlertCircle } from "lucide-react";
+import { FileStack, FileCheck, AlertCircle, Bookmark } from "lucide-react";
 
 interface ChecklistBasicInfoProps {
   title: string;
@@ -39,115 +39,83 @@ export function ChecklistBasicInfo({
   onIsTemplateChange,
   onStatusChange
 }: ChecklistBasicInfoProps) {
-  const categories = [
-    "Segurança do Trabalho",
-    "Meio Ambiente",
-    "Qualidade",
-    "Saúde Ocupacional",
-    "Conformidade",
-    "Manutenção",
-    "Outro"
-  ];
-
-  const statusOptions = [
-    { value: "active", label: "Ativo" },
-    { value: "inactive", label: "Inativo" },
-    { value: "draft", label: "Rascunho" }
-  ];
-
   return (
     <Card>
-      <CardContent className="p-6">
-        <div className="grid gap-6">
-          <div className="space-y-2">
-            <Label htmlFor="title" className="flex items-center gap-1.5">
-              <FileCheck className="h-4 w-4" />
-              <span>Título</span>
-              <span className="text-red-500 ml-1">*</span>
+      <CardContent className="p-6 space-y-6">
+        <div className="space-y-2">
+          <Label htmlFor="title" className="text-base">Título</Label>
+          <Input
+            id="title"
+            value={title}
+            onChange={(e) => onTitleChange(e.target.value)}
+            placeholder="Digite um título para o checklist"
+          />
+          {!title && (
+            <p className="text-xs text-destructive flex items-center gap-1.5">
+              <AlertCircle className="h-3.5 w-3.5" />
+              <span>O título é obrigatório</span>
+            </p>
+          )}
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="description" className="text-base">Descrição</Label>
+          <Textarea
+            id="description"
+            value={description}
+            onChange={(e) => onDescriptionChange(e.target.value)}
+            placeholder="Digite uma descrição para o checklist"
+            rows={3}
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="category" className="text-base">Categoria</Label>
+          <Select value={category} onValueChange={onCategoryChange}>
+            <SelectTrigger id="category">
+              <SelectValue placeholder="Selecione uma categoria" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="segurança">Segurança</SelectItem>
+              <SelectItem value="qualidade">Qualidade</SelectItem>
+              <SelectItem value="processos">Processos</SelectItem>
+              <SelectItem value="meio_ambiente">Meio Ambiente</SelectItem>
+              <SelectItem value="manutenção">Manutenção</SelectItem>
+              <SelectItem value="outros">Outros</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div className="flex items-center justify-between border-t pt-4">
+          <div className="flex items-center gap-2">
+            <Bookmark className="h-4 w-4 text-primary" />
+            <Label htmlFor="isTemplate" className="text-sm font-medium">
+              Este é um modelo (template)
             </Label>
-            <Input
-              id="title"
-              placeholder="Digite o título do checklist"
-              value={title}
-              onChange={(e) => onTitleChange(e.target.value)}
-            />
-            {!title && (
-              <div className="flex items-center text-xs text-red-500 mt-1 gap-1.5">
-                <AlertCircle className="h-3.5 w-3.5" />
-                <span>O título é obrigatório</span>
-              </div>
-            )}
           </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
-            <Textarea
-              id="description"
-              placeholder="Digite uma descrição para este checklist"
-              value={description}
-              onChange={(e) => onDescriptionChange(e.target.value)}
-              rows={4}
-            />
+          <Switch
+            id="isTemplate"
+            checked={isTemplate}
+            onCheckedChange={onIsTemplateChange}
+          />
+        </div>
+        
+        <div className="flex items-center justify-between border-t pt-4">
+          <div>
+            <Label htmlFor="status" className="text-sm font-medium">Status</Label>
+            <p className="text-xs text-muted-foreground mt-1">
+              Define se o checklist está ativo ou inativo
+            </p>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="category">Categoria</Label>
-              <Select
-                value={category}
-                onValueChange={onCategoryChange}
-              >
-                <SelectTrigger id="category">
-                  <SelectValue placeholder="Selecione uma categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={status}
-                onValueChange={onStatusChange}
-              >
-                <SelectTrigger id="status">
-                  <SelectValue placeholder="Selecione um status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="flex items-center p-3 rounded-lg border bg-muted/40">
-            <div className="flex-1">
-              <div className="flex items-center gap-1.5">
-                <Template className={`h-4 w-4 ${isTemplate ? "text-blue-500" : "text-gray-400"}`} />
-                <Label htmlFor="is-template" className="font-medium">
-                  Modelo Reutilizável
-                </Label>
-              </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                {isTemplate 
-                  ? "Este checklist será salvo como um modelo e poderá ser reutilizado em múltiplas inspeções"
-                  : "Este checklist será usado como um documento único, não como template"}
-              </p>
-            </div>
-            <Switch
-              id="is-template"
-              checked={isTemplate}
-              onCheckedChange={onIsTemplateChange}
-            />
-          </div>
+          <Select value={status} onValueChange={onStatusChange}>
+            <SelectTrigger id="status" className="w-32">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">Ativo</SelectItem>
+              <SelectItem value="inactive">Inativo</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </CardContent>
     </Card>
