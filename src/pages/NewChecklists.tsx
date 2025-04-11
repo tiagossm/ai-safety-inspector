@@ -1,32 +1,10 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Table,
-  TableHeader,
-  TableRow,
-  TableHead,
-  TableBody,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Pencil,
-  Copy,
-  Trash,
-  MoreHorizontal,
-  Plus,
-  Eye,
-  ArrowLeft,
-  RefreshCw,
-} from "lucide-react";
+import { Table, TableHeader, TableRow, TableHead, TableBody } from "@/components/ui/table";
+import { Plus, ArrowLeft } from "lucide-react";
 import { useChecklists } from "@/hooks/new-checklist/useChecklists";
 import { DeleteChecklistDialog } from "@/components/new-checklist/DeleteChecklistDialog";
 import { ChecklistRow } from "@/components/new-checklist/ChecklistRow";
@@ -37,19 +15,9 @@ import { useToast } from "@/components/ui/use-toast";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { useChecklistDuplicate } from "@/hooks/new-checklist/useChecklistDuplicate";
 import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
+import { supabase } from "@/integrations/supabase/client";
 
 const PAGE_SIZE = 10;
 
@@ -59,92 +27,85 @@ export default function NewChecklists() {
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [page, setPage] = useState(Number(searchParams.get("page")) || 1);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedChecklist, setSelectedChecklist] = useState<{
-    id: string;
-    title: string;
-  } | null>(null);
+  const [selectedChecklist, setSelectedChecklist] = useState(null);
   const [isDeletingChecklist, setIsDeletingChecklist] = useState(false);
   const debouncedSearch = useDebounce(search, 500);
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [isTemplateFilterEnabled, setIsTemplateFilterEnabled] = useState(false);
+  
   const { toast } = useToast();
   
-  const {
-    data: checklistsData,
-    isLoading,
-    error,
-    refreshChecklists,
-  } = useChecklists({
+  const { data: checklistsData, isLoading, error, refreshChecklists } = useChecklists({
     page: page,
     pageSize: PAGE_SIZE,
     search: debouncedSearch,
-    isTemplate: isTemplateFilterEnabled,
+    isTemplate: isTemplateFilterEnabled
   });
   
   const { mutateAsync: duplicateChecklist } = useChecklistDuplicate();
-
+  
   useEffect(() => {
     const params = new URLSearchParams();
     if (search) params.set("search", search);
     if (page > 1) params.set("page", page.toString());
     setSearchParams(params);
   }, [search, page, setSearchParams]);
-
-  const totalPages = checklistsData
-    ? Math.ceil(checklistsData.total / PAGE_SIZE)
-    : 0;
-
-  const handleDuplicate = async (checklistId: string) => {
+  
+  const totalPages = checklistsData ? Math.ceil(checklistsData.total / PAGE_SIZE) : 0;
+  
+  const handleDuplicate = async (checklistId) => {
     setIsDuplicating(true);
     try {
       await duplicateChecklist(checklistId);
       toast({
         title: "Checklist Duplicado",
-        description: "O checklist foi duplicado com sucesso.",
+        description: "O checklist foi duplicado com sucesso."
       });
       await refreshChecklists();
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Erro ao Duplicar",
-        description: "Houve um erro ao duplicar o checklist.",
+        description: "Houve um erro ao duplicar o checklist."
       });
     } finally {
       setIsDuplicating(false);
     }
   };
-
-  const handleOpenDeleteDialog = (checklist: { id: string; title: string }) => {
+  
+  const handleOpenDeleteDialog = (checklist) => {
     setSelectedChecklist(checklist);
     setIsDeleteDialogOpen(true);
   };
-
+  
   const handleCloseDeleteDialog = () => {
     setSelectedChecklist(null);
     setIsDeleteDialogOpen(false);
   };
-
+  
   const handleDeleteChecklist = async () => {
     if (!selectedChecklist) return;
-
     setIsDeletingChecklist(true);
-
     try {
-      const { error } = await supabase
-        .from("checklists")
-        .delete()
-        .eq("id", selectedChecklist.id);
-
+      const { error } = await supabase.from("checklists").delete().eq("id", selectedChecklist.id);
       if (error) {
         console.error("Error deleting checklist:", error);
-        toast.error("Erro ao excluir checklist");
+        toast({
+          variant: "destructive",
+          title: "Erro ao excluir checklist"
+        });
       } else {
-        toast.success("Checklist excluído com sucesso");
+        toast({
+          title: "Checklist excluído com sucesso"
+        });
         await refreshChecklists();
       }
     } catch (error) {
       console.error("Error deleting checklist:", error);
-      toast.error("Erro ao excluir checklist");
+      toast({
+        variant: "destructive",
+        title: "Erro ao excluir checklist"
+      });
     } finally {
       setIsDeletingChecklist(false);
       handleCloseDeleteDialog();
@@ -249,7 +210,6 @@ export default function NewChecklists() {
             await refreshChecklists();
             toast.success("Checklist excluído com sucesso");
           }}
-          // Make isDeleting optional in the interface definition
           isDeleting={isDeletingChecklist}
         />
       )}

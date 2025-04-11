@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Card } from "@/components/ui/card";
@@ -18,7 +17,10 @@ import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 export default function NewChecklistEdit() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { data: checklist, isLoading, error, refetch } = useChecklistById(id || "");
+  const { data: checklist, loading, error, refetch } = useChecklistById(id || "");
+  
+  const isLoading = loading;
+  
   const [enableAllMedia, setEnableAllMedia] = useState(false);
   
   const {
@@ -52,11 +54,9 @@ export default function NewChecklistEdit() {
     handleSubmit
   } = useChecklistEdit(checklist, id);
 
-  // Função para aplicar opções de mídia para todas as perguntas
   const toggleAllMediaOptions = (enabled: boolean) => {
     setEnableAllMedia(enabled);
     
-    // Aplicar a configuração a todas as perguntas
     const updatedQuestions = questions.map(question => ({
       ...question,
       allowsPhoto: enabled,
@@ -73,11 +73,9 @@ export default function NewChecklistEdit() {
   };
 
   const handleStartInspection = async () => {
-    // Primeiro salvar o checklist
     const success = await handleSubmit();
     
     if (success && id) {
-      // Redirecionar para a página de criação de inspeção com o checklist selecionado
       navigate(`/inspections/new?checklist=${id}`);
     }
   };
@@ -89,14 +87,12 @@ export default function NewChecklistEdit() {
     }
   };
   
-  // Inicializar formulário com dados do checklist quando ele for carregado
   useEffect(() => {
     if (checklist) {
       console.log("Checklist data loaded for edit:", checklist);
     }
   }, [checklist]);
   
-  // Lidar com erros
   useEffect(() => {
     if (error) {
       toast.error("Erro ao carregar checklist. Verifique o ID ou tente novamente.");
@@ -120,7 +116,6 @@ export default function NewChecklistEdit() {
         }}
       />
       
-      {/* Botões de ação no topo */}
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-4">
           <Switch

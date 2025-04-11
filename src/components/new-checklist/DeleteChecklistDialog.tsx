@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -9,18 +9,17 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { useState } from "react";
+} from '@/components/ui/alert-dialog';
+import { Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
-interface DeleteChecklistDialogProps {
+export interface DeleteChecklistDialogProps {
   checklistId: string;
   checklistTitle: string;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onDeleted?: () => Promise<void> | void;
-  isDeleting?: boolean; // Make this prop optional
+  onDeleted: () => Promise<void>;
+  isDeleting?: boolean; // Added as optional
 }
 
 export function DeleteChecklistDialog({
@@ -29,41 +28,33 @@ export function DeleteChecklistDialog({
   isOpen,
   onOpenChange,
   onDeleted,
-  isDeleting: externalIsDeleting,
+  isDeleting = false // Default value
 }: DeleteChecklistDialogProps) {
-  const [internalIsDeleting, setInternalIsDeleting] = useState(false);
+  const [isDeleting1, setIsDeleting1] = useState(false);
   
-  // Use external state if provided, otherwise use internal state
-  const isDeleting = externalIsDeleting !== undefined ? externalIsDeleting : internalIsDeleting;
+  // Use the prop if provided, otherwise use state
+  const deleteInProgress = isDeleting || isDeleting1;
 
   const handleDelete = async () => {
-    if (!checklistId) {
-      toast.error("ID do checklist não fornecido");
-      onOpenChange(false);
-      return;
-    }
+    if (!checklistId) return;
     
-    setInternalIsDeleting(true);
+    setIsDeleting1(true);
     try {
       const { error } = await supabase
-        .from("checklists")
+        .from('checklists')
         .delete()
-        .eq("id", checklistId);
+        .eq('id', checklistId);
       
-      if (error) throw error;
+      if (error) {
+        throw error;
+      }
       
-      // Close dialog before calling onDeleted
+      await onDeleted();
       onOpenChange(false);
-      
-      // Call callback after successful deletion
-      if (onDeleted) await onDeleted();
-      
-      toast.success("Checklist excluído com sucesso");
     } catch (error) {
-      console.error("Erro ao excluir checklist:", error);
-      toast.error("Erro ao excluir checklist");
+      console.error('Error deleting checklist:', error);
     } finally {
-      setInternalIsDeleting(false);
+      setIsDeleting1(false);
     }
   };
 
@@ -71,24 +62,29 @@ export function DeleteChecklistDialog({
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Excluir Checklist</AlertDialogTitle>
+          <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
           <AlertDialogDescription>
-            Tem certeza que deseja excluir o checklist "{checklistTitle}"?
-            <br />
-            Esta ação não pode ser desfeita e todos os itens associados serão removidos.
+            Esta ação irá excluir permanentemente o checklist <strong>"{checklistTitle}"</strong> e não pode ser desfeita.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+          <AlertDialogCancel disabled={deleteInProgress}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             onClick={(e) => {
               e.preventDefault();
               handleDelete();
             }}
+            disabled={deleteInProgress}
             className="bg-destructive hover:bg-destructive/90"
-            disabled={isDeleting}
           >
-            {isDeleting ? "Excluindo..." : "Excluir"}
+            {deleteInProgress ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                Excluindo...
+              </>
+            ) : (
+              'Sim, excluir'
+            )}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

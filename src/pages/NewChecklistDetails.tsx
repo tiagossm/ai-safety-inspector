@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -12,13 +11,15 @@ import { DeleteChecklistDialog } from "@/components/new-checklist/DeleteChecklis
 export default function NewChecklistDetails() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { data: checklist, isLoading, error } = useChecklistById(id || "");
+  const { data: checklist, loading, error, refetch } = useChecklistById(id || "");
   
   const [deleteDialog, setDeleteDialog] = useState({
     open: false,
     checklistId: "",
     checklistTitle: ""
   });
+  
+  const isLoading = loading;
   
   if (isLoading) {
     return (
@@ -68,7 +69,6 @@ export default function NewChecklistDetails() {
     toast.info("Funcionalidade de duplicação será implementada em breve");
   };
   
-  // Process questions and organize into groups
   const processQuestions = () => {
     if (!checklist.questions || checklist.questions.length === 0) {
       return { groups: [], ungroupedQuestions: [] };
@@ -79,7 +79,6 @@ export default function NewChecklistDetails() {
     const questionsByGroup = new Map();
     const ungroupedQuestions = [];
     
-    // First organize questions by group
     checklist.questions.forEach(question => {
       if (question.groupId) {
         if (!questionsByGroup.has(question.groupId)) {
@@ -91,7 +90,6 @@ export default function NewChecklistDetails() {
       }
     });
     
-    // Then create the groups array using metadata from the defined groups
     const groups = [];
     
     if (checklist.groups && checklist.groups.length > 0) {
@@ -106,10 +104,8 @@ export default function NewChecklistDetails() {
       });
     }
     
-    // If there are grouped questions but no defined groups, create default groups
     questionsByGroup.forEach((questions, groupId) => {
       if (!checklist.groups || !checklist.groups.some(g => g.id === groupId)) {
-        // Try to extract title from the first question's hint
         let groupTitle = `Grupo ${groups.length + 1}`;
         if (questions[0].hint) {
           try {
@@ -133,7 +129,6 @@ export default function NewChecklistDetails() {
   
   const { groups, ungroupedQuestions } = processQuestions();
   
-  // Format dates
   const createdAt = checklist.createdAt 
     ? new Date(checklist.createdAt).toLocaleDateString("pt-BR", { 
         day: "2-digit", month: "2-digit", year: "numeric",
@@ -210,7 +205,6 @@ export default function NewChecklistDetails() {
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">
-          {/* Checklist Description */}
           <Card>
             <CardHeader className="pb-2">
               <h2 className="text-xl font-semibold">Descrição</h2>
@@ -222,7 +216,6 @@ export default function NewChecklistDetails() {
             </CardContent>
           </Card>
           
-          {/* Checklist Questions */}
           <Card>
             <CardHeader className="pb-2">
               <h2 className="text-xl font-semibold">Perguntas</h2>
@@ -232,7 +225,6 @@ export default function NewChecklistDetails() {
                 <p className="text-muted-foreground">Este checklist não possui perguntas.</p>
               ) : (
                 <div className="space-y-6">
-                  {/* Display grouped questions */}
                   {groups.map(group => (
                     <div key={group.id} className="mb-6">
                       <h3 className="text-lg font-medium mb-2 pb-1 border-b">
@@ -289,7 +281,6 @@ export default function NewChecklistDetails() {
                     </div>
                   ))}
                   
-                  {/* Display ungrouped questions if any */}
                   {ungroupedQuestions.length > 0 && (
                     <div className="mb-6">
                       <h3 className="text-lg font-medium mb-2 pb-1 border-b">
@@ -335,7 +326,6 @@ export default function NewChecklistDetails() {
           </Card>
         </div>
         
-        {/* Sidebar - Checklist Info */}
         <div className="space-y-6">
           <Card>
             <CardHeader className="pb-2">

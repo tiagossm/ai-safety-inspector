@@ -29,7 +29,7 @@ interface ChecklistListProps {
   checklists: ChecklistWithStats[];
   isLoading: boolean;
   onEdit: (id: string) => void;
-  onDelete: (id: string, title: string) => void;
+  onDelete: (id: string) => void; // Updated to match expected signature
   onOpen: (id: string) => void;
   onStatusChange: () => void;
   onBulkStatusChange: (ids: string[], newStatus: 'active' | 'inactive') => Promise<void>;
@@ -52,6 +52,7 @@ export function ChecklistList({
   const [selectedChecklists, setSelectedChecklists] = useState<string[]>([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [checklistToDelete, setChecklistToDelete] = useState<ChecklistWithStats | null>(null);
 
   // Clear selections when checklist data changes
   useEffect(() => {
@@ -89,6 +90,11 @@ export function ChecklistList({
         setIsDeleteDialogOpen(false);
       }
     }
+  };
+
+  const handleDeleteChecklist = (checklist: ChecklistWithStats) => {
+    setChecklistToDelete(checklist);
+    onDelete(checklist.id); // Pass just the ID to match the expected signature
   };
 
   const handleBulkActivate = async () => {
@@ -145,9 +151,8 @@ export function ChecklistList({
             <TableRow>
               <TableHead className="w-12">
                 <Checkbox 
-                  onCheckedChange={(checked) => handleSelectAll(!!checked)}
                   checked={selectedChecklists.length === filteredChecklists.length && filteredChecklists.length > 0}
-                  aria-checked={selectedChecklists.length > 0 && selectedChecklists.length < filteredChecklists.length ? 'mixed' : undefined}
+                  onCheckedChange={handleSelectAll}
                 />
               </TableHead>
               <TableHead>Nome</TableHead>
@@ -164,7 +169,7 @@ export function ChecklistList({
                 key={checklist.id}
                 checklist={checklist}
                 onEdit={onEdit}
-                onDelete={onDelete}
+                onDelete={() => handleDeleteChecklist(checklist)}
                 onOpen={onOpen}
                 onStatusChange={onStatusChange}
                 isSelected={selectedChecklists.includes(checklist.id)}
