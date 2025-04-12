@@ -32,8 +32,8 @@ interface ChecklistsContainerProps {
   onBatchUpdateStatus: (status: "active" | "inactive") => void;
   onDeleteDialogChange: (open: boolean) => void;
   onBulkDeleteDialogChange: (open: boolean) => void;
-  onConfirmDelete: () => void;
-  onConfirmBulkDelete: () => Promise<void>; // Changed return type to Promise<void>
+  onConfirmDelete: () => Promise<void>; // Changed return type to Promise<void>
+  onConfirmBulkDelete: () => Promise<void>;
 }
 
 export function ChecklistsContainer({

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -51,8 +50,8 @@ export default function NewChecklists() {
     setChecklistToDelete({ id, title });
   };
 
-  const confirmDeleteChecklist = async () => {
-    if (!checklistToDelete) return;
+  const confirmDeleteChecklist = async (): Promise<void> => {
+    if (!checklistToDelete) return Promise.resolve();
 
     setIsDeleting(true);
     try {
@@ -68,7 +67,7 @@ export default function NewChecklists() {
           title: "Erro ao excluir checklist",
           description: error.message,
         });
-        return;
+        return Promise.resolve();
       }
 
       toast({
@@ -80,6 +79,7 @@ export default function NewChecklists() {
       setIsDeleting(false);
       setChecklistToDelete(null);
     }
+    return Promise.resolve();
   };
 
   const handleSelectChecklist = (id: string, selected: boolean) => {
