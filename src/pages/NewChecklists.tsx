@@ -1,19 +1,21 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { FileText, Archive, CheckSquare } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNewChecklists } from "@/hooks/new-checklist/useNewChecklists";
 import { ChecklistFilters } from "@/components/new-checklist/ChecklistFilters";
+import { ChecklistGrid } from "@/components/new-checklist/ChecklistGrid";
+import { ChecklistList } from "@/components/new-checklist/ChecklistList";
 import { DeleteChecklistDialog } from "@/components/new-checklist/DeleteChecklistDialog";
 import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 import { toast } from "sonner";
-import { ChecklistTabs } from "@/components/new-checklist/ChecklistTabs";
-import { ChecklistWithStats } from "@/types/newChecklist";
 
 export default function NewChecklists() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   
-  // Use the refactored hook to get all checklist functionality
   const { 
     checklists, 
     allChecklists,
@@ -33,10 +35,8 @@ export default function NewChecklists() {
     companies,
     categories,
     isLoadingCompanies,
-    deleteChecklist,
-    updateStatus,
-    updateBulkStatus,
-    refetch
+    refetch,
+    deleteChecklist
   } = useNewChecklists();
   
   // Get tab from URL params or localStorage, default to "template"
@@ -50,8 +50,13 @@ export default function NewChecklists() {
     return savedTab || 'template';
   });
   
-  // Update filter type based on active tab
+  // Update URL and localStorage when tab changes
   useEffect(() => {
+    searchParams.set('tab', activeTab);
+    setSearchParams(searchParams);
+    localStorage.setItem('checklist-active-tab', activeTab);
+    
+    // Update filter type based on active tab
     if (activeTab === 'template') {
       setFilterType('template');
     } else if (activeTab === 'active') {
@@ -59,9 +64,8 @@ export default function NewChecklists() {
     } else if (activeTab === 'inactive') {
       setFilterType('inactive');
     }
-  }, [activeTab, setFilterType]);
+  }, [activeTab, setSearchParams, searchParams, setFilterType]);
   
-  // Delete dialog state
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
     checklistId: string;
@@ -79,17 +83,13 @@ export default function NewChecklists() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Count checklists by type - excluding subchecklist
-  const checklistCounts = React.useMemo(() => {
-    const filtered = allChecklists.filter(c => !c.isSubChecklist);
-    
-    return {
-      template: filtered.filter(c => c.isTemplate).length,
-      active: filtered.filter(c => c.status === "active" && !c.isTemplate).length,
-      inactive: filtered.filter(c => c.status === "inactive" && !c.isTemplate).length
-    };
-  }, [allChecklists]);
+  const filteredChecklists = allChecklists.filter(c => !c.isSubChecklist);
+  const counts = {
+    template: filteredChecklists.filter(c => c.isTemplate).length,
+    active: filteredChecklists.filter(c => c.status === "active" && !c.isTemplate).length,
+    inactive: filteredChecklists.filter(c => c.status === "inactive" && !c.isTemplate).length
+  };
 
-  // Navigation handlers
   const handleOpenChecklist = (id: string) => {
     navigate(`/new-checklists/${id}`);
   };
@@ -118,18 +118,6 @@ export default function NewChecklists() {
     });
   };
 
-  // Handle status update for multiple checklists
-  const handleBulkStatusChange = async (ids: string[], newStatus: 'active' | 'inactive') => {
-    try {
-      await updateBulkStatus.mutateAsync({ checklistIds: ids, newStatus });
-      return true;
-    } catch (error) {
-      console.error("Error updating status for multiple checklists:", error);
-      throw error;
-    }
-  };
-
-  // Handle delete confirmation
   const handleConfirmDelete = async () => {
     setIsDeleting(true);
     try {
@@ -145,7 +133,7 @@ export default function NewChecklists() {
         toast.success("Checklist excluído com sucesso");
       }
       
-      // Refetch data after deletion
+      // Important: refetch data after deletion
       await refetch();
       
       setDeleteDialog({
@@ -165,21 +153,6 @@ export default function NewChecklists() {
 
   const handleCreateNew = () => {
     navigate("/new-checklists/create");
-  };
-
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-  };
-
-  // Handle status change for a single checklist
-  const handleStatusChange = async (id: string, newStatus: 'active' | 'inactive') => {
-    try {
-      await updateStatus.mutateAsync({ checklistId: id, newStatus });
-      return true;
-    } catch (error) {
-      console.error("Error updating checklist status:", error);
-      throw error;
-    }
   };
 
   return (
@@ -204,24 +177,71 @@ export default function NewChecklists() {
         companies={companies}
         categories={categories}
         isLoadingCompanies={isLoadingCompanies}
-        totalChecklists={allChecklists.filter(c => !c.isSubChecklist).length}
+        totalChecklists={filteredChecklists.length}
         onCreateNew={handleCreateNew}
       />
 
-      <ChecklistTabs
-        checklistCounts={checklistCounts}
-        allChecklists={checklists}
-        isLoading={isLoading}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onOpen={handleOpenChecklist}
-        onStatusChange={refetch}
-        onBulkDelete={handleBulkDelete}
-        onBulkStatusChange={handleBulkStatusChange}
-        onTabChange={handleTabChange}
-        activeTab={activeTab}
-        onChecklistStatusChange={handleStatusChange}
-      />
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="template" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            <span>Templates</span>
+            {counts.template > 0 && <span className="ml-1 text-xs bg-primary/10 text-primary rounded-full px-2">{counts.template}</span>}
+          </TabsTrigger>
+          <TabsTrigger value="active" className="flex items-center gap-2">
+            <CheckSquare className="h-4 w-4" />
+            <span>Ativos</span>
+            {counts.active > 0 && <span className="ml-1 text-xs bg-primary/10 text-primary rounded-full px-2">{counts.active}</span>}
+          </TabsTrigger>
+          <TabsTrigger value="inactive" className="flex items-center gap-2">
+            <Archive className="h-4 w-4" />
+            <span>Inativos</span>
+            {counts.inactive > 0 && <span className="ml-1 text-xs bg-primary/10 text-primary rounded-full px-2">{counts.inactive}</span>}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="template">
+          <ScrollArea className="h-[calc(100vh-300px)]">
+            <ChecklistGrid 
+              checklists={filteredChecklists.filter(c => c.isTemplate)} 
+              isLoading={isLoading} 
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onOpen={handleOpenChecklist}
+              onStatusChange={refetch}
+              onBulkDelete={handleBulkDelete}
+            />
+          </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="active">
+          <ScrollArea className="h-[calc(100vh-300px)]">
+            <ChecklistGrid 
+              checklists={filteredChecklists.filter(c => c.status === "active" && !c.isTemplate)} 
+              isLoading={isLoading} 
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onOpen={handleOpenChecklist}
+              onStatusChange={refetch}
+              onBulkDelete={handleBulkDelete}
+            />
+          </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="inactive">
+          <ScrollArea className="h-[calc(100vh-300px)]">
+            <ChecklistGrid 
+              checklists={filteredChecklists.filter(c => c.status === "inactive" && !c.isTemplate)} 
+              isLoading={isLoading} 
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onOpen={handleOpenChecklist}
+              onStatusChange={refetch}
+              onBulkDelete={handleBulkDelete}
+            />
+          </ScrollArea>
+        </TabsContent>
+      </Tabs>
 
       <DeleteChecklistDialog
         checklistId={deleteDialog.checklistId}
@@ -229,7 +249,6 @@ export default function NewChecklists() {
         isOpen={deleteDialog.open}
         onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
         onDeleted={handleConfirmDelete}
-        isDeleting={isDeleting}
       />
       
       <FloatingNavigation threshold={300} />

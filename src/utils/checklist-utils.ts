@@ -1,55 +1,61 @@
-
-import { Checklist } from "@/types/newChecklist";
-
-/**
- * Determina a origem do checklist com base nos dados
- */
-export function determineChecklistOrigin(checklist: Checklist): 'manual' | 'ia' | 'csv' {
-  if (checklist.origin) {
-    return checklist.origin;
-  }
-  
-  // Lógica de fallback para determinar origem caso não tenha o campo origin
-  // Esta é uma lógica exemplo, adapte conforme necessidade
-  if (checklist.description?.includes('Gerado por IA')) {
-    return 'ia';
-  }
-  
-  if (checklist.description?.includes('Importado')) {
-    return 'csv';
-  }
-  
-  return 'manual';
-}
+import { ChecklistWithStats } from "@/types/newChecklist";
 
 /**
- * Formata a data para exibição amigável
+ * Determine the origin of a checklist based on its properties
+ * @param checklist The checklist to analyze
+ * @returns The determined origin type: 'manual', 'ia', or 'csv'
  */
-export function formatDate(dateString: string | undefined | null): string {
-  if (!dateString) return '-';
+export const determineChecklistOrigin = (checklist: ChecklistWithStats): "manual" | "ia" | "csv" => {
+  // If the origin is explicitly set, use it
+  if (checklist.origin && ["manual", "ia", "csv"].includes(checklist.origin)) {
+    return checklist.origin as "manual" | "ia" | "csv";
+  }
   
+  // Otherwise try to infer based on other characteristics
+  // This is a fallback logic that can be refined
+  if (checklist.title?.toLowerCase().includes('ia generated') || 
+      checklist.description?.toLowerCase().includes('ia generated')) {
+    return "ia";
+  } else if (checklist.title?.toLowerCase().includes('importado') || 
+             checklist.description?.toLowerCase().includes('csv')) {
+    return "csv";
+  }
+  
+  // Default to manual if we can't determine
+  return "manual";
+};
+
+/**
+ * Update checklist statuses in bulk
+ * @param ids Array of checklist IDs to update
+ * @param newStatus The new status to apply
+ * @returns A promise that resolves when the update is complete
+ */
+export const bulkUpdateChecklistStatus = async (
+  ids: string[],
+  newStatus: 'active' | 'inactive'
+) => {
+  // Implementation will depend on the specific backend service being used
+  // This is a placeholder for the function structure
   try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR');
+    // Example implementation with a REST API call
+    const response = await fetch('/api/checklists/bulk-update-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ids,
+        status: newStatus,
+        status_checklist: newStatus === 'active' ? 'ativo' : 'inativo'
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Error updating statuses: ${response.statusText}`);
+    }
+    
+    return await response.json();
   } catch (error) {
-    console.error('Error formatting date:', error);
-    return '-';
+    console.error('Error updating checklist statuses:', error);
+    throw error;
   }
-}
-
-/**
- * Calcula a porcentagem de conclusão do checklist
- */
-export function calculateCompletionPercentage(completed: number, total: number): number {
-  if (total === 0) return 0;
-  return Math.round((completed / total) * 100);
-}
-
-/**
- * Trunca texto para exibição com limite de caracteres
- */
-export function truncateText(text: string | undefined | null, maxLength: number = 100): string {
-  if (!text) return '';
-  if (text.length <= maxLength) return text;
-  return `${text.substring(0, maxLength)}...`;
-}
+};
