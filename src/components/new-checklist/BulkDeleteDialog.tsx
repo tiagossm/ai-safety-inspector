@@ -16,7 +16,7 @@ interface BulkDeleteDialogProps {
   onOpenChange: (open: boolean) => void;
   selectedCount: number;
   isDeleting: boolean;
-  onConfirmDelete: () => void;
+  onConfirmDelete: () => Promise<void>;
 }
 
 export function BulkDeleteDialog({
@@ -26,6 +26,10 @@ export function BulkDeleteDialog({
   isDeleting,
   onConfirmDelete,
 }: BulkDeleteDialogProps) {
+  const handleConfirmDelete = async () => {
+    await onConfirmDelete();
+  };
+
   return (
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -40,7 +44,7 @@ export function BulkDeleteDialog({
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
-            onClick={onConfirmDelete}
+            onClick={handleConfirmDelete}
             disabled={isDeleting}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
