@@ -1,4 +1,3 @@
-
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -85,7 +84,7 @@ export function MenuItem({
         onClick={onClick}
       >
         <Icon className="h-5 w-5" />
-        <span>{label}</span>
+        <span>{label === "Novo Checklist" ? "Checklists" : label}</span>
       </Link>
     );
   }
@@ -100,7 +99,7 @@ export function MenuItem({
       onClick={onClick}
     >
       <Icon className="h-5 w-5" />
-      <span>{label}</span>
+      <span>{label === "Novo Checklist" ? "Checklists" : label}</span>
     </div>
   );
 }
