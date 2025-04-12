@@ -1,4 +1,3 @@
-
 import {
   Select,
   SelectContent,
@@ -152,7 +151,6 @@ export default function NewChecklistCreate() {
         return;
       }
       
-      // Explicitly type-cast the properties to ensure they match the expected types
       const processedChecklist: NewChecklist = {
         ...checklist,
         status_checklist: (checklist.status_checklist || "ativo") as "ativo" | "inativo",
@@ -195,7 +193,6 @@ export default function NewChecklistCreate() {
     try {
       setIsSubmitting(true);
       
-      // Explicitly type-cast the properties to ensure they match the expected types
       const typedChecklist: NewChecklist = {
         ...checklist,
         status_checklist: (checklist.status_checklist || "ativo") as "ativo" | "inativo",
