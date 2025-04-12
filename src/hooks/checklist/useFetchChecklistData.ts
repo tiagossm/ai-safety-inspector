@@ -1,7 +1,6 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Checklist } from "@/types/checklist";
+import { Checklist } from "@types/checklist";
 
 // ✅ Valida se o ID é um UUID
 function isValidUUID(id: string | null | undefined): boolean {
@@ -24,25 +23,35 @@ export function useFetchChecklistData(id: string) {
       try {
         const { data: checklistData, error: checklistError } = await supabase
           .from("checklists")
-          .select("*")
+          .select(`
+            *,
+            users:user_id ( full_name )
+          `)
           .eq("id", id)
           .single();
 
         if (checklistError || !checklistData) {
           throw new Error("Checklist não encontrado.");
         }
-        
-        // Explicitly type the checklistData with parent_question_id
+
         const typedChecklistData = checklistData as {
           id: string;
           title: string;
+          description?: string;
           category: string;
           is_template: boolean;
           parent_question_id?: string | null;
+          user_id?: string;
+          company_id?: string;
+          created_at?: string;
+          updated_at?: string;
+          status?: string;
+          status_checklist?: string;
+          responsible_id?: string;
+          users?: { full_name: string };
           [key: string]: any;
         };
-        
-        // Log the checklist for debugging
+
         console.log("Checklist found:", {
           id: typedChecklistData.id,
           title: typedChecklistData.title,
@@ -52,7 +61,6 @@ export function useFetchChecklistData(id: string) {
           isSubChecklist: typedChecklistData.category === 'sub-checklist'
         });
 
-        // Buscar perguntas
         const { data: checklistItens, error: itensError } = await supabase
           .from("checklist_itens")
           .select("*")
@@ -62,17 +70,13 @@ export function useFetchChecklistData(id: string) {
         if (itensError) {
           console.warn("Erro ao buscar perguntas:", itensError);
         }
-        
-        console.log(`Found ${checklistItens?.length || 0} questions for checklist ${id}`);
 
-        // Processar grupos a partir do campo "hint"
         const groupsMap = new Map();
         const processedQuestions = (checklistItens || []).map((item: any) => {
           let groupId = null;
 
           if (item.hint) {
             try {
-              // Try to parse the hint as JSON
               const hint = typeof item.hint === 'string' ? JSON.parse(item.hint) : item.hint;
               if (hint.groupId && hint.groupTitle) {
                 groupId = hint.groupId;
@@ -88,10 +92,9 @@ export function useFetchChecklistData(id: string) {
               console.warn("Erro ao interpretar hint:", item.hint);
             }
           }
-          
-          // Check for sub-checklist
+
           const hasSubChecklist = !!item.sub_checklist_id;
-          
+
           if (hasSubChecklist) {
             console.log(`Question ${item.id} has sub-checklist: ${item.sub_checklist_id}`);
           }
@@ -117,22 +120,22 @@ export function useFetchChecklistData(id: string) {
         });
 
         const groups = Array.from(groupsMap.values()).sort((a, b) => a.order - b.order);
-        
+
         console.log(`Processed ${groups.length} groups for checklist ${id}`);
 
-        // Buscar nome do responsável
         let responsibleName = "Não atribuído";
         const responsibleId = typedChecklistData.responsible_id;
         if (isValidUUID(responsibleId)) {
           const { data: userData } = await supabase
             .from("users")
-            .select("name")
+            .select("full_name")
             .eq("id", responsibleId)
             .single();
-          responsibleName = userData?.name || "Usuário desconhecido";
+          responsibleName = userData?.full_name || "Usuário desconhecido";
         }
 
-        // Map data to the Checklist type with extended properties
+        const createdByName = typedChecklistData.users?.full_name || "Desconhecido";
+
         return {
           id: typedChecklistData.id,
           title: typedChecklistData.title || "Sem título",
@@ -146,6 +149,7 @@ export function useFetchChecklistData(id: string) {
           company_id: typedChecklistData.company_id,
           responsible_id: responsibleId,
           responsibleName,
+          created_by_name: createdByName,
           category: typedChecklistData.category || "general",
           questions: processedQuestions,
           groups,
@@ -155,6 +159,7 @@ export function useFetchChecklistData(id: string) {
           questions: any[];
           groups: any[];
           responsibleName: string;
+          created_by_name: string;
           is_sub_checklist?: boolean;
           parent_question_id?: string | null;
         };
