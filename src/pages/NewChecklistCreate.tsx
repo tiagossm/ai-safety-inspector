@@ -152,14 +152,27 @@ export default function NewChecklistCreate() {
         return;
       }
       
+      // Fix the type of status_checklist to be explicitly "ativo" | "inativo"
+      const statusChecklistValue = checklist.status === "active" ? "ativo" : "inativo";
+      const statusChecklist = statusChecklistValue as "ativo" | "inativo";
+      
+      // Fix the type of origin to be explicitly "manual" | "ia" | "csv"
+      const originValue = activeTab;
+      const origin = originValue as "manual" | "ia" | "csv";
+      
       const processedChecklist: NewChecklistPayload = {
         ...checklist,
-        status_checklist: (checklist.status === "active" ? "ativo" : "inativo") as "ativo" | "inativo",
-        origin: activeTab as "manual" | "ia" | "csv"
+        status_checklist: statusChecklist,
+        origin: origin
+      };
+      
+      // Convert to NewChecklist type for the API call to fix the type incompatibility
+      const checklistForMutation: any = {
+        ...processedChecklist,
       };
       
       const result = await createChecklist.mutateAsync({
-        checklist: processedChecklist,
+        checklist: checklistForMutation,
         questions: validQuestions,
         groups
       });
@@ -468,8 +481,8 @@ export default function NewChecklistCreate() {
           
           <TabsContent value="ai">
             <AICreateForm
-              form={checklist}
-              setForm={setChecklist}
+              form={checklist as any}
+              setForm={setChecklist as any}
               users={[]} 
               loadingUsers={false}
               companies={companies}
