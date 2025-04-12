@@ -10,7 +10,7 @@ export async function fetchChecklists(
   filterType = "all", 
   selectedCompanyId = "all", 
   selectedCategory = "all",
-  sortOrder = "created_desc"
+  sortOrder = "created_at_desc"
 ): Promise<ChecklistWithStats[]> {
   try {
     const [sortColumn, sortDirection] = sortOrder.split('_');
@@ -73,21 +73,17 @@ export async function fetchChecklists(
         origin: checklist.origin,
         totalQuestions: 0, // Default value
         completedQuestions: 0, // Default value
-        companyName: checklist.company?.fantasy_name || "Sem empresa",
-        stats: {
-          total: 0,
-          completed: 0
-        }
+        companyName: checklist.company?.fantasy_name || "Sem empresa"
       };
       
       // Check if these properties exist using a type assertion to access dynamic properties
       const checklistAny = checklist as any;
       if (checklistAny.total_items !== undefined) {
-        result.stats.total = checklistAny.total_items;
+        result.totalQuestions = checklistAny.total_items;
       }
       
       if (checklistAny.completed_items !== undefined) {
-        result.stats.completed = checklistAny.completed_items;
+        result.completedQuestions = checklistAny.completed_items;
       }
       
       return result;
@@ -138,21 +134,17 @@ export async function fetchAllChecklistsData(): Promise<ChecklistWithStats[]> {
         origin: checklist.origin,
         totalQuestions: 0, // Default value
         completedQuestions: 0, // Default value
-        companyName: checklist.company?.fantasy_name || "Sem empresa",
-        stats: {
-          total: 0,
-          completed: 0
-        }
+        companyName: checklist.company?.fantasy_name || "Sem empresa"
       };
       
       // Check if these properties exist using a type assertion to access dynamic properties
       const checklistAny = checklist as any;
       if (checklistAny.total_items !== undefined) {
-        result.stats.total = checklistAny.total_items;
+        result.totalQuestions = checklistAny.total_items;
       }
       
       if (checklistAny.completed_items !== undefined) {
-        result.stats.completed = checklistAny.completed_items;
+        result.completedQuestions = checklistAny.completed_items;
       }
       
       return result;
