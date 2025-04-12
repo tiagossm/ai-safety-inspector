@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { ChecklistWithStats } from "@/types/newChecklist";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,24 @@ export function ChecklistGrid({
   onStatusChange,
   onBulkDelete
 }: ChecklistGridProps) {
+  // State for tracking selected checklists
+  const [selectedChecklists, setSelectedChecklists] = useState<string[]>([]);
+  const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = useState(false);
+
+  const handleSelect = (id: string, selected: boolean) => {
+    setSelectedChecklists(prev => 
+      selected ? [...prev, id] : prev.filter(checklistId => checklistId !== id)
+    );
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    if (selectedChecklists.length > 0 && onBulkDelete) {
+      await onBulkDelete(selectedChecklists);
+      setSelectedChecklists([]);
+    }
+    setIsBulkDeleteConfirmOpen(false);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-60">
@@ -55,17 +73,58 @@ export function ChecklistGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-      {checklists.map((checklist) => (
-        <ChecklistCard
-          key={checklist.id}
-          checklist={checklist}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onOpen={onOpen}
-          onStatusChange={onStatusChange}
-        />
-      ))}
+    <div>
+      {selectedChecklists.length > 0 && (
+        <div className="mb-4 p-3 bg-muted rounded-md flex items-center justify-between">
+          <span>{selectedChecklists.length} checklists selecionados</span>
+          <Button 
+            variant="destructive" 
+            size="sm"
+            onClick={() => setIsBulkDeleteConfirmOpen(true)}
+          >
+            Excluir selecionados
+          </Button>
+        </div>
+      )}
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {checklists.map((checklist) => (
+          <ChecklistCard
+            key={checklist.id}
+            checklist={checklist}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onOpen={onOpen}
+            onStatusChange={onStatusChange}
+            isSelected={selectedChecklists.includes(checklist.id)}
+            onSelect={(checked) => handleSelect(checklist.id, checked)}
+          />
+        ))}
+      </div>
+
+      <AlertDialog 
+        open={isBulkDeleteConfirmOpen}
+        onOpenChange={setIsBulkDeleteConfirmOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir checklists selecionados</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir {selectedChecklists.length} checklists?
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={handleConfirmBulkDelete}
+            >
+              Confirmar exclusão
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

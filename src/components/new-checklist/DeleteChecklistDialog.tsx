@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -30,12 +29,21 @@ export function DeleteChecklistDialog({
   isDeleting
 }: DeleteChecklistDialogProps) {
   const handleDelete = async () => {
-    await onDeleted();
-    onOpenChange(false);
+    try {
+      await onDeleted();
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error deleting checklist:", error);
+      // Keep dialog open on error so user can try again
+    }
   };
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
+    <AlertDialog open={isOpen} onOpenChange={(open) => {
+      // Prevent closing while deletion is in progress
+      if (isDeleting && !open) return;
+      onOpenChange(open);
+    }}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Excluir checklist</AlertDialogTitle>
