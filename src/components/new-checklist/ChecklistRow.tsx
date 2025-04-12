@@ -103,7 +103,7 @@ export function ChecklistRow({
         />
       </TableCell>
       <TableCell className="font-medium min-h-[56px] flex items-center gap-2 py-3">
-        <ChecklistOriginBadge origin={checklist.origin} showLabel={false} />
+        <ChecklistOriginBadge origin={(checklist.origin || "manual") as "manual" | "ia" | "csv"} showLabel={false} />
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>

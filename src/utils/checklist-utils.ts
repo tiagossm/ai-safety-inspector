@@ -1,4 +1,3 @@
-
 import { Checklist } from "@/types/newChecklist";
 
 /**
@@ -52,4 +51,19 @@ export function truncateText(text: string | undefined | null, maxLength: number 
   if (!text) return '';
   if (text.length <= maxLength) return text;
   return `${text.substring(0, maxLength)}...`;
+}
+
+/**
+ * Obtém o nome da origem do checklist com base no valor do campo origin
+ */
+export function getChecklistOriginName(checklist: Checklist): string {
+  if (!checklist.origin) return "Manual";
+  
+  const originMap: Record<string, string> = {
+    "manual": "Manual",
+    "ia": "Inteligência Artificial",
+    "csv": "Importado CSV"
+  };
+  
+  return originMap[checklist.origin] || "Manual";
 }

@@ -1,7 +1,6 @@
-
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
+import { ChecklistWithStats, NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { toast } from "sonner";
 
 const getDatabaseType = (type: ChecklistQuestion['responseType']): string => {
@@ -28,53 +27,48 @@ const getStatusChecklist = (status: string): string => {
   return status === 'active' ? 'ativo' : 'inativo';
 };
 
+interface CreateParams {
+  checklist: NewChecklistPayload;
+  questions?: ChecklistQuestion[];
+  groups?: ChecklistGroup[];
+}
+
 export function useChecklistCreate() {
-  const queryClient = useQueryClient();
-  
   return useMutation({
-    mutationFn: async ({ 
-      checklist, 
-      questions, 
-      groups 
-    }: { 
-      checklist: NewChecklistPayload; 
-      questions?: ChecklistQuestion[];
-      groups?: ChecklistGroup[];
-    }) => {
-      console.log("Creating new checklist:", checklist);
+    mutationFn: async (params: CreateParams) => {
+      console.log("Creating new checklist:", params.checklist);
       
-      if (!checklist.title) {
+      if (!params.checklist.title) {
         throw new Error("Checklist title is required");
       }
       
-      const status_checklist = getStatusChecklist(checklist.status || 'active');
+      const status_checklist = getStatusChecklist(params.checklist.status || 'active');
       
-      const company_id = checklist.companyId || checklist.company_id;
+      const company_id = params.checklist.company_id;
       
-      const isAIGenerated = checklist.description?.toLowerCase().includes('gerado por ia') ||
-                            checklist.description?.toLowerCase().includes('checklist gerado por ia') ||
-                            checklist.description?.toLowerCase().includes('checklist: ');
+      const isAIGenerated = params.checklist.description?.toLowerCase().includes('gerado por ia') ||
+                            params.checklist.description?.toLowerCase().includes('checklist gerado por ia') ||
+                            params.checklist.description?.toLowerCase().includes('checklist: ');
       
-      const isCSVImported = checklist.description?.toLowerCase().includes('importado via csv') ||
-                           checklist.description?.toLowerCase().includes('importado de planilha') ||
-                           checklist.description?.toLowerCase().includes('importado de excel');
+      const isCSVImported = params.checklist.description?.toLowerCase().includes('importado via csv') ||
+                           params.checklist.description?.toLowerCase().includes('importado de planilha') ||
+                           params.checklist.description?.toLowerCase().includes('importado de excel');
       
-      const origin = checklist.origin || (isAIGenerated ? 'ia' : (isCSVImported ? 'csv' : 'manual'));
+      const origin = params.checklist.origin || (isAIGenerated ? 'ia' : (isCSVImported ? 'csv' : 'manual'));
       
       const { data: newChecklist, error: createError } = await supabase
         .from("checklists")
         .insert({
-          title: checklist.title,
-          description: checklist.description,
-          is_template: checklist.isTemplate || false,
-          status_checklist: status_checklist,
-          status: checklist.status || 'active',
-          category: checklist.category,
-          responsible_id: checklist.responsibleId,
+          title: params.checklist.title,
+          description: params.checklist.description,
+          status: params.checklist.status || "active",
           company_id: company_id,
-          due_date: checklist.dueDate,
-          created_by: isAIGenerated ? 'ai' : undefined,
-          origin: origin
+          category: params.checklist.category,
+          ...(params.checklist.origin && { origin: params.checklist.origin }),
+          is_template: params.checklist.is_template || false,
+          status_checklist: status_checklist,
+          responsible_id: params.checklist.responsible_id,
+          due_date: params.checklist.due_date
         })
         .select("id")
         .single();
@@ -87,17 +81,17 @@ export function useChecklistCreate() {
       const checklistId = newChecklist.id;
       console.log("Created checklist with ID:", checklistId);
       
-      if (questions && questions.length > 0) {
-        const questionInserts = questions.map((question, index) => {
+      if (params.questions && params.questions.length > 0) {
+        const questionInserts = params.questions.map((question, index) => {
           let questionHint = question.hint || "";
           
-          if (question.groupId && groups) {
-            const group = groups.find(g => g.id === question.groupId);
+          if (question.groupId && params.groups) {
+            const group = params.groups.find(g => g.id === question.groupId);
             if (group) {
               questionHint = JSON.stringify({
                 groupId: group.id,
                 groupTitle: group.title,
-                groupIndex: groups.indexOf(group)
+                groupIndex: params.groups.indexOf(group)
               });
             }
           }
@@ -109,7 +103,6 @@ export function useChecklistCreate() {
               questionOptions = question.options;
             } else if (typeof question.options === 'string') {
               try {
-                // Create a local variable for the options string to ensure proper typing
                 const optionsStr: string = question.options;
                 
                 if (optionsStr.startsWith('[') && optionsStr.endsWith(']')) {
@@ -119,11 +112,9 @@ export function useChecklistCreate() {
                       questionOptions = parsedOptions;
                     }
                   } catch (e) {
-                    // If JSON parsing fails, treat as comma-separated list
                     questionOptions = optionsStr.split(',').map(o => o.trim());
                   }
                 } else {
-                  // Treat as comma-separated list
                   questionOptions = optionsStr.split(',').map(o => o.trim());
                 }
               } catch (e) {
@@ -166,7 +157,6 @@ export function useChecklistCreate() {
       return { id: checklistId };
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["new-checklists"] });
       toast.success("Checklist criado com sucesso!");
     },
     onError: (error) => {

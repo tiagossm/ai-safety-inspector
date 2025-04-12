@@ -18,6 +18,8 @@ export interface ChecklistWithStats {
   completedQuestions?: number;
   companyName?: string;
   responsibleName?: string;
+  questions?: ChecklistQuestion[];
+  groups?: ChecklistGroup[];
 }
 
 export interface NewChecklistPayload {
@@ -29,6 +31,8 @@ export interface NewChecklistPayload {
   category?: string;
   company_id?: string;
   responsible_id?: string;
+  origin?: string;
+  due_date?: string | null;
 }
 
 export interface Checklist {
@@ -47,6 +51,7 @@ export interface Checklist {
   questions?: ChecklistItem[];
   groups?: ChecklistGroup[];
   responsibleName?: string;
+  origin?: string;
 }
 
 export interface ChecklistItem {
@@ -83,14 +88,64 @@ export interface NewChecklist {
   title?: string;
   description?: string;
   is_template?: boolean;
-  status_checklist?: string;
+  status_checklist?: "ativo" | "inativo";
   category?: string;
   company_id?: string | null;
   responsible_id?: string | null;
   status?: string;
+  due_date?: string | null;
 }
 
 export interface BatchUpdateResult {
   success: boolean;
   count: number;
+}
+
+// Add the ChecklistQuestion interface that was missing
+export interface ChecklistQuestion {
+  id: string;
+  text: string;
+  responseType: "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature";
+  isRequired: boolean;
+  weight: number;
+  allowsPhoto: boolean;
+  allowsVideo: boolean;
+  allowsAudio: boolean;
+  allowsFiles: boolean;
+  order: number;
+  options?: string[];
+  hint?: string | null;
+  groupId?: string | null;
+  parentQuestionId?: string | null;
+  hasSubChecklist?: boolean;
+  subChecklistId?: string | null;
+  displayNumber?: string;
+}
+
+// Add inspection related interfaces
+export interface InspectionDetails {
+  id: string;
+  status: string;
+  companyId?: string;
+  companyName?: string;
+  checklistId?: string;
+  checklistTitle?: string;
+  createdAt: string;
+  updatedAt?: string;
+  responsibleId?: string;
+  responsibleName?: string;
+  scheduledDate?: string;
+  location?: string;
+  syncStatus?: string;
+  metadata?: any;
+}
+
+export interface InspectionFilters {
+  status?: string;
+  companyId?: string;
+  checklistId?: string;
+  responsibleId?: string;
+  startDate?: string;
+  endDate?: string;
+  searchTerm?: string;
 }

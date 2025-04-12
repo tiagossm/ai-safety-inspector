@@ -1,238 +1,508 @@
-
-import React, { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { useNewChecklists } from "@/hooks/new-checklist/useNewChecklists";
-import { ChecklistFilters } from "@/components/new-checklist/ChecklistFilters";
-import { DeleteChecklistDialog } from "@/components/new-checklist/DeleteChecklistDialog";
-import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
-import { toast } from "sonner";
-import { ChecklistTabs } from "@/components/new-checklist/ChecklistTabs";
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  MoreHorizontal,
+  Pencil,
+  Copy,
+  Trash2,
+  Plus,
+  ChevronsUpDown,
+  Check,
+  X,
+  Search,
+  Loader2,
+} from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Switch } from "@/components/ui/switch";
+import { useForm } from "react-hook-form";
+import { cn } from "@/lib/utils";
 import { ChecklistWithStats } from "@/types/newChecklist";
+import { useChecklists } from "@/hooks/new-checklist/useChecklists";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command";
+import { ChecklistCard } from "@/components/new-checklist/ChecklistCard";
+import { ChecklistListItem } from "@/components/new-checklist/ChecklistListItem";
+import { Skeleton } from "@/components/ui/skeleton";
+import { InputSearch } from "@/components/ui/InputSearch";
+import { Badge } from "@/components/ui/badge";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import { useToast } from "@/components/ui/use-toast";
+import { ChecklistsHeader } from "@/components/checklists/ChecklistsHeader";
+import { formatDate } from "@/utils/format";
+
+// Update the DeleteChecklistDialog props interface to include isDeleting
+interface DeleteChecklistDialogProps {
+  checklistId: string;
+  checklistTitle: string;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onDeleted: () => Promise<void>;
+  isDeleting: boolean; // Add this property
+}
+
+// Fix the BatchUpdateChecklist function to return void instead of boolean
+const updateBatchChecklistsStatus = async (ids: string[], newStatus: "active" | "inactive"): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from("checklists")
+      .update({ status: newStatus })
+      .in("id", ids);
+
+    if (error) {
+      console.error("Error updating checklists status:", error);
+      throw error;
+    }
+
+    return;
+  } catch (error) {
+    console.error("Error updating checklists status:", error);
+    toast.error("Erro ao atualizar status dos checklists");
+    return;
+  }
+};
 
 export default function NewChecklists() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  
-  // Use the refactored hook to get all checklist functionality
-  const { 
-    checklists, 
-    allChecklists,
-    isLoading,
-    searchTerm, 
-    setSearchTerm, 
-    filterType, 
-    setFilterType,
-    selectedCompanyId,
-    setSelectedCompanyId,
-    selectedCategory,
-    setSelectedCategory,
-    selectedOrigin,
-    setSelectedOrigin,
-    sortOrder,
-    setSortOrder,
-    companies,
-    categories,
-    isLoadingCompanies,
-    deleteChecklist,
-    updateStatus,
-    updateBulkStatus,
-    refetch
-  } = useNewChecklists();
-  
-  // Get tab from URL params or localStorage, default to "template"
-  const [activeTab, setActiveTab] = useState(() => {
-    const tabFromUrl = searchParams.get('tab');
-    if (tabFromUrl && ['template', 'active', 'inactive'].includes(tabFromUrl)) {
-      return tabFromUrl;
-    }
-    
-    const savedTab = localStorage.getItem('checklist-active-tab');
-    return savedTab || 'template';
-  });
-  
-  // Update filter type based on active tab
-  useEffect(() => {
-    if (activeTab === 'template') {
-      setFilterType('template');
-    } else if (activeTab === 'active') {
-      setFilterType('active');
-    } else if (activeTab === 'inactive') {
-      setFilterType('inactive');
-    }
-  }, [activeTab, setFilterType]);
-  
-  // Delete dialog state
-  const [deleteDialog, setDeleteDialog] = useState<{
-    open: boolean;
-    checklistId: string;
-    checklistTitle: string;
-    isMultiple: boolean;
-    selectedIds: string[];
-  }>({
-    open: false,
-    checklistId: "",
-    checklistTitle: "",
-    isMultiple: false,
-    selectedIds: []
-  });
-  
+  const [selectedChecklists, setSelectedChecklists] = useState<string[]>([]);
+  const [isAllSelected, setIsAllSelected] = useState(false);
+  const [isBatchUpdating, setIsBatchUpdating] = useState(false);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
+  const [sort, setSort] = useState<"asc" | "desc">("asc");
+  const [sortColumn, setSortColumn] = useState<string>("title");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [checklistToDelete, setChecklistToDelete] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
+  const { toast } = useToast();
 
-  // Count checklists by type - excluding subchecklist
-  const checklistCounts = React.useMemo(() => {
-    const filtered = allChecklists.filter(c => !c.isSubChecklist);
-    
-    return {
-      template: filtered.filter(c => c.isTemplate).length,
-      active: filtered.filter(c => c.status === "active" && !c.isTemplate).length,
-      inactive: filtered.filter(c => c.status === "inactive" && !c.isTemplate).length
-    };
-  }, [allChecklists]);
+  const {
+    checklists,
+    loading,
+    error,
+    total,
+    refetch,
+  } = useChecklists({
+    search,
+    page,
+    perPage,
+    sort,
+    sortColumn,
+  });
 
-  // Navigation handlers
   const handleOpenChecklist = (id: string) => {
     navigate(`/new-checklists/${id}`);
   };
 
-  const handleEdit = (id: string) => {
-    navigate(`/new-checklists/edit/${id}`);
+  const handleEditChecklist = (id: string) => {
+    navigate(`/new-checklists/${id}/edit`);
   };
 
-  const handleDelete = (id: string, title: string) => {
-    setDeleteDialog({
-      open: true,
-      checklistId: id,
-      checklistTitle: title,
-      isMultiple: false,
-      selectedIds: []
-    });
+  const handleDeleteChecklist = async (id: string, title: string) => {
+    setChecklistToDelete({ id, title });
   };
 
-  const handleBulkDelete = (ids: string[]) => {
-    setDeleteDialog({
-      open: true,
-      checklistId: "",
-      checklistTitle: `${ids.length} checklists selecionados`,
-      isMultiple: true,
-      selectedIds: ids
-    });
-  };
+  const confirmDeleteChecklist = async () => {
+    if (!checklistToDelete) return;
 
-  // Handle status update for multiple checklists
-  const handleBulkStatusChange = async (ids: string[], newStatus: 'active' | 'inactive') => {
-    try {
-      await updateBulkStatus.mutateAsync({ checklistIds: ids, newStatus });
-      return true;
-    } catch (error) {
-      console.error("Error updating status for multiple checklists:", error);
-      throw error;
-    }
-  };
-
-  // Handle delete confirmation
-  const handleConfirmDelete = async () => {
     setIsDeleting(true);
     try {
-      if (deleteDialog.isMultiple) {
-        // Bulk delete
-        for (const id of deleteDialog.selectedIds) {
-          await deleteChecklist.mutateAsync(id);
-        }
-        toast.success(`${deleteDialog.selectedIds.length} checklists excluídos com sucesso`);
-      } else {
-        // Single delete
-        await deleteChecklist.mutateAsync(deleteDialog.checklistId);
-        toast.success("Checklist excluído com sucesso");
+      const { data, error } = await supabase
+        .from("checklists")
+        .delete()
+        .eq("id", checklistToDelete.id);
+
+      if (error) {
+        console.error("Error deleting checklist:", error);
+        toast({
+          variant: "destructive",
+          title: "Erro ao excluir checklist",
+          description: error.message,
+        });
+        return;
       }
-      
-      // Refetch data after deletion
-      await refetch();
-      
-      setDeleteDialog({
-        open: false,
-        checklistId: "",
-        checklistTitle: "",
-        isMultiple: false,
-        selectedIds: []
+
+      toast({
+        title: "Checklist excluído com sucesso!",
+        description: `O checklist "${checklistToDelete.title}" foi excluído.`,
       });
-    } catch (error: any) {
-      console.error("Error deleting checklist(s):", error);
-      toast.error(`Erro ao excluir: ${error.message || "Falha na operação"}`);
+      refetch();
     } finally {
       setIsDeleting(false);
+      setChecklistToDelete(null);
     }
   };
 
-  const handleCreateNew = () => {
-    navigate("/new-checklists/create");
+  const handleSelectChecklist = (id: string, selected: boolean) => {
+    setSelectedChecklists((prev) =>
+      selected
+        ? [...prev, id]
+        : prev.filter((checklistId) => checklistId !== id)
+    );
   };
 
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
+  const handleSelectAllChecklists = (checked: boolean) => {
+    setIsAllSelected(checked);
+    setSelectedChecklists(checked ? checklists.map((c) => c.id) : []);
   };
 
-  // Handle status change for a single checklist
-  const handleStatusChange = async (id: string, newStatus: 'active' | 'inactive') => {
+  const handleBatchUpdateStatus = async (newStatus: "active" | "inactive") => {
+    if (selectedChecklists.length === 0) {
+      toast({
+        title: "Nenhum checklist selecionado",
+        description: "Selecione pelo menos um checklist para alterar o status.",
+      });
+      return;
+    }
+
+    setIsBatchUpdating(true);
     try {
-      await updateStatus.mutateAsync({ checklistId: id, newStatus });
-      return true;
-    } catch (error) {
-      console.error("Error updating checklist status:", error);
-      throw error;
+      await updateBatchChecklistsStatus(selectedChecklists, newStatus);
+      toast({
+        title: "Checklists atualizados com sucesso!",
+        description: `O status dos checklists selecionados foi alterado para "${newStatus}".`,
+      });
+      refetch();
+    } finally {
+      setIsBatchUpdating(false);
+      setSelectedChecklists([]);
+      setIsAllSelected(false);
     }
   };
+
+  const isLoading = loading;
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Checklists</h1>
+      <ChecklistsHeader />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Filtros e Ações</CardTitle>
+          <CardDescription>
+            Use os filtros abaixo para refinar a lista de checklists.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <div className="flex items-center space-x-4">
+            <InputSearch
+              placeholder="Buscar checklists..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            {selectedChecklists.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    Ações em lote ({selectedChecklists.length})
+                    <ChevronsUpDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => handleBatchUpdateStatus("active")}
+                    disabled={isBatchUpdating}
+                  >
+                    Ativar selecionados
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleBatchUpdateStatus("inactive")}
+                    disabled={isBatchUpdating}
+                  >
+                    Desativar selecionados
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Lista de Checklists</CardTitle>
+          <CardDescription>
+            Gerencie seus checklists e acompanhe seu progresso.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="grid gap-4">
+              {[...Array(5)].map((_, i) => (
+                <div
+                  key={i}
+                  className="grid grid-cols-10 items-center gap-4 p-4 rounded-md transition-all border border-slate-200 shadow-sm min-h-[72px]"
+                >
+                  <div className="col-span-1 flex items-center">
+                    <Skeleton className="h-5 w-5 rounded-full" />
+                  </div>
+                  <div className="col-span-4">
+                    <Skeleton className="h-4 w-[250px]" />
+                  </div>
+                  <div className="col-span-2">
+                    <Skeleton className="h-4 w-[100px]" />
+                  </div>
+                  <div className="col-span-1">
+                    <Skeleton className="h-4 w-[50px]" />
+                  </div>
+                  <div className="col-span-1">
+                    <Skeleton className="h-4 w-[50px]" />
+                  </div>
+                  <div className="col-span-2 flex justify-end space-x-1">
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : checklists.length === 0 ? (
+            <div className="text-center p-4">
+              <p className="text-muted-foreground">
+                Nenhum checklist encontrado.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="hidden md:flex items-center p-2 rounded-md bg-muted">
+                <div className="w-12">
+                  <Checkbox
+                    checked={isAllSelected}
+                    onCheckedChange={handleSelectAllChecklists}
+                  />
+                </div>
+                <div className="w-1/4">Título</div>
+                <div className="w-1/4">Empresa</div>
+                <div className="w-1/6">Status</div>
+                <div className="w-1/6">Criado em</div>
+                <div className="w-1/6 text-right">Ações</div>
+              </div>
+              {checklists.map((checklist) => (
+                <ChecklistListItem
+                  key={checklist.id}
+                  checklist={checklist}
+                  onOpen={handleOpenChecklist}
+                  onEdit={handleEditChecklist}
+                  onDelete={handleDeleteChecklist}
+                  isSelected={selectedChecklists.includes(checklist.id)}
+                  onSelect={handleSelectChecklist}
+                />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="flex items-center justify-between">
+        <Select
+          value={perPage.toString()}
+          onValueChange={(value) => setPerPage(Number(value))}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Resultados por página" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="10">10 por página</SelectItem>
+            <SelectItem value="20">20 por página</SelectItem>
+            <SelectItem value="30">30 por página</SelectItem>
+            <SelectItem value="50">50 por página</SelectItem>
+          </SelectContent>
+        </Select>
+        <Pagination>
+          <PaginationContent>
+            <PaginationPrevious
+              href="#"
+              onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+            />
+            {page > 2 && (
+              <PaginationItem>
+                <PaginationLink href="#" onClick={() => setPage(1)}>
+                  1
+                </PaginationLink>
+              </PaginationItem>
+            )}
+            {page > 3 && <PaginationEllipsis />}
+            {page > 1 && (
+              <PaginationItem>
+                <PaginationLink
+                  href="#"
+                  onClick={() => setPage((prev) => prev - 1)}
+                >
+                  {page - 1}
+                </PaginationLink>
+              </PaginationItem>
+            )}
+            <PaginationItem>
+              <PaginationLink href="#" onClick={() => setPage(page)} isCurrent>
+                {page}
+              </PaginationLink>
+            </PaginationItem>
+            {page < Math.ceil(total / perPage) && (
+              <PaginationItem>
+                <PaginationLink
+                  href="#"
+                  onClick={() => setPage((prev) => prev + 1)}
+                >
+                  {page + 1}
+                </PaginationLink>
+              </PaginationItem>
+            )}
+            {page < Math.ceil(total / perPage) - 2 && <PaginationEllipsis />}
+            {page < Math.ceil(total / perPage) - 1 && (
+              <PaginationItem>
+                <PaginationLink
+                  href="#"
+                  onClick={() => setPage(Math.ceil(total / perPage))}
+                >
+                  {Math.ceil(total / perPage)}
+                </PaginationLink>
+              </PaginationItem>
+            )}
+            <PaginationNext
+              href="#"
+              onClick={() =>
+                setPage((prev) =>
+                  Math.min(prev + 1, Math.ceil(total / perPage))
+                )
+              }
+            />
+          </PaginationContent>
+        </Pagination>
       </div>
 
-      <ChecklistFilters 
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        filterType={filterType}
-        setFilterType={setFilterType}
-        selectedCompanyId={selectedCompanyId}
-        setSelectedCompanyId={setSelectedCompanyId}
-        selectedCategory={selectedCategory}
-        setSelectedCategory={setSelectedCategory}
-        selectedOrigin={selectedOrigin}
-        setSelectedOrigin={setSelectedOrigin}
-        sortOrder={sortOrder}
-        setSortOrder={setSortOrder}
-        companies={companies}
-        categories={categories}
-        isLoadingCompanies={isLoadingCompanies}
-        totalChecklists={allChecklists.filter(c => !c.isSubChecklist).length}
-        onCreateNew={handleCreateNew}
-      />
-
-      <ChecklistTabs
-        checklistCounts={checklistCounts}
-        allChecklists={checklists}
-        isLoading={isLoading}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onOpen={handleOpenChecklist}
-        onStatusChange={refetch}
-        onBulkDelete={handleBulkDelete}
-        onBulkStatusChange={handleBulkStatusChange}
-        onTabChange={handleTabChange}
-        activeTab={activeTab}
-        onChecklistStatusChange={handleStatusChange}
-      />
-
       <DeleteChecklistDialog
-        checklistId={deleteDialog.checklistId}
-        checklistTitle={deleteDialog.checklistTitle}
-        isOpen={deleteDialog.open}
-        onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
-        onDeleted={handleConfirmDelete}
+        checklistId={checklistToDelete?.id || ""}
+        checklistTitle={checklistToDelete?.title || ""}
+        isOpen={!!checklistToDelete}
+        onOpenChange={(open: boolean) =>
+          open ? null : setChecklistToDelete(null)
+        }
+        onDeleted={confirmDeleteChecklist}
         isDeleting={isDeleting}
       />
-      
-      <FloatingNavigation threshold={300} />
     </div>
+  );
+}
+
+// Make sure DeleteChecklistDialog component accepts the isDeleting prop
+export function DeleteChecklistDialog({
+  checklistId,
+  checklistTitle,
+  isOpen,
+  onOpenChange,
+  onDeleted,
+  isDeleting
+}: DeleteChecklistDialogProps) {
+  return (
+    <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
+      <AlertDialogTrigger asChild>
+        {/* You might not need a trigger here, the dialog can be opened directly */}
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Tem certeza que deseja excluir o checklist "
+            {checklistTitle}
+            "? Esta ação não pode ser desfeita.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogAction disabled={isDeleting} onClick={onDeleted}>
+            {isDeleting ? (
+              <>
+                Excluindo... <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+              </>
+            ) : (
+              "Excluir"
+            )}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { formatDate } from '@/utils/format';
 import { ChecklistWithStats } from '@/types/newChecklist';

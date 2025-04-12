@@ -88,12 +88,12 @@ export function AIChecklistCreator({
     }
 
     try {
-      // Create the payload for the checklist
+      // Create the payload for the checklist with proper naming
       const checklistPayload: NewChecklistPayload = {
         title: form.title || form.category || "Novo Checklist",
         description: form.description || `Gerado por IA: ${prompt}`,
         category: form.category,
-        isTemplate: form.is_template || false,
+        is_template: form.is_template || false,
         company_id: form.company_id
       };
       

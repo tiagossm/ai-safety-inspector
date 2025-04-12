@@ -1,146 +1,72 @@
-
-import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { NewChecklistPayload } from '@/types/newChecklist';
-
-// Update AIAssistantType to include all possible values
-export type AIAssistantType = 'general' | 'workplace-safety' | 'compliance' | 'quality' | 'openai' | 'claude' | 'gemini';
-
-interface GenerateResult {
-  success: boolean;
-  checklistData?: any;
-  questions?: any[];
-  groups?: any[];
-  error?: string;
-}
+import { useState } from "react";
+import { toast } from "sonner";
+import { AIAssistantType } from "@/types/AIAssistantType";
+import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
+import { supabase } from "@/integrations/supabase/client";
 
 export function useChecklistAI() {
-  const [prompt, setPrompt] = useState('');
-  const [questionCount, setQuestionCount] = useState(10);
-  const [selectedAssistant, setSelectedAssistant] = useState<AIAssistantType>('general');
-  const [openAIAssistant, setOpenAIAssistant] = useState<string>('');
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [prompt, setPrompt] = useState<string>("");
+  const [questionCount, setQuestionCount] = useState<number>(5);
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [selectedAssistant, setSelectedAssistant] = useState<AIAssistantType | null>(null);
+  const [openAIAssistant, setOpenAIAssistant] = useState<string | null>(null);
 
-  const generateChecklist = async (checklistData: NewChecklistPayload): Promise<GenerateResult> => {
+  const generateChecklist = async (checklistData: NewChecklistPayload) => {
     setIsGenerating(true);
+    
+    if (!checklistData.category) {
+      toast.error("Category is required");
+      setIsGenerating(false);
+      return { success: false, error: "Category is required" };
+    }
 
+    if (!checklistData.company_id) {
+      console.error("Company ID is required");
+      return { success: false, error: "Company ID is required" };
+    }
+    
     try {
-      if (!prompt.trim()) {
-        toast.error("É necessário fornecer um prompt para gerar o checklist");
-        return { success: false, error: "Prompt vazio" };
-      }
-
-      if (!checklistData.company_id && !checklistData.companyId) {
-        toast.error("É necessário selecionar uma empresa");
-        return { success: false, error: "Empresa não selecionada" };
-      }
-
-      if (!openAIAssistant) {
-        toast.error("É necessário selecionar um assistente de IA");
-        return { success: false, error: "Assistente não selecionado" };
-      }
-
-      console.log(`Generating checklist with ${questionCount} questions`);
-      
-      // Validate the assistant exists first (prevent 500 error)
-      const { data: assistantsData, error: assistantsError } = await supabase.functions.invoke('list-assistants', {});
-      
-      if (assistantsError) {
-        console.error("Erro ao listar assistentes:", assistantsError);
-        toast.error(`Erro ao verificar assistentes: ${assistantsError.message}`);
-        return {
-          success: false,
-          error: assistantsError.message,
-          checklistData,
-          questions: [],
-          groups: []
-        };
-      }
-      
-      // Check if the selected assistant exists in the list
-      const assistantExists = assistantsData?.assistants?.some((assistant: any) => assistant.id === openAIAssistant);
-      
-      if (!assistantExists) {
-        console.error("Assistente não encontrado:", openAIAssistant);
-        toast.error("O assistente selecionado não foi encontrado. Por favor, selecione outro assistente.");
-        return {
-          success: false,
-          error: "Assistente não encontrado",
-          checklistData,
-          questions: [],
-          groups: []
-        };
-      }
-
-      // Ensure company_id is set
-      const enhancedChecklistData = {
-        ...checklistData,
-        company_id: checklistData.company_id || checklistData.companyId,
-        status: 'active',
-        created_by: 'ai',
-        origin: 'ia', // Set the origin to 'ia' for AI-generated checklists
-        description: checklistData.description || `Checklist gerado por IA com o prompt: ${prompt.slice(0, 100)}...`
+      const requestBody: any = {
+        title: checklistData.title,
+        description: checklistData.description,
+        category: checklistData.category,
+        companyId: checklistData.company_id, // Using correct property name but maintain naming in API call
+        questionCount: questionCount,
+        prompt: prompt
       };
-
-      const { data, error } = await supabase.functions.invoke('generate-checklist', {
-        body: {
-          prompt,
-          questionCount,
-          checklistData: enhancedChecklistData,
-          assistantId: openAIAssistant
-        }
+      
+      if (openAIAssistant) {
+        requestBody.assistantId = openAIAssistant;
+      }
+      
+      const { data, error } = await supabase.functions.invoke('generate-checklist-v2', {
+        body: requestBody
       });
 
       if (error) {
-        console.error("Erro na função Edge:", error);
-        toast.error(`Erro ao gerar checklist: ${error.message}`);
-        return {
-          success: false,
-          error: error.message,
-          checklistData,
-          questions: [],
-          groups: []
-        };
+        console.error("Error in AI generation:", error);
+        toast.error(`Erro na geração por IA: ${error.message}`);
+        setIsGenerating(false);
+        return { success: false, error: error.message };
       }
 
       if (!data || !data.success) {
-        const fallbackError = data?.error || "Erro desconhecido ao gerar o checklist";
-        console.error("Erro na resposta:", fallbackError);
-        toast.error(fallbackError);
-        return {
-          success: false,
-          error: fallbackError,
-          checklistData: data?.checklistData || checklistData,
-          questions: data?.questions || [],
-          groups: data?.groups || []
-        };
+        console.error("AI generation failed:", data);
+        toast.error(data?.error || 'Failed to generate checklist');
+        setIsGenerating(false);
+        return { success: false, error: data?.error || 'Failed to generate checklist' };
       }
-
-      toast.success("Checklist gerado com sucesso!");
-      return {
-        success: true,
-        checklistData: {
-          ...enhancedChecklistData,
-          title: data.checklistData.title || checklistData.title,
-          description: data.checklistData.description || enhancedChecklistData.description,
-          origin: 'ia'
-        },
-        questions: data.questions || [],
-        groups: data.groups || []
-      };
-    } catch (error: any) {
-      console.error("Erro inesperado:", error);
-      toast.error(`Erro ao gerar checklist: ${error.message || "Erro desconhecido"}`);
-      return {
-        success: false,
-        error: error.message,
-        checklistData,
-        questions: [],
-        groups: []
-      };
-    } finally {
+      
+      const questions: ChecklistQuestion[] = data.questions || [];
+      const groups: ChecklistGroup[] = data.groups || [];
+      
       setIsGenerating(false);
+      return { success: true, questions, groups, checklistData };
+    } catch (error: any) {
+      console.error('Error in AI generation:', error);
+      toast.error(`Erro na geração por IA: ${error.message}`);
+      setIsGenerating(false);
+      return { success: false, error: error.message };
     }
   };
 
@@ -149,11 +75,11 @@ export function useChecklistAI() {
     setPrompt,
     questionCount,
     setQuestionCount,
+    isGenerating,
     selectedAssistant,
     setSelectedAssistant,
     openAIAssistant,
     setOpenAIAssistant,
-    isGenerating,
     generateChecklist
   };
 }
