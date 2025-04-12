@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { ChecklistWithStats } from "@/types/newChecklist";
 import {
@@ -7,7 +8,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Building2, MoreHorizontal, Archive, Check } from "lucide-react";
+import { Building2, MoreHorizontal, Archive, Check, User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +19,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChecklistOriginBadge } from "./ChecklistOriginBadge";
@@ -102,12 +102,12 @@ export function ChecklistRow({
           className={`${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
         />
       </TableCell>
-      <TableCell className="font-medium min-h-[56px] flex items-center gap-2 py-3">
-        <ChecklistOriginBadge origin={(checklist.origin || "manual") as "manual" | "ia" | "csv"} showLabel={false} />
+
+      <TableCell className="font-medium py-3">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span className="truncate max-w-[250px]">{checklist.title}</span>
+              <span className="truncate max-w-[250px] block">{checklist.title}</span>
             </TooltipTrigger>
             <TooltipContent>
               <p>{checklist.title}</p>
@@ -115,11 +115,16 @@ export function ChecklistRow({
           </Tooltip>
         </TooltipProvider>
       </TableCell>
+
+      <TableCell>
+        <ChecklistOriginBadge origin={(checklist.origin || "manual") as "manual" | "ia" | "csv"} />
+      </TableCell>
+
       <TableCell>
         {companyLoading ? (
           <Skeleton className="h-4 w-24" />
         ) : companyName ? (
-          <div className="flex items-center gap-1 truncate max-w-[200px]">
+          <div className="flex items-center gap-1 truncate max-w-[150px]">
             <Building2 className="h-4 w-4 text-muted-foreground" />
             <TooltipProvider>
               <Tooltip>
@@ -136,12 +141,22 @@ export function ChecklistRow({
           <span className="text-muted-foreground italic">Sem empresa</span>
         )}
       </TableCell>
+
+      <TableCell>
+        <div className="flex items-center gap-1 truncate max-w-[150px]">
+          <User className="h-4 w-4 text-muted-foreground" />
+          <span>{checklist.createdByName || "Usuário do sistema"}</span>
+        </div>
+      </TableCell>
+
       <TableCell>
         {checklist.category ? (
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="truncate max-w-[150px] inline-block">{checklist.category}</span>
+                <Badge variant="outline" className="truncate max-w-[150px] inline-block">
+                  {checklist.category}
+                </Badge>
               </TooltipTrigger>
               <TooltipContent>
                 <p>{checklist.category}</p>
@@ -152,6 +167,7 @@ export function ChecklistRow({
           <span className="text-muted-foreground italic">-</span>
         )}
       </TableCell>
+
       <TableCell>
         <div 
           className="flex items-center gap-3" 
@@ -209,9 +225,11 @@ export function ChecklistRow({
           )}
         </div>
       </TableCell>
+
       <TableCell>
         {checklist.createdAt && format(new Date(checklist.createdAt), "dd MMM yyyy", { locale: ptBR })}
       </TableCell>
+
       <TableCell className="text-right">
         <DropdownMenu>
           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>

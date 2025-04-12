@@ -18,6 +18,7 @@ export interface ChecklistWithStats {
   completedQuestions?: number;
   companyName?: string;
   responsibleName?: string;
+  createdByName?: string;
   questions?: ChecklistQuestion[];
   groups?: ChecklistGroup[];
 }

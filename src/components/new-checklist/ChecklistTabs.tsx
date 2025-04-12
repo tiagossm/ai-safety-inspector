@@ -4,8 +4,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ChecklistGrid } from "./ChecklistGrid";
 import { ChecklistList } from "./ChecklistList";
 import { Button } from "@/components/ui/button";
-import { List, Grid } from "lucide-react";
+import { Grid, List } from "lucide-react";
 import { ChecklistWithStats } from "@/types/newChecklist";
+import {
+  ToggleGroup,
+  ToggleGroupItem
+} from "@/components/ui/toggle-group";
 
 interface ChecklistTabsProps {
   checklistCounts: {
@@ -44,11 +48,24 @@ export function ChecklistTabs({
   onChecklistStatusChange
 }: ChecklistTabsProps) {
   const [viewMode, setViewMode] = React.useState<"grid" | "list">("grid");
+  
+  // Load view mode preference from localStorage on mount
+  React.useEffect(() => {
+    const savedViewMode = localStorage.getItem('checklist-view-mode');
+    if (savedViewMode === 'list' || savedViewMode === 'grid') {
+      setViewMode(savedViewMode);
+    }
+  }, []);
 
   // Save tab preference to localStorage
   React.useEffect(() => {
     localStorage.setItem('checklist-active-tab', activeTab);
   }, [activeTab]);
+
+  // Save view mode preference to localStorage
+  React.useEffect(() => {
+    localStorage.setItem('checklist-view-mode', viewMode);
+  }, [viewMode]);
 
   return (
     <div className="space-y-4">
@@ -67,24 +84,19 @@ export function ChecklistTabs({
           </TabsList>
         </Tabs>
         
-        <div className="flex items-center border rounded-md ml-4">
-          <Button
-            variant={viewMode === "grid" ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => setViewMode("grid")}
-            className="rounded-r-none"
-          >
+        <ToggleGroup
+          type="single"
+          value={viewMode}
+          onValueChange={(value) => value && setViewMode(value as "grid" | "list")}
+          className="border rounded-md ml-4"
+        >
+          <ToggleGroupItem value="grid" aria-label="Visualização em grid">
             <Grid className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={viewMode === "list" ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => setViewMode("list")}
-            className="rounded-l-none"
-          >
+          </ToggleGroupItem>
+          <ToggleGroupItem value="list" aria-label="Visualização em lista">
             <List className="h-4 w-4" />
-          </Button>
-        </div>
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
 
       {viewMode === "grid" ? (
