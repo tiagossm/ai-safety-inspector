@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from "react";
 import { ChecklistWithStats } from "@/types/newChecklist";
 import {

@@ -125,8 +125,9 @@ export default function NewChecklists() {
     }
   };
 
-  const handleBatchUpdateStatus = async (newStatus: "active" | "inactive") => {
-    if (selectedChecklists.length === 0) {
+  // Fix: Updated to take ids as first parameter and newStatus as second parameter
+  const handleBatchUpdateStatus = async (ids: string[], newStatus: "active" | "inactive") => {
+    if (ids.length === 0) {
       toast({
         title: "Nenhum checklist selecionado",
         description: "Selecione pelo menos um checklist para alterar o status.",
@@ -136,11 +137,11 @@ export default function NewChecklists() {
 
     setIsBatchUpdating(true);
     try {
-      await updateBatchChecklistsStatus(selectedChecklists, newStatus);
+      await updateBatchChecklistsStatus(ids, newStatus);
       refetch();
       toast({
         title: "Status atualizado",
-        description: `${selectedChecklists.length} checklists foram atualizados para ${newStatus === "active" ? "ativo" : "inativo"}.`,
+        description: `${ids.length} checklists foram atualizados para ${newStatus === "active" ? "ativo" : "inativo"}.`,
       });
     } finally {
       setIsBatchUpdating(false);
@@ -183,7 +184,7 @@ export default function NewChecklists() {
         search={search}
         setSearch={setSearch}
         selectedChecklists={selectedChecklists}
-        onBatchUpdateStatus={handleBatchUpdateStatus}
+        onBatchUpdateStatus={(newStatus) => handleBatchUpdateStatus(selectedChecklists, newStatus)}
         isBatchUpdating={isBatchUpdating}
         sortColumn={sortColumn}
         setSortColumn={setSortColumn}
