@@ -2,8 +2,6 @@
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -34,7 +32,7 @@ export function DeleteChecklistDialog({
     
     try {
       await onDeleted();
-      // O diálogo será fechado após a conclusão bem-sucedida
+      // O diálogo será fechado pelo componente pai após a conclusão bem-sucedida
     } catch (error) {
       console.error("Erro ao excluir checklist:", error);
       // Mantém o diálogo aberto em caso de erro para permitir nova tentativa
@@ -56,7 +54,13 @@ export function DeleteChecklistDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+          <Button 
+            variant="outline" 
+            onClick={() => !isDeleting && onOpenChange(false)}
+            disabled={isDeleting}
+          >
+            Cancelar
+          </Button>
           <Button 
             variant="destructive" 
             onClick={handleDelete}

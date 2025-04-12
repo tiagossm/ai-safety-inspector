@@ -4,8 +4,8 @@ import { ChecklistWithStats } from "@/types/newChecklist";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, FileText, Plus } from "lucide-react";
 import { ChecklistCard } from "./ChecklistCard";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { BulkDeleteDialog } from "./BulkDeleteDialog";
+import { useNavigate } from "react-router-dom";
 
 interface ChecklistGridProps {
   checklists: ChecklistWithStats[];
@@ -26,6 +26,7 @@ export function ChecklistGrid({
   onStatusChange,
   onBulkDelete
 }: ChecklistGridProps) {
+  const navigate = useNavigate();
   // State for tracking selected checklists
   const [selectedChecklists, setSelectedChecklists] = useState<string[]>([]);
   const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = useState(false);
@@ -61,6 +62,10 @@ export function ChecklistGrid({
     }
   };
 
+  const handleCreateChecklist = () => {
+    navigate("/new-checklists/create");
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-60">
@@ -80,7 +85,7 @@ export function ChecklistGrid({
         <p className="text-muted-foreground mb-6 max-w-md">
           Não foram encontrados checklists com os filtros atuais. Tente ajustar os filtros ou criar um novo checklist.
         </p>
-        <Button className="gap-2">
+        <Button className="gap-2" onClick={handleCreateChecklist}>
           <Plus className="h-4 w-4" />
           <span>Criar Checklist</span>
         </Button>
@@ -97,8 +102,9 @@ export function ChecklistGrid({
             variant="destructive" 
             size="sm"
             onClick={handleBulkDelete}
+            disabled={isDeleting}
           >
-            Excluir selecionados
+            {isDeleting ? "Excluindo..." : "Excluir selecionados"}
           </Button>
         </div>
       )}

@@ -1,6 +1,5 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 /**
  * Deletes a checklist by ID
@@ -34,83 +33,48 @@ export async function deleteChecklistById(checklistId: string) {
       console.log(`Deleting metadata for ${itemIds.length} items`);
       
       // Delete any comments related to items
-      const { error: commentError } = await supabase
+      await supabase
         .from("checklist_item_comments")
         .delete()
         .in("checklist_item_id", itemIds);
       
-      if (commentError) {
-        console.log("Error deleting item comments:", commentError);
-        // Continue with deletion even if this fails
-      }
-      
       // Delete any media related to items
-      const { error: mediaError } = await supabase
+      await supabase
         .from("checklist_item_media")
         .delete()
         .in("checklist_item_id", itemIds);
-      
-      if (mediaError) {
-        console.log("Error deleting item media:", mediaError);
-        // Continue with deletion even if this fails
-      }
     }
     
     // Delete the items
     console.log("Deleting checklist items");
-    const { error: itemsError } = await supabase
+    await supabase
       .from("checklist_itens")
       .delete()
       .eq("checklist_id", checklistId);
       
-    if (itemsError) {
-      console.error("Error deleting checklist items:", itemsError);
-      // Continue anyway to try to delete the checklist
-    }
-    
     // Delete any checklist permissions
-    const { error: permissionsError } = await supabase
+    await supabase
       .from("checklist_permissions")
       .delete()
       .eq("checklist_id", checklistId);
       
-    if (permissionsError) {
-      console.log("Error deleting checklist permissions:", permissionsError);
-      // Continue with deletion even if this fails
-    }
-    
     // Delete any checklist history
-    const { error: historyError } = await supabase
+    await supabase
       .from("checklist_history")
       .delete()
       .eq("checklist_id", checklistId);
       
-    if (historyError) {
-      console.log("Error deleting checklist history:", historyError);
-      // Continue with deletion even if this fails
-    }
-    
     // Delete any checklist comments
-    const { error: commentsError } = await supabase
+    await supabase
       .from("checklist_comments")
       .delete()
       .eq("checklist_id", checklistId);
       
-    if (commentsError) {
-      console.log("Error deleting checklist comments:", commentsError);
-      // Continue with deletion even if this fails
-    }
-    
     // Delete any checklist attachments
-    const { error: attachmentsError } = await supabase
+    await supabase
       .from("checklist_attachments")
       .delete()
       .eq("checklist_id", checklistId);
-      
-    if (attachmentsError) {
-      console.log("Error deleting checklist attachments:", attachmentsError);
-      // Continue with deletion even if this fails
-    }
     
     // Finally delete the checklist
     console.log("Deleting checklist");
@@ -170,4 +134,34 @@ export async function updateBulkChecklistStatus(checklistIds: string[], newStatu
   }
   
   return { success: true, count: checklistIds.length };
+}
+
+/**
+ * Bulk delete checklists
+ */
+export async function deleteBulkChecklistsById(checklistIds: string[]): Promise<{ success: boolean, count: number, failed?: number }> {
+  if (!checklistIds.length) return { success: true, count: 0 };
+  
+  let successCount = 0;
+  let failCount = 0;
+  
+  // Process each deletion sequentially to avoid overwhelming the server
+  for (const id of checklistIds) {
+    try {
+      await deleteChecklistById(id);
+      successCount++;
+    } catch (err) {
+      console.error(`Failed to delete checklist ${id}:`, err);
+      failCount++;
+    }
+    
+    // Small delay between operations to reduce database load
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  
+  return { 
+    success: successCount > 0, 
+    count: successCount, 
+    failed: failCount 
+  };
 }

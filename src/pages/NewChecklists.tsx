@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -10,7 +11,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChecklistGrid } from "@/components/new-checklist/ChecklistGrid";
 import { ChecklistList } from "@/components/new-checklist/ChecklistList";
 import { useNewChecklists } from "@/hooks/new-checklist/useNewChecklists";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DeleteChecklistDialog } from "@/components/new-checklist/DeleteChecklistDialog";
 
 export default function NewChecklists() {
@@ -66,23 +66,24 @@ export default function NewChecklists() {
     setIsDeleting(true);
     try {
       await deleteChecklist.mutateAsync(checklistToDelete.id);
-      refetch();
+      await refetch();
+      setChecklistToDelete(null);
     } catch (error) {
       console.error("Error deleting checklist:", error);
       toast.error("Erro ao excluir checklist");
     } finally {
       setIsDeleting(false);
-      setChecklistToDelete(null);
     }
     return Promise.resolve();
   };
 
   const handleBulkDelete = async (ids: string[]): Promise<void> => {
-    if (ids.length === 0) return;
+    if (ids.length === 0) return Promise.resolve();
 
     try {
       await deleteBulkChecklists.mutateAsync(ids);
-      refetch();
+      await refetch();
+      setSelectedChecklists([]);
       return Promise.resolve();
     } catch (error) {
       console.error("Error in bulk delete:", error);
@@ -99,7 +100,8 @@ export default function NewChecklists() {
 
     try {
       await updateBulkStatus.mutateAsync({ checklistIds: ids, newStatus });
-      refetch();
+      await refetch();
+      setSelectedChecklists([]);
       toast.success(`${ids.length} checklists atualizados para ${newStatus === "active" ? "ativo" : "inativo"}`);
     } catch (error) {
       console.error("Error updating status in batch:", error);
@@ -195,6 +197,7 @@ export default function NewChecklists() {
             onOpen={handleOpenChecklist}
             onStatusChange={refetch}
             onBulkStatusChange={handleBatchUpdateStatus}
+            onBulkDelete={handleBulkDelete}
           />
         </TabsContent>
         
@@ -217,7 +220,7 @@ export default function NewChecklists() {
         checklistTitle={checklistToDelete?.title || ""}
         isOpen={checklistToDelete !== null}
         onOpenChange={(open) => {
-          if (!open) setChecklistToDelete(null);
+          if (!open && !isDeleting) setChecklistToDelete(null);
         }}
         onDeleted={confirmDeleteChecklist}
         isDeleting={isDeleting}

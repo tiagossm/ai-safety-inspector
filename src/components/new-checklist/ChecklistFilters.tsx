@@ -22,7 +22,6 @@ import {
   RefreshCcw
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Company {
@@ -76,7 +75,6 @@ export function ChecklistFilters({
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     // Count active filters
@@ -226,7 +224,7 @@ export function ChecklistFilters({
             <Select 
               value={selectedCompanyId} 
               onValueChange={setSelectedCompanyId}
-              disabled={loading || companies.length === 0}
+              disabled={companies.length === 0}
             >
               <SelectTrigger className="bg-background">
                 <SelectValue placeholder="Empresa" />
@@ -246,7 +244,7 @@ export function ChecklistFilters({
             <Select 
               value={selectedCategory} 
               onValueChange={setSelectedCategory}
-              disabled={loading || categories.length === 0}
+              disabled={categories.length === 0}
             >
               <SelectTrigger className="bg-background">
                 <SelectValue placeholder="Categoria" />
