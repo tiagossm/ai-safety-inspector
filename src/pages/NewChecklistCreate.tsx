@@ -151,10 +151,10 @@ export default function NewChecklistCreate() {
         return;
       }
       
-      const processedChecklist = {
+      const processedChecklist: NewChecklistPayload = {
         ...checklist,
-        status_checklist: (checklist.status === "active" ? "ativo" : "inativo") as "ativo" | "inativo",
-        origin: (activeTab === "manual" ? "manual" : activeTab === "ai" ? "ia" : "csv") as "manual" | "ia" | "csv"
+        status_checklist: checklist.status === "active" ? "ativo" : "inativo",
+        origin: (activeTab === "manual" ? "manual" : activeTab === "ai" ? "ia" : "csv") 
       };
       
       const result = await createChecklist.mutateAsync({
@@ -193,10 +193,10 @@ export default function NewChecklistCreate() {
     try {
       setIsSubmitting(true);
       
-      const typedChecklist = {
+      const typedChecklist: NewChecklistPayload = {
         ...checklist,
-        status_checklist: (checklist.status === "active" ? "ativo" : "inativo") as "ativo" | "inativo",
-        origin: "ia" as "manual" | "ia" | "csv"
+        status_checklist: checklist.status === "active" ? "ativo" : "inativo",
+        origin: "ia" 
       };
       
       const result = await generateChecklist(typedChecklist);

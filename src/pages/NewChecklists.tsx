@@ -508,7 +508,7 @@ export default function NewChecklists() {
             <PaginationItem>
               <PaginationLink
                 href="#"
-                onClick={(e) => {
+                onClick={(e: React.MouseEvent) => {
                   e.preventDefault();
                 }}
                 isActive
