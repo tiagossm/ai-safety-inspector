@@ -33,7 +33,7 @@ interface ChecklistsContainerProps {
   onDeleteDialogChange: (open: boolean) => void;
   onBulkDeleteDialogChange: (open: boolean) => void;
   onConfirmDelete: () => void;
-  onConfirmBulkDelete: () => void;
+  onConfirmBulkDelete: () => Promise<void>; // Changed return type to Promise<void>
 }
 
 export function ChecklistsContainer({

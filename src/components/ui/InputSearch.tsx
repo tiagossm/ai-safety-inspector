@@ -6,9 +6,10 @@ interface InputSearchProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  className?: string; // Added className prop
 }
 
-export function InputSearch({ value, onChange, placeholder = "Search..." }: InputSearchProps) {
+export function InputSearch({ value, onChange, placeholder = "Search...", className }: InputSearchProps) {
   return (
     <div className="relative">
       <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -17,7 +18,7 @@ export function InputSearch({ value, onChange, placeholder = "Search..." }: Inpu
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="pl-8"
+        className={`pl-8 ${className}`}
       />
     </div>
   );

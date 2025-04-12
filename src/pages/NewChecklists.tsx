@@ -100,7 +100,7 @@ export default function NewChecklists() {
     setIsBulkDeleteDialogOpen(true);
   };
 
-  const confirmBulkDelete = async () => {
+  const confirmBulkDelete = async (): Promise<void> => {
     if (selectedChecklists.length === 0) return;
 
     setIsDeleting(true);
