@@ -1,6 +1,7 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Checklist } from "@types/checklist";
+import { Checklist } from "@/types/checklist";
 
 // ✅ Valida se o ID é um UUID
 function isValidUUID(id: string | null | undefined): boolean {
@@ -25,7 +26,7 @@ export function useFetchChecklistData(id: string) {
           .from("checklists")
           .select(`
             *,
-            users:user_id ( full_name )
+            users:user_id ( name )
           `)
           .eq("id", id)
           .single();
@@ -34,7 +35,8 @@ export function useFetchChecklistData(id: string) {
           throw new Error("Checklist não encontrado.");
         }
 
-        const typedChecklistData = checklistData as {
+        // Perform type assertion with unknown as intermediate step
+        const typedChecklistData = checklistData as unknown as {
           id: string;
           title: string;
           description?: string;
@@ -48,7 +50,7 @@ export function useFetchChecklistData(id: string) {
           status?: string;
           status_checklist?: string;
           responsible_id?: string;
-          users?: { full_name: string };
+          users?: { name: string } | null;
           [key: string]: any;
         };
 
@@ -128,13 +130,13 @@ export function useFetchChecklistData(id: string) {
         if (isValidUUID(responsibleId)) {
           const { data: userData } = await supabase
             .from("users")
-            .select("full_name")
+            .select("name")
             .eq("id", responsibleId)
             .single();
-          responsibleName = userData?.full_name || "Usuário desconhecido";
+          responsibleName = userData?.name || "Usuário desconhecido";
         }
 
-        const createdByName = typedChecklistData.users?.full_name || "Desconhecido";
+        const createdByName = typedChecklistData.users?.name || "Desconhecido";
 
         return {
           id: typedChecklistData.id,
