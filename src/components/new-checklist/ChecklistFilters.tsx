@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import {
@@ -40,6 +39,16 @@ interface ChecklistFiltersProps {
   setSortColumn: (column: string) => void;
   sort: "asc" | "desc";
   setSort: (sort: "asc" | "desc") => void;
+  selectedCompanyId: string;
+  setSelectedCompanyId: (id: string) => void;
+  selectedCategory: string;
+  setSelectedCategory: (category: string) => void;
+  selectedOrigin: string;
+  setSelectedOrigin: (origin: string) => void;
+  companies: any[];
+  categories: string[];
+  filterType: string;
+  setFilterType: (type: string) => void;
 }
 
 export function ChecklistFilters({
@@ -52,22 +61,25 @@ export function ChecklistFilters({
   setSortColumn,
   sort,
   setSort,
+  selectedCompanyId,
+  setSelectedCompanyId,
+  selectedCategory,
+  setSelectedCategory,
+  selectedOrigin,
+  setSelectedOrigin,
+  companies,
+  categories,
+  filterType,
+  setFilterType
 }: ChecklistFiltersProps) {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [selectedCompanyId, setSelectedCompanyId] = useState("all");
   const [selectedStatus, setSelectedStatus] = useState("all");
-  const [selectedOrigin, setSelectedOrigin] = useState("all");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [categories, setCategories] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [activeFiltersCount, setActiveFiltersCount] = useState(0);
 
-  // Fetch companies and categories for filters
   useEffect(() => {
     const fetchFilterData = async () => {
       setIsLoading(true);
       try {
-        // Fetch companies
         const { data: companiesData, error: companiesError } = await supabase
           .from("companies")
           .select("id, fantasy_name")
@@ -76,7 +88,6 @@ export function ChecklistFilters({
         if (companiesError) throw companiesError;
         setCompanies(companiesData || []);
         
-        // Fetch distinct categories
         const { data: categoriesData, error: categoriesError } = await supabase
           .from("checklists")
           .select("category")
@@ -84,7 +95,6 @@ export function ChecklistFilters({
         
         if (categoriesError) throw categoriesError;
         
-        // Extract unique categories
         const uniqueCategories = Array.from(
           new Set(categoriesData?.map(item => item.category).filter(Boolean))
         );
@@ -100,14 +110,12 @@ export function ChecklistFilters({
     fetchFilterData();
   }, []);
 
-  // Function to set sort order and column
   const handleSortChange = (value: string) => {
     const [column, direction] = value.split("_");
     setSortColumn(column);
     setSort(direction as "asc" | "desc");
   };
 
-  // Function to reset all filters
   const resetFilters = () => {
     setSearch("");
     setSelectedCompanyId("all");
@@ -117,15 +125,6 @@ export function ChecklistFilters({
     setSortColumn("title");
     setSort("asc");
   };
-
-  // Count active filters
-  const activeFiltersCount = [
-    selectedCompanyId !== "all",
-    selectedStatus !== "all",
-    selectedOrigin !== "all",
-    selectedCategory !== "all",
-    search.trim().length > 0
-  ].filter(Boolean).length;
 
   return (
     <Card className="border-muted bg-card">

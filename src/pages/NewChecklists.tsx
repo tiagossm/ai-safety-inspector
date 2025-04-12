@@ -1,11 +1,10 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ChecklistsContainer } from "@/components/new-checklist/ChecklistsContainer";
 import { ChecklistFilters } from "@/components/new-checklist/ChecklistFilters";
 import { Button } from "@/components/ui/button";
-import { Plus, Grid, List, BarChart2 } from "lucide-react";
+import { Plus, Grid, List, BarChart2, FileText } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChecklistGrid } from "@/components/new-checklist/ChecklistGrid";
@@ -40,7 +39,6 @@ export default function NewChecklists() {
     refetch
   } = useNewChecklists();
   
-  // State
   const [selectedChecklists, setSelectedChecklists] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [checklistToDelete, setChecklistToDelete] = useState<{
@@ -50,13 +48,11 @@ export default function NewChecklists() {
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list" | "analytics">("grid");
 
-  // Event handlers
   const handleOpenChecklist = (id: string) => {
     navigate(`/new-checklists/${id}`);
   };
 
   const handleEditChecklist = (id: string) => {
-    // Corrigindo a navegação para a página de edição
     navigate(`/new-checklists/${id}/edit`);
   };
 
@@ -70,7 +66,7 @@ export default function NewChecklists() {
     setIsDeleting(true);
     try {
       await deleteChecklist.mutateAsync(checklistToDelete.id);
-      refetch(); // Atualiza a lista após excluir
+      refetch();
     } catch (error) {
       console.error("Error deleting checklist:", error);
       toast.error("Erro ao excluir checklist");
@@ -86,7 +82,7 @@ export default function NewChecklists() {
 
     try {
       await deleteBulkChecklists.mutateAsync(ids);
-      refetch(); // Atualiza a lista após excluir
+      refetch();
       return Promise.resolve();
     } catch (error) {
       console.error("Error in bulk delete:", error);
@@ -216,7 +212,6 @@ export default function NewChecklists() {
         </TabsContent>
       </Tabs>
       
-      {/* Diálogo de exclusão individual */}
       <DeleteChecklistDialog 
         checklistId={checklistToDelete?.id || ""}
         checklistTitle={checklistToDelete?.title || ""}

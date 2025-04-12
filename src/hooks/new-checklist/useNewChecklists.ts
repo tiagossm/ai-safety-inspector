@@ -27,7 +27,13 @@ export function useNewChecklists() {
   const { companies, isLoadingCompanies } = useCompanyQueries();
   
   // Get mutations
-  const { deleteChecklist, updateStatus, updateBulkStatus, refetch } = useChecklistMutations();
+  const { 
+    deleteChecklist, 
+    updateStatus, 
+    updateBulkStatus, 
+    deleteBulkChecklists, // Ensure this is exposed
+    refetch 
+  } = useChecklistMutations();
   
   // Apply filters
   const {
@@ -90,6 +96,7 @@ export function useNewChecklists() {
     deleteChecklist,
     updateStatus,
     updateBulkStatus,
+    deleteBulkChecklists, // Make sure to expose this
     refetch
   };
 }

@@ -23,7 +23,7 @@ interface ChecklistTabsProps {
   onDelete: (id: string, title: string) => void;
   onOpen: (id: string) => void;
   onStatusChange: () => void;
-  onBulkDelete: (ids: string[]) => void;
+  onBulkDelete: (ids: string[]) => Promise<void>; // Fixed return type to Promise<void>
   onBulkStatusChange: (ids: string[], newStatus: 'active' | 'inactive') => Promise<void>;
   onTabChange: (tab: string) => void;
   activeTab: string;

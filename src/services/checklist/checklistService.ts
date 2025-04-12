@@ -75,7 +75,7 @@ export async function fetchCompanies() {
   const { data, error } = await supabase
     .from("companies")
     .select("id, fantasy_name")
-    .eq("status", "active") // Garantindo que apenas empresas ativas sejam retornadas
+    .eq("status", "active") // This ensures we only get active companies
     .order("fantasy_name", { ascending: true });
 
   if (error) {
