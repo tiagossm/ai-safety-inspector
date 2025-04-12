@@ -1,4 +1,3 @@
-
 import {
   Home,
   Building2,
@@ -6,7 +5,6 @@ import {
   HelpCircle,
   LogOut,
   User,
-  Plus,
   LayoutDashboard,
   ClipboardCheck,
   FileCheck,
@@ -93,20 +91,6 @@ export function SidebarMenu({ user, onLogout }: SidebarMenuProps) {
             >
               <ClipboardCheck className="mr-2 h-4 w-4" />
               Checklists
-            </Link>
-          </li>
-          
-          <li>
-            <Link
-              to="/new-checklists"
-              className={cn(
-                buttonVariants({ variant: "ghost" }),
-                "w-full justify-start",
-                isActive("/new-checklists") && "bg-muted"
-              )}
-            >
-              <FileCheck className="mr-2 h-4 w-4" />
-              Novos Checklists
             </Link>
           </li>
           
