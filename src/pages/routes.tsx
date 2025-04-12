@@ -18,12 +18,14 @@ import NotFound from "./NotFound";
 
 // Export the routes as an array instead of a component
 export const checklistRoutes = [
+  // Legacy routes are kept for reference but will be redirected in App.tsx
   <Route key="checklists" path="/checklists" element={<RequireAuth><Checklists /></RequireAuth>} />,
   <Route key="checklists-id" path="/checklists/:id" element={<RequireAuth><ChecklistDetails /></RequireAuth>} />,
   <Route key="checklists-editor" path="/checklists/editor" element={<RequireAuth><ChecklistEditorPage /></RequireAuth>} />,
   <Route key="checklists-editor-id" path="/checklists/editor/:id" element={<RequireAuth><ChecklistEditorPage /></RequireAuth>} />,
   <Route key="create-checklist" path="/create-checklist" element={<RequireAuth><CreateChecklist /></RequireAuth>} />,
   
+  // New routes
   <Route key="new-checklists" path="/new-checklists" element={<RequireAuth><NewChecklists /></RequireAuth>} />,
   <Route key="new-checklists-create" path="/new-checklists/create" element={<RequireAuth><NewChecklistCreate /></RequireAuth>} />,
   <Route key="new-checklists-edit" path="/new-checklists/:id/edit" element={<RequireAuth><NewChecklistEdit /></RequireAuth>} />,

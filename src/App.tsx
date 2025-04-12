@@ -38,12 +38,12 @@ function App() {
             <Route path="employees" element={<Employees />} />
             <Route path="users" element={<Users />} />
             
-            {/* Legacy Checklist routes */}
-            <Route path="checklists" element={<NewChecklists />} />
-            <Route path="checklists/:id" element={<ChecklistDetails />} />
-            <Route path="checklists/editor" element={<ChecklistEditorPage />} />
-            <Route path="checklists/editor/:id" element={<ChecklistEditorPage />} />
-            <Route path="create-checklist" element={<CreateChecklist />} />
+            {/* Legacy Checklist routes - Redirect to the new routes */}
+            <Route path="checklists" element={<Navigate to="/new-checklists" replace />} />
+            <Route path="checklists/editor" element={<Navigate to="/new-checklists/create" replace />} />
+            <Route path="checklists/editor/:id" element={<Navigate to="/new-checklists/:id/edit" replace />} />
+            <Route path="checklists/:id" element={<Navigate to="/new-checklists/:id" replace />} />
+            <Route path="create-checklist" element={<Navigate to="/new-checklists/create" replace />} />
             
             {/* New Checklist routes */}
             <Route path="new-checklists" element={<NewChecklists />} />
