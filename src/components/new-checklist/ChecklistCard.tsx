@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -84,7 +85,7 @@ export function ChecklistCard({
             <Checkbox
               id={`select-${checklist.id}`}
               checked={isSelected}
-              onCheckedChange={(checked) => onSelect(checklist.id, checked)}
+              onCheckedChange={(checked) => onSelect(checklist.id, !!checked)}
             />
           )}
           <Label htmlFor={`select-${checklist.id}`} className="text-lg font-semibold">
@@ -124,7 +125,7 @@ export function ChecklistCard({
           </div>
           <ChecklistCardBadges checklist={checklist} />
           <div className="flex items-center justify-between">
-            <Badge variant="secondary">
+            <Badge variant={checklist.status === "active" ? "success" : "secondary"}>
               {checklist.status === "active" ? "Ativo" : "Inativo"}
             </Badge>
             <Switch

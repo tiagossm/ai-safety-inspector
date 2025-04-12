@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -132,3 +133,6 @@ export function AIAssistantSelector({
     </div>
   );
 }
+
+// Export AIAssistantType to avoid import errors
+export type { AIAssistantType };

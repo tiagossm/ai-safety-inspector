@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -82,7 +83,9 @@ import { Switch } from "@/components/ui/switch";
 import { useForm } from "react-hook-form";
 import { cn } from "@/lib/utils";
 import { ChecklistWithStats } from "@/types/newChecklist";
-import { useChecklists } from "@/hooks/new-checklist/useChecklists";
+// Import useChecklists from the new-checklist directory
+// Comment out the import to avoid duplication
+// import { useChecklists } from "@/hooks/new-checklist/useChecklists";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Command,
@@ -123,13 +126,13 @@ interface UseChecklistsReturn {
 }
 
 // Implement a basic hook for NewChecklists while we wait for the actual useChecklists hook
-const useChecklists = ({ search, page, perPage, sort, sortColumn }: {
+function useLocalChecklists({ search, page, perPage, sort, sortColumn }: {
   search: string;
   page: number;
   perPage: number;
   sort: "asc" | "desc";
   sortColumn: string;
-}): UseChecklistsReturn => {
+}): UseChecklistsReturn {
   const [checklists, setChecklists] = useState<ChecklistWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -182,7 +185,7 @@ const useChecklists = ({ search, page, perPage, sort, sortColumn }: {
 
       setChecklists(transformedData);
       setTotal(count || 0);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error fetching checklists:", err);
       setError(err.message || "Error fetching checklists");
       toast.error("Erro ao carregar checklists");
@@ -192,7 +195,7 @@ const useChecklists = ({ search, page, perPage, sort, sortColumn }: {
   };
 
   // Call fetchChecklists when the component mounts or when dependencies change
-  React.useEffect(() => {
+  useEffect(() => {
     fetchChecklists();
   }, [search, page, perPage, sort, sortColumn]);
 
@@ -203,7 +206,7 @@ const useChecklists = ({ search, page, perPage, sort, sortColumn }: {
     refetch: fetchChecklists,
     total
   };
-};
+}
 
 const updateBatchChecklistsStatus = async (ids: string[], newStatus: "active" | "inactive"): Promise<void> => {
   try {
@@ -229,7 +232,7 @@ export default function NewChecklists() {
   const navigate = useNavigate();
   const [selectedChecklists, setSelectedChecklists] = useState<string[]>([]);
   const [isAllSelected, setIsAllSelected] = useState(false);
-  const [isBatchUpdating, setIsBatchUpdating] = useState(isBatchUpdating);
+  const [isBatchUpdating, setIsBatchUpdating] = useState(false);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -248,7 +251,7 @@ export default function NewChecklists() {
     error,
     total,
     refetch,
-  } = useChecklists({
+  } = useLocalChecklists({
     search,
     page,
     perPage,
@@ -478,11 +481,20 @@ export default function NewChecklists() {
           <PaginationContent>
             <PaginationPrevious
               href="#"
-              onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+              onClick={(e) => {
+                e.preventDefault();
+                setPage((prev) => Math.max(prev - 1, 1));
+              }}
             />
             {page > 2 && (
               <PaginationItem>
-                <PaginationLink href="#" onClick={() => setPage(1)}>
+                <PaginationLink 
+                  href="#" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setPage(1);
+                  }}
+                >
                   1
                 </PaginationLink>
               </PaginationItem>
@@ -492,7 +504,10 @@ export default function NewChecklists() {
               <PaginationItem>
                 <PaginationLink
                   href="#"
-                  onClick={() => setPage((prev) => prev - 1)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setPage((prev) => prev - 1);
+                  }}
                 >
                   {page - 1}
                 </PaginationLink>
@@ -501,7 +516,10 @@ export default function NewChecklists() {
             <PaginationItem>
               <PaginationLink
                 href="#"
-                onClick={() => setPage(page)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setPage(page);
+                }}
                 isActive
               >
                 {page}
@@ -511,7 +529,10 @@ export default function NewChecklists() {
               <PaginationItem>
                 <PaginationLink
                   href="#"
-                  onClick={() => setPage((prev) => prev + 1)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setPage((prev) => prev + 1);
+                  }}
                 >
                   {page + 1}
                 </PaginationLink>
@@ -522,7 +543,10 @@ export default function NewChecklists() {
               <PaginationItem>
                 <PaginationLink
                   href="#"
-                  onClick={() => setPage(Math.ceil(total / perPage))}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setPage(Math.ceil(total / perPage));
+                  }}
                 >
                   {Math.ceil(total / perPage)}
                 </PaginationLink>
@@ -530,11 +554,12 @@ export default function NewChecklists() {
             )}
             <PaginationNext
               href="#"
-              onClick={() =>
+              onClick={(e) => {
+                e.preventDefault();
                 setPage((prev) =>
                   Math.min(prev + 1, Math.ceil(total / perPage))
-                )
-              }
+                );
+              }}
             />
           </PaginationContent>
         </Pagination>

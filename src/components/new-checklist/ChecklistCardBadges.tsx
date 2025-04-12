@@ -1,86 +1,72 @@
 
+import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { File, Bot, Upload, Check, X } from "lucide-react";
-
-type Origin = "manual" | "ia" | "csv";
+import { ChecklistWithStats } from "@/types/newChecklist";
+import { PencilRuler, Copy, Bookmark, Users } from "lucide-react";
 
 interface ChecklistCardBadgesProps {
-  isTemplate?: boolean;
-  status?: string;
-  origin?: string;
+  checklist: ChecklistWithStats;
 }
 
-export function ChecklistCardBadges({ isTemplate, status, origin }: ChecklistCardBadgesProps) {
-  const getOriginBadge = () => {
-    // Map string origin to allowed Origin type
-    let safeOrigin: Origin = "manual";
-    
-    if (origin === "ia") {
-      safeOrigin = "ia";
-    } else if (origin === "csv") {
-      safeOrigin = "csv";
-    }
-    
-    switch (safeOrigin) {
-      case "manual":
-        return (
-          <Badge variant="outline" className="bg-slate-100">
-            <File className="h-3 w-3 mr-1" />
-            Manual
-          </Badge>
-        );
-      case "ia":
-        return (
-          <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-300">
-            <Bot className="h-3 w-3 mr-1" />
-            IA
-          </Badge>
-        );
-      case "csv":
-        return (
-          <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
-            <Upload className="h-3 w-3 mr-1" />
-            CSV
-          </Badge>
-        );
-      default:
-        return null;
-    }
-  };
-
-  const getStatusBadge = () => {
-    if (isTemplate) {
-      return (
-        <Badge variant="secondary">
-          Template
+export function ChecklistCardBadges({ checklist }: ChecklistCardBadgesProps) {
+  return (
+    <div className="flex flex-wrap gap-2 my-2">
+      {checklist.isTemplate && (
+        <Badge variant="outline" className="flex items-center gap-1">
+          <Copy className="h-3 w-3" />
+          <span>Template</span>
         </Badge>
-      );
-    }
+      )}
 
-    const badgeProps =
-      status === "active"
-        ? {
-          variant: "default" as "default",
-          className: "bg-green-100 text-green-800 border-green-300",
-          text: "Ativo",
-        }
-        : {
-          variant: "outline" as "outline",
-          className: "bg-gray-100 text-gray-600 border-gray-300",
-          text: "Inativo",
-        };
+      {checklist.category && (
+        <Badge variant="outline" className="flex items-center gap-1">
+          <Bookmark className="h-3 w-3" />
+          <span>{checklist.category}</span>
+        </Badge>
+      )}
 
-    return (
-      <Badge variant={badgeProps.variant} className={badgeProps.className}>
-        {badgeProps.text}
-      </Badge>
-    );
-  };
+      {checklist.responsibleId && (
+        <Badge variant="outline" className="flex items-center gap-1">
+          <Users className="h-3 w-3" />
+          <span>Responsável atribuído</span>
+        </Badge>
+      )}
+
+      {checklist.origin && (
+        <OriginBadge origin={checklist.origin as "manual" | "ia" | "csv"} />
+      )}
+    </div>
+  );
+}
+
+function OriginBadge({ origin }: { origin: "manual" | "ia" | "csv" }) {
+  let label = "";
+  let icon = null;
+  
+  switch (origin) {
+    case "manual":
+      label = "Criação Manual";
+      icon = <PencilRuler className="h-3 w-3" />;
+      break;
+    case "ia":
+      label = "Gerado por IA";
+      icon = <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M12 2v8m0 4v8M4 12h16M7 5h10M7 19h10" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>;
+      break;
+    case "csv":
+      label = "Importado de CSV";
+      icon = <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M14 3v4a1 1 0 0 0 1 1h4M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M10 13h4m-4 4h4" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>;
+      break;
+  }
 
   return (
-    <div className="flex items-center gap-1">
-      {getOriginBadge()}
-      {getStatusBadge()}
-    </div>
+    <Badge variant="secondary" className="flex items-center gap-1">
+      {icon}
+      <span>{label}</span>
+    </Badge>
   );
 }
