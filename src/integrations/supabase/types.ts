@@ -173,6 +173,13 @@ export type Database = {
             foreignKeyName: "checklist_attachments_checklist_id_fkey"
             columns: ["checklist_id"]
             isOneToOne: false
+            referencedRelation: "checklist_with_creator"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_attachments_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
             referencedRelation: "checklists"
             referencedColumns: ["id"]
           },
@@ -201,6 +208,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "checklist_comments_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_with_creator"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "checklist_comments_checklist_id_fkey"
             columns: ["checklist_id"]
@@ -236,6 +250,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "checklist_history_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_with_creator"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "checklist_history_checklist_id_fkey"
             columns: ["checklist_id"]
@@ -393,6 +414,13 @@ export type Database = {
             foreignKeyName: "checklist_itens_checklist_id_fkey"
             columns: ["checklist_id"]
             isOneToOne: false
+            referencedRelation: "checklist_with_creator"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_itens_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
             referencedRelation: "checklists"
             referencedColumns: ["id"]
           },
@@ -422,6 +450,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "checklist_permissions_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_with_creator"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "checklist_permissions_checklist_id_fkey"
             columns: ["checklist_id"]
@@ -960,6 +995,13 @@ export type Database = {
             foreignKeyName: "fk_inspections_checklist_id"
             columns: ["checklist_id"]
             isOneToOne: false
+            referencedRelation: "checklist_with_creator"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_inspections_checklist_id"
+            columns: ["checklist_id"]
+            isOneToOne: false
             referencedRelation: "checklists"
             referencedColumns: ["id"]
           },
@@ -1470,6 +1512,13 @@ export type Database = {
             foreignKeyName: "user_checklists_checklist_id_fkey"
             columns: ["checklist_id"]
             isOneToOne: false
+            referencedRelation: "checklist_with_creator"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_checklists_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
             referencedRelation: "checklists"
             referencedColumns: ["id"]
           },
@@ -1737,6 +1786,65 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      checklist_with_creator: {
+        Row: {
+          category: string | null
+          company_id: string | null
+          created_at: string | null
+          created_by_name: string | null
+          description: string | null
+          due_date: string | null
+          id: string | null
+          is_sub_checklist: boolean | null
+          is_template: boolean | null
+          origin: string | null
+          parent_question_id: string | null
+          responsible_id: string | null
+          status: string | null
+          status_checklist: string | null
+          title: string | null
+          total_questions: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklists_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "active_companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklists_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklists_responsible_id_fkey"
+            columns: ["responsible_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklists_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_checklists_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
