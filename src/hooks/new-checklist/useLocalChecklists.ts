@@ -37,7 +37,7 @@ export const useLocalChecklists = ({
     try {
       let query = supabase
         .from("checklists")
-        .select("*, companies(fantasy_name), profiles(name)", { count: "exact" });
+        .select("*, companies(fantasy_name), users(name)", { count: "exact" });
 
       if (search) {
         query = query.ilike("title", `%${search}%`);
@@ -68,7 +68,8 @@ export const useLocalChecklists = ({
         updatedAt: item.updated_at,
         responsibleId: item.responsible_id,
         userId: item.user_id,
-        createdByName: item.profiles?.name || "",
+        // Access the creator name directly from users instead of profiles
+        createdByName: item.users?.name || "Usuário do sistema",
         totalQuestions: 0,
         completedQuestions: 0,
         questions: [],
