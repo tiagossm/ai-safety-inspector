@@ -35,9 +35,10 @@ export const useLocalChecklists = ({
   const fetchChecklists = async () => {
     setLoading(true);
     try {
+      // Consulta básica dos checklists sem joins para evitar problemas de relacionamento
       let query = supabase
         .from("checklists")
-        .select("*, companies(fantasy_name), users!user_id(name)", { count: "exact" });
+        .select("*", { count: "exact" });
 
       if (search) {
         query = query.ilike("title", `%${search}%`);
@@ -55,29 +56,70 @@ export const useLocalChecklists = ({
 
       if (error) throw error;
 
-      const transformedData: ChecklistWithStats[] = data.map((item) => ({
-        id: item.id,
-        title: item.title,
-        description: item.description,
-        status: item.status_checklist === "ativo" ? "active" : "inactive",
-        category: item.category,
-        isTemplate: item.is_template,
-        companyId: item.company_id,
-        companyName: item.companies?.fantasy_name || "",
-        createdAt: item.created_at,
-        updatedAt: item.updated_at,
-        responsibleId: item.responsible_id,
-        userId: item.user_id,
-        // Use the users object with explicit foreign key reference
-        createdByName: item.users?.name || "Usuário do sistema",
-        totalQuestions: 0,
-        completedQuestions: 0,
-        questions: [],
-        groups: [],
-        origin: item.origin as "manual" | "ia" | "csv",
-      }));
+      // Processar os checklists e buscar dados relacionados separadamente
+      const processedChecklists = await Promise.all(
+        (data || []).map(async (checklist) => {
+          // Buscar o nome da empresa
+          let companyName = "";
+          if (checklist.company_id) {
+            const { data: companyData } = await supabase
+              .from("companies")
+              .select("fantasy_name")
+              .eq("id", checklist.company_id)
+              .single();
+            companyName = companyData?.fantasy_name || "";
+          }
 
-      setChecklists(transformedData);
+          // Buscar o nome do criador
+          let createdByName = "Usuário do sistema";
+          if (checklist.user_id) {
+            const { data: userData } = await supabase
+              .from("users")
+              .select("name")
+              .eq("id", checklist.user_id)
+              .single();
+            createdByName = userData?.name || "Usuário do sistema";
+          }
+
+          return {
+            id: checklist.id,
+            title: checklist.title,
+            description: checklist.description,
+            status: checklist.status_checklist === "ativo" ? "active" : "inactive",
+            category: checklist.category,
+            isTemplate: checklist.is_template,
+            companyId: checklist.company_id,
+            companyName,
+            createdAt: checklist.created_at,
+            updatedAt: checklist.updated_at,
+            responsibleId: checklist.responsible_id,
+            userId: checklist.user_id,
+            createdByName,
+            totalQuestions: 0, // Será carregado em uma consulta separada
+            completedQuestions: 0,
+            questions: [],
+            groups: [],
+            origin: checklist.origin as "manual" | "ia" | "csv",
+          };
+        })
+      );
+
+      // Para cada checklist, buscar contagem de questões
+      const checklistsWithQuestionCounts = await Promise.all(
+        processedChecklists.map(async (checklist) => {
+          const { count: questionCount } = await supabase
+            .from("checklist_itens")
+            .select("*", { count: "exact", head: true })
+            .eq("checklist_id", checklist.id);
+
+          return {
+            ...checklist,
+            totalQuestions: questionCount || 0
+          };
+        })
+      );
+
+      setChecklists(checklistsWithQuestionCounts);
       setTotal(count || 0);
     } catch (err: any) {
       console.error("Error fetching checklists:", err);

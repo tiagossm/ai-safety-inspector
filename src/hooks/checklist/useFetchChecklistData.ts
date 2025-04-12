@@ -22,12 +22,10 @@ export function useFetchChecklistData(id: string) {
       }
 
       try {
+        // Nova abordagem: Primeiro buscamos o checklist sem relacionamentos
         const { data: checklistData, error: checklistError } = await supabase
           .from("checklists")
-          .select(`
-            *,
-            users:user_id ( name )
-          `)
+          .select("*")
           .eq("id", id)
           .single();
 
@@ -50,9 +48,20 @@ export function useFetchChecklistData(id: string) {
           status?: string;
           status_checklist?: string;
           responsible_id?: string;
-          users?: { name: string } | null;
           [key: string]: any;
         };
+
+        // Buscar as informações do usuário criador em uma consulta separada
+        let createdByName = "Desconhecido";
+        if (typedChecklistData.user_id && isValidUUID(typedChecklistData.user_id)) {
+          const { data: creatorData } = await supabase
+            .from("users")
+            .select("name")
+            .eq("id", typedChecklistData.user_id)
+            .single();
+          
+          createdByName = creatorData?.name || "Usuário desconhecido";
+        }
 
         console.log("Checklist found:", {
           id: typedChecklistData.id,
@@ -135,8 +144,6 @@ export function useFetchChecklistData(id: string) {
             .single();
           responsibleName = userData?.name || "Usuário desconhecido";
         }
-
-        const createdByName = typedChecklistData.users?.name || "Desconhecido";
 
         return {
           id: typedChecklistData.id,

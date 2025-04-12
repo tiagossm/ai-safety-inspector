@@ -17,12 +17,10 @@ export function useFetchChecklists() {
     queryKey: ["checklists-list"],
     queryFn: async () => {
       try {
+        // Nova abordagem: Primeiro buscamos os checklists sem relacionamentos
         const { data: checklistsData, error: checklistsError } = await supabase
           .from("checklists")
-          .select(`
-            *,
-            users:user_id ( name )
-          `)
+          .select("*")
           .order("created_at", { ascending: false });
 
         if (checklistsError) {
@@ -35,21 +33,21 @@ export function useFetchChecklists() {
             const typedChecklistData = checklistData as unknown as {
               id: string;
               title: string;
-              description?: string;
+              description?: string | null;
               category: string;
               is_template: boolean;
               parent_question_id?: string | null;
-              user_id?: string;
-              company_id?: string;
+              user_id?: string | null;
+              company_id?: string | null;
               created_at?: string;
               updated_at?: string;
               status?: string;
               status_checklist?: string;
-              responsible_id?: string;
-              users?: { name: string } | null;
+              responsible_id?: string | null;
               [key: string]: any;
             };
 
+            // Para cada checklist, buscamos separadamente o nome do usuário responsável
             let responsibleName = "Não atribuído";
             const responsibleId = typedChecklistData.responsible_id;
             if (isValidUUID(responsibleId)) {
@@ -61,7 +59,17 @@ export function useFetchChecklists() {
               responsibleName = userData?.name || "Usuário desconhecido";
             }
 
-            const createdByName = typedChecklistData.users?.name || "Desconhecido";
+            // Para cada checklist, buscamos separadamente o nome do criador
+            let createdByName = "Desconhecido";
+            const userId = typedChecklistData.user_id;
+            if (isValidUUID(userId)) {
+              const { data: creatorData } = await supabase
+                .from("users")
+                .select("name")
+                .eq("id", userId)
+                .single();
+              createdByName = creatorData?.name || "Usuário desconhecido";
+            }
 
             // Count checklist items
             const { count: itemsCount, error: countError } = await supabase
