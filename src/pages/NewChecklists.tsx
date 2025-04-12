@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -474,7 +475,7 @@ export default function NewChecklists() {
           <PaginationContent>
             <PaginationPrevious
               href="#"
-              onClick={(e: React.MouseEvent) => {
+              onClick={(e) => {
                 e.preventDefault();
                 setPage((prev) => Math.max(prev - 1, 1));
               }}
