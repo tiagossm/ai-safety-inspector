@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -475,7 +474,7 @@ export default function NewChecklists() {
           <PaginationContent>
             <PaginationPrevious
               href="#"
-              onClick={(e) => {
+              onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
                 e.preventDefault();
                 setPage((prev) => Math.max(prev - 1, 1));
               }}
@@ -484,7 +483,7 @@ export default function NewChecklists() {
               <PaginationItem>
                 <PaginationLink 
                   href="#" 
-                  onClick={(e: React.MouseEvent) => {
+                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
                     e.preventDefault();
                     setPage(1);
                   }}
@@ -498,7 +497,7 @@ export default function NewChecklists() {
               <PaginationItem>
                 <PaginationLink
                   href="#"
-                  onClick={(e: React.MouseEvent) => {
+                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
                     e.preventDefault();
                     setPage((prev) => prev - 1);
                   }}
@@ -510,7 +509,7 @@ export default function NewChecklists() {
             <PaginationItem>
               <PaginationLink
                 href="#"
-                onClick={(e: React.MouseEvent) => {
+                onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
                   e.preventDefault();
                 }}
                 isActive
@@ -522,7 +521,7 @@ export default function NewChecklists() {
               <PaginationItem>
                 <PaginationLink
                   href="#"
-                  onClick={(e: React.MouseEvent) => {
+                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
                     e.preventDefault();
                     setPage((prev) => prev + 1);
                   }}
@@ -536,7 +535,7 @@ export default function NewChecklists() {
               <PaginationItem>
                 <PaginationLink
                   href="#"
-                  onClick={(e: React.MouseEvent) => {
+                  onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
                     e.preventDefault();
                     setPage(Math.ceil(total / perPage));
                   }}
@@ -547,7 +546,7 @@ export default function NewChecklists() {
             )}
             <PaginationNext
               href="#"
-              onClick={(e: React.MouseEvent) => {
+              onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
                 e.preventDefault();
                 setPage((prev) =>
                   Math.min(prev + 1, Math.ceil(total / perPage))
