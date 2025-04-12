@@ -110,15 +110,100 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { ChecklistsHeader } from "@/components/checklists/ChecklistsHeader";
 import { formatDate } from "@/utils/format";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { DeleteChecklistDialog } from "@/components/new-checklist/DeleteChecklistDialog";
 
-interface DeleteChecklistDialogProps {
-  checklistId: string;
-  checklistTitle: string;
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onDeleted: () => Promise<void>;
-  isDeleting: boolean;
+interface UseChecklistsReturn {
+  checklists: ChecklistWithStats[];
+  loading: boolean;
+  error: string;
+  refetch: () => void;
+  total: number;
 }
+
+// Implement a basic hook for NewChecklists while we wait for the actual useChecklists hook
+const useChecklists = ({ search, page, perPage, sort, sortColumn }: {
+  search: string;
+  page: number;
+  perPage: number;
+  sort: "asc" | "desc";
+  sortColumn: string;
+}): UseChecklistsReturn => {
+  const [checklists, setChecklists] = useState<ChecklistWithStats[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [total, setTotal] = useState(0);
+
+  const fetchChecklists = async () => {
+    setLoading(true);
+    try {
+      let query = supabase
+        .from("checklists")
+        .select("*, companies(fantasy_name)", { count: "exact" });
+
+      if (search) {
+        query = query.ilike("title", `%${search}%`);
+      }
+
+      // Add sorting
+      if (sortColumn) {
+        query = query.order(sortColumn, { ascending: sort === "asc" });
+      }
+
+      // Add pagination
+      const from = (page - 1) * perPage;
+      const to = from + perPage - 1;
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
+
+      if (error) throw error;
+
+      // Transform the data to ChecklistWithStats format
+      const transformedData: ChecklistWithStats[] = data.map(item => ({
+        id: item.id,
+        title: item.title,
+        description: item.description,
+        status: item.status_checklist === "ativo" ? "active" : "inactive",
+        category: item.category,
+        isTemplate: item.is_template,
+        companyId: item.company_id,
+        companyName: item.companies?.fantasy_name || "",
+        createdAt: item.created_at,
+        updatedAt: item.updated_at,
+        responsibleId: item.responsible_id,
+        userId: item.user_id,
+        totalQuestions: 0,
+        completedQuestions: 0,
+        questions: [],
+        groups: []
+      }));
+
+      setChecklists(transformedData);
+      setTotal(count || 0);
+    } catch (err) {
+      console.error("Error fetching checklists:", err);
+      setError(err.message || "Error fetching checklists");
+      toast.error("Erro ao carregar checklists");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Call fetchChecklists when the component mounts or when dependencies change
+  React.useEffect(() => {
+    fetchChecklists();
+  }, [search, page, perPage, sort, sortColumn]);
+
+  return {
+    checklists,
+    loading,
+    error,
+    refetch: fetchChecklists,
+    total
+  };
+};
 
 const updateBatchChecklistsStatus = async (ids: string[], newStatus: "active" | "inactive"): Promise<void> => {
   try {
@@ -144,7 +229,7 @@ export default function NewChecklists() {
   const navigate = useNavigate();
   const [selectedChecklists, setSelectedChecklists] = useState<string[]>([]);
   const [isAllSelected, setIsAllSelected] = useState(false);
-  const [isBatchUpdating, setIsBatchUpdating] = useState(false);
+  const [isBatchUpdating, setIsBatchUpdating] = useState(isBatchUpdating);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -414,7 +499,11 @@ export default function NewChecklists() {
               </PaginationItem>
             )}
             <PaginationItem>
-              <PaginationLink href="#" onClick={() => setPage(page)} isActive>
+              <PaginationLink
+                href="#"
+                onClick={() => setPage(page)}
+                isActive
+              >
                 {page}
               </PaginationLink>
             </PaginationItem>
@@ -462,44 +551,5 @@ export default function NewChecklists() {
         isDeleting={isDeleting}
       />
     </div>
-  );
-}
-
-export function DeleteChecklistDialog({
-  checklistId,
-  checklistTitle,
-  isOpen,
-  onOpenChange,
-  onDeleted,
-  isDeleting
-}: DeleteChecklistDialogProps) {
-  return (
-    <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
-      <AlertDialogTrigger asChild>
-        {/* You might not need a trigger here, the dialog can be opened directly */}
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Tem certeza que deseja excluir o checklist "
-            {checklistTitle}
-            "? Esta ação não pode ser desfeita.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <AlertDialogAction disabled={isDeleting} onClick={onDeleted}>
-            {isDeleting ? (
-              <>
-                Excluindo... <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-              </>
-            ) : (
-              "Excluir"
-            )}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
   );
 }

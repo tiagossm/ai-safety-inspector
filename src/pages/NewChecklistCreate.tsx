@@ -23,6 +23,7 @@ import { CSVImportSection } from "@/components/checklists/create-forms/CSVImport
 import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 import { useChecklistCompanies } from "@/hooks/checklist/form/useChecklistCompanies";
+import { NewChecklist } from "@/types/checklist";
 
 export default function NewChecklistCreate() {
   const navigate = useNavigate();
@@ -150,7 +151,7 @@ export default function NewChecklistCreate() {
         return;
       }
       
-      const newChecklistData: NewChecklistPayload = {
+      const newChecklistData: NewChecklist = {
         ...checklist,
         status_checklist: (checklist.status_checklist || "ativo") as "ativo" | "inativo"
       };

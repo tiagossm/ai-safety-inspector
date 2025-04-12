@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useOpenAIAssistants } from "@/hooks/new-checklist/useOpenAIAssistants";
+import { AIAssistantType } from "@/types/AIAssistantType";
 
 interface OpenAIAssistantSelectorProps {
   selectedAssistant: string;
@@ -83,9 +83,6 @@ export function OpenAIAssistantSelector({
   );
 }
 
-// Update the AIAssistantType to be compatible with useChecklistAI.ts
-export type AIAssistantType = 'general' | 'workplace-safety' | 'compliance' | 'quality' | 'openai' | 'claude' | 'gemini';
-
 interface AIAssistantSelectorProps {
   selectedAssistant: AIAssistantType;
   onChange: (type: AIAssistantType) => void;
@@ -112,7 +109,8 @@ export function AIAssistantSelector({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="general">OpenAI - Geral</SelectItem>
-            <SelectItem value="workplace-safety">OpenAI - Segurança do Trabalho</SelectItem>
+            <SelectItem value="safety">OpenAI - Segurança do Trabalho</SelectItem>
+            <SelectItem value="workplace-safety">OpenAI - Segurança no Trabalho</SelectItem>
             <SelectItem value="compliance">OpenAI - Compliance</SelectItem>
             <SelectItem value="quality">OpenAI - Qualidade</SelectItem>
             <SelectItem value="claude" disabled>Claude (Em breve)</SelectItem>
@@ -122,6 +120,7 @@ export function AIAssistantSelector({
       </div>
 
       {(selectedAssistant === 'general' || 
+        selectedAssistant === 'safety' ||
         selectedAssistant === 'workplace-safety' || 
         selectedAssistant === 'compliance' || 
         selectedAssistant === 'quality') && (

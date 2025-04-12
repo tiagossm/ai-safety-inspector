@@ -1,136 +1,141 @@
-
-import { formatDate } from '@/utils/format';
-import { ChecklistWithStats } from '@/types/newChecklist';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { ChecklistCardBadges } from './ChecklistCardBadges';
-import {
-  Calendar,
-  ArrowRight,
-  Edit2,
-  Trash2,
-  User
-} from 'lucide-react';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { supabase } from '@/integrations/supabase/client';
-import { useEffect, useState } from 'react';
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { ChecklistWithStats } from "@/types/newChecklist";
+import { Badge } from "@/components/ui/badge";
+import { ChecklistCardBadges } from "./ChecklistCardBadges";
+import { CalendarDays, FileText, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { CheckIcon, XIcon } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
+import { formatDate } from "@/utils/format";
+import { supabase } from "@/integrations/supabase/client";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 interface ChecklistCardProps {
   checklist: ChecklistWithStats;
-  onEdit?: (id: string) => void;
-  onDelete?: (id: string, title: string) => void;
-  onOpen?: (id: string) => void;
+  onEdit: (id: string) => void;
+  onDelete: (id: string, title: string) => void;
+  onOpen: (id: string) => void;
+  isSelected?: boolean;
+  onSelect?: (id: string, selected: boolean) => void;
+  onStatusChange?: () => void;
 }
 
-export const ChecklistCard = ({ checklist, onEdit, onDelete, onOpen }: ChecklistCardProps) => {
-  const { 
-    id, 
-    title, 
-    isTemplate, 
-    status, 
-    responsibleId, 
-    responsibleName, 
-    createdAt, 
-    dueDate, 
-    totalQuestions, 
-    completedQuestions, 
-    origin 
-  } = checklist;
-
-  const [responsibleNameState, setResponsibleNameState] = useState<string | undefined>(responsibleName);
-
-  useEffect(() => {
-    if (responsibleId && !responsibleName) {
-      // Fetch responsible name if not provided but we have ID
-      supabase
-        .from('users')
-        .select('name')
-        .eq('id', responsibleId)
-        .single()
-        .then(({ data, error }) => {
-          if (!error && data) {
-            setResponsibleNameState(data.name);
-          }
+export function ChecklistCard({
+  checklist,
+  onEdit,
+  onDelete,
+  onOpen,
+  isSelected = false,
+  onSelect,
+  onStatusChange
+}: ChecklistCardProps) {
+  const [isChangingStatus, setIsChangingStatus] = useState(false);
+  const { toast } = useToast();
+  
+  const handleStatusChange = async () => {
+    setIsChangingStatus(true);
+    try {
+      const newStatus = checklist.status === "active" ? "inactive" : "active";
+      
+      const { error } = await supabase
+        .from("checklists")
+        .update({ status: newStatus })
+        .eq("id", checklist.id);
+        
+      if (error) {
+        console.error("Error updating checklist status:", error);
+        toast({
+          variant: "destructive",
+          title: "Erro ao atualizar status",
+          description: error.message,
         });
+        return;
+      }
+      
+      toast({
+        title: "Status atualizado",
+        description: `O checklist agora está ${newStatus === "active" ? "ativo" : "inativo"}.`,
+      });
+      
+      if (onStatusChange) {
+        onStatusChange();
+      }
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao atualizar status",
+        description: "Ocorreu um erro ao atualizar o status do checklist.",
+      });
+    } finally {
+      setIsChangingStatus(false);
     }
-  }, [responsibleId, responsibleName]);
-
-  // Calculate completion percentage
-  const progress = totalQuestions && completedQuestions ? Math.round((completedQuestions / totalQuestions) * 100) : 0;
+  };
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardContent className="flex-1 pt-6">
-        <div className="flex justify-between items-start mb-3">
-          <h3 className="font-medium text-lg">{title}</h3>
-          <ChecklistCardBadges isTemplate={isTemplate} status={status} origin={origin} />
-        </div>
-
-        <div className="space-y-2 mt-2">
-          {responsibleNameState && (
-            <div className="flex items-center text-sm text-muted-foreground">
-              <User className="h-4 w-4 mr-2 text-muted-foreground" />
-              <span>{responsibleNameState}</span>
-            </div>
+    <Card className="group">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <div className="flex items-center space-x-2">
+          {onSelect && (
+            <Checkbox
+              id={`select-${checklist.id}`}
+              checked={isSelected}
+              onCheckedChange={(checked) => onSelect(checklist.id, checked)}
+            />
           )}
-
-          <div className="flex items-center text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4 mr-2 text-muted-foreground" />
-            <span>{formatDate(createdAt || "")}</span>
-            {dueDate && (
-              <Badge variant="outline" className="ml-2 px-1.5 py-0 text-[10px]">
-                Vence: {formatDate(dueDate)}
-              </Badge>
-            )}
+          <Label htmlFor={`select-${checklist.id}`} className="text-lg font-semibold">
+            {checklist.title}
+          </Label>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="h-8 w-8 p-0 opacity-70 group-hover:opacity-100">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onOpen(checklist.id)}>
+              <FileText className="mr-2 h-4 w-4" />
+              Abrir
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onEdit(checklist.id)}>
+              <Pencil className="mr-2 h-4 w-4" />
+              Editar
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onDelete(checklist.id, checklist.title)}>
+              <Trash2 className="mr-2 h-4 w-4" />
+              Excluir
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="space-y-1">
+          <p className="text-sm text-muted-foreground">{checklist.description}</p>
+          <div className="flex items-center space-x-2">
+            <CalendarDays className="h-4 w-4 opacity-70" />
+            <span className="text-xs text-muted-foreground">
+              Criado em {formatDate(checklist.createdAt)}
+            </span>
+          </div>
+          <ChecklistCardBadges checklist={checklist} />
+          <div className="flex items-center justify-between">
+            <Badge variant="secondary">
+              {checklist.status === "active" ? "Ativo" : "Inativo"}
+            </Badge>
+            <Switch
+              id={`status-switch-${checklist.id}`}
+              checked={checklist.status === "active"}
+              onCheckedChange={handleStatusChange}
+              disabled={isChangingStatus}
+            />
           </div>
         </div>
-
-        {totalQuestions > 0 && (
-          <div className="mt-4">
-            <div className="flex justify-between text-xs mb-1">
-              <span>Perguntas</span>
-              <span>
-                {completedQuestions || 0}/{totalQuestions}
-              </span>
-            </div>
-            <Progress value={progress} className="h-1.5" />
-          </div>
-        )}
       </CardContent>
-
-      <CardFooter className="flex gap-2 pt-2">
-        {onEdit && (
-          <Button variant="outline" size="sm" onClick={() => onEdit(id)} className="flex-1">
-            <Edit2 className="h-3.5 w-3.5 mr-1" />
-            Editar
-          </Button>
-        )}
-
-        {onDelete && (
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => onDelete(id, title)} 
-            className="flex-1"
-          >
-            <Trash2 className="h-3.5 w-3.5 mr-1" />
-            Excluir
-          </Button>
-        )}
-
-        {onOpen && (
-          <Button 
-            variant="default" 
-            size="sm"
-            onClick={() => onOpen(id)} 
-            className="flex-1"
-          >
-            <ArrowRight className="h-3.5 w-3.5 mr-1" />
-            Abrir
-          </Button>
-        )}
-      </CardFooter>
     </Card>
   );
-};
+}
