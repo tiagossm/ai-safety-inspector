@@ -47,6 +47,7 @@ import {
   X,
   Search,
   Loader2,
+  ArrowLeft,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
@@ -145,7 +146,7 @@ export default function NewChecklistDetails() {
   }
 
   if (error) {
-    return <div>Erro ao carregar checklist: {error}</div>;
+    return <div>Erro ao carregar checklist: {error.toString()}</div>;
   }
 
   if (!checklist) {

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -83,9 +82,7 @@ import { Switch } from "@/components/ui/switch";
 import { useForm } from "react-hook-form";
 import { cn } from "@/lib/utils";
 import { ChecklistWithStats } from "@/types/newChecklist";
-// Import useChecklists from the new-checklist directory
-// Comment out the import to avoid duplication
-// import { useChecklists } from "@/hooks/new-checklist/useChecklists";
+import { useChecklists } from "@/hooks/new-checklist/useChecklists";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Command,
@@ -125,14 +122,13 @@ interface UseChecklistsReturn {
   total: number;
 }
 
-// Implement a basic hook for NewChecklists while we wait for the actual useChecklists hook
-function useLocalChecklists({ search, page, perPage, sort, sortColumn }: {
+const useLocalChecklists = ({ search, page, perPage, sort, sortColumn }: {
   search: string;
   page: number;
   perPage: number;
   sort: "asc" | "desc";
   sortColumn: string;
-}): UseChecklistsReturn {
+}): UseChecklistsReturn => {
   const [checklists, setChecklists] = useState<ChecklistWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -149,12 +145,10 @@ function useLocalChecklists({ search, page, perPage, sort, sortColumn }: {
         query = query.ilike("title", `%${search}%`);
       }
 
-      // Add sorting
       if (sortColumn) {
         query = query.order(sortColumn, { ascending: sort === "asc" });
       }
 
-      // Add pagination
       const from = (page - 1) * perPage;
       const to = from + perPage - 1;
       query = query.range(from, to);
@@ -163,7 +157,6 @@ function useLocalChecklists({ search, page, perPage, sort, sortColumn }: {
 
       if (error) throw error;
 
-      // Transform the data to ChecklistWithStats format
       const transformedData: ChecklistWithStats[] = data.map(item => ({
         id: item.id,
         title: item.title,
@@ -194,7 +187,6 @@ function useLocalChecklists({ search, page, perPage, sort, sortColumn }: {
     }
   };
 
-  // Call fetchChecklists when the component mounts or when dependencies change
   useEffect(() => {
     fetchChecklists();
   }, [search, page, perPage, sort, sortColumn]);
@@ -206,7 +198,7 @@ function useLocalChecklists({ search, page, perPage, sort, sortColumn }: {
     refetch: fetchChecklists,
     total
   };
-}
+};
 
 const updateBatchChecklistsStatus = async (ids: string[], newStatus: "active" | "inactive"): Promise<void> => {
   try {

@@ -151,9 +151,10 @@ export default function NewChecklistCreate() {
         return;
       }
       
-      const newChecklistData: NewChecklist = {
+      const newChecklistData = {
         ...checklist,
-        status_checklist: (checklist.status_checklist || "ativo") as "ativo" | "inativo"
+        status_checklist: (checklist.status_checklist || "ativo") as "ativo" | "inativo",
+        origin: (checklist.origin || "manual") as "manual" | "ia" | "csv"
       };
       
       const result = await createChecklist.mutateAsync({
