@@ -2,8 +2,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { 
   fetchChecklists, 
-  fetchAllChecklistsData 
-} from "@/services/checklist/checklistQueryService";
+  fetchAllChecklistsData,
+  fetchCompanies 
+} from "@/services/checklist/checklistService";
 import { handleApiError } from "@/utils/errors";
 
 /**
@@ -51,12 +52,32 @@ export function useChecklistQueries(
     },
     staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
+  
+  // Fetch active companies for the filters
+  const {
+    data: companies = [],
+    isLoading: isLoadingCompanies,
+    error: companiesError
+  } = useQuery({
+    queryKey: ["active-companies"],
+    queryFn: async () => {
+      try {
+        return await fetchCompanies();
+      } catch (error) {
+        handleApiError(error, "Erro ao carregar empresas");
+        return [];
+      }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
+  });
 
   return {
     checklists,
     allChecklists,
+    companies,
     isLoading,
-    hasError: !!error || !!allChecklistsError,
+    isLoadingCompanies,
+    hasError: !!error || !!allChecklistsError || !!companiesError,
     refetch
   };
 }

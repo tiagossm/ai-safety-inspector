@@ -27,12 +27,27 @@ export function BulkDeleteDialog({
   isDeleting,
   onConfirmDelete,
 }: BulkDeleteDialogProps) {
-  const handleConfirmDelete = async () => {
-    await onConfirmDelete();
+  const handleConfirmDelete = async (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    
+    try {
+      await onConfirmDelete();
+      // O diálogo será fechado pelo componente pai após a conclusão bem-sucedida
+    } catch (error) {
+      console.error("Erro ao excluir em massa:", error);
+      // Mantém o diálogo aberto em caso de erro para permitir nova tentativa
+    }
   };
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
+    <AlertDialog 
+      open={isOpen} 
+      onOpenChange={(open) => {
+        // Impede o fechamento do diálogo durante a exclusão
+        if (isDeleting && !open) return;
+        onOpenChange(open);
+      }}
+    >
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Excluir checklists selecionados</AlertDialogTitle>

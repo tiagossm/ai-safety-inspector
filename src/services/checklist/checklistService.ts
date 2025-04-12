@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { ChecklistWithStats, Checklist } from "@/types/newChecklist";
+import { ChecklistWithStats } from "@/types/newChecklist";
 
 export async function fetchChecklists(
   filterType: string,
@@ -75,7 +75,7 @@ export async function fetchCompanies() {
   const { data, error } = await supabase
     .from("companies")
     .select("id, fantasy_name")
-    .eq("status", "active")
+    .eq("status", "active") // Garantindo que apenas empresas ativas sejam retornadas
     .order("fantasy_name", { ascending: true });
 
   if (error) {
@@ -86,11 +86,13 @@ export async function fetchCompanies() {
   return data;
 }
 
+// Função explícita para buscar uma empresa pelo ID
 export async function fetchCompanyNameById(companyId: string) {
   const { data, error } = await supabase
     .from('companies')
     .select('fantasy_name')
     .eq('id', companyId)
+    .eq('status', 'active') // Garantindo que apenas empresas ativas sejam retornadas
     .single();
 
   if (error) {
@@ -99,45 +101,6 @@ export async function fetchCompanyNameById(companyId: string) {
   }
 
   return data?.fantasy_name || null;
-}
-
-export async function deleteChecklistById(checklistId: string) {
-  const { error } = await supabase
-    .from("checklists")
-    .delete()
-    .eq("id", checklistId);
-
-  if (error) {
-    throw error;
-  }
-}
-
-export async function updateChecklistStatus(checklistId: string, newStatus: 'active' | 'inactive') {
-  const { error } = await supabase
-    .from('checklists')
-    .update({ 
-      status: newStatus,
-      status_checklist: newStatus === 'active' ? 'ativo' : 'inativo'
-    })
-    .eq('id', checklistId);
-    
-  if (error) {
-    throw error;
-  }
-}
-
-export async function updateBulkChecklistStatus(checklistIds: string[], newStatus: 'active' | 'inactive') {
-  const { error } = await supabase
-    .from('checklists')
-    .update({ 
-      status: newStatus,
-      status_checklist: newStatus === 'active' ? 'ativo' : 'inativo' 
-    })
-    .in('id', checklistIds);
-    
-  if (error) {
-    throw error;
-  }
 }
 
 // Helper functions to transform data

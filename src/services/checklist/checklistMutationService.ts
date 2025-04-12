@@ -33,24 +33,26 @@ export async function deleteChecklistById(checklistId: string) {
     if (itemIds.length > 0) {
       console.log(`Deleting metadata for ${itemIds.length} items`);
       
-      // Delete any comments related to items (if table exists)
-      try {
-        await supabase
-          .from("checklist_item_comments")
-          .delete()
-          .in("checklist_item_id", itemIds);
-      } catch (e) {
-        console.log("No item comments to delete or table doesn't exist");
+      // Delete any comments related to items
+      const { error: commentError } = await supabase
+        .from("checklist_item_comments")
+        .delete()
+        .in("checklist_item_id", itemIds);
+      
+      if (commentError) {
+        console.log("Error deleting item comments:", commentError);
+        // Continue with deletion even if this fails
       }
       
-      // Delete any media related to items (if table exists)
-      try {
-        await supabase
-          .from("checklist_item_media")
-          .delete()
-          .in("checklist_item_id", itemIds);
-      } catch (e) {
-        console.log("No item media to delete or table doesn't exist");
+      // Delete any media related to items
+      const { error: mediaError } = await supabase
+        .from("checklist_item_media")
+        .delete()
+        .in("checklist_item_id", itemIds);
+      
+      if (mediaError) {
+        console.log("Error deleting item media:", mediaError);
+        // Continue with deletion even if this fails
       }
     }
     
@@ -66,14 +68,48 @@ export async function deleteChecklistById(checklistId: string) {
       // Continue anyway to try to delete the checklist
     }
     
-    // Delete any checklist permissions (if table exists)
-    try {
-      await supabase
-        .from("checklist_permissions")
-        .delete()
-        .eq("checklist_id", checklistId);
-    } catch (e) {
-      console.log("No permissions to delete or table doesn't exist");
+    // Delete any checklist permissions
+    const { error: permissionsError } = await supabase
+      .from("checklist_permissions")
+      .delete()
+      .eq("checklist_id", checklistId);
+      
+    if (permissionsError) {
+      console.log("Error deleting checklist permissions:", permissionsError);
+      // Continue with deletion even if this fails
+    }
+    
+    // Delete any checklist history
+    const { error: historyError } = await supabase
+      .from("checklist_history")
+      .delete()
+      .eq("checklist_id", checklistId);
+      
+    if (historyError) {
+      console.log("Error deleting checklist history:", historyError);
+      // Continue with deletion even if this fails
+    }
+    
+    // Delete any checklist comments
+    const { error: commentsError } = await supabase
+      .from("checklist_comments")
+      .delete()
+      .eq("checklist_id", checklistId);
+      
+    if (commentsError) {
+      console.log("Error deleting checklist comments:", commentsError);
+      // Continue with deletion even if this fails
+    }
+    
+    // Delete any checklist attachments
+    const { error: attachmentsError } = await supabase
+      .from("checklist_attachments")
+      .delete()
+      .eq("checklist_id", checklistId);
+      
+    if (attachmentsError) {
+      console.log("Error deleting checklist attachments:", attachmentsError);
+      // Continue with deletion even if this fails
     }
     
     // Finally delete the checklist

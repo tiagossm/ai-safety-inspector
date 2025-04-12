@@ -1,12 +1,11 @@
 
 import React, { useState } from "react";
 import { ChecklistWithStats } from "@/types/newChecklist";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, FileText, Plus } from "lucide-react";
 import { ChecklistCard } from "./ChecklistCard";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogAction, AlertDialogCancel } from "@/components/ui/alert-dialog";
+import { BulkDeleteDialog } from "./BulkDeleteDialog";
 
 interface ChecklistGridProps {
   checklists: ChecklistWithStats[];
@@ -15,7 +14,7 @@ interface ChecklistGridProps {
   onDelete: (id: string, title: string) => void;
   onOpen: (id: string) => void;
   onStatusChange: () => void;
-  onBulkDelete?: (ids: string[]) => void;
+  onBulkDelete?: (ids: string[]) => Promise<void>;
 }
 
 export function ChecklistGrid({
@@ -30,6 +29,7 @@ export function ChecklistGrid({
   // State for tracking selected checklists
   const [selectedChecklists, setSelectedChecklists] = useState<string[]>([]);
   const [isBulkDeleteConfirmOpen, setIsBulkDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleSelect = (id: string, selected: boolean) => {
     setSelectedChecklists(prev => 
@@ -37,12 +37,28 @@ export function ChecklistGrid({
     );
   };
 
+  const handleBulkDelete = () => {
+    if (selectedChecklists.length > 0) {
+      setIsBulkDeleteConfirmOpen(true);
+    }
+  };
+
   const handleConfirmBulkDelete = async () => {
-    if (selectedChecklists.length > 0 && onBulkDelete) {
+    if (!selectedChecklists.length || !onBulkDelete) {
+      setIsBulkDeleteConfirmOpen(false);
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
       await onBulkDelete(selectedChecklists);
       setSelectedChecklists([]);
+    } catch (error) {
+      console.error("Error during bulk delete:", error);
+    } finally {
+      setIsDeleting(false);
+      setIsBulkDeleteConfirmOpen(false);
     }
-    setIsBulkDeleteConfirmOpen(false);
   };
 
   if (isLoading) {
@@ -76,11 +92,11 @@ export function ChecklistGrid({
     <div>
       {selectedChecklists.length > 0 && (
         <div className="mb-4 p-3 bg-muted rounded-md flex items-center justify-between">
-          <span>{selectedChecklists.length} checklists selecionados</span>
+          <span className="text-sm">{selectedChecklists.length} checklists selecionados</span>
           <Button 
             variant="destructive" 
             size="sm"
-            onClick={() => setIsBulkDeleteConfirmOpen(true)}
+            onClick={handleBulkDelete}
           >
             Excluir selecionados
           </Button>
@@ -102,29 +118,13 @@ export function ChecklistGrid({
         ))}
       </div>
 
-      <AlertDialog 
-        open={isBulkDeleteConfirmOpen}
+      <BulkDeleteDialog 
+        isOpen={isBulkDeleteConfirmOpen}
         onOpenChange={setIsBulkDeleteConfirmOpen}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir checklists selecionados</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir {selectedChecklists.length} checklists?
-              Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive hover:bg-destructive/90"
-              onClick={handleConfirmBulkDelete}
-            >
-              Confirmar exclusão
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        selectedCount={selectedChecklists.length}
+        isDeleting={isDeleting}
+        onConfirmDelete={handleConfirmBulkDelete}
+      />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -28,19 +29,21 @@ export function DeleteChecklistDialog({
   onDeleted,
   isDeleting
 }: DeleteChecklistDialogProps) {
-  const handleDelete = async () => {
+  const handleDelete = async (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    
     try {
       await onDeleted();
-      onOpenChange(false);
+      // O diálogo será fechado após a conclusão bem-sucedida
     } catch (error) {
-      console.error("Error deleting checklist:", error);
-      // Keep dialog open on error so user can try again
+      console.error("Erro ao excluir checklist:", error);
+      // Mantém o diálogo aberto em caso de erro para permitir nova tentativa
     }
   };
 
   return (
     <AlertDialog open={isOpen} onOpenChange={(open) => {
-      // Prevent closing while deletion is in progress
+      // Impede o fechamento do diálogo durante a exclusão
       if (isDeleting && !open) return;
       onOpenChange(open);
     }}>
