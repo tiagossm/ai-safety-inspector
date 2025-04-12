@@ -510,7 +510,6 @@ export default function NewChecklists() {
                 href="#"
                 onClick={(e) => {
                   e.preventDefault();
-                  setPage(page);
                 }}
                 isActive
               >

@@ -1,4 +1,3 @@
-
 import {
   Select,
   SelectContent,
@@ -152,9 +151,9 @@ export default function NewChecklistCreate() {
         return;
       }
       
-      const processedChecklist: NewChecklist = {
+      const processedChecklist = {
         ...checklist,
-        status_checklist: (checklist.status_checklist || "ativo") as "ativo" | "inativo",
+        status_checklist: (checklist.status === "active" ? "ativo" : "inativo") as "ativo" | "inativo",
         origin: (activeTab === "manual" ? "manual" : activeTab === "ai" ? "ia" : "csv") as "manual" | "ia" | "csv"
       };
       
@@ -194,9 +193,9 @@ export default function NewChecklistCreate() {
     try {
       setIsSubmitting(true);
       
-      const typedChecklist: NewChecklist = {
+      const typedChecklist = {
         ...checklist,
-        status_checklist: (checklist.status_checklist || "ativo") as "ativo" | "inativo",
+        status_checklist: (checklist.status === "active" ? "ativo" : "inativo") as "ativo" | "inativo",
         origin: "ia" as "manual" | "ia" | "csv"
       };
       

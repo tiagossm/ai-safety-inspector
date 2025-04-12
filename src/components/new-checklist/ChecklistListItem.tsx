@@ -57,6 +57,7 @@ export const ChecklistListItem = ({
   return (
     <div className={`grid grid-cols-10 items-center gap-4 p-4 rounded-md transition-all border border-slate-200 shadow-sm min-h-[72px]
       ${isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
+      onClick={() => onOpen(checklist.id)}
     >
       <div className="col-span-1 flex items-center">
         <Checkbox
