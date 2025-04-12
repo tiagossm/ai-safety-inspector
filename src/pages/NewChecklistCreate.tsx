@@ -193,7 +193,13 @@ export default function NewChecklistCreate() {
     try {
       setIsSubmitting(true);
       
-      const result = await generateChecklist(checklist);
+      const typedChecklist = {
+        ...checklist,
+        status_checklist: (checklist.status_checklist || "ativo") as "ativo" | "inativo",
+        origin: (checklist.origin || "ia") as "manual" | "ia" | "csv"
+      };
+      
+      const result = await generateChecklist(typedChecklist);
       
       if (result.success && result.questions && result.groups) {
         setChecklist(prev => ({
