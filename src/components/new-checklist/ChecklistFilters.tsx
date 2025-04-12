@@ -18,10 +18,12 @@ import {
   Filter,
   SlidersHorizontal, 
   Check, 
-  X 
+  X,
+  RefreshCcw
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Company {
   id: string;
@@ -126,8 +128,8 @@ export function ChecklistFilters({
   ].filter(Boolean).length;
 
   return (
-    <Card className="border-muted bg-muted/10">
-      <CardContent className="p-4 space-y-4">
+    <Card className="border-muted bg-card">
+      <CardContent className="p-3">
         <div className="flex flex-col lg:flex-row gap-3">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -144,7 +146,7 @@ export function ChecklistFilters({
               value={`${sortColumn}_${sort}`} 
               onValueChange={handleSortChange}
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[180px] bg-background">
                 <SelectValue placeholder="Ordenar por" />
               </SelectTrigger>
               <SelectContent>
@@ -186,34 +188,51 @@ export function ChecklistFilters({
             </Button>
             
             {selectedChecklists.length > 0 && (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  title="Ativar selecionados"
-                  disabled={isBatchUpdating}
-                  onClick={() => onBatchUpdateStatus("active")}
-                >
-                  <Check className="h-4 w-4 text-green-500" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  title="Desativar selecionados"
-                  disabled={isBatchUpdating}
-                  onClick={() => onBatchUpdateStatus("inactive")}
-                >
-                  <X className="h-4 w-4 text-red-500" />
-                </Button>
-              </div>
+              <TooltipProvider>
+                <div className="flex items-center gap-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        disabled={isBatchUpdating}
+                        onClick={() => onBatchUpdateStatus("active")}
+                        className="bg-background text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700"
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Ativar {selectedChecklists.length} selecionados</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        disabled={isBatchUpdating}
+                        onClick={() => onBatchUpdateStatus("inactive")}
+                        className="bg-background text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Desativar {selectedChecklists.length} selecionados</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </TooltipProvider>
             )}
           </div>
         </div>
 
         {showAdvancedFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-3 border-t">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-3 border-t mt-3">
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-background">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -231,7 +250,7 @@ export function ChecklistFilters({
               onValueChange={setSelectedCompanyId}
               disabled={isLoading || companies.length === 0}
             >
-              <SelectTrigger>
+              <SelectTrigger className="bg-background">
                 <SelectValue placeholder="Empresa" />
               </SelectTrigger>
               <SelectContent>
@@ -251,7 +270,7 @@ export function ChecklistFilters({
               onValueChange={setSelectedCategory}
               disabled={isLoading || categories.length === 0}
             >
-              <SelectTrigger>
+              <SelectTrigger className="bg-background">
                 <SelectValue placeholder="Categoria" />
               </SelectTrigger>
               <SelectContent>
@@ -267,7 +286,7 @@ export function ChecklistFilters({
             </Select>
             
             <Select value={selectedOrigin} onValueChange={setSelectedOrigin}>
-              <SelectTrigger>
+              <SelectTrigger className="bg-background">
                 <SelectValue placeholder="Origem" />
               </SelectTrigger>
               <SelectContent>
@@ -285,8 +304,9 @@ export function ChecklistFilters({
                 <Button 
                   variant="ghost" 
                   onClick={resetFilters}
-                  className="text-muted-foreground"
+                  className="text-muted-foreground flex items-center gap-2"
                 >
+                  <RefreshCcw className="h-3.5 w-3.5" />
                   Limpar filtros
                 </Button>
               </div>

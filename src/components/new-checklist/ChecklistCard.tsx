@@ -1,7 +1,6 @@
 
 import React, { useState } from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { ChecklistWithStats } from "@/types/newChecklist";
 import { Badge } from "@/components/ui/badge";
@@ -9,12 +8,13 @@ import {
   CalendarDays, 
   Pencil, 
   Trash2, 
-  MoreVertical, 
-  CheckCircle, 
-  XCircle,
+  MoreVertical,
+  ExternalLink,
   Building2,
   FileText,
-  User
+  User,
+  CheckSquare,
+  XSquare
 } from "lucide-react";
 import { 
   DropdownMenu, 
@@ -23,8 +23,6 @@ import {
   DropdownMenuTrigger, 
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatDate } from "@/utils/format";
 import { supabase } from "@/integrations/supabase/client";
@@ -97,138 +95,115 @@ export function ChecklistCard({
   };
 
   const isActiveStatus = checklist.status === "active";
+  const statusIcon = isActiveStatus ? 
+    <CheckSquare className="h-4 w-4 text-emerald-600" /> : 
+    <XSquare className="h-4 w-4 text-amber-500" />;
   
   return (
     <TooltipProvider>
-      <Card className={`transition-all hover:shadow-md ${isSelected ? 'border-primary bg-primary/5' : 'hover:bg-accent/20'}`}>
-        <CardContent className="p-5 space-y-4">
-          <div className="flex items-start gap-2">
-            {onSelect && (
-              <Checkbox 
-                checked={isSelected}
-                onCheckedChange={(checked) => onSelect(checklist.id, checked === true)}
-                onClick={(e) => e.stopPropagation()}
-                className="mt-1"
-              />
-            )}
-            
-            <div className="flex-1 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <h3 
-                  className="font-medium text-base truncate cursor-pointer hover:text-primary"
-                  onClick={() => onOpen(checklist.id)}
-                >
-                  {checklist.title}
-                </h3>
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-[180px]">
-                    <DropdownMenuItem onClick={() => onOpen(checklist.id)}>
-                      <FileText className="mr-2 h-4 w-4" />
-                      <span>Ver detalhes</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => onEdit(checklist.id)}>
-                      <Pencil className="mr-2 h-4 w-4" />
-                      <span>Editar</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleStatusChange} disabled={isChangingStatus}>
-                      {isActiveStatus ? (
-                        <>
-                          <XCircle className="mr-2 h-4 w-4 text-amber-500" />
-                          <span>Desativar</span>
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                          <span>Ativar</span>
-                        </>
-                      )}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      className="text-destructive focus:text-destructive"
-                      onClick={() => onDelete(checklist.id, checklist.title)}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      <span>Excluir</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+      <Card 
+        className={`transition-all hover:border-primary cursor-pointer group ${isSelected ? 'border-primary bg-primary/5' : 'hover:bg-accent/10'}`}
+        onClick={() => onOpen(checklist.id)}
+      >
+        <CardContent className="p-5 pt-5">
+          <div className="flex justify-between items-start mb-2.5">
+            <div className="flex flex-wrap gap-1.5">
+              <Badge variant={isActiveStatus ? "default" : "secondary"} className="capitalize">
+                {statusIcon}
+                <span className="ml-1">{isActiveStatus ? "Ativo" : "Inativo"}</span>
+              </Badge>
               
-              <div className="flex flex-wrap gap-1.5">
-                <Badge variant={checklist.isTemplate ? "outline" : isActiveStatus ? "default" : "secondary"}>
-                  {checklist.isTemplate ? "Template" : isActiveStatus ? "Ativo" : "Inativo"}
+              {checklist.isTemplate && (
+                <Badge variant="outline" className="border-purple-200 text-purple-700 bg-purple-50">
+                  Template
                 </Badge>
-                
-                {checklist.category && (
-                  <Badge variant="outline" className="text-xs">
-                    {checklist.category}
-                  </Badge>
-                )}
-                
-                {originValue && <ChecklistOriginBadge origin={originValue} />}
-              </div>
+              )}
+              
+              {checklist.category && (
+                <Badge variant="outline" className="text-xs">
+                  {checklist.category}
+                </Badge>
+              )}
+              
+              {originValue && <ChecklistOriginBadge origin={originValue} />}
             </div>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[180px]">
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(checklist.id); }}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  <span>Editar</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange(e); }} disabled={isChangingStatus}>
+                  {isActiveStatus ? (
+                    <>
+                      <XSquare className="mr-2 h-4 w-4 text-amber-500" />
+                      <span>Desativar</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckSquare className="mr-2 h-4 w-4 text-emerald-600" />
+                      <span>Ativar</span>
+                    </>
+                  )}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  className="text-destructive focus:text-destructive"
+                  onClick={(e) => { e.stopPropagation(); onDelete(checklist.id, checklist.title); }}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  <span>Excluir</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           
-          <div className="space-y-2 text-sm text-muted-foreground">
-            {checklist.description && (
-              <p className="line-clamp-2">
-                {checklist.description}
-              </p>
+          <h3 className="font-medium text-base line-clamp-2 mb-2 group-hover:text-primary transition-colors">
+            {checklist.title}
+          </h3>
+          
+          {checklist.description && (
+            <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+              {checklist.description}
+            </p>
+          )}
+          
+          <div className="grid grid-cols-2 gap-y-2 text-sm text-muted-foreground">
+            {checklist.companyName && (
+              <div className="flex items-center gap-2 col-span-2 mb-1">
+                <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="truncate font-medium" title={checklist.companyName}>{checklist.companyName}</span>
+              </div>
             )}
             
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center gap-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Data de criação</p>
-                  </TooltipContent>
-                </Tooltip>
-                <span>{formatDate(checklist.createdAt || "")}</span>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <User className="h-3.5 w-3.5 text-muted-foreground" />
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Criado por</p>
-                  </TooltipContent>
-                </Tooltip>
-                <span className="truncate">{checklist.createdByName || "Sistema"}</span>
-              </div>
-              
-              {checklist.companyName && (
-                <div className="flex items-center gap-2 col-span-2">
-                  <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="truncate">{checklist.companyName}</span>
-                </div>
-              )}
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+              <span>{formatDate(checklist.createdAt || "")}</span>
+            </div>
+            
+            <div className="flex items-center gap-2 justify-end">
+              <span className="text-xs font-medium bg-muted px-2 py-0.5 rounded">
+                {checklist.totalQuestions || 0} {(checklist.totalQuestions === 1) ? 'item' : 'itens'}
+              </span>
             </div>
           </div>
         </CardContent>
         
-        <CardFooter className="pt-0 px-5 pb-4 flex justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-muted-foreground">Itens:</span>
-              <span className="text-xs">{checklist.totalQuestions || 0}</span>
-            </div>
-          </div>
-          
-          <Button variant="ghost" size="sm" onClick={() => onOpen(checklist.id)}>
-            Abrir
+        <CardFooter className="p-0 border-t">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            className="h-9 rounded-none w-full justify-center hover:bg-muted group-hover:text-primary font-medium transition-colors"
+            onClick={(e) => { e.stopPropagation(); onOpen(checklist.id); }}
+          >
+            <span>Abrir</span>
+            <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
           </Button>
         </CardFooter>
       </Card>

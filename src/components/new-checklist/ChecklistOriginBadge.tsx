@@ -19,21 +19,21 @@ export function ChecklistOriginBadge({ origin, showLabel = true, className = "" 
           label: "Manual",
           icon: FilePenLine,
           variant: "outline" as const,
-          color: "text-blue-500",
+          color: "text-blue-600 bg-blue-50 border-blue-200",
         };
       case "ia":
         return {
           label: "IA",
           icon: Bot,
           variant: "outline" as const,
-          color: "text-violet-500",
+          color: "text-violet-600 bg-violet-50 border-violet-200",
         };
       case "csv":
         return {
-          label: "Importado",
+          label: "Planilha",
           icon: FileSpreadsheet,
           variant: "outline" as const,
-          color: "text-green-500",
+          color: "text-green-600 bg-green-50 border-green-200",
         };
       default:
         return null;
@@ -46,8 +46,8 @@ export function ChecklistOriginBadge({ origin, showLabel = true, className = "" 
   const Icon = config.icon;
 
   return (
-    <Badge variant={config.variant} className={`${config.color} ${className}`}>
-      <Icon className="h-3 w-3 mr-1" />
+    <Badge variant={config.variant} className={`${config.color} ${className} flex items-center gap-1 font-medium`}>
+      <Icon className="h-3 w-3" />
       {showLabel && config.label}
     </Badge>
   );

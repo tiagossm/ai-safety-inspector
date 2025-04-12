@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from "react";
 import { ChecklistWithStats } from "@/types/newChecklist";
 import {
@@ -11,7 +12,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { ChecklistRow } from "./ChecklistRow";
-import { CheckCircle, XCircle, Trash2, RefreshCw, FileText } from "lucide-react";
+import { CheckCircle, XCircle, Trash2, RefreshCw, FileText, Filter } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -131,6 +132,10 @@ export function ChecklistList({
         <p className="text-muted-foreground mb-6">
           Não foram encontrados checklists com os filtros atuais.
         </p>
+        <Button className="gap-2">
+          <Filter className="h-4 w-4" />
+          Ajustar filtros
+        </Button>
       </div>
     );
   }
@@ -138,7 +143,7 @@ export function ChecklistList({
   return (
     <div className="space-y-4">
       {selectedChecklists.length > 0 && (
-        <div className="bg-background border rounded-lg shadow-sm p-3 flex items-center justify-between">
+        <div className="bg-card border rounded-lg shadow-sm p-3 flex items-center justify-between">
           <span className="text-sm font-medium">
             {selectedChecklists.length} {selectedChecklists.length === 1 ? 'checklist selecionado' : 'checklists selecionados'}
           </span>
@@ -148,9 +153,9 @@ export function ChecklistList({
               size="sm"
               onClick={() => handleBulkStatusChange('active')}
               disabled={isProcessing}
-              className="gap-1"
+              className="gap-1 border-green-200 text-green-600 hover:bg-green-50"
             >
-              <CheckCircle className="h-4 w-4 text-green-500" />
+              <CheckCircle className="h-4 w-4" />
               <span>Ativar</span>
             </Button>
             <Button
@@ -158,9 +163,9 @@ export function ChecklistList({
               size="sm"
               onClick={() => handleBulkStatusChange('inactive')}
               disabled={isProcessing}
-              className="gap-1"
+              className="gap-1 border-amber-200 text-amber-600 hover:bg-amber-50"
             >
-              <XCircle className="h-4 w-4 text-amber-500" />
+              <XCircle className="h-4 w-4" />
               <span>Desativar</span>
             </Button>
             <Button
@@ -180,21 +185,22 @@ export function ChecklistList({
       <div className="border rounded-md overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow>
+            <TableRow className="bg-muted/30 hover:bg-muted/30">
               <TableHead className="w-[50px]">
                 <Checkbox 
                   checked={selectedChecklists.length === checklists.length && checklists.length > 0}
                   onCheckedChange={handleSelectAll}
+                  className="data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                 />
               </TableHead>
-              <TableHead>Checklist</TableHead>
-              <TableHead>Origem</TableHead>
-              <TableHead>Empresa</TableHead>
-              <TableHead>Criado por</TableHead>
-              <TableHead>Categoria</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Criado em</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+              <TableHead className="font-medium">Checklist</TableHead>
+              <TableHead className="font-medium">Origem</TableHead>
+              <TableHead className="font-medium">Empresa</TableHead>
+              <TableHead className="font-medium">Criado por</TableHead>
+              <TableHead className="font-medium">Categoria</TableHead>
+              <TableHead className="font-medium">Status</TableHead>
+              <TableHead className="font-medium">Criado em</TableHead>
+              <TableHead className="text-right font-medium">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
