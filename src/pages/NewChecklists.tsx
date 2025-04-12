@@ -191,7 +191,7 @@ export default function NewChecklists() {
           </Button>
           <h1 className="text-2xl font-bold">Checklists</h1>
         </div>
-        <Button onClick={() => navigate("/checklists/create")}>
+        <Button onClick={() => navigate("/new-checklists")}>
           <Plus className="h-4 w-4 mr-2" />
           Novo Checklist
         </Button>
