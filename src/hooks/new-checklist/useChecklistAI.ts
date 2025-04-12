@@ -1,8 +1,11 @@
+
 import { useState } from "react";
 import { toast } from "sonner";
 import { AIAssistantType } from "@/types/AIAssistantType";
 import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { supabase } from "@/integrations/supabase/client";
+
+export { type AIAssistantType };
 
 export function useChecklistAI() {
   const [prompt, setPrompt] = useState<string>("");
@@ -30,7 +33,7 @@ export function useChecklistAI() {
         title: checklistData.title,
         description: checklistData.description,
         category: checklistData.category,
-        companyId: checklistData.company_id, // Using correct property name but maintain naming in API call
+        companyId: checklistData.company_id, // Using correct property name for API
         questionCount: questionCount,
         prompt: prompt
       };

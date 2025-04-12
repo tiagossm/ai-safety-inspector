@@ -111,17 +111,15 @@ import { useToast } from "@/components/ui/use-toast";
 import { ChecklistsHeader } from "@/components/checklists/ChecklistsHeader";
 import { formatDate } from "@/utils/format";
 
-// Update the DeleteChecklistDialog props interface to include isDeleting
 interface DeleteChecklistDialogProps {
   checklistId: string;
   checklistTitle: string;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onDeleted: () => Promise<void>;
-  isDeleting: boolean; // Add this property
+  isDeleting: boolean;
 }
 
-// Fix the BatchUpdateChecklist function to return void instead of boolean
 const updateBatchChecklistsStatus = async (ids: string[], newStatus: "active" | "inactive"): Promise<void> => {
   try {
     const { error } = await supabase
@@ -131,14 +129,14 @@ const updateBatchChecklistsStatus = async (ids: string[], newStatus: "active" | 
 
     if (error) {
       console.error("Error updating checklists status:", error);
-      throw error;
+      toast.error("Erro ao atualizar status dos checklists");
+      return;
     }
 
-    return;
+    toast.success(`Status de ${ids.length} checklists atualizado com sucesso`);
   } catch (error) {
-    console.error("Error updating checklists status:", error);
+    console.error("Error updating checklists:", error);
     toast.error("Erro ao atualizar status dos checklists");
-    return;
   }
 };
 
@@ -416,7 +414,7 @@ export default function NewChecklists() {
               </PaginationItem>
             )}
             <PaginationItem>
-              <PaginationLink href="#" onClick={() => setPage(page)} isCurrent>
+              <PaginationLink href="#" onClick={() => setPage(page)} isActive>
                 {page}
               </PaginationLink>
             </PaginationItem>
@@ -467,7 +465,6 @@ export default function NewChecklists() {
   );
 }
 
-// Make sure DeleteChecklistDialog component accepts the isDeleting prop
 export function DeleteChecklistDialog({
   checklistId,
   checklistTitle,

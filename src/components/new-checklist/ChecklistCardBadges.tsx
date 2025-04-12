@@ -1,3 +1,4 @@
+
 import { Badge } from "@/components/ui/badge";
 import { File, Bot, Upload, Check, X } from "lucide-react";
 
@@ -59,12 +60,12 @@ export function ChecklistCardBadges({ isTemplate, status, origin }: ChecklistCar
     const badgeProps =
       status === "active"
         ? {
-          variant: "default",
+          variant: "default" as "default",
           className: "bg-green-100 text-green-800 border-green-300",
           text: "Ativo",
         }
         : {
-          variant: "outline",
+          variant: "outline" as "outline",
           className: "bg-gray-100 text-gray-600 border-gray-300",
           text: "Inativo",
         };

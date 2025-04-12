@@ -1,3 +1,4 @@
+
 import { Checklist } from "@/types/newChecklist";
 
 /**
@@ -5,7 +6,7 @@ import { Checklist } from "@/types/newChecklist";
  */
 export function determineChecklistOrigin(checklist: Checklist): 'manual' | 'ia' | 'csv' {
   if (checklist.origin) {
-    return checklist.origin;
+    return checklist.origin as 'manual' | 'ia' | 'csv';
   }
   
   // Lógica de fallback para determinar origem caso não tenha o campo origin

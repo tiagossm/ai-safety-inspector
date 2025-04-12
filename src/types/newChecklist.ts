@@ -51,7 +51,7 @@ export interface Checklist {
   questions?: ChecklistItem[];
   groups?: ChecklistGroup[];
   responsibleName?: string;
-  origin?: string;
+  origin?: 'manual' | 'ia' | 'csv';
 }
 
 export interface ChecklistItem {
@@ -94,6 +94,7 @@ export interface NewChecklist {
   responsible_id?: string | null;
   status?: string;
   due_date?: string | null;
+  origin?: 'manual' | 'ia' | 'csv';
 }
 
 export interface BatchUpdateResult {
@@ -101,7 +102,6 @@ export interface BatchUpdateResult {
   count: number;
 }
 
-// Add the ChecklistQuestion interface that was missing
 export interface ChecklistQuestion {
   id: string;
   text: string;
@@ -120,9 +120,10 @@ export interface ChecklistQuestion {
   hasSubChecklist?: boolean;
   subChecklistId?: string | null;
   displayNumber?: string;
+  conditionValue?: string | null;
 }
 
-// Add inspection related interfaces
+// Extended InspectionDetails interface with the missing properties
 export interface InspectionDetails {
   id: string;
   status: string;
@@ -138,14 +139,29 @@ export interface InspectionDetails {
   location?: string;
   syncStatus?: string;
   metadata?: any;
+  title?: string;
+  company?: {
+    id: string;
+    fantasy_name?: string;
+  };
+  responsible?: {
+    id: string;
+    name?: string;
+  };
+  priority?: 'low' | 'medium' | 'high';
+  progress?: number;
+  description?: string;
 }
 
+// Extended InspectionFilters interface with the missing properties
 export interface InspectionFilters {
   status?: string;
   companyId?: string;
   checklistId?: string;
   responsibleId?: string;
-  startDate?: string;
-  endDate?: string;
+  startDate?: Date;
+  endDate?: Date;
   searchTerm?: string;
+  search?: string;
+  priority?: 'all' | 'low' | 'medium' | 'high';
 }

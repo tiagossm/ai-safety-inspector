@@ -12,12 +12,12 @@ export function useInspections() {
   const { user } = useAuth();
   
   const [filters, setFilters] = useState<InspectionFilters>({
-    search: "",
     status: "all",
-    priority: "all",
     companyId: "all",
     responsibleId: "all", 
     checklistId: "all",
+    search: "",
+    priority: "all",
     startDate: undefined,
     endDate: undefined
   });
@@ -114,21 +114,17 @@ export function useInspections() {
           updatedAt: inspection.created_at,
           priority: (inspection.priority || 'medium') as 'low' | 'medium' | 'high',
           locationName: inspection.location,
-          company: inspection.companies || null,
-          responsible: inspection.responsible_id ? responsiblesData[inspection.responsible_id] : null,
+          company: {
+            id: inspection.company_id,
+            fantasy_name: inspection.companies?.fantasy_name
+          },
+          responsible: inspection.responsible_id ? {
+            id: inspection.responsible_id,
+            name: responsiblesData[inspection.responsible_id]?.name
+          } : undefined,
           progress,
-          // Additional fields from the database schema
-          approval_notes: inspection.approval_notes,
-          approval_status: inspection.approval_status,
-          approved_by: inspection.approved_by,
-          audio_url: inspection.audio_url,
-          photos: inspection.photos || [],
-          report_url: inspection.report_url,
-          unit_id: inspection.unit_id,
           metadata: inspection.metadata,
-          cnae: inspection.cnae,
-          inspection_type: inspection.inspection_type,
-          sync_status: inspection.sync_status
+          syncStatus: inspection.sync_status
         };
       }));
       
@@ -152,7 +148,7 @@ export function useInspections() {
   const filteredInspections = useMemo(() => {
     return inspections.filter(inspection => {
       // Search filter
-      const searchLower = filters.search.toLowerCase();
+      const searchLower = (filters.search || "").toLowerCase();
       const matchesSearch = !filters.search || 
         (inspection.title?.toLowerCase().includes(searchLower)) ||
         (inspection.company?.fantasy_name?.toLowerCase().includes(searchLower)) ||
@@ -162,7 +158,7 @@ export function useInspections() {
       const matchesStatus = filters.status === "all" || inspection.status === filters.status;
       
       // Priority filter
-      const matchesPriority = filters.priority === "all" || inspection.priority === filters.priority;
+      const matchesPriority = !filters.priority || filters.priority === "all" || inspection.priority === filters.priority;
       
       // Company filter
       const matchesCompany = filters.companyId === "all" || inspection.companyId === filters.companyId;
@@ -181,10 +177,15 @@ export function useInspections() {
         const endDate = filters.endDate || startDate;
         
         if (scheduledDate) {
-          // Remove time component for date comparison
-          const dateOnly = new Date(scheduledDate.setHours(0, 0, 0, 0));
-          const startDateOnly = new Date(startDate.setHours(0, 0, 0, 0));
-          const endDateOnly = new Date(endDate.setHours(23, 59, 59, 999));
+          // Convert to date objects for comparison
+          const dateOnly = new Date(scheduledDate);
+          dateOnly.setHours(0, 0, 0, 0);
+          
+          const startDateOnly = new Date(startDate);
+          startDateOnly.setHours(0, 0, 0, 0);
+          
+          const endDateOnly = new Date(endDate);
+          endDateOnly.setHours(23, 59, 59, 999);
           
           matchesDate = dateOnly >= startDateOnly && dateOnly <= endDateOnly;
         } else {

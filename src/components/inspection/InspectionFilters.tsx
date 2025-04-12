@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
@@ -7,11 +7,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useUsers } from "@/hooks/useUsers";
-import { useChecklists } from "@/hooks/useChecklists";
+import { useChecklists } from "@/hooks/new-checklist/useChecklists";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Search, CalendarIcon, X, Filter, Building2, User2, ClipboardList, AlertTriangle, CheckCircle } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
 import { InspectionFilters as IInspectionFilters } from "@/types/newChecklist";
 
 interface InspectionFiltersProps {
@@ -42,7 +41,7 @@ export function InspectionFilters({ filters, setFilters }: InspectionFiltersProp
   const hasActiveFilters = () => {
     return (
       filters.status !== "all" ||
-      filters.priority !== "all" ||
+      (filters.priority !== undefined && filters.priority !== "all") ||
       filters.companyId !== "all" ||
       filters.responsibleId !== "all" ||
       filters.checklistId !== "all" ||
@@ -60,7 +59,7 @@ export function InspectionFilters({ filters, setFilters }: InspectionFiltersProp
             <Input
               placeholder="Buscar por título, empresa ou responsável..."
               className="pl-8"
-              value={filters.search}
+              value={filters.search || ""}
               onChange={(e) => setFilters({ ...filters, search: e.target.value })}
             />
             {filters.search && (
@@ -227,7 +226,7 @@ export function InspectionFilters({ filters, setFilters }: InspectionFiltersProp
                 <span className="text-sm font-medium">Prioridade</span>
               </div>
               <Select
-                value={filters.priority}
+                value={filters.priority || "all"}
                 onValueChange={(value: "all" | "low" | "medium" | "high") =>
                   setFilters({ ...filters, priority: value })
                 }

@@ -201,7 +201,7 @@ export function useChecklistById(id: string) {
           totalQuestions: normalizedQuestions.length,
           completedQuestions: 0,
           isSubChecklist: checklist.is_sub_checklist,
-          is_sub_checklist: checklist.is_sub_checklist
+          isSubChecklist: checklist.is_sub_checklist
         };
 
         return checklistWithStats;

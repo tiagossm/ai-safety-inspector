@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { formatDate } from '@/utils/format';
 import { ChecklistWithStats } from '@/types/newChecklist';
@@ -34,6 +35,9 @@ export const ChecklistListItem = ({
     ? Math.round((checklist.completedQuestions / checklist.totalQuestions) * 100)
     : 0;
 
+  // Convert origin string to the expected type
+  const originValue = checklist.origin as "manual" | "ia" | "csv" | undefined;
+
   return (
     <div className={`grid grid-cols-10 items-center gap-4 p-4 rounded-md transition-all border border-slate-200 shadow-sm min-h-[72px]
       ${isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
@@ -49,7 +53,7 @@ export const ChecklistListItem = ({
       <div className="col-span-4 flex flex-col">
         <div className="font-medium text-base flex items-center gap-2">
           {checklist.title}
-          <ChecklistOriginBadge origin={checklist.origin} showLabel={false} className="ml-1" />
+          <ChecklistOriginBadge origin={originValue} showLabel={false} className="ml-1" />
         </div>
         {checklist.companyName ? (
           <div className="text-sm text-muted-foreground truncate max-w-[400px]">

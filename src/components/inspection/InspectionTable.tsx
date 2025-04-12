@@ -61,13 +61,13 @@ export function InspectionTable({
             return (
               <TableRow key={inspection.id}>
                 <TableCell className="font-medium">
-                  {inspection.title}
+                  {inspection.title || inspection.checklistTitle || "Inspeção"}
                 </TableCell>
                 <TableCell>
-                  {inspection.company?.fantasy_name || "N/A"}
+                  {inspection.company?.fantasy_name || inspection.companyName || "N/A"}
                 </TableCell>
                 <TableCell>
-                  {inspection.responsible?.name || "N/A"}
+                  {inspection.responsible?.name || inspection.responsibleName || "N/A"}
                 </TableCell>
                 <TableCell>
                   {formatDate(inspection.scheduledDate)}
