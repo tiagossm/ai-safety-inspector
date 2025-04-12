@@ -1,0 +1,9 @@
+# Query: Novos Chec
+# ContextLines: 1
+
+Um resultado - Um arquivo
+
+src/components/dashboard/SidebarMenu.tsx:
+  108                <FileCheck className="mr-2 h-4 w-4" />
+  109:               Checklists
+  110              </Link>
