@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ChecklistWithStats } from "@/types/newChecklist";
 import { ChecklistListItem } from "@/components/new-checklist/ChecklistListItem";
 import { ChecklistEmptyState } from "@/components/new-checklist/ChecklistEmptyState";
+import { Separator } from "@/components/ui/separator";
 
 interface ChecklistsTableProps {
   checklists: ChecklistWithStats[];
@@ -110,17 +111,19 @@ export function ChecklistsTable({
               <div className="w-1/6">Criado em</div>
               <div className="w-1/6 text-right">Ações</div>
             </div>
-            {checklists.map((checklist) => (
-              <ChecklistListItem
-                key={checklist.id}
-                checklist={checklist}
-                onOpen={onOpen}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                isSelected={selectedChecklists.includes(checklist.id)}
-                onSelect={onSelectChecklist}
-              />
-            ))}
+            <div className="overflow-x-auto">
+              {checklists.map((checklist) => (
+                <ChecklistListItem
+                  key={checklist.id}
+                  checklist={checklist}
+                  onOpen={onOpen}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  isSelected={selectedChecklists.includes(checklist.id)}
+                  onSelect={onSelectChecklist}
+                />
+              ))}
+            </div>
           </div>
         )}
       </CardContent>

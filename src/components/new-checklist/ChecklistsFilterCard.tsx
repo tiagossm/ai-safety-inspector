@@ -33,9 +33,9 @@ export function ChecklistsFilterCard({
   onBatchUpdateStatus,
 }: ChecklistsFilterCardProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Filtros e Ações</CardTitle>
+    <Card className="bg-muted/30 border-muted">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-lg">Filtros e Ações</CardTitle>
         <CardDescription>
           Use os filtros abaixo para refinar a lista de checklists.
         </CardDescription>
@@ -46,6 +46,7 @@ export function ChecklistsFilterCard({
             placeholder="Buscar checklists..."
             value={search}
             onChange={(e) => setSearch(e)}
+            className="flex-1"
           />
           {selectedChecklists.length > 0 && (
             <DropdownMenu>

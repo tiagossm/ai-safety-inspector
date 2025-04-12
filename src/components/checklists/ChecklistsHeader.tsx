@@ -17,7 +17,7 @@ export function ChecklistsHeader() {
         <Button asChild>
           <Link to="/new-checklists/create">
             <Plus className="mr-2 h-4 w-4" />
-            Novo Checklist
+            Criar Checklist
           </Link>
         </Button>
       </div>

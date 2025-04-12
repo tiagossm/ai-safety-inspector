@@ -3,14 +3,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-
-// Components
-import { ChecklistsHeader } from "@/components/checklists/ChecklistsHeader";
-import { ChecklistsFilterCard } from "@/components/new-checklist/ChecklistsFilterCard";
-import { ChecklistsTable } from "@/components/new-checklist/ChecklistsTable";
-import { ChecklistsPagination } from "@/components/new-checklist/ChecklistsPagination";
-import { DeleteChecklistDialog } from "@/components/new-checklist/DeleteChecklistDialog";
-import { BulkDeleteDialog } from "@/components/new-checklist/BulkDeleteDialog";
+import { ChecklistsContainer } from "@/components/new-checklist/ChecklistsContainer";
 
 // Hooks & Services
 import { useLocalChecklists } from "@/hooks/new-checklist/useLocalChecklists";
@@ -104,7 +97,6 @@ export default function NewChecklists() {
 
   const handleBulkDelete = async () => {
     if (selectedChecklists.length === 0) return;
-
     setIsBulkDeleteDialogOpen(true);
   };
 
@@ -147,55 +139,32 @@ export default function NewChecklists() {
   };
 
   return (
-    <div className="space-y-6">
-      <ChecklistsHeader />
-      
-      <ChecklistsFilterCard
-        search={search}
-        setSearch={setSearch}
-        selectedChecklists={selectedChecklists}
-        isBatchUpdating={isBatchUpdating}
-        onBatchUpdateStatus={handleBatchUpdateStatus}
-      />
-
-      <ChecklistsTable
-        checklists={checklists}
-        isLoading={loading}
-        selectedChecklists={selectedChecklists}
-        isAllSelected={isAllSelected}
-        onSelectAll={handleSelectAllChecklists}
-        onSelectChecklist={handleSelectChecklist}
-        onEdit={handleEditChecklist}
-        onDelete={handleDeleteChecklist}
-        onOpen={handleOpenChecklist}
-      />
-
-      <ChecklistsPagination
-        perPage={perPage}
-        setPerPage={setPerPage}
-        page={page}
-        setPage={setPage}
-        total={total}
-      />
-
-      <DeleteChecklistDialog
-        checklistId={checklistToDelete?.id || ""}
-        checklistTitle={checklistToDelete?.title || ""}
-        isOpen={!!checklistToDelete}
-        onOpenChange={(open: boolean) =>
-          open ? null : setChecklistToDelete(null)
-        }
-        onDeleted={confirmDeleteChecklist}
-        isDeleting={isDeleting}
-      />
-      
-      <BulkDeleteDialog
-        isOpen={isBulkDeleteDialogOpen}
-        onOpenChange={setIsBulkDeleteDialogOpen}
-        selectedCount={selectedChecklists.length}
-        isDeleting={isDeleting}
-        onConfirmDelete={confirmBulkDelete}
-      />
-    </div>
+    <ChecklistsContainer
+      search={search}
+      setSearch={setSearch}
+      checklists={checklists}
+      loading={loading}
+      selectedChecklists={selectedChecklists}
+      isAllSelected={isAllSelected}
+      page={page}
+      perPage={perPage}
+      total={total}
+      isBatchUpdating={isBatchUpdating}
+      isBulkDeleteDialogOpen={isBulkDeleteDialogOpen}
+      isDeleting={isDeleting}
+      checklistToDelete={checklistToDelete}
+      setPage={setPage}
+      setPerPage={setPerPage}
+      onSelectAll={handleSelectAllChecklists}
+      onSelectChecklist={handleSelectChecklist}
+      onEdit={handleEditChecklist}
+      onDelete={handleDeleteChecklist}
+      onOpen={handleOpenChecklist}
+      onBatchUpdateStatus={handleBatchUpdateStatus}
+      onDeleteDialogChange={(open) => open ? null : setChecklistToDelete(null)}
+      onBulkDeleteDialogChange={setIsBulkDeleteDialogOpen}
+      onConfirmDelete={confirmDeleteChecklist}
+      onConfirmBulkDelete={confirmBulkDelete}
+    />
   );
 }
