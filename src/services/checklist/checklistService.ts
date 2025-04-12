@@ -50,9 +50,24 @@ export async function fetchChecklists(
       throw error;
     }
     
-    // Transform data
+    // Transform data to match ChecklistWithStats type
     return data.map(checklist => ({
-      ...checklist,
+      id: checklist.id,
+      title: checklist.title,
+      description: checklist.description,
+      isTemplate: checklist.is_template,
+      status: checklist.status,
+      category: checklist.category,
+      responsibleId: checklist.responsible_id,
+      companyId: checklist.company_id,
+      userId: checklist.user_id,
+      createdAt: checklist.created_at,
+      updatedAt: checklist.updated_at,
+      dueDate: checklist.due_date,
+      isSubChecklist: checklist.is_sub_checklist,
+      origin: checklist.origin,
+      totalQuestions: 0, // Default value, may be updated from total_items if exists
+      completedQuestions: 0, // Default value, may be updated from completed_items if exists
       companyName: checklist.company?.fantasy_name || "Sem empresa",
       stats: {
         total: checklist.total_items || 0,
@@ -82,8 +97,24 @@ export async function fetchAllChecklistsData(): Promise<ChecklistWithStats[]> {
       
     if (error) throw error;
     
+    // Transform data to match ChecklistWithStats type
     return data.map(checklist => ({
-      ...checklist,
+      id: checklist.id,
+      title: checklist.title,
+      description: checklist.description,
+      isTemplate: checklist.is_template,
+      status: checklist.status,
+      category: checklist.category,
+      responsibleId: checklist.responsible_id,
+      companyId: checklist.company_id,
+      userId: checklist.user_id,
+      createdAt: checklist.created_at,
+      updatedAt: checklist.updated_at,
+      dueDate: checklist.due_date,
+      isSubChecklist: checklist.is_sub_checklist,
+      origin: checklist.origin,
+      totalQuestions: 0, // Default value
+      completedQuestions: 0, // Default value
       companyName: checklist.company?.fantasy_name || "Sem empresa",
       stats: {
         total: checklist.total_items || 0,
