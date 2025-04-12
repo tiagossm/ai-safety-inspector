@@ -1,6 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Checklist, ChecklistItem, ChecklistComment, ChecklistAttachment, ChecklistHistory } from "@/types/checklist";
+import {
+  Checklist,
+  ChecklistItem,
+  ChecklistComment,
+  ChecklistAttachment,
+  ChecklistHistory,
+} from "@/types/checklist";
 import { useChecklistDetails } from "@/hooks/checklist/useChecklistDetails";
 import { useUpdateChecklistItem } from "@/hooks/checklist/useUpdateChecklistItem";
 import { useDeleteChecklistItem } from "@/hooks/checklist/useDeleteChecklistItem";
@@ -15,8 +21,19 @@ import { ChecklistAttachments } from "@/components/checklists/ChecklistAttachmen
 import { ChecklistHistoryLog } from "@/components/checklists/ChecklistHistory";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ClipboardList, MessageSquare, Paperclip, History, FileText } from "lucide-react";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  ClipboardList,
+  MessageSquare,
+  Paperclip,
+  History,
+  FileText,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const questionTypes = [
@@ -25,15 +42,38 @@ const questionTypes = [
   { value: "texto", label: "Resposta em Texto" },
   { value: "foto", label: "Foto" },
   { value: "assinatura", label: "Assinatura" },
-  { value: "seleção múltipla", label: "Seleção Múltipla" }
+  { value: "seleção múltipla", label: "Seleção Múltipla" },
 ];
 
 interface ChecklistDetailsContainerProps {
   checklistId: string;
 }
 
-export default function ChecklistDetailsContainer({ checklistId }: ChecklistDetailsContainerProps) {
+export default function ChecklistDetailsContainer({
+  checklistId,
+}: ChecklistDetailsContainerProps) {
   const navigate = useNavigate();
+
+  // ✅ Proteção contra ID inválido ("create")
+  if (checklistId === "create") {
+    return (
+      <div className="py-20 text-center">
+        <h2 className="text-xl font-semibold mb-4">
+          Checklist novo em criação
+        </h2>
+        <p className="text-muted-foreground">
+          Use o editor para revisar e salvar o checklist.
+        </p>
+        <button
+          className="bg-primary text-white px-4 py-2 rounded mt-4"
+          onClick={() => navigate("/checklist-editor?mode=draft")}
+        >
+          Ir para revisão
+        </button>
+      </div>
+    );
+  }
+
   const [saving, setSaving] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [activeTab, setActiveTab] = useState("items");
@@ -41,7 +81,7 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
   const [attachments, setAttachments] = useState<ChecklistAttachment[]>([]);
   const [history, setHistory] = useState<ChecklistHistory[]>([]);
   const [loadingExtra, setLoadingExtra] = useState(false);
-  
+
   const {
     checklist,
     setChecklist,
@@ -49,7 +89,7 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
     setItems,
     users,
     isLoading,
-    error
+    error,
   } = useChecklistDetails(checklistId);
 
   const updateItemMutation = useUpdateChecklistItem();
@@ -65,109 +105,97 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
   }, [error]);
 
   useEffect(() => {
-    console.log("ChecklistDetailsContainer rendered with ID:", checklistId);
-    console.log("Items loaded:", items?.length || 0);
-  }, [checklistId, items]);
-
-  useEffect(() => {
     if (notFound) {
       toast.error("Checklist não encontrado ou acesso negado.");
       navigate("/checklists");
     }
   }, [notFound, navigate]);
-  
+
   useEffect(() => {
     const loadExtraData = async () => {
-      if (!checklistId || !activeTab || activeTab === 'items') return;
-      
+      if (!checklistId || !activeTab || activeTab === "items") return;
+
       setLoadingExtra(true);
       try {
-        if (activeTab === 'comments') {
+        if (activeTab === "comments") {
           const { data: commentsData, error: commentsError } = await supabase
-            .from('checklist_comments')
+            .from("checklist_comments")
             .select(`*`)
-            .eq('checklist_id', checklistId)
-            .order('created_at', { ascending: false });
-            
+            .eq("checklist_id", checklistId)
+            .order("created_at", { ascending: false });
+
           if (commentsError) throw commentsError;
-          
-          const commentsWithNames = await Promise.all(commentsData.map(async (comment) => {
-            const { data: userData } = await supabase
-              .from('users')
-              .select('name')
-              .eq('id', comment.user_id)
-              .single();
-              
-            return {
-              id: comment.id,
-              checklist_id: comment.checklist_id,
-              user_id: comment.user_id,
-              user_name: userData?.name || 'Usuário',
-              content: comment.content,
-              created_at: comment.created_at
-            };
-          }));
-          
+
+          const commentsWithNames = await Promise.all(
+            commentsData.map(async (comment) => {
+              const { data: userData } = await supabase
+                .from("users")
+                .select("name")
+                .eq("id", comment.user_id)
+                .single();
+
+              return {
+                ...comment,
+                user_name: userData?.name || "Usuário",
+              };
+            })
+          );
+
           setComments(commentsWithNames);
         }
-        
-        if (activeTab === 'attachments') {
-          const { data: attachmentsData, error: attachmentsError } = await supabase
-            .from('checklist_attachments')
-            .select(`*`)
-            .eq('checklist_id', checklistId)
-            .order('created_at', { ascending: false });
-            
+
+        if (activeTab === "attachments") {
+          const { data: attachmentsData, error: attachmentsError } =
+            await supabase
+              .from("checklist_attachments")
+              .select(`*`)
+              .eq("checklist_id", checklistId)
+              .order("created_at", { ascending: false });
+
           if (attachmentsError) throw attachmentsError;
-          
-          const attachmentsWithNames = await Promise.all(attachmentsData.map(async (attachment) => {
-            const { data: userData } = await supabase
-              .from('users')
-              .select('name')
-              .eq('id', attachment.uploaded_by)
-              .single();
-              
-            return {
-              id: attachment.id,
-              checklist_id: attachment.checklist_id,
-              file_name: attachment.file_name,
-              file_url: attachment.file_url,
-              file_type: attachment.file_type,
-              uploaded_by: userData?.name || 'Usuário',
-              created_at: attachment.created_at
-            };
-          }));
-          
+
+          const attachmentsWithNames = await Promise.all(
+            attachmentsData.map(async (attachment) => {
+              const { data: userData } = await supabase
+                .from("users")
+                .select("name")
+                .eq("id", attachment.uploaded_by)
+                .single();
+
+              return {
+                ...attachment,
+                uploaded_by: userData?.name || "Usuário",
+              };
+            })
+          );
+
           setAttachments(attachmentsWithNames);
         }
-        
-        if (activeTab === 'history') {
+
+        if (activeTab === "history") {
           const { data: historyData, error: historyError } = await supabase
-            .from('checklist_history')
+            .from("checklist_history")
             .select(`*`)
-            .eq('checklist_id', checklistId)
-            .order('created_at', { ascending: false });
-            
+            .eq("checklist_id", checklistId)
+            .order("created_at", { ascending: false });
+
           if (historyError) throw historyError;
-          
-          const historyWithNames = await Promise.all(historyData.map(async (entry) => {
-            const { data: userData } = await supabase
-              .from('users')
-              .select('name')
-              .eq('id', entry.user_id)
-              .single();
-              
-            return {
-              id: entry.id,
-              checklist_id: entry.checklist_id,
-              user_id: entry.user_id,
-              user_name: userData?.name || 'Usuário',
-              action: entry.action,
-              details: entry.details,
-              created_at: entry.created_at
-            };
-          }));
-          
+
+          const historyWithNames = await Promise.all(
+            historyData.map(async (entry) => {
+              const { data: userData } = await supabase
+                .from("users")
+                .select("name")
+                .eq("id", entry.user_id)
+                .single();
+
+              return {
+                ...entry,
+                user_name: userData?.name || "Usuário",
+              };
+            })
+          );
+
           setHistory(historyWithNames);
         }
       } catch (error) {
@@ -177,70 +205,66 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
         setLoadingExtra(false);
       }
     };
-    
+
     loadExtraData();
   }, [checklistId, activeTab]);
 
   const handleItemChange = (updatedItem: ChecklistItem) => {
-    setItems((prevItems) =>
-      prevItems.map(item => (item.id === updatedItem.id ? updatedItem : item))
+    setItems((prev) =>
+      prev.map((item) => (item.id === updatedItem.id ? updatedItem : item))
     );
 
     updateItemMutation.mutate(updatedItem, {
       onError: (error) => {
         console.error("Erro ao atualizar item:", error);
         toast.error("Falha ao atualizar item.");
-      }
+      },
     });
   };
 
   const handleDeleteItem = (itemId: string) => {
     deleteItemMutation.mutate(itemId, {
       onSuccess: () => {
-        setItems((prevItems) => prevItems.filter(item => item.id !== itemId));
+        setItems((prev) => prev.filter((item) => item.id !== itemId));
       },
       onError: (error) => {
         console.error("Erro ao excluir item:", error);
         toast.error("Falha ao excluir item.");
-      }
+      },
     });
   };
 
   const handleAddItem = (newItem: Partial<ChecklistItem>) => {
-    let sanitizedOptions: string[] | null = null;
-    
-    if (newItem.opcoes) {
-      if (Array.isArray(newItem.opcoes)) {
-        sanitizedOptions = newItem.opcoes.map(option => String(option));
-      } else {
-        sanitizedOptions = [String(newItem.opcoes)];
+    const opcoes = Array.isArray(newItem.opcoes)
+      ? newItem.opcoes.map(String)
+      : newItem.opcoes
+      ? [String(newItem.opcoes)]
+      : null;
+
+    addItemMutation.mutate(
+      { ...newItem, opcoes },
+      {
+        onSuccess: (data) => {
+          const addedItem: ChecklistItem = {
+            ...data,
+            tipo_resposta: data.tipo_resposta,
+            opcoes: opcoes,
+          };
+
+          setItems((prev) => [...prev, addedItem]);
+          toast.success("Item adicionado com sucesso.");
+        },
+        onError: (error) => {
+          console.error("Erro ao adicionar item:", error);
+          toast.error("Falha ao adicionar item.");
+        },
       }
-    }
-      
-    addItemMutation.mutate({
-      ...newItem,
-      opcoes: sanitizedOptions
-    }, {
-      onSuccess: (data) => {
-        const addedItem: ChecklistItem = {
-          ...data,
-          tipo_resposta: data.tipo_resposta as "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla",
-          opcoes: data.opcoes ? (Array.isArray(data.opcoes) ? data.opcoes.map(String) : [String(data.opcoes)]) : null
-        };
-        
-        setItems((prevItems) => [...prevItems, addedItem]);
-        toast.success("Item adicionado com sucesso.");
-      },
-      onError: (error) => {
-        console.error("Erro ao adicionar item:", error);
-        toast.error("Falha ao adicionar item.");
-      }
-    });
+    );
   };
 
   const handleSave = async () => {
     if (!checklist) return;
-    
+
     setSaving(true);
     try {
       await saveChecklistMutation.mutateAsync({
@@ -252,17 +276,19 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
         responsible_id: checklist.responsible_id,
         company_id: checklist.company_id,
         due_date: checklist.due_date,
-        status: checklist.status
+        status: checklist.status,
       });
 
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (user) {
-        await supabase.from('checklist_history').insert({
+        await supabase.from("checklist_history").insert({
           checklist_id: checklistId,
           user_id: user.id,
-          action: 'update',
-          details: 'Atualizou informações do checklist'
+          action: "update",
+          details: "Atualizou informações do checklist",
         });
       }
 
@@ -275,50 +301,16 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
     }
   };
 
-  const handleAddComment = (comment: ChecklistComment) => {
-    setComments(prev => [comment, ...prev]);
-  };
-
-  const handleAddAttachment = (attachment: ChecklistAttachment) => {
-    setAttachments(prev => [attachment, ...prev]);
-  };
-
-  const handleRemoveAttachment = (attachmentId: string) => {
-    setAttachments(prev => prev.filter(a => a.id !== attachmentId));
-  };
-
-  if (isLoading) {
-    return <div className="py-20 text-center">Carregando...</div>;
-  }
-
-  if (!checklist) {
-    return (
-      <div className="py-20 text-center">
-        <h2 className="text-2xl font-bold mb-4">Checklist não encontrado</h2>
-        <p className="text-muted-foreground mb-6">
-          O checklist solicitado não existe ou você não tem permissão para acessá-lo.
-        </p>
-        <button 
-          className="bg-primary text-white px-4 py-2 rounded"
-          onClick={() => navigate("/checklists")}
-        >
-          Voltar para Checklists
-        </button>
-      </div>
-    );
-  }
-
   const totalItems = items.length;
-  const completedItems = items.filter(item => item.resposta !== null && item.resposta !== undefined).length;
-  const progressPercentage = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
+  const completedItems = items.filter(
+    (item) => item.resposta !== null && item.resposta !== undefined
+  ).length;
+  const progressPercentage =
+    totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
 
   return (
     <div className="space-y-6">
-      <ChecklistHeader
-        checklist={checklist}
-        saving={saving}
-        onSave={handleSave}
-      />
+      <ChecklistHeader checklist={checklist} saving={saving} onSave={handleSave} />
 
       {checklist && (
         <div className="grid gap-6">
@@ -331,7 +323,10 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
           <div className="space-y-2">
             <div className="flex justify-between text-sm text-muted-foreground">
               <span>Progresso</span>
-              <span>{completedItems} de {totalItems} itens ({Math.round(progressPercentage)}%)</span>
+              <span>
+                {completedItems} de {totalItems} itens (
+                {Math.round(progressPercentage)}%)
+              </span>
             </div>
             <Progress value={progressPercentage} className="h-2" />
           </div>
@@ -365,14 +360,15 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
                 <span>Histórico</span>
               </TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="items" className="space-y-4 pt-4">
               {totalItems === 0 ? (
                 <div className="text-center py-8 border border-dashed rounded-md">
                   <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <h3 className="text-lg font-medium">Nenhum item no checklist</h3>
                   <p className="text-muted-foreground mt-1 max-w-md mx-auto">
-                    Este checklist não possui itens. Adicione perguntas usando o formulário abaixo ou importe um novo checklist com itens.
+                    Este checklist não possui itens. Adicione perguntas usando o
+                    formulário abaixo ou importe um novo checklist com itens.
                   </p>
                 </div>
               ) : (
@@ -387,11 +383,13 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
               <AddChecklistItemForm
                 checklistId={checklistId}
                 onAddItem={handleAddItem}
-                lastOrder={items.length > 0 ? Math.max(...items.map(i => i.ordem)) + 1 : 0}
+                lastOrder={
+                  items.length > 0 ? Math.max(...items.map((i) => i.ordem)) + 1 : 0
+                }
                 questionTypes={questionTypes}
               />
             </TabsContent>
-            
+
             <TabsContent value="comments" className="pt-4">
               {loadingExtra ? (
                 <div className="py-10 text-center">Carregando comentários...</div>
@@ -399,11 +397,13 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
                 <ChecklistComments
                   checklistId={checklistId}
                   comments={comments}
-                  onAddComment={handleAddComment}
+                  onAddComment={(comment) =>
+                    setComments((prev) => [comment, ...prev])
+                  }
                 />
               )}
             </TabsContent>
-            
+
             <TabsContent value="attachments" className="pt-4">
               {loadingExtra ? (
                 <div className="py-10 text-center">Carregando anexos...</div>
@@ -411,12 +411,18 @@ export default function ChecklistDetailsContainer({ checklistId }: ChecklistDeta
                 <ChecklistAttachments
                   checklistId={checklistId}
                   attachments={attachments}
-                  onAddAttachment={handleAddAttachment}
-                  onRemoveAttachment={handleRemoveAttachment}
+                  onAddAttachment={(attachment) =>
+                    setAttachments((prev) => [attachment, ...prev])
+                  }
+                  onRemoveAttachment={(attachmentId) =>
+                    setAttachments((prev) =>
+                      prev.filter((a) => a.id !== attachmentId)
+                    )
+                  }
                 />
               )}
             </TabsContent>
-            
+
             <TabsContent value="history" className="pt-4">
               {loadingExtra ? (
                 <div className="py-10 text-center">Carregando histórico...</div>
