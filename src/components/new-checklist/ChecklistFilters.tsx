@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import {
@@ -75,40 +76,18 @@ export function ChecklistFilters({
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("all");
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const fetchFilterData = async () => {
-      setIsLoading(true);
-      try {
-        const { data: companiesData, error: companiesError } = await supabase
-          .from("companies")
-          .select("id, fantasy_name")
-          .order("fantasy_name");
-        
-        if (companiesError) throw companiesError;
-        setCompanies(companiesData || []);
-        
-        const { data: categoriesData, error: categoriesError } = await supabase
-          .from("checklists")
-          .select("category")
-          .not("category", "is", null);
-        
-        if (categoriesError) throw categoriesError;
-        
-        const uniqueCategories = Array.from(
-          new Set(categoriesData?.map(item => item.category).filter(Boolean))
-        );
-        
-        setCategories(uniqueCategories as string[]);
-      } catch (error) {
-        console.error("Error fetching filter data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchFilterData();
-  }, []);
+    // Count active filters
+    let count = 0;
+    if (selectedCompanyId !== "all") count++;
+    if (selectedCategory !== "all") count++;
+    if (selectedOrigin !== "all") count++;
+    if (selectedStatus !== "all") count++;
+    if (search) count++;
+    setActiveFiltersCount(count);
+  }, [search, selectedCompanyId, selectedCategory, selectedOrigin, selectedStatus]);
 
   const handleSortChange = (value: string) => {
     const [column, direction] = value.split("_");
@@ -247,7 +226,7 @@ export function ChecklistFilters({
             <Select 
               value={selectedCompanyId} 
               onValueChange={setSelectedCompanyId}
-              disabled={isLoading || companies.length === 0}
+              disabled={loading || companies.length === 0}
             >
               <SelectTrigger className="bg-background">
                 <SelectValue placeholder="Empresa" />
@@ -267,7 +246,7 @@ export function ChecklistFilters({
             <Select 
               value={selectedCategory} 
               onValueChange={setSelectedCategory}
-              disabled={isLoading || categories.length === 0}
+              disabled={loading || categories.length === 0}
             >
               <SelectTrigger className="bg-background">
                 <SelectValue placeholder="Categoria" />

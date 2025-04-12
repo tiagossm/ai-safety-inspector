@@ -56,23 +56,23 @@ export function useNewChecklists() {
   // Ensure our state stays in sync
   useEffect(() => {
     setDerivedFilterType(filterType);
-  }, [filterType]);
+  }, [filterType, setDerivedFilterType]);
 
   useEffect(() => {
     setDerivedSelectedCompanyId(selectedCompanyId);
-  }, [selectedCompanyId]);
+  }, [selectedCompanyId, setDerivedSelectedCompanyId]);
 
   useEffect(() => {
     setDerivedSelectedCategory(selectedCategory);
-  }, [selectedCategory]);
+  }, [selectedCategory, setDerivedSelectedCategory]);
 
   useEffect(() => {
     setDerivedSelectedOrigin(selectedOrigin);
-  }, [selectedOrigin]);
+  }, [selectedOrigin, setDerivedSelectedOrigin]);
 
   useEffect(() => {
     setDerivedSortOrder(sortOrder);
-  }, [sortOrder]);
+  }, [sortOrder, setDerivedSortOrder]);
 
   return {
     checklists: filteredChecklists,
