@@ -9,7 +9,8 @@ import {
   ClipboardCheck,
   FileCheck,
   Users,
-  FileText
+  FileText,
+  Plus
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -39,14 +40,9 @@ export function SidebarMenu({ user, onLogout }: SidebarMenuProps) {
     }));
   };
 
-  // Function to check if a route is active
   const isActive = (path: string) => {
-    // Exact match
     if (location.pathname === path) return true;
-    
-    // Check for active sub-route (for nested routes)
     if (path !== '/' && location.pathname.startsWith(path)) return true;
-    
     return false;
   };
 
@@ -93,8 +89,6 @@ export function SidebarMenu({ user, onLogout }: SidebarMenuProps) {
               Checklists
             </Link>
           </li>
-          
-          {/* Inspections Link */}
           <li>
             <Link
               to="/inspections"
@@ -108,8 +102,6 @@ export function SidebarMenu({ user, onLogout }: SidebarMenuProps) {
               Inspeções
             </Link>
           </li>
-          
-          {/* Users Link */}
           <li>
             <Link
               to="/users"
@@ -123,7 +115,6 @@ export function SidebarMenu({ user, onLogout }: SidebarMenuProps) {
               Usuários
             </Link>
           </li>
-          
           <li>
             <Accordion type="single" collapsible className="w-full">
               <AccordionItem value="units">
