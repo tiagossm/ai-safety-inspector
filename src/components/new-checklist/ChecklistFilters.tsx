@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -10,191 +10,290 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { CompanyListItem } from "@/hooks/checklist/useFilterChecklists";
-import { SearchX, Plus, Bot, FileSpreadsheet, FilePenLine, ArrowDownAZ, ArrowUpZA } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { 
+  Search, 
+  ArrowDownAZ, 
+  ArrowUpZA, 
+  Filter,
+  SlidersHorizontal, 
+  Check, 
+  X 
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+
+interface Company {
+  id: string;
+  fantasy_name: string;
+}
 
 interface ChecklistFiltersProps {
-  searchTerm: string;
-  setSearchTerm: (term: string) => void;
-  filterType: string;
-  setFilterType: (type: string) => void;
-  selectedCompanyId: string;
-  setSelectedCompanyId: (id: string) => void;
-  selectedCategory: string;
-  setSelectedCategory: (category: string) => void;
-  selectedOrigin?: string;
-  setSelectedOrigin?: (origin: string) => void;
-  sortOrder: string;
-  setSortOrder: (order: string) => void;
-  companies: CompanyListItem[];
-  categories: string[];
-  isLoadingCompanies: boolean;
-  totalChecklists: number;
-  onCreateNew: () => void;
+  search: string;
+  setSearch: (search: string) => void;
+  selectedChecklists: string[];
+  isBatchUpdating: boolean;
+  onBatchUpdateStatus: (status: "active" | "inactive") => void;
+  sortColumn: string;
+  setSortColumn: (column: string) => void;
+  sort: "asc" | "desc";
+  setSort: (sort: "asc" | "desc") => void;
 }
 
 export function ChecklistFilters({
-  searchTerm,
-  setSearchTerm,
-  filterType,
-  setFilterType,
-  selectedCompanyId,
-  setSelectedCompanyId,
-  selectedCategory,
-  setSelectedCategory,
-  selectedOrigin = "all",
-  setSelectedOrigin,
-  sortOrder,
-  setSortOrder,
-  companies,
-  categories,
-  isLoadingCompanies,
-  totalChecklists,
-  onCreateNew,
+  search,
+  setSearch,
+  selectedChecklists,
+  isBatchUpdating,
+  onBatchUpdateStatus,
+  sortColumn,
+  setSortColumn,
+  sort,
+  setSort,
 }: ChecklistFiltersProps) {
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("all");
+  const [selectedOrigin, setSelectedOrigin] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [categories, setCategories] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Fetch companies and categories for filters
+  useEffect(() => {
+    const fetchFilterData = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch companies
+        const { data: companiesData, error: companiesError } = await supabase
+          .from("companies")
+          .select("id, fantasy_name")
+          .order("fantasy_name");
+        
+        if (companiesError) throw companiesError;
+        setCompanies(companiesData || []);
+        
+        // Fetch distinct categories
+        const { data: categoriesData, error: categoriesError } = await supabase
+          .from("checklists")
+          .select("category")
+          .not("category", "is", null);
+        
+        if (categoriesError) throw categoriesError;
+        
+        // Extract unique categories
+        const uniqueCategories = Array.from(
+          new Set(categoriesData?.map(item => item.category).filter(Boolean))
+        );
+        
+        setCategories(uniqueCategories as string[]);
+      } catch (error) {
+        console.error("Error fetching filter data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchFilterData();
+  }, []);
+
+  // Function to set sort order and column
+  const handleSortChange = (value: string) => {
+    const [column, direction] = value.split("_");
+    setSortColumn(column);
+    setSort(direction as "asc" | "desc");
+  };
+
+  // Function to reset all filters
+  const resetFilters = () => {
+    setSearch("");
+    setSelectedCompanyId("all");
+    setSelectedStatus("all");
+    setSelectedOrigin("all");
+    setSelectedCategory("all");
+    setSortColumn("title");
+    setSort("asc");
+  };
+
+  // Count active filters
+  const activeFiltersCount = [
+    selectedCompanyId !== "all",
+    selectedStatus !== "all",
+    selectedOrigin !== "all",
+    selectedCategory !== "all",
+    search.trim().length > 0
+  ].filter(Boolean).length;
+
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        <div className="relative">
-          <Input
-            placeholder="Pesquisar checklists"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-          <SearchX className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+    <Card className="border-muted bg-muted/10">
+      <CardContent className="p-4 space-y-4">
+        <div className="flex flex-col lg:flex-row gap-3">
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar checklists por título, descrição..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          
+          <div className="flex gap-2">
+            <Select 
+              value={`${sortColumn}_${sort}`} 
+              onValueChange={handleSortChange}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Ordenar por" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="title_asc">
+                    <div className="flex items-center gap-2">
+                      <ArrowDownAZ className="h-4 w-4" />
+                      <span>Nome (A-Z)</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="title_desc">
+                    <div className="flex items-center gap-2">
+                      <ArrowUpZA className="h-4 w-4" />
+                      <span>Nome (Z-A)</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="created_at_desc">
+                    <span>Mais recentes</span>
+                  </SelectItem>
+                  <SelectItem value="created_at_asc">
+                    <span>Mais antigos</span>
+                  </SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            
+            <Button
+              variant={showAdvancedFilters ? "default" : "outline"}
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className="flex gap-2 items-center"
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              <span>Filtros</span>
+              {activeFiltersCount > 0 && (
+                <Badge variant="secondary" className="ml-1 h-5 px-1.5 rounded-full">
+                  {activeFiltersCount}
+                </Badge>
+              )}
+            </Button>
+            
+            {selectedChecklists.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  title="Ativar selecionados"
+                  disabled={isBatchUpdating}
+                  onClick={() => onBatchUpdateStatus("active")}
+                >
+                  <Check className="h-4 w-4 text-green-500" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  title="Desativar selecionados"
+                  disabled={isBatchUpdating}
+                  onClick={() => onBatchUpdateStatus("inactive")}
+                >
+                  <X className="h-4 w-4 text-red-500" />
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <Select value={filterType} onValueChange={setFilterType}>
-            <SelectTrigger className="col-span-1">
-              <SelectValue placeholder="Filtrar por tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="template">Templates</SelectItem>
-                <SelectItem value="active">Ativos</SelectItem>
-                <SelectItem value="inactive">Inativos</SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          
-          <Select value={sortOrder} onValueChange={setSortOrder}>
-            <SelectTrigger className="col-span-1">
-              <SelectValue placeholder="Ordenar por" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="created_desc">
-                  <div className="flex items-center">
-                    <ArrowUpZA className="mr-2 h-4 w-4" />
-                    Mais recentes
-                  </div>
-                </SelectItem>
-                <SelectItem value="created_asc">
-                  <div className="flex items-center">
-                    <ArrowDownAZ className="mr-2 h-4 w-4" />
-                    Mais antigos
-                  </div>
-                </SelectItem>
-                <SelectItem value="title_asc">
-                  <div className="flex items-center">
-                    <ArrowDownAZ className="mr-2 h-4 w-4" />
-                    Nome (A-Z)
-                  </div>
-                </SelectItem>
-                <SelectItem value="title_desc">
-                  <div className="flex items-center">
-                    <ArrowUpZA className="mr-2 h-4 w-4" />
-                    Nome (Z-A)
-                  </div>
-                </SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="flex justify-end">
-          <Button onClick={onCreateNew} className="w-full md:w-auto">
-            <Plus className="h-4 w-4 mr-2" />
-            Criar Novo Checklist
-          </Button>
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <Select
-          value={selectedCompanyId}
-          onValueChange={setSelectedCompanyId}
-          disabled={isLoadingCompanies}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Todas as empresas" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem value="all">Todas as empresas</SelectItem>
-              {companies.map((company) => (
-                <SelectItem key={company.id} value={company.id}>
-                  {company.fantasy_name}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-        
-        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-          <SelectTrigger>
-            <SelectValue placeholder="Todas as categorias" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectItem value="all">Todas as categorias</SelectItem>
-              {categories.map((category) => (
-                <SelectItem key={category} value={category}>
-                  {category}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-        
-        {setSelectedOrigin && (
-          <Select value={selectedOrigin} onValueChange={setSelectedOrigin}>
-            <SelectTrigger>
-              <SelectValue placeholder="Todas as origens" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="all">Todas as origens</SelectItem>
-                <SelectItem value="manual">
-                  <div className="flex items-center">
-                    <FilePenLine className="mr-2 h-4 w-4" />
-                    Criação Manual
-                  </div>
-                </SelectItem>
-                <SelectItem value="ia">
-                  <div className="flex items-center">
-                    <Bot className="mr-2 h-4 w-4" />
-                    Gerado por IA
-                  </div>
-                </SelectItem>
-                <SelectItem value="csv">
-                  <div className="flex items-center">
-                    <FileSpreadsheet className="mr-2 h-4 w-4" />
-                    Importado de Planilha
-                  </div>
-                </SelectItem>
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+        {showAdvancedFilters && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-3 border-t">
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+              <SelectTrigger>
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="all">Todos os status</SelectItem>
+                  <SelectItem value="active">Ativos</SelectItem>
+                  <SelectItem value="inactive">Inativos</SelectItem>
+                  <SelectItem value="template">Templates</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            
+            <Select 
+              value={selectedCompanyId} 
+              onValueChange={setSelectedCompanyId}
+              disabled={isLoading || companies.length === 0}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Empresa" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="all">Todas as empresas</SelectItem>
+                  {companies.map((company) => (
+                    <SelectItem key={company.id} value={company.id}>
+                      {company.fantasy_name || `Empresa ${company.id.slice(0, 8)}`}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            
+            <Select 
+              value={selectedCategory} 
+              onValueChange={setSelectedCategory}
+              disabled={isLoading || categories.length === 0}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="all">Todas as categorias</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            
+            <Select value={selectedOrigin} onValueChange={setSelectedOrigin}>
+              <SelectTrigger>
+                <SelectValue placeholder="Origem" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="all">Todas as origens</SelectItem>
+                  <SelectItem value="manual">Manual</SelectItem>
+                  <SelectItem value="ia">IA</SelectItem>
+                  <SelectItem value="csv">Planilha</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            
+            {activeFiltersCount > 0 && (
+              <div className="col-span-full flex justify-end">
+                <Button 
+                  variant="ghost" 
+                  onClick={resetFilters}
+                  className="text-muted-foreground"
+                >
+                  Limpar filtros
+                </Button>
+              </div>
+            )}
+          </div>
         )}
-      </div>
-      
-      <div className="text-sm text-muted-foreground">
-        Exibindo {totalChecklists} {totalChecklists === 1 ? 'checklist' : 'checklists'}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

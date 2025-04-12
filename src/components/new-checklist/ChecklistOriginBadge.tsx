@@ -1,65 +1,54 @@
 
 import React from "react";
 import { Badge } from "@/components/ui/badge";
-import { File, Bot, Upload } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Bot, FilePenLine, FileSpreadsheet } from "lucide-react";
 
 interface ChecklistOriginBadgeProps {
-  origin?: "manual" | "ia" | "csv";
+  origin: "manual" | "ia" | "csv" | undefined;
   showLabel?: boolean;
   className?: string;
 }
 
-export const ChecklistOriginBadge = ({
-  origin = "manual",
-  showLabel = true,
-  className = "",
-  ...props
-}: ChecklistOriginBadgeProps) => {
-  const getContent = () => {
-    let icon = <File className="h-3 w-3 mr-1" />;
-    let label = "Manual";
-    let badgeClass = "bg-slate-100";
+export function ChecklistOriginBadge({ origin, showLabel = true, className = "" }: ChecklistOriginBadgeProps) {
+  if (!origin) return null;
 
-    if (origin === "ia") {
-      icon = <Bot className="h-3 w-3 mr-1" />;
-      label = "IA";
-      badgeClass = "bg-purple-100 text-purple-800 border-purple-300";
-    } else if (origin === "csv") {
-      icon = <Upload className="h-3 w-3 mr-1" />;
-      label = "CSV";
-      badgeClass = "bg-blue-100 text-blue-800 border-blue-300";
+  const getOriginConfig = () => {
+    switch (origin) {
+      case "manual":
+        return {
+          label: "Manual",
+          icon: FilePenLine,
+          variant: "outline" as const,
+          color: "text-blue-500",
+        };
+      case "ia":
+        return {
+          label: "IA",
+          icon: Bot,
+          variant: "outline" as const,
+          color: "text-violet-500",
+        };
+      case "csv":
+        return {
+          label: "Importado",
+          icon: FileSpreadsheet,
+          variant: "outline" as const,
+          color: "text-green-500",
+        };
+      default:
+        return null;
     }
-
-    return (
-      <Badge
-        variant="outline"
-        className={cn("flex items-center", badgeClass, className)}
-        {...props}
-      >
-        {icon}
-        {showLabel && label}
-      </Badge>
-    );
   };
 
-  if (showLabel) return getContent();
+  const config = getOriginConfig();
+  if (!config) return null;
+
+  const Icon = config.icon;
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>{getContent()}</TooltipTrigger>
-        <TooltipContent>
-          <p>
-            {origin === "manual"
-              ? "Criação Manual"
-              : origin === "ia"
-              ? "Gerado por IA"
-              : "Importado via CSV"}
-          </p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Badge variant={config.variant} className={`${config.color} ${className}`}>
+      <Icon className="h-3 w-3 mr-1" />
+      {showLabel && config.label}
+    </Badge>
   );
-};
+}
