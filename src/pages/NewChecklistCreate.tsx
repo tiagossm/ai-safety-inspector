@@ -1,3 +1,4 @@
+
 import {
   Select,
   SelectContent,
@@ -193,10 +194,11 @@ export default function NewChecklistCreate() {
     try {
       setIsSubmitting(true);
       
+      // Fix: explicitly type the status_checklist as "ativo" | "inativo" to match the NewChecklist type
       const typedChecklist: NewChecklistPayload = {
         ...checklist,
-        status_checklist: checklist.status === "active" ? "ativo" : "inativo",
-        origin: "ia"
+        status_checklist: checklist.status === "active" ? "ativo" : "inativo" as "ativo" | "inativo",
+        origin: "ia" as "manual" | "ia" | "csv"
       };
       
       const result = await generateChecklist(typedChecklist);
