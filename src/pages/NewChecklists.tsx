@@ -337,7 +337,7 @@ export default function NewChecklists() {
   return (
     <div className="space-y-6">
       <ChecklistsHeader />
-
+      
       <Card>
         <CardHeader>
           <CardTitle>Filtros e Ações</CardTitle>

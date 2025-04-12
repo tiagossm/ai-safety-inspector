@@ -1,3 +1,4 @@
+
 import {
   Select,
   SelectContent,
@@ -153,8 +154,8 @@ export default function NewChecklistCreate() {
       
       const processedChecklist: NewChecklistPayload = {
         ...checklist,
-        status_checklist: checklist.status === "active" ? "ativo" : "inativo",
-        origin: activeTab === "manual" ? "manual" : activeTab === "ai" ? "ia" : "csv"
+        status_checklist: (checklist.status === "active" ? "ativo" : "inativo") as "ativo" | "inativo",
+        origin: activeTab as "manual" | "ia" | "csv"
       };
       
       const result = await createChecklist.mutateAsync({
