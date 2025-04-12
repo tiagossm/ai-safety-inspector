@@ -20,9 +20,6 @@ import NewInspectionPage from "@/pages/NewInspectionPage";
 import InspectionExecutionPage from "@/pages/InspectionExecutionPage";
 import Inspections from "@/pages/Inspections";
 import { Users } from "@/pages/Users";
-import CreateChecklist from "@/pages/CreateChecklist";
-import ChecklistDetails from "@/pages/ChecklistDetails";
-import ChecklistEditorPage from "@/pages/ChecklistEditorPage";
 
 function App() {
   return (
@@ -38,25 +35,22 @@ function App() {
             <Route path="employees" element={<Employees />} />
             <Route path="users" element={<Users />} />
             
-            {/* Legacy Checklist routes - Redirect to the new routes */}
-            <Route path="checklists" element={<Navigate to="/new-checklists" replace />} />
-            <Route path="checklists/editor" element={<Navigate to="/new-checklists/create" replace />} />
-            <Route path="checklists/editor/:id" element={<Navigate to="/new-checklists/:id/edit" replace />} />
-            <Route path="checklists/:id" element={<Navigate to="/new-checklists/:id" replace />} />
-            <Route path="create-checklist" element={<Navigate to="/new-checklists/create" replace />} />
-            
-            {/* New Checklist routes */}
+            {/* Checklist routes */}
             <Route path="new-checklists" element={<NewChecklists />} />
             <Route path="new-checklists/create" element={<NewChecklistCreate />} />
-            <Route path="new-checklists/:id/edit" element={<NewChecklistEdit />} />
+            <Route path="new-checklists/edit/:id" element={<NewChecklistEdit />} />
             <Route path="new-checklists/:id" element={<NewChecklistDetails />} />
             
             {/* Inspection routes */}
             <Route path="inspections" element={<Inspections />} />
-            <Route path="inspections/new" element={<NewInspectionPage />} />
             <Route path="inspections/new/:id" element={<NewInspectionPage />} />
             <Route path="inspections/:id" element={<InspectionExecutionPage />} />
             <Route path="inspections/:id/view" element={<InspectionExecutionPage />} />
+            
+            {/* Redirect old routes to new ones */}
+            <Route path="checklists" element={<Navigate to="/new-checklists" replace />} />
+            <Route path="checklists/create" element={<Navigate to="/new-checklists/create" replace />} />
+            <Route path="checklists/:id" element={<Navigate to="/new-checklists/:id" replace />} />
             
             <Route path="settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />

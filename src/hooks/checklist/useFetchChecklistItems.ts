@@ -8,7 +8,7 @@ export function useFetchChecklistItems(id: string, enabled: boolean = true) {
   return useQuery({
     queryKey: ["checklist-items", id],
     queryFn: async () => {
-      if (!id || id === "create") {
+      if (!id) {
         console.error("Invalid checklist ID provided:", id);
         throw new Error("ID do checklist inválido");
       }

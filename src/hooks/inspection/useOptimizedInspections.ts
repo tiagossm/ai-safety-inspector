@@ -157,14 +157,11 @@ export function useOptimizedInspections() {
           createdAt: inspection.created_at,
           updatedAt: inspection.created_at,
           priority: (inspection.priority || 'medium') as 'low' | 'medium' | 'high',
-          location: inspection.location,
+          locationName: inspection.location,
           company: inspection.companies || null,
           responsible: inspection.responsible_id ? usersMap[inspection.responsible_id] : null,
           progress,
           // Additional fields from the database schema
-          date: inspection.scheduled_date || inspection.created_at || '', // Add missing date property
-          totalItems: totalQuestions, // Add missing totalItems property
-          completedItems: answeredQuestions,
           approval_notes: inspection.approval_notes,
           approval_status: inspection.approval_status,
           approved_by: inspection.approved_by,
@@ -199,18 +196,18 @@ export function useOptimizedInspections() {
   const filteredInspections = useMemo(() => {
     return inspections.filter(inspection => {
       // Search filter (case insensitive)
-      const searchLower = filters.search?.toLowerCase() || "";
+      const searchLower = filters.search.toLowerCase();
       const matchesSearch = !filters.search || 
         (inspection.title?.toLowerCase().includes(searchLower)) ||
-        (typeof inspection.company !== 'string' && inspection.company?.fantasy_name?.toLowerCase().includes(searchLower)) ||
+        (inspection.company?.fantasy_name?.toLowerCase().includes(searchLower)) ||
         (inspection.responsible?.name?.toLowerCase().includes(searchLower));
       
       // Other filters
       const matchesStatus = filters.status === "all" || inspection.status === filters.status;
-      const matchesPriority = !filters.priority || filters.priority === "all" || inspection.priority === filters.priority;
-      const matchesCompany = !filters.companyId || filters.companyId === "all" || inspection.companyId === filters.companyId;
-      const matchesResponsible = !filters.responsibleId || filters.responsibleId === "all" || inspection.responsibleId === filters.responsibleId;
-      const matchesChecklist = !filters.checklistId || filters.checklistId === "all" || inspection.checklistId === filters.checklistId;
+      const matchesPriority = filters.priority === "all" || inspection.priority === filters.priority;
+      const matchesCompany = filters.companyId === "all" || inspection.companyId === filters.companyId;
+      const matchesResponsible = filters.responsibleId === "all" || inspection.responsibleId === filters.responsibleId;
+      const matchesChecklist = filters.checklistId === "all" || inspection.checklistId === filters.checklistId;
       
       // Date filter
       let matchesDate = true;

@@ -40,13 +40,6 @@ export function InspectionTable({
     }
   };
   
-  // Helper to safely get company name
-  const getCompanyName = (company: string | { fantasy_name?: string } | undefined) => {
-    if (!company) return "N/A";
-    if (typeof company === 'string') return company;
-    return company.fantasy_name || "N/A";
-  };
-  
   return (
     <div className="rounded-md border">
       <Table>
@@ -71,7 +64,7 @@ export function InspectionTable({
                   {inspection.title}
                 </TableCell>
                 <TableCell>
-                  {getCompanyName(inspection.company)}
+                  {inspection.company?.fantasy_name || "N/A"}
                 </TableCell>
                 <TableCell>
                   {inspection.responsible?.name || "N/A"}

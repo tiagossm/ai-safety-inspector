@@ -1,4 +1,3 @@
-
 import { CalendarClock, Building2, User, Flag, CheckCircle2 } from "lucide-react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -39,13 +38,6 @@ export function InspectionCard({ inspection, onView }: InspectionCardProps) {
       onView(inspection.id);
     }
   };
-
-  // Helper to safely get company name
-  const getCompanyName = () => {
-    if (!inspection.company) return "Empresa não especificada";
-    if (typeof inspection.company === 'string') return inspection.company;
-    return inspection.company.fantasy_name || "Empresa não especificada";
-  };
   
   return (
     <Card className="h-full flex flex-col">
@@ -61,10 +53,12 @@ export function InspectionCard({ inspection, onView }: InspectionCardProps) {
         </div>
         
         <div className="space-y-2 text-sm">
-          <div className="flex items-center text-muted-foreground">
-            <Building2 className="h-3.5 w-3.5 mr-2" />
-            <span>{getCompanyName()}</span>
-          </div>
+          {inspection.company && (
+            <div className="flex items-center text-muted-foreground">
+              <Building2 className="h-3.5 w-3.5 mr-2" />
+              <span>{inspection.company.fantasy_name || "Empresa não especificada"}</span>
+            </div>
+          )}
           
           {inspection.responsible && (
             <div className="flex items-center text-muted-foreground">

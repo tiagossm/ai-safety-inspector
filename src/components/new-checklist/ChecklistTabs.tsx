@@ -16,7 +16,7 @@ interface ChecklistTabsProps {
   allChecklists: ChecklistWithStats[];
   isLoading: boolean;
   onEdit: (id: string) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: string, title: string) => void;
   onOpen: (id: string) => void;
   onStatusChange: () => void;
   onBulkDelete: (ids: string[]) => void;

@@ -6,7 +6,7 @@ import { useSubChecklistDialog } from "@/hooks/inspection/useSubChecklistDialog"
 import { QuestionsEmptyState } from "./questions-panel/QuestionsEmptyState";
 import { QuestionsList } from "./questions-panel/QuestionsList";
 
-export interface QuestionsPanelProps {
+interface QuestionsPanelProps {
   loading: boolean;
   currentGroupId: string | null;
   filteredQuestions: any[];
@@ -46,32 +46,10 @@ export function QuestionsPanel({
     : { id: "default-group", title: "Perguntas", order: 0 };
   
   // Se não temos perguntas para mostrar, exibir o estado vazio
-  if (loading) {
+  if (loading || !currentGroupId || !currentGroup || filteredQuestions.length === 0) {
     return (
       <QuestionsEmptyState 
-        loading={true}
-        currentGroupId={currentGroupId}
-        currentGroup={currentGroup}
-        questionsCount={questions.length}
-      />
-    );
-  }
-  
-  if (!currentGroupId || !currentGroup) {
-    return (
-      <QuestionsEmptyState 
-        loading={false}
-        currentGroupId={currentGroupId}
-        currentGroup={{ id: "no-group", title: "Nenhum grupo selecionado", order: 0 }}
-        questionsCount={questions.length}
-      />
-    );
-  }
-  
-  if (filteredQuestions.length === 0) {
-    return (
-      <QuestionsEmptyState 
-        loading={false}
+        loading={loading}
         currentGroupId={currentGroupId}
         currentGroup={currentGroup}
         questionsCount={questions.length}

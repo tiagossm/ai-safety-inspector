@@ -1,15 +1,12 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { ResponseInputRenderer } from "./question-parts/ResponseInputRenderer";
-import { QuestionHeader } from "./question-parts/QuestionHeader";
-import { QuestionFooter } from "./question-parts/QuestionFooter";
-import { QuestionActions } from "./question-parts/QuestionActions";
+import { Textarea } from "@/components/ui/textarea";
 import { ActionPlanInput } from "./question-parts/ActionPlanInput";
-import { ActionPlanIndicator } from "./question-parts/ActionPlanIndicator";
-import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { AlertCircle } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronRight, Pencil, List } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface InspectionQuestionProps {
   question: any;
@@ -18,165 +15,212 @@ interface InspectionQuestionProps {
   onResponseChange: (data: any) => void;
   allQuestions: any[];
   numberLabel?: string;
-  onOpenSubChecklist?: () => void;
-  onAddMedia?: () => void;
   isSubQuestion?: boolean;
+  onOpenSubChecklist?: () => void;
 }
 
-export const InspectionQuestion = ({
+export const InspectionQuestion = React.memo(function InspectionQuestion({
   question,
   index,
   response,
   onResponseChange,
   allQuestions,
   numberLabel,
-  onOpenSubChecklist,
-  onAddMedia,
-  isSubQuestion = false
-}: InspectionQuestionProps) => {
-  const [showActionPlan, setShowActionPlan] = useState(!!response?.actionPlan);
-  const [showCommentSection, setShowCommentSection] = useState(false);
+  isSubQuestion = false,
+  onOpenSubChecklist
+}: InspectionQuestionProps) {
+  const [comment, setComment] = useState(response?.comment || "");
+  const [isActionPlanOpen, setIsActionPlanOpen] = useState(false);
+  const [isValid, setIsValid] = useState(!question.isRequired);
   
-  const toggleActionPlan = () => {
-    setShowActionPlan(!showActionPlan);
-  };
+  const normalizedType = useMemo(() => {
+    const type = question.responseType || question.tipo_resposta || "";
+    if (typeof type !== 'string') return 'unknown';
+    
+    const lowerType = type.toLowerCase();
+    if (lowerType.includes('sim/não') || lowerType.includes('yes_no') || lowerType.includes('yes/no')) {
+      return 'yes_no';
+    } else if (lowerType.includes('múltipla') || lowerType.includes('multiple')) {
+      return 'multiple_choice';
+    } else if (lowerType.includes('texto') || lowerType.includes('text')) {
+      return 'text';
+    } else if (lowerType.includes('numeric') || lowerType.includes('numérico')) {
+      return 'numeric';
+    } else if (lowerType.includes('foto') || lowerType.includes('photo')) {
+      return 'photo';
+    } else {
+      return lowerType;
+    }
+  }, [question.responseType, question.tipo_resposta]);
   
-  const handleResponseChange = (value: any) => {
+  const questionText = question.text || question.pergunta || "";
+  const isRequired = question.isRequired !== undefined ? question.isRequired : question.obrigatorio;
+  const hasSubChecklist = question.hasSubChecklist || false;
+  
+  const allowsPhoto = question.allowsPhoto || question.permite_foto || false;
+  const allowsVideo = question.allowsVideo || question.permite_video || false;
+  const allowsAudio = question.allowsAudio || question.permite_audio || false;
+  
+  // Reduzir chamadas ao console em produção
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`Question ${question.id} media capabilities:`, { 
+        allowsPhoto, 
+        allowsVideo, 
+        allowsAudio,
+        responseType: normalizedType
+      });
+    }
+  }, [question.id, allowsPhoto, allowsVideo, allowsAudio, normalizedType]);
+  
+  const handleValueChange = useCallback((value: any) => {
+    setIsValid(!isRequired || (value !== undefined && value !== null && value !== ""));
+    
     onResponseChange({
       ...response,
-      value
+      value,
+      comment
     });
-  };
+  }, [isRequired, response, comment, onResponseChange]);
   
-  const handleActionPlanChange = (text: string) => {
+  const handleCommentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setComment(e.target.value);
+    
     onResponseChange({
       ...response,
-      actionPlan: text
+      comment: e.target.value
     });
-  };
+  }, [response, onResponseChange]);
   
-  // Get information about parent question if this is a child question
-  const parentInfo = React.useMemo(() => {
-    if (!question.parentQuestionId) return null;
-    
-    const parentQuestion = allQuestions.find(
-      q => q.id === question.parentQuestionId
-    );
-    
-    if (!parentQuestion) return null;
-    
-    return {
-      text: parentQuestion.text,
-      conditionValue: question.conditionValue
-    };
-  }, [question, allQuestions]);
+  const handleActionPlanChange = useCallback((actionPlan: string) => {
+    onResponseChange({
+      ...response,
+      actionPlan
+    });
+  }, [response, onResponseChange]);
   
-  // Check if question should show warning about being mandatory
-  const isUnanswered = question.isRequired && (!response || response.value === undefined);
-  const hasValidationError = response?.validated === false;
+  const handleAddMedia = useCallback(() => {
+    console.log("Attempting to add media to question:", question.id);
+    
+    const mediaUrls = response.mediaUrls || [];
+    const mockMediaUrl = `https://placehold.co/300x200?text=Media+${mediaUrls.length + 1}`;
+    
+    onResponseChange({
+      ...response,
+      mediaUrls: [...mediaUrls, mockMediaUrl]
+    });
+  }, [question.id, response, onResponseChange]);
   
-  const isFollowUpQuestion = !!question.parentQuestionId;
-
-  const onOpenCommentDialog = () => {
-    setShowCommentSection(true);
-  };
-
-  const onOpenActionPlanDialog = () => {
-    setShowActionPlan(true);
-  };
-
-  const setIsActionPlanOpen = (isOpen: boolean) => {
-    setShowActionPlan(isOpen);
-  };
+  const shouldBeVisible = useCallback(() => {
+    if (!question.parentQuestionId && !question.parent_item_id) {
+      return true;
+    }
+    
+    const parentId = question.parentQuestionId || question.parent_item_id;
+    const parentQuestion = allQuestions.find(q => q.id === parentId);
+    
+    if (!parentQuestion) {
+      return true;
+    }
+    
+    return true;
+  }, [question.parentQuestionId, question.parent_item_id, allQuestions]);
+  
+  if (!shouldBeVisible()) {
+    return null;
+  }
   
   return (
-    <Card 
-      className={cn(
-        "border shadow-sm", 
-        parentInfo ? "border-l-4 border-l-blue-500" : "",
-        isUnanswered ? "border-amber-300" : "",
-        hasValidationError ? "border-red-300" : ""
-      )}
-    >
-      <div className="p-4">
-        {parentInfo && (
-          <div className="mb-2">
-            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
-              Subitem da pergunta: "{parentInfo.text?.substring(0, 60)}{parentInfo.text && parentInfo.text.length > 60 ? "..." : ""}"
-              {parentInfo.conditionValue && (
-                <span className="ml-1">
-                  {" "}
-                  (quando "{parentInfo.conditionValue}")
-                </span>
-              )}
-            </Badge>
+    <div className={`relative ${!isValid && response.value !== undefined ? 'border-l-4 border-l-red-500 pl-2' : ''}`}>
+      <div className="flex items-start gap-2">
+        <div className="font-medium min-w-[24px] mt-0.5">{numberLabel || (index + 1)}</div>
+        <div className="flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="text-base font-medium flex-1">{questionText}</div>
+            
+            {hasSubChecklist && onOpenSubChecklist && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onOpenSubChecklist}
+                className="flex items-center"
+              >
+                <List className="h-3.5 w-3.5 mr-1" />
+                <span className="text-xs">Ver sub-checklist</span>
+              </Button>
+            )}
           </div>
-        )}
-        
-        <QuestionHeader 
-          question={question} 
-          index={index}
-          numberLabel={numberLabel}
-          response={response}
-          isFollowUpQuestion={isFollowUpQuestion}
-          showCommentSection={showCommentSection}
-          setShowCommentSection={setShowCommentSection}
-        />
-        
-        <div className="mt-3">
-          <ResponseInputRenderer
-            question={question}
-            response={response}
-            onResponseChange={handleResponseChange}
-            onAddMedia={onAddMedia}
-          />
-        </div>
-        
-        {isUnanswered && (
-          <div className="mt-2 flex items-center gap-1.5 text-amber-600 text-xs">
-            <AlertCircle className="h-3.5 w-3.5" />
-            <span>Esta pergunta precisa ser respondida</span>
-          </div>
-        )}
-        
-        {hasValidationError && (
-          <div className="mt-2 flex items-center gap-1.5 text-red-600 text-xs">
-            <AlertCircle className="h-3.5 w-3.5" />
-            <span>A resposta não atende aos critérios de validação</span>
-          </div>
-        )}
-        
-        {response?.value && (
-          <ActionPlanIndicator
-            responseValue={response.value}
-            question={question}
-            onClick={toggleActionPlan}
-            hasActionPlan={!!response?.actionPlan}
-          />
-        )}
-        
-        {showActionPlan && (
-          <div className="mt-3">
-            <ActionPlanInput
-              value={response?.actionPlan || ""}
-              onChange={handleActionPlanChange}
-              required={hasValidationError}
+          
+          <div className="mt-2">
+            <ResponseInputRenderer
+              question={question}
+              response={response}
+              onResponseChange={handleValueChange}
+              onAddMedia={handleAddMedia}
             />
           </div>
-        )}
-        
-        <QuestionFooter question={question} />
-        
-        {question.hasSubChecklist && onOpenSubChecklist && (
-          <QuestionActions 
-            response={response}
-            onOpenCommentDialog={onOpenCommentDialog}
-            onOpenActionPlanDialog={onOpenActionPlanDialog}
-            setIsActionPlanOpen={setIsActionPlanOpen}
-            onOpenSubChecklist={onOpenSubChecklist}
-          />
-        )}
+          
+          {(allowsPhoto || allowsVideo || allowsAudio) && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {allowsPhoto && (
+                <Button size="sm" variant="outline" onClick={handleAddMedia}>
+                  Adicionar Foto
+                </Button>
+              )}
+              {allowsVideo && (
+                <Button size="sm" variant="outline" onClick={handleAddMedia}>
+                  Adicionar Vídeo
+                </Button>
+              )}
+              {allowsAudio && (
+                <Button size="sm" variant="outline" onClick={handleAddMedia}>
+                  Adicionar Áudio
+                </Button>
+              )}
+            </div>
+          )}
+          
+          <Collapsible>
+            <div className="flex justify-between items-center mt-3">
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="flex items-center text-xs gap-1">
+                  <Pencil className="h-3 w-3" />
+                  Adicionar comentário
+                </Button>
+              </CollapsibleTrigger>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsActionPlanOpen(!isActionPlanOpen)}
+                className="flex items-center text-xs"
+              >
+                {isActionPlanOpen ? <ChevronDown className="h-3 w-3 mr-1" /> : <ChevronRight className="h-3 w-3 mr-1" />}
+                Plano de ação
+              </Button>
+            </div>
+            <CollapsibleContent>
+              <div className="mt-2">
+                <Textarea
+                  placeholder="Adicione seus comentários aqui..."
+                  value={comment}
+                  onChange={handleCommentChange}
+                  className="text-sm"
+                />
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+          
+          {isActionPlanOpen && (
+            <div className="mt-3 pt-3 border-t">
+              <ActionPlanInput
+                value={response?.actionPlan || ""}
+                onChange={handleActionPlanChange}
+              />
+            </div>
+          )}
+        </div>
       </div>
-    </Card>
+    </div>
   );
-};
+});

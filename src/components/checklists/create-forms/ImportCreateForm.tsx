@@ -19,7 +19,6 @@ interface ImportCreateFormProps {
   loadingUsers: boolean;
   file: File | null;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  clearFile: () => void;
   companies: CompanyListItem[];
   loadingCompanies: boolean;
   onSubmit: (e: React.FormEvent) => Promise<boolean>;
@@ -33,7 +32,6 @@ export function ImportCreateForm({
   loadingUsers,
   file,
   onFileChange,
-  clearFile,
   companies,
   loadingCompanies,
   onSubmit,

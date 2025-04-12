@@ -101,7 +101,6 @@ export function useInspections() {
           ? Math.round(((answeredQuestions || 0) / totalQuestions) * 100) 
           : 0;
           
-        // Ensure we populate all required fields for InspectionDetails
         return {
           id: inspection.id,
           title: inspection.checklist?.title || "Sem título",
@@ -118,11 +117,7 @@ export function useInspections() {
           company: inspection.companies || null,
           responsible: inspection.responsible_id ? responsiblesData[inspection.responsible_id] : null,
           progress,
-          // Required by interface
-          date: inspection.scheduled_date || inspection.created_at || '',
-          totalItems: totalQuestions || 0,
-          completedItems: answeredQuestions || 0,
-          // Additional fields
+          // Additional fields from the database schema
           approval_notes: inspection.approval_notes,
           approval_status: inspection.approval_status,
           approved_by: inspection.approved_by,
@@ -157,26 +152,26 @@ export function useInspections() {
   const filteredInspections = useMemo(() => {
     return inspections.filter(inspection => {
       // Search filter
-      const searchLower = filters.search?.toLowerCase() || "";
+      const searchLower = filters.search.toLowerCase();
       const matchesSearch = !filters.search || 
         (inspection.title?.toLowerCase().includes(searchLower)) ||
-        (typeof inspection.company !== 'string' && inspection.company?.fantasy_name?.toLowerCase().includes(searchLower)) ||
+        (inspection.company?.fantasy_name?.toLowerCase().includes(searchLower)) ||
         (inspection.responsible?.name?.toLowerCase().includes(searchLower));
       
       // Status filter
       const matchesStatus = filters.status === "all" || inspection.status === filters.status;
       
       // Priority filter
-      const matchesPriority = !filters.priority || filters.priority === "all" || inspection.priority === filters.priority;
+      const matchesPriority = filters.priority === "all" || inspection.priority === filters.priority;
       
       // Company filter
-      const matchesCompany = !filters.companyId || filters.companyId === "all" || inspection.companyId === filters.companyId;
+      const matchesCompany = filters.companyId === "all" || inspection.companyId === filters.companyId;
       
       // Responsible filter
-      const matchesResponsible = !filters.responsibleId || filters.responsibleId === "all" || inspection.responsibleId === filters.responsibleId;
+      const matchesResponsible = filters.responsibleId === "all" || inspection.responsibleId === filters.responsibleId;
       
       // Checklist filter
-      const matchesChecklist = !filters.checklistId || filters.checklistId === "all" || inspection.checklistId === filters.checklistId;
+      const matchesChecklist = filters.checklistId === "all" || inspection.checklistId === filters.checklistId;
       
       // Date filter
       let matchesDate = true;

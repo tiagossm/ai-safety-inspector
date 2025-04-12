@@ -6,21 +6,21 @@ import { AlertCircle } from "lucide-react";
 interface QuestionHeaderProps {
   question: any;
   index: number;
-  numberLabel?: string;
   isFollowUpQuestion: boolean;
   response: any;
   showCommentSection: boolean;
   setShowCommentSection: (show: boolean) => void;
+  numberLabel?: string;
 }
 
 export function QuestionHeader({
   question,
   index,
-  numberLabel,
   isFollowUpQuestion,
   response,
   showCommentSection,
-  setShowCommentSection
+  setShowCommentSection,
+  numberLabel
 }: QuestionHeaderProps) {
   const isAnswered = !!response?.value;
   const hasComment = !!response?.comment;

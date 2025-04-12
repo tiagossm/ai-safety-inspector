@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { ChecklistEditor } from "@/components/checklists/ChecklistEditor";
 import { useNavigate, useParams } from "react-router-dom";
@@ -118,7 +119,7 @@ export default function ChecklistEditorPage() {
       }
     } else {
       // For editing existing checklists
-      if (checklistQuery.loading) {
+      if (checklistQuery.isLoading) {
         setLoading(true);
         return;
       }
@@ -222,7 +223,7 @@ export default function ChecklistEditorPage() {
         setLoading(false);
       }
     }
-  }, [navigate, id, checklistQuery.loading, checklistQuery.error, checklistQuery.data, isEditorMode]);
+  }, [navigate, id, checklistQuery.isLoading, checklistQuery.error, checklistQuery.data, isEditorMode]);
 
   const handleSave = (checklistId: string) => {
     // Clear the stored data

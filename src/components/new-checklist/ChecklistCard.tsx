@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,9 +9,6 @@ import { toast } from "sonner";
 import { ChecklistCardBadges } from "./ChecklistCardBadges";
 import { ChecklistProgressBar } from "./ChecklistProgressBar";
 import { ChecklistCardActions } from "./ChecklistCardActions";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { calculateCompletionPercentage } from "@/utils/checklist-utils";
-import { supabase } from "@/integrations/supabase/client";
 
 interface ChecklistCardProps {
   checklist: ChecklistWithStats;

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -9,17 +9,18 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+} from "@/components/ui/alert-dialog";
+import { useChecklistDelete } from "@/hooks/new-checklist/useChecklistDelete";
+import { toast } from "sonner";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
-export interface DeleteChecklistDialogProps {
+interface DeleteChecklistDialogProps {
   checklistId: string;
   checklistTitle: string;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  onDeleted: () => Promise<void>;
-  isDeleting?: boolean; // Added as optional
+  onDeleted?: () => void;
 }
 
 export function DeleteChecklistDialog({
@@ -27,34 +28,47 @@ export function DeleteChecklistDialog({
   checklistTitle,
   isOpen,
   onOpenChange,
-  onDeleted,
-  isDeleting = false // Default value
+  onDeleted
 }: DeleteChecklistDialogProps) {
-  const [isDeleting1, setIsDeleting1] = useState(false);
-  
-  // Use the prop if provided, otherwise use state
-  const deleteInProgress = isDeleting || isDeleting1;
+  const deleteChecklist = useChecklistDelete();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleDelete = async () => {
-    if (!checklistId) return;
+    if (!checklistId) {
+      toast.error("ID do checklist não fornecido");
+      onOpenChange(false);
+      return;
+    }
     
-    setIsDeleting1(true);
+    setIsDeleting(true);
     try {
-      const { error } = await supabase
-        .from('checklists')
-        .delete()
-        .eq('id', checklistId);
+      await deleteChecklist.mutateAsync(checklistId);
       
-      if (error) {
-        throw error;
+      // Check if we're on the details page of the checklist being deleted
+      const isOnDetailsPage = location.pathname.includes(`/new-checklists/${checklistId}`);
+      
+      // Close the dialog before navigating
+      onOpenChange(false);
+      
+      // If we're on the details page of the deleted checklist, navigate to the checklists page
+      if (isOnDetailsPage) {
+        console.log("Navegando para a lista de checklists após exclusão");
+        navigate("/new-checklists", { replace: true });
       }
       
-      await onDeleted();
-      onOpenChange(false);
+      // Call the onDeleted callback if provided
+      if (onDeleted) {
+        await onDeleted();
+      }
+      
+      // Success message is shown by the mutation
     } catch (error) {
-      console.error('Error deleting checklist:', error);
+      console.error("Erro ao excluir checklist:", error);
+      toast.error("Erro ao excluir checklist");
     } finally {
-      setIsDeleting1(false);
+      setIsDeleting(false);
     }
   };
 
@@ -62,28 +76,30 @@ export function DeleteChecklistDialog({
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+          <AlertDialogTitle>Excluir Checklist</AlertDialogTitle>
           <AlertDialogDescription>
-            Esta ação irá excluir permanentemente o checklist <strong>"{checklistTitle}"</strong> e não pode ser desfeita.
+            Tem certeza que deseja excluir o checklist "{checklistTitle}"?
+            <br />
+            Esta ação não pode ser desfeita e todos os itens associados serão removidos.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={deleteInProgress}>Cancelar</AlertDialogCancel>
+          <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
           <AlertDialogAction
             onClick={(e) => {
               e.preventDefault();
               handleDelete();
             }}
-            disabled={deleteInProgress}
             className="bg-destructive hover:bg-destructive/90"
+            disabled={isDeleting}
           >
-            {deleteInProgress ? (
+            {isDeleting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Excluindo...
               </>
             ) : (
-              'Sim, excluir'
+              "Excluir"
             )}
           </AlertDialogAction>
         </AlertDialogFooter>

@@ -1,21 +1,24 @@
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { NewChecklist } from "@/types/checklist";
+import { CompanyListItem } from "@/types/CompanyListItem";
 import { Bot, Sparkles } from "lucide-react";
-import { useChecklistAI } from "@/hooks/new-checklist/useChecklistAI";
+import { AIAssistantType, useChecklistAI } from "@/hooks/new-checklist/useChecklistAI";
 import { CompanySelector } from "@/components/inspection/CompanySelector";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { IntelligentChecklistForm } from "./IntelligentChecklistForm";
 import { supabase } from "@/integrations/supabase/client";
+import { NewChecklistPayload } from "@/types/newChecklist";
 
 interface AIChecklistCreatorProps {
-  form: any;
-  setForm: React.Dispatch<React.SetStateAction<any>>;
+  form: NewChecklist;
+  setForm: React.Dispatch<React.SetStateAction<NewChecklist>>;
   onSubmit: (e: React.FormEvent) => Promise<void>;
   isSubmitting: boolean;
-  companies: any[];
+  companies: CompanyListItem[];
   loadingCompanies: boolean;
 }
 
@@ -29,10 +32,7 @@ export function AIChecklistCreator({
 }: AIChecklistCreatorProps) {
   const [prompt, setPrompt] = useState<string>("");
   const [selectedCompanyName, setSelectedCompanyName] = useState<string>("");
-  
   const {
-    aiLoading,
-    isLoading,
     isGenerating,
     selectedAssistant,
     setSelectedAssistant,
@@ -89,16 +89,15 @@ export function AIChecklistCreator({
 
     try {
       // Create the payload for the checklist
-      const checklistPayload = {
+      const checklistPayload: NewChecklistPayload = {
         title: form.title || form.category || "Novo Checklist",
         description: form.description || `Gerado por IA: ${prompt}`,
         category: form.category,
-        is_template: form.is_template || false,
-        company_id: form.company_id,
-        origin: 'ia'
+        isTemplate: form.is_template || false,
+        company_id: form.company_id
       };
       
-      const result = await generateChecklist(prompt, checklistPayload, openAIAssistant);
+      const result = await generateChecklist(checklistPayload);
       
       if (result && result.success) {
         // Form submission is handled by the parent component
@@ -163,11 +162,11 @@ export function AIChecklistCreator({
           
           <Button
             type="submit"
-            disabled={isLoading || isSubmitting || !form.category?.trim() || !form.company_id || !openAIAssistant}
+            disabled={isGenerating || isSubmitting || !form.category?.trim() || !form.company_id || !openAIAssistant}
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 mt-4"
             size="lg"
           >
-            {isLoading || isSubmitting ? (
+            {isGenerating || isSubmitting ? (
               <>
                 <Sparkles className="mr-2 h-5 w-5 animate-spin" />
                 Gerando...

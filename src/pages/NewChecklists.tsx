@@ -1,237 +1,238 @@
+
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { Plus, ArrowLeft } from "lucide-react";
-import { useChecklists } from "@/hooks/new-checklist/useChecklists";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNewChecklists } from "@/hooks/new-checklist/useNewChecklists";
+import { ChecklistFilters } from "@/components/new-checklist/ChecklistFilters";
 import { DeleteChecklistDialog } from "@/components/new-checklist/DeleteChecklistDialog";
-import { ChecklistTabs } from "@/components/new-checklist/ChecklistTabs";
-import { supabase } from "@/integrations/supabase/client";
+import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 import { toast } from "sonner";
+import { ChecklistTabs } from "@/components/new-checklist/ChecklistTabs";
 import { ChecklistWithStats } from "@/types/newChecklist";
 
 export default function NewChecklists() {
   const navigate = useNavigate();
-  const [search, setSearch] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<string>(
-    localStorage.getItem('checklist-active-tab') || "active"
-  );
+  const [searchParams] = useSearchParams();
+  
+  // Use the refactored hook to get all checklist functionality
+  const { 
+    checklists, 
+    allChecklists,
+    isLoading,
+    searchTerm, 
+    setSearchTerm, 
+    filterType, 
+    setFilterType,
+    selectedCompanyId,
+    setSelectedCompanyId,
+    selectedCategory,
+    setSelectedCategory,
+    selectedOrigin,
+    setSelectedOrigin,
+    sortOrder,
+    setSortOrder,
+    companies,
+    categories,
+    isLoadingCompanies,
+    deleteChecklist,
+    updateStatus,
+    updateBulkStatus,
+    refetch
+  } = useNewChecklists();
+  
+  // Get tab from URL params or localStorage, default to "template"
+  const [activeTab, setActiveTab] = useState(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl && ['template', 'active', 'inactive'].includes(tabFromUrl)) {
+      return tabFromUrl;
+    }
+    
+    const savedTab = localStorage.getItem('checklist-active-tab');
+    return savedTab || 'template';
+  });
+  
+  // Update filter type based on active tab
+  useEffect(() => {
+    if (activeTab === 'template') {
+      setFilterType('template');
+    } else if (activeTab === 'active') {
+      setFilterType('active');
+    } else if (activeTab === 'inactive') {
+      setFilterType('inactive');
+    }
+  }, [activeTab, setFilterType]);
+  
+  // Delete dialog state
   const [deleteDialog, setDeleteDialog] = useState<{
-    isOpen: boolean;
+    open: boolean;
     checklistId: string;
     checklistTitle: string;
+    isMultiple: boolean;
+    selectedIds: string[];
   }>({
-    isOpen: false,
+    open: false,
     checklistId: "",
     checklistTitle: "",
+    isMultiple: false,
+    selectedIds: []
   });
+  
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const {
-    data: templates,
-    isLoading: templatesLoading,
-    refreshChecklists: refreshTemplates,
-  } = useChecklists({
-    isTemplate: true,
-    search,
-    page: 1,
-    pageSize: 100
-  });
+  // Count checklists by type - excluding subchecklist
+  const checklistCounts = React.useMemo(() => {
+    const filtered = allChecklists.filter(c => !c.isSubChecklist);
+    
+    return {
+      template: filtered.filter(c => c.isTemplate).length,
+      active: filtered.filter(c => c.status === "active" && !c.isTemplate).length,
+      inactive: filtered.filter(c => c.status === "inactive" && !c.isTemplate).length
+    };
+  }, [allChecklists]);
 
-  const {
-    data: activeChecklists,
-    isLoading: activeLoading,
-    refreshChecklists: refreshActive,
-  } = useChecklists({
-    isTemplate: false,
-    status: "active",
-    search,
-    page: 1,
-    pageSize: 100
-  });
-
-  const {
-    data: inactiveChecklists,
-    isLoading: inactiveLoading,
-    refreshChecklists: refreshInactive,
-  } = useChecklists({
-    isTemplate: false,
-    status: "inactive",
-    search,
-    page: 1,
-    pageSize: 100
-  });
-
-  const refreshAllChecklists = () => {
-    refreshTemplates();
-    refreshActive();
-    refreshInactive();
+  // Navigation handlers
+  const handleOpenChecklist = (id: string) => {
+    navigate(`/new-checklists/${id}`);
   };
 
-  const getActiveChecklists = (): ChecklistWithStats[] => {
-    switch (activeTab) {
-      case "template":
-        return templates?.data || [];
-      case "active":
-        return activeChecklists?.data || [];
-      case "inactive":
-        return inactiveChecklists?.data || [];
-      default:
-        return [];
-    }
+  const handleEdit = (id: string) => {
+    navigate(`/new-checklists/edit/${id}`);
   };
 
-  const isLoading = templatesLoading || activeLoading || inactiveLoading;
-  const displayedChecklists = getActiveChecklists();
-
-  const checklistCounts = {
-    template: templates?.data?.length || 0,
-    active: activeChecklists?.data?.length || 0,
-    inactive: inactiveChecklists?.data?.length || 0,
-  };
-
-  const handleDeleteChecklist = (id: string, title: string) => {
+  const handleDelete = (id: string, title: string) => {
     setDeleteDialog({
-      isOpen: true,
+      open: true,
       checklistId: id,
       checklistTitle: title,
+      isMultiple: false,
+      selectedIds: []
     });
   };
 
-  const handleDeleteConfirmed = async () => {
-    try {
-      const { error } = await supabase
-        .from("checklists")
-        .delete()
-        .eq("id", deleteDialog.checklistId);
-
-      if (error) {
-        throw error;
-      }
-
-      toast.success("Checklist excluído com sucesso");
-      refreshAllChecklists();
-    } catch (error) {
-      console.error("Error deleting checklist:", error);
-      toast.error("Erro ao excluir checklist");
-    } finally {
-      setDeleteDialog({
-        isOpen: false,
-        checklistId: "",
-        checklistTitle: "",
-      });
-    }
+  const handleBulkDelete = (ids: string[]) => {
+    setDeleteDialog({
+      open: true,
+      checklistId: "",
+      checklistTitle: `${ids.length} checklists selecionados`,
+      isMultiple: true,
+      selectedIds: ids
+    });
   };
 
-  const handleBulkDelete = async (ids: string[]) => {
+  // Handle status update for multiple checklists
+  const handleBulkStatusChange = async (ids: string[], newStatus: 'active' | 'inactive') => {
     try {
-      const { error } = await supabase
-        .from("checklists")
-        .delete()
-        .in("id", ids);
-
-      if (error) {
-        throw error;
-      }
-
-      toast.success(`${ids.length} checklists excluídos com sucesso`);
-      refreshAllChecklists();
-    } catch (error) {
-      console.error("Error bulk deleting checklists:", error);
-      toast.error("Erro ao excluir checklists em massa");
-      throw error;
-    }
-  };
-
-  const handleBulkStatusChange = async (ids: string[], newStatus: 'active' | 'inactive'): Promise<void> => {
-    try {
-      const { error } = await supabase
-        .from("checklists")
-        .update({ status: newStatus })
-        .in("id", ids);
-
-      if (error) {
-        throw error;
-      }
-
-      refreshAllChecklists();
-    } catch (error) {
-      console.error(`Error changing status to ${newStatus}:`, error);
-      throw error;
-    }
-  };
-
-  const handleChecklistStatusChange = async (id: string, newStatus: 'active' | 'inactive') => {
-    try {
-      const { error } = await supabase
-        .from("checklists")
-        .update({ status: newStatus })
-        .eq("id", id);
-
-      if (error) {
-        throw error;
-      }
-
-      toast.success(`Status do checklist alterado para ${newStatus === 'active' ? 'Ativo' : 'Inativo'}`);
-      refreshAllChecklists();
+      await updateBulkStatus.mutateAsync({ checklistIds: ids, newStatus });
       return true;
     } catch (error) {
-      console.error(`Error changing status to ${newStatus}:`, error);
-      toast.error("Erro ao alterar status do checklist");
-      return false;
+      console.error("Error updating status for multiple checklists:", error);
+      throw error;
+    }
+  };
+
+  // Handle delete confirmation
+  const handleConfirmDelete = async () => {
+    setIsDeleting(true);
+    try {
+      if (deleteDialog.isMultiple) {
+        // Bulk delete
+        for (const id of deleteDialog.selectedIds) {
+          await deleteChecklist.mutateAsync(id);
+        }
+        toast.success(`${deleteDialog.selectedIds.length} checklists excluídos com sucesso`);
+      } else {
+        // Single delete
+        await deleteChecklist.mutateAsync(deleteDialog.checklistId);
+        toast.success("Checklist excluído com sucesso");
+      }
+      
+      // Refetch data after deletion
+      await refetch();
+      
+      setDeleteDialog({
+        open: false,
+        checklistId: "",
+        checklistTitle: "",
+        isMultiple: false,
+        selectedIds: []
+      });
+    } catch (error: any) {
+      console.error("Error deleting checklist(s):", error);
+      toast.error(`Erro ao excluir: ${error.message || "Falha na operação"}`);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCreateNew = () => {
+    navigate("/new-checklists/create");
+  };
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+  };
+
+  // Handle status change for a single checklist
+  const handleStatusChange = async (id: string, newStatus: 'active' | 'inactive') => {
+    try {
+      await updateStatus.mutateAsync({ checklistId: id, newStatus });
+      return true;
+    } catch (error) {
+      console.error("Error updating checklist status:", error);
+      throw error;
     }
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-2xl font-bold">Checklists</h1>
-        </div>
-        <Button onClick={() => navigate("/new-checklists")}>
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Checklist
-        </Button>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Checklists</h1>
       </div>
 
-      <Card className="overflow-visible">
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <Input
-              placeholder="Pesquisar checklists..."
-              className="max-w-md"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
+      <ChecklistFilters 
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        filterType={filterType}
+        setFilterType={setFilterType}
+        selectedCompanyId={selectedCompanyId}
+        setSelectedCompanyId={setSelectedCompanyId}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        selectedOrigin={selectedOrigin}
+        setSelectedOrigin={setSelectedOrigin}
+        sortOrder={sortOrder}
+        setSortOrder={setSortOrder}
+        companies={companies}
+        categories={categories}
+        isLoadingCompanies={isLoadingCompanies}
+        totalChecklists={allChecklists.filter(c => !c.isSubChecklist).length}
+        onCreateNew={handleCreateNew}
+      />
 
-          <ChecklistTabs
-            checklistCounts={checklistCounts}
-            allChecklists={displayedChecklists}
-            isLoading={isLoading}
-            onEdit={(id) => navigate(`/new-checklists/${id}/edit`)}
-            onDelete={(id) => handleDeleteChecklist(id, "")}
-            onOpen={(id) => navigate(`/new-checklists/${id}`)}
-            onStatusChange={refreshAllChecklists}
-            onBulkDelete={handleBulkDelete}
-            onBulkStatusChange={handleBulkStatusChange}
-            onTabChange={setActiveTab}
-            activeTab={activeTab}
-            onChecklistStatusChange={handleChecklistStatusChange}
-          />
-        </CardContent>
-      </Card>
-      
+      <ChecklistTabs
+        checklistCounts={checklistCounts}
+        allChecklists={checklists}
+        isLoading={isLoading}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onOpen={handleOpenChecklist}
+        onStatusChange={refetch}
+        onBulkDelete={handleBulkDelete}
+        onBulkStatusChange={handleBulkStatusChange}
+        onTabChange={handleTabChange}
+        activeTab={activeTab}
+        onChecklistStatusChange={handleStatusChange}
+      />
+
       <DeleteChecklistDialog
         checklistId={deleteDialog.checklistId}
         checklistTitle={deleteDialog.checklistTitle}
-        isOpen={deleteDialog.isOpen}
-        onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, isOpen: open }))}
-        onDeleted={handleDeleteConfirmed}
+        isOpen={deleteDialog.open}
+        onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}
+        onDeleted={handleConfirmDelete}
+        isDeleting={isDeleting}
       />
+      
+      <FloatingNavigation threshold={300} />
     </div>
   );
 }

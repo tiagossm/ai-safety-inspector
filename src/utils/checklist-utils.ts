@@ -4,12 +4,13 @@ import { Checklist } from "@/types/newChecklist";
 /**
  * Determina a origem do checklist com base nos dados
  */
-export function determineChecklistOrigin(checklist: Checklist): string {
+export function determineChecklistOrigin(checklist: Checklist): 'manual' | 'ia' | 'csv' {
   if (checklist.origin) {
     return checklist.origin;
   }
   
   // Lógica de fallback para determinar origem caso não tenha o campo origin
+  // Esta é uma lógica exemplo, adapte conforme necessidade
   if (checklist.description?.includes('Gerado por IA')) {
     return 'ia';
   }
@@ -52,18 +53,3 @@ export function truncateText(text: string | undefined | null, maxLength: number 
   if (text.length <= maxLength) return text;
   return `${text.substring(0, maxLength)}...`;
 }
-
-export const getOriginIcon = (checklist?: Checklist) => {
-  if (!checklist || !checklist.origin) return null;
-  
-  switch(checklist.origin) {
-    case 'manual':
-      return 'manual-icon';
-    case 'ia':
-      return 'ia-icon';
-    case 'csv':
-      return 'csv-icon';
-    default:
-      return null;
-  }
-};

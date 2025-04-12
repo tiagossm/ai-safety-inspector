@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -6,8 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AIAssistantType } from "@/components/checklists/create-forms/AIAssistantSelector";
 import { AIAssistantSelector } from "./AIAssistantSelector";
 import { Card } from "@/components/ui/card";
-import { NewChecklist } from "@/types/newChecklist";
-import { Textarea } from "@/components/ui/textarea";
+import { NewChecklist } from "@/types/checklist";
 
 interface ContextField {
   type: string;
@@ -28,8 +26,6 @@ interface IntelligentChecklistFormProps {
     company_id?: string | null;
   };
   setChecklist: React.Dispatch<React.SetStateAction<NewChecklist>>;
-  customPrompt?: string;
-  setCustomPrompt?: (prompt: string) => void;
 }
 
 export function IntelligentChecklistForm({
@@ -39,9 +35,7 @@ export function IntelligentChecklistForm({
   onOpenAIAssistantChange,
   onPromptChange,
   checklist,
-  setChecklist,
-  customPrompt = "",
-  setCustomPrompt = () => {}
+  setChecklist
 }: IntelligentChecklistFormProps) {
   const [environmentType, setEnvironmentType] = useState<string>("indoor");
   const [checklistFocus, setChecklistFocus] = useState<string>("safety");
@@ -50,14 +44,7 @@ export function IntelligentChecklistForm({
     value: ""
   });
   
-  const [useCustomPrompt, setUseCustomPrompt] = useState<boolean>(!!customPrompt);
-  
   useEffect(() => {
-    if (useCustomPrompt && customPrompt) {
-      onPromptChange(customPrompt);
-      return;
-    }
-    
     const companyInfo = checklist.company_name 
       ? `para a empresa ${checklist.company_name}` 
       : "";
@@ -93,7 +80,7 @@ export function IntelligentChecklistForm({
         title: `Checklist ${checklist.category} - ${context.value}`
       }));
     }
-  }, [environmentType, checklistFocus, context, checklist.company_name, checklist.category, useCustomPrompt, customPrompt]);
+  }, [environmentType, checklistFocus, context, checklist.company_name, checklist.category]);
 
   return (
     <div className="space-y-6">
@@ -101,96 +88,67 @@ export function IntelligentChecklistForm({
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="use-custom-prompt"
-              checked={useCustomPrompt}
-              onChange={(e) => setUseCustomPrompt(e.target.checked)}
-              className="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary"
-            />
-            <Label htmlFor="use-custom-prompt">Usar prompt personalizado</Label>
+          <div>
+            <Label htmlFor="environment">Tipo de ambiente</Label>
+            <Select 
+              value={environmentType} 
+              onValueChange={setEnvironmentType}
+            >
+              <SelectTrigger id="environment">
+                <SelectValue placeholder="Selecione o tipo de ambiente" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="indoor">Ambiente interno</SelectItem>
+                <SelectItem value="outdoor">Ambiente externo</SelectItem>
+                <SelectItem value="mixed">Ambiente misto (interno e externo)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
-          {useCustomPrompt ? (
-            <div className="space-y-2">
-              <Label htmlFor="custom-prompt">Prompt personalizado</Label>
-              <Textarea
-                id="custom-prompt"
-                value={customPrompt}
-                onChange={(e) => setCustomPrompt(e.target.value)}
-                placeholder="Digite seu prompt personalizado para a IA..."
-                className="min-h-[200px]"
+          <div>
+            <Label htmlFor="focus">Foco do checklist</Label>
+            <Select 
+              value={checklistFocus} 
+              onValueChange={setChecklistFocus}
+            >
+              <SelectTrigger id="focus">
+                <SelectValue placeholder="Selecione o foco do checklist" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="safety">Segurança do trabalho</SelectItem>
+                <SelectItem value="quality">Controle de qualidade</SelectItem>
+                <SelectItem value="maintenance">Manutenção preventiva</SelectItem>
+                <SelectItem value="compliance">Conformidade regulatória</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="context-type">Contexto específico</Label>
+            <div className="flex gap-2">
+              <Select 
+                value={context.type} 
+                onValueChange={(value) => setContext(prev => ({ ...prev, type: value }))}
+              >
+                <SelectTrigger id="context-type" className="w-1/3">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sector">Setor</SelectItem>
+                  <SelectItem value="role">Função</SelectItem>
+                  <SelectItem value="activity">Atividade</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Input 
+                id="context-value"
+                className="w-2/3"
+                value={context.value}
+                onChange={(e) => setContext(prev => ({ ...prev, value: e.target.value }))}
+                placeholder={`Ex: ${context.type === "sector" ? "Almoxarifado" : context.type === "role" ? "Operador" : "Montagem"}`}
               />
-              <p className="text-xs text-muted-foreground">
-                Escreva instruções detalhadas para a IA gerar o checklist. Por exemplo: "Crie um checklist para inspeção de EPIs em obra civil, focando em capacetes, luvas e calçados de segurança."
-              </p>
             </div>
-          ) : (
-            <>
-              <div>
-                <Label htmlFor="environment">Tipo de ambiente</Label>
-                <Select 
-                  value={environmentType} 
-                  onValueChange={setEnvironmentType}
-                >
-                  <SelectTrigger id="environment">
-                    <SelectValue placeholder="Selecione o tipo de ambiente" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="indoor">Ambiente interno</SelectItem>
-                    <SelectItem value="outdoor">Ambiente externo</SelectItem>
-                    <SelectItem value="mixed">Ambiente misto (interno e externo)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Label htmlFor="focus">Foco do checklist</Label>
-                <Select 
-                  value={checklistFocus} 
-                  onValueChange={setChecklistFocus}
-                >
-                  <SelectTrigger id="focus">
-                    <SelectValue placeholder="Selecione o foco do checklist" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="safety">Segurança do trabalho</SelectItem>
-                    <SelectItem value="quality">Controle de qualidade</SelectItem>
-                    <SelectItem value="maintenance">Manutenção preventiva</SelectItem>
-                    <SelectItem value="compliance">Conformidade regulatória</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="context-type">Contexto específico</Label>
-                <div className="flex gap-2">
-                  <Select 
-                    value={context.type} 
-                    onValueChange={(value) => setContext(prev => ({ ...prev, type: value }))}
-                  >
-                    <SelectTrigger id="context-type" className="w-1/3">
-                      <SelectValue placeholder="Tipo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="sector">Setor</SelectItem>
-                      <SelectItem value="role">Função</SelectItem>
-                      <SelectItem value="activity">Atividade</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  
-                  <Input 
-                    id="context-value"
-                    className="w-2/3"
-                    value={context.value}
-                    onChange={(e) => setContext(prev => ({ ...prev, value: e.target.value }))}
-                    placeholder={`Ex: ${context.type === "sector" ? "Almoxarifado" : context.type === "role" ? "Operador" : "Montagem"}`}
-                  />
-                </div>
-              </div>
-            </>
-          )}
+          </div>
         </div>
         
         <div>
@@ -200,7 +158,7 @@ export function IntelligentChecklistForm({
             </div>
             <div className="bg-white border rounded-md p-3 text-sm">
               <p className="whitespace-pre-wrap">
-                {useCustomPrompt ? customPrompt : `Criar um checklist ${checklist.category ? `relacionado à ${checklist.category}` : ""} ${
+                {`Criar um checklist ${checklist.category ? `relacionado à ${checklist.category}` : ""} ${
                   checklist.company_name ? `para a empresa ${checklist.company_name}` : ""
                 } em ${
                   environmentType === "indoor" ? "ambiente interno" :

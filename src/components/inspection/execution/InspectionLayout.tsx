@@ -1,36 +1,39 @@
 
 import React from "react";
-import { 
-  InspectionHeader, 
-  InspectionHeaderProps 
-} from "./InspectionHeader";
-import { 
-  GroupsSidebar, 
-  GroupsSidebarProps 
-} from "./GroupsSidebar";
-import { QuestionsPanel } from "../QuestionsPanel";
-import { SaveIndicator } from "./SaveIndicator";
-import { InspectionFooterActions } from "./InspectionFooterActions";
+import { InspectionHeader } from "@/components/inspection/InspectionHeader";
+import { QuestionGroups } from "@/components/inspection/QuestionGroups";
+import { QuestionsPanel } from "@/components/inspection/QuestionsPanel";
+import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ActionButtons } from "./ActionButtons";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
-interface InspectionLayoutProps extends 
-  InspectionHeaderProps,
-  Pick<GroupsSidebarProps, 'groups' | 'currentGroupId' | 'setCurrentGroupId' | 'stats'> {
+interface InspectionLayoutProps {
   loading: boolean;
+  inspection: any;
+  company: any;
+  responsible: any;
   questions: any[];
   responses: Record<string, any>;
+  groups: any[];
   subChecklists: Record<string, any>;
-  onResponseChange: (questionId: string, data: any) => void;
-  onSaveSubChecklistResponses: (questionId: string, responses: Record<string, any>) => Promise<void>;
-  autoSave: boolean;
+  currentGroupId: string | null;
+  stats: any;
   saving: boolean;
+  autoSave: boolean;
   lastSaved: Date | null;
   setAutoSave: (value: boolean) => void;
+  setCurrentGroupId: (id: string) => void;
   onSaveProgress: () => Promise<void>;
   onCompleteInspection: () => Promise<void>;
   onReopenInspection: () => Promise<void>;
-  onViewActionPlan?: () => Promise<void>;
-  onGenerateReport?: () => Promise<void>;
-  refreshData: () => Promise<void>;
+  onViewActionPlan: () => Promise<void>;
+  onGenerateReport: () => Promise<void>;
+  refreshData: () => void;
+  onResponseChange: (questionId: string, value: any, additionalData?: any) => void;
+  onSaveSubChecklistResponses: (subChecklistId: string, responses: Record<string, any>) => Promise<void>;
 }
 
 export function InspectionLayout({
@@ -47,77 +50,148 @@ export function InspectionLayout({
   saving,
   autoSave,
   lastSaved,
-  setCurrentGroupId,
   setAutoSave,
-  onResponseChange,
+  setCurrentGroupId,
   onSaveProgress,
   onCompleteInspection,
   onReopenInspection,
-  onSaveSubChecklistResponses,
   onViewActionPlan,
   onGenerateReport,
-  refreshData
+  refreshData,
+  onResponseChange,
+  onSaveSubChecklistResponses
 }: InspectionLayoutProps) {
-  // Filter questions for current group
-  const filteredQuestions = currentGroupId
-    ? questions.filter(q => q.groupId === currentGroupId)
-    : [];
+  // Definir grupo padrão se não houver nenhum
+  const defaultGroup = {
+    id: "default-group",
+    title: "Perguntas",
+    order: 0
+  };
   
-  return (
-    <div className="flex flex-col h-full">
-      <InspectionHeader
-        inspection={inspection}
-        company={company}
-        responsible={responsible}
-        saving={saving}
-        autoSave={autoSave}
-        setAutoSave={setAutoSave}
-        onSaveProgress={onSaveProgress}
-        onCompleteInspection={onCompleteInspection}
-        onReopenInspection={onReopenInspection}
-        onViewActionPlan={onViewActionPlan}
-        onGenerateReport={onGenerateReport}
-        refreshData={refreshData}
-        stats={stats}
-      />
-      
-      <div className="flex flex-1 overflow-hidden mt-4">
-        <GroupsSidebar
-          groups={groups}
-          currentGroupId={currentGroupId}
-          setCurrentGroupId={setCurrentGroupId}
-          stats={stats}
-        />
+  // Garantir que sempre existe pelo menos um grupo
+  const displayGroups = groups.length > 0 ? groups : [defaultGroup];
+  
+  // Definir currentGroupId se não estiver definido
+  const effectiveCurrentGroupId = currentGroupId || (displayGroups.length > 0 ? displayGroups[0].id : null);
+  
+  // Filter questions by current group, handling null groupId values
+  const questionsInCurrentGroup = effectiveCurrentGroupId
+    ? questions.filter(q => q.groupId === effectiveCurrentGroupId || 
+                          (q.groupId === null && effectiveCurrentGroupId === 'default-group'))
+    : [];
+
+  // Log the filtered questions for debugging
+  console.log(`Layout: Questions in group ${effectiveCurrentGroupId}: ${questionsInCurrentGroup.length} of ${questions.length} total`);
+  console.log('Group IDs distribution:', questions.reduce((acc, q) => {
+    const key = q.groupId || 'null';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {}));
+  
+  if (loading) {
+    return (
+      <div className="container max-w-7xl mx-auto py-8">
+        <div className="mb-4">
+          <Skeleton className="h-7 w-2/3 max-w-md mb-1" />
+          <Skeleton className="h-4 w-1/3 max-w-xs" />
+        </div>
         
-        <div className="flex-1 overflow-auto px-4">
-          <QuestionsPanel
-            loading={loading}
-            currentGroupId={currentGroupId}
-            filteredQuestions={filteredQuestions}
-            questions={questions}
-            responses={responses}
-            groups={groups}
-            onResponseChange={onResponseChange}
-            onSaveSubChecklistResponses={onSaveSubChecklistResponses}
-            subChecklists={subChecklists}
-          />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="md:col-span-1">
+            <Card className="p-4">
+              <Skeleton className="h-4 w-3/4 mb-4" />
+              <Skeleton className="h-10 w-full mb-2" />
+              <Skeleton className="h-10 w-full mb-2" />
+              <Skeleton className="h-10 w-full" />
+            </Card>
+          </div>
+          
+          <div className="md:col-span-3">
+            <Card className="p-4">
+              <Skeleton className="h-6 w-1/3 mb-6" />
+              <div className="space-y-8">
+                <div className="space-y-4">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-20 w-full" />
+                </div>
+                <div className="space-y-4">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-20 w-full" />
+                </div>
+              </div>
+            </Card>
+          </div>
         </div>
       </div>
+    );
+  }
+
+  if (!inspection) {
+    return (
+      <div className="container max-w-7xl mx-auto py-8">
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-5 w-5" />
+          <AlertTitle className="text-base font-medium">Inspeção não encontrada</AlertTitle>
+          <AlertDescription className="mt-2">
+            Não foi possível carregar os dados da inspeção. Tente novamente mais tarde ou contate o suporte.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container max-w-7xl mx-auto py-8">
+      <InspectionHeader loading={loading} inspection={inspection} />
       
-      <InspectionFooterActions
-        inspection={inspection}
-        saving={saving}
-        onSaveProgress={onSaveProgress}
-        onCompleteInspection={onCompleteInspection}
-        stats={stats}
-      />
-      
-      {/* Save indicator */}
-      <SaveIndicator 
-        saving={saving}
-        lastSaved={lastSaved}
-        autoSave={autoSave}
-      />
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="md:col-span-1 space-y-6">
+          <Card className="p-4">
+            <ActionButtons
+              loading={loading}
+              saving={saving}
+              autoSave={autoSave}
+              setAutoSave={setAutoSave}
+              lastSaved={lastSaved}
+              inspectionStatus={inspection?.status}
+              completionPercentage={stats.completionPercentage}
+              onSaveProgress={onSaveProgress}
+              onCompleteInspection={onCompleteInspection}
+              onReopenInspection={onReopenInspection}
+              onViewActionPlan={onViewActionPlan}
+              onGenerateReport={onGenerateReport}
+              refreshData={refreshData}
+            />
+          </Card>
+          
+          <Card>
+            <ScrollArea className="h-[calc(100vh-350px)]">
+              <QuestionGroups 
+                groups={displayGroups}
+                currentGroupId={effectiveCurrentGroupId}
+                onGroupChange={setCurrentGroupId}
+                stats={stats}
+              />
+            </ScrollArea>
+          </Card>
+        </div>
+        
+        <div className="md:col-span-3">
+          <Card>
+            <QuestionsPanel
+              loading={loading}
+              currentGroupId={effectiveCurrentGroupId}
+              filteredQuestions={questionsInCurrentGroup}
+              questions={questions}
+              responses={responses}
+              groups={displayGroups}
+              onResponseChange={onResponseChange}
+              onSaveSubChecklistResponses={onSaveSubChecklistResponses}
+              subChecklists={subChecklists}
+            />
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

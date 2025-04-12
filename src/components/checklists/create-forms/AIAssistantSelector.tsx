@@ -83,8 +83,8 @@ export function OpenAIAssistantSelector({
   );
 }
 
-// Update the AIAssistantType to match useChecklistAI.ts
-export type AIAssistantType = "general" | "workplace-safety" | "compliance" | "quality" | "openai" | "claude" | "gemini";
+// Update the AIAssistantType to be compatible with useChecklistAI.ts
+export type AIAssistantType = 'general' | 'workplace-safety' | 'compliance' | 'quality' | 'openai' | 'claude' | 'gemini';
 
 interface AIAssistantSelectorProps {
   selectedAssistant: AIAssistantType;
