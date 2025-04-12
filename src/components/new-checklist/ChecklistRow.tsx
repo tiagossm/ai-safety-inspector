@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { ChecklistWithStats } from "@/types/newChecklist";
 import {
@@ -8,7 +7,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Building2, MoreHorizontal } from "lucide-react";
+import { Building2, MoreHorizontal, Archive, Check } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -154,21 +153,58 @@ export function ChecklistRow({
         )}
       </TableCell>
       <TableCell>
-        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+        <div 
+          className="flex items-center gap-3" 
+          onClick={(e) => e.stopPropagation()}
+        >
           {checklist.isTemplate ? (
             <Badge variant="secondary">Template</Badge>
           ) : (
             <>
-              <Badge variant={status === "active" ? "default" : "outline"}>
+              <Badge 
+                variant={status === "active" ? "default" : "outline"}
+                className={`
+                  transition-colors duration-300 
+                  ${status === 'active' 
+                    ? 'bg-green-100 text-green-800 border-green-300' 
+                    : 'bg-gray-100 text-gray-600 border-gray-300'}
+                `}
+              >
                 {status === "active" ? "Ativo" : "Inativo"}
               </Badge>
-              <Switch 
-                checked={status === 'active'}
-                onClick={handleToggleStatus}
-                disabled={isToggling}
-                aria-label="Toggle status"
-                className="ml-1"
-              />
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className={`
+                        transition-all duration-300 
+                        ${status === 'active' 
+                          ? 'bg-red-50 text-red-600 hover:bg-red-100 border-red-200' 
+                          : 'bg-green-50 text-green-600 hover:bg-green-100 border-green-200'}
+                      `}
+                      onClick={handleToggleStatus}
+                      disabled={isToggling}
+                    >
+                      {status === 'active' ? (
+                        <Archive className="h-4 w-4 mr-1" />
+                      ) : (
+                        <Check className="h-4 w-4 mr-1" />
+                      )}
+                      {status === 'active' ? 'Desativar' : 'Ativar'}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      {status === 'active' 
+                        ? 'Clique para desativar este checklist' 
+                        : 'Clique para ativar este checklist'}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </>
           )}
         </div>
