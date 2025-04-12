@@ -14,6 +14,7 @@ import { formatDate } from "@/utils/format";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { ChecklistOriginBadge } from "./ChecklistOriginBadge";
 
 interface ChecklistCardProps {
   checklist: ChecklistWithStats;
@@ -37,7 +38,11 @@ export function ChecklistCard({
   const [isChangingStatus, setIsChangingStatus] = useState(false);
   const { toast } = useToast();
   
-  const handleStatusChange = async () => {
+  // Convert origin string to the expected type
+  const originValue = checklist.origin as "manual" | "ia" | "csv" | undefined;
+  
+  const handleStatusChange = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsChangingStatus(true);
     try {
       const newStatus = checklist.status === "active" ? "inactive" : "active";
@@ -77,8 +82,22 @@ export function ChecklistCard({
     }
   };
 
+  const handleClick = () => {
+    onOpen(checklist.id);
+  };
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit(checklist.id);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete(checklist.id, checklist.title);
+  };
+
   return (
-    <Card className="group">
+    <Card className="group cursor-pointer" onClick={handleClick}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex items-center space-x-2">
           {onSelect && (
@@ -86,6 +105,7 @@ export function ChecklistCard({
               id={`select-${checklist.id}`}
               checked={isSelected}
               onCheckedChange={(checked) => onSelect(checklist.id, !!checked)}
+              onClick={(e) => e.stopPropagation()}
             />
           )}
           <Label htmlFor={`select-${checklist.id}`} className="text-lg font-semibold">
@@ -94,46 +114,55 @@ export function ChecklistCard({
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0 opacity-70 group-hover:opacity-100">
+            <Button variant="ghost" className="h-8 w-8 p-0 opacity-70 group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onOpen(checklist.id)}>
-              <FileText className="mr-2 h-4 w-4" />
-              Abrir
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onEdit(checklist.id)}>
+            <DropdownMenuItem onClick={handleEditClick}>
               <Pencil className="mr-2 h-4 w-4" />
               Editar
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onDelete(checklist.id, checklist.title)}>
+            <DropdownMenuItem onClick={handleDeleteClick}>
               <Trash2 className="mr-2 h-4 w-4" />
               Excluir
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </CardHeader>
-      <CardContent className="pt-0">
-        <div className="space-y-1">
-          <p className="text-sm text-muted-foreground">{checklist.description}</p>
-          <div className="flex items-center space-x-2">
-            <CalendarDays className="h-4 w-4 opacity-70" />
-            <span className="text-xs text-muted-foreground">
-              Criado em {formatDate(checklist.createdAt)}
-            </span>
-          </div>
-          <ChecklistCardBadges checklist={checklist} />
+      <CardContent>
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <Badge variant={checklist.status === "active" ? "success" : "secondary"}>
-              {checklist.status === "active" ? "Ativo" : "Inativo"}
-            </Badge>
-            <Switch
-              id={`status-switch-${checklist.id}`}
-              checked={checklist.status === "active"}
-              onCheckedChange={handleStatusChange}
-              disabled={isChangingStatus}
-            />
+            <div className="flex items-center gap-2">
+              <ChecklistOriginBadge origin={originValue} />
+              <Badge variant={checklist.status === "active" ? "default" : "secondary"}>
+                {checklist.status === "active" ? "Ativo" : "Inativo"}
+              </Badge>
+              {checklist.isTemplate && <Badge variant="outline">Template</Badge>}
+            </div>
+            <div className="flex items-center gap-1">
+              <Switch 
+                checked={checklist.status === "active"} 
+                disabled={isChangingStatus}
+                onClick={handleStatusChange}
+                className="data-[state=checked]:bg-green-500"
+              />
+            </div>
+          </div>
+          
+          <div className="text-sm text-muted-foreground">
+            {checklist.description || "Sem descrição"}
+          </div>
+          
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <CalendarDays className="h-3 w-3" />
+              <span>Criado em {formatDate(checklist.createdAt || "")}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <FileText className="h-3 w-3" />
+              <span>{checklist.totalQuestions || 0} perguntas</span>
+            </div>
           </div>
         </div>
       </CardContent>

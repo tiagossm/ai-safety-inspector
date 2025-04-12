@@ -38,6 +38,22 @@ export const ChecklistListItem = ({
   // Convert origin string to the expected type
   const originValue = checklist.origin as "manual" | "ia" | "csv" | undefined;
 
+  // Prevent event propagation to avoid triggering parent click events
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit(checklist.id);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete(checklist.id, checklist.title);
+  };
+
+  const handleOpenClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onOpen(checklist.id);
+  };
+
   return (
     <div className={`grid grid-cols-10 items-center gap-4 p-4 rounded-md transition-all border border-slate-200 shadow-sm min-h-[72px]
       ${isSelected ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
@@ -89,13 +105,13 @@ export const ChecklistListItem = ({
         )}
       </div>
       <div className="col-span-1 flex justify-end space-x-1">
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(checklist.id)}>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleEditClick}>
           <Edit2 className="h-3.5 w-3.5" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDelete(checklist.id, checklist.title)}>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleDeleteClick}>
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onOpen(checklist.id)}>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleOpenClick}>
           <ArrowRight className="h-3.5 w-3.5" />
         </Button>
       </div>

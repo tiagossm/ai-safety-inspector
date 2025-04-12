@@ -1,3 +1,4 @@
+
 import {
   Select,
   SelectContent,
@@ -154,7 +155,7 @@ export default function NewChecklistCreate() {
       const processedChecklist: NewChecklist = {
         ...checklist,
         status_checklist: (checklist.status_checklist || "ativo") as "ativo" | "inativo",
-        origin: (checklist.origin || "manual") as "manual" | "ia" | "csv"
+        origin: (activeTab === "manual" ? "manual" : activeTab === "ai" ? "ia" : "csv") as "manual" | "ia" | "csv"
       };
       
       const result = await createChecklist.mutateAsync({
@@ -196,7 +197,7 @@ export default function NewChecklistCreate() {
       const typedChecklist: NewChecklist = {
         ...checklist,
         status_checklist: (checklist.status_checklist || "ativo") as "ativo" | "inativo",
-        origin: (checklist.origin || "ia") as "manual" | "ia" | "csv"
+        origin: "ia" as "manual" | "ia" | "csv"
       };
       
       const result = await generateChecklist(typedChecklist);

@@ -36,6 +36,22 @@ export const ChecklistCardActions: React.FC<ChecklistCardActionsProps> = ({
   onEdit,
   onDelete
 }) => {
+  // Prevent event propagation to avoid triggering parent click events
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onEdit(id);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete(id, title);
+  };
+
+  const handleStatusToggleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggleStatus(e);
+  };
+
   return (
     <div className="flex items-center">
       {!isTemplate && (
@@ -44,7 +60,7 @@ export const ChecklistCardActions: React.FC<ChecklistCardActionsProps> = ({
             <TooltipTrigger asChild>
               <Switch 
                 checked={status === 'active'}
-                onClick={onToggleStatus}
+                onClick={handleStatusToggleClick}
                 disabled={isToggling}
                 className="mr-2"
               />
@@ -63,17 +79,11 @@ export const ChecklistCardActions: React.FC<ChecklistCardActionsProps> = ({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={(e) => {
-            e.stopPropagation();
-            onEdit(id);
-          }}>
+          <DropdownMenuItem onClick={handleEditClick}>
             <Edit className="mr-2 h-4 w-4" />
             <span>Editar</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={(e) => {
-            e.stopPropagation();
-            onToggleStatus(e);
-          }}>
+          <DropdownMenuItem onClick={handleStatusToggleClick}>
             {status === 'active' ? (
               <>
                 <Archive className="mr-2 h-4 w-4" />
@@ -89,10 +99,7 @@ export const ChecklistCardActions: React.FC<ChecklistCardActionsProps> = ({
           <DropdownMenuSeparator />
           <DropdownMenuItem 
             className="text-red-600" 
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(id, title);
-            }}
+            onClick={handleDeleteClick}
           >
             <Trash2 className="mr-2 h-4 w-4" />
             <span>Excluir</span>
