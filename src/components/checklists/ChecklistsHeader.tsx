@@ -15,9 +15,9 @@ export function ChecklistsHeader() {
       
       <div className="flex gap-2 self-end sm:self-auto">
         <Button asChild>
-          <Link to="/checklists/create">
+          <Link to="/new-checklists/create">
             <Plus className="mr-2 h-4 w-4" />
-            Criar Checklist
+            Novo Checklist
           </Link>
         </Button>
       </div>

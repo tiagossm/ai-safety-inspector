@@ -1,5 +1,5 @@
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { ChecklistWithStats } from "@/types/newChecklist";
 
 /**
@@ -27,21 +27,34 @@ export function useChecklistFilters(checklists: ChecklistWithStats[], allCheckli
     return Array.from(uniqueCategories).sort();
   }, [allChecklists]);
 
+  // Normalize search term for efficient search
+  const normalizedSearchTerm = useMemo(() => 
+    searchTerm.trim().toLowerCase(),
+    [searchTerm]
+  );
+
+  // Memoized callback for filtering individual checklist
+  const checklistMatchesSearch = useCallback((checklist: ChecklistWithStats, term: string) => {
+    if (!term) return true;
+    
+    return (
+      (checklist.title?.toLowerCase().includes(term)) ||
+      (checklist.description?.toLowerCase().includes(term)) ||
+      (checklist.category?.toLowerCase().includes(term)) ||
+      (checklist.companyName?.toLowerCase().includes(term))
+    );
+  }, []);
+
   // Apply search filter on top of API filters
   const filteredChecklists = useMemo(() => {
-    if (!searchTerm.trim()) {
+    if (!normalizedSearchTerm) {
       return checklists;
     }
     
-    const normalized = searchTerm.trim().toLowerCase();
-    
     return checklists.filter(checklist => 
-      checklist.title.toLowerCase().includes(normalized) ||
-      checklist.description?.toLowerCase().includes(normalized) ||
-      checklist.category?.toLowerCase().includes(normalized) ||
-      checklist.companyName?.toLowerCase().includes(normalized)
+      checklistMatchesSearch(checklist, normalizedSearchTerm)
     );
-  }, [checklists, searchTerm]);
+  }, [checklists, normalizedSearchTerm, checklistMatchesSearch]);
 
   return {
     searchTerm,

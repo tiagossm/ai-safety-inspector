@@ -7,19 +7,20 @@ import { toast } from "sonner";
 export function handleApiError(error: any, defaultMessage = "Ocorreu um erro inesperado"): string {
   console.error("API Error:", error);
   
-  let errorMessage = defaultMessage;
+  // Get error details
+  const errorInfo = {
+    message: getErrorMessage(error),
+    code: error?.code || 'unknown',
+    status: error?.status || null,
+    timestamp: new Date().toISOString(),
+  };
   
-  if (error?.message) {
-    errorMessage = error.message;
-  }
+  console.error("Error details:", errorInfo);
   
-  if (error?.error?.message) {
-    errorMessage = error.error.message;
-  }
+  // Show toast with error message
+  toast.error(errorInfo.message);
   
-  toast.error(errorMessage);
-  
-  return errorMessage;
+  return errorInfo.message;
 }
 
 /**
@@ -36,6 +37,11 @@ export function getErrorMessage(error: any): string {
   
   if (error?.error?.message) {
     return error.error.message;
+  }
+  
+  // Check for Supabase specific error formats
+  if (error?.error?.details) {
+    return error.error.details;
   }
   
   return "Ocorreu um erro inesperado";

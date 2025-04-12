@@ -16,10 +16,23 @@ export const ChecklistCardBadges: React.FC<ChecklistCardBadgesProps> = ({
   checklist, 
   status 
 }) => {
+  // Determine badge text based on checklist properties
+  const badgeText = checklist.isTemplate 
+    ? "Template" 
+    : status === 'active' 
+      ? "Ativo" 
+      : "Inativo";
+  
+  // Determine badge variant based on checklist type
+  const badgeVariant = checklist.isTemplate ? "secondary" : "default";
+  
   return (
-    <div className="flex items-center gap-2 mb-1">
-      <Badge variant={checklist.isTemplate ? "secondary" : "default"} className="px-2 py-0">
-        {checklist.isTemplate ? "Template" : status === 'active' ? "Ativo" : "Inativo"}
+    <div className="flex items-center gap-2 mb-1" aria-label="Status do checklist">
+      <Badge 
+        variant={badgeVariant} 
+        className="px-2 py-0"
+      >
+        {badgeText}
       </Badge>
       <ChecklistOriginBadge origin={checklist.origin} />
     </div>
