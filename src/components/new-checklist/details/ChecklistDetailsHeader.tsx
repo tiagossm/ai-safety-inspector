@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Copy, Pencil, Trash2 } from "lucide-react";
 import { ChecklistOriginBadge } from "@/components/new-checklist/ChecklistOriginBadge";
 import { ChecklistWithStats } from "@/types/newChecklist";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ChecklistDetailsHeaderProps {
   checklist: ChecklistWithStats;
@@ -20,16 +21,28 @@ export function ChecklistDetailsHeader({
   const navigate = useNavigate();
   
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div className="flex items-center gap-4">
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          onClick={() => navigate("/new-checklists")}
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-2xl font-bold">{checklist.title}</h1>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => navigate("/new-checklists")}
+                aria-label="Voltar para lista de checklists"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Voltar para lista</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        <h1 className="text-2xl font-bold" id="checklist-title">
+          {checklist.title}
+        </h1>
         <ChecklistOriginBadge 
           origin={checklist.origin as "manual" | "ia" | "csv" | undefined} 
           showLabel={false} 
@@ -37,22 +50,56 @@ export function ChecklistDetailsHeader({
         />
       </div>
       <div className="flex items-center space-x-2">
-        <Button variant="outline" size="sm">
-          <Copy className="h-4 w-4 mr-2" />
-          Duplicar
-        </Button>
-        <Button onClick={() => onEdit(checklist.id)} size="sm">
-          <Pencil className="h-4 w-4 mr-2" />
-          Editar
-        </Button>
-        <Button 
-          variant="destructive" 
-          size="sm" 
-          onClick={() => onDelete(checklist.id, checklist.title)}
-        >
-          <Trash2 className="h-4 w-4 mr-2" />
-          Excluir
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Copy className="h-4 w-4 mr-2" />
+                <span>Duplicar</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Criar uma cópia deste checklist</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                onClick={() => onEdit(checklist.id)} 
+                size="sm"
+                aria-label={`Editar checklist ${checklist.title}`}
+              >
+                <Pencil className="h-4 w-4 mr-2" />
+                <span>Editar</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Editar este checklist</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={() => onDelete(checklist.id, checklist.title)}
+                aria-label={`Excluir checklist ${checklist.title}`}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                <span>Excluir</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Excluir permanentemente este checklist</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
     </div>
   );

@@ -5,7 +5,12 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export function ChecklistLoadingState() {
   return (
-    <div className="space-y-6">
+    <div 
+      className="space-y-6" 
+      role="status"
+      aria-label="Carregando informações do checklist" 
+      aria-live="polite"
+    >
       <div className="flex items-center gap-4">
         <Skeleton className="h-10 w-10 rounded-full" />
         <Skeleton className="h-8 w-64" />
@@ -37,6 +42,8 @@ export function ChecklistLoadingState() {
           <Skeleton className="h-48 w-full" />
         </CardContent>
       </Card>
+
+      <div className="sr-only">Carregando dados do checklist, por favor aguarde...</div>
     </div>
   );
 }
