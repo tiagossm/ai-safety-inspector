@@ -1,28 +1,74 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2, Save, PlayCircle, FileUp } from "lucide-react";
 import { toast } from "sonner";
-import { Switch } from "@/components/ui/switch";
 import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
-import { useChecklistEdit } from "@/hooks/new-checklist/useChecklistEdit";
 import { ChecklistEditHeader } from "@/components/new-checklist/edit/ChecklistEditHeader";
 import { ChecklistBasicInfo } from "@/components/new-checklist/edit/ChecklistBasicInfo";
-import { ChecklistQuestions } from "@/components/new-checklist/edit/ChecklistQuestions";
 import { ChecklistEditActions } from "@/components/new-checklist/edit/ChecklistEditActions";
 import { LoadingState } from "@/components/new-checklist/edit/LoadingState";
 import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 import { handleError } from "@/utils/errorHandling";
+import { useChecklistState } from "@/hooks/new-checklist/useChecklistState";
+import { useChecklistQuestions } from "@/hooks/new-checklist/useChecklistQuestions";
+import { useChecklistGroups } from "@/hooks/new-checklist/useChecklistGroups";
+import { useChecklistSubmit } from "@/hooks/new-checklist/useChecklistSubmit";
+import { ChecklistEditorProvider } from "@/contexts/ChecklistEditorContext";
+import { ChecklistHeader } from "@/components/new-checklist/edit/ChecklistHeader";
+import { ChecklistQuestionList } from "@/components/new-checklist/edit/ChecklistQuestionList";
 
 export default function NewChecklistEdit() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { data: checklist, isLoading, error, refetch } = useChecklistById(id || "");
-  const [enableAllMedia, setEnableAllMedia] = useState(false);
   
+  // Use our refactored hooks for state management
   const {
+    title, setTitle,
+    description, setDescription,
+    category, setCategory,
+    isTemplate, setIsTemplate,
+    status, setStatus,
+    questions, setQuestions,
+    groups, setGroups,
+    viewMode, setViewMode,
+    deletedQuestionIds, setDeletedQuestionIds,
+    isSubmitting, setIsSubmitting,
+    enableAllMedia, setEnableAllMedia
+  } = useChecklistState(checklist);
+  
+  // Questions management
+  const {
+    handleAddQuestion,
+    handleUpdateQuestion,
+    handleDeleteQuestion,
+    toggleAllMediaOptions
+  } = useChecklistQuestions(
+    questions, 
+    setQuestions, 
+    groups, 
+    deletedQuestionIds, 
+    setDeletedQuestionIds
+  );
+  
+  // Groups management
+  const {
+    handleAddGroup,
+    handleUpdateGroup,
+    handleDeleteGroup,
+    handleDragEnd
+  } = useChecklistGroups(
+    groups,
+    setGroups,
+    questions,
+    setQuestions
+  );
+  
+  // Submission logic
+  const {
+    handleSubmit
+  } = useChecklistSubmit(
+    id,
     title,
     description,
     category,
@@ -30,67 +76,49 @@ export default function NewChecklistEdit() {
     status,
     questions,
     groups,
-    viewMode,
-    deletedQuestionIds,
-    questionsByGroup,
-    nonEmptyGroups,
-    isSubmitting,
-    setTitle,
-    setDescription,
-    setCategory,
-    setIsTemplate,
-    setStatus,
-    setQuestions,
-    setGroups,
-    setViewMode,
-    handleAddGroup,
-    handleUpdateGroup,
-    handleDeleteGroup,
-    handleAddQuestion,
-    handleUpdateQuestion,
-    handleDeleteQuestion,
-    handleDragEnd,
-    handleSubmit
-  } = useChecklistEdit(checklist, id);
-
-  // Função para aplicar opções de mídia para todas as perguntas
-  const toggleAllMediaOptions = (enabled: boolean) => {
-    setEnableAllMedia(enabled);
-    
-    // Aplicar a configuração a todas as perguntas
-    const updatedQuestions = questions.map(question => ({
-      ...question,
-      allowsPhoto: enabled,
-      allowsVideo: enabled,
-      allowsAudio: enabled,
-      allowsFiles: enabled
-    }));
-    
-    setQuestions(updatedQuestions);
-    toast.success(enabled 
-      ? "Opções de mídia ativadas para todas as perguntas" 
-      : "Opções de mídia desativadas para todas as perguntas"
-    );
-  };
-
-  const handleStartInspection = async () => {
-    try {
-      // Primeiro salvar o checklist
-      const success = await handleSubmit();
-      
-      if (success && id) {
-        toast.success("Navegando para nova inspeção...");
-        // Redirecionar para a página de criação de inspeção com o checklist selecionado
-        navigate(`/inspections/new?checklist=${id}`);
-      } else {
-        toast.error("É preciso salvar o checklist antes de iniciar uma inspeção");
-      }
-    } catch (error) {
-      handleError(error, "Erro ao preparar inspeção");
-    }
-  };
+    deletedQuestionIds
+  );
   
-  const handleSave = async () => {
+  // Computed properties with memoization
+  const questionsByGroup = useMemo(() => {
+    const result = new Map<string, typeof questions>();
+    
+    groups.forEach(group => {
+      result.set(group.id, []);
+    });
+    
+    questions.forEach(question => {
+      const groupId = question.groupId || groups[0]?.id || "default";
+      if (!result.has(groupId)) {
+        result.set(groupId, []);
+      }
+      
+      const groupQuestions = result.get(groupId) || [];
+      groupQuestions.push(question);
+      result.set(groupId, groupQuestions);
+    });
+    
+    result.forEach((groupQuestions, groupId) => {
+      result.set(
+        groupId,
+        groupQuestions.sort((a, b) => a.order - b.order)
+      );
+    });
+    
+    return result;
+  }, [questions, groups]);
+  
+  const nonEmptyGroups = useMemo(() => {
+    return groups
+      .filter(group => {
+        const groupQuestions = questionsByGroup.get(group.id) || [];
+        return groupQuestions.length > 0;
+      })
+      .sort((a, b) => a.order - b.order);
+  }, [groups, questionsByGroup]);
+  
+  // Action handlers
+  const handleSave = useCallback(async () => {
     try {
       const success = await handleSubmit();
       if (success) {
@@ -100,16 +128,85 @@ export default function NewChecklistEdit() {
     } catch (error) {
       handleError(error, "Erro ao salvar o checklist");
     }
-  };
+  }, [handleSubmit, navigate]);
   
-  // Inicializar formulário com dados do checklist quando ele for carregado
+  const handleStartInspection = useCallback(async () => {
+    try {
+      const success = await handleSubmit();
+      
+      if (success && id) {
+        toast.success("Navegando para nova inspeção...");
+        navigate(`/inspections/new?checklist=${id}`);
+      } else {
+        toast.error("É preciso salvar o checklist antes de iniciar uma inspeção");
+      }
+    } catch (error) {
+      handleError(error, "Erro ao preparar inspeção");
+    }
+  }, [handleSubmit, id, navigate]);
+  
+  // Initialize form with data from the checklist when it's loaded
   useEffect(() => {
     if (checklist) {
-      console.log("Dados do checklist carregados para edição:", checklist);
+      setTitle(checklist.title || "");
+      setDescription(checklist.description || "");
+      setCategory(checklist.category || "");
+      setIsTemplate(checklist.isTemplate || false);
+      setStatus(checklist.status || "active");
+      
+      if (checklist.questions && checklist.questions.length > 0) {
+        if (checklist.groups && checklist.groups.length > 0) {
+          setGroups(checklist.groups);
+          
+          const questionsWithValidGroups = checklist.questions.map((q) => ({
+            ...q,
+            groupId: q.groupId || checklist.groups[0].id
+          }));
+          
+          setQuestions(questionsWithValidGroups);
+        } else {
+          const defaultGroup = {
+            id: "default",
+            title: "Geral",
+            order: 0
+          };
+          
+          const questionsWithDefaultGroup = checklist.questions.map((q) => ({
+            ...q,
+            groupId: "default"
+          }));
+          
+          setGroups([defaultGroup]);
+          setQuestions(questionsWithDefaultGroup);
+        }
+      } else {
+        const defaultGroup = {
+          id: "default",
+          title: "Geral",
+          order: 0
+        };
+        
+        const defaultQuestion = {
+          id: `new-${Date.now()}`,
+          text: "",
+          responseType: "yes_no",
+          isRequired: true,
+          weight: 1,
+          allowsPhoto: false,
+          allowsVideo: false, 
+          allowsAudio: false,
+          allowsFiles: false,
+          order: 0,
+          groupId: "default"
+        };
+        
+        setGroups([defaultGroup]);
+        setQuestions([defaultQuestion]);
+      }
     }
-  }, [checklist]);
+  }, [checklist, setTitle, setDescription, setCategory, setIsTemplate, setStatus, setQuestions, setGroups]);
   
-  // Lidar com erros
+  // Handle errors
   useEffect(() => {
     if (error) {
       handleError(error, "Erro ao carregar checklist");
@@ -121,103 +218,81 @@ export default function NewChecklistEdit() {
     return <LoadingState />;
   }
   
+  // Context value with all state and actions
+  const contextValue = {
+    title,
+    description,
+    category,
+    isTemplate,
+    status,
+    questions,
+    groups,
+    viewMode,
+    questionsByGroup,
+    nonEmptyGroups,
+    isSubmitting,
+    enableAllMedia,
+    setTitle,
+    setDescription,
+    setCategory,
+    setIsTemplate,
+    setStatus,
+    setViewMode,
+    handleAddGroup,
+    handleUpdateGroup,
+    handleDeleteGroup,
+    handleAddQuestion,
+    handleUpdateQuestion,
+    handleDeleteQuestion,
+    handleDragEnd,
+    handleSubmit,
+    toggleAllMediaOptions
+  };
+  
   return (
-    <div className="space-y-6">
-      <ChecklistEditHeader 
-        onBack={() => navigate("/new-checklists")}
-        onRefresh={() => {
-          if (id) {
-            toast.info("Recarregando dados do checklist...");
-            refetch();
-          }
-        }}
-      />
-      
-      {/* Botões de ação no topo */}
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <Switch
-            id="all-media-options"
-            checked={enableAllMedia}
-            onCheckedChange={toggleAllMediaOptions}
-          />
-          <label htmlFor="all-media-options" className="text-sm font-medium">
-            Ativar todas as opções de mídia
-          </label>
-        </div>
-        <div className="flex space-x-4">
-          <Button 
-            variant="outline" 
-            onClick={handleSave}
-            disabled={isSubmitting}
-            className="flex items-center"
-          >
-            {isSubmitting ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</>
-            ) : (
-              <><Save className="mr-2 h-4 w-4" /> Salvar Checklist</>
-            )}
-          </Button>
-          
-          <Button 
-            onClick={handleStartInspection}
-            disabled={isSubmitting}
-            className="flex items-center"
-          >
-            {isSubmitting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <PlayCircle className="mr-2 h-4 w-4" />
-            )}
-            Iniciar Inspeção
-          </Button>
-        </div>
-      </div>
-      
-      <form onSubmit={(e) => {
-        e.preventDefault();
-        handleSubmit();
-      }} className="space-y-6">
-        <ChecklistBasicInfo
-          title={title}
-          description={description}
-          category={category}
-          isTemplate={isTemplate}
-          status={status}
-          onTitleChange={setTitle}
-          onDescriptionChange={setDescription}
-          onCategoryChange={setCategory}
-          onIsTemplateChange={setIsTemplate}
-          onStatusChange={setStatus}
-        />
-        
-        <ChecklistQuestions
-          questions={questions}
-          groups={groups}
-          nonEmptyGroups={nonEmptyGroups}
-          questionsByGroup={questionsByGroup}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          onAddGroup={handleAddGroup}
-          onUpdateGroup={handleUpdateGroup}
-          onDeleteGroup={handleDeleteGroup}
-          onAddQuestion={handleAddQuestion}
-          onUpdateQuestion={handleUpdateQuestion}
-          onDeleteQuestion={handleDeleteQuestion}
-          onDragEnd={handleDragEnd}
-          enableAllMedia={enableAllMedia}
-          isSubmitting={isSubmitting}
-        />
-        
-        <ChecklistEditActions
-          isSubmitting={isSubmitting}
-          onCancel={() => navigate("/new-checklists")}
+    <ChecklistEditorProvider value={contextValue}>
+      <div className="space-y-6">
+        {/* Header section */}
+        <ChecklistHeader 
+          onBack={() => navigate("/new-checklists")}
+          onRefresh={() => id && refetch()}
           onStartInspection={handleStartInspection}
           onSave={handleSave}
         />
-      </form>
-      
-      <FloatingNavigation threshold={400} />
-    </div>
+        
+        {/* Form section */}
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          handleSubmit();
+        }} className="space-y-6">
+          {/* Basic information section */}
+          <ChecklistBasicInfo
+            title={title}
+            description={description}
+            category={category}
+            isTemplate={isTemplate}
+            status={status}
+            onTitleChange={setTitle}
+            onDescriptionChange={setDescription}
+            onCategoryChange={setCategory}
+            onIsTemplateChange={setIsTemplate}
+            onStatusChange={setStatus}
+          />
+          
+          {/* Questions section */}
+          <ChecklistQuestionList />
+          
+          {/* Bottom actions */}
+          <ChecklistEditActions
+            isSubmitting={isSubmitting}
+            onCancel={() => navigate("/new-checklists")}
+            onStartInspection={handleStartInspection}
+            onSave={handleSave}
+          />
+        </form>
+        
+        <FloatingNavigation threshold={400} />
+      </div>
+    </ChecklistEditorProvider>
   );
 }
