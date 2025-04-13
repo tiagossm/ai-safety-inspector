@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Card,
@@ -12,74 +11,11 @@ import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
-  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
-  MoreHorizontal,
-  Pencil,
-  Copy,
-  Trash2,
-  Plus,
-  ChevronsUpDown,
-  Check,
-  X,
-  Search,
-  Loader2,
-  ArrowLeft,
-} from "lucide-react";
-import { Link } from "react-router-dom";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Switch } from "@/components/ui/switch";
 import { useForm } from "react-hook-form";
 import { cn } from "@/lib/utils";
 import { ChecklistWithStats } from "@/types/newChecklist";
@@ -98,7 +34,13 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { formatDate } from "@/utils/format";
 import { DeleteChecklistDialog } from "@/components/new-checklist/DeleteChecklistDialog";
-import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
+import { 
+  MoreHorizontal, 
+  Pencil, 
+  Copy, 
+  Trash2, 
+  ArrowLeft 
+} from "lucide-react";
 
 export default function NewChecklistDetails() {
   const { id } = useParams<{ id: string }>();

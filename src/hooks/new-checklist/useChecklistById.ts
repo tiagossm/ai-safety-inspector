@@ -1,8 +1,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { ChecklistWithStats, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { toast } from "sonner";
-import { ChecklistWithStats } from "@/types/newChecklist";
 
 // Function to validate UUID format
 const isValidUUID = (id: string): boolean => {
@@ -20,7 +20,7 @@ const transformChecklistData = (data: any): ChecklistWithStats => {
     title: data.title,
     description: data.description,
     isTemplate: data.is_template,
-    status: data.status,
+    status: data.status || data.status_checklist,
     category: data.category,
     responsibleId: data.responsible_id,
     companyId: data.company_id,
@@ -37,8 +37,29 @@ const transformChecklistData = (data: any): ChecklistWithStats => {
   };
 };
 
+// Transform question data to match ChecklistQuestion type
+const transformQuestionData = (q: any): ChecklistQuestion => ({
+  id: q.id,
+  text: q.pergunta || q.text,
+  responseType: q.tipo_resposta as ChecklistQuestion['responseType'], 
+  isRequired: q.obrigatorio,
+  weight: q.weight || 1,
+  allowsPhoto: q.permite_foto || false,
+  allowsVideo: q.permite_video || false,
+  allowsAudio: q.permite_audio || false,
+  allowsFiles: false,
+  order: q.ordem,
+  options: q.opcoes,
+  hint: q.hint,
+  groupId: null,
+  parentQuestionId: q.parent_item_id,
+  hasSubChecklist: q.has_subchecklist || false,
+  subChecklistId: q.sub_checklist_id,
+  conditionValue: q.condition_value
+});
+
 export function useChecklistById(id: string) {
-  return useQuery({
+  return useQuery<ChecklistWithStats | null>({
     queryKey: ["checklists", id],
     queryFn: async () => {
       // Skip query if ID is empty or "editor"
@@ -78,75 +99,16 @@ export function useChecklistById(id: string) {
         // Not throwing here, we'll just have an empty questions array
       }
 
-      // Transform the questions data
-      const questions = questionsData ? questionsData.map(q => ({
-        id: q.id,
-        text: q.pergunta,
-        responseType: q.tipo_resposta,
-        isRequired: q.obrigatorio,
-        weight: q.weight || 1,
-        allowsPhoto: q.permite_foto || false,
-        allowsVideo: q.permite_video || false,
-        allowsAudio: q.permite_audio || false,
-        allowsFiles: false, // Default value
-        order: q.ordem,
-        options: q.opcoes,
-        hint: q.hint,
-        groupId: null, // Will set this when processing groups
-        parentQuestionId: q.parent_item_id,
-        conditionValue: q.condition_value,
-        subChecklistId: q.sub_checklist_id,
-        hasSubChecklist: q.has_subchecklist || false
-      })) : [];
-      
-      // Extract groups from questions' hints
-      const groups: ChecklistGroup[] = [];
-      const groupMap = new Map();
-      
-      questions.forEach(q => {
-        if (q.hint) {
-          try {
-            const hintObj = JSON.parse(q.hint);
-            if (hintObj && hintObj.groupId && hintObj.groupTitle) {
-              if (!groupMap.has(hintObj.groupId)) {
-                const group = {
-                  id: hintObj.groupId,
-                  title: hintObj.groupTitle,
-                  order: hintObj.groupIndex || 0
-                };
-                groups.push(group);
-                groupMap.set(hintObj.groupId, group);
-              }
-              q.groupId = hintObj.groupId;
-            }
-          } catch (e) {
-            // Not a JSON hint, ignore
-          }
-        }
-      });
-      
-      // If no groups found, create a default one
-      if (groups.length === 0) {
-        const defaultGroup = {
-          id: "default",
-          title: "Geral",
-          order: 0
-        };
-        groups.push(defaultGroup);
-        
-        // Assign all questions to the default group
-        questions.forEach(q => {
-          q.groupId = "default";
-        });
-      }
-      
-      // Create a transformed checklist with questions and groups
+      // Transform the checklist data
       const transformed = transformChecklistData(checklistData);
-      transformed.questions = questions;
-      transformed.groups = groups;
       
-      // Count questions
-      transformed.totalQuestions = questions.length;
+      // Transform and assign questions
+      transformed.questions = questionsData 
+        ? questionsData.map(transformQuestionData)
+        : [];
+      
+      // Assign total questions count
+      transformed.totalQuestions = transformed.questions.length;
       
       return transformed;
     },
