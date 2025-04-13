@@ -7,6 +7,7 @@ import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ChecklistQuestion } from "@/types/newChecklist";
 
 export default function ChecklistEditorPage() {
   const [loading, setLoading] = useState(true);
@@ -148,7 +149,7 @@ export default function ChecklistEditorPage() {
           // When we have defined groups, map questions to their groups
           groups = checklist.groups.map(group => {
             // Filter questions that belong to this group
-            const groupQuestions = checklist.questions.filter(q => q.groupId === group.id);
+            const groupQuestions = checklist.questions?.filter(q => q.groupId === group.id) || [];
             console.log(`Group ${group.id} (${group.title}) has ${groupQuestions.length} questions`);
             
             return {
@@ -170,7 +171,7 @@ export default function ChecklistEditorPage() {
               }))
             };
           });
-        } else {
+        } else if (checklist.questions?.length > 0) {
           // If no groups defined, create a default group with all questions
           const defaultGroupId = `group-default-${Date.now()}`;
           groups = [{
@@ -195,7 +196,7 @@ export default function ChecklistEditorPage() {
         }
         
         // Convert questions to the editor format (for flat view)
-        const questions = checklist.questions.map(q => ({
+        const questions = checklist.questions?.map(q => ({
           id: q.id, // Keep original ID
           text: q.text,
           type: q.responseType,
@@ -209,7 +210,7 @@ export default function ChecklistEditorPage() {
           parentId: q.parentQuestionId,
           conditionValue: q.conditionValue,
           groupId: q.groupId || groups[0]?.id
-        }));
+        })) || [];
         
         console.log(`Prepared ${questions.length} questions for the editor`);
         console.log(`Prepared ${groups.length} groups with a total of ${groups.reduce((sum, g) => sum + g.questions.length, 0)} questions`);

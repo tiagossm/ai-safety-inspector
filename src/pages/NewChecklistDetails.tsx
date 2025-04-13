@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -97,6 +98,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { formatDate } from "@/utils/format";
 import { DeleteChecklistDialog } from "@/components/new-checklist/DeleteChecklistDialog";
+import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
 
 export default function NewChecklistDetails() {
   const { id } = useParams<{ id: string }>();

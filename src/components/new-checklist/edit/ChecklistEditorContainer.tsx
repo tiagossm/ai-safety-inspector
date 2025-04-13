@@ -160,29 +160,17 @@ export function ChecklistEditorContainer() {
       setStatus(checklistStatus);
       
       if (checklist.questions && checklist.questions.length > 0) {
+        setQuestions(checklist.questions);
+        
         if (checklist.groups && checklist.groups.length > 0) {
           setGroups(checklist.groups);
-          
-          const questionsWithValidGroups = checklist.questions.map((q) => ({
-            ...q,
-            groupId: q.groupId || checklist.groups[0].id
-          }));
-          
-          setQuestions(questionsWithValidGroups);
         } else {
           const defaultGroup: ChecklistGroup = {
             id: "default",
             title: "Geral",
             order: 0
           };
-          
-          const questionsWithDefaultGroup = checklist.questions.map((q) => ({
-            ...q,
-            groupId: "default"
-          }));
-          
           setGroups([defaultGroup]);
-          setQuestions(questionsWithDefaultGroup);
         }
       } else {
         const defaultGroup: ChecklistGroup = {
