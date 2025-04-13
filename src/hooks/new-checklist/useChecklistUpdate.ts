@@ -17,48 +17,132 @@ export function useChecklistUpdate() {
   return useMutation({
     mutationFn: async (params: ChecklistUpdateParams) => {
       const { id, questions, groups, deletedQuestionIds, ...updateData } = params;
-      console.log(`Updating checklist ${id} with:`, updateData);
+      console.log(`Atualizando checklist ${id} com:`, updateData);
       
+      // Atualizar dados principais do checklist
       const { data, error } = await supabase
         .from("checklists")
-        .update(updateData)
+        .update({
+          ...updateData,
+          updated_at: new Date().toISOString() // Garantir que updated_at seja atualizado
+        })
         .eq("id", id)
         .select()
         .single();
         
       if (error) {
-        console.error("Error updating checklist:", error);
-        throw error;
+        console.error("Erro ao atualizar checklist:", error);
+        throw new Error(`Falha ao atualizar dados básicos: ${error.message}`);
       }
       
-      // If we have questions to update, handle them separately
+      // Se temos perguntas para atualizar, tratamos aqui
       if (questions && questions.length > 0) {
-        console.log(`Processing ${questions.length} questions`);
-        // Additional logic for updating questions could be added here
+        console.log(`Processando ${questions.length} perguntas`);
+        
+        // Separar perguntas novas das existentes
+        const newQuestions = questions.filter(q => q.id.startsWith('new-'));
+        const existingQuestions = questions.filter(q => !q.id.startsWith('new-'));
+        
+        // Inserir novas perguntas
+        if (newQuestions.length > 0) {
+          const questionsToInsert = newQuestions.map((q, index) => {
+            const groupInfo = groups?.find(g => g.id === q.groupId);
+            const hint = groupInfo ? 
+              JSON.stringify({
+                groupId: groupInfo.id,
+                groupTitle: groupInfo.title,
+                groupIndex: groups.findIndex(g => g.id === groupInfo.id)
+              }) : null;
+            
+            return {
+              checklist_id: id,
+              pergunta: q.text,
+              tipo_resposta: q.responseType,
+              obrigatorio: q.isRequired,
+              ordem: q.order || index,
+              opcoes: q.options,
+              weight: q.weight || 1,
+              permite_foto: q.allowsPhoto,
+              permite_video: q.allowsVideo,
+              permite_audio: q.allowsAudio,
+              parent_item_id: q.parentQuestionId,
+              condition_value: q.conditionValue,
+              hint
+            };
+          });
+          
+          console.log(`Inserindo ${questionsToInsert.length} novas perguntas`);
+          const { error: insertError } = await supabase
+            .from("checklist_itens")
+            .insert(questionsToInsert);
+            
+          if (insertError) {
+            console.error("Erro ao inserir novas perguntas:", insertError);
+            throw new Error(`Falha ao inserir novas perguntas: ${insertError.message}`);
+          }
+        }
+        
+        // Atualizar perguntas existentes
+        for (const question of existingQuestions) {
+          const groupInfo = groups?.find(g => g.id === question.groupId);
+          const hint = groupInfo ? 
+            JSON.stringify({
+              groupId: groupInfo.id,
+              groupTitle: groupInfo.title,
+              groupIndex: groups.findIndex(g => g.id === groupInfo.id)
+            }) : question.hint;
+          
+          const { error: updateError } = await supabase
+            .from("checklist_itens")
+            .update({
+              pergunta: question.text,
+              tipo_resposta: question.responseType,
+              obrigatorio: question.isRequired,
+              ordem: question.order,
+              opcoes: question.options,
+              weight: question.weight || 1,
+              permite_foto: question.allowsPhoto,
+              permite_video: question.allowsVideo,
+              permite_audio: question.allowsAudio,
+              parent_item_id: question.parentQuestionId,
+              condition_value: question.conditionValue,
+              hint,
+              updated_at: new Date().toISOString()
+            })
+            .eq("id", question.id);
+            
+          if (updateError) {
+            console.error(`Erro ao atualizar pergunta ${question.id}:`, updateError);
+            throw new Error(`Falha ao atualizar pergunta: ${updateError.message}`);
+          }
+        }
       }
       
-      // If we have groups to update, handle them separately
-      if (groups && groups.length > 0) {
-        console.log(`Processing ${groups.length} groups`);
-        // Additional logic for updating groups could be added here
-      }
-      
-      // If we have questions to delete, handle them
+      // Excluir perguntas marcadas para exclusão
       if (deletedQuestionIds && deletedQuestionIds.length > 0) {
-        console.log(`Deleting ${deletedQuestionIds.length} questions`);
-        // Additional logic for deleting questions could be added here
+        console.log(`Excluindo ${deletedQuestionIds.length} perguntas`);
+        const { error: deleteError } = await supabase
+          .from("checklist_itens")
+          .delete()
+          .in("id", deletedQuestionIds);
+          
+        if (deleteError) {
+          console.error("Erro ao excluir perguntas:", deleteError);
+          throw new Error(`Falha ao excluir perguntas: ${deleteError.message}`);
+        }
       }
       
-      console.log("Checklist updated successfully:", data);
+      console.log("Checklist atualizado com sucesso:", data);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success("Checklist atualizado com sucesso");
       queryClient.invalidateQueries({ queryKey: ["new-checklists"] });
+      queryClient.invalidateQueries({ queryKey: ["new-checklist", data?.id] });
     },
-    onError: (error) => {
-      console.error("Mutation error:", error);
-      toast.error("Erro ao atualizar checklist");
+    onError: (error: any) => {
+      console.error("Erro na mutação:", error);
+      toast.error(`Erro ao atualizar checklist: ${error.message || "Erro desconhecido"}`);
     }
   });
 }

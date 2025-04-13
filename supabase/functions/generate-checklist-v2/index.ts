@@ -1,22 +1,35 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { corsHeaders } from "../_shared/corsUtils.ts";
+import { corsHeaders, handleCors, errorResponse, addCorsHeaders } from "../_shared/corsUtils.ts";
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
 
 serve(async (req) => {
   // IMPORTANTE: Sempre responder a solicitações OPTIONS com cabeçalhos CORS
-  if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: corsHeaders
-    });
+  const corsResponse = handleCors(req);
+  if (corsResponse) {
+    return corsResponse;
   }
   
   try {
-    const body = await req.json();
-    console.log("Request body:", JSON.stringify(body));
+    console.log("--- Iniciando solicitação generate-checklist-v2 ---");
+    
+    // Verificar se a chave OpenAI está configurada
+    if (!OPENAI_API_KEY) {
+      console.error("OPENAI_API_KEY não está configurada");
+      return errorResponse("API key da OpenAI não configurada no servidor", 500);
+    }
+    
+    const body = await req.json().catch(err => {
+      console.error("Erro ao analisar corpo da requisição:", err);
+      return null;
+    });
+    
+    if (!body) {
+      return errorResponse("Corpo da requisição inválido ou vazio");
+    }
+    
+    console.log("Corpo da requisição:", JSON.stringify(body));
     
     // Extrair os parâmetros da solicitação
     const { 
@@ -32,39 +45,20 @@ serve(async (req) => {
     // Verificações de parâmetros
     if (!prompt && !description) {
       console.error("Descrição ou prompt são necessários");
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Descrição ou prompt são necessários" 
-        }),
-        { 
-          status: 400,
-          headers: {
-            "Content-Type": "application/json",
-            ...corsHeaders
-          }
-        }
-      );
+      return errorResponse("Descrição ou prompt são necessários");
     }
     
     if (!category) {
       console.error("Categoria é obrigatória");
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Categoria é obrigatória" 
-        }),
-        { 
-          status: 400,
-          headers: {
-            "Content-Type": "application/json",
-            ...corsHeaders
-          }
-        }
-      );
+      return errorResponse("Categoria é obrigatória");
+    }
+    
+    if (!companyId) {
+      console.error("ID da empresa é obrigatório");
+      return errorResponse("ID da empresa é obrigatório");
     }
 
-    console.log("Checking OpenAI Assistant ID:", assistantId);
+    console.log("Verificando ID do Assistente OpenAI:", assistantId);
 
     // Parâmetros para a chamada da OpenAI
     const messages = [
@@ -94,81 +88,60 @@ serve(async (req) => {
       response_format: { type: "json_object" }
     };
 
-    console.log("Making OpenAI request with parameters:", JSON.stringify(openaiParams));
+    console.log("Fazendo requisição para OpenAI com parâmetros:", JSON.stringify(openaiParams));
     
     let response;
     
     if (assistantId && assistantId !== "default") {
-      console.log("Using thread-based approach with Assistant ID:", assistantId);
+      console.log("Usando abordagem baseada em threads com ID do Assistente:", assistantId);
       response = await generateWithAssistant(assistantId, prompt || description, category, questionCount);
     } else {
-      console.log("Using standard completion API");
+      console.log("Usando API de completion padrão");
       // Chamada padrão da API
-      const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify(openaiParams),
-      });
-      
-      const apiResponse = await openaiResponse.json();
-      console.log("API Response status:", openaiResponse.status);
-      
-      if (!openaiResponse.ok) {
-        console.error("OpenAI API error:", apiResponse);
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: "Erro ao comunicar com OpenAI", 
-            details: apiResponse 
-          }),
-          { 
-            status: 500,
-            headers: {
-              "Content-Type": "application/json",
-              ...corsHeaders
-            }
-          }
-        );
+      try {
+        const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
+          },
+          body: JSON.stringify(openaiParams),
+        });
+        
+        const apiResponse = await openaiResponse.json();
+        console.log("Status da resposta da API:", openaiResponse.status);
+        
+        if (!openaiResponse.ok) {
+          console.error("Erro na API OpenAI:", apiResponse);
+          return errorResponse("Erro ao comunicar com OpenAI", openaiResponse.status);
+        }
+        
+        response = JSON.parse(apiResponse.choices[0].message.content);
+      } catch (openaiError) {
+        console.error("Exceção na chamada OpenAI:", openaiError);
+        return errorResponse(`Erro ao processar resposta da OpenAI: ${openaiError.message}`, 500);
       }
-      
-      response = JSON.parse(apiResponse.choices[0].message.content);
     }
     
     // Processa a resposta para estruturar os dados
     const processedResponse = processResponse(response, title, description, category, companyId);
     
-    console.log("Returning successful response");
-    return new Response(
+    console.log("Resposta processada com sucesso");
+    return addCorsHeaders(new Response(
       JSON.stringify({
         success: true,
         ...processedResponse
       }),
       { 
         headers: {
-          "Content-Type": "application/json",
-          ...corsHeaders
+          "Content-Type": "application/json"
         }
       }
-    );
+    ));
     
   } catch (error) {
-    console.error("General error in generate-checklist-v2:", error);
-    return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message || "Erro desconhecido", 
-      }),
-      { 
-        status: 500,
-        headers: {
-          "Content-Type": "application/json",
-          ...corsHeaders
-        }
-      }
-    );
+    console.error("Erro geral em generate-checklist-v2:", error);
+    return errorResponse(error.message || "Erro desconhecido", 500);
   }
 });
 

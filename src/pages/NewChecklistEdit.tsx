@@ -14,6 +14,7 @@ import { ChecklistQuestions } from "@/components/new-checklist/edit/ChecklistQue
 import { ChecklistEditActions } from "@/components/new-checklist/edit/ChecklistEditActions";
 import { LoadingState } from "@/components/new-checklist/edit/LoadingState";
 import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
+import { handleError } from "@/utils/errorHandling";
 
 export default function NewChecklistEdit() {
   const navigate = useNavigate();
@@ -73,33 +74,45 @@ export default function NewChecklistEdit() {
   };
 
   const handleStartInspection = async () => {
-    // Primeiro salvar o checklist
-    const success = await handleSubmit();
-    
-    if (success && id) {
-      // Redirecionar para a página de criação de inspeção com o checklist selecionado
-      navigate(`/inspections/new?checklist=${id}`);
+    try {
+      // Primeiro salvar o checklist
+      const success = await handleSubmit();
+      
+      if (success && id) {
+        toast.success("Navegando para nova inspeção...");
+        // Redirecionar para a página de criação de inspeção com o checklist selecionado
+        navigate(`/inspections/new?checklist=${id}`);
+      } else {
+        toast.error("É preciso salvar o checklist antes de iniciar uma inspeção");
+      }
+    } catch (error) {
+      handleError(error, "Erro ao preparar inspeção");
     }
   };
   
   const handleSave = async () => {
-    const success = await handleSubmit();
-    if (success) {
-      navigate("/new-checklists");
+    try {
+      const success = await handleSubmit();
+      if (success) {
+        toast.success("Checklist salvo com sucesso!");
+        navigate("/new-checklists");
+      }
+    } catch (error) {
+      handleError(error, "Erro ao salvar o checklist");
     }
   };
   
   // Inicializar formulário com dados do checklist quando ele for carregado
   useEffect(() => {
     if (checklist) {
-      console.log("Checklist data loaded for edit:", checklist);
+      console.log("Dados do checklist carregados para edição:", checklist);
     }
   }, [checklist]);
   
   // Lidar com erros
   useEffect(() => {
     if (error) {
-      toast.error("Erro ao carregar checklist. Verifique o ID ou tente novamente.");
+      handleError(error, "Erro ao carregar checklist");
       navigate("/new-checklists");
     }
   }, [error, navigate]);
@@ -139,8 +152,11 @@ export default function NewChecklistEdit() {
             disabled={isSubmitting}
             className="flex items-center"
           >
-            <Save className="mr-2 h-4 w-4" />
-            Salvar Checklist
+            {isSubmitting ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Salvando...</>
+            ) : (
+              <><Save className="mr-2 h-4 w-4" /> Salvar Checklist</>
+            )}
           </Button>
           
           <Button 
@@ -148,7 +164,11 @@ export default function NewChecklistEdit() {
             disabled={isSubmitting}
             className="flex items-center"
           >
-            <PlayCircle className="mr-2 h-4 w-4" />
+            {isSubmitting ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <PlayCircle className="mr-2 h-4 w-4" />
+            )}
             Iniciar Inspeção
           </Button>
         </div>
@@ -186,6 +206,7 @@ export default function NewChecklistEdit() {
           onDeleteQuestion={handleDeleteQuestion}
           onDragEnd={handleDragEnd}
           enableAllMedia={enableAllMedia}
+          isSubmitting={isSubmitting}
         />
         
         <ChecklistEditActions

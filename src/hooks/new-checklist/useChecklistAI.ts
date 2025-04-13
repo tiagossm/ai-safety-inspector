@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { AIAssistantType } from "@/types/AIAssistantType";
 import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { supabase } from "@/integrations/supabase/client";
+import { handleError, validateRequiredFields } from "@/utils/errorHandling";
 
 export { type AIAssistantType };
 
@@ -17,25 +18,23 @@ export function useChecklistAI() {
   const generateChecklist = async (checklistData: NewChecklistPayload) => {
     setIsGenerating(true);
     
-    if (!checklistData.category) {
-      toast.error("Category is required");
+    // Validar campos obrigatórios
+    if (!validateRequiredFields({
+      categoria: checklistData.category,
+      empresa: checklistData.company_id
+    })) {
       setIsGenerating(false);
-      return { success: false, error: "Category is required" };
-    }
-
-    if (!checklistData.company_id) {
-      console.error("Company ID is required");
-      return { success: false, error: "Company ID is required" };
+      return { success: false, error: "Campos obrigatórios não preenchidos" };
     }
     
     try {
-      console.log("Starting AI checklist generation with data:", checklistData);
+      console.log("Iniciando geração de checklist por IA com dados:", checklistData);
       
       const requestBody: any = {
         title: checklistData.title,
         description: checklistData.description,
         category: checklistData.category,
-        companyId: checklistData.company_id, // Using correct property name for API
+        companyId: checklistData.company_id,
         questionCount: questionCount,
         prompt: prompt
       };
@@ -44,40 +43,34 @@ export function useChecklistAI() {
         requestBody.assistantId = openAIAssistant;
       }
       
-      console.log("Sending request to generate-checklist-v2:", requestBody);
+      console.log("Enviando requisição para generate-checklist-v2:", requestBody);
       
       const { data, error } = await supabase.functions.invoke('generate-checklist-v2', {
         body: requestBody
       });
 
-      console.log("Response from generate-checklist-v2:", data, error);
+      console.log("Resposta de generate-checklist-v2:", data, error);
 
       if (error) {
-        console.error("Error in AI generation:", error);
-        toast.error(`Erro na geração por IA: ${error.message}`);
-        setIsGenerating(false);
-        return { success: false, error: error.message };
+        throw new Error(`Erro na geração por IA: ${error.message || "Erro desconhecido"}`);
       }
 
       if (!data || !data.success) {
-        console.error("AI generation failed:", data);
-        toast.error(data?.error || 'Failed to generate checklist');
-        setIsGenerating(false);
-        return { success: false, error: data?.error || 'Failed to generate checklist' };
+        throw new Error(data?.error || 'Falha ao gerar checklist');
       }
       
       const questions: ChecklistQuestion[] = data.questions || [];
       const groups: ChecklistGroup[] = data.groups || [];
       
-      console.log(`Generation successful! Received ${questions.length} questions and ${groups.length} groups`);
+      console.log(`Geração bem-sucedida! Recebidas ${questions.length} perguntas e ${groups.length} grupos`);
       
-      setIsGenerating(false);
+      toast.success("Checklist gerado com sucesso!");
       return { success: true, questions, groups, checklistData };
     } catch (error: any) {
-      console.error('Error in AI generation:', error);
-      toast.error(`Erro na geração por IA: ${error.message}`);
+      handleError(error, "Erro na geração por IA");
+      return { success: false, error: error.message || "Erro desconhecido" };
+    } finally {
       setIsGenerating(false);
-      return { success: false, error: error.message };
     }
   };
 
