@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +22,7 @@ export interface QuestionGroupProps {
   dragHandleProps?: any;
   enableAllMedia?: boolean;
   onGenerateWithAI?: (groupId: string) => void;
+  isSubmitting?: boolean;
 }
 
 export function QuestionGroup({
@@ -35,7 +35,8 @@ export function QuestionGroup({
   onDeleteGroup,
   dragHandleProps,
   enableAllMedia = false,
-  onGenerateWithAI
+  onGenerateWithAI,
+  isSubmitting = false
 }: QuestionGroupProps) {
   const [isOpen, setIsOpen] = useState(true);
 
@@ -102,6 +103,7 @@ export function QuestionGroup({
                   className="w-full" 
                   onClick={() => onAddQuestion(group.id)}
                   size="sm"
+                  disabled={isSubmitting}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Adicionar Pergunta
@@ -114,6 +116,7 @@ export function QuestionGroup({
                     className="w-full"
                     onClick={() => onGenerateWithAI(group.id)}
                     size="sm"
+                    disabled={isSubmitting}
                   >
                     <Sparkles className="h-4 w-4 mr-2" />
                     Gerar com IA

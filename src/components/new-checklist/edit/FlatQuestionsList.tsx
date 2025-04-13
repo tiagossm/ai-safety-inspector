@@ -12,6 +12,7 @@ interface FlatQuestionsListProps {
   onUpdateQuestion: (question: ChecklistQuestion) => void;
   onDeleteQuestion: (questionId: string) => void;
   enableAllMedia?: boolean;
+  isSubmitting?: boolean;  // Added optional isSubmitting prop
 }
 
 export function FlatQuestionsList({
@@ -19,7 +20,8 @@ export function FlatQuestionsList({
   onAddQuestion,
   onUpdateQuestion,
   onDeleteQuestion,
-  enableAllMedia = false
+  enableAllMedia = false,
+  isSubmitting = false  // Added default value
 }: FlatQuestionsListProps) {
   // Group questions by their parent IDs
   const parentQuestions = questions.filter(q => !q.parentQuestionId);
@@ -84,6 +86,7 @@ export function FlatQuestionsList({
         variant="outline"
         onClick={onAddQuestion}
         className="w-full mt-4"
+        disabled={isSubmitting}  // Disable when submitting
       >
         <Plus className="h-4 w-4 mr-2" />
         Adicionar Pergunta

@@ -13,7 +13,7 @@ interface QuestionGroupsListProps {
   onDeleteQuestion: (questionId: string) => void;
   onDeleteGroup: (groupId: string) => void;
   enableAllMedia?: boolean;
-  isSubmitting?: boolean; // Added missing property
+  isSubmitting?: boolean;  // Added optional isSubmitting prop
 }
 
 export function QuestionGroupsList({
@@ -25,14 +25,13 @@ export function QuestionGroupsList({
   onDeleteQuestion,
   onDeleteGroup,
   enableAllMedia = false,
-  isSubmitting = false // Added with default value
+  isSubmitting = false  // Added default value
 }: QuestionGroupsListProps) {
   return (
     <>
       {groups.map((group, index) => {
         const groupQuestions = questionsByGroup.get(group.id) || [];
         
-        // Only render groups that have at least one question
         if (groupQuestions.length === 0) {
           return null;
         }
@@ -67,7 +66,7 @@ export function QuestionGroupsList({
                         onDeleteGroup={onDeleteGroup}
                         dragHandleProps={draggableProvided.dragHandleProps}
                         enableAllMedia={enableAllMedia}
-                        isSubmitting={isSubmitting}
+                        isSubmitting={isSubmitting}  // Pass isSubmitting prop
                       />
                       {droppableProvided.placeholder}
                     </div>
