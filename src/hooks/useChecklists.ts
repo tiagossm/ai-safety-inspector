@@ -21,6 +21,9 @@ export function useChecklists() {
   const updateChecklist = useUpdateChecklist();
   const deleteChecklist = useDeleteChecklist();
   
+  // Ensure checklists is always an array before passing to useFilterChecklists
+  const checklistsArray = Array.isArray(checklists) ? checklists : [];
+  
   const {
     searchTerm,
     setSearchTerm,
@@ -29,7 +32,7 @@ export function useChecklists() {
     selectedCompanyId,
     setSelectedCompanyId,
     filteredChecklists
-  } = useFilterChecklists(checklists);
+  } = useFilterChecklists(checklistsArray);
 
   return {
     checklists: filteredChecklists,
