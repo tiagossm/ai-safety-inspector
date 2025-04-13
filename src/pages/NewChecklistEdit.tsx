@@ -8,6 +8,7 @@ import { ChecklistEditorProvider } from "@/contexts/ChecklistEditorContext";
 import { AccessibleEditor } from "@/components/new-checklist/edit/AccessibleEditor";
 import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
 import { useParams, useNavigate } from "react-router-dom";
+import { ChecklistErrorState } from "@/components/new-checklist/details/ChecklistErrorState";
 
 export default function NewChecklistEdit() {
   const [searchParams] = useSearchParams();
@@ -17,7 +18,7 @@ export default function NewChecklistEdit() {
   const navigate = useNavigate();
   
   // Get checklist data if it exists
-  const { data: checklist, isLoading } = useChecklistById(id || "");
+  const { data: checklist, isLoading, error, refetch } = useChecklistById(id || "");
   
   // Handlers for accessibility wrapper
   const handleSave = async () => {
@@ -32,6 +33,16 @@ export default function NewChecklistEdit() {
   const handleCancel = () => {
     navigate("/new-checklists");
   };
+
+  // If there's an error fetching the checklist, show error state
+  if (error) {
+    return (
+      <ChecklistErrorState 
+        error={error as Error} 
+        onRetry={() => refetch()} 
+      />
+    );
+  }
 
   return (
     <div>

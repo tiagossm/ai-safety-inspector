@@ -26,6 +26,7 @@ export const checklistRoutes = [
   <Route key="new-checklists" path="/new-checklists" element={<RequireAuth><NewChecklists /></RequireAuth>} />,
   <Route key="new-checklists-create" path="/new-checklists/create" element={<RequireAuth><NewChecklistCreate /></RequireAuth>} />,
   <Route key="new-checklists-edit-id" path="/new-checklists/edit/:id" element={<RequireAuth><NewChecklistEdit /></RequireAuth>} />,
+  <Route key="new-checklists-id-edit" path="/new-checklists/:id/edit" element={<RequireAuth><NewChecklistEdit /></RequireAuth>} />,
   <Route key="new-checklists-id" path="/new-checklists/:id" element={<RequireAuth><NewChecklistDetails /></RequireAuth>} />,
   <Route key="inspections-new-id" path="/inspections/new/:id" element={<RequireAuth><NewInspectionPage /></RequireAuth>} />,
   <Route key="inspections-id" path="/inspections/:id" element={<RequireAuth><InspectionExecutionPage /></RequireAuth>} />,

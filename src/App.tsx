@@ -39,6 +39,8 @@ function App() {
             <Route path="new-checklists" element={<NewChecklists />} />
             <Route path="new-checklists/create" element={<NewChecklistCreate />} />
             <Route path="new-checklists/edit/:id" element={<NewChecklistEdit />} />
+            {/* Add the new route pattern that matches /new-checklists/:id/edit */}
+            <Route path="new-checklists/:id/edit" element={<NewChecklistEdit />} />
             <Route path="new-checklists/:id" element={<NewChecklistDetails />} />
             
             {/* Inspection routes */}
