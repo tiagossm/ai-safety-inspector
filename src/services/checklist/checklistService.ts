@@ -13,7 +13,17 @@ export async function fetchChecklists(
   sortOrder = "created_at_desc"
 ): Promise<ChecklistWithStats[]> {
   try {
-    const [sortColumn, sortDirection] = sortOrder.split('_');
+    // Extract sort column and direction from sortOrder
+    let sortColumn = "created_at";
+    let sortDirection = "desc";
+    
+    if (sortOrder) {
+      const parts = sortOrder.split('_');
+      if (parts.length > 1) {
+        sortColumn = parts.slice(0, -1).join('_'); // Handle multi-part column names like "created_at"
+        sortDirection = parts[parts.length - 1];
+      }
+    }
     
     let query = supabase
       .from("checklists")

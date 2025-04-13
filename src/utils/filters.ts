@@ -55,14 +55,14 @@ export function sortChecklists(
   checklists: ChecklistWithStats[],
   sortOrder: string
 ): ChecklistWithStats[] {
-  if (sortOrder === "created_desc") {
+  if (sortOrder === "created_at_desc") {
     return [...checklists].sort((a, b) => {
       if (!a.createdAt || !b.createdAt) return 0;
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
   }
   
-  if (sortOrder === "created_asc") {
+  if (sortOrder === "created_at_asc") {
     return [...checklists].sort((a, b) => {
       if (!a.createdAt || !b.createdAt) return 0;
       return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();

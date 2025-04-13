@@ -14,7 +14,7 @@ export function useNewChecklists() {
   const [selectedCompanyId, setSelectedCompanyId] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedOrigin, setSelectedOrigin] = useState("all");
-  const [sortOrder, setSortOrder] = useState("created_desc");
+  const [sortOrder, setSortOrder] = useState("created_at_desc");
   
   // Get checklist data
   const { 
@@ -31,7 +31,7 @@ export function useNewChecklists() {
     deleteChecklist, 
     updateStatus, 
     updateBulkStatus, 
-    deleteBulkChecklists, // Ensure this is exposed
+    deleteBulkChecklists, 
     refetch 
   } = useChecklistMutations();
   
@@ -96,7 +96,7 @@ export function useNewChecklists() {
     deleteChecklist,
     updateStatus,
     updateBulkStatus,
-    deleteBulkChecklists, // Make sure to expose this
+    deleteBulkChecklists,
     refetch
   };
 }
