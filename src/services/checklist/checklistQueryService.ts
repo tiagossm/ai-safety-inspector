@@ -39,9 +39,9 @@ export async function fetchChecklists(
   }
 
   // Apply sorting
-  if (sortOrder === "created_desc") {
+  if (sortOrder === "created_at_desc") {
     query = query.order("created_at", { ascending: false });
-  } else if (sortOrder === "created_asc") {
+  } else if (sortOrder === "created_at_asc") {
     query = query.order("created_at", { ascending: true });
   } else if (sortOrder === "title_asc") {
     query = query.order("title", { ascending: true });

@@ -12,7 +12,7 @@ export function useChecklistFilters(checklists: ChecklistWithStats[], allCheckli
   const [selectedCompanyId, setSelectedCompanyId] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedOrigin, setSelectedOrigin] = useState("all");
-  const [sortOrder, setSortOrder] = useState("created_desc");
+  const [sortOrder, setSortOrder] = useState("created_at_desc");
 
   // Extract unique categories from checklists
   const categories = useMemo(() => {
