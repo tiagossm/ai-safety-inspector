@@ -10,7 +10,8 @@ export async function fetchChecklists(
   filterType: string,
   selectedCompanyId: string,
   selectedCategory: string,
-  sortOrder: string
+  selectedOrigin: string = "all",
+  sortOrder: string = "created_at_desc"
 ) {
   let query = supabase
     .from("checklists")
@@ -37,17 +38,25 @@ export async function fetchChecklists(
   if (selectedCategory !== "all") {
     query = query.eq("category", selectedCategory);
   }
-
-  // Apply sorting
-  if (sortOrder === "created_at_desc") {
-    query = query.order("created_at", { ascending: false });
-  } else if (sortOrder === "created_at_asc") {
-    query = query.order("created_at", { ascending: true });
-  } else if (sortOrder === "title_asc") {
-    query = query.order("title", { ascending: true });
-  } else if (sortOrder === "title_desc") {
-    query = query.order("title", { ascending: false });
+  
+  if (selectedOrigin !== "all") {
+    query = query.eq("origin", selectedOrigin);
   }
+
+  // Extract sort column and direction from sortOrder
+  let sortColumn = "created_at";
+  let sortDirection: 'asc' | 'desc' = "desc";
+    
+  if (sortOrder) {
+    const parts = sortOrder.split('_');
+    if (parts.length > 1) {
+      sortColumn = parts.slice(0, -1).join('_'); // Handle multi-part column names like "created_at"
+      sortDirection = parts[parts.length - 1] === 'asc' ? 'asc' : 'desc';
+    }
+  }
+  
+  // Apply sort
+  query = query.order(sortColumn, { ascending: sortDirection === "asc" });
 
   const { data, error } = await query;
 
@@ -68,7 +77,8 @@ export async function fetchAllChecklistsData() {
     .select(`
       id, title, description, is_template, status, category, 
       company_id, created_at, updated_at, is_sub_checklist, origin
-    `);
+    `)
+    .order("created_at", { ascending: false });
 
   if (error) {
     console.error("Error fetching all checklists data:", error);
