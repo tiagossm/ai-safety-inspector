@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Card } from "@/components/ui/card";
 import { Trash2, ChevronDown, ChevronUp, GripVertical } from "lucide-react";
@@ -16,13 +16,19 @@ interface QuestionItemProps {
   onUpdate: (question: ChecklistQuestion) => void;
   onDelete: (questionId: string) => void;
   enableAllMedia?: boolean;
-  "data-drag-handle"?: any;
+  "data-drag-handle"?: React.DraggableProvidedDragHandleProps | null;
 }
 
-export function QuestionItem({ question, onUpdate, onDelete, enableAllMedia = false, "data-drag-handle": dragHandleProps }: QuestionItemProps) {
+export function QuestionItem({ 
+  question, 
+  onUpdate, 
+  onDelete, 
+  enableAllMedia = false, 
+  "data-drag-handle": dragHandleProps 
+}: QuestionItemProps) {
   const [expanded, setExpanded] = useState(false);
   
-  React.useEffect(() => {
+  useEffect(() => {
     if (enableAllMedia && (!question.allowsPhoto || !question.allowsVideo || !question.allowsAudio || !question.allowsFiles)) {
       onUpdate({
         ...question,
