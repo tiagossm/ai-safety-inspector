@@ -1,5 +1,5 @@
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 
 export function useChecklistState(initialChecklist: any) {
