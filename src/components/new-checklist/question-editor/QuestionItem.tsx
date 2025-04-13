@@ -1,7 +1,8 @@
+
 import React, { useState } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Card } from "@/components/ui/card";
-import { Trash2, ChevronDown, ChevronUp, List } from "lucide-react";
+import { Trash2, ChevronDown, ChevronUp, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,9 +16,10 @@ interface QuestionItemProps {
   onUpdate: (question: ChecklistQuestion) => void;
   onDelete: (questionId: string) => void;
   enableAllMedia?: boolean;
+  "data-drag-handle"?: any;
 }
 
-export function QuestionItem({ question, onUpdate, onDelete, enableAllMedia = false }: QuestionItemProps) {
+export function QuestionItem({ question, onUpdate, onDelete, enableAllMedia = false, "data-drag-handle": dragHandleProps }: QuestionItemProps) {
   const [expanded, setExpanded] = useState(false);
   
   React.useEffect(() => {
@@ -78,6 +80,9 @@ export function QuestionItem({ question, onUpdate, onDelete, enableAllMedia = fa
   return (
     <Card className="p-3 border">
       <div className="flex items-start">
+        <div {...dragHandleProps} className="p-2 cursor-move mr-1" aria-label="Drag to reorder">
+          <GripVertical size={18} className="text-muted-foreground" />
+        </div>
         <div className="flex-grow">
           <Input
             value={question.text}
@@ -128,6 +133,7 @@ export function QuestionItem({ question, onUpdate, onDelete, enableAllMedia = fa
             variant="ghost"
             size="sm"
             onClick={() => setExpanded(!expanded)}
+            aria-label={expanded ? "Recolher detalhes" : "Expandir detalhes"}
           >
             {expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
           </Button>
@@ -135,6 +141,7 @@ export function QuestionItem({ question, onUpdate, onDelete, enableAllMedia = fa
             variant="ghost"
             size="sm"
             onClick={() => onDelete(question.id)}
+            aria-label="Excluir pergunta"
           >
             <Trash2 size={18} className="text-destructive" />
           </Button>

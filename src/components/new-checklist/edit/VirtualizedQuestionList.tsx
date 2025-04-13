@@ -43,10 +43,11 @@ const Row = ({ data, index, style }: { data: ItemData; index: number; style: Rea
           >
             <QuestionItem
               question={question}
-              dragHandleProps={provided.dragHandleProps}
-              onUpdateQuestion={onUpdateQuestion}
-              onDeleteQuestion={onDeleteQuestion}
+              onUpdate={onUpdateQuestion}
+              onDelete={onDeleteQuestion}
               enableAllMedia={enableAllMedia}
+              // Pass drag handle props to the component via data attribute
+              data-drag-handle={provided.dragHandleProps}
             />
           </div>
         )}
