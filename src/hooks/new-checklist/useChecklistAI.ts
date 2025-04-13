@@ -29,6 +29,8 @@ export function useChecklistAI() {
     }
     
     try {
+      console.log("Starting AI checklist generation with data:", checklistData);
+      
       const requestBody: any = {
         title: checklistData.title,
         description: checklistData.description,
@@ -42,9 +44,13 @@ export function useChecklistAI() {
         requestBody.assistantId = openAIAssistant;
       }
       
+      console.log("Sending request to generate-checklist-v2:", requestBody);
+      
       const { data, error } = await supabase.functions.invoke('generate-checklist-v2', {
         body: requestBody
       });
+
+      console.log("Response from generate-checklist-v2:", data, error);
 
       if (error) {
         console.error("Error in AI generation:", error);
@@ -62,6 +68,8 @@ export function useChecklistAI() {
       
       const questions: ChecklistQuestion[] = data.questions || [];
       const groups: ChecklistGroup[] = data.groups || [];
+      
+      console.log(`Generation successful! Received ${questions.length} questions and ${groups.length} groups`);
       
       setIsGenerating(false);
       return { success: true, questions, groups, checklistData };

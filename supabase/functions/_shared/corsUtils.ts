@@ -1,0 +1,21 @@
+
+// CORS headers para acesso cross-origin
+export const corsHeaders = {
+  "Access-Control-Allow-Origin": "*", 
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS"
+};
+
+// Função para lidar com requisições CORS preflight
+export function handleCors(req: Request): Response | null {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { 
+      status: 204,
+      headers: corsHeaders 
+    });
+  }
+  
+  // Para outras requisições, retorna null para que o processamento normal continue
+  return null;
+}

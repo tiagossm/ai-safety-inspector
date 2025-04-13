@@ -53,5 +53,8 @@ level = "remote"
 [functions.generate-checklist]
 verify_jwt = true
 
+[functions.generate-checklist-v2]
+verify_jwt = true
+
 [functions.list-assistants]
 verify_jwt = true
