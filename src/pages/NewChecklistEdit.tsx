@@ -16,6 +16,7 @@ import { useChecklistSubmit } from "@/hooks/new-checklist/useChecklistSubmit";
 import { ChecklistEditorProvider } from "@/contexts/ChecklistEditorContext";
 import { ChecklistHeader } from "@/components/new-checklist/edit/ChecklistHeader";
 import { ChecklistQuestionList } from "@/components/new-checklist/edit/ChecklistQuestionList";
+import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 
 export default function NewChecklistEdit() {
   const navigate = useNavigate();
@@ -81,7 +82,7 @@ export default function NewChecklistEdit() {
   
   // Computed properties with memoization
   const questionsByGroup = useMemo(() => {
-    const result = new Map<string, typeof questions>();
+    const result = new Map<string, ChecklistQuestion[]>();
     
     groups.forEach(group => {
       result.set(group.id, []);
@@ -152,7 +153,10 @@ export default function NewChecklistEdit() {
       setDescription(checklist.description || "");
       setCategory(checklist.category || "");
       setIsTemplate(checklist.isTemplate || false);
-      setStatus(checklist.status || "active");
+      
+      // Fix #1: Ensure we're setting a properly typed status value
+      const checklistStatus = checklist.status === "inactive" ? "inactive" : "active";
+      setStatus(checklistStatus);
       
       if (checklist.questions && checklist.questions.length > 0) {
         if (checklist.groups && checklist.groups.length > 0) {
@@ -165,7 +169,7 @@ export default function NewChecklistEdit() {
           
           setQuestions(questionsWithValidGroups);
         } else {
-          const defaultGroup = {
+          const defaultGroup: ChecklistGroup = {
             id: "default",
             title: "Geral",
             order: 0
@@ -180,16 +184,17 @@ export default function NewChecklistEdit() {
           setQuestions(questionsWithDefaultGroup);
         }
       } else {
-        const defaultGroup = {
+        const defaultGroup: ChecklistGroup = {
           id: "default",
           title: "Geral",
           order: 0
         };
         
-        const defaultQuestion = {
+        // Fix #2: Use a properly typed responseType value
+        const defaultQuestion: ChecklistQuestion = {
           id: `new-${Date.now()}`,
           text: "",
-          responseType: "yes_no",
+          responseType: "yes_no", // This must be one of the allowed types
           isRequired: true,
           weight: 1,
           allowsPhoto: false,
