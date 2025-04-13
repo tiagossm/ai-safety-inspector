@@ -2,6 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Checklist } from "@/types/checklist";
+import { handleApiError } from "@/utils/errors";
 
 // ✅ Valida se o ID é um UUID
 function isValidUUID(id: string | null | undefined): boolean {
@@ -103,8 +104,7 @@ export function useFetchChecklists() {
 
         return checklists;
       } catch (err) {
-        console.error("Erro ao buscar lista de checklists:", err);
-        throw new Error("Erro ao buscar checklists.");
+        return handleApiError(err, "Erro ao buscar lista de checklists.");
       }
     },
     staleTime: 5 * 60 * 1000,

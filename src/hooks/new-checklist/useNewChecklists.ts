@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useChecklistQueries } from './useChecklistQueries';
 import { useCompanyQueries } from './useCompanyQueries';
 import { useChecklistMutations } from './useChecklistMutations';
@@ -39,41 +39,11 @@ export function useNewChecklists() {
   const {
     searchTerm,
     setSearchTerm,
-    filterType: derivedFilterType,
-    setFilterType: setDerivedFilterType,
-    selectedCompanyId: derivedSelectedCompanyId,
-    setSelectedCompanyId: setDerivedSelectedCompanyId,
-    selectedCategory: derivedSelectedCategory,
-    setSelectedCategory: setDerivedSelectedCategory,
-    selectedOrigin: derivedSelectedOrigin,
-    setSelectedOrigin: setDerivedSelectedOrigin,
-    sortOrder: derivedSortOrder,
-    setSortOrder: setDerivedSortOrder,
     categories,
     filteredChecklists
   } = useChecklistFilters(checklists, allChecklists);
 
-  // Ensure our state stays in sync
-  useEffect(() => {
-    setDerivedFilterType(filterType);
-  }, [filterType, setDerivedFilterType]);
-
-  useEffect(() => {
-    setDerivedSelectedCompanyId(selectedCompanyId);
-  }, [selectedCompanyId, setDerivedSelectedCompanyId]);
-
-  useEffect(() => {
-    setDerivedSelectedCategory(selectedCategory);
-  }, [selectedCategory, setDerivedSelectedCategory]);
-
-  useEffect(() => {
-    setDerivedSelectedOrigin(selectedOrigin);
-  }, [selectedOrigin, setDerivedSelectedOrigin]);
-
-  useEffect(() => {
-    setDerivedSortOrder(sortOrder);
-  }, [sortOrder, setDerivedSortOrder]);
-
+  // Passando estados diretamente, sem usar useEffect redundantes
   return {
     checklists: filteredChecklists,
     allChecklists,
