@@ -10,13 +10,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { SubChecklistButton } from "./SubChecklistButton";
+import { DraggableProvidedDragHandleProps } from "react-beautiful-dnd";
 
 interface QuestionItemProps {
   question: ChecklistQuestion;
   onUpdate: (question: ChecklistQuestion) => void;
   onDelete: (questionId: string) => void;
   enableAllMedia?: boolean;
-  "data-drag-handle"?: React.DraggableProvidedDragHandleProps | null;
+  "data-drag-handle"?: DraggableProvidedDragHandleProps | null;
 }
 
 export function QuestionItem({ 
