@@ -8,6 +8,7 @@ import { AccessibleEditor } from "@/components/new-checklist/edit/AccessibleEdit
 import { useParams, useNavigate } from "react-router-dom";
 import { ChecklistErrorState } from "@/components/new-checklist/details/ChecklistErrorState";
 import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
+import { useChecklistEditorContext } from "@/hooks/new-checklist/useChecklistEditorContext"; 
 
 export default function NewChecklistEdit() {
   const [searchParams] = useSearchParams();

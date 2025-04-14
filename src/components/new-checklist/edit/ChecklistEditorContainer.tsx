@@ -58,6 +58,8 @@ export function ChecklistEditorContainer() {
           onRefresh={() => editorContext.id && editorContext.refetch()}
           onStartInspection={editorContext.handleStartInspection}
           onSave={editorContext.handleSave}
+          onEnableAllMedia={editorContext.toggleAllMediaOptions}
+          enableAllMedia={editorContext.enableAllMedia}
         />
         
         {/* Form section */}

@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { SubChecklistButton } from "./SubChecklistButton";
 import { DraggableProvidedDragHandleProps } from "react-beautiful-dnd";
 import { supabase } from "@/integrations/supabase/client";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface QuestionItemProps {
   question: ChecklistQuestion;
@@ -31,6 +32,7 @@ export function QuestionItem({
   const [expanded, setExpanded] = useState(false);
   const [subQuestions, setSubQuestions] = useState<ChecklistQuestion[]>([]);
   const [loadingSubChecklist, setLoadingSubChecklist] = useState(false);
+  const [subChecklistOpen, setSubChecklistOpen] = useState(false);
   
   useEffect(() => {
     if (enableAllMedia && (!question.allowsPhoto || !question.allowsVideo || !question.allowsAudio || !question.allowsFiles)) {
@@ -336,43 +338,54 @@ export function QuestionItem({
 
           {/* Display sub-checklist questions if they exist */}
           {question.hasSubChecklist && question.subChecklistId && expanded && (
-            <div className="mt-3 pt-2 border-t">
+            <Collapsible
+              open={subChecklistOpen}
+              onOpenChange={setSubChecklistOpen}
+              className="mt-3 pt-2 border-t"
+            >
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-sm font-medium">Perguntas do Sub-checklist</h4>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-1 p-0 h-auto">
+                    <h4 className="text-sm font-medium">Perguntas do Sub-checklist</h4>
+                    {subChecklistOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </Button>
+                </CollapsibleTrigger>
                 {loadingSubChecklist && <div className="text-xs text-muted-foreground">Carregando...</div>}
               </div>
               
-              {!loadingSubChecklist && subQuestions.length === 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Este sub-checklist não tem perguntas ou não pôde ser carregado.
-                </p>
-              )}
-              
-              {!loadingSubChecklist && subQuestions.length > 0 && (
-                <div className="space-y-2 ml-4 border-l pl-3 border-gray-200">
-                  {subQuestions.map((subQ, index) => (
-                    <div key={subQ.id} className="text-sm p-2 border rounded-sm bg-slate-50">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-xs">{index + 1}.</span>
-                        <span>{subQ.text || "Sem texto"}</span>
+              <CollapsibleContent>
+                {!loadingSubChecklist && subQuestions.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Este sub-checklist não tem perguntas ou não pôde ser carregado.
+                  </p>
+                )}
+                
+                {!loadingSubChecklist && subQuestions.length > 0 && (
+                  <div className="space-y-2 ml-4 border-l pl-3 border-gray-200">
+                    {subQuestions.map((subQ, index) => (
+                      <div key={subQ.id} className="text-sm p-2 border rounded-sm bg-slate-50">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-xs">{index + 1}.</span>
+                          <span>{subQ.text || "Sem texto"}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>
+                            Tipo: {subQ.responseType === "yes_no" 
+                                  ? "Sim/Não" 
+                                  : subQ.responseType === "text" 
+                                  ? "Texto" 
+                                  : subQ.responseType === "multiple_choice"
+                                  ? "Múltipla escolha"
+                                  : subQ.responseType}
+                          </span>
+                          {subQ.isRequired && <span>• Obrigatório</span>}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>
-                          Tipo: {subQ.responseType === "yes_no" 
-                                ? "Sim/Não" 
-                                : subQ.responseType === "text" 
-                                ? "Texto" 
-                                : subQ.responseType === "multiple_choice"
-                                ? "Múltipla escolha"
-                                : subQ.responseType}
-                        </span>
-                        {subQ.isRequired && <span>• Obrigatório</span>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                    ))}
+                  </div>
+                )}
+              </CollapsibleContent>
+            </Collapsible>
           )}
         </div>
       )}

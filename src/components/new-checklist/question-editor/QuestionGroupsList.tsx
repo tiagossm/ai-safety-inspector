@@ -13,7 +13,7 @@ interface QuestionGroupsListProps {
   onDeleteQuestion: (questionId: string) => void;
   onDeleteGroup: (groupId: string) => void;
   enableAllMedia?: boolean;
-  isSubmitting?: boolean;  // Added optional isSubmitting prop
+  isSubmitting?: boolean;
 }
 
 export function QuestionGroupsList({
@@ -25,7 +25,7 @@ export function QuestionGroupsList({
   onDeleteQuestion,
   onDeleteGroup,
   enableAllMedia = false,
-  isSubmitting = false  // Added default value
+  isSubmitting = false
 }: QuestionGroupsListProps) {
   return (
     <>
@@ -66,7 +66,7 @@ export function QuestionGroupsList({
                         onDeleteGroup={onDeleteGroup}
                         dragHandleProps={draggableProvided.dragHandleProps}
                         enableAllMedia={enableAllMedia}
-                        isSubmitting={isSubmitting}  // Pass isSubmitting prop
+                        isSubmitting={isSubmitting}
                       />
                       {droppableProvided.placeholder}
                     </div>
