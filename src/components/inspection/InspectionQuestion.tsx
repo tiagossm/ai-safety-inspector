@@ -1,12 +1,11 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { ResponseInputRenderer } from "./question-parts/ResponseInputRenderer";
-import { Textarea } from "@/components/ui/textarea";
 import { ActionPlanSection } from "./question-inputs/ActionPlanSection";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronRight, Pencil, List } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { QuestionHeader } from "./question-components/QuestionHeader";
+import { CommentSection } from "./question-components/CommentSection";
+import { ActionPlanButton } from "./question-components/ActionPlanButton";
+import { MediaControls } from "./question-components/MediaControls";
 
 interface InspectionQuestionProps {
   question: any;
@@ -62,7 +61,7 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
   const allowsVideo = question.allowsVideo || question.permite_video || false;
   const allowsAudio = question.allowsAudio || question.permite_audio || false;
   
-  // Reduzir chamadas ao console em produção
+  // Reduce production console calls
   useEffect(() => {
     if (process.env.NODE_ENV !== 'production') {
       console.log(`Question ${question.id} media capabilities:`, { 
@@ -144,21 +143,13 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
       <div className="flex items-start gap-2">
         <div className="font-medium min-w-[24px] mt-0.5">{numberLabel || (index + 1)}</div>
         <div className="flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="text-base font-medium flex-1">{questionText}</div>
-            
-            {hasSubChecklist && onOpenSubChecklist && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onOpenSubChecklist}
-                className="flex items-center"
-              >
-                <List className="h-3.5 w-3.5 mr-1" />
-                <span className="text-xs">Ver sub-checklist</span>
-              </Button>
-            )}
-          </div>
+          <QuestionHeader 
+            questionText={questionText} 
+            numberLabel={numberLabel || (index + 1)}
+            index={index}
+            hasSubChecklist={hasSubChecklist}
+            onOpenSubChecklist={onOpenSubChecklist}
+          />
           
           <div className="mt-2">
             <ResponseInputRenderer
@@ -169,56 +160,25 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
             />
           </div>
           
-          {(allowsPhoto || allowsVideo || allowsAudio) && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {allowsPhoto && (
-                <Button size="sm" variant="outline" onClick={handleAddMedia}>
-                  Adicionar Foto
-                </Button>
-              )}
-              {allowsVideo && (
-                <Button size="sm" variant="outline" onClick={handleAddMedia}>
-                  Adicionar Vídeo
-                </Button>
-              )}
-              {allowsAudio && (
-                <Button size="sm" variant="outline" onClick={handleAddMedia}>
-                  Adicionar Áudio
-                </Button>
-              )}
-            </div>
-          )}
+          <MediaControls
+            allowsPhoto={allowsPhoto}
+            allowsVideo={allowsVideo}
+            allowsAudio={allowsAudio}
+            handleAddMedia={handleAddMedia}
+          />
           
           <div className="flex justify-between items-center mt-3">
-            <Collapsible open={isCommentOpen} onOpenChange={setIsCommentOpen}>
-              <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm" className="flex items-center text-xs gap-1">
-                  <Pencil className="h-3 w-3" />
-                  Adicionar comentário
-                </Button>
-              </CollapsibleTrigger>
-              
-              <CollapsibleContent>
-                <div className="mt-2">
-                  <Textarea
-                    placeholder="Adicione seus comentários aqui..."
-                    value={comment}
-                    onChange={handleCommentChange}
-                    className="text-sm"
-                  />
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
+            <CommentSection 
+              isCommentOpen={isCommentOpen}
+              setIsCommentOpen={setIsCommentOpen}
+              comment={comment}
+              handleCommentChange={handleCommentChange}
+            />
             
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsActionPlanOpen(!isActionPlanOpen)}
-              className="flex items-center text-xs"
-            >
-              {isActionPlanOpen ? <ChevronDown className="h-3 w-3 mr-1" /> : <ChevronRight className="h-3 w-3 mr-1" />}
-              Plano de ação
-            </Button>
+            <ActionPlanButton 
+              isActionPlanOpen={isActionPlanOpen}
+              setIsActionPlanOpen={setIsActionPlanOpen}
+            />
           </div>
           
           <ActionPlanSection
