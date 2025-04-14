@@ -19,13 +19,24 @@ export function useChecklistUpdate() {
       const { id, questions, groups, deletedQuestionIds, ...updateData } = params;
       console.log(`Atualizando checklist ${id} com:`, updateData);
       
+      // Fix isTemplate to match database column is_template
+      const formattedUpdateData = {
+        ...updateData,
+        // Convert isTemplate to is_template for database compatibility
+        is_template: updateData.isTemplate,
+        // Convert status to status_checklist if needed
+        status_checklist: updateData.status,
+        updated_at: new Date().toISOString()
+      };
+      
+      // Remove frontend-only fields that don't exist in the database
+      delete formattedUpdateData.isTemplate;
+      delete formattedUpdateData.status;
+      
       // Atualizar dados principais do checklist
       const { data, error } = await supabase
         .from("checklists")
-        .update({
-          ...updateData,
-          updated_at: new Date().toISOString() // Garantir que updated_at seja atualizado
-        })
+        .update(formattedUpdateData)
         .eq("id", id)
         .select()
         .single();

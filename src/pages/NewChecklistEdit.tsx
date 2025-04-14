@@ -1,19 +1,18 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { useSearchParams } from "react-router-dom";
 import { ChecklistEditorContainer } from "@/components/new-checklist/edit/ChecklistEditorContainer";
 import { ChecklistWizard } from "@/components/new-checklist/edit/ChecklistWizard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ChecklistEditorProvider } from "@/contexts/ChecklistEditorContext";
 import { AccessibleEditor } from "@/components/new-checklist/edit/AccessibleEditor";
-import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChecklistErrorState } from "@/components/new-checklist/details/ChecklistErrorState";
+import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
 
 export default function NewChecklistEdit() {
   const [searchParams] = useSearchParams();
   const mode = searchParams.get("mode") || "standard";
-  const [editorMode, setEditorMode] = useState<"standard" | "wizard">(mode as "standard" | "wizard");
+  const [editorMode, setEditorMode] = React.useState<"standard" | "wizard">(mode as "standard" | "wizard");
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
   
@@ -68,6 +67,7 @@ export default function NewChecklistEdit() {
             onCancel={handleCancel}
             isSubmitting={false}
           >
+            {/* Each tab content renders its own editor container with its own provider */}
             <ChecklistEditorContainer />
           </AccessibleEditor>
         </TabsContent>

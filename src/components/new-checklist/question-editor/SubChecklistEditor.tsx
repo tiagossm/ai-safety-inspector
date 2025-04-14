@@ -43,6 +43,8 @@ export function SubChecklistEditor({
   const fetchExistingSubChecklist = async (checklistId: string) => {
     setLoading(true);
     try {
+      console.log(`Fetching existing sub-checklist with ID: ${checklistId}`);
+      
       // Fetch checklist
       const { data: checklistData, error: checklistError } = await supabase
         .from("checklists")
@@ -162,6 +164,7 @@ export function SubChecklistEditor({
       
       // Create or update checklist
       if (isCreating) {
+        console.log(`Creating sub-checklist with parent question ID: ${parentQuestionId}`);
         const { data: checklistData, error: checklistError } = await supabase
           .from("checklists")
           .insert({
@@ -169,20 +172,37 @@ export function SubChecklistEditor({
             description,
             is_template: false,
             status_checklist: "ativo",
-            parent_question_id: parentQuestionId
+            is_sub_checklist: true, // Mark as sub-checklist
+            parent_question_id: parentQuestionId // Link to parent question
           })
           .select("id")
           .single();
         
         if (checklistError) throw checklistError;
         checklistId = checklistData.id;
+        
+        // Also update parent question to indicate it has a sub-checklist
+        const { error: updateError } = await supabase
+          .from("checklist_itens")
+          .update({
+            has_subchecklist: true,
+            sub_checklist_id: checklistId
+          })
+          .eq("id", parentQuestionId);
+          
+        if (updateError) {
+          console.error("Error updating parent question:", updateError);
+          // Continue anyway since the sub-checklist was created
+        }
       } else {
         const { error: updateError } = await supabase
           .from("checklists")
           .update({
             title,
             description,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            is_sub_checklist: true, // Ensure it's marked as sub-checklist
+            parent_question_id: parentQuestionId // Ensure link to parent question
           })
           .eq("id", checklistId);
         
@@ -221,11 +241,12 @@ export function SubChecklistEditor({
         if (insertError) throw insertError;
       }
       
+      console.log(`Sub-checklist ${isCreating ? 'created' : 'updated'} successfully with ID: ${checklistId}`);
       toast.success(`Sub-checklist ${isCreating ? "created" : "updated"} successfully`);
       onSubChecklistCreated(checklistId!);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving sub-checklist:", error);
-      toast.error(`Failed to ${isCreating ? "create" : "update"} sub-checklist`);
+      toast.error(`Failed to ${isCreating ? "create" : "update"} sub-checklist: ${error.message}`);
     } finally {
       setLoading(false);
     }

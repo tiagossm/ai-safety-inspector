@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { SubChecklistButton } from "./SubChecklistButton";
 import { DraggableProvidedDragHandleProps } from "react-beautiful-dnd";
+import { supabase } from "@/integrations/supabase/client";
 
 interface QuestionItemProps {
   question: ChecklistQuestion;
@@ -28,6 +29,8 @@ export function QuestionItem({
   "data-drag-handle": dragHandleProps 
 }: QuestionItemProps) {
   const [expanded, setExpanded] = useState(false);
+  const [subQuestions, setSubQuestions] = useState<ChecklistQuestion[]>([]);
+  const [loadingSubChecklist, setLoadingSubChecklist] = useState(false);
   
   useEffect(() => {
     if (enableAllMedia && (!question.allowsPhoto || !question.allowsVideo || !question.allowsAudio || !question.allowsFiles)) {
@@ -40,6 +43,72 @@ export function QuestionItem({
       });
     }
   }, [enableAllMedia, question, onUpdate]);
+  
+  // Fetch sub-checklist questions if this question has one
+  useEffect(() => {
+    if (question.hasSubChecklist && question.subChecklistId && expanded) {
+      fetchSubChecklistQuestions(question.subChecklistId);
+    }
+  }, [question.hasSubChecklist, question.subChecklistId, expanded]);
+  
+  const fetchSubChecklistQuestions = async (subChecklistId: string) => {
+    if (!subChecklistId) return;
+    
+    setLoadingSubChecklist(true);
+    try {
+      console.log(`Fetching questions for sub-checklist: ${subChecklistId}`);
+      const { data, error } = await supabase
+        .from("checklist_itens")
+        .select("*")
+        .eq("checklist_id", subChecklistId)
+        .order("ordem", { ascending: true });
+        
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const mappedQuestions: ChecklistQuestion[] = data.map(q => ({
+          id: q.id,
+          text: q.pergunta,
+          responseType: mapDbTypeToUiType(q.tipo_resposta),
+          isRequired: q.obrigatorio,
+          options: q.opcoes || [],
+          weight: q.weight || 1,
+          allowsPhoto: q.permite_foto || false,
+          allowsVideo: q.permite_video || false,
+          allowsAudio: q.permite_audio || false,
+          allowsFiles: false,
+          order: q.ordem || 0,
+          hint: q.hint,
+          parentQuestionId: question.id,
+          hasSubChecklist: false,
+          subChecklistId: null,
+          groupId: question.groupId
+        }));
+        
+        setSubQuestions(mappedQuestions);
+      } else {
+        setSubQuestions([]);
+      }
+    } catch (error) {
+      console.error("Error fetching sub-checklist questions:", error);
+      setSubQuestions([]);
+    } finally {
+      setLoadingSubChecklist(false);
+    }
+  };
+  
+  const mapDbTypeToUiType = (dbType: string): ChecklistQuestion["responseType"] => {
+    const typeMap: Record<string, ChecklistQuestion["responseType"]> = {
+      'sim/não': 'yes_no',
+      'seleção múltipla': 'multiple_choice',
+      'texto': 'text',
+      'numérico': 'numeric',
+      'foto': 'photo',
+      'assinatura': 'signature'
+    };
+    
+    return typeMap[dbType] || 'text';
+  };
   
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onUpdate({
@@ -130,6 +199,12 @@ export function QuestionItem({
             {question.parentQuestionId && (
               <Badge variant="outline" className="text-xs">
                 Sub-pergunta
+              </Badge>
+            )}
+
+            {question.hasSubChecklist && question.subChecklistId && (
+              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-600">
+                Tem Sub-checklist
               </Badge>
             )}
           </div>
@@ -247,6 +322,47 @@ export function QuestionItem({
               {question.hasSubChecklist && question.subChecklistId && (
                 <div className="mt-2 text-xs text-blue-600 bg-blue-50 p-2 rounded">
                   Sub-checklist vinculado (ID: {question.subChecklistId.substring(0, 8)}...)
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Display sub-checklist questions if they exist */}
+          {question.hasSubChecklist && question.subChecklistId && expanded && (
+            <div className="mt-3 pt-2 border-t">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-medium">Perguntas do Sub-checklist</h4>
+                {loadingSubChecklist && <div className="text-xs text-muted-foreground">Carregando...</div>}
+              </div>
+              
+              {!loadingSubChecklist && subQuestions.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Este sub-checklist não tem perguntas ou não pôde ser carregado.
+                </p>
+              )}
+              
+              {!loadingSubChecklist && subQuestions.length > 0 && (
+                <div className="space-y-2 ml-4 border-l pl-3 border-gray-200">
+                  {subQuestions.map((subQ, index) => (
+                    <div key={subQ.id} className="text-sm p-2 border rounded-sm bg-slate-50">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-xs">{index + 1}.</span>
+                        <span>{subQ.text || "Sem texto"}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>
+                          Tipo: {subQ.responseType === "yes_no" 
+                                ? "Sim/Não" 
+                                : subQ.responseType === "text" 
+                                ? "Texto" 
+                                : subQ.responseType === "multiple_choice"
+                                ? "Múltipla escolha"
+                                : subQ.responseType}
+                        </span>
+                        {subQ.isRequired && <span>• Obrigatório</span>}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
