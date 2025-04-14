@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ChecklistEditorContainer } from "@/components/new-checklist/edit/ChecklistEditorContainer";
 import { ChecklistWizard } from "@/components/new-checklist/edit/ChecklistWizard";
@@ -9,6 +9,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ChecklistErrorState } from "@/components/new-checklist/details/ChecklistErrorState";
 import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
 import { useChecklistEditorContext } from "@/hooks/new-checklist/useChecklistEditorContext"; 
+import { ChecklistEditorProvider } from "@/contexts/ChecklistEditorContext";
 
 export default function NewChecklistEdit() {
   const [searchParams] = useSearchParams();
@@ -19,15 +20,21 @@ export default function NewChecklistEdit() {
   
   // Get checklist data if it exists
   const { data: checklist, isLoading, error, refetch } = useChecklistById(id || "");
+  const editorContext = useChecklistEditorContext();
   
   // Handlers for accessibility wrapper
   const handleSave = async () => {
-    // This will be provided by the context
+    if (editorMode === "standard" && editorContext) {
+      return editorContext.handleSave();
+    }
+    // For wizard mode, we'll implement this later
     return Promise.resolve();
   };
   
   const handleAddQuestion = () => {
-    // This will be provided by the context
+    if (editorMode === "standard" && editorContext) {
+      editorContext.handleAddQuestion("default");
+    }
   };
   
   const handleCancel = () => {
@@ -43,6 +50,37 @@ export default function NewChecklistEdit() {
       />
     );
   }
+
+  // Create a fixed context value for the wizard mode to prevent the context error
+  const wizardContextValue = {
+    title: checklist?.title || "",
+    description: checklist?.description || "",
+    category: checklist?.category || "",
+    isTemplate: checklist?.isTemplate || false,
+    status: checklist?.status_checklist === "inativo" ? "inactive" : "active",
+    questions: [],
+    groups: [],
+    viewMode: "flat" as "flat" | "grouped",
+    questionsByGroup: new Map(),
+    nonEmptyGroups: [],
+    isSubmitting: false,
+    enableAllMedia: false,
+    setTitle: () => {},
+    setDescription: () => {},
+    setCategory: () => {},
+    setIsTemplate: () => {},
+    setStatus: () => {},
+    setViewMode: () => {},
+    handleAddGroup: () => {},
+    handleUpdateGroup: () => {},
+    handleDeleteGroup: () => {},
+    handleAddQuestion: () => {},
+    handleUpdateQuestion: () => {},
+    handleDeleteQuestion: () => {},
+    handleDragEnd: () => {},
+    handleSubmit: async () => false,
+    toggleAllMediaOptions: () => {}
+  };
 
   return (
     <div>
@@ -68,20 +106,21 @@ export default function NewChecklistEdit() {
             onCancel={handleCancel}
             isSubmitting={false}
           >
-            {/* Each tab content renders its own editor container with its own provider */}
             <ChecklistEditorContainer />
           </AccessibleEditor>
         </TabsContent>
         
         <TabsContent value="wizard" className="mt-0">
-          <AccessibleEditor 
-            onSave={handleSave}
-            onAddQuestion={handleAddQuestion}
-            onCancel={handleCancel}
-            isSubmitting={false}
-          >
-            <ChecklistWizard />
-          </AccessibleEditor>
+          <ChecklistEditorProvider value={wizardContextValue}>
+            <AccessibleEditor 
+              onSave={handleSave}
+              onAddQuestion={handleAddQuestion}
+              onCancel={handleCancel}
+              isSubmitting={false}
+            >
+              <ChecklistWizard />
+            </AccessibleEditor>
+          </ChecklistEditorProvider>
         </TabsContent>
       </Tabs>
     </div>

@@ -52,7 +52,13 @@ export function useChecklistSubmit(
       toast.success("Checklist atualizado com sucesso!");
       return true;
     } catch (error) {
-      handleError(error, "Erro ao atualizar checklist");
+      // Identify the specific database constraint error and show a more helpful message
+      if (error?.message?.includes("violates check constraint") && 
+          error?.message?.includes("checklists_status_checklist_check")) {
+        toast.error("Erro ao salvar: O status do checklist é inválido. Por favor, selecione 'Ativo' ou 'Inativo'.");
+      } else {
+        handleError(error, "Erro ao atualizar checklist");
+      }
       return false;
     } finally {
       setIsSubmitting(false);

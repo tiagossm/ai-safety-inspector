@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sparkles, Loader2 } from "lucide-react";
@@ -24,7 +24,34 @@ export function SubitemGenerator({
 }: SubitemGeneratorProps) {
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [autoPrompt, setAutoPrompt] = useState("");
   const remainingSubitems = maxSubitems - currentSubitemsCount;
+
+  // Generate an automatic prompt based on the parent question
+  useEffect(() => {
+    if (questionText && questionText.trim().length > 10) {
+      const generateAutoPrompt = () => {
+        // Remove question marks and create a prompt based on the question text
+        const cleanText = questionText.replace(/\?/g, '').trim();
+        
+        if (cleanText.toLowerCase().includes("procedimento") || cleanText.toLowerCase().includes("processo")) {
+          return `Detalhe os passos específicos para ${cleanText}`;
+        } else if (cleanText.toLowerCase().includes("risco") || cleanText.toLowerCase().includes("perigo")) {
+          return `Identifique fatores de risco relacionados a ${cleanText}`;
+        } else if (cleanText.toLowerCase().includes("prevenção") || cleanText.toLowerCase().includes("programa")) {
+          return `Liste os principais componentes para um programa efetivo de ${cleanText}`;
+        } else {
+          return `Quais os pontos principais a serem verificados sobre ${cleanText}`;
+        }
+      };
+
+      setAutoPrompt(generateAutoPrompt());
+      // Pre-fill the prompt input with the auto-generated prompt
+      if (!prompt) {
+        setPrompt(generateAutoPrompt());
+      }
+    }
+  }, [questionText, prompt]);
 
   const handleGenerateSubitems = async () => {
     if (remainingSubitems <= 0) {
@@ -87,6 +114,7 @@ export function SubitemGenerator({
     <div className="flex flex-col gap-2 mt-2 mb-4">
       <div className="text-sm text-muted-foreground mb-1">
         Gere até {remainingSubitems} subitens para esta pergunta usando IA
+        {autoPrompt && <span className="text-xs block text-primary-foreground/70">Sugestão: {autoPrompt}</span>}
       </div>
       <div className="flex gap-2">
         <Input
