@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { ResponseInputRenderer } from "./question-parts/ResponseInputRenderer";
 import { Textarea } from "@/components/ui/textarea";
-import { ActionPlanInput } from "./question-parts/ActionPlanInput";
+import { ActionPlanSection } from "./question-inputs/ActionPlanSection";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronRight, Pencil, List } from "lucide-react";
@@ -32,6 +32,7 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
   const [comment, setComment] = useState(response?.comment || "");
   const [isActionPlanOpen, setIsActionPlanOpen] = useState(false);
   const [isValid, setIsValid] = useState(!question.isRequired);
+  const [isCommentOpen, setIsCommentOpen] = useState(false);
   
   const normalizedType = useMemo(() => {
     const type = question.responseType || question.tipo_resposta || "";
@@ -130,6 +131,14 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
     return null;
   }
   
+  // Calculate if response is negative (for action plan visibility)
+  const hasNegativeResponse = 
+    response?.value === false || 
+    response?.value === "false" || 
+    response?.value === "não" || 
+    response?.value === "nao" || 
+    response?.value === "no";
+  
   return (
     <div className={`relative ${!isValid && response.value !== undefined ? 'border-l-4 border-l-red-500 pl-2' : ''}`}>
       <div className="flex items-start gap-2">
@@ -180,8 +189,8 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
             </div>
           )}
           
-          <Collapsible>
-            <div className="flex justify-between items-center mt-3">
+          <div className="flex justify-between items-center mt-3">
+            <Collapsible open={isCommentOpen} onOpenChange={setIsCommentOpen}>
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" size="sm" className="flex items-center text-xs gap-1">
                   <Pencil className="h-3 w-3" />
@@ -189,36 +198,37 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
                 </Button>
               </CollapsibleTrigger>
               
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsActionPlanOpen(!isActionPlanOpen)}
-                className="flex items-center text-xs"
-              >
-                {isActionPlanOpen ? <ChevronDown className="h-3 w-3 mr-1" /> : <ChevronRight className="h-3 w-3 mr-1" />}
-                Plano de ação
-              </Button>
-            </div>
-            <CollapsibleContent>
-              <div className="mt-2">
-                <Textarea
-                  placeholder="Adicione seus comentários aqui..."
-                  value={comment}
-                  onChange={handleCommentChange}
-                  className="text-sm"
-                />
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
+              <CollapsibleContent>
+                <div className="mt-2">
+                  <Textarea
+                    placeholder="Adicione seus comentários aqui..."
+                    value={comment}
+                    onChange={handleCommentChange}
+                    className="text-sm"
+                  />
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsActionPlanOpen(!isActionPlanOpen)}
+              className="flex items-center text-xs"
+            >
+              {isActionPlanOpen ? <ChevronDown className="h-3 w-3 mr-1" /> : <ChevronRight className="h-3 w-3 mr-1" />}
+              Plano de ação
+            </Button>
+          </div>
           
-          {isActionPlanOpen && (
-            <div className="mt-3 pt-3 border-t">
-              <ActionPlanInput
-                value={response?.actionPlan || ""}
-                onChange={handleActionPlanChange}
-              />
-            </div>
-          )}
+          <ActionPlanSection
+            isOpen={isActionPlanOpen}
+            onOpenChange={setIsActionPlanOpen}
+            actionPlan={response?.actionPlan}
+            onActionPlanChange={handleActionPlanChange}
+            onOpenDialog={() => {}} // Implement if needed
+            hasNegativeResponse={hasNegativeResponse}
+          />
         </div>
       </div>
     </div>
