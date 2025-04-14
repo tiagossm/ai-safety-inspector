@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Card } from "@/components/ui/card";
@@ -65,24 +66,31 @@ export function QuestionItem({
       if (error) throw error;
       
       if (data && data.length > 0) {
-        const mappedQuestions: ChecklistQuestion[] = data.map(q => ({
-          id: q.id,
-          text: q.pergunta,
-          responseType: mapDbTypeToUiType(q.tipo_resposta),
-          isRequired: q.obrigatorio,
-          options: Array.isArray(q.opcoes) ? q.opcoes : [],
-          weight: q.weight || 1,
-          allowsPhoto: q.permite_foto || false,
-          allowsVideo: q.permite_video || false,
-          allowsAudio: q.permite_audio || false,
-          allowsFiles: false,
-          order: q.ordem || 0,
-          hint: q.hint,
-          parentQuestionId: question.id,
-          hasSubChecklist: false,
-          subChecklistId: null,
-          groupId: question.groupId
-        }));
+        const mappedQuestions: ChecklistQuestion[] = data.map(q => {
+          // Ensure options are always strings
+          const options = Array.isArray(q.opcoes) 
+            ? q.opcoes.map(opt => String(opt)) // Convert all options to string
+            : [];
+            
+          return {
+            id: q.id,
+            text: q.pergunta,
+            responseType: mapDbTypeToUiType(q.tipo_resposta),
+            isRequired: q.obrigatorio,
+            options: options,
+            weight: q.weight || 1,
+            allowsPhoto: q.permite_foto || false,
+            allowsVideo: q.permite_video || false,
+            allowsAudio: q.permite_audio || false,
+            allowsFiles: false,
+            order: q.ordem || 0,
+            hint: q.hint,
+            parentQuestionId: question.id,
+            hasSubChecklist: false,
+            subChecklistId: null,
+            groupId: question.groupId
+          };
+        });
         
         setSubQuestions(mappedQuestions);
       } else {

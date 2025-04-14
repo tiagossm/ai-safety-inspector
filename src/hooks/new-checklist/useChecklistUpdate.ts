@@ -65,13 +65,18 @@ export function useChecklistUpdate() {
                 groupIndex: groups.findIndex(g => g.id === groupInfo.id)
               }) : null;
             
+            // Ensure options is always a string array
+            const options = Array.isArray(q.options) 
+              ? q.options.map(opt => String(opt)) 
+              : [];
+            
             return {
               checklist_id: id,
               pergunta: q.text,
               tipo_resposta: q.responseType,
               obrigatorio: q.isRequired,
               ordem: q.order || index,
-              opcoes: q.options || [], // Ensure options is always an array
+              opcoes: options, // Ensure options is always a string array
               weight: q.weight || 1,
               permite_foto: q.allowsPhoto,
               permite_video: q.allowsVideo,
@@ -103,6 +108,11 @@ export function useChecklistUpdate() {
               groupIndex: groups.findIndex(g => g.id === groupInfo.id)
             }) : question.hint;
           
+          // Ensure options is always a string array
+          const options = Array.isArray(question.options) 
+            ? question.options.map(opt => String(opt)) 
+            : [];
+          
           const { error: updateError } = await supabase
             .from("checklist_itens")
             .update({
@@ -110,7 +120,7 @@ export function useChecklistUpdate() {
               tipo_resposta: question.responseType,
               obrigatorio: question.isRequired,
               ordem: question.order,
-              opcoes: question.options || [], // Ensure options is always an array
+              opcoes: options, // Ensure options is always a string array
               weight: question.weight || 1,
               permite_foto: question.allowsPhoto,
               permite_video: question.allowsVideo,
