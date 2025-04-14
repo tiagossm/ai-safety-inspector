@@ -2,7 +2,7 @@
 import React, { createContext, useContext, ReactNode } from "react";
 import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 
-interface ChecklistEditorContextType {
+export interface ChecklistEditorContextType {
   // State
   title: string;
   description: string;

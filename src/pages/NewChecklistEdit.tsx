@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { ChecklistEditorContainer } from "@/components/new-checklist/edit/ChecklistEditorContainer";
@@ -9,8 +8,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ChecklistErrorState } from "@/components/new-checklist/details/ChecklistErrorState";
 import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
 import { useChecklistEditorContext } from "@/hooks/new-checklist/useChecklistEditorContext"; 
-import { ChecklistEditorProvider } from "@/contexts/ChecklistEditorContext";
-import { ChecklistEditorContextType } from "@/contexts/ChecklistEditorContext";
+import { ChecklistEditorProvider, ChecklistEditorContextType } from "@/contexts/ChecklistEditorContext";
 
 export default function NewChecklistEdit() {
   const [searchParams] = useSearchParams();
@@ -19,16 +17,13 @@ export default function NewChecklistEdit() {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
   
-  // Get checklist data if it exists
   const { data: checklist, isLoading, error, refetch } = useChecklistById(id || "");
   const editorContext = useChecklistEditorContext();
   
-  // Handlers for accessibility wrapper
   const handleSave = async () => {
     if (editorMode === "standard" && editorContext) {
       return editorContext.handleSave();
     }
-    // For wizard mode, we'll implement this later
     return Promise.resolve();
   };
   
@@ -42,7 +37,6 @@ export default function NewChecklistEdit() {
     navigate("/new-checklists");
   };
 
-  // If there's an error fetching the checklist, show error state
   if (error) {
     return (
       <ChecklistErrorState 
@@ -52,7 +46,6 @@ export default function NewChecklistEdit() {
     );
   }
 
-  // Create a fixed context value for the wizard mode to prevent the context error
   const wizardContextValue: ChecklistEditorContextType = {
     title: checklist?.title || "",
     description: checklist?.description || "",
