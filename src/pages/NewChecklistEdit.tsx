@@ -9,12 +9,13 @@ import { useParams, useNavigate } from "react-router-dom";
 import { ChecklistErrorState } from "@/components/new-checklist/details/ChecklistErrorState";
 import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
 import { useChecklistEditorContext } from "@/hooks/new-checklist/useChecklistEditorContext"; 
-import { ChecklistEditorProvider, ChecklistEditorContextType } from "@/contexts/ChecklistEditorContext";
+import { ChecklistEditorProvider } from "@/contexts/ChecklistEditorContext";
+import { ChecklistEditorContextType } from "@/contexts/ChecklistEditorContext";
 
 export default function NewChecklistEdit() {
   const [searchParams] = useSearchParams();
   const mode = searchParams.get("mode") || "standard";
-  const [editorMode, setEditorMode] = React.useState<"standard" | "wizard">(mode as "standard" | "wizard");
+  const [editorMode, setEditorMode] = React.useState<"standard" | "wizard">("standard"); // Changing default to standard, removing wizard mode
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
   
@@ -79,45 +80,20 @@ export default function NewChecklistEdit() {
 
   return (
     <div>
-      <Tabs 
-        value={editorMode} 
-        onValueChange={(value) => setEditorMode(value as "standard" | "wizard")}
-        className="mb-6"
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">
+          {id ? "Editar Checklist" : "Criar Novo Checklist"}
+        </h1>
+      </div>
+      
+      <AccessibleEditor 
+        onSave={handleSave}
+        onAddQuestion={handleAddQuestion}
+        onCancel={handleCancel}
+        isSubmitting={false}
       >
-        <div className="flex justify-between items-center mb-2">
-          <h1 className="text-2xl font-bold">
-            {id ? "Editar Checklist" : "Criar Novo Checklist"}
-          </h1>
-          <TabsList>
-            <TabsTrigger value="standard">Editor Padrão</TabsTrigger>
-            <TabsTrigger value="wizard">Modo Assistente</TabsTrigger>
-          </TabsList>
-        </div>
-        
-        <TabsContent value="standard" className="mt-0">
-          <AccessibleEditor 
-            onSave={handleSave}
-            onAddQuestion={handleAddQuestion}
-            onCancel={handleCancel}
-            isSubmitting={false}
-          >
-            <ChecklistEditorContainer />
-          </AccessibleEditor>
-        </TabsContent>
-        
-        <TabsContent value="wizard" className="mt-0">
-          <ChecklistEditorProvider value={wizardContextValue}>
-            <AccessibleEditor 
-              onSave={handleSave}
-              onAddQuestion={handleAddQuestion}
-              onCancel={handleCancel}
-              isSubmitting={false}
-            >
-              <ChecklistWizard />
-            </AccessibleEditor>
-          </ChecklistEditorProvider>
-        </TabsContent>
-      </Tabs>
+        <ChecklistEditorContainer />
+      </AccessibleEditor>
     </div>
   );
 }

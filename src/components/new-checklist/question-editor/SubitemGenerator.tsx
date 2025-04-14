@@ -2,15 +2,25 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistQuestion } from "@/types/newChecklist";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface SubitemGeneratorProps {
   questionId: string;
   questionText: string;
   onSubitemsGenerated: (subitems: ChecklistQuestion[], parentId: string) => void;
+  onAddManualSubitem: () => void;
   maxSubitems: number;
   currentSubitemsCount: number;
 }
@@ -19,40 +29,37 @@ export function SubitemGenerator({
   questionId,
   questionText,
   onSubitemsGenerated,
+  onAddManualSubitem,
   maxSubitems = 5,
   currentSubitemsCount = 0
 }: SubitemGeneratorProps) {
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [autoPrompt, setAutoPrompt] = useState("");
+  const [subitemsCount, setSubitemsCount] = useState(1);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
   const remainingSubitems = maxSubitems - currentSubitemsCount;
-
+  
   // Generate an automatic prompt based on the parent question
   useEffect(() => {
     if (questionText && questionText.trim().length > 10) {
-      const generateAutoPrompt = () => {
-        // Remove question marks and create a prompt based on the question text
-        const cleanText = questionText.replace(/\?/g, '').trim();
-        
-        if (cleanText.toLowerCase().includes("procedimento") || cleanText.toLowerCase().includes("processo")) {
-          return `Detalhe os passos específicos para ${cleanText}`;
-        } else if (cleanText.toLowerCase().includes("risco") || cleanText.toLowerCase().includes("perigo")) {
-          return `Identifique fatores de risco relacionados a ${cleanText}`;
-        } else if (cleanText.toLowerCase().includes("prevenção") || cleanText.toLowerCase().includes("programa")) {
-          return `Liste os principais componentes para um programa efetivo de ${cleanText}`;
-        } else {
-          return `Quais os pontos principais a serem verificados sobre ${cleanText}`;
-        }
-      };
-
-      setAutoPrompt(generateAutoPrompt());
-      // Pre-fill the prompt input with the auto-generated prompt
-      if (!prompt) {
-        setPrompt(generateAutoPrompt());
-      }
+      const initialItemCount = Math.min(3, remainingSubitems);
+      setSubitemsCount(initialItemCount);
+      
+      const defaultPrompt = `Elabore ${initialItemCount} subitens da pergunta: '${questionText}'`;
+      setAutoPrompt(defaultPrompt);
+      setPrompt(defaultPrompt);
     }
-  }, [questionText, prompt]);
+  }, [questionText, remainingSubitems]);
 
+  const handleCountChange = (count: number) => {
+    const validCount = Math.min(Math.max(1, count), remainingSubitems);
+    setSubitemsCount(validCount);
+    const newPrompt = `Elabore ${validCount} subitens da pergunta: '${questionText}'`;
+    setPrompt(newPrompt);
+  };
+  
   const handleGenerateSubitems = async () => {
     if (remainingSubitems <= 0) {
       toast.error(`Limite máximo de ${maxSubitems} subitens atingido.`);
@@ -71,7 +78,7 @@ export function SubitemGenerator({
           prompt: prompt,
           parentQuestionId: questionId,
           parentQuestionText: questionText,
-          questionCount: Math.min(remainingSubitems, 5)
+          questionCount: Math.min(remainingSubitems, subitemsCount)
         }
       });
 
@@ -101,7 +108,7 @@ export function SubitemGenerator({
       }));
 
       onSubitemsGenerated(generatedQuestions, questionId);
-      setPrompt("");
+      setIsDialogOpen(false);
       toast.success(`${generatedQuestions.length} subitens gerados com sucesso.`);
     } catch (err: any) {
       toast.error(`Erro ao gerar subitens: ${err.message}`);
@@ -111,38 +118,96 @@ export function SubitemGenerator({
   };
 
   return (
-    <div className="flex flex-col gap-2 mt-2 mb-4">
-      <div className="text-sm text-muted-foreground mb-1">
-        Gere até {remainingSubitems} subitens para esta pergunta usando IA
-        {autoPrompt && <span className="text-xs block text-primary-foreground/70">Sugestão: {autoPrompt}</span>}
-      </div>
-      <div className="flex gap-2">
-        <Input
-          placeholder="Digite um prompt para gerar subitens (ex: Detalhes sobre segurança em altura)"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          disabled={isGenerating || remainingSubitems <= 0}
-          className="flex-1"
-        />
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleGenerateSubitems}
-          disabled={isGenerating || remainingSubitems <= 0 || !prompt.trim()}
-        >
-          {isGenerating ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Gerando...
-            </>
-          ) : (
-            <>
-              <Sparkles className="h-4 w-4 mr-2" />
-              Gerar com IA
-            </>
-          )}
-        </Button>
-      </div>
+    <div className="flex items-center gap-2 mt-2">
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-1"
+            disabled={remainingSubitems <= 0}
+          >
+            <Sparkles className="h-4 w-4 mr-1" />
+            Gerar Subitens com IA
+          </Button>
+        </DialogTrigger>
+        
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Gerar Subitens com IA</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Quantidade de subitens (máx: {remainingSubitems})
+              </label>
+              <Input
+                type="number"
+                min={1}
+                max={remainingSubitems}
+                value={subitemsCount}
+                onChange={(e) => handleCountChange(parseInt(e.target.value) || 1)}
+                className="w-full"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Prompt para geração
+              </label>
+              <Textarea
+                placeholder="Descreva os subitens que deseja gerar"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                className="min-h-[100px]"
+              />
+              {autoPrompt && (
+                <p className="text-xs text-muted-foreground">
+                  Você pode editar o prompt acima ou usar a sugestão automática
+                </p>
+              )}
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancelar</Button>
+            </DialogClose>
+            <Button
+              onClick={handleGenerateSubitems}
+              disabled={isGenerating || !prompt.trim()}
+              className="gap-2"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Gerando...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  Gerar Subitens
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={onAddManualSubitem}
+        disabled={remainingSubitems <= 0}
+        className="flex items-center gap-1"
+      >
+        <Plus className="h-4 w-4 mr-1" />
+        Adicionar Subitem Manualmente
+      </Button>
+      
       {remainingSubitems <= 0 && (
         <p className="text-xs text-amber-600">
           Limite máximo de {maxSubitems} subitens atingido.

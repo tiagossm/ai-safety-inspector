@@ -33,13 +33,17 @@ export function useChecklistSubmit(
       
       const validQuestions = questions.filter(q => q.text.trim());
       
+      // Make sure to use is_template here since that's the actual column name in the database
+      // This matches what is used in useChecklistUpdate.ts
       const updatedChecklist = {
         id,
         title,
         description,
         category,
-        isTemplate,
-        status
+        // Use is_template which matches the database column name
+        is_template: isTemplate,
+        // Use status_checklist which matches the database column name
+        status_checklist: status === "inactive" ? "inactive" : "active"
       };
       
       await updateChecklist.mutateAsync({

@@ -23,7 +23,6 @@ import {
   FileText,
   ChevronDown,
   ChevronUp,
-  Plus,
   Grid3X3,
 } from "lucide-react";
 import { ChecklistQuestion } from "@/types/newChecklist";
@@ -175,6 +174,7 @@ export function QuestionItem({
               size="icon"
               onClick={() => onDelete(question.id)}
               className="h-8 w-8 text-destructive hover:bg-destructive/10"
+              aria-label="Excluir pergunta"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -253,6 +253,7 @@ export function QuestionItem({
                           handleChange("options", newOptions);
                         }}
                         className="h-10 w-10 text-destructive"
+                        aria-label={`Remover opção ${index + 1}`}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -268,7 +269,6 @@ export function QuestionItem({
                     }}
                     className="mt-2"
                   >
-                    <Plus className="h-4 w-4 mr-2" />
                     Adicionar Opção
                   </Button>
                 </div>
@@ -298,48 +298,56 @@ export function QuestionItem({
                 </div>
               </div>
 
-              <div className="flex items-center gap-4">
-                <p className="text-sm">Permitir mídia:</p>
-                <div className="flex gap-2">
+              <div className="space-y-2">
+                <Label>Permitir mídia:</Label>
+                <div className="flex flex-wrap gap-2">
                   <Button
                     type="button"
                     variant={question.allowsPhoto ? "default" : "outline"}
-                    size="icon"
-                    className="h-8 w-8"
+                    size="sm"
+                    className="gap-2"
                     title="Permitir fotos"
                     onClick={() => handleChange("allowsPhoto", !question.allowsPhoto)}
+                    aria-label="Permitir anexar imagens"
                   >
                     <Image className="h-4 w-4" />
+                    <span>Imagem</span>
                   </Button>
                   <Button
                     type="button"
                     variant={question.allowsVideo ? "default" : "outline"}
-                    size="icon"
-                    className="h-8 w-8"
+                    size="sm"
+                    className="gap-2"
                     title="Permitir vídeos"
                     onClick={() => handleChange("allowsVideo", !question.allowsVideo)}
+                    aria-label="Permitir anexar vídeos"
                   >
                     <Video className="h-4 w-4" />
+                    <span>Vídeo</span>
                   </Button>
                   <Button
                     type="button"
                     variant={question.allowsAudio ? "default" : "outline"}
-                    size="icon"
-                    className="h-8 w-8"
+                    size="sm"
+                    className="gap-2"
                     title="Permitir áudios"
                     onClick={() => handleChange("allowsAudio", !question.allowsAudio)}
+                    aria-label="Permitir anexar áudios"
                   >
                     <Mic className="h-4 w-4" />
+                    <span>Áudio</span>
                   </Button>
                   <Button
                     type="button"
                     variant={question.allowsFiles ? "default" : "outline"}
-                    size="icon"
-                    className="h-8 w-8"
+                    size="sm"
+                    className="gap-2"
                     title="Permitir arquivos"
                     onClick={() => handleChange("allowsFiles", !question.allowsFiles)}
+                    aria-label="Permitir anexar arquivos"
                   >
                     <FileText className="h-4 w-4" />
+                    <span>Anexo</span>
                   </Button>
                 </div>
               </div>
@@ -365,18 +373,6 @@ export function QuestionItem({
                 </Button>
               </CollapsibleTrigger>
             </Collapsible>
-            
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleSubitemAdded}
-              disabled={subitems.length >= MAX_SUBITEMS}
-              className="flex items-center gap-1"
-            >
-              <Plus className="h-4 w-4" />
-              Adicionar Subitem
-            </Button>
           </div>
         </CardFooter>
       )}
@@ -390,11 +386,12 @@ export function QuestionItem({
                 questionId={question.id}
                 questionText={question.text}
                 onSubitemsGenerated={handleSubitemsGenerated}
+                onAddManualSubitem={handleSubitemAdded}
                 maxSubitems={MAX_SUBITEMS}
                 currentSubitemsCount={subitems.length}
               />
               
-              <div className="pl-4 space-y-3">
+              <div className="pl-4 space-y-3 mt-4">
                 {subitems.length === 0 ? (
                   <div className="text-sm text-muted-foreground py-4 text-center">
                     Nenhum subitem criado. Adicione manualmente ou gere com IA.

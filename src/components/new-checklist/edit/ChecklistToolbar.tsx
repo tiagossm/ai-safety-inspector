@@ -46,6 +46,7 @@ export function ChecklistToolbar() {
           size="sm"
           onClick={() => toggleAllMediaOptions(!enableAllMedia)}
           className="whitespace-nowrap"
+          aria-label={enableAllMedia ? "Desativar todas as mídias" : "Ativar todas as mídias"}
         >
           {enableAllMedia ? "Desativar mídias" : "Ativar mídias em tudo"}
         </Button>
@@ -56,6 +57,7 @@ export function ChecklistToolbar() {
           size="sm"
           onClick={() => handleAddQuestion("default")}
           className="whitespace-nowrap"
+          aria-label="Adicionar nova pergunta"
         >
           <Sparkles className="h-4 w-4 mr-2" />
           Adicionar Pergunta

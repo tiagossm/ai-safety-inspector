@@ -9,6 +9,9 @@ interface ChecklistUpdateParams extends Partial<ChecklistWithStats> {
   questions?: ChecklistQuestion[];
   groups?: ChecklistGroup[];
   deletedQuestionIds?: string[];
+  // Explicitly add these to match database column names
+  is_template?: boolean;
+  status_checklist?: string;
 }
 
 export function useChecklistUpdate() {
@@ -19,13 +22,12 @@ export function useChecklistUpdate() {
       const { id, questions, groups, deletedQuestionIds, ...updateData } = params;
       console.log(`Atualizando checklist ${id} com:`, updateData);
       
-      // Fix isTemplate to match database column is_template
+      // Fix column names to match the database
       const formattedUpdateData = {
         ...updateData,
-        // Convert isTemplate to is_template for database compatibility
-        is_template: updateData.isTemplate,
-        // Convert status to status_checklist if needed
-        status_checklist: updateData.status,
+        // Ensure we're using the correct column names for the database
+        is_template: params.is_template !== undefined ? params.is_template : updateData.isTemplate,
+        status_checklist: params.status_checklist || updateData.status,
         updated_at: new Date().toISOString()
       };
       
