@@ -1,26 +1,27 @@
 
 import React from "react";
+import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import { useChecklistEditor } from "@/contexts/ChecklistEditorContext";
-import { QuestionGroupsList } from "@/components/new-checklist/question-editor/QuestionGroupsList";
+import { QuestionGroupsList } from "../question-editor/QuestionGroupsList";
 
 export function ChecklistGroupEditor() {
-  const { 
-    nonEmptyGroups, 
-    questionsByGroup, 
-    handleAddGroup, 
-    handleUpdateGroup, 
-    handleAddQuestion, 
-    handleUpdateQuestion, 
-    handleDeleteQuestion, 
-    handleDeleteGroup, 
+  const {
+    groups,
+    nonEmptyGroups,
+    questionsByGroup,
+    handleAddGroup,
+    handleUpdateGroup,
+    handleDeleteGroup,
+    handleAddQuestion,
+    handleUpdateQuestion,
+    handleDeleteQuestion,
     handleDragEnd,
     enableAllMedia,
     isSubmitting
   } = useChecklistEditor();
-  
+
   return (
     <div className="space-y-4">
       <DragDropContext onDragEnd={handleDragEnd}>
@@ -44,7 +45,7 @@ export function ChecklistGroupEditor() {
                   isSubmitting={isSubmitting}
                 />
               ) : (
-                <div className="text-center py-8 border border-dashed rounded">
+                <div className="text-center py-12 border border-dashed rounded-md">
                   <p className="text-muted-foreground mb-4">Nenhum grupo com perguntas encontrado</p>
                   <Button 
                     variant="outline" 
