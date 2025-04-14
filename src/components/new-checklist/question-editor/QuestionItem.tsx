@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Card } from "@/components/ui/card";
@@ -71,7 +70,7 @@ export function QuestionItem({
           text: q.pergunta,
           responseType: mapDbTypeToUiType(q.tipo_resposta),
           isRequired: q.obrigatorio,
-          options: q.opcoes || [],
+          options: Array.isArray(q.opcoes) ? q.opcoes : [],
           weight: q.weight || 1,
           allowsPhoto: q.permite_foto || false,
           allowsVideo: q.permite_video || false,

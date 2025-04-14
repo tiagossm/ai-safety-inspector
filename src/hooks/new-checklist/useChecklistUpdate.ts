@@ -71,7 +71,7 @@ export function useChecklistUpdate() {
               tipo_resposta: q.responseType,
               obrigatorio: q.isRequired,
               ordem: q.order || index,
-              opcoes: q.options,
+              opcoes: q.options || [], // Ensure options is always an array
               weight: q.weight || 1,
               permite_foto: q.allowsPhoto,
               permite_video: q.allowsVideo,
@@ -110,7 +110,7 @@ export function useChecklistUpdate() {
               tipo_resposta: question.responseType,
               obrigatorio: question.isRequired,
               ordem: question.order,
-              opcoes: question.options,
+              opcoes: question.options || [], // Ensure options is always an array
               weight: question.weight || 1,
               permite_foto: question.allowsPhoto,
               permite_video: question.allowsVideo,
