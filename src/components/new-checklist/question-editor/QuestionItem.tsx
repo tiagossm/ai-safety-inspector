@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -162,13 +162,12 @@ export function QuestionItem({
     <Card className="border shadow-sm">
       <CardHeader className="px-4 py-3 bg-gray-50">
         <div className="flex justify-between items-start">
-          <CollapsibleTrigger 
-            onClick={() => setIsOpen(!isOpen)} 
-            className="flex items-center gap-2 hover:text-primary cursor-pointer text-sm font-medium"
-          >
-            {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            {question.parentQuestionId ? "Subitem" : "Pergunta"}
-          </CollapsibleTrigger>
+          <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+            <CollapsibleTrigger className="flex items-center gap-2 hover:text-primary cursor-pointer text-sm font-medium">
+              {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              {question.parentQuestionId ? "Subitem" : "Pergunta"}
+            </CollapsibleTrigger>
+          </Collapsible>
           
           <div className="flex items-center gap-2">
             <Button
@@ -183,7 +182,7 @@ export function QuestionItem({
         </div>
       </CardHeader>
 
-      <Collapsible open={isOpen}>
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleContent>
           <CardContent className="p-4 space-y-4">
             <div className="space-y-2">
@@ -352,17 +351,20 @@ export function QuestionItem({
       {!question.parentQuestionId && (
         <CardFooter className="px-4 py-2 bg-gray-50 flex justify-between">
           <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setIsSubitemsOpen(!isSubitemsOpen)}
-              className="flex items-center gap-1"
-            >
-              <Grid3X3 className="h-4 w-4" />
-              Subitens {subitems.length > 0 ? `(${subitems.length})` : ""}
-              {isSubitemsOpen ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}
-            </Button>
+            <Collapsible open={isSubitemsOpen} onOpenChange={setIsSubitemsOpen}>
+              <CollapsibleTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-1"
+                >
+                  <Grid3X3 className="h-4 w-4" />
+                  Subitens {subitems.length > 0 ? `(${subitems.length})` : ""}
+                  {isSubitemsOpen ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}
+                </Button>
+              </CollapsibleTrigger>
+            </Collapsible>
             
             <Button
               type="button"
@@ -381,7 +383,7 @@ export function QuestionItem({
 
       {/* Subitems collapsible section */}
       {!question.parentQuestionId && (
-        <Collapsible open={isSubitemsOpen}>
+        <Collapsible open={isSubitemsOpen} onOpenChange={setIsSubitemsOpen}>
           <CollapsibleContent className="py-2 border-t">
             <div className="px-4">
               <SubitemGenerator
