@@ -1,18 +1,15 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Grid, Rows } from 'lucide-react';
+import { Grid, Rows, Sparkles } from 'lucide-react';
 import { useChecklistEditor } from '@/contexts/ChecklistEditorContext';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Sparkles } from 'lucide-react';
 
 export function ChecklistToolbar() {
   const { 
     viewMode, 
     setViewMode,
-    toggleAllMediaOptions,
-    enableAllMedia,
     questions,
     handleAddQuestion
   } = useChecklistEditor();
@@ -40,17 +37,6 @@ export function ChecklistToolbar() {
       </div>
       
       <div className="flex items-center gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => toggleAllMediaOptions(!enableAllMedia)}
-          className="whitespace-nowrap"
-          aria-label={enableAllMedia ? "Desativar todas as mídias" : "Ativar todas as mídias"}
-        >
-          {enableAllMedia ? "Desativar mídias" : "Ativar mídias em tudo"}
-        </Button>
-        
         <Button
           type="button" 
           variant="default"

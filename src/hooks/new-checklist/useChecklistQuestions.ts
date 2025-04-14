@@ -40,6 +40,7 @@ export function useChecklistQuestions(
     };
     
     setQuestions(prev => [...prev, newQuestion]);
+    toast.success("Nova pergunta adicionada");
   }, [questions, setQuestions, groups]);
 
   const handleUpdateQuestion = useCallback((updatedQuestion: ChecklistQuestion) => {
@@ -52,12 +53,14 @@ export function useChecklistQuestions(
     // If this is a new question (not yet in the database), just remove it
     if (questionId.startsWith('new-')) {
       setQuestions(prev => prev.filter(q => q.id !== questionId));
+      toast.success("Pergunta removida");
       return;
     }
     
     // For existing questions, mark for deletion
     setDeletedQuestionIds(prev => [...prev, questionId]);
     setQuestions(prev => prev.filter(q => q.id !== questionId));
+    toast.success("Pergunta marcada para exclusão");
   }, [setQuestions, setDeletedQuestionIds]);
 
   const toggleAllMediaOptions = useCallback((enabled = true) => {

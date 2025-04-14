@@ -9,6 +9,7 @@ import { ChecklistHeader } from "@/components/new-checklist/edit/ChecklistHeader
 import { useChecklistEditorContext } from "@/hooks/new-checklist/useChecklistEditorContext";
 import { ChecklistBasicInfo } from "./ChecklistBasicInfo";
 import { ChecklistQuestionList } from "./ChecklistQuestionList";
+import { toast } from "sonner";
 
 export function ChecklistEditorContainer() {
   const editorContext = useChecklistEditorContext();
@@ -41,12 +42,38 @@ export function ChecklistEditorContainer() {
     handleAddGroup: editorContext.handleAddGroup,
     handleUpdateGroup: editorContext.handleUpdateGroup,
     handleDeleteGroup: editorContext.handleDeleteGroup,
-    handleAddQuestion: editorContext.handleAddQuestion,
+    handleAddQuestion: (groupId: string) => {
+      editorContext.handleAddQuestion(groupId);
+      toast.success("Nova pergunta adicionada");
+    },
     handleUpdateQuestion: editorContext.handleUpdateQuestion,
     handleDeleteQuestion: editorContext.handleDeleteQuestion,
     handleDragEnd: editorContext.handleDragEnd,
     handleSubmit: editorContext.handleSubmit,
     toggleAllMediaOptions: editorContext.toggleAllMediaOptions
+  };
+  
+  // Enhanced save handler to provide feedback
+  const handleSave = async () => {
+    toast.info("Salvando checklist...", { duration: 2000 });
+    try {
+      const result = await editorContext.handleSave();
+      if (result) {
+        toast.success("Checklist salvo com sucesso!");
+      }
+    } catch (error) {
+      toast.error("Erro ao salvar checklist");
+    }
+  };
+  
+  // Enhanced start inspection handler to provide feedback
+  const handleStartInspection = async () => {
+    toast.info("Preparando inspeção...", { duration: 2000 });
+    try {
+      await editorContext.handleStartInspection();
+    } catch (error) {
+      toast.error("Erro ao iniciar inspeção");
+    }
   };
   
   return (
@@ -55,17 +82,20 @@ export function ChecklistEditorContainer() {
         {/* Header section */}
         <ChecklistHeader 
           onBack={() => navigate("/new-checklists")}
-          onRefresh={() => editorContext.id && editorContext.refetch()}
-          onStartInspection={editorContext.handleStartInspection}
-          onSave={editorContext.handleSave}
-          onEnableAllMedia={editorContext.toggleAllMediaOptions}
-          enableAllMedia={editorContext.enableAllMedia}
+          onRefresh={() => {
+            if (editorContext.id) {
+              toast.info("Recarregando dados...", { duration: 2000 });
+              editorContext.refetch();
+            }
+          }}
+          onStartInspection={handleStartInspection}
+          onSave={handleSave}
         />
         
         {/* Form section */}
         <form onSubmit={(e) => {
           e.preventDefault();
-          editorContext.handleSubmit();
+          handleSave();
         }} className="space-y-6">
           {/* Basic information section */}
           <ChecklistBasicInfo
@@ -88,8 +118,8 @@ export function ChecklistEditorContainer() {
           <ChecklistEditActions
             isSubmitting={editorContext.isSubmitting}
             onCancel={() => navigate("/new-checklists")}
-            onStartInspection={editorContext.handleStartInspection}
-            onSave={editorContext.handleSave}
+            onStartInspection={handleStartInspection}
+            onSave={handleSave}
           />
         </form>
         

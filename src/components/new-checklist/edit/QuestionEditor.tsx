@@ -27,6 +27,7 @@ import {
   ToggleGroupItem 
 } from "@/components/ui/toggle-group";
 import { SubChecklistButton } from "@/components/new-checklist/question-editor/SubChecklistButton";
+import { toast } from "sonner";
 
 interface QuestionEditorProps {
   question: ChecklistQuestion;
@@ -52,6 +53,23 @@ export function QuestionEditor({
         ...question,
         [field]: value
       });
+      
+      // Provide visual feedback for certain actions
+      if (field === "allowsPhoto" || field === "allowsVideo" || field === "allowsAudio" || field === "allowsFiles") {
+        const status = value ? "ativada" : "desativada";
+        const mediaType = getMediaTypeName(field);
+        toast.success(`Opção de ${mediaType} ${status}`);
+      }
+    }
+  };
+  
+  const getMediaTypeName = (mediaField: string): string => {
+    switch (mediaField) {
+      case "allowsPhoto": return "imagem";
+      case "allowsVideo": return "vídeo";
+      case "allowsAudio": return "áudio";
+      case "allowsFiles": return "anexo";
+      default: return "mídia";
     }
   };
   
@@ -63,6 +81,7 @@ export function QuestionEditor({
         options: [...currentOptions, newOption.trim()]
       });
       setNewOption("");
+      toast.success("Opção adicionada");
     }
   };
   
@@ -74,6 +93,7 @@ export function QuestionEditor({
         ...question,
         options: currentOptions
       });
+      toast.success("Opção removida");
     }
   };
   
@@ -226,7 +246,7 @@ export function QuestionEditor({
         <div>
           <label className="text-sm font-medium mb-1 block">Dica para o inspetor</label>
           <Textarea
-            placeholder="Instruções adicionais para o inspetor"
+            placeholder="Digite uma dica..."
             value={userHint}
             onChange={(e) => handleUpdate("hint", e.target.value)}
             className="w-full"
@@ -237,44 +257,59 @@ export function QuestionEditor({
         {/* Media options */}
         <div>
           <label className="text-sm font-medium mb-1 block">Opções de mídia</label>
-          <ToggleGroup type="multiple" className="justify-start">
-            <ToggleGroupItem 
-              value="photo" 
-              aria-label="Permitir foto"
-              data-state={question.allowsPhoto ? "on" : "off"}
+          <div className="flex flex-wrap gap-2 mt-1">
+            <Button
+              type="button"
+              variant={question.allowsPhoto ? "default" : "outline"}
+              size="sm"
+              className="gap-2 min-w-[110px]"
+              title="Permitir fotos"
               onClick={() => handleUpdate("allowsPhoto", !question.allowsPhoto)}
-              title="Permitir foto"
+              aria-label="Permitir anexar imagens"
             >
               <Image className="h-4 w-4" />
-            </ToggleGroupItem>
-            <ToggleGroupItem 
-              value="video" 
-              aria-label="Permitir vídeo"
-              data-state={question.allowsVideo ? "on" : "off"}
+              <span>Imagem</span>
+            </Button>
+            
+            <Button
+              type="button"
+              variant={question.allowsVideo ? "default" : "outline"}
+              size="sm"
+              className="gap-2 min-w-[110px]"
+              title="Permitir vídeos"
               onClick={() => handleUpdate("allowsVideo", !question.allowsVideo)}
-              title="Permitir vídeo"
+              aria-label="Permitir anexar vídeos"
             >
               <Video className="h-4 w-4" />
-            </ToggleGroupItem>
-            <ToggleGroupItem 
-              value="audio" 
-              aria-label="Permitir áudio"
-              data-state={question.allowsAudio ? "on" : "off"}
+              <span>Vídeo</span>
+            </Button>
+            
+            <Button
+              type="button"
+              variant={question.allowsAudio ? "default" : "outline"}
+              size="sm"
+              className="gap-2 min-w-[110px]"
+              title="Permitir áudios"
               onClick={() => handleUpdate("allowsAudio", !question.allowsAudio)}
-              title="Permitir áudio"
+              aria-label="Permitir anexar áudios"
             >
               <Mic className="h-4 w-4" />
-            </ToggleGroupItem>
-            <ToggleGroupItem 
-              value="files" 
-              aria-label="Permitir arquivos"
-              data-state={question.allowsFiles ? "on" : "off"}
-              onClick={() => handleUpdate("allowsFiles", !question.allowsFiles)}
+              <span>Áudio</span>
+            </Button>
+            
+            <Button
+              type="button"
+              variant={question.allowsFiles ? "default" : "outline"}
+              size="sm"
+              className="gap-2 min-w-[110px]"
               title="Permitir arquivos"
+              onClick={() => handleUpdate("allowsFiles", !question.allowsFiles)}
+              aria-label="Permitir anexar arquivos"
             >
               <FileText className="h-4 w-4" />
-            </ToggleGroupItem>
-          </ToggleGroup>
+              <span>Anexo</span>
+            </Button>
+          </div>
         </div>
         
         {/* Action buttons */}
@@ -284,7 +319,12 @@ export function QuestionEditor({
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => onDelete(question.id)}
+              onClick={() => {
+                if (onDelete) {
+                  onDelete(question.id);
+                  toast.success("Pergunta excluída");
+                }
+              }}
               className="text-red-500 hover:text-red-700"
             >
               <Trash2 className="h-4 w-4 mr-2" />
@@ -306,6 +346,7 @@ export function QuestionEditor({
                       hasSubChecklist: true,
                       subChecklistId
                     });
+                    toast.success("Subitems adicionados com sucesso");
                   }
                 }}
               />

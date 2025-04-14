@@ -1,24 +1,20 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2, PlayCircle, Save, FilePlus2 } from "lucide-react";
+import { ArrowLeft, Loader2, PlayCircle, Save } from "lucide-react";
 
 interface ChecklistHeaderProps {
   onBack: () => void;
   onRefresh: () => void;
   onStartInspection: () => void;
   onSave: () => void;
-  onEnableAllMedia?: () => void;
-  enableAllMedia?: boolean;
 }
 
 export function ChecklistHeader({ 
   onBack, 
   onRefresh, 
   onStartInspection, 
-  onSave,
-  onEnableAllMedia,
-  enableAllMedia = false
+  onSave
 }: ChecklistHeaderProps) {
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -34,20 +30,6 @@ export function ChecklistHeader({
       </div>
       
       <div className="flex items-center gap-2 w-full sm:w-auto">
-        {onEnableAllMedia && (
-          <Button
-            variant={enableAllMedia ? "default" : "outline"}
-            size="sm"
-            onClick={onEnableAllMedia}
-            className="flex items-center gap-1"
-            title="Ativar opções de mídia em todas as perguntas"
-          >
-            <FilePlus2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Ativar mídias em todas as perguntas</span>
-            <span className="inline sm:hidden">Ativar mídias</span>
-          </Button>
-        )}
-        
         <Button 
           variant="outline" 
           size="sm" 

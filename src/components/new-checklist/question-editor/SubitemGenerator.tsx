@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,6 +72,8 @@ export function SubitemGenerator({
     }
 
     setIsGenerating(true);
+    toast.info(`Gerando ${subitemsCount} subitens...`, { duration: 2000 });
+    
     try {
       const { data, error } = await supabase.functions.invoke("generate-sub-checklist", {
         body: {
@@ -123,10 +126,10 @@ export function SubitemGenerator({
             type="button"
             variant="outline"
             size="sm"
-            className="flex items-center gap-1"
+            className="flex items-center gap-2"
             disabled={remainingSubitems <= 0}
           >
-            <Sparkles className="h-4 w-4 mr-1" />
+            <Sparkles className="h-4 w-4" />
             Gerar Subitens com IA
           </Button>
         </DialogTrigger>
@@ -198,11 +201,14 @@ export function SubitemGenerator({
         type="button"
         variant="ghost"
         size="sm"
-        onClick={onAddManualSubitem}
+        onClick={() => {
+          onAddManualSubitem();
+          toast.success("Subitem adicionado manualmente");
+        }}
         disabled={remainingSubitems <= 0}
-        className="flex items-center gap-1"
+        className="flex items-center gap-2"
       >
-        <Plus className="h-4 w-4 mr-1" />
+        <Plus className="h-4 w-4" />
         Adicionar Subitem Manualmente
       </Button>
       

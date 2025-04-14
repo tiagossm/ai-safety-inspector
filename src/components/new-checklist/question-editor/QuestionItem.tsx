@@ -107,6 +107,8 @@ export function QuestionItem({
     if (!isSubitemsOpen) {
       setIsSubitemsOpen(true);
     }
+    
+    toast.success("Subitem adicionado manualmente");
   };
 
   const handleSubitemUpdate = (updatedSubitem: ChecklistQuestion) => {
@@ -125,6 +127,8 @@ export function QuestionItem({
         hasSubChecklist: false
       });
     }
+    
+    toast.success("Subitem removido");
   };
 
   const handleSubitemsGenerated = (generatedSubitems: ChecklistQuestion[], parentId: string) => {
@@ -146,6 +150,8 @@ export function QuestionItem({
       ...question,
       hasSubChecklist: true
     });
+    
+    toast.success(`${subitemsToAdd.length} subitens gerados com sucesso`);
   };
 
   const responseTypeOptions = [
@@ -172,7 +178,10 @@ export function QuestionItem({
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => onDelete(question.id)}
+              onClick={() => {
+                onDelete(question.id);
+                toast.success(`${question.parentQuestionId ? "Subitem" : "Pergunta"} excluído(a)`);
+              }}
               className="h-8 w-8 text-destructive hover:bg-destructive/10"
               aria-label="Excluir pergunta"
             >
@@ -251,6 +260,7 @@ export function QuestionItem({
                           const newOptions = [...(question.options || [])];
                           newOptions.splice(index, 1);
                           handleChange("options", newOptions);
+                          toast.success("Opção removida");
                         }}
                         className="h-10 w-10 text-destructive"
                         aria-label={`Remover opção ${index + 1}`}
@@ -266,6 +276,7 @@ export function QuestionItem({
                     onClick={() => {
                       const newOptions = [...(question.options || []), ""];
                       handleChange("options", newOptions);
+                      toast.success("Nova opção adicionada");
                     }}
                     className="mt-2"
                   >
@@ -305,9 +316,12 @@ export function QuestionItem({
                     type="button"
                     variant={question.allowsPhoto ? "default" : "outline"}
                     size="sm"
-                    className="gap-2"
+                    className="gap-2 min-w-[110px]"
                     title="Permitir fotos"
-                    onClick={() => handleChange("allowsPhoto", !question.allowsPhoto)}
+                    onClick={() => {
+                      handleChange("allowsPhoto", !question.allowsPhoto);
+                      toast.success(question.allowsPhoto ? "Mídia de imagem desativada" : "Mídia de imagem ativada");
+                    }}
                     aria-label="Permitir anexar imagens"
                   >
                     <Image className="h-4 w-4" />
@@ -317,9 +331,12 @@ export function QuestionItem({
                     type="button"
                     variant={question.allowsVideo ? "default" : "outline"}
                     size="sm"
-                    className="gap-2"
+                    className="gap-2 min-w-[110px]"
                     title="Permitir vídeos"
-                    onClick={() => handleChange("allowsVideo", !question.allowsVideo)}
+                    onClick={() => {
+                      handleChange("allowsVideo", !question.allowsVideo);
+                      toast.success(question.allowsVideo ? "Mídia de vídeo desativada" : "Mídia de vídeo ativada");
+                    }}
                     aria-label="Permitir anexar vídeos"
                   >
                     <Video className="h-4 w-4" />
@@ -329,9 +346,12 @@ export function QuestionItem({
                     type="button"
                     variant={question.allowsAudio ? "default" : "outline"}
                     size="sm"
-                    className="gap-2"
+                    className="gap-2 min-w-[110px]"
                     title="Permitir áudios"
-                    onClick={() => handleChange("allowsAudio", !question.allowsAudio)}
+                    onClick={() => {
+                      handleChange("allowsAudio", !question.allowsAudio);
+                      toast.success(question.allowsAudio ? "Mídia de áudio desativada" : "Mídia de áudio ativada");
+                    }}
                     aria-label="Permitir anexar áudios"
                   >
                     <Mic className="h-4 w-4" />
@@ -341,9 +361,12 @@ export function QuestionItem({
                     type="button"
                     variant={question.allowsFiles ? "default" : "outline"}
                     size="sm"
-                    className="gap-2"
+                    className="gap-2 min-w-[110px]"
                     title="Permitir arquivos"
-                    onClick={() => handleChange("allowsFiles", !question.allowsFiles)}
+                    onClick={() => {
+                      handleChange("allowsFiles", !question.allowsFiles);
+                      toast.success(question.allowsFiles ? "Mídia de anexos desativada" : "Mídia de anexos ativada");
+                    }}
                     aria-label="Permitir anexar arquivos"
                   >
                     <FileText className="h-4 w-4" />
