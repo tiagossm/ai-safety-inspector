@@ -63,20 +63,22 @@ export function QuestionGroup({
               <Trash2 className="h-4 w-4" />
             </Button>
             
-            <CollapsibleTrigger asChild onClick={() => setIsOpen(!isOpen)}>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                {isOpen ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
-              </Button>
-            </CollapsibleTrigger>
+            <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  {isOpen ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </Button>
+              </CollapsibleTrigger>
+            </Collapsible>
           </div>
         </div>
       </CardHeader>
       
-      <Collapsible open={isOpen}>
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleContent>
           <CardContent className="pt-0 px-4 pb-4">
             <div className="space-y-3">
