@@ -10,6 +10,7 @@ import { ChecklistErrorState } from "@/components/new-checklist/details/Checklis
 import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
 import { useChecklistEditorContext } from "@/hooks/new-checklist/useChecklistEditorContext"; 
 import { ChecklistEditorProvider } from "@/contexts/ChecklistEditorContext";
+import { ChecklistEditorContextType } from "@/contexts/ChecklistEditorContext";
 
 export default function NewChecklistEdit() {
   const [searchParams] = useSearchParams();
@@ -52,12 +53,12 @@ export default function NewChecklistEdit() {
   }
 
   // Create a fixed context value for the wizard mode to prevent the context error
-  const wizardContextValue = {
+  const wizardContextValue: ChecklistEditorContextType = {
     title: checklist?.title || "",
     description: checklist?.description || "",
     category: checklist?.category || "",
     isTemplate: checklist?.isTemplate || false,
-    status: checklist?.status_checklist === "inativo" ? "inactive" : "active",
+    status: checklist?.status === "inactive" ? "inactive" : "active",
     questions: [],
     groups: [],
     viewMode: "flat" as "flat" | "grouped",
