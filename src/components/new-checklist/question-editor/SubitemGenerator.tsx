@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Sparkles, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,7 +41,6 @@ export function SubitemGenerator({
   
   const remainingSubitems = maxSubitems - currentSubitemsCount;
   
-  // Generate an automatic prompt based on the parent question
   useEffect(() => {
     if (questionText && questionText.trim().length > 10) {
       const initialItemCount = Math.min(3, remainingSubitems);
@@ -90,7 +89,6 @@ export function SubitemGenerator({
         throw new Error("Falha ao gerar subitens. Tente novamente.");
       }
 
-      // Transform the generated questions to match the ChecklistQuestion type
       const generatedQuestions: ChecklistQuestion[] = data.subChecklist.questions.map((q: any, index: number) => ({
         id: `new-${Date.now()}-${index}`,
         text: q.text,
