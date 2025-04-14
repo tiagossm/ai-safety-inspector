@@ -5,3 +5,5 @@ export * from "./useInspectionFetch";
 export * from "./useResponseHandling";
 export * from "./useInspectionStatus";
 export * from "./useQuestionsManagement";
+export * from "./useInspectionFetcher";
+export * from "./useInspectionFilters";
