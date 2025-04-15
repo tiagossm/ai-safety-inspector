@@ -57,10 +57,8 @@ export function ChecklistEditorContainer() {
   const handleSave = async () => {
     toast.info("Salvando checklist...", { duration: 2000 });
     try {
-      const result = await editorContext.handleSave();
-      if (result) {
-        toast.success("Checklist salvo com sucesso!");
-      }
+      await editorContext.handleSave();
+      toast.success("Checklist salvo com sucesso!");
     } catch (error) {
       toast.error("Erro ao salvar checklist");
     }
