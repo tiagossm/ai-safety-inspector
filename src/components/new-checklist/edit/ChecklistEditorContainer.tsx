@@ -57,7 +57,6 @@ export function ChecklistEditorContainer() {
   const handleSave = async () => {
     toast.info("Salvando checklist...", { duration: 2000 });
     try {
-      // Don't check the return value, just await the promise
       await editorContext.handleSave();
       toast.success("Checklist salvo com sucesso!");
     } catch (error) {
@@ -74,7 +73,7 @@ export function ChecklistEditorContainer() {
     
     toast.info("Preparando inspeção...", { duration: 2000 });
     try {
-      await editorContext.handleSave(); // Salva primeiro, don't check return value
+      await editorContext.handleSave(); // Salva primeiro
       await editorContext.handleStartInspection(); // Depois inicia a inspeção
       toast.success("Redirecionando para a inspeção...");
     } catch (error) {

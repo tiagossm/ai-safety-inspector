@@ -26,7 +26,6 @@ export function ChecklistToolbar() {
           </TabsList>
         </Tabs>
       </div>
-      {/* Removed any additional buttons or question count displays */}
     </div>
   );
 }
