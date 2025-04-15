@@ -37,7 +37,7 @@ export function useChecklistQuestions(
       allowsFiles: false,
       order: highestOrder + 1,
       groupId: targetGroupId,
-      hint: "" // Garantir que a dica começa vazia
+      hint: "" // Ensuring hint is empty by default
     };
     
     setQuestions(prev => [...prev, newQuestion]);

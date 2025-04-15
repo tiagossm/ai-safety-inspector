@@ -22,11 +22,13 @@ export default function NewChecklistEdit() {
   const { data: checklist, isLoading, error, refetch } = useChecklistById(id || "");
   const editorContext = useChecklistEditorContext();
   
-  const handleSave = async () => {
+  // Modify this function to return Promise<void> instead of Promise<boolean | void>
+  const handleSave = async (): Promise<void> => {
     if (editorMode === "standard" && editorContext) {
-      return editorContext.handleSave();
+      // Call the context save method but don't return its result directly
+      await editorContext.handleSave();
+      // Return void explicitly by not returning anything
     }
-    return Promise.resolve();
   };
   
   const handleAddQuestion = () => {

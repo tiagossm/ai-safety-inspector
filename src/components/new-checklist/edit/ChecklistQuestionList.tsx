@@ -78,7 +78,6 @@ export function ChecklistQuestionList() {
         {viewMode === "flat" && (
           <FlatQuestionsList
             questions={allQuestionsWithHierarchy}
-            onAddQuestion={() => handleAddQuestion(groups[0]?.id || "default")}
             onUpdateQuestion={handleUpdateQuestion}
             onDeleteQuestion={handleDeleteQuestion}
             enableAllMedia={enableAllMedia}
