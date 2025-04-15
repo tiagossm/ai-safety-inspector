@@ -40,14 +40,13 @@ export function FlatQuestionsList({
               question={question}
               onUpdate={onUpdateQuestion}
               onDelete={onDeleteQuestion}
-              isNested={!!question.parentQuestionId}
+              isSubQuestion={!!question.parentQuestionId}
+              enableAllMedia={enableAllMedia}
               isDisabled={isSubmitting}
             />
           ))}
         </div>
       </ScrollArea>
-      
-      {/* Removed "Add Question" button */}
     </div>
   );
 }

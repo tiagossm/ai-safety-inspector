@@ -35,6 +35,7 @@ interface QuestionEditorProps {
   onDelete?: (id: string) => void;
   isSubQuestion?: boolean;
   enableAllMedia?: boolean;
+  isDisabled?: boolean;
 }
 
 export function QuestionEditor({
@@ -42,7 +43,8 @@ export function QuestionEditor({
   onUpdate,
   onDelete,
   isSubQuestion = false,
-  enableAllMedia = false
+  enableAllMedia = false,
+  isDisabled = false
 }: QuestionEditorProps) {
   const [showOptionsEditor, setShowOptionsEditor] = useState(false);
   const [newOption, setNewOption] = useState("");
@@ -130,6 +132,7 @@ export function QuestionEditor({
             onChange={(e) => handleUpdate("text", e.target.value)}
             className="w-full"
             rows={2}
+            disabled={isDisabled}
           />
         </div>
         
@@ -140,6 +143,7 @@ export function QuestionEditor({
             <Select
               value={question.responseType}
               onValueChange={(value) => handleUpdate("responseType", value)}
+              disabled={isDisabled}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o tipo" />
@@ -164,6 +168,7 @@ export function QuestionEditor({
               max="100"
               value={question.weight}
               onChange={(e) => handleUpdate("weight", Number(e.target.value))}
+              disabled={isDisabled}
             />
           </div>
           
@@ -173,6 +178,7 @@ export function QuestionEditor({
             <Switch
               checked={question.isRequired}
               onCheckedChange={(checked) => handleUpdate("isRequired", checked)}
+              disabled={isDisabled}
             />
           </div>
         </div>
@@ -187,6 +193,7 @@ export function QuestionEditor({
                 variant="ghost" 
                 size="sm"
                 onClick={() => setShowOptionsEditor(!showOptionsEditor)}
+                disabled={isDisabled}
               >
                 {showOptionsEditor ? "Ocultar" : "Editar opções"}
               </Button>
@@ -204,12 +211,14 @@ export function QuestionEditor({
                         handleUpdate("options", newOptions);
                       }}
                       className="flex-1"
+                      disabled={isDisabled}
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
                       onClick={() => handleRemoveOption(index)}
+                      disabled={isDisabled}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -227,11 +236,13 @@ export function QuestionEditor({
                         handleAddOption();
                       }
                     }}
+                    disabled={isDisabled}
                   />
                   <Button
                     type="button"
                     variant="outline"
                     onClick={handleAddOption}
+                    disabled={isDisabled}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Adicionar
@@ -251,6 +262,7 @@ export function QuestionEditor({
             onChange={(e) => handleUpdate("hint", e.target.value)}
             className="w-full"
             rows={2}
+            disabled={isDisabled}
           />
         </div>
         
@@ -266,6 +278,7 @@ export function QuestionEditor({
               title="Permitir fotos"
               onClick={() => handleUpdate("allowsPhoto", !question.allowsPhoto)}
               aria-label="Permitir anexar imagens"
+              disabled={isDisabled}
             >
               <Image className="h-4 w-4" />
               <span>Imagem</span>
@@ -279,6 +292,7 @@ export function QuestionEditor({
               title="Permitir vídeos"
               onClick={() => handleUpdate("allowsVideo", !question.allowsVideo)}
               aria-label="Permitir anexar vídeos"
+              disabled={isDisabled}
             >
               <Video className="h-4 w-4" />
               <span>Vídeo</span>
@@ -292,6 +306,7 @@ export function QuestionEditor({
               title="Permitir áudios"
               onClick={() => handleUpdate("allowsAudio", !question.allowsAudio)}
               aria-label="Permitir anexar áudios"
+              disabled={isDisabled}
             >
               <Mic className="h-4 w-4" />
               <span>Áudio</span>
@@ -305,6 +320,7 @@ export function QuestionEditor({
               title="Permitir arquivos"
               onClick={() => handleUpdate("allowsFiles", !question.allowsFiles)}
               aria-label="Permitir anexar arquivos"
+              disabled={isDisabled}
             >
               <FileText className="h-4 w-4" />
               <span>Anexo</span>
@@ -326,6 +342,7 @@ export function QuestionEditor({
                 }
               }}
               className="text-red-500 hover:text-red-700"
+              disabled={isDisabled}
             >
               <Trash2 className="h-4 w-4 mr-2" />
               Excluir

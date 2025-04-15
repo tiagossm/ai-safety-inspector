@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -109,7 +110,6 @@ export function ChecklistQuestions({
         {viewMode === "flat" && (
           <FlatQuestionsList
             questions={allQuestionsWithHierarchy}
-            onAddQuestion={() => onAddQuestion(groups[0]?.id || "default")}
             onUpdateQuestion={onUpdateQuestion}
             onDeleteQuestion={onDeleteQuestion}
             enableAllMedia={enableAllMedia}

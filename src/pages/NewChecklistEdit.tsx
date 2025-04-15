@@ -22,12 +22,17 @@ export default function NewChecklistEdit() {
   const { data: checklist, isLoading, error, refetch } = useChecklistById(id || "");
   const editorContext = useChecklistEditorContext();
   
-  // Modify this function to return Promise<void> instead of Promise<boolean | void>
+  // Update handleSave to properly return Promise<void>
   const handleSave = async (): Promise<void> => {
     if (editorMode === "standard" && editorContext) {
-      // Call the context save method but don't return its result directly
-      await editorContext.handleSave();
-      // Return void explicitly by not returning anything
+      try {
+        // Call the context save method but don't check its return value
+        await editorContext.handleSave();
+        // The function implicitly returns undefined, which is compatible with void
+      } catch (error) {
+        console.error("Error saving checklist:", error);
+        // Still return nothing (void) even in case of error
+      }
     }
   };
   
