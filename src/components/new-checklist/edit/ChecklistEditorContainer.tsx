@@ -42,10 +42,7 @@ export function ChecklistEditorContainer() {
     handleAddGroup: editorContext.handleAddGroup,
     handleUpdateGroup: editorContext.handleUpdateGroup,
     handleDeleteGroup: editorContext.handleDeleteGroup,
-    handleAddQuestion: (groupId: string) => {
-      editorContext.handleAddQuestion(groupId);
-      toast.success("Nova pergunta adicionada");
-    },
+    handleAddQuestion: editorContext.handleAddQuestion,
     handleUpdateQuestion: editorContext.handleUpdateQuestion,
     handleDeleteQuestion: editorContext.handleDeleteQuestion,
     handleDragEnd: editorContext.handleDragEnd,
@@ -54,18 +51,23 @@ export function ChecklistEditorContainer() {
   };
   
   // Enhanced save handler to provide feedback
-  const handleSave = async () => {
+  const handleSave = async (): Promise<void> => {
     toast.info("Salvando checklist...", { duration: 2000 });
     try {
-      await editorContext.handleSave();
-      toast.success("Checklist salvo com sucesso!");
+      const success = await editorContext.handleSave();
+      if (success) {
+        toast.success("Checklist salvo com sucesso!");
+      } else {
+        toast.error("Erro ao salvar checklist");
+      }
     } catch (error) {
+      console.error("Error saving checklist:", error);
       toast.error("Erro ao salvar checklist");
     }
   };
   
   // Enhanced start inspection handler to provide feedback
-  const handleStartInspection = async () => {
+  const handleStartInspection = async (): Promise<void> => {
     if (!editorContext.id) {
       toast.error("É necessário salvar o checklist antes de iniciar a inspeção");
       return;
@@ -73,10 +75,22 @@ export function ChecklistEditorContainer() {
     
     toast.info("Preparando inspeção...", { duration: 2000 });
     try {
-      await editorContext.handleSave(); // Salva primeiro
-      await editorContext.handleStartInspection(); // Depois inicia a inspeção
-      toast.success("Redirecionando para a inspeção...");
+      // Salva primeiro e verifica se o salvamento foi bem sucedido
+      const saveSuccess = await editorContext.handleSave();
+      if (!saveSuccess) {
+        toast.error("Não foi possível salvar o checklist antes de iniciar a inspeção");
+        return;
+      }
+      
+      // Se o salvamento foi bem sucedido, tenta iniciar a inspeção
+      const success = await editorContext.handleStartInspection();
+      if (success) {
+        toast.success("Redirecionando para a inspeção...");
+      } else {
+        toast.error("Erro ao iniciar inspeção");
+      }
     } catch (error) {
+      console.error("Error starting inspection:", error);
       toast.error("Erro ao iniciar inspeção");
     }
   };

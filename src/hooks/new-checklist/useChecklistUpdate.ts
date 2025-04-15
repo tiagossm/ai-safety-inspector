@@ -22,18 +22,24 @@ export function useChecklistUpdate() {
       const { id, questions, groups, deletedQuestionIds, ...updateData } = params;
       console.log(`Atualizando checklist ${id} com:`, updateData);
       
-      // Fix column names to match the database
+      // Fix column names to match the database and ensure proper types
       const formattedUpdateData = {
         ...updateData,
         // Ensure we're using the correct column names for the database
-        is_template: params.is_template !== undefined ? params.is_template : updateData.isTemplate,
-        status_checklist: params.status_checklist || updateData.status,
+        is_template: typeof params.is_template !== 'undefined' ? params.is_template : 
+                     typeof updateData.isTemplate !== 'undefined' ? updateData.isTemplate : undefined,
+        // Always ensure status_checklist is a string: "active" or "inactive"
+        status_checklist: params.status_checklist || 
+                         (updateData.status === "active" || updateData.status === "inactive" ? 
+                           updateData.status : "active"),
         updated_at: new Date().toISOString()
       };
       
       // Remove frontend-only fields that don't exist in the database
       delete formattedUpdateData.isTemplate;
       delete formattedUpdateData.status;
+      
+      console.log("Dados formatados para atualização:", formattedUpdateData);
       
       // Atualizar dados principais do checklist
       const { data, error } = await supabase
@@ -60,12 +66,8 @@ export function useChecklistUpdate() {
         if (newQuestions.length > 0) {
           const questionsToInsert = newQuestions.map((q, index) => {
             const groupInfo = groups?.find(g => g.id === q.groupId);
-            const hint = groupInfo ? 
-              JSON.stringify({
-                groupId: groupInfo.id,
-                groupTitle: groupInfo.title,
-                groupIndex: groups.findIndex(g => g.id === groupInfo.id)
-              }) : null;
+            // Certifique-se de que o hint nunca é um objeto JSON serializado
+            const hint = q.hint && typeof q.hint === 'string' && !q.hint.startsWith('{') ? q.hint : "";
             
             // Ensure options is always a string array
             const options = Array.isArray(q.options) 
@@ -85,7 +87,7 @@ export function useChecklistUpdate() {
               permite_audio: q.allowsAudio,
               parent_item_id: q.parentQuestionId,
               condition_value: q.conditionValue,
-              hint
+              hint: hint // Use only user-provided hints, not metadata
             };
           });
           
@@ -102,13 +104,9 @@ export function useChecklistUpdate() {
         
         // Atualizar perguntas existentes
         for (const question of existingQuestions) {
-          const groupInfo = groups?.find(g => g.id === question.groupId);
-          const hint = groupInfo ? 
-            JSON.stringify({
-              groupId: groupInfo.id,
-              groupTitle: groupInfo.title,
-              groupIndex: groups.findIndex(g => g.id === groupInfo.id)
-            }) : question.hint;
+          // Certifique-se de que o hint nunca é um objeto JSON serializado
+          const hint = question.hint && typeof question.hint === 'string' && !question.hint.startsWith('{') ? 
+            question.hint : "";
           
           // Ensure options is always a string array
           const options = Array.isArray(question.options) 
@@ -129,7 +127,7 @@ export function useChecklistUpdate() {
               permite_audio: question.allowsAudio,
               parent_item_id: question.parentQuestionId,
               condition_value: question.conditionValue,
-              hint,
+              hint: hint, // Use only user-provided hints, not metadata
               updated_at: new Date().toISOString()
             })
             .eq("id", question.id);

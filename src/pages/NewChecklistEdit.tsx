@@ -15,18 +15,17 @@ import { ChecklistEditorContextType } from "@/contexts/ChecklistEditorContext";
 export default function NewChecklistEdit() {
   const [searchParams] = useSearchParams();
   const mode = searchParams.get("mode") || "standard";
-  const [editorMode, setEditorMode] = React.useState<"standard" | "wizard">("standard"); // Changing default to standard, removing wizard mode
+  const [editorMode, setEditorMode] = React.useState<"standard" | "wizard">("standard");
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
   
   const { data: checklist, isLoading, error, refetch } = useChecklistById(id || "");
   const editorContext = useChecklistEditorContext();
   
-  const handleSave = async () => {
+  const handleSave = async (): Promise<void> => {
     if (editorMode === "standard" && editorContext) {
-      return editorContext.handleSave();
+      await editorContext.handleSave();
     }
-    return Promise.resolve();
   };
   
   const handleAddQuestion = () => {

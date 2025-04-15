@@ -7,7 +7,6 @@ import { QuestionItem } from "@/components/new-checklist/question-editor/Questio
 
 interface FlatQuestionsListProps {
   questions: ChecklistQuestion[];
-  onAddQuestion: () => void;
   onUpdateQuestion: (question: ChecklistQuestion) => void;
   onDeleteQuestion: (questionId: string) => void;
   enableAllMedia?: boolean;
@@ -16,7 +15,6 @@ interface FlatQuestionsListProps {
 
 export function FlatQuestionsList({
   questions,
-  onAddQuestion,
   onUpdateQuestion,
   onDeleteQuestion,
   enableAllMedia = false,
@@ -29,14 +27,6 @@ export function FlatQuestionsList({
           <p className="text-muted-foreground mb-4">
             Este checklist ainda não possui perguntas
           </p>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={onAddQuestion}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Adicionar primeira pergunta
-          </Button>
         </div>
       ) : (
         <>
@@ -58,17 +48,6 @@ export function FlatQuestionsList({
                 </div>
               </div>
             ))}
-          </div>
-          <div className="flex justify-center mt-6">
-            <Button 
-              onClick={onAddQuestion}
-              size="sm"
-              variant="outline"
-              disabled={isSubmitting}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Adicionar pergunta
-            </Button>
           </div>
         </>
       )}
