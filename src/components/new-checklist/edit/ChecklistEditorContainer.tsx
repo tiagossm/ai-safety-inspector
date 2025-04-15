@@ -66,9 +66,16 @@ export function ChecklistEditorContainer() {
   
   // Enhanced start inspection handler to provide feedback
   const handleStartInspection = async () => {
+    if (!editorContext.id) {
+      toast.error("É necessário salvar o checklist antes de iniciar a inspeção");
+      return;
+    }
+    
     toast.info("Preparando inspeção...", { duration: 2000 });
     try {
-      await editorContext.handleStartInspection();
+      await editorContext.handleSave(); // Salva primeiro
+      await editorContext.handleStartInspection(); // Depois inicia a inspeção
+      toast.success("Redirecionando para a inspeção...");
     } catch (error) {
       toast.error("Erro ao iniciar inspeção");
     }

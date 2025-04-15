@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -174,30 +173,46 @@ export function useChecklistEditorContext() {
   // Action handlers
   const handleSave = useCallback(async () => {
     try {
+      setIsSubmitting(true);
       const success = await handleSubmit();
+      setIsSubmitting(false);
+      
       if (success) {
-        toast.success("Checklist salvo com sucesso!");
-        navigate("/new-checklists");
+        return true;
       }
+      return false;
     } catch (error) {
+      setIsSubmitting(false);
       handleError(error, "Erro ao salvar o checklist");
+      return false;
     }
-  }, [handleSubmit, navigate]);
+  }, [handleSubmit, setIsSubmitting]);
   
   const handleStartInspection = useCallback(async () => {
     try {
-      const success = await handleSubmit();
+      if (!id) {
+        toast.error("É preciso salvar o checklist antes de iniciar uma inspeção");
+        return false;
+      }
       
-      if (success && id) {
+      setIsSubmitting(true);
+      const success = await handleSubmit();
+      setIsSubmitting(false);
+      
+      if (success) {
         toast.success("Navegando para nova inspeção...");
         navigate(`/inspections/new?checklist=${id}`);
-      } else {
-        toast.error("É preciso salvar o checklist antes de iniciar uma inspeção");
+        return true;
       }
+      
+      toast.error("Erro ao preparar inspeção");
+      return false;
     } catch (error) {
+      setIsSubmitting(false);
       handleError(error, "Erro ao preparar inspeção");
+      return false;
     }
-  }, [handleSubmit, id, navigate]);
+  }, [handleSubmit, id, navigate, setIsSubmitting]);
 
   return {
     // State data

@@ -6,6 +6,7 @@ import { ChecklistGroupEditor } from "./ChecklistGroupEditor";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ChecklistToolbar } from "./ChecklistToolbar";
 import { ChecklistQuestion } from "@/types/newChecklist";
+import { Badge } from "@/components/ui/badge";
 
 export function ChecklistQuestionList() {
   const { 
@@ -63,7 +64,14 @@ export function ChecklistQuestionList() {
   return (
     <Card>
       <CardHeader className="border-b pb-3 flex flex-row items-center justify-between">
-        <h2 className="text-xl font-semibold">Perguntas {questions.length > 0 ? `(${questions.length})` : ""}</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-semibold">Perguntas</h2>
+          {questions.length > 0 && (
+            <Badge variant="outline">
+              {questions.length} {questions.length === 1 ? 'Pergunta' : 'Perguntas'}
+            </Badge>
+          )}
+        </div>
         <ChecklistToolbar />
       </CardHeader>
       <CardContent className="pt-6">

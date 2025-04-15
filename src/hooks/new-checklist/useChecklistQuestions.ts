@@ -36,7 +36,8 @@ export function useChecklistQuestions(
       allowsAudio: false,
       allowsFiles: false,
       order: highestOrder + 1,
-      groupId: targetGroupId
+      groupId: targetGroupId,
+      hint: "" // Garantir que a dica começa vazia
     };
     
     setQuestions(prev => [...prev, newQuestion]);
