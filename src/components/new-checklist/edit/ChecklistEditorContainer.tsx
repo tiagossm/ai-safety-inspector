@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ChecklistEditActions } from "@/components/new-checklist/edit/ChecklistEditActions";
@@ -13,6 +14,10 @@ import { toast } from "sonner";
 export function ChecklistEditorContainer() {
   const editorContext = useChecklistEditorContext();
   const navigate = useNavigate();
+  
+  if (!editorContext) {
+    return <LoadingState />;
+  }
   
   if (editorContext.isLoading) {
     return <LoadingState />;
@@ -46,19 +51,23 @@ export function ChecklistEditorContainer() {
     handleDeleteQuestion: editorContext.handleDeleteQuestion,
     handleDragEnd: editorContext.handleDragEnd,
     handleSubmit: editorContext.handleSubmit,
-    toggleAllMediaOptions: editorContext.toggleAllMediaOptions
+    toggleAllMediaOptions: editorContext.toggleAllMediaOptions,
+    id: editorContext.id,
   };
   
   // Enhanced save handler to provide feedback and navigate after success
   const handleSave = async (): Promise<void> => {
-    toast.info("Salvando checklist...", { duration: 2000 });
     try {
-      const success = await editorContext.handleSave();
-      if (success) {
-        toast.success("Checklist salvo com sucesso!", { duration: 5000 });
-        navigate("/new-checklists"); // Navigate back to checklist list after successful save
-      } else {
-        toast.error("Erro ao salvar checklist", { duration: 5000 });
+      toast.info("Salvando checklist...", { duration: 2000 });
+      
+      if (editorContext.handleSave) {
+        const success = await editorContext.handleSave();
+        if (success) {
+          toast.success("Checklist salvo com sucesso!", { duration: 5000 });
+          navigate("/new-checklists"); // Navigate back to checklist list after successful save
+        } else {
+          toast.error("Erro ao salvar checklist", { duration: 5000 });
+        }
       }
     } catch (error) {
       console.error("Error saving checklist:", error);
@@ -73,18 +82,21 @@ export function ChecklistEditorContainer() {
       return;
     }
     
-    toast.info("Preparando inspeção...", { duration: 2000 });
     try {
-      // Save first and only proceed if save was successful
-      const saveSuccess = await editorContext.handleSave();
-      if (!saveSuccess) {
-        toast.error("Não foi possível salvar o checklist antes de iniciar a inspeção", { duration: 5000 });
-        return;
-      }
+      toast.info("Preparando inspeção...", { duration: 2000 });
       
-      // Navigate with checklist ID as query parameter
-      toast.success("Redirecionando para a inspeção...", { duration: 2000 });
-      navigate(`/inspections/new?checklist=${editorContext.id}`);
+      // Save first and only proceed if save was successful
+      if (editorContext.handleSave) {
+        const saveSuccess = await editorContext.handleSave();
+        if (!saveSuccess) {
+          toast.error("Não foi possível salvar o checklist antes de iniciar a inspeção", { duration: 5000 });
+          return;
+        }
+        
+        // Navigate with checklist ID as query parameter
+        toast.success("Redirecionando para a inspeção...", { duration: 2000 });
+        navigate(`/inspections/new?checklist=${editorContext.id}`);
+      }
     } catch (error) {
       console.error("Error starting inspection:", error);
       toast.error(`Erro ao iniciar inspeção: ${error instanceof Error ? error.message : "Erro desconhecido"}`, { duration: 5000 });
@@ -100,7 +112,9 @@ export function ChecklistEditorContainer() {
           onRefresh={() => {
             if (editorContext.id) {
               toast.info("Recarregando dados...", { duration: 2000 });
-              editorContext.refetch();
+              if (editorContext.refetch) {
+                editorContext.refetch();
+              }
             }
           }}
           onStartInspection={handleStartInspection}

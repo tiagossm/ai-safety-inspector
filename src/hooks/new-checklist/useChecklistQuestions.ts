@@ -28,11 +28,12 @@ export function useChecklistQuestions(
       allowsPhoto: enableAllMedia,
       allowsVideo: enableAllMedia,
       allowsAudio: enableAllMedia,
-      allowsFiles: enableAllMedia, // Add this line
+      allowsFiles: enableAllMedia, // Add allowsFiles field
       groupId
     };
     
     setQuestions(prevQuestions => [...prevQuestions, newQuestion]);
+    toast.success("Pergunta adicionada", { duration: 5000 });
     return newId;
   }, [questions, setQuestions, enableAllMedia]);
 
@@ -58,7 +59,7 @@ export function useChecklistQuestions(
     toast.success("Pergunta removida", { duration: 5000 });
   }, [setQuestions, setDeletedQuestionIds]);
 
-  // Add toggle all media options function
+  // Updated toggle all media options function to include allowsFiles
   const toggleAllMediaOptions = useCallback((enabled: boolean) => {
     setEnableAllMedia(enabled);
     
@@ -68,9 +69,17 @@ export function useChecklistQuestions(
         ...question,
         allowsPhoto: enabled,
         allowsVideo: enabled,
-        allowsAudio: enabled
+        allowsAudio: enabled,
+        allowsFiles: enabled // Added allowsFiles
       }))
     );
+    
+    // Add toast notification
+    if (enabled) {
+      toast.success("Todos os recursos de mídia ativados", { duration: 5000 });
+    } else {
+      toast.success("Todos os recursos de mídia desativados", { duration: 5000 });
+    }
   }, [setQuestions]);
 
   return {

@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
@@ -20,7 +19,7 @@ const transformChecklistData = (data: any): ChecklistWithStats => {
     title: data.title,
     description: data.description,
     isTemplate: data.is_template,
-    status: data.status || data.status_checklist,
+    status: data.status_checklist === 'inativo' ? 'inactive' : 'active',
     category: data.category,
     responsibleId: data.responsible_id,
     companyId: data.company_id,
@@ -30,10 +29,10 @@ const transformChecklistData = (data: any): ChecklistWithStats => {
     dueDate: data.due_date,
     isSubChecklist: data.is_sub_checklist,
     origin: data.origin,
-    totalQuestions: 0, // Default value
+    totalQuestions: 0, // Default value, will update after fetching questions
     completedQuestions: 0, // Default value
-    questions: [], // Will be populated separately if needed
-    groups: [] // Will be populated separately if needed
+    questions: [], // Will be populated separately
+    groups: [] // Will be populated separately
   };
 };
 
@@ -47,14 +46,14 @@ const transformQuestionData = (q: any): ChecklistQuestion => ({
   allowsPhoto: q.permite_foto || false,
   allowsVideo: q.permite_video || false,
   allowsAudio: q.permite_audio || false,
-  allowsFiles: false,
+  allowsFiles: q.permite_files || false, // Added allowsFiles field
   order: q.ordem,
   options: q.opcoes,
   hint: q.hint,
-  groupId: null,
+  groupId: null, // We'll set this later when organizing into groups
   parentQuestionId: q.parent_item_id,
-  hasSubChecklist: q.has_subchecklist || false,
-  subChecklistId: q.sub_checklist_id,
+  hasSubChecklist: false, // No more subchecklist support
+  subChecklistId: null, // No more subchecklist support
   conditionValue: q.condition_value
 });
 
@@ -87,7 +86,7 @@ export function useChecklistById(id: string) {
         throw checklistError;
       }
 
-      // Then fetch associated questions
+      // Then fetch associated questions with explicit selection to ensure all fields
       const { data: questionsData, error: questionsError } = await supabase
         .from("checklist_itens")
         .select("*")
@@ -99,16 +98,69 @@ export function useChecklistById(id: string) {
         // Not throwing here, we'll just have an empty questions array
       }
 
+      console.log(`Fetched ${questionsData?.length || 0} questions for checklist ${id}`);
+
       // Transform the checklist data
       const transformed = transformChecklistData(checklistData);
       
-      // Transform and assign questions
-      transformed.questions = questionsData 
-        ? questionsData.map(transformQuestionData)
-        : [];
+      // Check for parent-child relationship among questions
+      const questionsById = new Map();
+      const transformedQuestions = (questionsData || []).map(transformQuestionData);
       
-      // Assign total questions count
-      transformed.totalQuestions = transformed.questions.length;
+      transformedQuestions.forEach(q => {
+        questionsById.set(q.id, q);
+      });
+      
+      // Set up default group for questions
+      const defaultGroupId = "default";
+      const defaultGroup: ChecklistGroup = {
+        id: defaultGroupId,
+        title: "Geral",
+        order: 0
+      };
+      
+      // Group questions by looking for groupId hints in the data
+      const groupsMap = new Map<string, ChecklistGroup>();
+      groupsMap.set(defaultGroupId, defaultGroup);
+      
+      // Transform and organize questions
+      const organizedQuestions = transformedQuestions.map(question => {
+        // Set default groupId if none exists
+        question.groupId = question.groupId || defaultGroupId;
+        
+        // Extract group info from hint if possible
+        if (question.hint && question.hint.startsWith('{') && question.hint.includes('groupId')) {
+          try {
+            const groupInfo = JSON.parse(question.hint);
+            if (groupInfo.groupId && groupInfo.groupTitle) {
+              if (!groupsMap.has(groupInfo.groupId)) {
+                groupsMap.set(groupInfo.groupId, {
+                  id: groupInfo.groupId,
+                  title: groupInfo.groupTitle,
+                  order: groupInfo.groupIndex || 0
+                });
+              }
+              question.groupId = groupInfo.groupId;
+              // Clean up the hint by removing the JSON metadata
+              question.hint = "";
+            }
+          } catch (e) {
+            // Not valid JSON, keep hint as is
+          }
+        }
+        
+        return question;
+      });
+      
+      // Convert groups map to array
+      const groups = Array.from(groupsMap.values()).sort((a, b) => a.order - b.order);
+      
+      // Assign transformed questions and groups
+      transformed.questions = organizedQuestions;
+      transformed.groups = groups;
+      transformed.totalQuestions = organizedQuestions.length;
+      
+      console.log(`Returning checklist with ${transformed.questions.length} questions and ${transformed.groups.length} groups`);
       
       return transformed;
     },

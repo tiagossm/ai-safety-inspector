@@ -32,13 +32,26 @@ export function ChecklistQuestionList() {
 
   // Reference to scroll to the newly added question
   const questionsEndRef = useRef<HTMLDivElement>(null);
-
+  
   // State for "all questions required" toggle
   const [allQuestionsRequired, setAllQuestionsRequired] = React.useState(false);
+  
+  // Effect to scroll to newly added question
+  const [lastQuestionCount, setLastQuestionCount] = React.useState(questions.length);
+  
+  useEffect(() => {
+    // If questions count increased, scroll to the new question
+    if (questions.length > lastQuestionCount) {
+      setTimeout(() => {
+        questionsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    }
+    setLastQuestionCount(questions.length);
+  }, [questions.length, lastQuestionCount]);
 
   // Handler to add a question to the default group
   const handleAddDefaultQuestion = () => {
-    handleAddQuestion("default");
+    const newQuestionId = handleAddQuestion("default");
     
     // Scroll to the bottom after adding a new question
     setTimeout(() => {
@@ -128,7 +141,7 @@ export function ChecklistQuestionList() {
               isSubmitting={isSubmitting}
               onAddQuestion={handleAddDefaultQuestion}
             />
-            <div ref={questionsEndRef} />
+            <div ref={questionsEndRef} /> {/* Reference element for scrolling */}
           </div>
         ) : (
           <div>
@@ -177,7 +190,7 @@ export function ChecklistQuestionList() {
               enableAllMedia={enableAllMedia}
               isSubmitting={isSubmitting}
             />
-            <div ref={questionsEndRef} />
+            <div ref={questionsEndRef} /> {/* Reference element for scrolling */}
           </div>
         )}
       </CardContent>

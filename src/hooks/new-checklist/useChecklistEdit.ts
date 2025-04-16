@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
@@ -6,6 +7,7 @@ import { useChecklistQuestions } from "./useChecklistQuestions";
 import { useChecklistGroups } from "./useChecklistGroups";
 import { useChecklistSubmit } from "./useChecklistSubmit";
 import { useChecklistValidation } from "./useChecklistValidation";
+import { toast } from "sonner";
 
 export function useChecklistEdit(checklist: any, id: string | undefined) {
   const navigate = useNavigate();
@@ -39,7 +41,7 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
 
   const { validateChecklist } = useChecklistValidation();
 
-  const { handleSubmit } = useChecklistSubmit(
+  const { handleSubmit, isSubmitting } = useChecklistSubmit(
     id,
     state.title,
     state.description,
@@ -51,16 +53,22 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
     state.deletedQuestionIds
   );
 
+  // Improved useEffect to ensure proper data loading from the checklist
   useEffect(() => {
     if (checklist) {
+      console.log("Setting initial checklist data:", checklist);
       state.setTitle(checklist.title || "");
       state.setDescription(checklist.description || "");
       state.setCategory(checklist.category || "");
       state.setIsTemplate(checklist.isTemplate || false);
       state.setStatus(checklist.status === "inactive" ? "inactive" : "active");
 
-      if (checklist.questions && checklist.questions.length > 0) {
-        if (checklist.groups && checklist.groups.length > 0) {
+      // Handle questions and groups properly
+      if (checklist.questions && Array.isArray(checklist.questions) && checklist.questions.length > 0) {
+        console.log(`Checklist has ${checklist.questions.length} questions`);
+        
+        if (checklist.groups && Array.isArray(checklist.groups) && checklist.groups.length > 0) {
+          console.log(`Checklist has ${checklist.groups.length} groups`);
           state.setGroups(checklist.groups);
           const questionsWithValidGroups = checklist.questions.map((q: any) => ({
             ...q,
@@ -81,6 +89,7 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
           state.setQuestions(questionsWithDefaultGroup);
         }
       } else {
+        console.log("No questions found in checklist, creating default");
         const defaultGroup: ChecklistGroup = {
           id: "default",
           title: "Geral",
@@ -104,6 +113,54 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
       }
     }
   }, [checklist]);
+
+  // Save handler with proper navigation
+  const handleSave = async () => {
+    if (isSubmitting) return false;
+    
+    try {
+      toast.info("Salvando checklist...", { duration: 2000 });
+      const success = await handleSubmit();
+      
+      if (success) {
+        toast.success("Checklist salvo com sucesso!", { duration: 5000 });
+        navigate("/new-checklists"); // Navigate to checklist list on success
+        return true;
+      } else {
+        toast.error("Erro ao salvar checklist", { duration: 5000 });
+        return false;
+      }
+    } catch (error) {
+      console.error("Error saving checklist:", error);
+      toast.error(`Erro ao salvar checklist: ${error instanceof Error ? error.message : "Erro desconhecido"}`, { duration: 5000 });
+      return false;
+    }
+  };
+
+  // Start Inspection handler with proper navigation
+  const handleStartInspection = async () => {
+    try {
+      if (!id) {
+        toast.error("É necessário salvar o checklist antes de iniciar a inspeção", { duration: 5000 });
+        return;
+      }
+      
+      toast.info("Preparando inspeção...", { duration: 2000 });
+      
+      // Save checklist first
+      const saveSuccess = await handleSubmit();
+      if (!saveSuccess) {
+        toast.error("Não foi possível salvar o checklist antes de iniciar a inspeção", { duration: 5000 });
+        return;
+      }
+      
+      toast.success("Redirecionando para a inspeção...", { duration: 2000 });
+      navigate(`/inspections/new?checklist=${id}`);
+    } catch (error) {
+      console.error("Error starting inspection:", error);
+      toast.error(`Erro ao iniciar inspeção: ${error instanceof Error ? error.message : "Erro desconhecido"}`, { duration: 5000 });
+    }
+  };
 
   const questionsByGroup = useMemo(() => {
     const result = new Map<string, ChecklistQuestion[]>();
@@ -153,7 +210,10 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
     handleUpdateQuestion,
     handleDeleteQuestion,
     handleDragEnd,
-    handleSubmit
+    handleSubmit,
+    handleSave,
+    handleStartInspection,
+    isSubmitting
   };
 }
 

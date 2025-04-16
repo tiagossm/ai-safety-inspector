@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
@@ -28,10 +29,9 @@ export function useChecklistUpdate() {
         is_template: typeof params.is_template !== 'undefined' ? params.is_template : 
                      typeof updateData.isTemplate !== 'undefined' ? updateData.isTemplate : undefined,
         // Map status to status_checklist with the exact values expected by the database
-        status_checklist: params.status === "active" ? "ativo" : 
-                         params.status === "inactive" ? "inativo" : 
-                         updateData.status === "active" ? "ativo" : 
-                         updateData.status === "inactive" ? "inativo" : "ativo",
+        status_checklist: params.status_checklist || 
+                         (params.status === "active" || updateData.status === "active") ? "ativo" : 
+                         (params.status === "inactive" || updateData.status === "inactive") ? "inativo" : "ativo",
         updated_at: new Date().toISOString()
       };
       
@@ -95,6 +95,7 @@ export function useChecklistUpdate() {
               permite_foto: q.allowsPhoto,
               permite_video: q.allowsVideo,
               permite_audio: q.allowsAudio,
+              permite_files: q.allowsFiles, // Added allowsFiles field
               parent_item_id: q.parentQuestionId,
               condition_value: q.conditionValue,
               hint: hint // Use only user-provided hints, not metadata
@@ -145,6 +146,7 @@ export function useChecklistUpdate() {
               permite_foto: question.allowsPhoto,
               permite_video: question.allowsVideo,
               permite_audio: question.allowsAudio,
+              permite_files: question.allowsFiles, // Added allowsFiles field
               parent_item_id: question.parentQuestionId,
               condition_value: question.conditionValue,
               hint: hint, // Use only user-provided hints, not metadata
@@ -179,7 +181,7 @@ export function useChecklistUpdate() {
     onSuccess: (data) => {
       toast.success("Checklist atualizado com sucesso", { duration: 5000 });
       queryClient.invalidateQueries({ queryKey: ["new-checklists"] });
-      queryClient.invalidateQueries({ queryKey: ["new-checklist", data?.id] });
+      queryClient.invalidateQueries({ queryKey: ["checklists", data?.id] });
     },
     onError: (error: any) => {
       console.error("Erro na mutação:", error);

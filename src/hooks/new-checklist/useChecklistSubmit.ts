@@ -1,10 +1,25 @@
-
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { useChecklistUpdate } from "@/hooks/new-checklist/useChecklistUpdate";
 import { handleError } from "@/utils/errorHandling";
 import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { useChecklistValidation } from "./useChecklistValidation";
+
+const cleanHintMetadata = (hint: string | undefined): string | undefined => {
+  if (!hint) return undefined;
+  
+  if (typeof hint === 'string' && hint.includes('{') && hint.includes('}')) {
+    try {
+      const parsed = JSON.parse(hint);
+      if (parsed && (parsed.groupId || parsed.groupTitle || parsed.groupIndex)) {
+        return "";
+      }
+    } catch (e) {
+    }
+  }
+  
+  return hint;
+};
 
 export function useChecklistSubmit(
   id: string | undefined,
@@ -31,21 +46,29 @@ export function useChecklistSubmit(
         return false;
       }
       
-      const validQuestions = questions.filter(q => q.text.trim());
+      const validQuestions = questions
+        .filter(q => q.text.trim())
+        .map(q => ({
+          ...q,
+          hint: cleanHintMetadata(q.hint)
+        }));
       
-      // Make sure to use is_template here since that's the actual column name in the database
-      // This matches what is used in useChecklistUpdate.ts
+      const dbStatus = status === "inactive" ? "inativo" : "ativo";
+      
       const updatedChecklist = {
         id,
         title,
         description,
         category,
-        // Use is_template which matches the database column name
         is_template: isTemplate,
-        // Map status to the values expected by the database
-        status_checklist: status === "inactive" ? "inativo" : "ativo", 
-        status: status // Keep this for internal use in the app
+        status_checklist: dbStatus, 
+        status: status
       };
+      
+      console.log("Submitting checklist with data:", {
+        ...updatedChecklist,
+        questions: validQuestions.length
+      });
       
       await updateChecklist.mutateAsync({
         ...updatedChecklist,
@@ -56,7 +79,6 @@ export function useChecklistSubmit(
       
       return true;
     } catch (error) {
-      // Identify the specific database constraint error and show a more helpful message
       if (error?.message?.includes("violates check constraint") && 
           error?.message?.includes("checklists_status_checklist_check")) {
         toast.error("Erro ao salvar: O status do checklist é inválido. Por favor, selecione 'Ativo' ou 'Inativo'.", { duration: 5000 });
