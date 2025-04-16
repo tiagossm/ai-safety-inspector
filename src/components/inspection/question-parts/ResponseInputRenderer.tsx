@@ -1,5 +1,5 @@
 
-import React, { memo } from "react";
+import React, { memo, useEffect } from "react";
 import { YesNoInput } from "../question-inputs/YesNoInput";
 import { TextInput } from "../question-inputs/TextInput";
 import { NumberInput } from "../question-inputs/NumberInput";
@@ -21,7 +21,8 @@ export const ResponseInputRenderer = memo(function ResponseInputRenderer({
 }: ResponseInputRendererProps) {
   // Normalization function to handle different property naming schemes
   const getProperty = (propCamelCase: string, propSnakeCase: string): boolean => {
-    return question[propCamelCase] === true || question[propSnakeCase] === true;
+    const value = question[propCamelCase] === true || question[propSnakeCase] === true;
+    return value;
   };
   
   // Get media capabilities
@@ -47,26 +48,29 @@ export const ResponseInputRenderer = memo(function ResponseInputRenderer({
     } else if (lowerType.includes('foto') || lowerType.includes('photo')) {
       return 'photo';
     } else {
-      return lowerType;
+      return lowerType || "unknown";
     }
   })();
   
-  // Log de debug
-  console.log(`Rendering input for question ${question.id}, type: ${responseType}, media: `, {
-    allowsPhoto, allowsVideo, allowsAudio, allowsFiles,
-    rawProps: {
-      allowsPhoto: question.allowsPhoto, 
-      permite_foto: question.permite_foto,
-      allowsFiles: question.allowsFiles,
-      permite_files: question.permite_files
-    }
-  });
+  useEffect(() => {
+    // Log de debug
+    console.log(`Rendering input for question ${question.id}, type: ${responseType}, media: `, {
+      allowsPhoto, allowsVideo, allowsAudio, allowsFiles,
+      rawProps: {
+        allowsPhoto: question.allowsPhoto, 
+        permite_foto: question.permite_foto,
+        allowsFiles: question.allowsFiles,
+        permite_files: question.permite_files
+      }
+    });
+  }, [question.id, responseType, allowsPhoto, allowsVideo, allowsAudio, allowsFiles, question.allowsPhoto, question.permite_foto, question.allowsFiles, question.permite_files]);
   
   switch (responseType) {
     case "yes_no":
       return <YesNoInput value={response?.value} onChange={onResponseChange} />;
       
     case "numeric":
+    case "number":
       return <NumberInput value={response?.value} onChange={onResponseChange} />;
       
     case "text":
@@ -110,6 +114,6 @@ export const ResponseInputRenderer = memo(function ResponseInputRenderer({
         );
       }
       
-      return <p className="text-sm text-muted-foreground mt-2">Tipo de resposta não suportado: {responseType}</p>;
+      return <p className="text-sm text-muted-foreground mt-2">Tipo de resposta não suportado: {responseType || "desconhecido"}</p>;
   }
 });

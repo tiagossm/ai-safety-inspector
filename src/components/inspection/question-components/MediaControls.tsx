@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { FileText, Image, Mic, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -19,7 +19,9 @@ export function MediaControls({
   handleAddMedia
 }: MediaControlsProps) {
   // Log para Debug
-  console.log("MediaControls props:", { allowsPhoto, allowsVideo, allowsAudio, allowsFiles });
+  useEffect(() => {
+    console.log("MediaControls props:", { allowsPhoto, allowsVideo, allowsAudio, allowsFiles });
+  }, [allowsPhoto, allowsVideo, allowsAudio, allowsFiles]);
   
   // Se não houver nenhuma opção de mídia habilitada, não renderiza nada
   if (!allowsPhoto && !allowsVideo && !allowsAudio && !allowsFiles) {

@@ -103,6 +103,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
 
       if (!checklistItems || checklistItems.length === 0) {
         console.warn("No checklist items found for this inspection");
+        toast.error("Nenhuma pergunta encontrada para esta inspeção");
       }
 
       const DEFAULT_GROUP = { id: "default-group", title: "Geral", order: 0 };
@@ -115,34 +116,35 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         let hint = null;
 
         try {
+          // Parse hint se for uma string
           if (typeof item.hint === "string" && item.hint) {
-            hint = JSON.parse(item.hint);
-            if (hint?.groupId && hint?.groupTitle) {
-              groupId = hint.groupId;
-              if (!groupsMap.has(groupId)) {
-                groupsMap.set(groupId, {
-                  id: groupId,
-                  title: hint.groupTitle,
-                  order: hint.groupIndex || 0,
-                });
-              }
+            try {
+              hint = JSON.parse(item.hint);
+            } catch (e) {
+              hint = { text: item.hint };
+              console.warn(`Failed to parse hint as JSON for item ${item.id}:`, e);
             }
           } else if (item.hint && typeof item.hint === "object") {
             hint = item.hint;
-            if (hint.groupId && hint.groupTitle) {
-              groupId = hint.groupId;
-              if (!groupsMap.has(groupId)) {
-                groupsMap.set(groupId, {
-                  id: groupId,
-                  title: hint.groupTitle,
-                  order: hint.groupIndex || 0,
-                });
-              }
+          }
+
+          // Extrai informações do grupo do hint
+          if (hint?.groupId && hint?.groupTitle) {
+            groupId = hint.groupId;
+            if (!groupsMap.has(groupId)) {
+              groupsMap.set(groupId, {
+                id: groupId,
+                title: hint.groupTitle,
+                order: hint.groupIndex || 0,
+              });
             }
           }
         } catch (error) {
-          console.error("Error parsing hint for item:", item.id, error);
+          console.error("Error processing hint for item:", item.id, error);
         }
+
+        // Debug dos dados do item
+        console.log(`Processing question ${item.id}: groupId=${groupId}, responseType=${item.tipo_resposta}`);
 
         return {
           id: item.id,
@@ -249,6 +251,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
       console.error("Erro ao buscar dados da inspeção:", err);
       setError(err.message || "Erro ao carregar inspeção");
       setDetailedError(JSON.stringify(err, null, 2));
+      toast.error(`Erro ao carregar inspeção: ${err.message || "Erro desconhecido"}`);
     } finally {
       setLoading(false);
     }
