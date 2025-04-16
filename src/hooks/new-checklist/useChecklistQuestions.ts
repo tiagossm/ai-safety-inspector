@@ -28,6 +28,7 @@ export function useChecklistQuestions(
       allowsPhoto: enableAllMedia,
       allowsVideo: enableAllMedia,
       allowsAudio: enableAllMedia,
+      allowsFiles: enableAllMedia, // Add this line
       groupId
     };
     
