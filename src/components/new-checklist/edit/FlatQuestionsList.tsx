@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -6,21 +5,21 @@ import { ChecklistQuestion } from "@/types/newChecklist";
 import { QuestionItem } from "@/components/new-checklist/question-editor/QuestionItem";
 
 interface FlatQuestionsListProps {
-  questions: ChecklistQuestion[];
-  onUpdateQuestion: (question: ChecklistQuestion) => void;
+  questions: any[];
+  onUpdateQuestion: (question: any) => void;
   onDeleteQuestion: (questionId: string) => void;
-  onAddQuestion?: () => void; // Make this prop optional
   enableAllMedia?: boolean;
   isSubmitting?: boolean;
+  onAddQuestion?: () => void; // Add this prop to pass the add question handler
 }
 
 export function FlatQuestionsList({
   questions,
   onUpdateQuestion,
   onDeleteQuestion,
-  onAddQuestion, // Add this prop to the component
   enableAllMedia = false,
-  isSubmitting = false
+  isSubmitting = false,
+  onAddQuestion
 }: FlatQuestionsListProps) {
   return (
     <div className="space-y-4">
@@ -62,7 +61,6 @@ export function FlatQuestionsList({
             ))}
           </div>
           
-          {/* Add button at the bottom if handler is provided */}
           {onAddQuestion && (
             <Button
               variant="outline"

@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
@@ -66,9 +65,19 @@ export function useChecklistUpdate() {
         // Inserir novas perguntas
         if (newQuestions.length > 0) {
           const questionsToInsert = newQuestions.map((q, index) => {
-            const groupInfo = groups?.find(g => g.id === q.groupId);
-            // Certifique-se de que o hint nunca é um objeto JSON serializado
-            const hint = q.hint && typeof q.hint === 'string' && !q.hint.startsWith('{') ? q.hint : "";
+            // Remove any JSON metadata from the hint field - only use plain text hints
+            let hint = q.hint || "";
+            if (typeof hint === 'string' && hint.includes('{') && hint.includes('}')) {
+              try {
+                const parsed = JSON.parse(hint);
+                // If it parses successfully, it's likely metadata - set to empty string
+                if (parsed && (parsed.groupId || parsed.groupTitle || parsed.groupIndex)) {
+                  hint = "";
+                }
+              } catch (e) {
+                // If it doesn't parse, it's probably just text with braces - keep it
+              }
+            }
             
             // Ensure options is always a string array
             const options = Array.isArray(q.options) 
@@ -105,9 +114,19 @@ export function useChecklistUpdate() {
         
         // Atualizar perguntas existentes
         for (const question of existingQuestions) {
-          // Certifique-se de que o hint nunca é um objeto JSON serializado
-          const hint = question.hint && typeof question.hint === 'string' && !question.hint.startsWith('{') ? 
-            question.hint : "";
+          // Clean up hint field - remove JSON metadata
+          let hint = question.hint || "";
+          if (typeof hint === 'string' && hint.includes('{') && hint.includes('}')) {
+            try {
+              const parsed = JSON.parse(hint);
+              // If it parses successfully, it's likely metadata - set to empty string
+              if (parsed && (parsed.groupId || parsed.groupTitle || parsed.groupIndex)) {
+                hint = "";
+              }
+            } catch (e) {
+              // If it doesn't parse, it's probably just text with braces - keep it
+            }
+          }
           
           // Ensure options is always a string array
           const options = Array.isArray(question.options) 
@@ -158,13 +177,13 @@ export function useChecklistUpdate() {
       return data;
     },
     onSuccess: (data) => {
-      toast.success("Checklist atualizado com sucesso");
+      toast.success("Checklist atualizado com sucesso", { duration: 5000 });
       queryClient.invalidateQueries({ queryKey: ["new-checklists"] });
       queryClient.invalidateQueries({ queryKey: ["new-checklist", data?.id] });
     },
     onError: (error: any) => {
       console.error("Erro na mutação:", error);
-      toast.error(`Erro ao atualizar checklist: ${error.message || "Erro desconhecido"}`);
+      toast.error(`Erro ao atualizar checklist: ${error.message || "Erro desconhecido"}`, { duration: 5000 });
     }
   });
 }

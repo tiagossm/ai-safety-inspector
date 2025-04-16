@@ -94,7 +94,7 @@ export function ChecklistQuestions({
   return (
     <Card>
       <CardHeader className="border-b pb-3 flex flex-row items-center justify-between">
-        <h2 className="text-xl font-semibold">Perguntas {questions.length > 0 ? `(${questions.length})` : ""}</h2>
+        <h2 className="text-xl font-semibold">Perguntas</h2>
         <Tabs 
           value={viewMode} 
           onValueChange={(value) => onViewModeChange(value as "flat" | "grouped")}

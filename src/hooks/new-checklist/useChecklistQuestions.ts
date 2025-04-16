@@ -10,72 +10,65 @@ export function useChecklistQuestions(
   deletedQuestionIds: string[],
   setDeletedQuestionIds: React.Dispatch<React.SetStateAction<string[]>>
 ) {
+  const [enableAllMedia, setEnableAllMedia] = useState(false);
+
   const handleAddQuestion = useCallback((groupId: string) => {
-    if (!groupId && groups.length === 0) {
-      toast.error("É preciso criar pelo menos um grupo antes de adicionar perguntas");
-      return;
-    }
-    
-    const targetGroupId = groupId || groups[0].id;
-    
-    // Find the highest order in this group
-    const groupQuestions = questions.filter(q => q.groupId === targetGroupId);
-    const highestOrder = groupQuestions.length > 0 
-      ? Math.max(...groupQuestions.map(q => q.order))
-      : -1;
-    
+    const newId = `new-${Date.now()}`;
+    const order = questions.length > 0 
+      ? Math.max(...questions.map(q => q.order)) + 1 
+      : 0;
+
     const newQuestion: ChecklistQuestion = {
-      id: `new-${Date.now()}`,
+      id: newId,
       text: "",
       responseType: "yes_no",
       isRequired: true,
-      options: [],
+      order,
       weight: 1,
-      allowsPhoto: false,
-      allowsVideo: false,
-      allowsAudio: false,
-      allowsFiles: false,
-      order: highestOrder + 1,
-      groupId: targetGroupId,
-      hint: "" // Garantir que a dica começa vazia
+      allowsPhoto: enableAllMedia,
+      allowsVideo: enableAllMedia,
+      allowsAudio: enableAllMedia,
+      groupId
     };
     
-    setQuestions(prev => [...prev, newQuestion]);
-    toast.success("Nova pergunta adicionada");
-  }, [questions, setQuestions, groups]);
+    setQuestions(prevQuestions => [...prevQuestions, newQuestion]);
+    return newId;
+  }, [questions, setQuestions, enableAllMedia]);
 
   const handleUpdateQuestion = useCallback((updatedQuestion: ChecklistQuestion) => {
-    setQuestions(prev => prev.map(q => 
-      q.id === updatedQuestion.id ? updatedQuestion : q
-    ));
+    setQuestions(prevQuestions => 
+      prevQuestions.map(q => 
+        q.id === updatedQuestion.id ? updatedQuestion : q
+      )
+    );
   }, [setQuestions]);
 
   const handleDeleteQuestion = useCallback((questionId: string) => {
-    // If this is a new question (not yet in the database), just remove it
+    // If it's a new question (not yet saved to DB), just remove it
     if (questionId.startsWith('new-')) {
-      setQuestions(prev => prev.filter(q => q.id !== questionId));
-      toast.success("Pergunta removida");
+      setQuestions(prevQuestions => prevQuestions.filter(q => q.id !== questionId));
+      toast.success("Pergunta removida", { duration: 5000 });
       return;
     }
     
     // For existing questions, mark for deletion
     setDeletedQuestionIds(prev => [...prev, questionId]);
-    setQuestions(prev => prev.filter(q => q.id !== questionId));
-    toast.success("Pergunta marcada para exclusão");
+    setQuestions(prevQuestions => prevQuestions.filter(q => q.id !== questionId));
+    toast.success("Pergunta removida", { duration: 5000 });
   }, [setQuestions, setDeletedQuestionIds]);
 
-  const toggleAllMediaOptions = useCallback((enabled = true) => {
-    setQuestions(prev => prev.map(question => ({
-      ...question,
-      allowsPhoto: enabled,
-      allowsVideo: enabled,
-      allowsAudio: enabled,
-      allowsFiles: enabled
-    })));
+  // Add toggle all media options function
+  const toggleAllMediaOptions = useCallback((enabled: boolean) => {
+    setEnableAllMedia(enabled);
     
-    toast.success(enabled 
-      ? "Opções de mídia ativadas para todas as perguntas" 
-      : "Opções de mídia desativadas para todas as perguntas"
+    // Update all questions to enable/disable media options
+    setQuestions(prevQuestions => 
+      prevQuestions.map(question => ({
+        ...question,
+        allowsPhoto: enabled,
+        allowsVideo: enabled,
+        allowsAudio: enabled
+      }))
     );
   }, [setQuestions]);
 
@@ -83,6 +76,7 @@ export function useChecklistQuestions(
     handleAddQuestion,
     handleUpdateQuestion,
     handleDeleteQuestion,
-    toggleAllMediaOptions
+    toggleAllMediaOptions,
+    enableAllMedia
   };
 }
