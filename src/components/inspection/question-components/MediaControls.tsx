@@ -18,13 +18,19 @@ export function MediaControls({
   allowsFiles,
   handleAddMedia
 }: MediaControlsProps) {
-  // Log para Debug
+  // Debug logging
   useEffect(() => {
-    console.log("MediaControls props:", { allowsPhoto, allowsVideo, allowsAudio, allowsFiles });
+    console.log("MediaControls rendered with props:", { 
+      allowsPhoto, 
+      allowsVideo, 
+      allowsAudio, 
+      allowsFiles 
+    });
   }, [allowsPhoto, allowsVideo, allowsAudio, allowsFiles]);
   
-  // Se não houver nenhuma opção de mídia habilitada, não renderiza nada
+  // If no media options are enabled, don't render anything
   if (!allowsPhoto && !allowsVideo && !allowsAudio && !allowsFiles) {
+    console.log("No media types allowed, hiding media controls");
     return null;
   }
 

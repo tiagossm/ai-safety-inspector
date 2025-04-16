@@ -3,30 +3,34 @@ import { useCallback } from "react";
 
 export function useQuestionsManagement(questions: any[], responses: Record<string, any>) {
   const getFilteredQuestions = useCallback((groupId: string | null) => {
+    // Log initial state for debugging
+    console.log(`Filtering questions for group ${groupId}. Total questions available: ${questions?.length || 0}`);
+    
+    // If no groupId is provided, return empty array with a warning
     if (!groupId) {
       console.warn("No groupId provided for filtering questions");
       return [];
     }
     
-    console.log(`Filtering questions for group ${groupId}. Total questions: ${questions.length}`);
-    
-    // Se não há perguntas, retorna array vazio
+    // If no questions, return empty array
     if (!questions || questions.length === 0) {
       console.warn(`No questions available to filter for group ${groupId}`);
       return [];
     }
     
-    // Filtrar questões por ID do grupo, tratando valores nulos ou indefinidos
-    const filtered = questions.filter(q => {
-      // Garantir que temos um valor de groupId para comparação
-      const questionGroupId = q.groupId || "default-group";
+    // First, ensure all questions have a valid groupId
+    // If a question doesn't have a groupId, assign it to 'default-group'
+    const normalizedQuestions = questions.map(q => ({
+      ...q,
+      groupId: q.groupId || "default-group"
+    }));
+    
+    // Now filter questions by groupId
+    const filtered = normalizedQuestions.filter(q => {
+      // Log for debugging individual questions 
+      console.log(`Question ${q.id}: checking if groupId "${q.groupId}" matches "${groupId}"`);
       
-      // Log para debug
-      console.log(`Question ${q.id} has groupId: ${questionGroupId}, comparing with: ${groupId}`);
-      
-      return questionGroupId === groupId || 
-             (questionGroupId === null && groupId === "default-group") ||
-             (questionGroupId === undefined && groupId === "default-group");
+      return q.groupId === groupId;
     });
     
     console.log(`Found ${filtered.length} questions for group ${groupId} from total ${questions.length}`);
@@ -41,10 +45,13 @@ export function useQuestionsManagement(questions: any[], responses: Record<strin
       return { percentage: 0, answered: 0, total: 0 };
     }
 
-    const answered = Object.keys(responses || {}).filter(questionId => 
-      responses[questionId]?.value !== undefined && 
-      responses[questionId]?.value !== null
-    ).length;
+    // Count answered questions
+    const answered = Object.keys(responses || {}).filter(questionId => {
+      const response = responses[questionId];
+      const hasValue = response?.value !== undefined && response?.value !== null;
+      console.log(`Question ${questionId}: has value? ${hasValue}`);
+      return hasValue;
+    }).length;
 
     const percentage = Math.round((answered / totalQuestions) * 100);
     

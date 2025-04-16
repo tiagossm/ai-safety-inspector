@@ -5,6 +5,7 @@ import { TextInput } from "../question-inputs/TextInput";
 import { NumberInput } from "../question-inputs/NumberInput";
 import { MultipleChoiceInput } from "../question-inputs/MultipleChoiceInput";
 import { PhotoInput } from "../question-inputs/PhotoInput";
+import { MediaControls } from "../question-components/MediaControls";
 
 interface ResponseInputRendererProps {
   question: any;
@@ -19,19 +20,19 @@ export const ResponseInputRenderer = memo(function ResponseInputRenderer({
   onResponseChange,
   onAddMedia
 }: ResponseInputRendererProps) {
-  // Normalization function to handle different property naming schemes
+  // Enhanced normalization function to handle different property naming schemes
   const getProperty = (propCamelCase: string, propSnakeCase: string): boolean => {
     const value = question[propCamelCase] === true || question[propSnakeCase] === true;
     return value;
   };
   
-  // Get media capabilities
+  // Get media capabilities with better normalization
   const allowsPhoto = getProperty('allowsPhoto', 'permite_foto');
   const allowsVideo = getProperty('allowsVideo', 'permite_video');
   const allowsAudio = getProperty('allowsAudio', 'permite_audio');
   const allowsFiles = getProperty('allowsFiles', 'permite_files');
   
-  // Normalize response type
+  // Normalize response type with more robust handling
   const responseType = (() => {
     const type = question.responseType || question.tipo_resposta || "";
     if (typeof type !== 'string') return 'unknown';
@@ -52,10 +53,13 @@ export const ResponseInputRenderer = memo(function ResponseInputRenderer({
     }
   })();
   
+  // Enhanced debug logging
   useEffect(() => {
-    // Log de debug
-    console.log(`Rendering input for question ${question.id}, type: ${responseType}, media: `, {
-      allowsPhoto, allowsVideo, allowsAudio, allowsFiles,
+    console.log(`Rendering input for question ${question.id}, type: ${responseType}, media capabilities:`, {
+      allowsPhoto, 
+      allowsVideo, 
+      allowsAudio, 
+      allowsFiles,
       rawProps: {
         allowsPhoto: question.allowsPhoto, 
         permite_foto: question.permite_foto,
@@ -63,22 +67,78 @@ export const ResponseInputRenderer = memo(function ResponseInputRenderer({
         permite_files: question.permite_files
       }
     });
-  }, [question.id, responseType, allowsPhoto, allowsVideo, allowsAudio, allowsFiles, question.allowsPhoto, question.permite_foto, question.allowsFiles, question.permite_files]);
+  }, [question.id, responseType, allowsPhoto, allowsVideo, allowsAudio, allowsFiles, 
+      question.allowsPhoto, question.permite_foto, question.allowsFiles, question.permite_files]);
+  
+  // Determine if any media is allowed
+  const allowsAnyMedia = allowsPhoto || allowsVideo || allowsAudio || allowsFiles;
   
   switch (responseType) {
     case "yes_no":
-      return <YesNoInput value={response?.value} onChange={onResponseChange} />;
+      return (
+        <>
+          <YesNoInput value={response?.value} onChange={onResponseChange} />
+          {allowsAnyMedia && (
+            <MediaControls 
+              allowsPhoto={allowsPhoto}
+              allowsVideo={allowsVideo}
+              allowsAudio={allowsAudio}
+              allowsFiles={allowsFiles}
+              handleAddMedia={onAddMedia}
+            />
+          )}
+        </>
+      );
       
     case "numeric":
     case "number":
-      return <NumberInput value={response?.value} onChange={onResponseChange} />;
+      return (
+        <>
+          <NumberInput value={response?.value} onChange={onResponseChange} />
+          {allowsAnyMedia && (
+            <MediaControls 
+              allowsPhoto={allowsPhoto}
+              allowsVideo={allowsVideo}
+              allowsAudio={allowsAudio}
+              allowsFiles={allowsFiles}
+              handleAddMedia={onAddMedia}
+            />
+          )}
+        </>
+      );
       
     case "text":
-      return <TextInput value={response?.value} onChange={onResponseChange} />;
+      return (
+        <>
+          <TextInput value={response?.value} onChange={onResponseChange} />
+          {allowsAnyMedia && (
+            <MediaControls 
+              allowsPhoto={allowsPhoto}
+              allowsVideo={allowsVideo}
+              allowsAudio={allowsAudio}
+              allowsFiles={allowsFiles}
+              handleAddMedia={onAddMedia}
+            />
+          )}
+        </>
+      );
       
     case "multiple_choice":
       const options = question.options || question.opcoes || [];
-      return <MultipleChoiceInput options={options} value={response?.value} onChange={onResponseChange} />;
+      return (
+        <>
+          <MultipleChoiceInput options={options} value={response?.value} onChange={onResponseChange} />
+          {allowsAnyMedia && (
+            <MediaControls 
+              allowsPhoto={allowsPhoto}
+              allowsVideo={allowsVideo}
+              allowsAudio={allowsAudio}
+              allowsFiles={allowsFiles}
+              handleAddMedia={onAddMedia}
+            />
+          )}
+        </>
+      );
       
     case "photo":
       return (
@@ -93,27 +153,27 @@ export const ResponseInputRenderer = memo(function ResponseInputRenderer({
       );
       
     default:
-      // If the question allows media but is another type, still show media buttons
-      if (allowsPhoto || allowsVideo || allowsAudio || allowsFiles) {
-        return (
-          <div>
-            {responseType !== "photo" && responseType !== "unknown" && (
-              <div className="mb-2">
-                <p className="text-sm text-muted-foreground">Tipo de resposta: {responseType}</p>
-              </div>
-            )}
-            <PhotoInput 
-              onAddMedia={onAddMedia} 
-              mediaUrls={response?.mediaUrls}
+      // Show a more informative fallback when type is unknown
+      return (
+        <div>
+          {responseType !== "photo" && responseType !== "unknown" && (
+            <div className="mb-2">
+              <p className="text-sm text-muted-foreground">Tipo de resposta: {responseType}</p>
+            </div>
+          )}
+          {allowsAnyMedia && (
+            <MediaControls 
               allowsPhoto={allowsPhoto}
               allowsVideo={allowsVideo}
               allowsAudio={allowsAudio}
               allowsFiles={allowsFiles}
+              handleAddMedia={onAddMedia}
             />
-          </div>
-        );
-      }
-      
-      return <p className="text-sm text-muted-foreground mt-2">Tipo de resposta não suportado: {responseType || "desconhecido"}</p>;
+          )}
+          {!allowsAnyMedia && (
+            <p className="text-sm text-muted-foreground mt-2">Tipo de resposta não suportado: {responseType || "desconhecido"}</p>
+          )}
+        </div>
+      );
   }
 });
