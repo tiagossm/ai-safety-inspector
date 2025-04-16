@@ -9,6 +9,7 @@ interface FlatQuestionsListProps {
   questions: ChecklistQuestion[];
   onUpdateQuestion: (question: ChecklistQuestion) => void;
   onDeleteQuestion: (questionId: string) => void;
+  onAddQuestion?: () => void; // Make this prop optional
   enableAllMedia?: boolean;
   isSubmitting?: boolean;
 }
@@ -17,6 +18,7 @@ export function FlatQuestionsList({
   questions,
   onUpdateQuestion,
   onDeleteQuestion,
+  onAddQuestion, // Add this prop to the component
   enableAllMedia = false,
   isSubmitting = false
 }: FlatQuestionsListProps) {
@@ -27,6 +29,16 @@ export function FlatQuestionsList({
           <p className="text-muted-foreground mb-4">
             Este checklist ainda não possui perguntas
           </p>
+          {onAddQuestion && (
+            <Button 
+              variant="outline" 
+              onClick={onAddQuestion} 
+              disabled={isSubmitting}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Adicionar Pergunta
+            </Button>
+          )}
         </div>
       ) : (
         <>
@@ -49,6 +61,19 @@ export function FlatQuestionsList({
               </div>
             ))}
           </div>
+          
+          {/* Add button at the bottom if handler is provided */}
+          {onAddQuestion && (
+            <Button
+              variant="outline"
+              onClick={onAddQuestion}
+              className="mt-4 w-full"
+              disabled={isSubmitting}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Adicionar Pergunta
+            </Button>
+          )}
         </>
       )}
     </div>
