@@ -2,6 +2,8 @@
 import { useState, useCallback } from "react";
 import { useInspectionFetch } from "./useInspectionFetch";
 import { useResponseHandling } from "./useResponseHandling";
+import { useInspectionStatus } from "./useInspectionStatus";
+import { toast } from "sonner";
 
 export function useInspectionData(inspectionId: string | undefined) {
   const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
@@ -27,6 +29,9 @@ export function useInspectionData(inspectionId: string | undefined) {
     handleSaveInspection,
     handleSaveSubChecklistResponses
   } = useResponseHandling(inspectionId, setResponses);
+
+  const { completeInspection: completeInspectionStatus, reopenInspection: reopenInspectionStatus } = 
+    useInspectionStatus(inspectionId, handleSaveInspection);
   
   // Calculate completion statistics
   const getCompletionStats = useCallback(() => {
@@ -81,6 +86,9 @@ export function useInspectionData(inspectionId: string | undefined) {
       setSaving(true);
       const updatedInspection = await handleSaveInspection(responses, inspection);
       return updatedInspection;
+    } catch (error) {
+      // Error handling is now in the InspectionExecutionPage
+      throw error;
     } finally {
       setSaving(false);
     }
@@ -94,16 +102,17 @@ export function useInspectionData(inspectionId: string | undefined) {
       setSaving(true);
       await handleSaveInspection(responses, inspection);
       
-      const { error } = await fetch("/api/completeInspection", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inspectionId, userId: inspection.userId })
-      }).then(res => res.json());
+      const updatedInspection = await completeInspectionStatus(responses, inspection);
       
-      if (error) throw new Error(error);
+      if (!updatedInspection) {
+        throw new Error("Falha ao completar inspeção.");
+      }
       
       await refreshData();
       return true;
+    } catch (error) {
+      // Error handling is now in the InspectionExecutionPage
+      throw error;
     } finally {
       setSaving(false);
     }
@@ -115,16 +124,17 @@ export function useInspectionData(inspectionId: string | undefined) {
     
     try {
       setSaving(true);
-      const { error } = await fetch("/api/reopenInspection", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ inspectionId, userId: inspection.userId })
-      }).then(res => res.json());
+      const updatedInspection = await reopenInspectionStatus(inspection);
       
-      if (error) throw new Error(error);
+      if (!updatedInspection) {
+        throw new Error("Falha ao reabrir inspeção.");
+      }
       
       await refreshData();
       return true;
+    } catch (error) {
+      // Error handling is now in the InspectionExecutionPage
+      throw error;
     } finally {
       setSaving(false);
     }

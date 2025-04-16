@@ -60,6 +60,7 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
   const allowsPhoto = question.allowsPhoto || question.permite_foto || false;
   const allowsVideo = question.allowsVideo || question.permite_video || false;
   const allowsAudio = question.allowsAudio || question.permite_audio || false;
+  const allowsFiles = question.allowsFiles || question.permite_files || false;
   
   // Reduce production console calls
   useEffect(() => {
@@ -68,10 +69,11 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
         allowsPhoto, 
         allowsVideo, 
         allowsAudio,
+        allowsFiles,
         responseType: normalizedType
       });
     }
-  }, [question.id, allowsPhoto, allowsVideo, allowsAudio, normalizedType]);
+  }, [question.id, allowsPhoto, allowsVideo, allowsAudio, allowsFiles, normalizedType]);
   
   const handleValueChange = useCallback((value: any) => {
     setIsValid(!isRequired || (value !== undefined && value !== null && value !== ""));
@@ -102,7 +104,7 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
   const handleAddMedia = useCallback(() => {
     console.log("Attempting to add media to question:", question.id);
     
-    const mediaUrls = response.mediaUrls || [];
+    const mediaUrls = response?.mediaUrls || [];
     const mockMediaUrl = `https://placehold.co/300x200?text=Media+${mediaUrls.length + 1}`;
     
     onResponseChange({
@@ -139,7 +141,7 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
     response?.value === "no";
   
   return (
-    <div className={`relative ${!isValid && response.value !== undefined ? 'border-l-4 border-l-red-500 pl-2' : ''}`}>
+    <div className={`relative ${!isValid && response?.value !== undefined ? 'border-l-4 border-l-red-500 pl-2' : ''}`}>
       <div className="flex items-start gap-2">
         <div className="font-medium min-w-[24px] mt-0.5">{numberLabel || (index + 1)}</div>
         <div className="flex-1">
@@ -164,6 +166,7 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
             allowsPhoto={allowsPhoto}
             allowsVideo={allowsVideo}
             allowsAudio={allowsAudio}
+            allowsFiles={allowsFiles}
             handleAddMedia={handleAddMedia}
           />
           

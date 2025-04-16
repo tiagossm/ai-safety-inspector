@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { useChecklistUpdate } from "@/hooks/new-checklist/useChecklistUpdate";
@@ -50,7 +51,8 @@ export function useChecklistSubmit(
         .filter(q => q.text.trim())
         .map(q => ({
           ...q,
-          hint: cleanHintMetadata(q.hint)
+          hint: cleanHintMetadata(q.hint),
+          allowsFiles: q.allowsFiles || false // Ensure allowsFiles is properly set
         }));
       
       const dbStatus = status === "inactive" ? "inativo" : "ativo";

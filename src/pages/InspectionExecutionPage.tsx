@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useInspectionData } from "@/hooks/inspection";
@@ -115,7 +116,12 @@ export default function InspectionExecutionPage() {
     subChecklistId: string, 
     responses: Record<string, any>
   ): Promise<void> => {
-    await handleSaveSubChecklistResponses(subChecklistId, responses);
+    try {
+      await handleSaveSubChecklistResponses(subChecklistId, responses);
+      toast.success("Sub-checklist salvo com sucesso");
+    } catch (error: any) {
+      toast.error(`Erro ao salvar sub-checklist: ${error.message || 'Erro desconhecido'}`);
+    }
     return Promise.resolve();
   };
 

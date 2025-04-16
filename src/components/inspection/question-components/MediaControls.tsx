@@ -1,39 +1,76 @@
 
 import React from "react";
+import { FileText, Image, Mic, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface MediaControlsProps {
   allowsPhoto: boolean;
   allowsVideo: boolean;
   allowsAudio: boolean;
+  allowsFiles: boolean;
   handleAddMedia: () => void;
 }
 
-export function MediaControls({ 
-  allowsPhoto, 
-  allowsVideo, 
-  allowsAudio, 
-  handleAddMedia 
+export function MediaControls({
+  allowsPhoto,
+  allowsVideo,
+  allowsAudio,
+  allowsFiles,
+  handleAddMedia
 }: MediaControlsProps) {
-  if (!allowsPhoto && !allowsVideo && !allowsAudio) {
-    return null;
-  }
-  
+  if (!allowsPhoto && !allowsVideo && !allowsAudio && !allowsFiles) return null;
+
   return (
-    <div className="mt-2 flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2 mt-3">
       {allowsPhoto && (
-        <Button size="sm" variant="outline" onClick={handleAddMedia}>
-          Adicionar Foto
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="flex items-center gap-1"
+          onClick={handleAddMedia}
+        >
+          <Image className="h-3.5 w-3.5" />
+          <span className="text-xs">Foto</span>
         </Button>
       )}
+      
       {allowsVideo && (
-        <Button size="sm" variant="outline" onClick={handleAddMedia}>
-          Adicionar Vídeo
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="flex items-center gap-1"
+          onClick={handleAddMedia}
+        >
+          <Video className="h-3.5 w-3.5" />
+          <span className="text-xs">Vídeo</span>
         </Button>
       )}
+      
       {allowsAudio && (
-        <Button size="sm" variant="outline" onClick={handleAddMedia}>
-          Adicionar Áudio
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="flex items-center gap-1"
+          onClick={handleAddMedia}
+        >
+          <Mic className="h-3.5 w-3.5" />
+          <span className="text-xs">Áudio</span>
+        </Button>
+      )}
+      
+      {allowsFiles && (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          className="flex items-center gap-1"
+          onClick={handleAddMedia}
+        >
+          <FileText className="h-3.5 w-3.5" />
+          <span className="text-xs">Arquivo</span>
         </Button>
       )}
     </div>

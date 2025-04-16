@@ -28,7 +28,7 @@ export function useChecklistQuestions(
       allowsPhoto: enableAllMedia,
       allowsVideo: enableAllMedia,
       allowsAudio: enableAllMedia,
-      allowsFiles: enableAllMedia, // Add allowsFiles field
+      allowsFiles: enableAllMedia,
       groupId
     };
     
@@ -70,7 +70,7 @@ export function useChecklistQuestions(
         allowsPhoto: enabled,
         allowsVideo: enabled,
         allowsAudio: enabled,
-        allowsFiles: enabled // Added allowsFiles
+        allowsFiles: enabled
       }))
     );
     

@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
@@ -81,7 +82,7 @@ export function useChecklistUpdate() {
               permite_foto: q.allowsPhoto,
               permite_video: q.allowsVideo,
               permite_audio: q.allowsAudio,
-              permite_files: q.allowsFiles || false, // ← restaurado aqui
+              permite_files: q.allowsFiles || false,
               parent_item_id: q.parentQuestionId,
               condition_value: q.conditionValue,
               hint: hint
@@ -125,7 +126,7 @@ export function useChecklistUpdate() {
               permite_foto: question.allowsPhoto,
               permite_video: question.allowsVideo,
               permite_audio: question.allowsAudio,
-              permite_files: question.allowsFiles || false, // ← restaurado aqui
+              permite_files: question.allowsFiles || false,
               parent_item_id: question.parentQuestionId,
               condition_value: question.conditionValue,
               hint: hint,

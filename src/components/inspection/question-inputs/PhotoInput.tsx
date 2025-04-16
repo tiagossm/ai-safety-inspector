@@ -1,63 +1,96 @@
 
-import React, { memo } from "react";
-import { MediaCaptureMenu } from "./MediaCaptureMenu";
+import React from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, Video, Mic } from "lucide-react";
+import { File, FileVideo, Mic, Camera, Plus } from "lucide-react";
+import { MediaAttachments } from "./MediaAttachments";
 
 interface PhotoInputProps {
+  mediaUrls?: string[];
   onAddMedia: () => void;
-  mediaUrls: string[] | undefined;
   allowsPhoto?: boolean;
   allowsVideo?: boolean;
   allowsAudio?: boolean;
+  allowsFiles?: boolean;
 }
 
-export const PhotoInput = memo(function PhotoInput({ 
-  onAddMedia, 
-  mediaUrls,
+export function PhotoInput({
+  mediaUrls = [],
+  onAddMedia,
   allowsPhoto = true,
   allowsVideo = false,
-  allowsAudio = false
+  allowsAudio = false,
+  allowsFiles = false
 }: PhotoInputProps) {
   return (
-    <div className="mt-2">
+    <div className="space-y-1">
       <div className="flex flex-wrap gap-2">
         {allowsPhoto && (
-          <Button size="sm" variant="outline" onClick={onAddMedia} className="flex items-center gap-1">
-            <Camera className="h-4 w-4" />
-            <span>Adicionar Foto</span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="text-xs flex items-center gap-1"
+            onClick={onAddMedia}
+          >
+            <Camera className="h-3.5 w-3.5" />
+            <span>Foto</span>
           </Button>
         )}
         
         {allowsVideo && (
-          <Button size="sm" variant="outline" onClick={onAddMedia} className="flex items-center gap-1">
-            <Video className="h-4 w-4" />
-            <span>Adicionar Vídeo</span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="text-xs flex items-center gap-1"
+            onClick={onAddMedia}
+          >
+            <FileVideo className="h-3.5 w-3.5" />
+            <span>Vídeo</span>
           </Button>
         )}
         
         {allowsAudio && (
-          <Button size="sm" variant="outline" onClick={onAddMedia} className="flex items-center gap-1">
-            <Mic className="h-4 w-4" />
-            <span>Adicionar Áudio</span>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="text-xs flex items-center gap-1"
+            onClick={onAddMedia}
+          >
+            <Mic className="h-3.5 w-3.5" />
+            <span>Áudio</span>
+          </Button>
+        )}
+        
+        {allowsFiles && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="text-xs flex items-center gap-1"
+            onClick={onAddMedia}
+          >
+            <File className="h-3.5 w-3.5" />
+            <span>Arquivo</span>
+          </Button>
+        )}
+        
+        {!allowsPhoto && !allowsVideo && !allowsAudio && !allowsFiles && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="text-xs flex items-center gap-1"
+            onClick={onAddMedia}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span>Anexar</span>
           </Button>
         )}
       </div>
       
-      {mediaUrls && mediaUrls.length > 0 && (
-        <div className="mt-2 grid grid-cols-3 gap-2">
-          {mediaUrls.map((url: string, i: number) => (
-            <div key={i} className="relative aspect-square rounded border overflow-hidden">
-              <img 
-                src={url} 
-                alt={`Mídia ${i+1}`} 
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
-            </div>
-          ))}
-        </div>
-      )}
+      <MediaAttachments mediaUrls={mediaUrls} />
     </div>
   );
-});
+}

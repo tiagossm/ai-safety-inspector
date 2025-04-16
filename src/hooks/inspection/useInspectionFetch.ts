@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -142,6 +143,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
           allowsPhoto: item.permite_foto || false,
           allowsVideo: item.permite_video || false,
           allowsAudio: item.permite_audio || false,
+          allowsFiles: item.permite_files || false, // Added allowsFiles field
           weight: item.weight || 1,
         };
       });
@@ -222,6 +224,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
                 allowsPhoto: item.permite_foto || false,
                 allowsVideo: item.permite_video || false,
                 allowsAudio: item.permite_audio || false,
+                allowsFiles: item.permite_files || false, // Added allowsFiles field
                 weight: item.weight || 1,
               }));
 

@@ -28,6 +28,7 @@ export const ResponseInputRenderer = memo(function ResponseInputRenderer({
   const allowsPhoto = getProperty('allowsPhoto', 'permite_foto') || false;
   const allowsVideo = getProperty('allowsVideo', 'permite_video') || false;
   const allowsAudio = getProperty('allowsAudio', 'permite_audio') || false;
+  const allowsFiles = getProperty('allowsFiles', 'permite_files') || false;
   
   // Normalize response type
   const responseType = (() => {
@@ -53,7 +54,7 @@ export const ResponseInputRenderer = memo(function ResponseInputRenderer({
   // Limitar logs apenas para ambiente de desenvolvimento
   if (process.env.NODE_ENV !== 'production') {
     console.log(`Rendering input for question ${question.id}, type: ${responseType}, media: `, {
-      allowsPhoto, allowsVideo, allowsAudio
+      allowsPhoto, allowsVideo, allowsAudio, allowsFiles
     });
   }
   
@@ -79,12 +80,13 @@ export const ResponseInputRenderer = memo(function ResponseInputRenderer({
           allowsPhoto={allowsPhoto}
           allowsVideo={allowsVideo}
           allowsAudio={allowsAudio}
+          allowsFiles={allowsFiles}
         />
       );
       
     default:
       // If the question allows media but is another type, still show media buttons
-      if (allowsPhoto || allowsVideo || allowsAudio) {
+      if (allowsPhoto || allowsVideo || allowsAudio || allowsFiles) {
         return (
           <div>
             {responseType !== "photo" && responseType !== "unknown" && (
@@ -98,6 +100,7 @@ export const ResponseInputRenderer = memo(function ResponseInputRenderer({
               allowsPhoto={allowsPhoto}
               allowsVideo={allowsVideo}
               allowsAudio={allowsAudio}
+              allowsFiles={allowsFiles}
             />
           </div>
         );

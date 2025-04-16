@@ -350,6 +350,7 @@ export type Database = {
           parent_item_id: string | null
           pergunta: string
           permite_audio: boolean | null
+          permite_files: boolean | null
           permite_foto: boolean | null
           permite_video: boolean | null
           requires_action: boolean | null
@@ -374,6 +375,7 @@ export type Database = {
           parent_item_id?: string | null
           pergunta: string
           permite_audio?: boolean | null
+          permite_files?: boolean | null
           permite_foto?: boolean | null
           permite_video?: boolean | null
           requires_action?: boolean | null
@@ -398,6 +400,7 @@ export type Database = {
           parent_item_id?: string | null
           pergunta?: string
           permite_audio?: boolean | null
+          permite_files?: boolean | null
           permite_foto?: boolean | null
           permite_video?: boolean | null
           requires_action?: boolean | null
