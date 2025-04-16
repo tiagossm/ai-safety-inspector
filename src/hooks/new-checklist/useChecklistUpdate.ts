@@ -28,10 +28,11 @@ export function useChecklistUpdate() {
         // Ensure we're using the correct column names for the database
         is_template: typeof params.is_template !== 'undefined' ? params.is_template : 
                      typeof updateData.isTemplate !== 'undefined' ? updateData.isTemplate : undefined,
-        // Always ensure status_checklist is a string: "ativo" or "inativo"
-        status_checklist: params.status_checklist || 
-                         (updateData.status === "active" ? "ativo" : 
-                          updateData.status === "inactive" ? "inativo" : "ativo"),
+        // Map status to status_checklist with the exact values expected by the database
+        status_checklist: params.status === "active" ? "ativo" : 
+                         params.status === "inactive" ? "inativo" : 
+                         updateData.status === "active" ? "ativo" : 
+                         updateData.status === "inactive" ? "inativo" : "ativo",
         updated_at: new Date().toISOString()
       };
       

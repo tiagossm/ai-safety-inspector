@@ -42,8 +42,9 @@ export function useChecklistSubmit(
         category,
         // Use is_template which matches the database column name
         is_template: isTemplate,
-        // Use status_checklist which matches the database column name
-        status_checklist: status === "inactive" ? "inactive" : "active"
+        // Map status to the values expected by the database
+        status_checklist: status === "inactive" ? "inativo" : "ativo", 
+        status: status // Keep this for internal use in the app
       };
       
       await updateChecklist.mutateAsync({
