@@ -11,6 +11,7 @@ import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
 import { useChecklistEditorContext } from "@/hooks/new-checklist/useChecklistEditorContext"; 
 import { ChecklistEditorProvider } from "@/contexts/ChecklistEditorContext";
 import { ChecklistEditorContextType } from "@/contexts/ChecklistEditorContext";
+import { toast } from "sonner";
 
 export default function NewChecklistEdit() {
   const [searchParams] = useSearchParams();
@@ -24,7 +25,18 @@ export default function NewChecklistEdit() {
   
   const handleSave = async (): Promise<void> => {
     if (editorMode === "standard" && editorContext) {
-      await editorContext.handleSave();
+      try {
+        toast.info("Salvando checklist...");
+        const success = await editorContext.handleSave();
+        if (success) {
+          toast.success("Checklist salvo com sucesso!");
+        } else {
+          toast.error("Erro ao salvar checklist");
+        }
+      } catch (error) {
+        console.error("Error saving checklist:", error);
+        toast.error(`Erro ao salvar checklist: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
+      }
     }
   };
   

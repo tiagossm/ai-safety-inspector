@@ -1,3 +1,4 @@
+
 import { useCallback, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -196,17 +197,20 @@ export function useChecklistEditorContext() {
       }
       
       setIsSubmitting(true);
+      // First save the checklist and only continue if save is successful
       const success = await handleSubmit();
-      setIsSubmitting(false);
       
-      if (success) {
-        toast.success("Navegando para nova inspeção...");
-        navigate(`/inspections/new?checklist=${id}`);
-        return true;
+      if (!success) {
+        setIsSubmitting(false);
+        toast.error("Erro ao preparar inspeção: Não foi possível salvar o checklist");
+        return false;
       }
       
-      toast.error("Erro ao preparar inspeção");
-      return false;
+      // If save was successful, proceed with navigation
+      toast.success("Navegando para nova inspeção...");
+      navigate(`/inspections/new?checklist=${id}`);
+      setIsSubmitting(false);
+      return true;
     } catch (error) {
       setIsSubmitting(false);
       handleError(error, "Erro ao preparar inspeção");

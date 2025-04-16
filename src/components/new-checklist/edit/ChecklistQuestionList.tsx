@@ -1,93 +1,81 @@
 
-import React, { useMemo } from "react";
+import React from "react";
 import { useChecklistEditor } from "@/contexts/ChecklistEditorContext";
+import { ChecklistQuestions } from "./ChecklistQuestions";
+import { Card, CardContent } from "@/components/ui/card";
 import { FlatQuestionsList } from "./FlatQuestionsList";
-import { ChecklistGroupEditor } from "./ChecklistGroupEditor";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { ChecklistToolbar } from "./ChecklistToolbar";
-import { ChecklistQuestion } from "@/types/newChecklist";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 export function ChecklistQuestionList() {
-  const { 
-    questions, 
-    groups, 
-    viewMode, 
-    handleAddQuestion, 
-    handleUpdateQuestion, 
-    handleDeleteQuestion,
+  const {
+    questions,
+    groups,
+    viewMode,
+    questionsByGroup,
+    nonEmptyGroups,
+    isSubmitting,
     enableAllMedia,
-    isSubmitting
+    setViewMode,
+    handleAddGroup,
+    handleUpdateGroup,
+    handleDeleteGroup,
+    handleAddQuestion,
+    handleUpdateQuestion,
+    handleDeleteQuestion,
+    handleDragEnd,
   } = useChecklistEditor();
 
-  // Get all questions with proper hierarchy and numbering
-  const allQuestionsWithHierarchy = useMemo(() => {
-    const questionsWithSubs = new Map<string, ChecklistQuestion[]>();
-    
-    questions.forEach(q => {
-      if (q.parentQuestionId) {
-        const parentQs = questionsWithSubs.get(q.parentQuestionId) || [];
-        parentQs.push(q);
-        questionsWithSubs.set(q.parentQuestionId, parentQs);
-      }
-    });
-    
-    const orderedQuestions: ChecklistQuestion[] = [];
-    let counter = 1;
-    
-    const addQuestionsRecursively = (qs: ChecklistQuestion[], parentNumber: string = '') => {
-      const sortedQs = [...qs].sort((a, b) => a.order - b.order);
-      
-      sortedQs.forEach((q, index) => {
-        const questionNumber = parentNumber ? `${parentNumber}.${index + 1}` : `${counter}`;
-        
-        const questionWithNumber = { ...q, displayNumber: questionNumber };
-        orderedQuestions.push(questionWithNumber);
-        
-        if (!parentNumber) {
-          counter++;
-        }
-        
-        const subQuestions = questionsWithSubs.get(q.id);
-        if (subQuestions && subQuestions.length > 0) {
-          addQuestionsRecursively(subQuestions, questionNumber);
-        }
-      });
-    };
-    
-    const rootQuestions = questions.filter(q => !q.parentQuestionId);
-    addQuestionsRecursively(rootQuestions);
-    
-    return orderedQuestions;
-  }, [questions]);
+  // Handler to add a question to the default group
+  const handleAddDefaultQuestion = () => {
+    handleAddQuestion("default");
+  };
 
   return (
-    <Card>
-      <CardHeader className="border-b pb-3 flex flex-row items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h2 className="text-xl font-semibold">Perguntas</h2>
-          {questions.length > 0 && (
-            <Badge variant="outline">
-              {questions.length} {questions.length === 1 ? 'Pergunta' : 'Perguntas'}
-            </Badge>
-          )}
-        </div>
-        <ChecklistToolbar />
-      </CardHeader>
-      <CardContent className="pt-6">
-        {viewMode === "flat" && (
-          <FlatQuestionsList
-            questions={allQuestionsWithHierarchy}
-            onAddQuestion={() => handleAddQuestion(groups[0]?.id || "default")}
+    <Card className="mt-6">
+      <CardContent className="p-6">
+        {viewMode === "flat" ? (
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">
+                Perguntas{questions.length > 0 ? ` (${questions.length})` : ""}
+              </h2>
+              <Button
+                variant="outline"
+                onClick={handleAddDefaultQuestion}
+                disabled={isSubmitting}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Nova Pergunta
+              </Button>
+            </div>
+
+            <FlatQuestionsList
+              questions={questions}
+              onUpdateQuestion={handleUpdateQuestion}
+              onDeleteQuestion={handleDeleteQuestion}
+              enableAllMedia={enableAllMedia}
+              isSubmitting={isSubmitting}
+            />
+          </div>
+        ) : (
+          <ChecklistQuestions
+            questions={questions}
+            groups={groups}
+            nonEmptyGroups={nonEmptyGroups}
+            questionsByGroup={questionsByGroup}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            onAddGroup={handleAddGroup}
+            onUpdateGroup={handleUpdateGroup}
+            onDeleteGroup={handleDeleteGroup}
+            onAddQuestion={handleAddQuestion}
             onUpdateQuestion={handleUpdateQuestion}
             onDeleteQuestion={handleDeleteQuestion}
+            onDragEnd={handleDragEnd}
             enableAllMedia={enableAllMedia}
             isSubmitting={isSubmitting}
           />
-        )}
-        
-        {viewMode === "grouped" && (
-          <ChecklistGroupEditor />
         )}
       </CardContent>
     </Card>

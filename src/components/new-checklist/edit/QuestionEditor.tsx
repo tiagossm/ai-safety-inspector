@@ -103,7 +103,7 @@ export function QuestionEditor({
     
     try {
       // Check if hint is JSON
-      if (hint.startsWith("{") && hint.endsWith("}")) {
+      if (typeof hint === 'string' && hint.startsWith("{") && hint.endsWith("}")) {
         const parsed = JSON.parse(hint);
         // If it's our group metadata format, return empty string
         if (parsed.groupId && parsed.groupTitle) {
