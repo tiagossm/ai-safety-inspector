@@ -1,15 +1,13 @@
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { toast } from "sonner";
 
-interface ChecklistUpdateParams extends Partial<ChecklistWithStats> { 
+interface ChecklistUpdateParams extends Partial<ChecklistWithStats> {
   id: string;
   questions?: ChecklistQuestion[];
   groups?: ChecklistGroup[];
   deletedQuestionIds?: string[];
-  // Explicitly add these to match database column names
   is_template?: boolean;
   status_checklist?: string;
 }
@@ -20,120 +18,100 @@ export function useChecklistUpdate() {
   return useMutation({
     mutationFn: async (params: ChecklistUpdateParams) => {
       const { id, questions, groups, deletedQuestionIds, ...updateData } = params;
-      console.log(`Atualizando checklist ${id} com:`, updateData);
-      
-      // Fix column names to match the database and ensure proper types
+
       const formattedUpdateData = {
         ...updateData,
-        // Ensure we're using the correct column names for the database
-        is_template: typeof params.is_template !== 'undefined' ? params.is_template : 
-                     typeof updateData.isTemplate !== 'undefined' ? updateData.isTemplate : undefined,
-        // Map status to status_checklist with the exact values expected by the database
-        status_checklist: params.status_checklist || 
-                         (params.status === "active" || updateData.status === "active") ? "ativo" : 
-                         (params.status === "inactive" || updateData.status === "inactive") ? "inativo" : "ativo",
+        is_template:
+          typeof params.is_template !== "undefined"
+            ? params.is_template
+            : typeof updateData.isTemplate !== "undefined"
+            ? updateData.isTemplate
+            : undefined,
+        status_checklist:
+          params.status_checklist ||
+          (params.status === "active" || updateData.status === "active")
+            ? "ativo"
+            : (params.status === "inactive" || updateData.status === "inactive")
+            ? "inativo"
+            : "ativo",
         updated_at: new Date().toISOString()
       };
-      
-      // Remove frontend-only fields that don't exist in the database
+
       delete formattedUpdateData.isTemplate;
       delete formattedUpdateData.status;
-      
-      console.log("Dados formatados para atualização:", formattedUpdateData);
-      
-      // Atualizar dados principais do checklist
+
       const { data, error } = await supabase
         .from("checklists")
         .update(formattedUpdateData)
         .eq("id", id)
         .select()
         .single();
-        
+
       if (error) {
         console.error("Erro ao atualizar checklist:", error);
         throw new Error(`Falha ao atualizar dados básicos: ${error.message}`);
       }
-      
-      // Se temos perguntas para atualizar, tratamos aqui
+
       if (questions && questions.length > 0) {
-        console.log(`Processando ${questions.length} perguntas`);
-        
-        // Separar perguntas novas das existentes
-        const newQuestions = questions.filter(q => q.id.startsWith('new-'));
-        const existingQuestions = questions.filter(q => !q.id.startsWith('new-'));
-        
-        // Inserir novas perguntas
+        const newQuestions = questions.filter((q) => q.id.startsWith("new-"));
+        const existingQuestions = questions.filter((q) => !q.id.startsWith("new-"));
+
         if (newQuestions.length > 0) {
           const questionsToInsert = newQuestions.map((q, index) => {
-            // Remove any JSON metadata from the hint field - only use plain text hints
             let hint = q.hint || "";
-            if (typeof hint === 'string' && hint.includes('{') && hint.includes('}')) {
+            if (typeof hint === "string" && hint.includes("{") && hint.includes("}")) {
               try {
                 const parsed = JSON.parse(hint);
-                // If it parses successfully, it's likely metadata - set to empty string
                 if (parsed && (parsed.groupId || parsed.groupTitle || parsed.groupIndex)) {
                   hint = "";
                 }
-              } catch (e) {
-                // If it doesn't parse, it's probably just text with braces - keep it
-              }
+              } catch (e) {}
             }
-            
-            // Ensure options is always a string array
-            const options = Array.isArray(q.options) 
-              ? q.options.map(opt => String(opt)) 
-              : [];
-            
+
+            const options = Array.isArray(q.options) ? q.options.map((opt) => String(opt)) : [];
+
             return {
               checklist_id: id,
               pergunta: q.text,
               tipo_resposta: q.responseType,
               obrigatorio: q.isRequired,
               ordem: q.order || index,
-              opcoes: options, // Ensure options is always a string array
+              opcoes: options,
               weight: q.weight || 1,
               permite_foto: q.allowsPhoto,
               permite_video: q.allowsVideo,
               permite_audio: q.allowsAudio,
-              permite_files: q.allowsFiles, // Added allowsFiles field
               parent_item_id: q.parentQuestionId,
               condition_value: q.conditionValue,
-              hint: hint // Use only user-provided hints, not metadata
+              hint: hint
             };
           });
-          
-          console.log(`Inserindo ${questionsToInsert.length} novas perguntas`);
+
           const { error: insertError } = await supabase
             .from("checklist_itens")
             .insert(questionsToInsert);
-            
+
           if (insertError) {
             console.error("Erro ao inserir novas perguntas:", insertError);
             throw new Error(`Falha ao inserir novas perguntas: ${insertError.message}`);
           }
         }
-        
-        // Atualizar perguntas existentes
+
         for (const question of existingQuestions) {
-          // Clean up hint field - remove JSON metadata
           let hint = question.hint || "";
-          if (typeof hint === 'string' && hint.includes('{') && hint.includes('}')) {
+          if (typeof hint === "string" && hint.includes("{") && hint.includes("}")) {
             try {
               const parsed = JSON.parse(hint);
-              // If it parses successfully, it's likely metadata - set to empty string
               if (parsed && (parsed.groupId || parsed.groupTitle || parsed.groupIndex)) {
                 hint = "";
               }
-            } catch (e) {
-              // If it doesn't parse, it's probably just text with braces - keep it
-            }
+            } catch (e) {}
           }
-          
-          // Ensure options is always a string array
-          const options = Array.isArray(question.options) 
-            ? question.options.map(opt => String(opt)) 
+
+          const options = Array.isArray(question.options)
+            ? question.options.map((opt) => String(opt))
             : [];
-          
+
           const { error: updateError } = await supabase
             .from("checklist_itens")
             .update({
@@ -141,51 +119,52 @@ export function useChecklistUpdate() {
               tipo_resposta: question.responseType,
               obrigatorio: question.isRequired,
               ordem: question.order,
-              opcoes: options, // Ensure options is always a string array
+              opcoes: options,
               weight: question.weight || 1,
               permite_foto: question.allowsPhoto,
               permite_video: question.allowsVideo,
               permite_audio: question.allowsAudio,
-              permite_files: question.allowsFiles, // Added allowsFiles field
               parent_item_id: question.parentQuestionId,
               condition_value: question.conditionValue,
-              hint: hint, // Use only user-provided hints, not metadata
+              hint: hint,
               updated_at: new Date().toISOString()
             })
             .eq("id", question.id);
-            
+
           if (updateError) {
             console.error(`Erro ao atualizar pergunta ${question.id}:`, updateError);
             throw new Error(`Falha ao atualizar pergunta: ${updateError.message}`);
           }
         }
       }
-      
-      // Excluir perguntas marcadas para exclusão
+
       if (deletedQuestionIds && deletedQuestionIds.length > 0) {
-        console.log(`Excluindo ${deletedQuestionIds.length} perguntas`);
         const { error: deleteError } = await supabase
           .from("checklist_itens")
           .delete()
           .in("id", deletedQuestionIds);
-          
+
         if (deleteError) {
           console.error("Erro ao excluir perguntas:", deleteError);
           throw new Error(`Falha ao excluir perguntas: ${deleteError.message}`);
         }
       }
-      
+
       console.log("Checklist atualizado com sucesso:", data);
       return data;
     },
+
     onSuccess: (data) => {
       toast.success("Checklist atualizado com sucesso", { duration: 5000 });
       queryClient.invalidateQueries({ queryKey: ["new-checklists"] });
       queryClient.invalidateQueries({ queryKey: ["checklists", data?.id] });
     },
+
     onError: (error: any) => {
       console.error("Erro na mutação:", error);
-      toast.error(`Erro ao atualizar checklist: ${error.message || "Erro desconhecido"}`, { duration: 5000 });
+      toast.error(`Erro ao atualizar checklist: ${error.message || "Erro desconhecido"}`, {
+        duration: 5000
+      });
     }
   });
 }
