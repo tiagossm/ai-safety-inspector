@@ -25,12 +25,14 @@ export function useQuestionsManagement(questions: any[], responses: Record<strin
       groupId: q.groupId || "default-group"
     }));
     
+    console.log(`Questions before filtering: ${normalizedQuestions.length}`);
+    console.log("Group IDs in questions:", normalizedQuestions.map(q => q.groupId));
+    
     // Now filter questions by groupId
     const filtered = normalizedQuestions.filter(q => {
-      // Log for debugging individual questions 
-      console.log(`Question ${q.id}: checking if groupId "${q.groupId}" matches "${groupId}"`);
-      
-      return q.groupId === groupId;
+      const matches = q.groupId === groupId;
+      console.log(`Question ${q.id}: groupId "${q.groupId}" matches "${groupId}"? ${matches}`);
+      return matches;
     });
     
     console.log(`Found ${filtered.length} questions for group ${groupId} from total ${questions.length}`);

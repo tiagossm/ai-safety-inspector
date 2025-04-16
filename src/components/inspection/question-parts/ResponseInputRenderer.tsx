@@ -70,110 +70,61 @@ export const ResponseInputRenderer = memo(function ResponseInputRenderer({
   }, [question.id, responseType, allowsPhoto, allowsVideo, allowsAudio, allowsFiles, 
       question.allowsPhoto, question.permite_foto, question.allowsFiles, question.permite_files]);
   
-  // Determine if any media is allowed
-  const allowsAnyMedia = allowsPhoto || allowsVideo || allowsAudio || allowsFiles;
+  // For photo type input, we use a specialized component
+  if (responseType === 'photo') {
+    return (
+      <PhotoInput 
+        onAddMedia={onAddMedia} 
+        mediaUrls={response?.mediaUrls}
+        allowsPhoto={allowsPhoto}
+        allowsVideo={allowsVideo}
+        allowsAudio={allowsAudio}
+        allowsFiles={allowsFiles}
+      />
+    );
+  }
   
+  // For all other response types, render the appropriate input and then media controls separately
+  let inputComponent;
   switch (responseType) {
     case "yes_no":
-      return (
-        <>
-          <YesNoInput value={response?.value} onChange={onResponseChange} />
-          {allowsAnyMedia && (
-            <MediaControls 
-              allowsPhoto={allowsPhoto}
-              allowsVideo={allowsVideo}
-              allowsAudio={allowsAudio}
-              allowsFiles={allowsFiles}
-              handleAddMedia={onAddMedia}
-            />
-          )}
-        </>
-      );
+      inputComponent = <YesNoInput value={response?.value} onChange={onResponseChange} />;
+      break;
       
     case "numeric":
     case "number":
-      return (
-        <>
-          <NumberInput value={response?.value} onChange={onResponseChange} />
-          {allowsAnyMedia && (
-            <MediaControls 
-              allowsPhoto={allowsPhoto}
-              allowsVideo={allowsVideo}
-              allowsAudio={allowsAudio}
-              allowsFiles={allowsFiles}
-              handleAddMedia={onAddMedia}
-            />
-          )}
-        </>
-      );
+      inputComponent = <NumberInput value={response?.value} onChange={onResponseChange} />;
+      break;
       
     case "text":
-      return (
-        <>
-          <TextInput value={response?.value} onChange={onResponseChange} />
-          {allowsAnyMedia && (
-            <MediaControls 
-              allowsPhoto={allowsPhoto}
-              allowsVideo={allowsVideo}
-              allowsAudio={allowsAudio}
-              allowsFiles={allowsFiles}
-              handleAddMedia={onAddMedia}
-            />
-          )}
-        </>
-      );
+      inputComponent = <TextInput value={response?.value} onChange={onResponseChange} />;
+      break;
       
     case "multiple_choice":
       const options = question.options || question.opcoes || [];
-      return (
-        <>
-          <MultipleChoiceInput options={options} value={response?.value} onChange={onResponseChange} />
-          {allowsAnyMedia && (
-            <MediaControls 
-              allowsPhoto={allowsPhoto}
-              allowsVideo={allowsVideo}
-              allowsAudio={allowsAudio}
-              allowsFiles={allowsFiles}
-              handleAddMedia={onAddMedia}
-            />
-          )}
-        </>
-      );
-      
-    case "photo":
-      return (
-        <PhotoInput 
-          onAddMedia={onAddMedia} 
-          mediaUrls={response?.mediaUrls}
-          allowsPhoto={allowsPhoto}
-          allowsVideo={allowsVideo}
-          allowsAudio={allowsAudio}
-          allowsFiles={allowsFiles}
-        />
-      );
+      inputComponent = <MultipleChoiceInput options={options} value={response?.value} onChange={onResponseChange} />;
+      break;
       
     default:
       // Show a more informative fallback when type is unknown
-      return (
-        <div>
-          {responseType !== "photo" && responseType !== "unknown" && (
-            <div className="mb-2">
-              <p className="text-sm text-muted-foreground">Tipo de resposta: {responseType}</p>
-            </div>
-          )}
-          {allowsAnyMedia && (
-            <MediaControls 
-              allowsPhoto={allowsPhoto}
-              allowsVideo={allowsVideo}
-              allowsAudio={allowsAudio}
-              allowsFiles={allowsFiles}
-              handleAddMedia={onAddMedia}
-            />
-          )}
-          {!allowsAnyMedia && (
-            <p className="text-sm text-muted-foreground mt-2">Tipo de resposta não suportado: {responseType || "desconhecido"}</p>
-          )}
+      inputComponent = (
+        <div className="mb-2">
+          <p className="text-sm text-muted-foreground">Tipo de resposta: {responseType || "unknown"}</p>
         </div>
       );
   }
+
+  return (
+    <>
+      {inputComponent}
+      
+      <MediaControls 
+        allowsPhoto={allowsPhoto}
+        allowsVideo={allowsVideo}
+        allowsAudio={allowsAudio}
+        allowsFiles={allowsFiles}
+        handleAddMedia={onAddMedia}
+      />
+    </>
+  );
 });

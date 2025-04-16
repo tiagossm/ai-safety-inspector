@@ -42,39 +42,21 @@ export function QuestionsPanel({
   } = useSubChecklistDialog(responses, onResponseChange, onSaveSubChecklistResponses);
   
   // Find current group or use a default group
-  const currentGroup = currentGroupId 
-    ? groups.find(g => g.id === currentGroupId) 
+  const currentGroup = currentGroupId && groups.length > 0
+    ? groups.find(g => g.id === currentGroupId) || { id: "default-group", title: "Perguntas", order: 0 }
     : { id: "default-group", title: "Perguntas", order: 0 };
   
-  // Improved logging
-  console.log(`QuestionsPanel: currentGroupId=${currentGroupId}, filteredQuestions=${filteredQuestions?.length || 0}, questions=${questions?.length || 0}, currentGroup=${currentGroup?.title || "undefined"}`);
-  
-  // Add debug logging to track questions data
+  // Enhanced debugging information
   useEffect(() => {
+    console.log(`QuestionsPanel: currentGroupId=${currentGroupId}, filteredQuestions=${filteredQuestions?.length || 0}, questions=${questions?.length || 0}, currentGroup=${currentGroup?.title || "undefined"}`);
+    console.log("Available groups:", groups.map(g => `${g.id}: ${g.title}`));
+    
     if (questions && questions.length > 0) {
-      console.log("Questions data available:", questions.length);
-      // Log the unique groupIds in the questions array
-      const groupIds = [...new Set(questions.map(q => q.groupId || "undefined"))];
-      console.log("Unique groupIds in questions:", groupIds);
-    } else {
-      console.warn("No questions data available");
+      // Log unique groupIds in questions array
+      const uniqueGroupIds = [...new Set(questions.map(q => q.groupId || "undefined"))];
+      console.log("Unique groupIds in questions:", uniqueGroupIds);
     }
-  }, [questions]);
-  
-  useEffect(() => {
-    // Show warning if we have questions but filtered questions is empty
-    if (questions?.length > 0 && filteredQuestions?.length === 0 && currentGroupId) {
-      console.warn(`No questions are being shown despite having ${questions.length} questions available. Check groupId filtering.`);
-      
-      // If no filtered questions but we have questions, this suggests a filtering issue
-      if (groups.length > 0) {
-        toast.warning(`Tentando mostrar perguntas do grupo "${currentGroup?.title || currentGroupId}", mas nenhuma foi encontrada.`, {
-          id: "filtering-issue",
-          duration: 5000
-        });
-      }
-    }
-  }, [questions, filteredQuestions, currentGroupId, groups, currentGroup]);
+  }, [currentGroupId, filteredQuestions, questions, groups, currentGroup]);
   
   // If loading show loading state
   if (loading) {
@@ -89,8 +71,8 @@ export function QuestionsPanel({
   }
   
   // If no group selected or not found
-  if (!currentGroupId || !currentGroup) {
-    toast.error("Nenhum grupo de perguntas selecionado");
+  if (!currentGroupId) {
+    console.warn("No group selected");
     return (
       <QuestionsEmptyState 
         loading={loading}
@@ -103,6 +85,7 @@ export function QuestionsPanel({
   
   // If no filtered questions but we have questions
   if (filteredQuestions?.length === 0 && questions?.length > 0) {
+    console.warn(`No questions found for group "${currentGroup?.title || currentGroupId}"`);
     toast.warning(`Nenhuma pergunta encontrada para o grupo "${currentGroup?.title || 'selecionado'}"`, {
       id: "no-questions-in-group",
       duration: 3000
