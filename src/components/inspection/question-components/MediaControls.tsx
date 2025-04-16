@@ -18,6 +18,7 @@ export function MediaControls({
   allowsFiles,
   handleAddMedia
 }: MediaControlsProps) {
+  // Se não houver nenhuma opção de mídia habilitada, não renderiza nada
   if (!allowsPhoto && !allowsVideo && !allowsAudio && !allowsFiles) return null;
 
   return (
