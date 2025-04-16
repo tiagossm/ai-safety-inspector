@@ -45,6 +45,9 @@ export function QuestionsPanel({
     ? groups.find(g => g.id === currentGroupId) 
     : { id: "default-group", title: "Perguntas", order: 0 };
   
+  // Log para debug
+  console.log(`QuestionsPanel: currentGroupId=${currentGroupId}, filteredQuestions=${filteredQuestions.length}, currentGroup=${currentGroup?.title}`);
+  
   // Se não temos perguntas para mostrar, exibir o estado vazio
   if (loading || !currentGroupId || !currentGroup || filteredQuestions.length === 0) {
     return (

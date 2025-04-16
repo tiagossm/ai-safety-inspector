@@ -4,6 +4,7 @@ import { useInspectionFetch } from "./useInspectionFetch";
 import { useResponseHandling } from "./useResponseHandling";
 import { useInspectionStatus } from "./useInspectionStatus";
 import { toast } from "sonner";
+import { useQuestionsManagement } from "./useQuestionsManagement";
 
 export function useInspectionData(inspectionId: string | undefined) {
   const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
@@ -24,6 +25,9 @@ export function useInspectionData(inspectionId: string | undefined) {
     refreshData
   } = useInspectionFetch(inspectionId);
   
+  const { getFilteredQuestions, getCompletionStats: getQuestionsStats } = 
+    useQuestionsManagement(questions, responses);
+  
   const {
     handleResponseChange,
     handleSaveInspection,
@@ -38,6 +42,9 @@ export function useInspectionData(inspectionId: string | undefined) {
     const totalQuestions = questions.length;
     let answeredQuestions = 0;
     let groupStats: Record<string, { total: number; completed: number }> = {};
+    
+    // Log para debug
+    console.log(`getCompletionStats called, questions.length: ${totalQuestions}`);
     
     // Initialize group stats for all groups
     groups.forEach(group => {
@@ -85,9 +92,10 @@ export function useInspectionData(inspectionId: string | undefined) {
     try {
       setSaving(true);
       const updatedInspection = await handleSaveInspection(responses, inspection);
+      toast.success("Progresso salvo com sucesso");
       return updatedInspection;
-    } catch (error) {
-      // Error handling is now in the InspectionExecutionPage
+    } catch (error: any) {
+      toast.error(`Erro ao salvar: ${error.message || "Erro desconhecido"}`);
       throw error;
     } finally {
       setSaving(false);
@@ -110,8 +118,8 @@ export function useInspectionData(inspectionId: string | undefined) {
       
       await refreshData();
       return true;
-    } catch (error) {
-      // Error handling is now in the InspectionExecutionPage
+    } catch (error: any) {
+      toast.error(`Erro ao finalizar inspeção: ${error.message || "Erro desconhecido"}`);
       throw error;
     } finally {
       setSaving(false);
@@ -132,8 +140,8 @@ export function useInspectionData(inspectionId: string | undefined) {
       
       await refreshData();
       return true;
-    } catch (error) {
-      // Error handling is now in the InspectionExecutionPage
+    } catch (error: any) {
+      toast.error(`Erro ao reabrir inspeção: ${error.message || "Erro desconhecido"}`);
       throw error;
     } finally {
       setSaving(false);
@@ -153,6 +161,7 @@ export function useInspectionData(inspectionId: string | undefined) {
     handleSaveInspection: saveInspection,
     handleSaveSubChecklistResponses,
     getCompletionStats,
+    getFilteredQuestions,
     error,
     detailedError,
     refreshData,

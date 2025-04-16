@@ -1,5 +1,7 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export function useInspectionFetch(inspectionId: string | undefined) {
   const [loading, setLoading] = useState(true);
@@ -14,7 +16,9 @@ export function useInspectionFetch(inspectionId: string | undefined) {
   const [subChecklists, setSubChecklists] = useState<Record<string, any>>({});
 
   const normalizeResponseType = (tipo: string): string => {
-    switch (tipo?.toLowerCase()) {
+    if (!tipo) return "text";
+    
+    switch (tipo.toLowerCase()) {
       case "sim/não":
       case "sim/nao":
       case "yes_no":
@@ -55,6 +59,8 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         throw inspectionError || new Error("Inspeção não encontrada");
       }
 
+      console.log("Inspection data loaded:", inspectionData);
+
       const isSubChecklist = inspectionData.checklist?.category === "subchecklist";
       if (isSubChecklist) {
         setError("Esta inspeção é um sub-checklist e não pode ser executada diretamente.");
@@ -92,27 +98,51 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         .order("ordem", { ascending: true });
 
       if (checklistError) throw checklistError;
+      
+      console.log(`Loaded ${checklistItems?.length || 0} checklist items from Supabase`);
+
+      if (!checklistItems || checklistItems.length === 0) {
+        console.warn("No checklist items found for this inspection");
+      }
 
       const DEFAULT_GROUP = { id: "default-group", title: "Geral", order: 0 };
       const groupsMap = new Map<string, any>();
       groupsMap.set(DEFAULT_GROUP.id, DEFAULT_GROUP);
 
-      const parsedQuestions = checklistItems.map((item: any) => {
+      // Processar os itens do checklist para normalizar os dados
+      const parsedQuestions = (checklistItems || []).map((item: any) => {
         let groupId = DEFAULT_GROUP.id;
+        let hint = null;
 
         try {
-          const hint = typeof item.hint === "string" ? JSON.parse(item.hint) : item.hint;
-          if (hint?.groupId && hint?.groupTitle) {
-            groupId = hint.groupId;
-            if (!groupsMap.has(groupId)) {
-              groupsMap.set(groupId, {
-                id: groupId,
-                title: hint.groupTitle,
-                order: hint.groupIndex || 0,
-              });
+          if (typeof item.hint === "string" && item.hint) {
+            hint = JSON.parse(item.hint);
+            if (hint?.groupId && hint?.groupTitle) {
+              groupId = hint.groupId;
+              if (!groupsMap.has(groupId)) {
+                groupsMap.set(groupId, {
+                  id: groupId,
+                  title: hint.groupTitle,
+                  order: hint.groupIndex || 0,
+                });
+              }
+            }
+          } else if (item.hint && typeof item.hint === "object") {
+            hint = item.hint;
+            if (hint.groupId && hint.groupTitle) {
+              groupId = hint.groupId;
+              if (!groupsMap.has(groupId)) {
+                groupsMap.set(groupId, {
+                  id: groupId,
+                  title: hint.groupTitle,
+                  order: hint.groupIndex || 0,
+                });
+              }
             }
           }
-        } catch {}
+        } catch (error) {
+          console.error("Error parsing hint for item:", item.id, error);
+        }
 
         return {
           id: item.id,
@@ -121,7 +151,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
           options: item.opcoes,
           isRequired: item.obrigatorio,
           order: item.ordem,
-          groupId,
+          groupId, // Garante que sempre tem um groupId
           parentQuestionId: item.parent_item_id || null,
           parentValue: item.condition_value || null,
           hint: item.hint || null,
@@ -135,10 +165,16 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         };
       });
 
+      // Ordenar e configurar grupos
       const sortedGroups = Array.from(groupsMap.values()).sort((a, b) => a.order - b.order);
-      setGroups(sortedGroups.length > 0 ? sortedGroups : [DEFAULT_GROUP]);
+      const finalGroups = sortedGroups.length > 0 ? sortedGroups : [DEFAULT_GROUP];
+      
+      console.log(`Setting ${finalGroups.length} groups and ${parsedQuestions.length} questions`);
+      
+      setGroups(finalGroups);
       setQuestions(parsedQuestions);
 
+      // Carregar respostas
       const { data: responsesData } = await supabase
         .from("inspection_responses")
         .select("*")
@@ -156,6 +192,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
       }, {});
       setResponses(responsesObj);
 
+      // Carregar sub-checklists
       const questionsWithSubchecklist = parsedQuestions.filter(q => q.subChecklistId);
       const subChecklistsMap: Record<string, any> = {};
 
@@ -228,6 +265,19 @@ export function useInspectionFetch(inspectionId: string | undefined) {
       setSubChecklists({});
     }
   }, [fetchInspectionData, inspectionId]);
+
+  useEffect(() => {
+    // Log para depuração após o carregamento dos dados
+    if (!loading) {
+      console.log(`Finished loading inspection data. Questions count: ${questions.length}, Groups count: ${groups.length}`);
+      if (questions.length === 0) {
+        console.warn("No questions loaded, this might be a problem!");
+      }
+      if (groups.length === 0) {
+        console.warn("No groups loaded, will use default group");
+      }
+    }
+  }, [loading, questions, groups]);
 
   return {
     loading,

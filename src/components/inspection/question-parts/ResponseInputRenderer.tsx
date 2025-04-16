@@ -20,15 +20,15 @@ export const ResponseInputRenderer = memo(function ResponseInputRenderer({
   onAddMedia
 }: ResponseInputRendererProps) {
   // Normalization function to handle different property naming schemes
-  const getProperty = (propCamelCase: string, propSnakeCase: string) => {
-    return question[propCamelCase] !== undefined ? question[propCamelCase] : question[propSnakeCase];
+  const getProperty = (propCamelCase: string, propSnakeCase: string): boolean => {
+    return question[propCamelCase] === true || question[propSnakeCase] === true;
   };
   
   // Get media capabilities
-  const allowsPhoto = getProperty('allowsPhoto', 'permite_foto') || false;
-  const allowsVideo = getProperty('allowsVideo', 'permite_video') || false;
-  const allowsAudio = getProperty('allowsAudio', 'permite_audio') || false;
-  const allowsFiles = getProperty('allowsFiles', 'permite_files') || false;
+  const allowsPhoto = getProperty('allowsPhoto', 'permite_foto');
+  const allowsVideo = getProperty('allowsVideo', 'permite_video');
+  const allowsAudio = getProperty('allowsAudio', 'permite_audio');
+  const allowsFiles = getProperty('allowsFiles', 'permite_files');
   
   // Normalize response type
   const responseType = (() => {
@@ -51,12 +51,16 @@ export const ResponseInputRenderer = memo(function ResponseInputRenderer({
     }
   })();
   
-  // Limitar logs apenas para ambiente de desenvolvimento
-  if (process.env.NODE_ENV !== 'production') {
-    console.log(`Rendering input for question ${question.id}, type: ${responseType}, media: `, {
-      allowsPhoto, allowsVideo, allowsAudio, allowsFiles
-    });
-  }
+  // Log de debug
+  console.log(`Rendering input for question ${question.id}, type: ${responseType}, media: `, {
+    allowsPhoto, allowsVideo, allowsAudio, allowsFiles,
+    rawProps: {
+      allowsPhoto: question.allowsPhoto, 
+      permite_foto: question.permite_foto,
+      allowsFiles: question.allowsFiles,
+      permite_files: question.permite_files
+    }
+  });
   
   switch (responseType) {
     case "yes_no":

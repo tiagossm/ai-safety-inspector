@@ -37,6 +37,7 @@ export default function InspectionExecutionPage() {
     handleSaveInspection,
     handleSaveSubChecklistResponses,
     getCompletionStats,
+    getFilteredQuestions,
     error,
     detailedError,
     refreshData,
@@ -44,24 +45,35 @@ export default function InspectionExecutionPage() {
     reopenInspection
   } = useInspectionData(skipLoading ? undefined : id);
   
+  // Definir grupo inicial quando os dados são carregados
   useEffect(() => {
     if (groups.length > 0 && !currentGroupId) {
-      setCurrentGroupId(groups[0].id);
-      console.log(`Setting initial group to ${groups[0].id} (${groups[0].title})`);
+      const firstGroupId = groups[0].id;
+      console.log(`Setting initial group to ${firstGroupId} (${groups[0].title})`);
+      setCurrentGroupId(firstGroupId);
     }
   }, [groups, currentGroupId]);
 
+  // Configurar auto-save
   useEffect(() => {
-    if (autoSave) {
+    if (autoSave && !loading) {
       const timer = setTimeout(() => {
         onSaveProgress();
       }, 60000); // Auto-save every minute
       
       return () => clearTimeout(timer);
     }
-  }, [responses, autoSave]);
+  }, [responses, autoSave, loading]);
   
   const stats = getCompletionStats();
+  const filteredQuestions = currentGroupId ? getFilteredQuestions(currentGroupId) : [];
+  
+  // Log para depuração
+  useEffect(() => {
+    if (!loading) {
+      console.log(`Filtered questions for group ${currentGroupId}: ${filteredQuestions.length} of ${questions.length}`);
+    }
+  }, [currentGroupId, filteredQuestions.length, questions.length, loading]);
   
   const onSaveProgress = async () => {
     if (saving) return;
@@ -157,6 +169,7 @@ export default function InspectionExecutionPage() {
         groups={groups}
         subChecklists={subChecklists}
         currentGroupId={currentGroupId}
+        filteredQuestions={filteredQuestions}
         stats={stats}
         saving={saving}
         autoSave={autoSave}

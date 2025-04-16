@@ -18,8 +18,13 @@ export function MediaControls({
   allowsFiles,
   handleAddMedia
 }: MediaControlsProps) {
+  // Log para Debug
+  console.log("MediaControls props:", { allowsPhoto, allowsVideo, allowsAudio, allowsFiles });
+  
   // Se não houver nenhuma opção de mídia habilitada, não renderiza nada
-  if (!allowsPhoto && !allowsVideo && !allowsAudio && !allowsFiles) return null;
+  if (!allowsPhoto && !allowsVideo && !allowsAudio && !allowsFiles) {
+    return null;
+  }
 
   return (
     <div className="flex flex-wrap gap-2 mt-3">

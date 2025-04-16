@@ -1,4 +1,3 @@
-
 import React from "react";
 import { InspectionHeader } from "@/components/inspection/InspectionHeader";
 import { QuestionGroups } from "@/components/inspection/QuestionGroups";
@@ -20,6 +19,7 @@ interface InspectionLayoutProps {
   groups: any[];
   subChecklists: Record<string, any>;
   currentGroupId: string | null;
+  filteredQuestions: any[];
   stats: any;
   saving: boolean;
   autoSave: boolean;
@@ -46,6 +46,7 @@ export function InspectionLayout({
   groups,
   subChecklists,
   currentGroupId,
+  filteredQuestions,
   stats,
   saving,
   autoSave,
@@ -62,26 +63,20 @@ export function InspectionLayout({
   onSaveSubChecklistResponses
 }: InspectionLayoutProps) {
   // Definir grupo padrão se não houver nenhum
-  const defaultGroup = {
+  const DEFAULT_GROUP = {
     id: "default-group",
     title: "Perguntas",
     order: 0
   };
   
   // Garantir que sempre existe pelo menos um grupo
-  const displayGroups = groups.length > 0 ? groups : [defaultGroup];
+  const displayGroups = groups.length > 0 ? groups : [DEFAULT_GROUP];
   
   // Definir currentGroupId se não estiver definido
   const effectiveCurrentGroupId = currentGroupId || (displayGroups.length > 0 ? displayGroups[0].id : null);
-  
-  // Filter questions by current group, handling null groupId values
-  const questionsInCurrentGroup = effectiveCurrentGroupId
-    ? questions.filter(q => q.groupId === effectiveCurrentGroupId || 
-                          (q.groupId === null && effectiveCurrentGroupId === 'default-group'))
-    : [];
 
-  // Log the filtered questions for debugging
-  console.log(`Layout: Questions in group ${effectiveCurrentGroupId}: ${questionsInCurrentGroup.length} of ${questions.length} total`);
+  // Log para debug
+  console.log(`Layout: Questions in group ${effectiveCurrentGroupId}: ${filteredQuestions.length} of ${questions.length} total`);
   console.log('Group IDs distribution:', questions.reduce((acc, q) => {
     const key = q.groupId || 'null';
     acc[key] = (acc[key] || 0) + 1;
@@ -181,7 +176,7 @@ export function InspectionLayout({
             <QuestionsPanel
               loading={loading}
               currentGroupId={effectiveCurrentGroupId}
-              filteredQuestions={questionsInCurrentGroup}
+              filteredQuestions={filteredQuestions}
               questions={questions}
               responses={responses}
               groups={displayGroups}
