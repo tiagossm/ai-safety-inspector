@@ -16,7 +16,6 @@ export function useNewInspectionForm(checklistId: string | undefined) {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
-  // Form state
   const [companyId, setCompanyId] = useState<string>("");
   const [companyData, setCompanyData] = useState<any>(null);
   const [responsibleId, setResponsibleId] = useState<string>("");
@@ -28,7 +27,6 @@ export function useNewInspectionForm(checklistId: string | undefined) {
   const [priority, setPriority] = useState<string>("medium");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Fetch checklist data
   useEffect(() => {
     if (!checklistId) {
       toast.error("ID do checklist não fornecido");
@@ -39,8 +37,6 @@ export function useNewInspectionForm(checklistId: string | undefined) {
     const fetchChecklist = async () => {
       try {
         setLoading(true);
-        console.log("Fetching checklist with ID:", checklistId);
-
         const { data, error } = await supabase
           .from("checklists")
           .select("*, checklist_itens(*)")
@@ -48,7 +44,6 @@ export function useNewInspectionForm(checklistId: string | undefined) {
           .single();
 
         if (error) throw error;
-
         if (!data) {
           toast.error("Checklist não encontrado");
           navigate("/inspections");
@@ -82,7 +77,7 @@ export function useNewInspectionForm(checklistId: string | undefined) {
   }, [checklistId, navigate]);
 
   useEffect(() => {
-    if (companyData && companyData.address) {
+    if (companyData?.address) {
       setLocation(companyData.address);
     }
   }, [companyData]);
@@ -90,27 +85,12 @@ export function useNewInspectionForm(checklistId: string | undefined) {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!companyId) {
-      newErrors.company = "Selecione uma empresa";
-    }
-
-    if (!companyData?.cnae) {
-      newErrors.cnae = "CNAE é obrigatório";
-    } else if (!/^\d{2}\.\d{2}-\d$/.test(companyData.cnae)) {
-      newErrors.cnae = "CNAE deve estar no formato 00.00-0";
-    }
-
-    if (!responsibleId && !responsibleData) {
-      newErrors.responsible = "Selecione um responsável";
-    }
-
-    if (!checklistId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(checklistId)) {
-      newErrors.checklist = "ID do checklist inválido";
-    }
-
-    if (companyId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(companyId)) {
-      newErrors.company = "ID da empresa inválido";
-    }
+    if (!companyId) newErrors.company = "Selecione uma empresa";
+    if (!companyData?.cnae) newErrors.cnae = "CNAE é obrigatório";
+    else if (!/^\d{2}\.\d{2}-\d$/.test(companyData.cnae)) newErrors.cnae = "CNAE deve estar no formato 00.00-0";
+    if (!responsibleId && !responsibleData) newErrors.responsible = "Selecione um responsável";
+    if (!checklistId || !/^[0-9a-f\-]{36}$/i.test(checklistId)) newErrors.checklist = "ID do checklist inválido";
+    if (companyId && !/^[0-9a-f\-]{36}$/i.test(companyId)) newErrors.company = "ID da empresa inválido";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -130,12 +110,10 @@ export function useNewInspectionForm(checklistId: string | undefined) {
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-
     if (!validateForm()) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
-
     if (!user?.id) {
       toast.error("Usuário não autenticado");
       return;
@@ -143,14 +121,6 @@ export function useNewInspectionForm(checklistId: string | undefined) {
 
     try {
       setSubmitting(true);
-
-      if (!checklistId) {
-        console.error("Missing checklist ID");
-        toast.error("ID do checklist não fornecido");
-        setSubmitting(false);
-        return;
-      }
-
       const formattedCNAE = formatCNAE(companyData.cnae);
       const formattedDate = scheduledDate ? scheduledDate.toISOString() : null;
 
@@ -173,7 +143,7 @@ export function useNewInspectionForm(checklistId: string | undefined) {
         checklist: {
           title: checklist.title,
           description: checklist.description || "",
-          total_questions: checklist?.checklist_itens?.length || 0,
+          total_questions: Array.isArray(checklist?.checklist_itens) ? checklist.checklist_itens.length : 0
         }
       };
 
@@ -183,10 +153,7 @@ export function useNewInspectionForm(checklistId: string | undefined) {
         .select()
         .single();
 
-      if (error) {
-        console.error("Supabase error:", error);
-        throw error;
-      }
+      if (error) throw error;
 
       toast.success("Inspeção criada com sucesso!");
       navigate(`/inspections/${inspection.id}/view`);
@@ -202,10 +169,7 @@ export function useNewInspectionForm(checklistId: string | undefined) {
   const handleCompanySelect = (id: string, data: any) => {
     setCompanyId(id);
     setCompanyData(data);
-    if (data.address) {
-      setLocation(data.address);
-    }
-
+    if (data.address) setLocation(data.address);
     if (data.cnae && /^\d{2}\.\d{2}-\d$/.test(data.cnae)) {
       setErrors(prev => ({ ...prev, cnae: "" }));
     }
