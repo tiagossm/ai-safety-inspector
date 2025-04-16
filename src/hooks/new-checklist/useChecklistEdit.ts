@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { useChecklistState } from "./useChecklistState";
@@ -9,9 +9,9 @@ import { useChecklistValidation } from "./useChecklistValidation";
 
 export function useChecklistEdit(checklist: any, id: string | undefined) {
   const navigate = useNavigate();
-  
+
   const state = useChecklistState(checklist);
-  
+
   const {
     handleAddQuestion,
     handleUpdateQuestion,
@@ -24,7 +24,7 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
     state.deletedQuestionIds,
     state.setDeletedQuestionIds
   );
-  
+
   const {
     handleAddGroup,
     handleUpdateGroup,
@@ -36,9 +36,9 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
     state.questions,
     state.setQuestions
   );
-  
+
   const { validateChecklist } = useChecklistValidation();
-  
+
   const { handleSubmit } = useChecklistSubmit(
     id,
     state.title,
@@ -51,14 +51,14 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
     state.deletedQuestionIds
   );
 
-  useCallback(() => {
+  useEffect(() => {
     if (checklist) {
       state.setTitle(checklist.title || "");
       state.setDescription(checklist.description || "");
       state.setCategory(checklist.category || "");
       state.setIsTemplate(checklist.isTemplate || false);
       state.setStatus(checklist.status === "inactive" ? "inactive" : "active");
-      
+
       if (checklist.questions && checklist.questions.length > 0) {
         if (checklist.groups && checklist.groups.length > 0) {
           state.setGroups(checklist.groups);
@@ -93,7 +93,7 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
           isRequired: true,
           weight: 1,
           allowsPhoto: false,
-          allowsVideo: false, 
+          allowsVideo: false,
           allowsAudio: false,
           allowsFiles: false,
           order: 0,
@@ -103,36 +103,36 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
         state.setQuestions([defaultQuestion]);
       }
     }
-  }, [checklist, state]);
+  }, [checklist]);
 
   const questionsByGroup = useMemo(() => {
     const result = new Map<string, ChecklistQuestion[]>();
-    
+
     state.groups.forEach(group => {
       result.set(group.id, []);
     });
-    
+
     state.questions.forEach(question => {
       const groupId = question.groupId || state.groups[0]?.id || "default";
       if (!result.has(groupId)) {
         result.set(groupId, []);
       }
-      
+
       const groupQuestions = result.get(groupId) || [];
       groupQuestions.push(question);
       result.set(groupId, groupQuestions);
     });
-    
+
     result.forEach((groupQuestions, groupId) => {
       result.set(
         groupId,
         groupQuestions.sort((a, b) => a.order - b.order)
       );
     });
-    
+
     return result;
   }, [state.questions, state.groups]);
-  
+
   const nonEmptyGroups = useMemo(() => {
     return state.groups
       .filter(group => {
