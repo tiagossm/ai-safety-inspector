@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -50,6 +51,8 @@ export function useNewInspectionForm(checklistId: string | undefined) {
           return;
         }
 
+        // Debug information
+        console.log(`Fetched checklist ${data.id} with ${data.checklist_itens?.length || 0} questions`);
         setChecklist(data);
 
         if (data.company_id) {
@@ -124,12 +127,15 @@ export function useNewInspectionForm(checklistId: string | undefined) {
       const formattedCNAE = formatCNAE(companyData.cnae);
       const formattedDate = scheduledDate ? scheduledDate.toISOString() : null;
 
+      // Debug info
+      console.log(`Creating inspection for checklist ${checklistId} with ${checklist?.checklist_itens?.length || 0} questions`);
+
       const inspectionData = {
         checklist_id: checklistId,
         user_id: user.id,
         company_id: companyId,
         cnae: formattedCNAE,
-        status: "Pendente",
+        status: "pending",
         approval_status: "pending" as ApprovalStatus,
         responsible_id: responsibleId || null,
         scheduled_date: formattedDate,
@@ -146,6 +152,9 @@ export function useNewInspectionForm(checklistId: string | undefined) {
           total_questions: Array.isArray(checklist?.checklist_itens) ? checklist.checklist_itens.length : 0
         }
       };
+
+      // Log the inspection data before submission
+      console.log("Submitting inspection with data:", inspectionData);
 
       const { data: inspection, error } = await supabase
         .from("inspections")

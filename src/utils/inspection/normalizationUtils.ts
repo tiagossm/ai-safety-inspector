@@ -76,9 +76,6 @@ export const processChecklistItems = (
       console.error("Error processing hint for item:", item.id, error);
     }
 
-    // Debug item data
-    console.log(`Processing question ${item.id}: groupId=${groupId}, responseType=${item.tipo_resposta}`);
-
     return {
       id: item.id,
       text: item.pergunta,

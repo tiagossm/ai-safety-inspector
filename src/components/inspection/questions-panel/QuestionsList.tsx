@@ -26,11 +26,18 @@ export function QuestionsList({
   const [expandedSubChecklists, setExpandedSubChecklists] = useState<Record<string, boolean>>({});
   
   useEffect(() => {
-    // Log the available subChecklists for debugging
+    // Log the questions and available subChecklists for debugging
+    console.log(`QuestionsList: Rendering ${questions?.length || 0} questions`);
     if (Object.keys(subChecklists).length > 0) {
       console.log("Available subChecklists:", Object.keys(subChecklists));
     }
-  }, [subChecklists]);
+    
+    // Check if all questions have groupId
+    const questionsWithoutGroup = questions?.filter(q => !q.groupId) || [];
+    if (questionsWithoutGroup.length > 0) {
+      console.warn(`Found ${questionsWithoutGroup.length} questions without groupId`);
+    }
+  }, [questions, subChecklists]);
   
   // Helper function to toggle sub-checklist expanded state
   const toggleSubChecklist = (questionId: string) => {
@@ -49,7 +56,6 @@ export function QuestionsList({
     
     if (hasSubChecklist) {
       console.log(`Question ${question.id} has sub-checklist. Is expanded: ${isExpanded}`);
-      console.log("Sub-checklist data:", subChecklists[question.id]);
     }
     
     // Generate hierarchical question number label

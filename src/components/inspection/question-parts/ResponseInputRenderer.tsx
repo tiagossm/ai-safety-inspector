@@ -5,7 +5,6 @@ import { TextInput } from "../question-inputs/TextInput";
 import { NumberInput } from "../question-inputs/NumberInput";
 import { MultipleChoiceInput } from "../question-inputs/MultipleChoiceInput";
 import { PhotoInput } from "../question-inputs/PhotoInput";
-import { MediaControls } from "../question-components/MediaControls";
 
 interface ResponseInputRendererProps {
   question: any;
@@ -84,7 +83,7 @@ export const ResponseInputRenderer = memo(function ResponseInputRenderer({
     );
   }
   
-  // For all other response types, render the appropriate input and then media controls separately
+  // For all other response types, render the appropriate input
   let inputComponent;
   switch (responseType) {
     case "yes_no":
@@ -114,17 +113,5 @@ export const ResponseInputRenderer = memo(function ResponseInputRenderer({
       );
   }
 
-  return (
-    <>
-      {inputComponent}
-      
-      <MediaControls 
-        allowsPhoto={allowsPhoto}
-        allowsVideo={allowsVideo}
-        allowsAudio={allowsAudio}
-        allowsFiles={allowsFiles}
-        handleAddMedia={onAddMedia}
-      />
-    </>
-  );
-});
+  return inputComponent;
+}

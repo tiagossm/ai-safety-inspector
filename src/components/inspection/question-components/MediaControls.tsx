@@ -1,7 +1,6 @@
 
-import React, { useEffect } from "react";
-import { FileText, Image, Mic, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Camera, Mic, File, Video } from "lucide-react";
 
 interface MediaControlsProps {
   allowsPhoto: boolean;
@@ -18,73 +17,62 @@ export function MediaControls({
   allowsFiles,
   handleAddMedia
 }: MediaControlsProps) {
-  // Debug logging
-  useEffect(() => {
-    console.log("MediaControls rendered with props:", { 
-      allowsPhoto, 
-      allowsVideo, 
-      allowsAudio, 
-      allowsFiles 
-    });
-  }, [allowsPhoto, allowsVideo, allowsAudio, allowsFiles]);
-  
-  // If no media options are enabled, don't render anything
+  // If no media types are allowed, don't render anything
   if (!allowsPhoto && !allowsVideo && !allowsAudio && !allowsFiles) {
-    console.log("No media types allowed, hiding media controls");
     return null;
   }
 
   return (
-    <div className="flex flex-wrap gap-2 mt-3">
+    <div className="flex flex-wrap gap-2 mt-2">
       {allowsPhoto && (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="flex items-center gap-1"
+        <Button 
+          type="button" 
+          variant="outline" 
+          size="sm" 
           onClick={handleAddMedia}
+          className="flex items-center"
         >
-          <Image className="h-3.5 w-3.5" />
-          <span className="text-xs">Foto</span>
+          <Camera className="h-4 w-4 mr-1" />
+          Foto
         </Button>
       )}
       
       {allowsVideo && (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="flex items-center gap-1"
+        <Button 
+          type="button" 
+          variant="outline" 
+          size="sm" 
           onClick={handleAddMedia}
+          className="flex items-center"
         >
-          <Video className="h-3.5 w-3.5" />
-          <span className="text-xs">Vídeo</span>
+          <Video className="h-4 w-4 mr-1" />
+          Vídeo
         </Button>
       )}
       
       {allowsAudio && (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="flex items-center gap-1"
+        <Button 
+          type="button" 
+          variant="outline" 
+          size="sm" 
           onClick={handleAddMedia}
+          className="flex items-center"
         >
-          <Mic className="h-3.5 w-3.5" />
-          <span className="text-xs">Áudio</span>
+          <Mic className="h-4 w-4 mr-1" />
+          Áudio
         </Button>
       )}
       
       {allowsFiles && (
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="flex items-center gap-1"
+        <Button 
+          type="button" 
+          variant="outline" 
+          size="sm" 
           onClick={handleAddMedia}
+          className="flex items-center"
         >
-          <FileText className="h-3.5 w-3.5" />
-          <span className="text-xs">Arquivo</span>
+          <File className="h-4 w-4 mr-1" />
+          Arquivo
         </Button>
       )}
     </div>

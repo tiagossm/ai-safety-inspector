@@ -41,9 +41,20 @@ export function QuestionsPanel({
     safeParseResponse
   } = useSubChecklistDialog(responses, onResponseChange, onSaveSubChecklistResponses);
   
+  // Use the first group if none selected
+  useEffect(() => {
+    if (!currentGroupId && groups.length > 0) {
+      console.log("No group selected, but groups exist. Selecting the first group.");
+      // Note: We can't set the group here as we don't have the setter function
+      // This is for diagnostic purposes only
+    }
+  }, [currentGroupId, groups]);
+  
   // Find current group or use a default group
-  const currentGroup = currentGroupId && groups.length > 0
-    ? groups.find(g => g.id === currentGroupId) || { id: "default-group", title: "Perguntas", order: 0 }
+  const currentGroup = groups.length > 0
+    ? (currentGroupId 
+        ? groups.find(g => g.id === currentGroupId) 
+        : groups[0]) || groups[0]  
     : { id: "default-group", title: "Perguntas", order: 0 };
   
   // Enhanced debugging information
@@ -70,13 +81,16 @@ export function QuestionsPanel({
     );
   }
   
-  // If no group selected or not found
-  if (!currentGroupId) {
-    console.warn("No group selected");
+  // If no group selected, try to use the first one
+  const effectiveGroupId = currentGroupId || (groups.length > 0 ? groups[0].id : null);
+  
+  // If still no group available
+  if (!effectiveGroupId) {
+    console.warn("No group selected or available");
     return (
       <QuestionsEmptyState 
         loading={loading}
-        currentGroupId={currentGroupId}
+        currentGroupId={null}
         currentGroup={undefined}
         questionsCount={questions?.length || 0}
       />
@@ -85,7 +99,7 @@ export function QuestionsPanel({
   
   // If no filtered questions but we have questions
   if (filteredQuestions?.length === 0 && questions?.length > 0) {
-    console.warn(`No questions found for group "${currentGroup?.title || currentGroupId}"`);
+    console.warn(`No questions found for group "${currentGroup?.title || effectiveGroupId}"`);
     toast.warning(`Nenhuma pergunta encontrada para o grupo "${currentGroup?.title || 'selecionado'}"`, {
       id: "no-questions-in-group",
       duration: 3000
@@ -114,7 +128,7 @@ export function QuestionsPanel({
           ) : (
             <QuestionsEmptyState 
               loading={loading}
-              currentGroupId={currentGroupId}
+              currentGroupId={effectiveGroupId}
               currentGroup={currentGroup}
               questionsCount={questions?.length || 0}
             />

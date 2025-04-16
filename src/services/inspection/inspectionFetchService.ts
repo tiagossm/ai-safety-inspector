@@ -23,6 +23,8 @@ export const fetchInspectionData = async (inspectionId: string) => {
   }
 
   try {
+    console.log(`Fetching inspection data for ID: ${inspectionId}`);
+    
     // Fetch inspection data
     const { data: inspectionData, error: inspectionError } = await supabase
       .from("inspections")
@@ -87,7 +89,7 @@ export const fetchInspectionData = async (inspectionId: string) => {
 
     if (checklistError) throw checklistError;
     
-    console.log(`Loaded ${checklistItems?.length || 0} checklist items from Supabase`);
+    console.log(`Loaded ${checklistItems?.length || 0} checklist items from Supabase for checklist ${inspectionData.checklist_id}`);
 
     if (!checklistItems || checklistItems.length === 0) {
       console.warn("No checklist items found for this inspection");
@@ -102,6 +104,8 @@ export const fetchInspectionData = async (inspectionId: string) => {
     const finalGroups = sortedGroups.length > 0 ? sortedGroups : [{ id: "default-group", title: "Geral", order: 0 }];
     
     console.log(`Setting ${finalGroups.length} groups and ${parsedQuestions.length} questions`);
+    console.log("Group IDs:", finalGroups.map(g => g.id));
+    console.log("Questions with groupIds:", parsedQuestions.map(q => q.groupId));
 
     // Fetch responses
     const { data: responsesData } = await supabase

@@ -7,6 +7,8 @@ import { normalizeResponseType } from "@/utils/inspection/normalizationUtils";
  */
 export const fetchSubChecklist = async (questionId: string, subChecklistId: string) => {
   try {
+    console.log(`Fetching subchecklist ${subChecklistId} for question ${questionId}`);
+    
     const { data: checklistData, error: checklistError } = await supabase
       .from("checklists")
       .select("*")
@@ -29,6 +31,8 @@ export const fetchSubChecklist = async (questionId: string, subChecklistId: stri
       return null;
     }
 
+    console.log(`Found ${subQuestions.length} questions in subchecklist ${subChecklistId}`);
+    
     const processedSubQuestions = subQuestions.map((item: any) => ({
       id: item.id,
       text: item.pergunta,
