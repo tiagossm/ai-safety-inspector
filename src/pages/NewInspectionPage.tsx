@@ -13,9 +13,9 @@ export default function ChecklistEditorPage() {
   const [editorData, setEditorData] = useState<any>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const id = searchParams.get("checklistId") || "";
-  const isEditorMode = !id;
-  const checklistQuery = useChecklistById(id);
+  const checklistId = searchParams.get("checklistId") || "";
+  const isEditorMode = !checklistId;
+  const checklistQuery = useChecklistById(checklistId);
 
   useEffect(() => {
     const loadChecklistData = async () => {
@@ -129,12 +129,12 @@ export default function ChecklistEditorPage() {
     };
 
     loadChecklistData();
-  }, [id, isEditorMode, checklistQuery]);
+  }, [isEditorMode, checklistQuery, searchParams]);
 
   const handleSave = (checklistId: string) => {
     sessionStorage.removeItem("checklistEditorData");
     if (isEditorMode) {
-      navigate(`/checklists/${checklistId}/edit`);
+      navigate(`/inspections/new?checklistId=${checklistId}`);
     } else {
       toast.success("Checklist atualizado com sucesso!");
     }
@@ -203,4 +203,3 @@ export default function ChecklistEditorPage() {
     />
   );
 }
-
