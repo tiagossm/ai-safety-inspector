@@ -5,6 +5,7 @@ export function useQuestionsManagement(questions: any[], responses: Record<strin
   const getFilteredQuestions = useCallback((groupId: string | null) => {
     // Enhanced debug logging
     console.log(`Filtering questions for group ${groupId || 'null'}. Total questions: ${questions?.length || 0}`);
+    console.log("All questions:", questions);
     
     if (!questions || questions.length === 0) {
       console.warn("No questions available to filter");
@@ -25,11 +26,13 @@ export function useQuestionsManagement(questions: any[], responses: Record<strin
     // Log unique groups for debugging
     const uniqueGroups = [...new Set(normalizedQuestions.map(q => q.groupId))];
     console.log("Available groups in questions:", uniqueGroups);
+    console.log("Looking for group:", groupId);
     
     // Now filter questions by groupId
     const filtered = normalizedQuestions.filter(q => q.groupId === groupId);
     
     console.log(`Found ${filtered.length} questions for group ${groupId} (from total ${questions.length})`);
+    console.log("Filtered questions:", filtered);
     return filtered;
   }, [questions]);
 

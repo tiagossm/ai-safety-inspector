@@ -44,9 +44,8 @@ export function QuestionsPanel({
   // Use the first group if none selected
   useEffect(() => {
     if (!currentGroupId && groups.length > 0) {
-      console.log("No group selected, but groups exist. Selecting the first group.");
-      // Note: We can't set the group here as we don't have the setter function
-      // This is for diagnostic purposes only
+      console.log("No group selected, but groups exist. This should be fixed at a higher level.");
+      console.log("Available groups:", groups);
     }
   }, [currentGroupId, groups]);
   

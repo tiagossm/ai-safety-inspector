@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useInspectionFetch } from "./useInspectionFetch";
 import { useResponseHandling } from "./useResponseHandling";
 import { useInspectionStatus } from "./useInspectionStatus";
@@ -24,6 +24,15 @@ export function useInspectionData(inspectionId: string | undefined) {
     setResponses,
     refreshData
   } = useInspectionFetch(inspectionId);
+  
+  // Definir automaticamente o primeiro grupo quando carregado
+  useEffect(() => {
+    if (!loading && groups.length > 0 && !currentGroupId) {
+      const firstGroupId = groups[0].id;
+      console.log(`Auto-selecting first group: ${firstGroupId}`);
+      setCurrentGroupId(firstGroupId);
+    }
+  }, [loading, groups, currentGroupId]);
   
   const { getFilteredQuestions, getCompletionStats: getQuestionsStats } = 
     useQuestionsManagement(questions, responses);
@@ -147,6 +156,16 @@ export function useInspectionData(inspectionId: string | undefined) {
       setSaving(false);
     }
   };
+  
+  // Diagnose any issues with the inspection data
+  useEffect(() => {
+    if (!loading && questions.length === 0) {
+      console.warn("No questions found for this inspection. This might be a data issue.");
+      if (inspection?.checklistId) {
+        console.log(`This inspection uses checklist ID: ${inspection.checklistId}`);
+      }
+    }
+  }, [loading, questions, inspection]);
 
   return {
     loading,
@@ -157,6 +176,8 @@ export function useInspectionData(inspectionId: string | undefined) {
     company,
     responsible,
     subChecklists,
+    currentGroupId,
+    setCurrentGroupId,
     handleResponseChange,
     handleSaveInspection: saveInspection,
     handleSaveSubChecklistResponses,

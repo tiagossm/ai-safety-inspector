@@ -28,11 +28,16 @@ export const fetchInspectionData = async (inspectionId: string) => {
     // Fetch inspection data
     const { data: inspectionData, error: inspectionError } = await supabase
       .from("inspections")
-      .select(`*, companies:company_id(id, fantasy_name), checklist:checklist_id(id, title, description, category)`)
+      .select(`
+        *, 
+        companies:company_id(id, fantasy_name), 
+        checklist:checklist_id(id, title, description, category)
+      `)
       .eq("id", inspectionId)
       .single();
 
     if (inspectionError || !inspectionData) {
+      console.error("Error fetching inspection:", inspectionError || "Inspection not found");
       throw inspectionError || new Error("Inspeção não encontrada");
     }
 
@@ -57,8 +62,8 @@ export const fetchInspectionData = async (inspectionId: string) => {
     // Format inspection data
     const inspection = {
       id: inspectionData.id,
-      title: inspectionData.checklist?.title,
-      description: inspectionData.checklist?.description,
+      title: inspectionData.checklist?.title || "Inspeção",
+      description: inspectionData.checklist?.description || "",
       checklistId: inspectionData.checklist_id,
       companyId: inspectionData.company_id,
       responsibleId: inspectionData.responsible_id,
@@ -87,7 +92,10 @@ export const fetchInspectionData = async (inspectionId: string) => {
       .eq("checklist_id", inspectionData.checklist_id)
       .order("ordem", { ascending: true });
 
-    if (checklistError) throw checklistError;
+    if (checklistError) {
+      console.error("Error fetching checklist items:", checklistError);
+      throw checklistError;
+    }
     
     console.log(`Loaded ${checklistItems?.length || 0} checklist items from Supabase for checklist ${inspectionData.checklist_id}`);
 
@@ -96,8 +104,10 @@ export const fetchInspectionData = async (inspectionId: string) => {
       toast.error("Nenhuma pergunta encontrada para esta inspeção");
     }
 
-    // Process questions and groups
+    // Process questions and groups - Adicionando logs detalhados
+    console.log("Processing checklist items:", checklistItems);
     const { parsedQuestions, groupsMap } = processChecklistItems(checklistItems);
+    console.log("Processed questions:", parsedQuestions);
     
     // Sort and configure groups
     const sortedGroups = Array.from(groupsMap.values()).sort((a, b) => a.order - b.order);
@@ -105,7 +115,7 @@ export const fetchInspectionData = async (inspectionId: string) => {
     
     console.log(`Setting ${finalGroups.length} groups and ${parsedQuestions.length} questions`);
     console.log("Group IDs:", finalGroups.map(g => g.id));
-    console.log("Questions with groupIds:", parsedQuestions.map(q => q.groupId));
+    console.log("Questions with groupIds:", parsedQuestions.map(q => ({ id: q.id, groupId: q.groupId })));
 
     // Fetch responses
     const { data: responsesData } = await supabase
@@ -114,6 +124,7 @@ export const fetchInspectionData = async (inspectionId: string) => {
       .eq("inspection_id", inspectionId);
 
     const responses = processResponses(responsesData);
+    console.log("Processed responses:", responses);
 
     // Fetch subchecklists
     const subChecklists = await fetchAllSubChecklists(parsedQuestions);

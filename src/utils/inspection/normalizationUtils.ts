@@ -76,14 +76,17 @@ export const processChecklistItems = (
       console.error("Error processing hint for item:", item.id, error);
     }
 
-    return {
+    // Aqui garantimos que cada pergunta tenha um groupId válido
+    const finalGroupId = groupId || DEFAULT_GROUP.id;
+
+    const processedQuestion = {
       id: item.id,
       text: item.pergunta,
       responseType: normalizeResponseType(item.tipo_resposta),
       options: item.opcoes,
       isRequired: item.obrigatorio,
       order: item.ordem,
-      groupId, // Ensure it always has a groupId
+      groupId: finalGroupId, // Garantindo que sempre tem um groupId
       parentQuestionId: item.parent_item_id || null,
       parentValue: item.condition_value || null,
       hint: item.hint || null,
@@ -95,6 +98,9 @@ export const processChecklistItems = (
       allowsFiles: item.permite_files || false,
       weight: item.weight || 1,
     };
+
+    console.log(`Processed question ${item.id} with groupId ${finalGroupId}`);
+    return processedQuestion;
   });
 
   return { parsedQuestions, groupsMap };
