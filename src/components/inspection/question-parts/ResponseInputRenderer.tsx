@@ -114,4 +114,4 @@ export const ResponseInputRenderer = memo(function ResponseInputRenderer({
   }
 
   return inputComponent;
-}
+});
