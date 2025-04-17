@@ -22,6 +22,7 @@ import StartInspectionPage from "@/pages/StartInspectionPage";
 import Inspections from "@/pages/Inspections";
 import { Users } from "@/pages/Users";
 import ChecklistRedirectPage from "@/pages/ChecklistRedirectPage";
+import InspectionExecutionPage from "@/pages/InspectionExecutionPage";
 
 function App() {
   return (
@@ -47,12 +48,12 @@ function App() {
             {/* Inspection routes - Fluxo atualizado */}
             <Route path="inspections" element={<Inspections />} />
             <Route path="inspections/new" element={<NewInspectionPage />} />
+            <Route path="inspections/new/:id" element={<NewInspectionPage />} />
+            <Route path="inspections/redirect/:id" element={<ChecklistRedirectPage />} />
             <Route path="inspections/start" element={<StartInspectionPage />} />
             <Route path="inspections/start/:checklistId" element={<StartInspectionPage />} />
-            <Route path="inspections/redirect/:id" element={<ChecklistRedirectPage />} />
-            <Route path="inspections/new/:id" element={<NewInspectionPage />} />
             <Route path="inspections/:id" element={<SimpleInspectionPage />} />
-            <Route path="inspections/:id/view" element={<SimpleInspectionPage />} />
+            <Route path="inspections/:id/view" element={<InspectionExecutionPage />} />
             
             {/* Redirect old routes to new ones */}
             <Route path="checklists" element={<Navigate to="/new-checklists" replace />} />
