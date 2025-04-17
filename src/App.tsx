@@ -18,6 +18,7 @@ import NewChecklistEdit from "@/pages/NewChecklistEdit";
 import NewChecklistDetails from "@/pages/NewChecklistDetails";
 import NewInspectionPage from "@/pages/NewInspectionPage";
 import SimpleInspectionPage from "@/pages/SimpleInspectionPage";
+import StartInspectionPage from "@/pages/StartInspectionPage";
 import Inspections from "@/pages/Inspections";
 import { Users } from "@/pages/Users";
 
@@ -45,6 +46,8 @@ function App() {
             {/* Inspection routes */}
             <Route path="inspections" element={<Inspections />} />
             <Route path="inspections/new" element={<NewInspectionPage />} />
+            <Route path="inspections/start" element={<StartInspectionPage />} />
+            <Route path="inspections/start/:checklistId" element={<StartInspectionPage />} />
             <Route path="inspections/new/:id" element={<NewInspectionPage />} />
             <Route path="inspections/:id" element={<SimpleInspectionPage />} />
             <Route path="inspections/:id/view" element={<SimpleInspectionPage />} />
