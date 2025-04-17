@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+""import React, { useEffect, useState } from "react";
 import { ChecklistEditor } from "@/components/checklists/ChecklistEditor";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -37,6 +37,7 @@ export default function ChecklistEditorPage() {
             return;
           }
 
+          const groupIdBase = `group-default-${Date.now()}`;
           const questionGroups = groups.length > 0
             ? groups.map(group => ({
                 ...group,
@@ -57,11 +58,11 @@ export default function ChecklistEditorPage() {
                 }))
               }))
             : [{
-                id: `group-default-${Date.now()}`,
+                id: groupIdBase,
                 title: "Geral",
                 questions: questions.map((q: any) => ({
                   ...q,
-                  groupId: `group-default-${Date.now()}`
+                  groupId: groupIdBase
                 }))
               }];
 
@@ -85,6 +86,7 @@ export default function ChecklistEditorPage() {
 
         if (checklistQuery.data) {
           const checklist = checklistQuery.data;
+          const groupIdBase = `group-default-${Date.now()}`;
           const groups = checklist.groups?.length
             ? checklist.groups.map(group => ({
                 ...group,
@@ -100,7 +102,7 @@ export default function ChecklistEditorPage() {
                 }))
               }))
             : [{
-                id: `group-default-${Date.now()}`,
+                id: groupIdBase,
                 title: "Geral",
                 questions: checklist.questions.map(q => ({
                   ...q,
@@ -110,7 +112,7 @@ export default function ChecklistEditorPage() {
                   allowVideo: q.allowsVideo,
                   allowAudio: q.allowsAudio,
                   parentId: q.parentQuestionId,
-                  groupId: `group-default-${Date.now()}`
+                  groupId: groupIdBase
                 }))
               }];
 
@@ -131,7 +133,7 @@ export default function ChecklistEditorPage() {
   const handleSave = (checklistId: string) => {
     sessionStorage.removeItem("checklistEditorData");
     if (isEditorMode) {
-      navigate(`/checklists/${checklistId}/edit`);
+      navigate(`/inspections/new?checklistId=${checklistId}`);
     } else {
       toast.success("Checklist atualizado com sucesso!");
     }
