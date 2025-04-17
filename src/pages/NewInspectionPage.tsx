@@ -1,21 +1,19 @@
 
 import React, { useEffect, useState } from "react";
-import { ChecklistEditor } from "@/components/checklists/ChecklistEditor";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { useChecklistById } from "@/hooks/checklist/useChecklistById";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useFetchChecklistData } from "@/hooks/checklist/useFetchChecklistData";
 
 export default function NewInspectionPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [editorData, setEditorData] = useState<any>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const checklistId = searchParams.get("checklistId") || "";
-  const checklistQuery = useChecklistById(checklistId);
+  const checklistQuery = useFetchChecklistData(checklistId);
 
   useEffect(() => {
     const loadChecklistData = async () => {
@@ -38,46 +36,14 @@ export default function NewInspectionPage() {
       }
 
       if (checklistQuery.data) {
-        const checklist = checklistQuery.data;
-        const groupIdBase = `group-default-${Date.now()}`;
-        
-        // Use o hook useChecklistById diretamente para obter os dados
-        const groups = checklist.groups?.length
-          ? checklist.groups.map(group => ({
-              ...group,
-              questions: checklist.questions.filter(q => q.groupId === group.id).map(q => ({
-                ...q,
-                type: q.responseType,
-                required: q.isRequired,
-                allowPhoto: q.allowsPhoto,
-                allowVideo: q.allowsVideo,
-                allowAudio: q.allowsAudio,
-                parentId: q.parentQuestionId,
-                groupId: q.groupId
-              }))
-            }))
-          : [{
-              id: groupIdBase,
-              title: "Geral",
-              questions: checklist.questions.map(q => ({
-                ...q,
-                type: q.responseType,
-                required: q.isRequired,
-                allowPhoto: q.allowsPhoto,
-                allowVideo: q.allowsVideo,
-                allowAudio: q.allowsAudio,
-                parentId: q.parentQuestionId,
-                groupId: groupIdBase
-              }))
-            }];
-
-        setEditorData({
-          checklistData: checklist,
-          questions: checklist.questions,
-          groups,
-          mode: "inspection"
-        });
+        console.log("Checklist loaded:", checklistQuery.data);
         setLoading(false);
+        
+        // Redirect to the start inspection page directly
+        if (checklistId) {
+          navigate(`/inspections/start/${checklistId}`);
+          return;
+        }
       } else {
         setError("Não foi possível encontrar o checklist especificado");
         setLoading(false);
@@ -85,16 +51,7 @@ export default function NewInspectionPage() {
     };
 
     loadChecklistData();
-  }, [checklistId, checklistQuery]);
-
-  const handleSave = (checklistId: string) => {
-    // Redirecione para a página de início da inspeção com o ID do checklist
-    navigate(`/inspections/start/${checklistId}`);
-  };
-
-  const handleCancel = () => {
-    navigate("/checklists");
-  };
+  }, [checklistId, checklistQuery, navigate]);
 
   if (loading) {
     return (
@@ -130,33 +87,7 @@ export default function NewInspectionPage() {
     );
   }
 
-  if (!editorData) {
-    return (
-      <div className="py-20 text-center">
-        <AlertCircle className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-        <h2 className="text-xl font-semibold mb-2">Nenhum dado encontrado</h2>
-        <p className="text-muted-foreground mb-6">Não foi possível carregar os dados do checklist</p>
-        <Button onClick={() => navigate("/checklists")} className="mx-auto">
-          Voltar para Checklists
-        </Button>
-      </div>
-    );
-  }
-
-  // Redirecionar diretamente para a página de início de inspeção
-  if (checklistId) {
-    navigate(`/inspections/start/${checklistId}`);
-    return null;
-  }
-
-  return (
-    <ChecklistEditor
-      initialChecklist={editorData.checklistData}
-      initialQuestions={editorData.questions || []}
-      initialGroups={editorData.groups || []}
-      mode={editorData.mode || "create"}
-      onSave={handleSave}
-      onCancel={handleCancel}
-    />
-  );
+  // Simply redirect to the start page with the checklistId
+  navigate(`/inspections/start/${checklistId}`);
+  return null;
 }
