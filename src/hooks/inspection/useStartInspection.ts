@@ -211,7 +211,8 @@ export function useStartInspection(checklistId?: string) {
         company_id: formData.companyId,
         responsible_id: formData.responsibleId,
         location: formData.location,
-        scheduled_date: formData.scheduledDate,
+        // Convert Date object to ISO string for compatibility with the Supabase schema
+        scheduled_date: formData.scheduledDate ? formData.scheduledDate.toISOString() : null,
         metadata: {
           ...locationData,
           notes: formData.notes,
