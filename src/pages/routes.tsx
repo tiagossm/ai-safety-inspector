@@ -15,6 +15,8 @@ import NewChecklistDetails from "./NewChecklistDetails";
 import NewInspectionPage from "./NewInspectionPage";
 import InspectionExecutionPage from "./InspectionExecutionPage";
 import ChecklistRedirectPage from "./ChecklistRedirectPage";
+import StartInspectionPage from "./StartInspectionPage";
+import SimpleInspectionPage from "./SimpleInspectionPage";
 
 // Export the routes as an array instead of a component
 export const checklistRoutes = [
