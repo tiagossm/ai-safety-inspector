@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -241,7 +240,6 @@ export function useStartInspection(checklistId?: string) {
   const startInspection = async () => {
     const inspectionId = await saveInspection('pending');
     if (inspectionId) {
-      // Modificação aqui: corrigir a rota para garantir que seja direcionado para a execução da inspeção
       navigate(`/inspections/${inspectionId}/view`);
       return true;
     }

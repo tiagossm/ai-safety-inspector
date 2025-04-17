@@ -43,7 +43,7 @@ function App() {
             <Route path="new-checklists/:id/edit" element={<NewChecklistEdit />} />
             <Route path="new-checklists/:id" element={<NewChecklistDetails />} />
             
-            {/* Inspection routes */}
+            {/* Inspection routes - Verificando que temos todas as rotas necessárias */}
             <Route path="inspections" element={<Inspections />} />
             <Route path="inspections/new" element={<NewInspectionPage />} />
             <Route path="inspections/start" element={<StartInspectionPage />} />

@@ -1,6 +1,6 @@
-""import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ChecklistEditor } from "@/components/checklists/ChecklistEditor";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -13,6 +13,7 @@ export default function ChecklistEditorPage() {
   const [editorData, setEditorData] = useState<any>(null);
   const navigate = useNavigate();
   const { id } = useParams<{ id?: string }>();
+  const [searchParams] = useSearchParams();
   const isEditorMode = id === "editor";
   const checklistQuery = useChecklistById(isEditorMode ? "" : id || "");
 
@@ -136,6 +137,7 @@ export default function ChecklistEditorPage() {
       navigate(`/inspections/new?checklistId=${checklistId}`);
     } else {
       toast.success("Checklist atualizado com sucesso!");
+      navigate("/checklists");
     }
   };
 
@@ -202,4 +204,3 @@ export default function ChecklistEditorPage() {
     />
   );
 }
-
