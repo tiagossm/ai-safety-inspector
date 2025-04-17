@@ -17,7 +17,7 @@ import NewChecklistCreate from "@/pages/NewChecklistCreate";
 import NewChecklistEdit from "@/pages/NewChecklistEdit";
 import NewChecklistDetails from "@/pages/NewChecklistDetails";
 import NewInspectionPage from "@/pages/NewInspectionPage";
-import InspectionExecutionPage from "@/pages/InspectionExecutionPage";
+import SimpleInspectionPage from "@/pages/SimpleInspectionPage";
 import Inspections from "@/pages/Inspections";
 import { Users } from "@/pages/Users";
 
@@ -39,15 +39,15 @@ function App() {
             <Route path="new-checklists" element={<NewChecklists />} />
             <Route path="new-checklists/create" element={<NewChecklistCreate />} />
             <Route path="new-checklists/edit/:id" element={<NewChecklistEdit />} />
-            {/* Add the new route pattern that matches /new-checklists/:id/edit */}
             <Route path="new-checklists/:id/edit" element={<NewChecklistEdit />} />
             <Route path="new-checklists/:id" element={<NewChecklistDetails />} />
             
             {/* Inspection routes */}
             <Route path="inspections" element={<Inspections />} />
+            <Route path="inspections/new" element={<NewInspectionPage />} />
             <Route path="inspections/new/:id" element={<NewInspectionPage />} />
-            <Route path="inspections/:id" element={<InspectionExecutionPage />} />
-            <Route path="inspections/:id/view" element={<InspectionExecutionPage />} />
+            <Route path="inspections/:id" element={<SimpleInspectionPage />} />
+            <Route path="inspections/:id/view" element={<SimpleInspectionPage />} />
             
             {/* Redirect old routes to new ones */}
             <Route path="checklists" element={<Navigate to="/new-checklists" replace />} />

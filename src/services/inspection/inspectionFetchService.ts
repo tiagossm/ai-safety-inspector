@@ -1,20 +1,133 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { processChecklistItems, processResponses } from "@/utils/inspection/normalizationUtils";
-import { fetchAllSubChecklists } from "./subChecklistService";
 import { toast } from "sonner";
 
 /**
- * Fetches all data needed for an inspection
+ * Normaliza o tipo de resposta para um formato padrão
  */
-export const fetchInspectionData = async (inspectionId: string) => {
+const normalizeResponseType = (type) => {
+  if (!type) return "text";
+  
+  const typeStr = String(type).toLowerCase();
+  if (typeStr.includes("sim") || typeStr.includes("não") || typeStr.includes("yes") || typeStr.includes("no")) {
+    return "yes_no";
+  } else if (typeStr.includes("múlt") || typeStr.includes("mult")) {
+    return "multiple_choice";
+  } else if (typeStr.includes("num")) {
+    return "numeric";
+  } else if (typeStr.includes("foto") || typeStr.includes("image") || typeStr.includes("photo")) {
+    return "photo";
+  }
+  return "text";
+};
+
+/**
+ * Processa os itens do checklist para o formato necessário
+ */
+const processChecklistItems = (items) => {
+  console.log(`Processing ${items?.length || 0} checklist items`);
+  
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    console.warn("No checklist items to process");
+    return { parsedQuestions: [], groupsMap: new Map() };
+  }
+  
+  // Criar um mapa para os grupos
+  const groupsMap = new Map();
+  groupsMap.set("default-group", { id: "default-group", title: "Geral", order: 0 });
+  
+  // Processar as questões
+  const parsedQuestions = items.map((item, index) => {
+    // Garantir que cada item tenha um groupId, usando default-group se não tiver
+    const groupId = item.group_id || "default-group";
+    
+    // Adicionar o grupo ao mapa se não existir
+    if (item.group_id && !groupsMap.has(item.group_id)) {
+      groupsMap.set(item.group_id, {
+        id: item.group_id,
+        title: item.group_name || `Grupo ${groupsMap.size}`,
+        order: groupsMap.size
+      });
+    }
+    
+    // Normalizar as opções (se existirem)
+    let options = [];
+    if (item.opcoes) {
+      try {
+        if (typeof item.opcoes === 'string') {
+          options = JSON.parse(item.opcoes);
+        } else if (Array.isArray(item.opcoes)) {
+          options = item.opcoes;
+        } else if (typeof item.opcoes === 'object') {
+          options = item.opcoes;
+        }
+      } catch (e) {
+        console.warn(`Failed to parse options for question ${item.id}:`, e);
+      }
+    }
+    
+    // Criar objeto de questão normalizado
+    return {
+      id: item.id,
+      text: item.pergunta,
+      responseType: normalizeResponseType(item.tipo_resposta),
+      isRequired: item.obrigatorio !== false,
+      options: options,
+      order: item.ordem || index,
+      groupId: groupId,
+      weight: item.weight || 1,
+      allowsPhoto: item.permite_foto === true,
+      allowsVideo: item.permite_video === true,
+      allowsAudio: item.permite_audio === true,
+      allowsFiles: item.permite_files === true,
+      hint: item.hint || null,
+      parentQuestionId: item.parent_item_id || null,
+      conditionValue: item.condition_value || null,
+      hasSubChecklist: item.has_subchecklist === true,
+      subChecklistId: item.sub_checklist_id || null,
+    };
+  });
+  
+  console.log(`Parsed ${parsedQuestions.length} questions with ${groupsMap.size} groups`);
+  return { parsedQuestions, groupsMap };
+};
+
+/**
+ * Processa as respostas da inspeção
+ */
+const processResponses = (responsesData) => {
+  if (!responsesData || responsesData.length === 0) {
+    return {};
+  }
+  
+  const responses = {};
+  responsesData.forEach(response => {
+    responses[response.question_id] = {
+      value: response.answer,
+      comment: response.notes,
+      actionPlan: response.action_plan,
+      mediaUrls: response.media_urls || [],
+      subChecklistResponses: response.sub_checklist_responses || {},
+      updatedAt: response.updated_at
+    };
+  });
+  
+  return responses;
+};
+
+/**
+ * Busca todos os dados necessários para uma inspeção
+ */
+export const fetchInspectionData = async (inspectionId) => {
+  console.log(`Fetching inspection data for ID: ${inspectionId}`);
+  
   if (!inspectionId) {
+    console.error("No inspection ID provided");
     return {
       error: "ID da inspeção não fornecido",
-      detailedError: null,
       inspection: null,
       questions: [],
-      groups: [],
+      groups: [{ id: "default-group", title: "Geral", order: 0 }],
       responses: {},
       company: null,
       responsible: null,
@@ -23,46 +136,33 @@ export const fetchInspectionData = async (inspectionId: string) => {
   }
 
   try {
-    console.log(`Fetching inspection data for ID: ${inspectionId}`);
-    
-    // Fetch inspection data
+    // Buscar dados da inspeção
     const { data: inspectionData, error: inspectionError } = await supabase
       .from("inspections")
       .select(`
         *, 
-        companies:company_id(id, fantasy_name), 
-        checklist:checklist_id(id, title, description, category)
+        companies:company_id(id, fantasy_name, cnpj),
+        checklist:checklist_id(id, title, description)
       `)
       .eq("id", inspectionId)
       .single();
 
-    if (inspectionError || !inspectionData) {
-      console.error("Error fetching inspection:", inspectionError || "Inspection not found");
-      throw inspectionError || new Error("Inspeção não encontrada");
+    if (inspectionError) {
+      console.error("Error fetching inspection:", inspectionError);
+      throw new Error("Erro ao buscar inspeção: " + inspectionError.message);
+    }
+
+    if (!inspectionData) {
+      console.error("No inspection data found for ID:", inspectionId);
+      throw new Error("Inspeção não encontrada");
     }
 
     console.log("Inspection data loaded:", inspectionData);
 
-    // Check if it's a subchecklist
-    const isSubChecklist = inspectionData.checklist?.category === "subchecklist";
-    if (isSubChecklist) {
-      return {
-        error: "Esta inspeção é um sub-checklist e não pode ser executada diretamente.",
-        detailedError: null,
-        inspection: null,
-        questions: [],
-        groups: [],
-        responses: {},
-        company: null,
-        responsible: null,
-        subChecklists: {},
-      };
-    }
-
-    // Format inspection data
+    // Formatar dados da inspeção
     const inspection = {
       id: inspectionData.id,
-      title: inspectionData.checklist?.title || "Inspeção",
+      title: inspectionData.checklist?.title || "Inspeção sem título",
       description: inspectionData.checklist?.description || "",
       checklistId: inspectionData.checklist_id,
       companyId: inspectionData.company_id,
@@ -72,20 +172,28 @@ export const fetchInspectionData = async (inspectionId: string) => {
       status: inspectionData.status || "pending",
     };
 
-    const company = inspectionData.companies;
+    // Extrair informações da empresa
+    const company = inspectionData.companies ? {
+      id: inspectionData.companies.id,
+      fantasy_name: inspectionData.companies.fantasy_name,
+      cnpj: inspectionData.companies.cnpj
+    } : null;
 
-    // Fetch responsible user data
+    // Buscar dados do responsável
     let responsible = null;
     if (inspectionData.responsible_id) {
       const { data: userData } = await supabase
         .from("users")
-        .select("name")
+        .select("id, name, email, position")
         .eq("id", inspectionData.responsible_id)
         .single();
-      if (userData) responsible = userData;
+      
+      if (userData) {
+        responsible = userData;
+      }
     }
 
-    // Fetch checklist questions
+    // Buscar itens do checklist
     const { data: checklistItems, error: checklistError } = await supabase
       .from("checklist_itens")
       .select("*")
@@ -94,62 +202,60 @@ export const fetchInspectionData = async (inspectionId: string) => {
 
     if (checklistError) {
       console.error("Error fetching checklist items:", checklistError);
-      throw checklistError;
-    }
-    
-    console.log(`Loaded ${checklistItems?.length || 0} checklist items from Supabase for checklist ${inspectionData.checklist_id}`);
-
-    if (!checklistItems || checklistItems.length === 0) {
-      console.warn("No checklist items found for this inspection");
-      toast.error("Nenhuma pergunta encontrada para esta inspeção");
+      throw new Error("Erro ao buscar perguntas do checklist: " + checklistError.message);
     }
 
-    // Process questions and groups - Adding detailed logs
-    console.log("Processing checklist items:", checklistItems);
+    console.log(`Loaded ${checklistItems?.length || 0} checklist items from database`);
+
+    // Processar questões e grupos
     const { parsedQuestions, groupsMap } = processChecklistItems(checklistItems);
-    console.log("Processed questions:", parsedQuestions);
     
-    // Sort and configure groups
-    const sortedGroups = Array.from(groupsMap.values()).sort((a, b) => a.order - b.order);
-    const finalGroups = sortedGroups.length > 0 ? sortedGroups : [{ id: "default-group", title: "Geral", order: 0 }];
+    // Converter mapa de grupos para array ordenado
+    const groups = Array.from(groupsMap.values()).sort((a, b) => a.order - b.order);
     
-    console.log(`Setting ${finalGroups.length} groups and ${parsedQuestions.length} questions`);
-    console.log("Group IDs:", finalGroups.map(g => g.id));
-    console.log("Questions with groupIds:", parsedQuestions.map(q => ({ id: q.id, groupId: q.groupId })));
+    // Log para debug
+    console.log(`Processed ${parsedQuestions.length} questions with ${groups.length} groups`);
+    if (parsedQuestions.length > 0) {
+      // Verificar distribuição de grupos
+      const groupDistribution = parsedQuestions.reduce((acc, q) => {
+        const grp = q.groupId || "undefined";
+        acc[grp] = (acc[grp] || 0) + 1;
+        return acc;
+      }, {});
+      
+      console.log("Questions per group:", groupDistribution);
+    }
 
-    // Fetch responses
+    // Buscar respostas
     const { data: responsesData } = await supabase
       .from("inspection_responses")
       .select("*")
       .eq("inspection_id", inspectionId);
 
     const responses = processResponses(responsesData);
-    console.log("Processed responses:", responses);
-
-    // Fetch subchecklists
-    const subChecklists = await fetchAllSubChecklists(parsedQuestions);
+    
+    // Dados de subchecklists simplificados por enquanto
+    const subChecklists = {};
 
     return {
       error: null,
-      detailedError: null,
       inspection,
       questions: parsedQuestions,
-      groups: finalGroups,
+      groups,
       responses,
       company,
       responsible,
       subChecklists,
     };
-  } catch (err: any) {
+  } catch (err) {
     console.error("Error fetching inspection data:", err);
     toast.error(`Erro ao carregar inspeção: ${err.message || "Erro desconhecido"}`);
     
     return {
       error: err.message || "Erro ao carregar inspeção",
-      detailedError: JSON.stringify(err, null, 2),
       inspection: null,
       questions: [],
-      groups: [],
+      groups: [{ id: "default-group", title: "Geral", order: 0 }],
       responses: {},
       company: null,
       responsible: null,
