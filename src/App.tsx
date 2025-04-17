@@ -21,6 +21,7 @@ import SimpleInspectionPage from "@/pages/SimpleInspectionPage";
 import StartInspectionPage from "@/pages/StartInspectionPage";
 import Inspections from "@/pages/Inspections";
 import { Users } from "@/pages/Users";
+import ChecklistRedirectPage from "@/pages/ChecklistRedirectPage";
 
 function App() {
   return (
@@ -43,11 +44,12 @@ function App() {
             <Route path="new-checklists/:id/edit" element={<NewChecklistEdit />} />
             <Route path="new-checklists/:id" element={<NewChecklistDetails />} />
             
-            {/* Inspection routes - Verificando que temos todas as rotas necessárias */}
+            {/* Inspection routes - Fluxo atualizado */}
             <Route path="inspections" element={<Inspections />} />
             <Route path="inspections/new" element={<NewInspectionPage />} />
             <Route path="inspections/start" element={<StartInspectionPage />} />
             <Route path="inspections/start/:checklistId" element={<StartInspectionPage />} />
+            <Route path="inspections/redirect/:id" element={<ChecklistRedirectPage />} />
             <Route path="inspections/new/:id" element={<NewInspectionPage />} />
             <Route path="inspections/:id" element={<SimpleInspectionPage />} />
             <Route path="inspections/:id/view" element={<SimpleInspectionPage />} />

@@ -14,6 +14,7 @@ import NewChecklistEdit from "./NewChecklistEdit";
 import NewChecklistDetails from "./NewChecklistDetails";
 import NewInspectionPage from "./NewInspectionPage";
 import InspectionExecutionPage from "./InspectionExecutionPage";
+import ChecklistRedirectPage from "./ChecklistRedirectPage";
 
 // Export the routes as an array instead of a component
 export const checklistRoutes = [
@@ -29,8 +30,9 @@ export const checklistRoutes = [
   <Route key="new-checklists-id-edit" path="/new-checklists/:id/edit" element={<RequireAuth><NewChecklistEdit /></RequireAuth>} />,
   <Route key="new-checklists-id" path="/new-checklists/:id" element={<RequireAuth><NewChecklistDetails /></RequireAuth>} />,
   
-  // Certifique-se de que essas rotas estão corretamente definidas
+  // Rotas de inspeção atualizadas
   <Route key="inspections-new" path="/inspections/new" element={<RequireAuth><NewInspectionPage /></RequireAuth>} />,
+  <Route key="inspections-redirect-id" path="/inspections/redirect/:id" element={<RequireAuth><ChecklistRedirectPage /></RequireAuth>} />,
   <Route key="inspections-new-id" path="/inspections/new/:id" element={<RequireAuth><NewInspectionPage /></RequireAuth>} />,
   <Route key="inspections-id" path="/inspections/:id" element={<RequireAuth><InspectionExecutionPage /></RequireAuth>} />,
   <Route key="inspections-id-view" path="/inspections/:id/view" element={<RequireAuth><InspectionExecutionPage /></RequireAuth>} />

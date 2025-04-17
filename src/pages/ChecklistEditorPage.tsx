@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { ChecklistEditor } from "@/components/checklists/ChecklistEditor";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -134,7 +135,8 @@ export default function ChecklistEditorPage() {
   const handleSave = (checklistId: string) => {
     sessionStorage.removeItem("checklistEditorData");
     if (isEditorMode) {
-      navigate(`/inspections/new?checklistId=${checklistId}`);
+      // Direcionar diretamente para a página de início da inspeção
+      navigate(`/inspections/start/${checklistId}`);
     } else {
       toast.success("Checklist atualizado com sucesso!");
       navigate("/checklists");

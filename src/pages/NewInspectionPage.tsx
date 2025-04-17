@@ -1,8 +1,9 @@
+
 import React, { useEffect, useState } from "react";
 import { ChecklistEditor } from "@/components/checklists/ChecklistEditor";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
+import { useChecklistById } from "@/hooks/checklist/useChecklistById";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,134 +15,84 @@ export default function NewInspectionPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const checklistId = searchParams.get("checklistId") || "";
-  const isEditorMode = !checklistId;
   const checklistQuery = useChecklistById(checklistId);
 
   useEffect(() => {
     const loadChecklistData = async () => {
-      if (isEditorMode) {
-        const storedData = sessionStorage.getItem("checklistEditorData");
+      if (!checklistId) {
+        setError("ID do checklist não fornecido na URL. Use o formato /inspections/new?checklistId=ID");
+        setLoading(false);
+        return;
+      }
 
-        if (!storedData) {
-          setError("Nenhum dado de checklist encontrado em armazenamento temporário");
-          setLoading(false);
-          return;
-        }
+      if (checklistQuery.isLoading) {
+        setLoading(true);
+        return;
+      }
 
-        try {
-          const parsedData = JSON.parse(storedData);
-          const { checklistData, questions = [], groups = [] } = parsedData;
+      if (checklistQuery.error) {
+        console.error("Erro ao carregar checklist:", checklistQuery.error);
+        setError(`Erro ao carregar checklist: ${checklistQuery.error}`);
+        setLoading(false);
+        return;
+      }
 
-          if (!checklistData) {
-            setError("Dados do checklist inválidos: faltando dados principais");
-            setLoading(false);
-            return;
-          }
-
-          const groupIdBase = `group-default-${Date.now()}`;
-          const questionGroups = groups.length > 0
-            ? groups.map(group => ({
-                ...group,
-                questions: (group.questions || []).map((q: any) => ({
-                  ...q,
-                  text: q.text || "",
-                  type: q.type || "sim/não",
-                  required: q.required !== undefined ? q.required : true,
-                  allowPhoto: q.allowPhoto || false,
-                  allowVideo: q.allowVideo || false,
-                  allowAudio: q.allowAudio || false,
-                  options: Array.isArray(q.options) ? q.options : (q.type === "múltipla escolha" ? ["Opção 1", "Opção 2"] : []),
-                  hint: q.hint || "",
-                  weight: q.weight || 1,
-                  parentId: q.parentId || null,
-                  conditionValue: q.conditionValue || null,
-                  groupId: group.id
-                }))
+      if (checklistQuery.data) {
+        const checklist = checklistQuery.data;
+        const groupIdBase = `group-default-${Date.now()}`;
+        
+        // Use o hook useChecklistById diretamente para obter os dados
+        const groups = checklist.groups?.length
+          ? checklist.groups.map(group => ({
+              ...group,
+              questions: checklist.questions.filter(q => q.groupId === group.id).map(q => ({
+                ...q,
+                type: q.responseType,
+                required: q.isRequired,
+                allowPhoto: q.allowsPhoto,
+                allowVideo: q.allowsVideo,
+                allowAudio: q.allowsAudio,
+                parentId: q.parentQuestionId,
+                groupId: q.groupId
               }))
-            : [{
-                id: groupIdBase,
-                title: "Geral",
-                questions: questions.map((q: any) => ({
-                  ...q,
-                  groupId: groupIdBase
-                }))
-              }];
+            }))
+          : [{
+              id: groupIdBase,
+              title: "Geral",
+              questions: checklist.questions.map(q => ({
+                ...q,
+                type: q.responseType,
+                required: q.isRequired,
+                allowPhoto: q.allowsPhoto,
+                allowVideo: q.allowsVideo,
+                allowAudio: q.allowsAudio,
+                parentId: q.parentQuestionId,
+                groupId: groupIdBase
+              }))
+            }];
 
-          setEditorData({ ...parsedData, groups: questionGroups });
-          setLoading(false);
-        } catch (err: any) {
-          setError(`Erro ao carregar dados do checklist: ${err.message || "Erro desconhecido"}`);
-          setLoading(false);
-        }
+        setEditorData({
+          checklistData: checklist,
+          questions: checklist.questions,
+          groups,
+          mode: "inspection"
+        });
+        setLoading(false);
       } else {
-        if (checklistQuery.isLoading) {
-          setLoading(true);
-          return;
-        }
-
-        if (checklistQuery.error) {
-          setError(`Erro ao carregar checklist: ${checklistQuery.error}`);
-          setLoading(false);
-          return;
-        }
-
-        if (checklistQuery.data) {
-          const checklist = checklistQuery.data;
-          const groupIdBase = `group-default-${Date.now()}`;
-          const groups = checklist.groups?.length
-            ? checklist.groups.map(group => ({
-                ...group,
-                questions: checklist.questions.filter(q => q.groupId === group.id).map(q => ({
-                  ...q,
-                  type: q.responseType,
-                  required: q.isRequired,
-                  allowPhoto: q.allowsPhoto,
-                  allowVideo: q.allowsVideo,
-                  allowAudio: q.allowsAudio,
-                  parentId: q.parentQuestionId,
-                  groupId: q.groupId
-                }))
-              }))
-            : [{
-                id: groupIdBase,
-                title: "Geral",
-                questions: checklist.questions.map(q => ({
-                  ...q,
-                  type: q.responseType,
-                  required: q.isRequired,
-                  allowPhoto: q.allowsPhoto,
-                  allowVideo: q.allowsVideo,
-                  allowAudio: q.allowsAudio,
-                  parentId: q.parentQuestionId,
-                  groupId: groupIdBase
-                }))
-              }];
-
-          setEditorData({
-            checklistData: checklist,
-            questions: checklist.questions,
-            groups,
-            mode: "edit"
-          });
-          setLoading(false);
-        }
+        setError("Não foi possível encontrar o checklist especificado");
+        setLoading(false);
       }
     };
 
     loadChecklistData();
-  }, [isEditorMode, checklistQuery, searchParams]);
+  }, [checklistId, checklistQuery]);
 
   const handleSave = (checklistId: string) => {
-    sessionStorage.removeItem("checklistEditorData");
-    if (isEditorMode) {
-      navigate(`/inspections/new?checklistId=${checklistId}`);
-    } else {
-      toast.success("Checklist atualizado com sucesso!");
-    }
+    // Redirecione para a página de início da inspeção com o ID do checklist
+    navigate(`/inspections/start/${checklistId}`);
   };
 
   const handleCancel = () => {
-    sessionStorage.removeItem("checklistEditorData");
     navigate("/checklists");
   };
 
@@ -151,7 +102,7 @@ export default function NewInspectionPage() {
         <div className="animate-pulse mx-auto w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mb-4">
           <div className="w-6 h-6 rounded-full bg-primary/40"></div>
         </div>
-        <p className="text-muted-foreground">Carregando editor...</p>
+        <p className="text-muted-foreground">Carregando checklist...</p>
       </div>
     );
   }
@@ -190,6 +141,12 @@ export default function NewInspectionPage() {
         </Button>
       </div>
     );
+  }
+
+  // Redirecionar diretamente para a página de início de inspeção
+  if (checklistId) {
+    navigate(`/inspections/start/${checklistId}`);
+    return null;
   }
 
   return (
