@@ -3,6 +3,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider"; // Import the auth context to get the user ID
 
 export type InspectionType = "internal" | "external" | "audit" | "routine";
 export type InspectionPriority = "low" | "medium" | "high";
@@ -23,6 +24,7 @@ export interface StartInspectionFormData {
 
 export function useStartInspection(checklistId?: string) {
   const navigate = useNavigate();
+  const { user } = useAuth(); // Get the current user from auth context
   
   const [formData, setFormData] = useState<StartInspectionFormData>({
     companyId: "",
@@ -186,6 +188,11 @@ export function useStartInspection(checklistId?: string) {
       return false;
     }
 
+    if (!user?.id) {
+      toast.error("Usuário não autenticado");
+      return false;
+    }
+
     setSubmitting(true);
     
     try {
@@ -213,7 +220,8 @@ export function useStartInspection(checklistId?: string) {
         status: status,
         inspection_type: formData.inspectionType,
         priority: formData.priority,
-        cnae: formData.companyData?.cnae || null
+        cnae: formData.companyData?.cnae || null,
+        user_id: user.id // Add the user_id field which is required by the database
       };
 
       const { data, error } = await supabase

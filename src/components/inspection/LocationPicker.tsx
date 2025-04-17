@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState } from "react";
 import { MapPin, Navigation, CircleHelp, Search, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,20 @@ import {
 } from "@/components/ui/popover";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+declare global {
+  interface Window {
+    google?: {
+      maps: {
+        Map: new (element: HTMLElement, options: any) => any;
+        Marker: new (options: any) => any;
+        event: {
+          addListener: (instance: any, event: string, handler: Function) => void;
+        };
+      };
+    };
+  }
+}
 
 interface LocationPickerProps {
   value: string;
@@ -33,20 +46,16 @@ export function LocationPicker({
   const mapInstanceRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
   
-  // Carregar o mapa quando o popover é aberto
   useEffect(() => {
     if (showMap && mapRef.current && !mapInstanceRef.current) {
-      // Verificar se a API do Google Maps está disponível
       if (window.google && window.google.maps) {
         initializeMap();
       } else {
-        // Fallback para OpenStreetMap via Leaflet
         loadOpenStreetMap();
       }
     }
   }, [showMap, coordinates]);
 
-  // Inicializa o mapa do Google
   const initializeMap = () => {
     if (!mapRef.current || !window.google) return;
     
@@ -69,7 +78,6 @@ export function LocationPicker({
       title: "Localização da inspeção"
     });
     
-    // Atualizar coordenadas quando o marcador for arrastado
     window.google.maps.event.addListener(markerRef.current, 'dragend', () => {
       const position = markerRef.current.getPosition();
       const newCoords = { 
@@ -81,14 +89,11 @@ export function LocationPicker({
     });
   };
 
-  // Fallback para OpenStreetMap se Google Maps não estiver disponível
   const loadOpenStreetMap = async () => {
     try {
-      // Em um cenário real, carregaríamos o Leaflet aqui
       console.log("Carregando OpenStreetMap como fallback");
       toast.warning("Mapa simplificado carregado. Algumas funcionalidades podem estar limitadas.");
       
-      // Placeholder para o mapa (em produção, carregaríamos o Leaflet)
       if (mapRef.current) {
         mapRef.current.innerHTML = `
           <div style="background-color: #f0f0f0; padding: 20px; text-align: center; height: 100%;">
@@ -104,7 +109,6 @@ export function LocationPicker({
     }
   };
 
-  // Buscar localização atual
   const getCurrentLocation = async () => {
     if (!navigator.geolocation) {
       toast.error("Geolocalização não suportada neste navegador");
@@ -127,7 +131,6 @@ export function LocationPicker({
       onCoordinatesChange?.({ latitude, longitude });
       updateAddressFromCoordinates(latitude, longitude);
       
-      // Atualizar mapa, se ativo
       if (mapInstanceRef.current && markerRef.current) {
         const latlng = { lat: latitude, lng: longitude };
         mapInstanceRef.current.setCenter(latlng);
@@ -152,7 +155,6 @@ export function LocationPicker({
     }
   };
 
-  // Atualizar endereço a partir de coordenadas
   const updateAddressFromCoordinates = async (latitude: number, longitude: number) => {
     try {
       const response = await fetch(
@@ -167,12 +169,10 @@ export function LocationPicker({
       }
     } catch (err) {
       console.error("Error in reverse geocoding:", err);
-      // Apenas atualiza com as coordenadas em caso de erro
       onChange(`Lat: ${latitude.toFixed(6)}, Long: ${longitude.toFixed(6)}`);
     }
   };
 
-  // Pesquisar endereço
   const searchAddress = async () => {
     if (!value.trim()) return;
     
@@ -194,7 +194,6 @@ export function LocationPicker({
           
           onCoordinatesChange?.({ latitude, longitude });
           
-          // Atualizar mapa, se ativo
           if (mapInstanceRef.current && markerRef.current) {
             const latlng = { lat: latitude, lng: longitude };
             mapInstanceRef.current.setCenter(latlng);
@@ -214,7 +213,6 @@ export function LocationPicker({
     }
   };
 
-  // Limpar localização
   const clearLocation = () => {
     onChange("");
     onCoordinatesChange?.(null);
@@ -276,7 +274,6 @@ export function LocationPicker({
                   ref={mapRef} 
                   className="w-full h-[200px] bg-gray-100"
                 >
-                  {/* O mapa será renderizado aqui */}
                   <div className="flex items-center justify-center h-full text-gray-500">
                     Carregando mapa...
                   </div>
