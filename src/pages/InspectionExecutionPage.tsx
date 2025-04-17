@@ -45,16 +45,16 @@ export default function InspectionExecutionPage() {
     reopenInspection
   } = useInspectionData(skipLoading ? undefined : id);
   
-  // Definir grupo inicial quando os dados são carregados
+  // Set initial group when data is loaded
   useEffect(() => {
-    if (groups.length > 0 && !currentGroupId) {
+    if (!loading && groups && groups.length > 0 && !currentGroupId) {
       const firstGroupId = groups[0].id;
       console.log(`Setting initial group to ${firstGroupId} (${groups[0].title})`);
       setCurrentGroupId(firstGroupId);
     }
-  }, [groups, currentGroupId]);
+  }, [groups, currentGroupId, loading]);
 
-  // Configurar auto-save
+  // Auto-save configuration
   useEffect(() => {
     if (autoSave && !loading) {
       const timer = setTimeout(() => {
@@ -66,14 +66,25 @@ export default function InspectionExecutionPage() {
   }, [responses, autoSave, loading]);
   
   const stats = getCompletionStats();
-  const filteredQuestions = currentGroupId ? getFilteredQuestions(currentGroupId) : [];
+  const filteredQuestions = getFilteredQuestions(currentGroupId);
   
-  // Log para depuração
+  // Debug logging
   useEffect(() => {
     if (!loading) {
       console.log(`Filtered questions for group ${currentGroupId}: ${filteredQuestions.length} of ${questions.length}`);
+      console.log(`Available groups: ${groups.map(g => g.id).join(', ')}`);
+      
+      if (questions && questions.length > 0) {
+        const groupCounts = questions.reduce((acc: Record<string, number>, q) => {
+          const groupId = q.groupId || 'no-group';
+          acc[groupId] = (acc[groupId] || 0) + 1;
+          return acc;
+        }, {});
+        
+        console.log('Questions per group:', groupCounts);
+      }
     }
-  }, [currentGroupId, filteredQuestions.length, questions.length, loading]);
+  }, [currentGroupId, filteredQuestions, questions, groups, loading]);
   
   const onSaveProgress = async () => {
     if (saving) return;
@@ -151,9 +162,9 @@ export default function InspectionExecutionPage() {
     );
   }
   
-  console.log(`Execution Page: Loaded ${questions.length} questions, ${groups.length} groups`);
+  console.log(`Execution Page: Loaded ${questions?.length || 0} questions, ${groups?.length || 0} groups`);
   if (currentGroupId) {
-    const questionsInGroup = questions.filter(q => q.groupId === currentGroupId);
+    const questionsInGroup = questions?.filter(q => q.groupId === currentGroupId) || [];
     console.log(`Current group ${currentGroupId} has ${questionsInGroup.length} questions`);
   }
   
@@ -164,9 +175,9 @@ export default function InspectionExecutionPage() {
         inspection={inspection}
         company={company}
         responsible={responsible}
-        questions={questions}
+        questions={questions || []}
         responses={responses}
-        groups={groups}
+        groups={groups || []}
         subChecklists={subChecklists}
         currentGroupId={currentGroupId}
         filteredQuestions={filteredQuestions}

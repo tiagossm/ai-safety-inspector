@@ -104,7 +104,7 @@ export const fetchInspectionData = async (inspectionId: string) => {
       toast.error("Nenhuma pergunta encontrada para esta inspeção");
     }
 
-    // Process questions and groups - Adicionando logs detalhados
+    // Process questions and groups - Adding detailed logs
     console.log("Processing checklist items:", checklistItems);
     const { parsedQuestions, groupsMap } = processChecklistItems(checklistItems);
     console.log("Processed questions:", parsedQuestions);

@@ -7,7 +7,7 @@ export function useQuestionsManagement(questions: any[], responses: Record<strin
     console.log(`Filtering questions for group ${groupId || 'null'}. Total questions: ${questions?.length || 0}`);
     console.log("All questions:", questions);
     
-    if (!questions || questions.length === 0) {
+    if (!Array.isArray(questions) || questions.length === 0) {
       console.warn("No questions available to filter");
       return [];
     }
@@ -32,7 +32,6 @@ export function useQuestionsManagement(questions: any[], responses: Record<strin
     const filtered = normalizedQuestions.filter(q => q.groupId === groupId);
     
     console.log(`Found ${filtered.length} questions for group ${groupId} (from total ${questions.length})`);
-    console.log("Filtered questions:", filtered);
     return filtered;
   }, [questions]);
 

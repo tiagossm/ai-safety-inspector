@@ -76,7 +76,7 @@ export const processChecklistItems = (
       console.error("Error processing hint for item:", item.id, error);
     }
 
-    // Aqui garantimos que cada pergunta tenha um groupId válido
+    // Always ensure each question has a valid groupId
     const finalGroupId = groupId || DEFAULT_GROUP.id;
 
     const processedQuestion = {
@@ -86,7 +86,7 @@ export const processChecklistItems = (
       options: item.opcoes,
       isRequired: item.obrigatorio,
       order: item.ordem,
-      groupId: finalGroupId, // Garantindo que sempre tem um groupId
+      groupId: finalGroupId, // Ensuring every question has a groupId
       parentQuestionId: item.parent_item_id || null,
       parentValue: item.condition_value || null,
       hint: item.hint || null,
@@ -102,6 +102,9 @@ export const processChecklistItems = (
     console.log(`Processed question ${item.id} with groupId ${finalGroupId}`);
     return processedQuestion;
   });
+
+  console.log(`Processed ${parsedQuestions.length} questions with ${groupsMap.size} groups`);
+  console.log("Available groups:", Array.from(groupsMap.values()).map(g => g.id));
 
   return { parsedQuestions, groupsMap };
 };

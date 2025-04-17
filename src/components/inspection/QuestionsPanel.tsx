@@ -41,32 +41,34 @@ export function QuestionsPanel({
     safeParseResponse
   } = useSubChecklistDialog(responses, onResponseChange, onSaveSubChecklistResponses);
   
-  // Use the first group if none selected
+  // Debug logging
   useEffect(() => {
-    if (!currentGroupId && groups.length > 0) {
-      console.log("No group selected, but groups exist. This should be fixed at a higher level.");
-      console.log("Available groups:", groups);
-    }
-  }, [currentGroupId, groups]);
-  
-  // Find current group or use a default group
-  const currentGroup = groups.length > 0
-    ? (currentGroupId 
+    console.log(`QuestionsPanel: currentGroupId=${currentGroupId}, filteredQuestions=${filteredQuestions?.length || 0}, questions=${questions?.length || 0}`);
+    
+    if (groups && groups.length > 0) {
+      console.log("Available groups:", groups.map(g => `${g.id}: ${g.title}`));
+      
+      // Find current group
+      const currentGroup = currentGroupId 
         ? groups.find(g => g.id === currentGroupId) 
-        : groups[0]) || groups[0]  
-    : { id: "default-group", title: "Perguntas", order: 0 };
-  
-  // Enhanced debugging information
-  useEffect(() => {
-    console.log(`QuestionsPanel: currentGroupId=${currentGroupId}, filteredQuestions=${filteredQuestions?.length || 0}, questions=${questions?.length || 0}, currentGroup=${currentGroup?.title || "undefined"}`);
-    console.log("Available groups:", groups.map(g => `${g.id}: ${g.title}`));
+        : groups[0];
+        
+      console.log("Current group:", currentGroup);
+    }
     
     if (questions && questions.length > 0) {
       // Log unique groupIds in questions array
       const uniqueGroupIds = [...new Set(questions.map(q => q.groupId || "undefined"))];
       console.log("Unique groupIds in questions:", uniqueGroupIds);
     }
-  }, [currentGroupId, filteredQuestions, questions, groups, currentGroup]);
+  }, [currentGroupId, filteredQuestions, questions, groups]);
+  
+  // Find current group or use a default group
+  const currentGroup = groups && groups.length > 0
+    ? (currentGroupId 
+        ? groups.find(g => g.id === currentGroupId) 
+        : groups[0]) || groups[0]  
+    : { id: "default-group", title: "Perguntas", order: 0 };
   
   // If loading show loading state
   if (loading) {
@@ -81,7 +83,7 @@ export function QuestionsPanel({
   }
   
   // If no group selected, try to use the first one
-  const effectiveGroupId = currentGroupId || (groups.length > 0 ? groups[0].id : null);
+  const effectiveGroupId = currentGroupId || (groups && groups.length > 0 ? groups[0].id : null);
   
   // If still no group available
   if (!effectiveGroupId) {
@@ -97,7 +99,7 @@ export function QuestionsPanel({
   }
   
   // If no filtered questions but we have questions
-  if (filteredQuestions?.length === 0 && questions?.length > 0) {
+  if (!filteredQuestions?.length && questions?.length > 0) {
     console.warn(`No questions found for group "${currentGroup?.title || effectiveGroupId}"`);
     toast.warning(`Nenhuma pergunta encontrada para o grupo "${currentGroup?.title || 'selecionado'}"`, {
       id: "no-questions-in-group",
@@ -115,14 +117,14 @@ export function QuestionsPanel({
           </p>
         </CardHeader>
         <CardContent className="space-y-4 p-4">
-          {filteredQuestions?.length > 0 ? (
+          {filteredQuestions && filteredQuestions.length > 0 ? (
             <QuestionsList
               questions={filteredQuestions}
-              responses={responses}
-              allQuestions={questions}
+              responses={responses || {}}
+              allQuestions={questions || []}
               onResponseChange={onResponseChange}
-              onOpenSubChecklist={(questionId) => handleOpenSubChecklist(questionId, subChecklists)}
-              subChecklists={subChecklists}
+              onOpenSubChecklist={(questionId) => handleOpenSubChecklist(questionId, subChecklists || {})}
+              subChecklists={subChecklists || {}}
             />
           ) : (
             <QuestionsEmptyState 
@@ -143,7 +145,7 @@ export function QuestionsPanel({
           subChecklistQuestions={currentSubChecklist.questions || []}
           currentResponses={
             currentParentQuestionId && 
-            responses[currentParentQuestionId] && 
+            responses && responses[currentParentQuestionId] && 
             responses[currentParentQuestionId].subChecklistResponses
               ? safeParseResponse(responses[currentParentQuestionId].subChecklistResponses)
               : {}
