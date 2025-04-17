@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RefreshCw } from "lucide-react";
@@ -11,8 +11,9 @@ export default function NewInspectionPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
-  const checklistId = searchParams.get("checklistId") || "";
+  const checklistId = id || searchParams.get("checklistId") || "";
   const checklistQuery = useFetchChecklistData(checklistId);
 
   useEffect(() => {
@@ -40,10 +41,8 @@ export default function NewInspectionPage() {
         setLoading(false);
         
         // Redirect to the start inspection page directly
-        if (checklistId) {
-          navigate(`/inspections/start/${checklistId}`);
-          return;
-        }
+        navigate(`/inspections/start/${checklistId}`);
+        return;
       } else {
         setError("Não foi possível encontrar o checklist especificado");
         setLoading(false);
@@ -87,7 +86,13 @@ export default function NewInspectionPage() {
     );
   }
 
-  // Simply redirect to the start page with the checklistId
-  navigate(`/inspections/start/${checklistId}`);
-  return null;
+  // Simply show loading as we should redirect in useEffect
+  return (
+    <div className="py-20 text-center">
+      <div className="animate-pulse mx-auto w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mb-4">
+        <div className="w-6 h-6 rounded-full bg-primary/40"></div>
+      </div>
+      <p className="text-muted-foreground">Redirecionando para inspeção...</p>
+    </div>
+  );
 }
