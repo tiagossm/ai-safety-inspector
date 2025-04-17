@@ -184,7 +184,7 @@ export function useInspectionData(inspectionId: string | undefined) {
     getCompletionStats,
     getFilteredQuestions,
     error,
-    detailedError,
+    detailedError,  // Agora retornamos detailedError para os componentes que usarem este hook
     refreshData,
     completeInspection,
     reopenInspection

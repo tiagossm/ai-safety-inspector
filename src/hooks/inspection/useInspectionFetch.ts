@@ -6,7 +6,7 @@ import { toast } from "sonner";
 export function useInspectionFetch(inspectionId: string | undefined) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [detailedError, setDetailedError] = useState<string | null>(null);
+  const [detailedError, setDetailedError] = useState<any>(null);
   const [inspection, setInspection] = useState<any>(null);
   const [questions, setQuestions] = useState<any[]>([]);
   const [groups, setGroups] = useState<any[]>([]);
@@ -63,6 +63,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
     } catch (err: any) {
       console.error("Error in useInspectionFetch:", err);
       setError(err.message || "Erro desconhecido");
+      setDetailedError(err);
       toast.error(`Erro ao carregar dados da inspeção: ${err.message}`);
     } finally {
       setLoading(false);

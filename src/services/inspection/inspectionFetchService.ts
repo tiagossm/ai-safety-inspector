@@ -125,6 +125,7 @@ export const fetchInspectionData = async (inspectionId) => {
     console.error("No inspection ID provided");
     return {
       error: "ID da inspeção não fornecido",
+      detailedError: null, // Adicionamos a propriedade detailedError
       inspection: null,
       questions: [],
       groups: [{ id: "default-group", title: "Geral", order: 0 }],
@@ -149,12 +150,32 @@ export const fetchInspectionData = async (inspectionId) => {
 
     if (inspectionError) {
       console.error("Error fetching inspection:", inspectionError);
-      throw new Error("Erro ao buscar inspeção: " + inspectionError.message);
+      return {
+        error: "Erro ao buscar inspeção: " + inspectionError.message,
+        detailedError: inspectionError, // Armazenamos o erro detalhado
+        inspection: null,
+        questions: [],
+        groups: [{ id: "default-group", title: "Geral", order: 0 }],
+        responses: {},
+        company: null,
+        responsible: null,
+        subChecklists: {},
+      };
     }
 
     if (!inspectionData) {
       console.error("No inspection data found for ID:", inspectionId);
-      throw new Error("Inspeção não encontrada");
+      return {
+        error: "Inspeção não encontrada",
+        detailedError: { message: "Nenhum dado encontrado para este ID de inspeção" },
+        inspection: null,
+        questions: [],
+        groups: [{ id: "default-group", title: "Geral", order: 0 }],
+        responses: {},
+        company: null,
+        responsible: null,
+        subChecklists: {},
+      };
     }
 
     console.log("Inspection data loaded:", inspectionData);
@@ -202,7 +223,17 @@ export const fetchInspectionData = async (inspectionId) => {
 
     if (checklistError) {
       console.error("Error fetching checklist items:", checklistError);
-      throw new Error("Erro ao buscar perguntas do checklist: " + checklistError.message);
+      return {
+        error: "Erro ao buscar perguntas do checklist: " + checklistError.message,
+        detailedError: checklistError,
+        inspection,
+        questions: [],
+        groups: [{ id: "default-group", title: "Geral", order: 0 }],
+        responses: {},
+        company,
+        responsible,
+        subChecklists: {},
+      };
     }
 
     console.log(`Loaded ${checklistItems?.length || 0} checklist items from database`);
@@ -239,6 +270,7 @@ export const fetchInspectionData = async (inspectionId) => {
 
     return {
       error: null,
+      detailedError: null, // Não há erro detalhado quando tudo corre bem
       inspection,
       questions: parsedQuestions,
       groups,
@@ -253,6 +285,7 @@ export const fetchInspectionData = async (inspectionId) => {
     
     return {
       error: err.message || "Erro ao carregar inspeção",
+      detailedError: err, // Armazenamos o erro completo
       inspection: null,
       questions: [],
       groups: [{ id: "default-group", title: "Geral", order: 0 }],
