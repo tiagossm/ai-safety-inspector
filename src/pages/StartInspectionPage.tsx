@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -29,6 +28,11 @@ import { ResponsibleSelector } from "@/components/inspection/ResponsibleSelector
 import { LocationPicker } from "@/components/inspection/LocationPicker";
 import { DateTimePicker } from "@/components/inspection/DateTimePicker";
 import { useStartInspection } from "@/hooks/inspection/useStartInspection";
+import ChecklistHeaderSection from "./start-inspection/ChecklistHeaderSection";
+import FormProgressSection from "./start-inspection/FormProgressSection";
+import InspectionTabsSection from "./start-inspection/InspectionTabsSection";
+import InspectionActionButtonsSection from "./start-inspection/InspectionActionButtonsSection";
+import ShareDialogSection from "./start-inspection/ShareDialogSection";
 
 export default function StartInspectionPage() {
   const navigate = useNavigate();
@@ -151,32 +155,13 @@ export default function StartInspectionPage() {
 
   return (
     <div className="container max-w-5xl py-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <div>
-          <h1 
-            className="text-2xl font-bold tracking-tight cursor-pointer" 
-            onClick={handleHeaderClick}
-          >
-            Iniciar Inspeção
-          </h1>
-          <p className="text-muted-foreground">
-            Preencha os dados necessários para iniciar a inspeção
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          {draftSaved && (
-            <Badge variant="outline" className="text-xs">
-              <Check className="w-3 h-3 mr-1" /> 
-              Salvo {draftSaved.toLocaleTimeString()}
-            </Badge>
-          )}
-          <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-primary/20">
-            {checklist.isTemplate ? "Template" : "Checklist"}
-          </Badge>
-        </div>
-      </div>
-
+      <ChecklistHeaderSection
+        checklist={checklist}
+        draftSaved={draftSaved}
+        debugMode={debugMode}
+        debugClickCount={debugClickCount}
+        handleHeaderClick={handleHeaderClick}
+      />
       <Card className="mb-6 border-primary/20">
         <CardHeader className="pb-2">
           <CardTitle className="flex justify-between">
@@ -202,334 +187,32 @@ export default function StartInspectionPage() {
           </div>
         </CardContent>
       </Card>
-
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-2">
-          <p className="text-sm font-medium">Progresso do formulário</p>
-          <Badge variant="outline">{formProgress}%</Badge>
-        </div>
-        <Progress value={formProgress} className="h-2" />
-      </div>
-
-      <div className="bg-card p-6 rounded-lg border border-border mb-6">
-        <Tabs defaultValue="basic">
-          <TabsList className="mb-4">
-            <TabsTrigger value="basic">Dados Básicos</TabsTrigger>
-            <TabsTrigger value="advanced">Configurações</TabsTrigger>
-            {debugMode && <TabsTrigger value="debug">Debug</TabsTrigger>}
-          </TabsList>
-          
-          <TabsContent value="basic">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <FormLabel htmlFor="company" className={formErrors.company ? "text-destructive" : ""}>
-                  Empresa <span className="text-destructive">*</span>
-                </FormLabel>
-                <CompanySelector
-                  value={formData.companyId}
-                  onSelect={(id, data) => {
-                    updateFormField("companyId", id);
-                    updateFormField("companyData", data);
-                  }}
-                  className={formErrors.company ? "border-destructive" : ""}
-                />
-                {formErrors.company && (
-                  <p className="text-sm text-destructive">{formErrors.company}</p>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                <FormLabel htmlFor="cnae" className={formErrors.cnae ? "text-destructive" : ""}>
-                  CNAE
-                </FormLabel>
-                <div className="relative">
-                  <Input
-                    id="cnae"
-                    placeholder="00.00-0"
-                    value={formData.companyData?.cnae || ""}
-                    onChange={(e) => {
-                      const newData = { ...formData.companyData, cnae: e.target.value };
-                      updateFormField("companyData", newData);
-                    }}
-                    className={formErrors.cnae ? "border-destructive" : ""}
-                  />
-                  {formData.companyData?.cnae && /^\d{2}\.\d{2}-\d$/.test(formData.companyData.cnae) && (
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                      <Check className="h-4 w-4 text-green-500" />
-                    </div>
-                  )}
-                </div>
-                {formErrors.cnae && (
-                  <p className="text-sm text-destructive">{formErrors.cnae}</p>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  Formato: XX.XX-X (ex: 42.11-1)
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <FormLabel htmlFor="responsible" className={formErrors.responsible ? "text-destructive" : ""}>
-                  Responsável <span className="text-destructive">*</span>
-                </FormLabel>
-                <ResponsibleSelector
-                  value={formData.responsibleId}
-                  onSelect={(id, data) => {
-                    updateFormField("responsibleId", id);
-                    updateFormField("responsibleData", data);
-                  }}
-                  className={formErrors.responsible ? "border-destructive" : ""}
-                />
-                {formErrors.responsible && (
-                  <p className="text-sm text-destructive">{formErrors.responsible}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <FormLabel htmlFor="location" className={formErrors.location ? "text-destructive" : ""}>
-                  Localização <span className="text-destructive">*</span>
-                </FormLabel>
-                <LocationPicker
-                  value={formData.location}
-                  onChange={(value) => updateFormField("location", value)}
-                  onCoordinatesChange={(coords) => updateFormField("coordinates", coords)}
-                  coordinates={formData.coordinates}
-                />
-                {formErrors.location && (
-                  <p className="text-sm text-destructive">{formErrors.location}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <FormLabel htmlFor="scheduledDate">
-                  Data Agendada
-                </FormLabel>
-                <DateTimePicker
-                  date={formData.scheduledDate}
-                  setDate={(date) => updateFormField("scheduledDate", date)}
-                />
-              </div>
-
-              <div className="space-y-2 md:col-span-2">
-                <FormLabel htmlFor="notes">
-                  Observações
-                </FormLabel>
-                <Textarea
-                  id="notes"
-                  placeholder="Adicione observações relevantes para a inspeção"
-                  value={formData.notes}
-                  onChange={(e) => updateFormField("notes", e.target.value)}
-                  className="min-h-[100px]"
-                />
-              </div>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="advanced">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <FormLabel>
-                  Tipo de Inspeção
-                </FormLabel>
-                <RadioGroup
-                  defaultValue={formData.inspectionType}
-                  onValueChange={(value) => updateFormField("inspectionType", value as any)}
-                  className="grid grid-cols-2 gap-4"
-                >
-                  <div>
-                    <RadioGroupItem value="internal" id="internal" className="peer sr-only" />
-                    <FormLabel
-                      htmlFor="internal"
-                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                    >
-                      <span className="font-medium">Interna</span>
-                    </FormLabel>
-                  </div>
-                  
-                  <div>
-                    <RadioGroupItem value="external" id="external" className="peer sr-only" />
-                    <FormLabel
-                      htmlFor="external"
-                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                    >
-                      <span className="font-medium">Externa</span>
-                    </FormLabel>
-                  </div>
-                  
-                  <div>
-                    <RadioGroupItem value="audit" id="audit" className="peer sr-only" />
-                    <FormLabel
-                      htmlFor="audit"
-                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                    >
-                      <span className="font-medium">Auditoria</span>
-                    </FormLabel>
-                  </div>
-                  
-                  <div>
-                    <RadioGroupItem value="routine" id="routine" className="peer sr-only" />
-                    <FormLabel
-                      htmlFor="routine"
-                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                    >
-                      <span className="font-medium">Rotina</span>
-                    </FormLabel>
-                  </div>
-                </RadioGroup>
-              </div>
-              
-              <div className="space-y-4">
-                <FormLabel>
-                  Prioridade
-                </FormLabel>
-                <RadioGroup
-                  defaultValue={formData.priority}
-                  onValueChange={(value) => updateFormField("priority", value as any)}
-                  className="grid grid-cols-3 gap-4"
-                >
-                  <div>
-                    <RadioGroupItem value="low" id="low" className="peer sr-only" />
-                    <FormLabel
-                      htmlFor="low"
-                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                    >
-                      <span className="font-medium">Baixa</span>
-                    </FormLabel>
-                  </div>
-                  
-                  <div>
-                    <RadioGroupItem value="medium" id="medium" className="peer sr-only" />
-                    <FormLabel
-                      htmlFor="medium"
-                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                    >
-                      <span className="font-medium">Média</span>
-                    </FormLabel>
-                  </div>
-                  
-                  <div>
-                    <RadioGroupItem value="high" id="high" className="peer sr-only" />
-                    <FormLabel
-                      htmlFor="high"
-                      className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer"
-                    >
-                      <span className="font-medium">Alta</span>
-                    </FormLabel>
-                  </div>
-                </RadioGroup>
-              </div>
-            </div>
-          </TabsContent>
-          
-          {debugMode && (
-            <TabsContent value="debug">
-              <div className="p-4 bg-black text-green-400 font-mono rounded-md overflow-auto max-h-[400px]">
-                <pre>{JSON.stringify(formData, null, 2)}</pre>
-              </div>
-            </TabsContent>
-          )}
-        </Tabs>
-      </div>
-      
-      <div className="flex flex-col sm:flex-row justify-end items-center gap-3 mt-6">
-        <Button 
-          variant="outline" 
-          onClick={cancelAndGoBack}
-          disabled={isLoading || !!submitting}
-        >
-          Cancelar
-        </Button>
-        
-        <Button 
-          variant="outline" 
-          onClick={saveAsDraft}
-          disabled={isLoading || !!submitting}
-        >
-          {submitting === 'draft' ? (
-            <>
-              <div className="h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin mr-2"></div>
-              Salvando...
-            </>
-          ) : (
-            'Salvar como Rascunho'
-          )}
-        </Button>
-        
-        <Button 
-          variant="outline"
-          onClick={handleShare}
-          disabled={isLoading || !!submitting}
-        >
-          <Share2 className="mr-2 h-4 w-4" />
-          Compartilhar
-        </Button>
-        
-        <Button 
-          onClick={handleStartInspection}
-          disabled={isLoading || !!submitting}
-        >
-          {submitting === 'pending' ? (
-            <>
-              <div className="h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin mr-2"></div>
-              Iniciando...
-            </>
-          ) : (
-            <>
-              Iniciar Inspeção
-              <ChevronRight className="ml-2 h-4 w-4" />
-            </>
-          )}
-        </Button>
-      </div>
-      
-      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Compartilhar Inspeção</DialogTitle>
-            <DialogDescription>
-              Compartilhe esta inspeção com outros responsáveis ou envie o link para dispositivos móveis.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex items-center space-x-2">
-            <div className="grid flex-1 gap-2">
-              <Input
-                value={sharableLink}
-                readOnly
-                className="w-full"
-              />
-            </div>
-            <Button size="sm" variant="secondary" className="px-3" onClick={copyToClipboard}>
-              <span className="sr-only">Copiar</span>
-              <ClipboardCopy className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="flex justify-center p-4">
-            <div className="w-40 h-40 bg-gray-200 flex items-center justify-center">
-              <Info className="h-8 w-8 text-gray-400" />
-              <span className="sr-only">QR Code</span>
-            </div>
-          </div>
-          <DialogFooter className="sm:justify-between">
-            <Button variant="secondary" onClick={() => setShareDialogOpen(false)}>
-              Fechar
-            </Button>
-            {navigator.share && (
-              <Button
-                variant="default"
-                onClick={() => {
-                  navigator.share({
-                    title: "Inspeção compartilhada",
-                    text: `Inspeção ${checklistData?.title || ""} - Empresa: ${formData.companyData?.fantasy_name || ""}`,
-                    url: sharableLink
-                  }).catch(err => console.error("Erro ao compartilhar:", err));
-                }}
-              >
-                <Share2 className="mr-2 h-4 w-4" />
-                Compartilhar
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <FormProgressSection formProgress={formProgress} />
+      <InspectionTabsSection
+        formData={formData}
+        updateFormField={updateFormField}
+        formErrors={formErrors}
+        checklist={checklist}
+        debugMode={debugMode}
+        setDebugMode={setDebugMode}
+        setDebugClickCount={setDebugClickCount}
+      />
+      <InspectionActionButtonsSection
+        isLoading={isLoading}
+        submitting={submitting}
+        cancelAndGoBack={cancelAndGoBack}
+        saveAsDraft={saveAsDraft}
+        handleShare={handleShare}
+        handleStartInspection={handleStartInspection}
+      />
+      <ShareDialogSection
+        open={shareDialogOpen}
+        setOpen={setShareDialogOpen}
+        sharableLink={sharableLink}
+        copyToClipboard={copyToClipboard}
+        checklistData={checklistData}
+        formData={formData}
+      />
     </div>
   );
 }
