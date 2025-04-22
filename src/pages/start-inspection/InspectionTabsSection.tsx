@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Check } from "lucide-react";
+import { useFormContext, Controller } from "react-hook-form";
 
 interface InspectionTabsSectionProps {
   formData: any;
@@ -30,8 +31,13 @@ export default function InspectionTabsSection({
   setDebugMode,
   setDebugClickCount,
 }: InspectionTabsSectionProps) {
-  // Reuse handler for debug mode (if further splitting wanted)
-  // (Code stays mostly the same as original)
+  const { control, setValue, watch } = useFormContext();
+
+  // Function to update both the form context and the parent state
+  const handleFieldUpdate = (field: string, value: any) => {
+    setValue(field, value);
+    updateFormField(field, value);
+  };
 
   return (
     <div className="bg-card p-6 rounded-lg border border-border mb-6">
@@ -39,6 +45,7 @@ export default function InspectionTabsSection({
         <TabsList className="mb-4">
           <TabsTrigger value="basic">Dados Básicos</TabsTrigger>
           <TabsTrigger value="advanced">Configurações</TabsTrigger>
+          <TabsTrigger value="users">Usuários</TabsTrigger>
           {debugMode && <TabsTrigger value="debug">Debug</TabsTrigger>}
         </TabsList>
         <TabsContent value="basic">
@@ -47,13 +54,19 @@ export default function InspectionTabsSection({
               <FormLabel htmlFor="company" className={formErrors.company ? "text-destructive" : ""}>
                 Empresa <span className="text-destructive">*</span>
               </FormLabel>
-              <CompanySelector
-                value={formData.companyId}
-                onSelect={(id, data) => {
-                  updateFormField("companyId", id);
-                  updateFormField("companyData", data);
-                }}
-                className={formErrors.company ? "border-destructive" : ""}
+              <Controller
+                name="companyId"
+                control={control}
+                render={({ field }) => (
+                  <CompanySelector
+                    value={field.value}
+                    onSelect={(id, data) => {
+                      handleFieldUpdate("companyId", id);
+                      handleFieldUpdate("companyData", data);
+                    }}
+                    className={formErrors.company ? "border-destructive" : ""}
+                  />
+                )}
               />
               {formErrors.company && (
                 <p className="text-sm text-destructive">{formErrors.company}</p>
@@ -64,15 +77,21 @@ export default function InspectionTabsSection({
                 CNAE
               </FormLabel>
               <div className="relative">
-                <Input
-                  id="cnae"
-                  placeholder="00.00-0"
-                  value={formData.companyData?.cnae || ""}
-                  onChange={(e) => {
-                    const newData = { ...formData.companyData, cnae: e.target.value };
-                    updateFormField("companyData", newData);
-                  }}
-                  className={formErrors.cnae ? "border-destructive" : ""}
+                <Controller
+                  name="companyData.cnae"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      id="cnae"
+                      placeholder="00.00-0"
+                      value={field.value || ""}
+                      onChange={(e) => {
+                        const newData = { ...(formData.companyData || {}), cnae: e.target.value };
+                        handleFieldUpdate("companyData", newData);
+                      }}
+                      className={formErrors.cnae ? "border-destructive" : ""}
+                    />
+                  )}
                 />
                 {formData.companyData?.cnae && /^\d{2}\.\d{2}-\d$/.test(formData.companyData.cnae) && (
                   <div className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -91,13 +110,19 @@ export default function InspectionTabsSection({
               <FormLabel htmlFor="responsible" className={formErrors.responsible ? "text-destructive" : ""}>
                 Responsável <span className="text-destructive">*</span>
               </FormLabel>
-              <ResponsibleSelector
-                value={formData.responsibleId}
-                onSelect={(id, data) => {
-                  updateFormField("responsibleId", id);
-                  updateFormField("responsibleData", data);
-                }}
-                className={formErrors.responsible ? "border-destructive" : ""}
+              <Controller
+                name="responsibleId"
+                control={control}
+                render={({ field }) => (
+                  <ResponsibleSelector
+                    value={field.value}
+                    onSelect={(id, data) => {
+                      handleFieldUpdate("responsibleId", id);
+                      handleFieldUpdate("responsibleData", data);
+                    }}
+                    className={formErrors.responsible ? "border-destructive" : ""}
+                  />
+                )}
               />
               {formErrors.responsible && (
                 <p className="text-sm text-destructive">{formErrors.responsible}</p>
@@ -107,11 +132,17 @@ export default function InspectionTabsSection({
               <FormLabel htmlFor="location" className={formErrors.location ? "text-destructive" : ""}>
                 Localização <span className="text-destructive">*</span>
               </FormLabel>
-              <LocationPicker
-                value={formData.location}
-                onChange={(value) => updateFormField("location", value)}
-                onCoordinatesChange={(coords) => updateFormField("coordinates", coords)}
-                coordinates={formData.coordinates}
+              <Controller
+                name="location"
+                control={control}
+                render={({ field }) => (
+                  <LocationPicker
+                    value={field.value}
+                    onChange={(value) => handleFieldUpdate("location", value)}
+                    onCoordinatesChange={(coords) => handleFieldUpdate("coordinates", coords)}
+                    coordinates={formData.coordinates}
+                  />
+                )}
               />
               {formErrors.location && (
                 <p className="text-sm text-destructive">{formErrors.location}</p>
@@ -121,21 +152,33 @@ export default function InspectionTabsSection({
               <FormLabel htmlFor="scheduledDate">
                 Data Agendada
               </FormLabel>
-              <DateTimePicker
-                date={formData.scheduledDate}
-                setDate={(date) => updateFormField("scheduledDate", date)}
+              <Controller
+                name="scheduledDate"
+                control={control}
+                render={({ field }) => (
+                  <DateTimePicker
+                    date={field.value}
+                    setDate={(date) => handleFieldUpdate("scheduledDate", date)}
+                  />
+                )}
               />
             </div>
             <div className="space-y-2 md:col-span-2">
               <FormLabel htmlFor="notes">
                 Observações
               </FormLabel>
-              <Textarea
-                id="notes"
-                placeholder="Adicione observações relevantes para a inspeção"
-                value={formData.notes}
-                onChange={(e) => updateFormField("notes", e.target.value)}
-                className="min-h-[100px]"
+              <Controller
+                name="notes"
+                control={control}
+                render={({ field }) => (
+                  <Textarea
+                    id="notes"
+                    placeholder="Adicione observações relevantes para a inspeção"
+                    value={field.value || ""}
+                    onChange={(e) => handleFieldUpdate("notes", e.target.value)}
+                    className="min-h-[100px]"
+                  />
+                )}
               />
             </div>
           </div>
@@ -146,80 +189,130 @@ export default function InspectionTabsSection({
               <FormLabel>
                 Tipo de Inspeção
               </FormLabel>
-              {/* ... type radio group ... */}
               <div className="grid grid-cols-2 gap-4">
-                <label>
-                  <input
-                    type="radio"
-                    checked={formData.inspectionType === "internal"}
-                    onChange={() => updateFormField("inspectionType", "internal")}
-                  />
-                  Interna
-                </label>
-                <label>
-                  <input
-                    type="radio"
-                    checked={formData.inspectionType === "external"}
-                    onChange={() => updateFormField("inspectionType", "external")}
-                  />
-                  Externa
-                </label>
-                <label>
-                  <input
-                    type="radio"
-                    checked={formData.inspectionType === "audit"}
-                    onChange={() => updateFormField("inspectionType", "audit")}
-                  />
-                  Auditoria
-                </label>
-                <label>
-                  <input
-                    type="radio"
-                    checked={formData.inspectionType === "routine"}
-                    onChange={() => updateFormField("inspectionType", "routine")}
-                  />
-                  Rotina
-                </label>
+                <Controller
+                  name="inspectionType"
+                  control={control}
+                  render={({ field }) => (
+                    <>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          checked={field.value === "internal"}
+                          onChange={() => handleFieldUpdate("inspectionType", "internal")}
+                          className="h-4 w-4"
+                        />
+                        <span>Interna</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          checked={field.value === "external"}
+                          onChange={() => handleFieldUpdate("inspectionType", "external")}
+                          className="h-4 w-4"
+                        />
+                        <span>Externa</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          checked={field.value === "audit"}
+                          onChange={() => handleFieldUpdate("inspectionType", "audit")}
+                          className="h-4 w-4"
+                        />
+                        <span>Auditoria</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          checked={field.value === "routine"}
+                          onChange={() => handleFieldUpdate("inspectionType", "routine")}
+                          className="h-4 w-4"
+                        />
+                        <span>Rotina</span>
+                      </label>
+                    </>
+                  )}
+                />
               </div>
             </div>
             <div className="space-y-4">
               <FormLabel>
                 Prioridade
               </FormLabel>
-              {/* ... priority radio group ... */}
               <div className="grid grid-cols-3 gap-4">
-                <label>
-                  <input
-                    type="radio"
-                    checked={formData.priority === "low"}
-                    onChange={() => updateFormField("priority", "low")}
-                  />
-                  Baixa
-                </label>
-                <label>
-                  <input
-                    type="radio"
-                    checked={formData.priority === "medium"}
-                    onChange={() => updateFormField("priority", "medium")}
-                  />
-                  Média
-                </label>
-                <label>
-                  <input
-                    type="radio"
-                    checked={formData.priority === "high"}
-                    onChange={() => updateFormField("priority", "high")}
-                  />
-                  Alta
-                </label>
+                <Controller
+                  name="priority"
+                  control={control}
+                  render={({ field }) => (
+                    <>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          checked={field.value === "low"}
+                          onChange={() => handleFieldUpdate("priority", "low")}
+                          className="h-4 w-4"
+                        />
+                        <span>Baixa</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          checked={field.value === "medium"}
+                          onChange={() => handleFieldUpdate("priority", "medium")}
+                          className="h-4 w-4"
+                        />
+                        <span>Média</span>
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="radio"
+                          checked={field.value === "high"}
+                          onChange={() => handleFieldUpdate("priority", "high")}
+                          className="h-4 w-4"
+                        />
+                        <span>Alta</span>
+                      </label>
+                    </>
+                  )}
+                />
               </div>
             </div>
+          </div>
+        </TabsContent>
+        <TabsContent value="users">
+          <div className="space-y-4">
+            <FormLabel>
+              Usuários da Inspeção
+            </FormLabel>
+            <Controller
+              name="assignedUsers"
+              control={control}
+              defaultValue={[]}
+              render={({ field }) => (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Selecione os usuários que podem editar e executar esta inspeção:
+                  </p>
+                  <div className="border rounded-md p-4">
+                    <p className="text-sm italic text-muted-foreground">
+                      A funcionalidade de seleção de múltiplos usuários será implementada aqui.
+                      Por enquanto, apenas o responsável principal pode executar a inspeção.
+                    </p>
+                  </div>
+                </div>
+              )}
+            />
           </div>
         </TabsContent>
         {debugMode && (
           <TabsContent value="debug">
             <div className="p-4 bg-black text-green-400 font-mono rounded-md overflow-auto max-h-[400px]">
               <pre>{JSON.stringify(formData, null, 2)}</pre>
+              <div className="mt-4 pt-4 border-t border-green-500">
+                <div className="text-yellow-400 mb-2">React Hook Form Values:</div>
+                <pre>{JSON.stringify(watch(), null, 2)}</pre>
+              </div>
             </div>
           </TabsContent>
         )}

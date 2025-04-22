@@ -7,6 +7,7 @@ import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
 import { useStartInspection } from "@/hooks/inspection/useStartInspection";
+import { FormProvider, useForm } from "react-hook-form";
 import ChecklistHeaderSection from "./start-inspection/ChecklistHeaderSection";
 import FormProgressSection from "./start-inspection/FormProgressSection";
 import InspectionTabsSection from "./start-inspection/InspectionTabsSection";
@@ -41,6 +42,16 @@ export default function StartInspectionPage() {
     getFormProgress,
     generateShareableLink,
   } = useStartInspection(checklistId);
+
+  // Initialize React Hook Form with the data from useStartInspection
+  const methods = useForm({
+    defaultValues: formData
+  });
+
+  // Sync form data from useStartInspection to React Hook Form
+  useEffect(() => {
+    methods.reset(formData);
+  }, [formData, methods]);
 
   const handleHeaderClick = () => {
     const newCount = debugClickCount + 1;
@@ -91,12 +102,26 @@ export default function StartInspectionPage() {
   };
 
   const handleStartInspection = async () => {
+    // Get current form data from React Hook Form
+    const formValues = methods.getValues();
+    
+    // Update the formData in useStartInspection if needed
+    Object.keys(formValues).forEach(key => {
+      if (formValues[key] !== formData[key]) {
+        updateFormField(key, formValues[key]);
+      }
+    });
+    
     const success = await startInspection();
     if (success) {
       toast.success("Inspeção iniciada com sucesso!");
     }
     return success;
   };
+
+  const handleFormSubmit = methods.handleSubmit(async () => {
+    await handleStartInspection();
+  });
 
   if (checklistLoading || checklistQuery.isLoading) {
     return (
@@ -134,31 +159,38 @@ export default function StartInspectionPage() {
 
   return (
     <div className="container max-w-5xl py-8">
-      <ChecklistHeaderSection
-        checklist={checklist}
-        draftSaved={draftSaved}
-        debugMode={debugMode}
-        debugClickCount={debugClickCount}
-        handleHeaderClick={handleHeaderClick}
-      />
-      <FormProgressSection formProgress={formProgress} />
-      <InspectionTabsSection
-        formData={formData}
-        updateFormField={updateFormField}
-        formErrors={formErrors}
-        checklist={checklist}
-        debugMode={debugMode}
-        setDebugMode={setDebugMode}
-        setDebugClickCount={setDebugClickCount}
-      />
-      <InspectionActionButtonsSection
-        isLoading={isLoading}
-        submitting={submitting}
-        cancelAndGoBack={cancelAndGoBack}
-        saveAsDraft={saveAsDraft}
-        handleShare={handleShare}
-        handleStartInspection={handleStartInspection}
-      />
+      <FormProvider {...methods}>
+        <form onSubmit={handleFormSubmit}>
+          <ChecklistHeaderSection
+            checklist={checklist}
+            draftSaved={draftSaved}
+            debugMode={debugMode}
+            debugClickCount={debugClickCount}
+            handleHeaderClick={handleHeaderClick}
+          />
+          <FormProgressSection formProgress={formProgress} />
+          <InspectionTabsSection
+            formData={formData}
+            updateFormField={(field, value) => {
+              updateFormField(field, value);
+              methods.setValue(field, value);
+            }}
+            formErrors={formErrors}
+            checklist={checklist}
+            debugMode={debugMode}
+            setDebugMode={setDebugMode}
+            setDebugClickCount={setDebugClickCount}
+          />
+          <InspectionActionButtonsSection
+            isLoading={isLoading}
+            submitting={submitting}
+            cancelAndGoBack={cancelAndGoBack}
+            saveAsDraft={saveAsDraft}
+            handleShare={handleShare}
+            handleStartInspection={handleStartInspection}
+          />
+        </form>
+      </FormProvider>
       <ShareDialogSection
         open={shareDialogOpen}
         setOpen={setShareDialogOpen}

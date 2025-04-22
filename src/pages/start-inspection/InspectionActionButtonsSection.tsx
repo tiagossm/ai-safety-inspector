@@ -2,6 +2,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Share2, ChevronRight } from "lucide-react";
+import { useFormContext } from "react-hook-form";
 
 interface InspectionActionButtonsSectionProps {
   isLoading: boolean;
@@ -20,12 +21,19 @@ export default function InspectionActionButtonsSection({
   handleShare,
   handleStartInspection,
 }: InspectionActionButtonsSectionProps) {
+  const { handleSubmit } = useFormContext();
+
+  const onSubmit = handleSubmit(async () => {
+    await handleStartInspection();
+  });
+
   return (
     <div className="flex flex-col sm:flex-row justify-end items-center gap-3 mt-6">
       <Button
         variant="outline"
         onClick={cancelAndGoBack}
         disabled={isLoading || !!submitting}
+        type="button"
       >
         Cancelar
       </Button>
@@ -33,6 +41,7 @@ export default function InspectionActionButtonsSection({
         variant="outline"
         onClick={saveAsDraft}
         disabled={isLoading || !!submitting}
+        type="button"
       >
         {submitting === "draft" ? (
           <>
@@ -47,12 +56,13 @@ export default function InspectionActionButtonsSection({
         variant="outline"
         onClick={handleShare}
         disabled={isLoading || !!submitting}
+        type="button"
       >
         <Share2 className="mr-2 h-4 w-4" />
         Compartilhar
       </Button>
       <Button
-        onClick={handleStartInspection}
+        type="submit"
         disabled={isLoading || !!submitting}
       >
         {submitting === "pending" ? (
