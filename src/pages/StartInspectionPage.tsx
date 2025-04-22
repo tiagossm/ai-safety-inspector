@@ -13,6 +13,7 @@ import FormProgressSection from "./start-inspection/FormProgressSection";
 import InspectionTabsSection from "./start-inspection/InspectionTabsSection";
 import InspectionActionButtonsSection from "./start-inspection/InspectionActionButtonsSection";
 import ShareDialogSection from "./start-inspection/ShareDialogSection";
+import { handleError } from "@/utils/errorHandling";
 
 export default function StartInspectionPage() {
   const navigate = useNavigate();
@@ -79,16 +80,21 @@ export default function StartInspectionPage() {
         setShareDialogOpen(true);
         
         if (navigator.share) {
-          await navigator.share({
-            title: "Inspeção compartilhada",
-            text: `Inspeção ${checklistData?.title || ""} - Empresa: ${formData.companyData?.fantasy_name || ""}`,
-            url: link
-          });
+          try {
+            await navigator.share({
+              title: "Inspeção compartilhada",
+              text: `Inspeção ${checklistData?.title || ""} - Empresa: ${formData.companyData?.fantasy_name || ""}`,
+              url: link
+            });
+          } catch (shareError) {
+            console.log("Share API error or user canceled:", shareError);
+            // This is not an error we need to show to the user
+          }
         }
       }
     } catch (error) {
       console.error("Erro ao compartilhar:", error);
-      toast.error("Não foi possível gerar o link de compartilhamento");
+      handleError(error, "Não foi possível gerar o link de compartilhamento");
     } finally {
       setIsLoading(false);
     }
@@ -113,11 +119,16 @@ export default function StartInspectionPage() {
       }
     });
     
-    const success = await startInspection();
-    if (success) {
-      toast.success("Inspeção iniciada com sucesso!");
+    try {
+      const success = await startInspection();
+      if (success) {
+        toast.success("Inspeção iniciada com sucesso!");
+      }
+      return success;
+    } catch (error) {
+      handleError(error, "Não foi possível iniciar a inspeção");
+      return false;
     }
-    return success;
   };
 
   const handleFormSubmit = methods.handleSubmit(async () => {

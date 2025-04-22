@@ -24,7 +24,12 @@ export default function InspectionActionButtonsSection({
   const { handleSubmit } = useFormContext();
 
   const onSubmit = handleSubmit(async () => {
-    await handleStartInspection();
+    try {
+      await handleStartInspection();
+    } catch (error) {
+      console.error("Error during form submission:", error);
+      // The error is already handled in handleStartInspection
+    }
   });
 
   return (

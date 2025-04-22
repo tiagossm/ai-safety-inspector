@@ -2,6 +2,7 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { handleError } from "@/utils/errorHandling";
 
 export function useChecklistInfo(
   checklistId: string | undefined,
@@ -16,6 +17,7 @@ export function useChecklistInfo(
   const fetchChecklistInfo = useCallback(async () => {
     if (!checklistId) return;
     setChecklistLoading(true);
+    
     try {
       const { data, error } = await supabase
         .from("checklists")
@@ -28,7 +30,9 @@ export function useChecklistInfo(
         `)
         .eq("id", checklistId)
         .single();
+      
       if (error) throw error;
+      
       if (data) {
         setChecklist(data);
         if (data.company_id) {
@@ -42,7 +46,7 @@ export function useChecklistInfo(
       }
     } catch (err) {
       console.error("Error fetching checklist:", err);
-      toast.error("Não foi possível carregar os dados do checklist");
+      handleError(err, "Não foi possível carregar os dados do checklist");
     } finally {
       setChecklistLoading(false);
     }

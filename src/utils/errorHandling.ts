@@ -20,6 +20,15 @@ export function handleError(error: any, message: string = "Ocorreu um erro inesp
     errorMessage = error.error.details;
   }
   
+  // Verificar se é erro de CORS
+  if (
+    errorMessage.includes('CORS') || 
+    errorMessage.includes('cross-origin') || 
+    error?.name === 'TypeError' && errorMessage.includes('Failed to fetch')
+  ) {
+    errorMessage = "Erro de conexão com o servidor. Verifique sua rede ou tente novamente mais tarde.";
+  }
+  
   // Exibir toast com mensagem de erro
   toast.error(errorMessage);
 }

@@ -7,9 +7,15 @@ import { useNavigate } from "react-router-dom";
 
 interface ErrorStateProps {
   error: string;
+  backPath?: string;
+  backLabel?: string;
 }
 
-export function ErrorState({ error }: ErrorStateProps) {
+export function ErrorState({ 
+  error, 
+  backPath = "/checklists", 
+  backLabel = "Voltar para Checklists" 
+}: ErrorStateProps) {
   const navigate = useNavigate();
   
   return (
@@ -20,8 +26,8 @@ export function ErrorState({ error }: ErrorStateProps) {
         <AlertDescription className="mt-2">
           <p>{error}</p>
           <div className="flex space-x-3 pt-4">
-            <Button variant="outline" onClick={() => navigate("/checklists")} className="text-sm">
-              Voltar para Checklists
+            <Button variant="outline" onClick={() => navigate(backPath)} className="text-sm">
+              {backLabel}
             </Button>
             <Button variant="default" onClick={() => window.location.reload()} className="text-sm">
               <RefreshCw className="mr-2 h-4 w-4" />
