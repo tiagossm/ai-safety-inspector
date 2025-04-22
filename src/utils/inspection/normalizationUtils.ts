@@ -1,10 +1,9 @@
-
 import { toast } from "sonner";
 
 /**
  * Normalizes response type to a consistent format
  */
-export const normalizeResponseType = (tipo: string): "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature" | string => {
+export const normalizeResponseType = (tipo: string): "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature" => {
   if (!tipo) return "text";
   
   const type = tipo.toLowerCase();

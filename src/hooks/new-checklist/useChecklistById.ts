@@ -144,7 +144,8 @@ export function useChecklistById(id: string) {
             }
 
             // Normalize the response type to ensure it matches the expected union type
-            const normalizedType = normalizeResponseType(item.tipo_resposta);
+            // Using type assertion to ensure TypeScript knows this is the correct type
+            const normalizedType = normalizeResponseType(item.tipo_resposta) as "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature";
 
             // Handle options and ensure they're in string array format
             const options = normalizeOptionsArray(item.opcoes);
