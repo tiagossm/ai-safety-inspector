@@ -456,7 +456,7 @@ export default function StartInspectionPage() {
         <Button 
           variant="outline" 
           onClick={cancelAndGoBack}
-          disabled={isLoading || submitting}
+          disabled={isLoading || !!submitting}
         >
           Cancelar
         </Button>
@@ -464,7 +464,7 @@ export default function StartInspectionPage() {
         <Button 
           variant="outline" 
           onClick={saveAsDraft}
-          disabled={isLoading || submitting}
+          disabled={isLoading || !!submitting}
         >
           {submitting === 'draft' ? (
             <>
@@ -479,7 +479,7 @@ export default function StartInspectionPage() {
         <Button 
           variant="outline"
           onClick={handleShare}
-          disabled={isLoading || submitting}
+          disabled={isLoading || !!submitting}
         >
           <Share2 className="mr-2 h-4 w-4" />
           Compartilhar
@@ -487,7 +487,7 @@ export default function StartInspectionPage() {
         
         <Button 
           onClick={handleStartInspection}
-          disabled={isLoading || submitting}
+          disabled={isLoading || !!submitting}
         >
           {submitting === 'pending' ? (
             <>
