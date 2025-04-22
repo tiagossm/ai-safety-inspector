@@ -24,47 +24,29 @@ export default function NewInspectionPage() {
     checklistId 
   });
   
-  const checklistQuery = useFetchChecklistData(checklistId);
-
   useEffect(() => {
-    const loadChecklistData = async () => {
+    const redirectToStartPage = () => {
       if (!checklistId) {
         setError("ID do checklist não fornecido. Verifique o parâmetro checklistId na URL.");
         setLoading(false);
         return;
       }
 
-      if (checklistQuery.isLoading) {
-        setLoading(true);
-        return;
-      }
-
-      if (checklistQuery.error) {
-        console.error("Erro ao carregar checklist:", checklistQuery.error);
-        setError(`Erro ao carregar checklist: ${checklistQuery.error}`);
-        setLoading(false);
-        return;
-      }
-
-      if (checklistQuery.data) {
-        console.log("Checklist carregado com sucesso:", checklistQuery.data);
-        setLoading(false);
-        
-        try {
-          // Navigate to the start page with the ID in the URL path for consistency
-          navigate(`/inspections/start/${checklistId}`);
-        } catch (navigationError) {
-          console.error("Erro de navegação:", navigationError);
-          setError("Erro ao redirecionar para a página de início da inspeção");
-        }
-      } else {
-        setError(`Não foi possível encontrar o checklist com ID ${checklistId}`);
+      try {
+        // Redirecionar para a nova tela de início de inspeção
+        navigate(`/inspections/start/${checklistId}`, { replace: true });
+      } catch (navigationError) {
+        console.error("Erro de navegação:", navigationError);
+        setError("Erro ao redirecionar para a nova página de início da inspeção");
         setLoading(false);
       }
     };
 
-    loadChecklistData();
-  }, [checklistId, checklistQuery, navigate]);
+    // Pequeno delay para garantir que os parâmetros foram carregados
+    const timer = setTimeout(redirectToStartPage, 100);
+    
+    return () => clearTimeout(timer);
+  }, [checklistId, navigate]);
 
   if (loading) {
     return (
@@ -72,7 +54,7 @@ export default function NewInspectionPage() {
         <div className="animate-pulse mx-auto w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mb-4">
           <div className="w-6 h-6 rounded-full bg-primary/40"></div>
         </div>
-        <p className="text-muted-foreground">Carregando checklist...</p>
+        <p className="text-muted-foreground">Redirecionando para a nova tela de inspeção...</p>
       </div>
     );
   }
@@ -82,7 +64,7 @@ export default function NewInspectionPage() {
       <div className="py-10 max-w-3xl mx-auto px-4">
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-5 w-5" />
-          <AlertTitle className="text-base font-medium">Erro ao carregar checklist</AlertTitle>
+          <AlertTitle className="text-base font-medium">Erro ao iniciar inspeção</AlertTitle>
           <AlertDescription className="mt-2">
             <p>{error}</p>
             <div className="flex space-x-3 pt-4">
@@ -100,13 +82,13 @@ export default function NewInspectionPage() {
     );
   }
 
-  // Show loading while redirecting
+  // Mostrar loading enquanto redireciona
   return (
     <div className="py-20 text-center">
       <div className="animate-pulse mx-auto w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mb-4">
         <div className="w-6 h-6 rounded-full bg-primary/40"></div>
       </div>
-      <p className="text-muted-foreground">Preparando inspeção...</p>
+      <p className="text-muted-foreground">Preparando a nova experiência de inspeção...</p>
     </div>
   );
 }

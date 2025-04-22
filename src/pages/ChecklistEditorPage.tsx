@@ -26,8 +26,8 @@ export default function ChecklistEditorPage() {
       // Log the redirection for debugging
       console.log(`Redirecionando para inspeção com ID: ${checklistId}`);
       
-      // Use the correctly formatted URL with query parameter
-      navigate(`/inspections/new?checklistId=${checklistId}`);
+      // Redireciona para a nova tela de iniciar inspeção
+      navigate(`/inspections/start/${checklistId}`);
     } else {
       toast.success("Checklist atualizado com sucesso!");
       navigate("/checklists");
