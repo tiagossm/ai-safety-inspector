@@ -106,7 +106,7 @@ export const fetchInspectionData = async (inspectionId) => {
     console.error("No inspection ID provided");
     return {
       error: "ID da inspeção não fornecido",
-      detailedError: null, // Adicionamos a propriedade detailedError
+      detailedError: null,
       inspection: null,
       questions: [],
       groups: [{ id: "default-group", title: "Geral", order: 0 }],
@@ -133,7 +133,7 @@ export const fetchInspectionData = async (inspectionId) => {
       console.error("Error fetching inspection:", inspectionError);
       return {
         error: "Erro ao buscar inspeção: " + inspectionError.message,
-        detailedError: inspectionError, // Armazenamos o erro detalhado
+        detailedError: inspectionError,
         inspection: null,
         questions: [],
         groups: [{ id: "default-group", title: "Geral", order: 0 }],
@@ -251,7 +251,7 @@ export const fetchInspectionData = async (inspectionId) => {
 
     return {
       error: null,
-      detailedError: null, // Não há erro detalhado quando tudo corre bem
+      detailedError: null,
       inspection,
       questions: parsedQuestions,
       groups,
@@ -266,7 +266,7 @@ export const fetchInspectionData = async (inspectionId) => {
     
     return {
       error: err.message || "Erro ao carregar inspeção",
-      detailedError: err, // Armazenamos o erro completo
+      detailedError: err,
       inspection: null,
       questions: [],
       groups: [{ id: "default-group", title: "Geral", order: 0 }],
