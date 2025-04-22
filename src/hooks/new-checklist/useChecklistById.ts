@@ -113,7 +113,7 @@ export function useChecklistById(id: string) {
           groups.set(DEFAULT_GROUP.id, DEFAULT_GROUP);
 
           // Map questions to the expected format with properly typed responseType
-          transformedData.questions = questionData.map(item => {
+          const typedQuestions: ChecklistQuestion[] = questionData.map(item => {
             // Extract any group info from hint if available
             let groupId = DEFAULT_GROUP.id;
             if (item.hint) {
@@ -135,13 +135,13 @@ export function useChecklistById(id: string) {
             }
 
             // Normalize the response type to ensure it matches the expected union type
-            const normalizedResponseType = normalizeResponseType(item.tipo_resposta);
+            const normalizedType = normalizeResponseType(item.tipo_resposta);
 
             // Transform question format with normalized responseType
-            return {
+            const question: ChecklistQuestion = {
               id: item.id,
               text: item.pergunta,
-              responseType: normalizedResponseType,
+              responseType: normalizedType,
               isRequired: item.obrigatorio,
               weight: item.weight || 1,
               allowsPhoto: item.permite_foto || false,
@@ -156,8 +156,13 @@ export function useChecklistById(id: string) {
               conditionValue: item.condition_value,
               hasSubChecklist: !!item.sub_checklist_id,
               subChecklistId: item.sub_checklist_id
-            } as ChecklistQuestion;
+            };
+            
+            return question;
           });
+          
+          // Assign the typed questions array to the transformed data
+          transformedData.questions = typedQuestions;
 
           // Add the extracted groups
           transformedData.groups = Array.from(groups.values())

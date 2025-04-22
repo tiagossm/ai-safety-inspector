@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { ResponseInputRenderer } from "./question-parts/ResponseInputRenderer";
 import { ActionPlanSection } from "./question-inputs/ActionPlanSection";
@@ -6,6 +5,7 @@ import { QuestionHeader } from "./question-components/QuestionHeader";
 import { CommentSection } from "./question-components/CommentSection";
 import { ActionPlanButton } from "./question-components/ActionPlanButton";
 import { MediaControls } from "./question-components/MediaControls";
+import { normalizeResponseType } from "@/utils/inspection/normalizationUtils";
 
 interface InspectionQuestionProps {
   question: any;
@@ -34,23 +34,7 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
   const [isCommentOpen, setIsCommentOpen] = useState(false);
   
   const normalizedType = useMemo(() => {
-    const type = question.responseType || question.tipo_resposta || "";
-    if (typeof type !== 'string') return 'unknown';
-    
-    const lowerType = type.toLowerCase();
-    if (lowerType.includes('sim/não') || lowerType.includes('yes_no') || lowerType.includes('yes/no')) {
-      return 'yes_no';
-    } else if (lowerType.includes('múltipla') || lowerType.includes('multiple')) {
-      return 'multiple_choice';
-    } else if (lowerType.includes('texto') || lowerType.includes('text')) {
-      return 'text';
-    } else if (lowerType.includes('numeric') || lowerType.includes('numérico')) {
-      return 'numeric';
-    } else if (lowerType.includes('foto') || lowerType.includes('photo')) {
-      return 'photo';
-    } else {
-      return lowerType;
-    }
+    return normalizeResponseType(question.responseType || question.tipo_resposta || "");
   }, [question.responseType, question.tipo_resposta]);
   
   const questionText = question.text || question.pergunta || "";
@@ -62,7 +46,6 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
   const allowsAudio = question.allowsAudio || question.permite_audio || false;
   const allowsFiles = question.allowsFiles || question.permite_files || false;
   
-  // Reduce production console calls
   useEffect(() => {
     if (process.env.NODE_ENV !== 'production') {
       console.log(`Question ${question.id} media capabilities:`, { 
@@ -132,7 +115,6 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
     return null;
   }
   
-  // Calculate if response is negative (for action plan visibility)
   const hasNegativeResponse = 
     response?.value === false || 
     response?.value === "false" || 

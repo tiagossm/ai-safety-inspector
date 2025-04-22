@@ -1,8 +1,8 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ChecklistWithStats } from "@/types/newChecklist";
+import { normalizeResponseType } from "@/utils/inspection/normalizationUtils";
 
 // Function to validate UUID format
 const isValidUUID = (id: string): boolean => {

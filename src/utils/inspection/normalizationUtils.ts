@@ -4,26 +4,27 @@ import { toast } from "sonner";
 /**
  * Normalizes response type to a consistent format
  */
-export const normalizeResponseType = (tipo: string): string => {
+export const normalizeResponseType = (tipo: string): "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature" | string => {
   if (!tipo) return "text";
   
-  switch (tipo.toLowerCase()) {
-    case "sim/não":
-    case "sim/nao":
-    case "yes_no":
-      return "yes_no";
-    case "texto":
-    case "text":
-      return "text";
-    case "número":
-    case "number":
-      return "number";
-    case "múltipla escolha":
-    case "multiple_choice":
-      return "multiple_choice";
-    default:
-      return tipo || "text";
+  const type = tipo.toLowerCase();
+  
+  if (type.includes('sim/não') || type.includes('sim/nao') || type.includes('yes_no') || type.includes('yes/no')) {
+    return "yes_no";
+  } else if (type.includes('texto') || type.includes('text')) {
+    return "text";
+  } else if (type.includes('número') || type.includes('number') || type.includes('numeric') || type.includes('numérico')) {
+    return "numeric";
+  } else if (type.includes('múltipla escolha') || type.includes('multiple_choice') || type.includes('múltipla')) {
+    return "multiple_choice";
+  } else if (type.includes('foto') || type.includes('photo')) {
+    return "photo";
+  } else if (type.includes('signature') || type.includes('assinatura')) {
+    return "signature";
   }
+  
+  // Default to text if no match found
+  return "text";
 };
 
 /**
