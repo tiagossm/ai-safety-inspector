@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ChecklistWithStats, ChecklistQuestion } from "@/types/newChecklist";
+import { normalizeResponseType } from "@/utils/inspection/normalizationUtils";
 
 // Function to validate UUID format
 const isValidUUID = (id: string): boolean => {
@@ -37,28 +38,36 @@ const transformChecklistData = (data: any): ChecklistWithStats => {
   };
 };
 
-// Function to normalize response type to match the ChecklistQuestion type requirements
-const normalizeResponseType = (responseType: string): "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature" => {
-  if (!responseType) return "text";
+// Helper function to ensure options are in string array format
+const normalizeOptionsArray = (options: any): string[] => {
+  if (!options) return [];
   
-  const type = responseType.toLowerCase();
-  
-  if (type.includes('sim/não') || type.includes('yes_no') || type.includes('yes/no')) {
-    return "yes_no";
-  } else if (type.includes('múltipla') || type.includes('multiple')) {
-    return "multiple_choice";
-  } else if (type.includes('texto') || type.includes('text')) {
-    return "text";
-  } else if (type.includes('numeric') || type.includes('numérico')) {
-    return "numeric";
-  } else if (type.includes('foto') || type.includes('photo')) {
-    return "photo";
-  } else if (type.includes('signature') || type.includes('assinatura')) {
-    return "signature";
+  // If it's already an array, make sure all elements are strings
+  if (Array.isArray(options)) {
+    return options.map(opt => String(opt));
   }
-
-  // Default fallback to text if no match is found
-  return "text";
+  
+  // If it's a string, try to parse it as JSON
+  if (typeof options === 'string') {
+    try {
+      const parsed = JSON.parse(options);
+      if (Array.isArray(parsed)) {
+        return parsed.map(opt => String(opt));
+      }
+      return [];
+    } catch (e) {
+      // Not valid JSON, just return as a single item array
+      return [options];
+    }
+  }
+  
+  // If it's an object, convert to array of strings
+  if (typeof options === 'object') {
+    return Object.values(options).map(value => String(value));
+  }
+  
+  // Fallback
+  return [];
 };
 
 export function useChecklistById(id: string) {
@@ -137,6 +146,9 @@ export function useChecklistById(id: string) {
             // Normalize the response type to ensure it matches the expected union type
             const normalizedType = normalizeResponseType(item.tipo_resposta);
 
+            // Handle options and ensure they're in string array format
+            const options = normalizeOptionsArray(item.opcoes);
+
             // Transform question format with normalized responseType
             const question: ChecklistQuestion = {
               id: item.id,
@@ -149,7 +161,7 @@ export function useChecklistById(id: string) {
               allowsAudio: item.permite_audio || false,
               allowsFiles: item.permite_files || false,
               order: item.ordem,
-              options: item.opcoes,
+              options: options,
               hint: item.hint,
               groupId,
               parentQuestionId: item.parent_item_id,
