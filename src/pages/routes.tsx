@@ -34,7 +34,7 @@ export const checklistRoutes = [
   <Route key="new-checklists-id-edit" path="/new-checklists/:id/edit" element={<RequireAuth><NewChecklistEdit /></RequireAuth>} />,
   <Route key="new-checklists-id" path="/new-checklists/:id" element={<RequireAuth><NewChecklistDetails /></RequireAuth>} />,
   
-  // Updated inspection routes - ensure they're in the correct order (most specific first)
+  // Updated inspection routes - Order matters for correct matching (most specific first)
   <Route key="inspections-redirect-id" path="/inspections/redirect/:id" element={<RequireAuth><ChecklistRedirectPage /></RequireAuth>} />,
   <Route key="inspections-new-with-id" path="/inspections/new/:id" element={<RequireAuth><NewInspectionPage /></RequireAuth>} />,
   <Route key="inspections-new" path="/inspections/new" element={<RequireAuth><NewInspectionPage /></RequireAuth>} />,

@@ -1,138 +1,109 @@
+
 import React, { useEffect, useState } from "react";
 import { ChecklistEditor } from "@/components/checklists/ChecklistEditor";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export default function ChecklistEditorPage() {
+export default function StartInspectionPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editorData, setEditorData] = useState<any>(null);
   const navigate = useNavigate();
+  const { checklistId: paramChecklistId } = useParams<{ checklistId?: string }>();
   const [searchParams] = useSearchParams();
-  const checklistId = searchParams.get("checklistId") || "";
-  const isEditorMode = !checklistId;
+  const queryChecklistId = searchParams.get("checklistId") || "";
+  
+  // Use param from URL path first, then query param as fallback
+  const checklistId = paramChecklistId || queryChecklistId || "";
+  
+  // Debugging logs to trace the flow
+  console.log("StartInspectionPage - ChecklistIDs:", { 
+    paramChecklistId, 
+    queryChecklistId, 
+    finalChecklistId: checklistId 
+  });
+  
+  // Only fetch data if we have a checklistId
   const checklistQuery = useChecklistById(checklistId);
 
   useEffect(() => {
     const loadChecklistData = async () => {
-      if (isEditorMode) {
-        const storedData = sessionStorage.getItem("checklistEditorData");
+      // Skip loading if no checklist ID is provided
+      if (!checklistId) {
+        setError("ID do checklist não fornecido na URL. Use o formato /inspections/start/:checklistId ou ?checklistId=ID");
+        setLoading(false);
+        return;
+      }
 
-        if (!storedData) {
-          setError("ID do checklist não fornecido na URL. Use o formato /inspections/new?checklistId=ID");
-          setLoading(false);
-          return;
-        }
+      if (checklistQuery.isLoading) {
+        setLoading(true);
+        return;
+      }
 
-        try {
-          const parsedData = JSON.parse(storedData);
-          const { checklistData, questions = [], groups = [] } = parsedData;
+      if (checklistQuery.error) {
+        setError(`Erro ao carregar checklist: ${checklistQuery.error}`);
+        setLoading(false);
+        return;
+      }
 
-          if (!checklistData) {
-            setError("Dados do checklist inválidos: faltando dados principais");
-            setLoading(false);
-            return;
-          }
-
-          const groupIdBase = `group-default-${Date.now()}`;
-          const questionGroups = groups.length > 0
-            ? groups.map(group => ({
-                ...group,
-                questions: (group.questions || []).map((q: any) => ({
-                  ...q,
-                  text: q.text || "",
-                  type: q.type || "sim/não",
-                  required: q.required !== undefined ? q.required : true,
-                  allowPhoto: q.allowPhoto || false,
-                  allowVideo: q.allowVideo || false,
-                  allowAudio: q.allowAudio || false,
-                  options: Array.isArray(q.options) ? q.options : (q.type === "múltipla escolha" ? ["Opção 1", "Opção 2"] : []),
-                  hint: q.hint || "",
-                  weight: q.weight || 1,
-                  parentId: q.parentId || null,
-                  conditionValue: q.conditionValue || null,
-                  groupId: group.id
-                }))
+      if (checklistQuery.data) {
+        const checklist = checklistQuery.data;
+        const groupIdBase = `group-default-${Date.now()}`;
+        const groups = checklist.groups?.length
+          ? checklist.groups.map(group => ({
+              ...group,
+              questions: checklist.questions.filter(q => q.groupId === group.id).map(q => ({
+                ...q,
+                type: q.responseType,
+                required: q.isRequired,
+                allowPhoto: q.allowsPhoto,
+                allowVideo: q.allowsVideo,
+                allowAudio: q.allowsAudio,
+                parentId: q.parentQuestionId,
+                groupId: q.groupId
               }))
-            : [{
-                id: groupIdBase,
-                title: "Geral",
-                questions: questions.map((q: any) => ({
-                  ...q,
-                  groupId: groupIdBase
-                }))
-              }];
+            }))
+          : [{
+              id: groupIdBase,
+              title: "Geral",
+              questions: checklist.questions.map(q => ({
+                ...q,
+                type: q.responseType,
+                required: q.isRequired,
+                allowPhoto: q.allowsPhoto,
+                allowVideo: q.allowsVideo,
+                allowAudio: q.allowsAudio,
+                parentId: q.parentQuestionId,
+                groupId: groupIdBase
+              }))
+            }];
 
-          setEditorData({ ...parsedData, groups: questionGroups });
-          setLoading(false);
-        } catch (err: any) {
-          setError(`Erro ao carregar dados do checklist: ${err.message || "Erro desconhecido"}`);
-          setLoading(false);
-        }
+        setEditorData({
+          checklistData: checklist,
+          questions: checklist.questions,
+          groups,
+          mode: "edit"
+        });
+        setLoading(false);
       } else {
-        if (checklistQuery.isLoading) {
-          setLoading(true);
-          return;
+        // Only set error if we have a checklist ID but no data was returned
+        if (checklistId) {
+          setError(`Não foi possível encontrar o checklist com ID: ${checklistId}`);
         }
-
-        if (checklistQuery.error) {
-          setError(`Erro ao carregar checklist: ${checklistQuery.error}`);
-          setLoading(false);
-          return;
-        }
-
-        if (checklistQuery.data) {
-          const checklist = checklistQuery.data;
-          const groupIdBase = `group-default-${Date.now()}`;
-          const groups = checklist.groups?.length
-            ? checklist.groups.map(group => ({
-                ...group,
-                questions: checklist.questions.filter(q => q.groupId === group.id).map(q => ({
-                  ...q,
-                  type: q.responseType,
-                  required: q.isRequired,
-                  allowPhoto: q.allowsPhoto,
-                  allowVideo: q.allowsVideo,
-                  allowAudio: q.allowsAudio,
-                  parentId: q.parentQuestionId,
-                  groupId: q.groupId
-                }))
-              }))
-            : [{
-                id: groupIdBase,
-                title: "Geral",
-                questions: checklist.questions.map(q => ({
-                  ...q,
-                  type: q.responseType,
-                  required: q.isRequired,
-                  allowPhoto: q.allowsPhoto,
-                  allowVideo: q.allowsVideo,
-                  allowAudio: q.allowsAudio,
-                  parentId: q.parentQuestionId,
-                  groupId: groupIdBase
-                }))
-              }];
-
-          setEditorData({
-            checklistData: checklist,
-            questions: checklist.questions,
-            groups,
-            mode: "edit"
-          });
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
 
     loadChecklistData();
-  }, [isEditorMode, checklistQuery, searchParams]);
+  }, [checklistId, checklistQuery.data, checklistQuery.error, checklistQuery.isLoading]);
 
   const handleSave = (checklistId: string) => {
     sessionStorage.removeItem("checklistEditorData");
+    // Redirect to the inspection creation page with the checklistId as a query parameter
     navigate(`/inspections/new?checklistId=${checklistId}`);
   };
 
@@ -199,4 +170,3 @@ export default function ChecklistEditorPage() {
     />
   );
 }
-

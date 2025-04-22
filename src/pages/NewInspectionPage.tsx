@@ -14,7 +14,7 @@ export default function NewInspectionPage() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   
-  // Improve checklistId retrieval - check both URL parameter and query parameter
+  // Get checklistId from either URL param or query param
   const checklistId = id || searchParams.get("checklistId") || "";
   
   // Add detailed logging for debugging
@@ -50,8 +50,13 @@ export default function NewInspectionPage() {
         console.log("Checklist carregado com sucesso:", checklistQuery.data);
         setLoading(false);
         
-        // Always use checklistId parameter to ensure consistency
-        navigate(`/inspections/start/${checklistId}`);
+        try {
+          // Navigate to the start page with the ID in the URL path for consistency
+          navigate(`/inspections/start/${checklistId}`);
+        } catch (navigationError) {
+          console.error("Erro de navegação:", navigationError);
+          setError("Erro ao redirecionar para a página de início da inspeção");
+        }
       } else {
         setError(`Não foi possível encontrar o checklist com ID ${checklistId}`);
         setLoading(false);
