@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -6,6 +7,7 @@ import { useAuth } from "@/components/AuthProvider";
 
 export type InspectionType = "internal" | "external" | "audit" | "routine";
 export type InspectionPriority = "low" | "medium" | "high";
+export type SubmittingState = false | 'draft' | 'pending';
 
 export interface StartInspectionFormData {
   companyId: string;
@@ -40,7 +42,7 @@ export function useStartInspection(checklistId?: string) {
   });
 
   const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting] = useState<SubmittingState>(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [draftSaved, setDraftSaved] = useState<Date | null>(null);
   const [checklist, setChecklist] = useState<any>(null);
@@ -182,7 +184,7 @@ export function useStartInspection(checklistId?: string) {
       return false;
     }
 
-    setSubmitting(true);
+    setSubmitting(status);
     
     try {
       const locationData = formData.coordinates 

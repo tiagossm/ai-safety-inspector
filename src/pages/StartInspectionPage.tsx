@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -78,7 +79,7 @@ export default function StartInspectionPage() {
     setIsLoading(true);
     try {
       const inspectionId = await saveAsDraft();
-      if (typeof inspectionId === 'string') {
+      if (inspectionId && typeof inspectionId === 'string') {
         const link = generateShareableLink(inspectionId);
         setSharableLink(link);
         setShareDialogOpen(true);
@@ -456,7 +457,7 @@ export default function StartInspectionPage() {
         <Button 
           variant="outline"
           onClick={handleShare}
-          disabled={isLoading || !!submitting || submitting === 'draft' || submitting === 'pending'}
+          disabled={isLoading || !!submitting}
         >
           <Share2 className="mr-2 h-4 w-4" />
           Compartilhar
@@ -464,7 +465,7 @@ export default function StartInspectionPage() {
         
         <Button 
           onClick={handleStartInspection}
-          disabled={isLoading || !!submitting || submitting === 'draft' || submitting === 'pending'}
+          disabled={isLoading || !!submitting}
         >
           {submitting === 'pending' ? (
             <>
