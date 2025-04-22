@@ -1,7 +1,8 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ChecklistWithStats } from "@/types/newChecklist";
+import { ChecklistWithStats, ChecklistQuestion } from "@/types/newChecklist";
 
 // Function to validate UUID format
 const isValidUUID = (id: string): boolean => {
@@ -34,6 +35,30 @@ const transformChecklistData = (data: any): ChecklistWithStats => {
     questions: [], // Will be populated by separate query if needed
     groups: []     // Will be populated by separate query if needed
   };
+};
+
+// Function to normalize response type to match the ChecklistQuestion type requirements
+const normalizeResponseType = (responseType: string): "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature" => {
+  if (!responseType) return "text";
+  
+  const type = responseType.toLowerCase();
+  
+  if (type.includes('sim/não') || type.includes('yes_no') || type.includes('yes/no')) {
+    return "yes_no";
+  } else if (type.includes('múltipla') || type.includes('multiple')) {
+    return "multiple_choice";
+  } else if (type.includes('texto') || type.includes('text')) {
+    return "text";
+  } else if (type.includes('numeric') || type.includes('numérico')) {
+    return "numeric";
+  } else if (type.includes('foto') || type.includes('photo')) {
+    return "photo";
+  } else if (type.includes('signature') || type.includes('assinatura')) {
+    return "signature";
+  }
+
+  // Default fallback to text if no match is found
+  return "text";
 };
 
 export function useChecklistById(id: string) {
@@ -87,7 +112,7 @@ export function useChecklistById(id: string) {
           const DEFAULT_GROUP = { id: 'default', title: 'Geral', order: 0 };
           groups.set(DEFAULT_GROUP.id, DEFAULT_GROUP);
 
-          // Map questions to the expected format
+          // Map questions to the expected format with properly typed responseType
           transformedData.questions = questionData.map(item => {
             // Extract any group info from hint if available
             let groupId = DEFAULT_GROUP.id;
@@ -109,16 +134,14 @@ export function useChecklistById(id: string) {
               }
             }
 
-            // Transform question format
+            // Normalize the response type to ensure it matches the expected union type
+            const normalizedResponseType = normalizeResponseType(item.tipo_resposta);
+
+            // Transform question format with normalized responseType
             return {
               id: item.id,
               text: item.pergunta,
-              responseType: item.tipo_resposta.includes("sim/não") ? "yes_no" :
-                           item.tipo_resposta.includes("múltipla") ? "multiple_choice" :
-                           item.tipo_resposta.includes("texto") ? "text" :
-                           item.tipo_resposta.includes("numérico") ? "numeric" :
-                           item.tipo_resposta.includes("foto") ? "photo" :
-                           item.tipo_resposta,
+              responseType: normalizedResponseType,
               isRequired: item.obrigatorio,
               weight: item.weight || 1,
               allowsPhoto: item.permite_foto || false,
@@ -133,7 +156,7 @@ export function useChecklistById(id: string) {
               conditionValue: item.condition_value,
               hasSubChecklist: !!item.sub_checklist_id,
               subChecklistId: item.sub_checklist_id
-            };
+            } as ChecklistQuestion;
           });
 
           // Add the extracted groups
