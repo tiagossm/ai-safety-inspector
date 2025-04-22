@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -145,7 +144,7 @@ export function useChecklistById(id: string) {
 
             // Normalize the response type to ensure it matches the expected union type
             // Using type assertion to ensure TypeScript knows this is the correct type
-            const normalizedType = normalizeResponseType(item.tipo_resposta) as "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature";
+            const normalizedType = normalizeResponseType(item.tipo_resposta);
 
             // Handle options and ensure they're in string array format
             const options = normalizeOptionsArray(item.opcoes);

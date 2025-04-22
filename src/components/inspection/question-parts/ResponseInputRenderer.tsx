@@ -5,6 +5,7 @@ import { TextInput } from "../question-inputs/TextInput";
 import { NumberInput } from "../question-inputs/NumberInput";
 import { MultipleChoiceInput } from "../question-inputs/MultipleChoiceInput";
 import { PhotoInput } from "../question-inputs/PhotoInput";
+import { normalizeResponseType } from "@/utils/inspection/normalizationUtils";
 
 interface ResponseInputRendererProps {
   question: any;
@@ -31,26 +32,8 @@ export const ResponseInputRenderer = memo(function ResponseInputRenderer({
   const allowsAudio = getProperty('allowsAudio', 'permite_audio');
   const allowsFiles = getProperty('allowsFiles', 'permite_files');
   
-  // Normalize response type with more robust handling
-  const responseType = (() => {
-    const type = question.responseType || question.tipo_resposta || "";
-    if (typeof type !== 'string') return 'unknown';
-    
-    const lowerType = type.toLowerCase();
-    if (lowerType.includes('sim/não') || lowerType.includes('yes_no') || lowerType.includes('yes/no')) {
-      return 'yes_no';
-    } else if (lowerType.includes('múltipla') || lowerType.includes('multiple')) {
-      return 'multiple_choice';
-    } else if (lowerType.includes('texto') || lowerType.includes('text')) {
-      return 'text';
-    } else if (lowerType.includes('numeric') || lowerType.includes('numérico')) {
-      return 'numeric';
-    } else if (lowerType.includes('foto') || lowerType.includes('photo')) {
-      return 'photo';
-    } else {
-      return lowerType || "unknown";
-    }
-  })();
+  // Use our central normalization utility for consistency
+  const responseType = normalizeResponseType(question.responseType || question.tipo_resposta || "");
   
   // Enhanced debug logging
   useEffect(() => {

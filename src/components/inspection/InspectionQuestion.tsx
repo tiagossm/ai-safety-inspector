@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { ResponseInputRenderer } from "./question-parts/ResponseInputRenderer";
 import { ActionPlanSection } from "./question-inputs/ActionPlanSection";
@@ -33,6 +34,7 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
   const [isValid, setIsValid] = useState(!question.isRequired);
   const [isCommentOpen, setIsCommentOpen] = useState(false);
   
+  // Use our centralized normalization utility for consistency
   const normalizedType = useMemo(() => {
     return normalizeResponseType(question.responseType || question.tipo_resposta || "");
   }, [question.responseType, question.tipo_resposta]);
