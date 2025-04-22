@@ -1,32 +1,11 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle, Check, ChevronRight, ClipboardCopy, Info, Pencil, RefreshCw, Share2 } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Separator } from "@/components/ui/separator";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { CompanySelector } from "@/components/inspection/CompanySelector";
-import { ResponsibleSelector } from "@/components/inspection/ResponsibleSelector";
-import { LocationPicker } from "@/components/inspection/LocationPicker";
-import { DateTimePicker } from "@/components/inspection/DateTimePicker";
 import { useStartInspection } from "@/hooks/inspection/useStartInspection";
 import ChecklistHeaderSection from "./start-inspection/ChecklistHeaderSection";
 import FormProgressSection from "./start-inspection/FormProgressSection";
@@ -116,6 +95,7 @@ export default function StartInspectionPage() {
     if (success) {
       toast.success("Inspeção iniciada com sucesso!");
     }
+    return success;
   };
 
   if (checklistLoading || checklistQuery.isLoading) {
@@ -140,7 +120,6 @@ export default function StartInspectionPage() {
                 Voltar para Checklists
               </Button>
               <Button variant="default" onClick={() => window.location.reload()} className="text-sm">
-                <RefreshCw className="mr-2 h-4 w-4" />
                 Tentar novamente
               </Button>
             </div>
@@ -162,31 +141,6 @@ export default function StartInspectionPage() {
         debugClickCount={debugClickCount}
         handleHeaderClick={handleHeaderClick}
       />
-      <Card className="mb-6 border-primary/20">
-        <CardHeader className="pb-2">
-          <CardTitle className="flex justify-between">
-            <span>{checklist.title}</span>
-            <Badge variant={checklist.status === "active" ? "default" : "outline"}>
-              {checklist.status === "active" ? "Ativo" : "Inativo"}
-            </Badge>
-          </CardTitle>
-          {checklist.description && (
-            <CardDescription>{checklist.description}</CardDescription>
-          )}
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm font-medium">Total de perguntas</p>
-              <p className="text-2xl font-bold">{checklist.totalQuestions || "0"}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium">Categoria</p>
-              <p>{checklist.category || "Não definida"}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
       <FormProgressSection formProgress={formProgress} />
       <InspectionTabsSection
         formData={formData}

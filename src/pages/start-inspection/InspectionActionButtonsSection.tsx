@@ -7,9 +7,9 @@ interface InspectionActionButtonsSectionProps {
   isLoading: boolean;
   submitting: string | boolean;
   cancelAndGoBack: () => void;
-  saveAsDraft: () => Promise<void>;
+  saveAsDraft: () => Promise<string | false>;
   handleShare: () => Promise<void>;
-  handleStartInspection: () => Promise<void>;
+  handleStartInspection: () => Promise<boolean>;
 }
 
 export default function InspectionActionButtonsSection({
