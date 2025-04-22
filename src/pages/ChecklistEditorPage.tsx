@@ -1,7 +1,7 @@
 
 import React from "react";
 import { ChecklistEditor } from "@/components/checklists/ChecklistEditor";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { LoadingState } from "@/components/checklist/editor/LoadingState";
 import { ErrorState } from "@/components/checklist/editor/ErrorState";
@@ -10,13 +10,23 @@ import { useLoadChecklistData } from "@/hooks/checklist/useLoadChecklistData";
 
 export default function ChecklistEditorPage() {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const { loading, error, editorData } = useLoadChecklistData();
 
   const handleSave = (checklistId: string) => {
     sessionStorage.removeItem("checklistEditorData");
 
     if (editorData?.mode !== "edit") {
-      // O problema estava aqui - corrigido para usar o formato correto com "checklistId="
+      // Ensure checklistId is valid before navigation
+      if (!checklistId) {
+        toast.error("Erro: ID do checklist inválido");
+        return;
+      }
+      
+      // Log the redirection for debugging
+      console.log(`Redirecionando para inspeção com ID: ${checklistId}`);
+      
+      // Use correct format with query parameter
       navigate(`/inspections/new?checklistId=${checklistId}`);
     } else {
       toast.success("Checklist atualizado com sucesso!");

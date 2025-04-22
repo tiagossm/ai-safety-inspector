@@ -17,9 +17,6 @@ import NewChecklistDetails from "./NewChecklistDetails";
 import NewInspectionPage from "./NewInspectionPage";
 import InspectionExecutionPage from "./InspectionExecutionPage";
 import ChecklistRedirectPage from "./ChecklistRedirectPage";
-
-// Importação dos componentes faltantes
-// Adicione essas importações para resolver os erros
 import StartInspectionPage from "./StartInspectionPage";
 import SimpleInspectionPage from "./SimpleInspectionPage";
 

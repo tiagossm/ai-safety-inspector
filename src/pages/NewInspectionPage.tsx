@@ -14,18 +14,22 @@ export default function NewInspectionPage() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   
-  // Melhorando a obtenção do ID do checklist - verificando tanto o parâmetro na URL quanto no path
+  // Improve checklistId retrieval - check both URL parameter and query parameter
   const checklistId = id || searchParams.get("checklistId") || "";
   
-  // Adicionando logs para debug
-  console.log("Parâmetros da URL:", { id, searchParams: Object.fromEntries(searchParams.entries()), checklistId });
+  // Add detailed logging for debugging
+  console.log("NewInspectionPage - URL Info:", { 
+    id, 
+    searchParams: Object.fromEntries(searchParams.entries()), 
+    checklistId 
+  });
   
   const checklistQuery = useFetchChecklistData(checklistId);
 
   useEffect(() => {
     const loadChecklistData = async () => {
       if (!checklistId) {
-        setError("ID do checklist não fornecido na URL. Use o formato /inspections/new?checklistId=ID");
+        setError("ID do checklist não fornecido. Verifique o parâmetro checklistId na URL.");
         setLoading(false);
         return;
       }
@@ -46,11 +50,10 @@ export default function NewInspectionPage() {
         console.log("Checklist carregado com sucesso:", checklistQuery.data);
         setLoading(false);
         
-        // Redirect to the start inspection page directly with the checklistId
+        // Always use checklistId parameter to ensure consistency
         navigate(`/inspections/start/${checklistId}`);
-        return;
       } else {
-        setError("Não foi possível encontrar o checklist especificado");
+        setError(`Não foi possível encontrar o checklist com ID ${checklistId}`);
         setLoading(false);
       }
     };
@@ -92,13 +95,13 @@ export default function NewInspectionPage() {
     );
   }
 
-  // Simply show loading as we should redirect in useEffect
+  // Show loading while redirecting
   return (
     <div className="py-20 text-center">
       <div className="animate-pulse mx-auto w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mb-4">
         <div className="w-6 h-6 rounded-full bg-primary/40"></div>
       </div>
-      <p className="text-muted-foreground">Redirecionando para inspeção...</p>
+      <p className="text-muted-foreground">Preparando inspeção...</p>
     </div>
   );
 }

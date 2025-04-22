@@ -45,15 +45,15 @@ function App() {
             <Route path="new-checklists/:id/edit" element={<NewChecklistEdit />} />
             <Route path="new-checklists/:id" element={<NewChecklistDetails />} />
             
-            {/* Inspection routes - Fluxo atualizado */}
+            {/* Inspection routes - Updated order for proper matching */}
             <Route path="inspections" element={<Inspections />} />
-            <Route path="inspections/new" element={<NewInspectionPage />} />
-            <Route path="inspections/new/:id" element={<NewInspectionPage />} />
             <Route path="inspections/redirect/:id" element={<ChecklistRedirectPage />} />
-            <Route path="inspections/start" element={<StartInspectionPage />} />
+            <Route path="inspections/new/:id" element={<NewInspectionPage />} />
+            <Route path="inspections/new" element={<NewInspectionPage />} />
             <Route path="inspections/start/:checklistId" element={<StartInspectionPage />} />
-            <Route path="inspections/:id" element={<SimpleInspectionPage />} />
+            <Route path="inspections/start" element={<StartInspectionPage />} />
             <Route path="inspections/:id/view" element={<InspectionExecutionPage />} />
+            <Route path="inspections/:id" element={<SimpleInspectionPage />} />
             
             {/* Redirect old routes to new ones */}
             <Route path="checklists" element={<Navigate to="/new-checklists" replace />} />
