@@ -393,6 +393,7 @@ export function ChecklistEditor({
       toast.success("Checklist salvo com sucesso!");
       
       if (onSave) {
+        console.log("Calling onSave with checklistId:", newChecklistId);
         onSave(newChecklistId);
       } else {
         navigate(`/new-checklists/${newChecklistId}`);

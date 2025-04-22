@@ -13,7 +13,13 @@ export default function NewInspectionPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
+  
+  // Melhorando a obtenção do ID do checklist - verificando tanto o parâmetro na URL quanto no path
   const checklistId = id || searchParams.get("checklistId") || "";
+  
+  // Adicionando logs para debug
+  console.log("Parâmetros da URL:", { id, searchParams: Object.fromEntries(searchParams.entries()), checklistId });
+  
   const checklistQuery = useFetchChecklistData(checklistId);
 
   useEffect(() => {
@@ -37,10 +43,10 @@ export default function NewInspectionPage() {
       }
 
       if (checklistQuery.data) {
-        console.log("Checklist loaded:", checklistQuery.data);
+        console.log("Checklist carregado com sucesso:", checklistQuery.data);
         setLoading(false);
         
-        // Redirect to the start inspection page directly
+        // Redirect to the start inspection page directly with the checklistId
         navigate(`/inspections/start/${checklistId}`);
         return;
       } else {

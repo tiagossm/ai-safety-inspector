@@ -1,3 +1,4 @@
+
 import React from "react";
 import { ChecklistEditor } from "@/components/checklists/ChecklistEditor";
 import { useNavigate } from "react-router-dom";
@@ -15,7 +16,7 @@ export default function ChecklistEditorPage() {
     sessionStorage.removeItem("checklistEditorData");
 
     if (editorData?.mode !== "edit") {
-      // ✅ Redirecionamento corrigido para passar o checklistId como query param
+      // O problema estava aqui - corrigido para usar o formato correto com "checklistId="
       navigate(`/inspections/new?checklistId=${checklistId}`);
     } else {
       toast.success("Checklist atualizado com sucesso!");

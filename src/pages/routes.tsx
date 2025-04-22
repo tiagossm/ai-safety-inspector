@@ -3,11 +3,13 @@ import { Suspense, lazy } from "react";
 import { Route, Routes } from "react-router-dom";
 import { RequireAuth } from "@/components/RequireAuth";
 
+// Lazy loaded components
 const ChecklistEditorPage = lazy(() => import("@/pages/ChecklistEditorPage"));
 const Checklists = lazy(() => import("@/pages/Checklists"));
 const ChecklistDetails = lazy(() => import("@/pages/ChecklistDetails"));
 const CreateChecklist = lazy(() => import("@/pages/CreateChecklist"));
 
+// Direct imports for inspection pages
 import NewChecklists from "./NewChecklists";
 import NewChecklistCreate from "./NewChecklistCreate";
 import NewChecklistEdit from "./NewChecklistEdit";
@@ -15,6 +17,9 @@ import NewChecklistDetails from "./NewChecklistDetails";
 import NewInspectionPage from "./NewInspectionPage";
 import InspectionExecutionPage from "./InspectionExecutionPage";
 import ChecklistRedirectPage from "./ChecklistRedirectPage";
+
+// Importação dos componentes faltantes
+// Adicione essas importações para resolver os erros
 import StartInspectionPage from "./StartInspectionPage";
 import SimpleInspectionPage from "./SimpleInspectionPage";
 

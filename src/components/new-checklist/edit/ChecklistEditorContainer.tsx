@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ChecklistEditActions } from "@/components/new-checklist/edit/ChecklistEditActions";
@@ -94,8 +93,9 @@ export function ChecklistEditorContainer() {
         }
         
         // Navigate with checklist ID as query parameter
+        console.log(`Redirecionando para inspeção com checklistId=${editorContext.id}`);
         toast.success("Redirecionando para a inspeção...", { duration: 2000 });
-        navigate(`/inspections/new?checklist=${editorContext.id}`);
+        navigate(`/inspections/new?checklistId=${editorContext.id}`);
       }
     } catch (error) {
       console.error("Error starting inspection:", error);
