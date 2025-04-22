@@ -84,7 +84,7 @@ export default function StartInspectionPage() {
     try {
       const inspectionId = await saveAsDraft();
       if (inspectionId) {
-        const link = generateShareableLink(inspectionId as string);
+        const link = generateShareableLink(inspectionId);
         setSharableLink(link);
         setShareDialogOpen(true);
         
