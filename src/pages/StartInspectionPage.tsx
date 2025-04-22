@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -39,10 +38,8 @@ export default function StartInspectionPage() {
   const [debugMode, setDebugMode] = useState<boolean>(false);
   const [debugClickCount, setDebugClickCount] = useState<number>(0);
   
-  // Buscar dados do checklist
   const checklistQuery = useChecklistById(checklistId || "");
   
-  // Custom hook para gerenciar o formulário de iniciar inspeção
   const {
     formData,
     updateFormField,
@@ -61,7 +58,6 @@ export default function StartInspectionPage() {
     generateShareableLink,
   } = useStartInspection(checklistId);
 
-  // Ativar modo de debug após 5 cliques no título
   const handleHeaderClick = () => {
     const newCount = debugClickCount + 1;
     setDebugClickCount(newCount);
@@ -73,7 +69,6 @@ export default function StartInspectionPage() {
     }
   };
 
-  // Gerar link compartilhável
   const handleShare = async () => {
     if (!validateForm()) {
       toast.error("Preencha todos os campos obrigatórios antes de compartilhar");
@@ -83,12 +78,11 @@ export default function StartInspectionPage() {
     setIsLoading(true);
     try {
       const inspectionId = await saveAsDraft();
-      if (inspectionId) {
+      if (typeof inspectionId === 'string') {
         const link = generateShareableLink(inspectionId);
         setSharableLink(link);
         setShareDialogOpen(true);
         
-        // Tentar usar a API de compartilhamento nativa
         if (navigator.share) {
           await navigator.share({
             title: "Inspeção compartilhada",
@@ -105,7 +99,6 @@ export default function StartInspectionPage() {
     }
   };
 
-  // Copiar link para a área de transferência
   const copyToClipboard = () => {
     navigator.clipboard.writeText(sharableLink).then(
       () => toast.success("Link copiado para a área de transferência"),
@@ -113,7 +106,6 @@ export default function StartInspectionPage() {
     );
   };
 
-  // Iniciar a inspeção
   const handleStartInspection = async () => {
     const success = await startInspection();
     if (success) {
@@ -121,7 +113,6 @@ export default function StartInspectionPage() {
     }
   };
 
-  // Exibindo mensagem de carregamento enquanto os dados são buscados
   if (checklistLoading || checklistQuery.isLoading) {
     return (
       <div className="flex flex-col items-center justify-center p-10 space-y-4">
@@ -131,7 +122,6 @@ export default function StartInspectionPage() {
     );
   }
 
-  // Exibindo mensagem de erro caso ocorra algum problema ao buscar os dados
   if (checklistQuery.error || !checklistQuery.data) {
     return (
       <div className="py-10 max-w-3xl mx-auto px-4">
@@ -186,7 +176,6 @@ export default function StartInspectionPage() {
         </div>
       </div>
 
-      {/* Card com informações do checklist */}
       <Card className="mb-6 border-primary/20">
         <CardHeader className="pb-2">
           <CardTitle className="flex justify-between">
@@ -213,7 +202,6 @@ export default function StartInspectionPage() {
         </CardContent>
       </Card>
 
-      {/* Barra de progresso do formulário */}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-2">
           <p className="text-sm font-medium">Progresso do formulário</p>
@@ -222,7 +210,6 @@ export default function StartInspectionPage() {
         <Progress value={formProgress} className="h-2" />
       </div>
 
-      {/* Formulário de configuração da inspeção */}
       <div className="bg-card p-6 rounded-lg border border-border mb-6">
         <Tabs defaultValue="basic">
           <TabsList className="mb-4">
@@ -233,7 +220,6 @@ export default function StartInspectionPage() {
           
           <TabsContent value="basic">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Seletor de Empresa */}
               <div className="space-y-2">
                 <FormLabel htmlFor="company" className={formErrors.company ? "text-destructive" : ""}>
                   Empresa <span className="text-destructive">*</span>
@@ -251,7 +237,6 @@ export default function StartInspectionPage() {
                 )}
               </div>
               
-              {/* CNAE */}
               <div className="space-y-2">
                 <FormLabel htmlFor="cnae" className={formErrors.cnae ? "text-destructive" : ""}>
                   CNAE
@@ -281,7 +266,6 @@ export default function StartInspectionPage() {
                 </p>
               </div>
 
-              {/* Responsável */}
               <div className="space-y-2">
                 <FormLabel htmlFor="responsible" className={formErrors.responsible ? "text-destructive" : ""}>
                   Responsável <span className="text-destructive">*</span>
@@ -299,7 +283,6 @@ export default function StartInspectionPage() {
                 )}
               </div>
 
-              {/* Localização */}
               <div className="space-y-2">
                 <FormLabel htmlFor="location" className={formErrors.location ? "text-destructive" : ""}>
                   Localização <span className="text-destructive">*</span>
@@ -315,7 +298,6 @@ export default function StartInspectionPage() {
                 )}
               </div>
 
-              {/* Data Agendada */}
               <div className="space-y-2">
                 <FormLabel htmlFor="scheduledDate">
                   Data Agendada
@@ -326,7 +308,6 @@ export default function StartInspectionPage() {
                 />
               </div>
 
-              {/* Observações */}
               <div className="space-y-2 md:col-span-2">
                 <FormLabel htmlFor="notes">
                   Observações
@@ -344,7 +325,6 @@ export default function StartInspectionPage() {
           
           <TabsContent value="advanced">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Tipo de Inspeção */}
               <div className="space-y-4">
                 <FormLabel>
                   Tipo de Inspeção
@@ -396,7 +376,6 @@ export default function StartInspectionPage() {
                 </RadioGroup>
               </div>
               
-              {/* Prioridade */}
               <div className="space-y-4">
                 <FormLabel>
                   Prioridade
@@ -440,7 +419,6 @@ export default function StartInspectionPage() {
             </div>
           </TabsContent>
           
-          {/* Modo Debug */}
           {debugMode && (
             <TabsContent value="debug">
               <div className="p-4 bg-black text-green-400 font-mono rounded-md overflow-auto max-h-[400px]">
@@ -451,7 +429,6 @@ export default function StartInspectionPage() {
         </Tabs>
       </div>
       
-      {/* Botões de Ação */}
       <div className="flex flex-col sm:flex-row justify-end items-center gap-3 mt-6">
         <Button 
           variant="outline" 
@@ -479,7 +456,7 @@ export default function StartInspectionPage() {
         <Button 
           variant="outline"
           onClick={handleShare}
-          disabled={isLoading || !!submitting}
+          disabled={isLoading || !!submitting || submitting === 'draft' || submitting === 'pending'}
         >
           <Share2 className="mr-2 h-4 w-4" />
           Compartilhar
@@ -487,7 +464,7 @@ export default function StartInspectionPage() {
         
         <Button 
           onClick={handleStartInspection}
-          disabled={isLoading || !!submitting}
+          disabled={isLoading || !!submitting || submitting === 'draft' || submitting === 'pending'}
         >
           {submitting === 'pending' ? (
             <>
@@ -503,7 +480,6 @@ export default function StartInspectionPage() {
         </Button>
       </div>
       
-      {/* Modal para compartilhar inspeção */}
       <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -526,7 +502,6 @@ export default function StartInspectionPage() {
             </Button>
           </div>
           <div className="flex justify-center p-4">
-            {/* Aqui você pode adicionar o QR Code usando uma biblioteca como qrcode.react */}
             <div className="w-40 h-40 bg-gray-200 flex items-center justify-center">
               <Info className="h-8 w-8 text-gray-400" />
               <span className="sr-only">QR Code</span>
