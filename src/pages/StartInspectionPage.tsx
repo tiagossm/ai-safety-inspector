@@ -108,7 +108,8 @@ export default function StartInspectionPage() {
     // Update the formData in useStartInspection if needed
     Object.keys(formValues).forEach(key => {
       if (formValues[key] !== formData[key]) {
-        updateFormField(key, formValues[key]);
+        // Type-safe approach: Cast key to keyof typeof formData to ensure it's a valid key
+        updateFormField(key as keyof typeof formData, formValues[key]);
       }
     });
     
@@ -171,9 +172,11 @@ export default function StartInspectionPage() {
           <FormProgressSection formProgress={formProgress} />
           <InspectionTabsSection
             formData={formData}
-            updateFormField={(field, value) => {
-              updateFormField(field, value);
-              methods.setValue(field, value);
+            updateFormField={(field: string, value: any) => {
+              // Type-safe approach: Cast field to keyof typeof formData
+              updateFormField(field as keyof typeof formData, value);
+              // Use type assertion for methods.setValue too
+              methods.setValue(field as keyof typeof formData, value);
             }}
             formErrors={formErrors}
             checklist={checklist}

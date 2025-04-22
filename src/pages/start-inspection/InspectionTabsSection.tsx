@@ -11,10 +11,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Check } from "lucide-react";
 import { useFormContext, Controller } from "react-hook-form";
+import { StartInspectionFormData } from "@/hooks/inspection/useStartInspection";
 
 interface InspectionTabsSectionProps {
   formData: any;
-  updateFormField: (field: string, value: any) => void;
+  updateFormField: (field: keyof StartInspectionFormData | string, value: any) => void;
   formErrors: Record<string, string>;
   checklist: any;
   debugMode: boolean;
@@ -34,8 +35,8 @@ export default function InspectionTabsSection({
   const { control, setValue, watch } = useFormContext();
 
   // Function to update both the form context and the parent state
-  const handleFieldUpdate = (field: string, value: any) => {
-    setValue(field, value);
+  const handleFieldUpdate = (field: keyof StartInspectionFormData | string, value: any) => {
+    setValue(field as string, value);
     updateFormField(field, value);
   };
 
