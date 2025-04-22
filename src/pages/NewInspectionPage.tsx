@@ -5,50 +5,39 @@ import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useFetchChecklistData } from "@/hooks/checklist/useFetchChecklistData";
 
+/**
+ * Esta tela serve apenas para garantir retrocompatibilidade:
+ * Assim que ela checa um checklistId válido (de parâmetro da URL ou query),
+ * redireciona automaticamente para a página real de início de inspeção.
+ */
 export default function NewInspectionPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
-  
-  // Get checklistId from either URL param or query param
+
+  // Permite receber tanto rotas /inspections/new/:id quanto /inspections/new?checklistId=...
   const checklistId = id || searchParams.get("checklistId") || "";
-  
-  // Add detailed logging for debugging
-  console.log("NewInspectionPage - URL Info:", { 
-    id, 
-    searchParams: Object.fromEntries(searchParams.entries()), 
-    checklistId 
-  });
-  
+
   useEffect(() => {
-    const redirectToStartPage = () => {
-      if (!checklistId) {
-        setError("ID do checklist não fornecido. Verifique o parâmetro checklistId na URL.");
-        setLoading(false);
-        return;
-      }
+    // Redireciona para o novo fluxo se houver checklistId válido
+    if (!checklistId) {
+      setError("ID do checklist não fornecido. Verifique a URL.");
+      setLoading(false);
+      return;
+    }
 
-      try {
-        // Redirecionar para a nova tela de início de inspeção
-        navigate(`/inspections/start/${checklistId}`, { replace: true });
-      } catch (navigationError) {
-        console.error("Erro de navegação:", navigationError);
-        setError("Erro ao redirecionar para a nova página de início da inspeção");
-        setLoading(false);
-      }
-    };
+    // Evita loops de re-renderização realizando o redirect dentro do useEffect
+    let timer = setTimeout(() => {
+      navigate(`/inspections/start/${checklistId}`, { replace: true });
+    }, 80);
 
-    // Pequeno delay para garantir que os parâmetros foram carregados
-    const timer = setTimeout(redirectToStartPage, 100);
-    
     return () => clearTimeout(timer);
   }, [checklistId, navigate]);
 
-  if (loading) {
+  if (loading && !error) {
     return (
       <div className="py-20 text-center">
         <div className="animate-pulse mx-auto w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mb-4">
@@ -82,13 +71,6 @@ export default function NewInspectionPage() {
     );
   }
 
-  // Mostrar loading enquanto redireciona
-  return (
-    <div className="py-20 text-center">
-      <div className="animate-pulse mx-auto w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mb-4">
-        <div className="w-6 h-6 rounded-full bg-primary/40"></div>
-      </div>
-      <p className="text-muted-foreground">Preparando a nova experiência de inspeção...</p>
-    </div>
-  );
+  // Nunca renderiza outra interface!
+  return null;
 }
