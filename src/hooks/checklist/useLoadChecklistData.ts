@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
+import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 
 export function useLoadChecklistData() {
   const [loading, setLoading] = useState(true);
@@ -83,24 +84,28 @@ export function useLoadChecklistData() {
         if (checklistQuery.data) {
           const checklist = checklistQuery.data;
           const groupIdBase = `group-default-${Date.now()}`;
+          
+          // Process groups and questions from the normalized checklist data
           const groups = checklist.groups?.length
             ? checklist.groups.map(group => ({
                 ...group,
-                questions: checklist.questions.filter(q => q.groupId === group.id).map(q => ({
-                  ...q,
-                  type: q.responseType,
-                  required: q.isRequired,
-                  allowPhoto: q.allowsPhoto,
-                  allowVideo: q.allowsVideo,
-                  allowAudio: q.allowsAudio,
-                  parentId: q.parentQuestionId,
-                  groupId: q.groupId
-                }))
+                questions: checklist.questions
+                  .filter(q => q.groupId === group.id)
+                  .map(q => ({
+                    ...q,
+                    type: q.responseType,
+                    required: q.isRequired,
+                    allowPhoto: q.allowsPhoto,
+                    allowVideo: q.allowsVideo,
+                    allowAudio: q.allowsAudio,
+                    parentId: q.parentQuestionId,
+                    groupId: q.groupId
+                  }))
               }))
             : [{
                 id: groupIdBase,
                 title: "Geral",
-                questions: checklist.questions.map(q => ({
+                questions: (checklist.questions || []).map(q => ({
                   ...q,
                   type: q.responseType,
                   required: q.isRequired,
@@ -114,7 +119,7 @@ export function useLoadChecklistData() {
 
           setEditorData({
             checklistData: checklist,
-            questions: checklist.questions,
+            questions: checklist.questions || [],
             groups,
             mode: "edit"
           });

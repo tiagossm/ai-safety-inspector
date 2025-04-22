@@ -63,7 +63,7 @@ export default function NewChecklistEdit() {
     title: checklist?.title || "",
     description: checklist?.description || "",
     category: checklist?.category || "",
-    isTemplate: checklist?.isTemplate || false,
+    isTemplate: checklist?.isTemplate || false,  // Now correctly accessing isTemplate
     status: checklist?.status === "inactive" ? "inactive" : "active",
     questions: [],
     groups: [],

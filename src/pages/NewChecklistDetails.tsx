@@ -66,6 +66,7 @@ export default function NewChecklistDetails() {
     return <ChecklistErrorState error={new Error("Checklist não encontrado")} />;
   }
 
+  // Now the checklist data should be properly formatted with the expected properties
   return (
     <div className="space-y-6">
       <ChecklistDetailsHeader 
@@ -76,7 +77,7 @@ export default function NewChecklistDetails() {
 
       <ChecklistInfoCard checklist={checklist} />
       
-      <ChecklistQuestionsTable questions={checklist.questions} />
+      <ChecklistQuestionsTable questions={checklist.questions || []} />
 
       <DeleteChecklistDialog
         checklistId={checklistToDelete?.id || ""}

@@ -2,12 +2,39 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ChecklistWithStats } from "@/types/newChecklist";
 
 // Function to validate UUID format
 const isValidUUID = (id: string): boolean => {
   if (!id) return false;
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(id);
+};
+
+// Helper function to transform raw checklist data
+const transformChecklistData = (data: any): ChecklistWithStats => {
+  if (!data) return null;
+  
+  return {
+    id: data.id,
+    title: data.title || "",
+    description: data.description || "",
+    isTemplate: data.is_template || false,
+    status: data.status || "active",
+    category: data.category || "",
+    responsibleId: data.responsible_id || null,
+    companyId: data.company_id || null,
+    userId: data.user_id || null,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+    dueDate: data.due_date,
+    isSubChecklist: data.is_sub_checklist || false,
+    origin: data.origin || "manual",
+    totalQuestions: data.total_questions || 0,
+    completedQuestions: 0,
+    questions: [], // Will be populated separately if needed
+    groups: []     // Will be populated separately if needed
+  };
 };
 
 export function useChecklistById(id: string) {
@@ -37,14 +64,12 @@ export function useChecklistById(id: string) {
         throw error;
       }
 
-      return data;
+      // Transform the data to expected format with camelCase properties
+      return transformChecklistData(data);
     },
     enabled: !!id && id !== "editor", // Only run query if ID exists and isn't "editor"
     retry: 1,
     gcTime: 300000, // 5 minutes
     staleTime: 60000, // 1 minute
-    
-    // In Tanstack Query v5, error handling is done with the onError option within the queryFn
-    // Using a global error handler or handling the error inside components
   });
 }

@@ -3,6 +3,21 @@ import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { handleError } from "@/utils/errorHandling";
+import { ChecklistWithStats } from "@/types/newChecklist";
+
+// Helper function to transform raw checklist data
+const transformChecklistData = (data: any): Partial<ChecklistWithStats> => {
+  if (!data) return {};
+  
+  return {
+    id: data.id,
+    title: data.title || "",
+    description: data.description || "",
+    isTemplate: data.is_template || false,
+    companyId: data.company_id || null,
+    responsibleId: data.responsible_id || null
+  };
+};
 
 export function useChecklistInfo(
   checklistId: string | undefined,
@@ -11,7 +26,7 @@ export function useChecklistInfo(
   fetchCompanyDetails: (companyId: string) => void,
   fetchResponsibleDetails: (responsibleId: string) => void
 ) {
-  const [checklist, setChecklist] = useState<any>(null);
+  const [checklist, setChecklist] = useState<Partial<ChecklistWithStats>>(null);
   const [checklistLoading, setChecklistLoading] = useState(false);
 
   const fetchChecklistInfo = useCallback(async () => {
@@ -26,7 +41,8 @@ export function useChecklistInfo(
           title, 
           description,
           company_id,
-          responsible_id
+          responsible_id,
+          is_template
         `)
         .eq("id", checklistId)
         .single();
@@ -34,7 +50,10 @@ export function useChecklistInfo(
       if (error) throw error;
       
       if (data) {
-        setChecklist(data);
+        // Transform data to consistent format
+        const transformedData = transformChecklistData(data);
+        setChecklist(transformedData);
+        
         if (data.company_id) {
           updateCompanyId(data.company_id);
           fetchCompanyDetails(data.company_id);
