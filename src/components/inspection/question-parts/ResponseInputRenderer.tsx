@@ -73,8 +73,7 @@ export const ResponseInputRenderer = memo(function ResponseInputRenderer({
       inputComponent = <YesNoInput value={response?.value} onChange={onResponseChange} />;
       break;
       
-    case "numeric":
-    case "number":
+    case "numeric": // Changed from "number" to "numeric" to match the type from normalizeResponseType
       inputComponent = <NumberInput value={response?.value} onChange={onResponseChange} />;
       break;
       

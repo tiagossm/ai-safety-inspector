@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { normalizeResponseType } from "@/utils/inspection/normalizationUtils";
 
 /**
  * Normaliza o tipo de resposta para um formato padrão
@@ -14,7 +15,7 @@ const normalizeResponseType = (type) => {
   } else if (typeStr.includes("múlt") || typeStr.includes("mult")) {
     return "multiple_choice";
   } else if (typeStr.includes("num")) {
-    return "numeric";
+    return "numeric"; // Ensure we use "numeric" consistently, not "number"
   } else if (typeStr.includes("foto") || typeStr.includes("image") || typeStr.includes("photo")) {
     return "photo";
   }
