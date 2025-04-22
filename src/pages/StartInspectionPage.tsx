@@ -181,7 +181,7 @@ export default function StartInspectionPage() {
             </Badge>
           )}
           <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-primary/20">
-            {checklist.is_template ? "Template" : "Checklist"}
+            {checklist.isTemplate ? "Template" : "Checklist"}
           </Badge>
         </div>
       </div>
@@ -203,7 +203,7 @@ export default function StartInspectionPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <p className="text-sm font-medium">Total de perguntas</p>
-              <p className="text-2xl font-bold">{checklist.total_questions || "0"}</p>
+              <p className="text-2xl font-bold">{checklist.totalQuestions || "0"}</p>
             </div>
             <div>
               <p className="text-sm font-medium">Categoria</p>

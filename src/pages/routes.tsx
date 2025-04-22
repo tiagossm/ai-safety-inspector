@@ -36,7 +36,6 @@ export const checklistRoutes = [
   
   // Updated inspection routes - Order matters for correct matching (most specific first)
   <Route key="inspections-redirect-id" path="/inspections/redirect/:id" element={<RequireAuth><ChecklistRedirectPage /></RequireAuth>} />,
-  // Atualizando para a nova tela de inspeção
   <Route key="inspections-start-id" path="/inspections/start/:checklistId" element={<RequireAuth><StartInspectionPage /></RequireAuth>} />,
   <Route key="inspections-start" path="/inspections/start" element={<RequireAuth><StartInspectionPage /></RequireAuth>} />,
   <Route key="inspections-new-with-id" path="/inspections/new/:id" element={<RequireAuth><NewInspectionPage /></RequireAuth>} />,
