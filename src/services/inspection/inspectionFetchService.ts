@@ -1,26 +1,6 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { normalizeResponseType } from "@/utils/inspection/normalizationUtils";
-
-/**
- * Normaliza o tipo de resposta para um formato padrão
- */
-const normalizeResponseType = (type) => {
-  if (!type) return "text";
-  
-  const typeStr = String(type).toLowerCase();
-  if (typeStr.includes("sim") || typeStr.includes("não") || typeStr.includes("yes") || typeStr.includes("no")) {
-    return "yes_no";
-  } else if (typeStr.includes("múlt") || typeStr.includes("mult")) {
-    return "multiple_choice";
-  } else if (typeStr.includes("num")) {
-    return "numeric"; // Ensure we use "numeric" consistently, not "number"
-  } else if (typeStr.includes("foto") || typeStr.includes("image") || typeStr.includes("photo")) {
-    return "photo";
-  }
-  return "text";
-};
 
 /**
  * Processa os itens do checklist para o formato necessário
