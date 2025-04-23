@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { SubChecklistDialog } from "./dialogs/SubChecklistDialog";
 import { useSubChecklistDialog } from "@/hooks/inspection/useSubChecklistDialog";
@@ -41,36 +41,20 @@ export function QuestionsPanel({
     safeParseResponse
   } = useSubChecklistDialog(responses, onResponseChange, onSaveSubChecklistResponses);
   
-  // Debug logging
-  useEffect(() => {
-    console.log(`QuestionsPanel: currentGroupId=${currentGroupId}, filteredQuestions=${filteredQuestions?.length || 0}, questions=${questions?.length || 0}`);
-    
-    if (groups && groups.length > 0) {
-      console.log("Available groups:", groups.map(g => `${g.id}: ${g.title}`));
-      
-      // Find current group
-      const currentGroup = currentGroupId 
-        ? groups.find(g => g.id === currentGroupId) 
-        : groups[0];
-        
-      console.log("Current group:", currentGroup);
+  // Encontrar grupo atual ou usar grupo padrão
+  const currentGroup = React.useMemo(() => {
+    if (!groups || groups.length === 0) {
+      return { id: "default-group", title: "Perguntas", order: 0 };
     }
     
-    if (questions && questions.length > 0) {
-      // Log unique groupIds in questions array
-      const uniqueGroupIds = [...new Set(questions.map(q => q.groupId || "undefined"))];
-      console.log("Unique groupIds in questions:", uniqueGroupIds);
+    if (!currentGroupId) {
+      return groups[0];
     }
-  }, [currentGroupId, filteredQuestions, questions, groups]);
+    
+    return groups.find(g => g.id === currentGroupId) || groups[0];
+  }, [groups, currentGroupId]);
   
-  // Find current group or use a default group
-  const currentGroup = groups && groups.length > 0
-    ? (currentGroupId 
-        ? groups.find(g => g.id === currentGroupId) 
-        : groups[0]) || groups[0]  
-    : { id: "default-group", title: "Perguntas", order: 0 };
-  
-  // If loading show loading state
+  // Se carregando mostrar estado de carregamento
   if (loading) {
     return (
       <QuestionsEmptyState 
@@ -82,25 +66,11 @@ export function QuestionsPanel({
     );
   }
   
-  // If no group selected, try to use the first one
+  // Se não há grupo selecionado, tentar usar o primeiro
   const effectiveGroupId = currentGroupId || (groups && groups.length > 0 ? groups[0].id : null);
   
-  // If still no group available
-  if (!effectiveGroupId) {
-    console.warn("No group selected or available");
-    return (
-      <QuestionsEmptyState 
-        loading={loading}
-        currentGroupId={null}
-        currentGroup={undefined}
-        questionsCount={questions?.length || 0}
-      />
-    );
-  }
-  
-  // If no filtered questions but we have questions
+  // Se não há perguntas filtradas mas temos perguntas
   if (!filteredQuestions?.length && questions?.length > 0) {
-    console.warn(`No questions found for group "${currentGroup?.title || effectiveGroupId}"`);
     toast.warning(`Nenhuma pergunta encontrada para o grupo "${currentGroup?.title || 'selecionado'}"`, {
       id: "no-questions-in-group",
       duration: 3000
@@ -150,9 +120,7 @@ export function QuestionsPanel({
               ? safeParseResponse(responses[currentParentQuestionId].subChecklistResponses)
               : {}
           }
-          onSaveResponses={async (responses) => {
-            await handleSaveSubChecklistResponses(responses);
-          }}
+          onSaveResponses={handleSaveSubChecklistResponses}
           saving={savingSubChecklist}
         />
       )}

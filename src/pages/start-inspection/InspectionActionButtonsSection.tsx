@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Share2, ChevronRight } from "lucide-react";
@@ -40,6 +41,7 @@ export default function InspectionActionButtonsSection({
     }
   }, [inspectionId, navigate]);
 
+  // Definir a função de tratamento de inspeção para receber dados de formulário opcionalmente
   const handleStartInspection = async (formData?: any) => {
     if (isSubmitting || isCompleted) {
       console.log("Preventing duplicate submission - already submitted or in progress");

@@ -2,8 +2,33 @@
 import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export function useResponseHandling(inspectionId: string | undefined, setResponses: React.Dispatch<React.SetStateAction<Record<string, any>>>) {
-  const handleResponseChange = useCallback((questionId: string, data: any) => {
+export interface ResponseData {
+  value?: any;
+  comment?: string;
+  actionPlan?: string;
+  mediaUrls?: string[];
+  subChecklistResponses?: Record<string, any>;
+  updatedAt?: string;
+  [key: string]: any;
+}
+
+export interface InspectionResponse {
+  inspection_id: string;
+  question_id: string;
+  answer: any;
+  notes?: string | null;
+  action_plan?: string | null;
+  media_urls?: string[];
+  sub_checklist_responses?: Record<string, any>;
+  updated_at: string;
+}
+
+export function useResponseHandling(
+  inspectionId: string | undefined, 
+  setResponses: React.Dispatch<React.SetStateAction<Record<string, ResponseData>>>
+) {
+  // Atualizar uma resposta individual
+  const handleResponseChange = useCallback((questionId: string, data: ResponseData) => {
     if (!questionId) {
       console.error("Question ID is required for response change");
       return;
@@ -18,11 +43,15 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
     }));
   }, [setResponses]);
 
-  const handleSaveInspection = useCallback(async (responses: Record<string, any>, inspection: any) => {
+  // Salvar todas as respostas da inspeção
+  const handleSaveInspection = useCallback(async (
+    responses: Record<string, ResponseData>, 
+    inspection: any
+  ): Promise<any> => {
     try {
       if (!inspectionId) throw new Error("ID da inspeção não fornecido");
 
-      const responsesToSave = Object.entries(responses).map(([questionId, data]) => ({
+      const responsesToSave: InspectionResponse[] = Object.entries(responses).map(([questionId, data]) => ({
         inspection_id: inspectionId,
         question_id: questionId,
         answer: data.value,
@@ -34,11 +63,8 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
       }));
 
       if (responsesToSave.length === 0) {
-        console.log("No responses to save");
         return inspection;
       }
-
-      console.log(`Saving ${responsesToSave.length} responses`);
 
       const { error } = await supabase
         .from("inspection_responses")
@@ -70,7 +96,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
     }
   }, [inspectionId]);
 
-  // Make sure this function returns a Promise<boolean> consistently
+  // Salvar respostas do subchecklist com tipo de retorno consistente
   const handleSaveSubChecklistResponses = useCallback(async (
     parentQuestionId: string, 
     responses: Record<string, any>
@@ -79,13 +105,12 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
       if (!inspectionId) throw new Error("ID da inspeção não fornecido");
       if (!parentQuestionId) throw new Error("ID da pergunta pai não fornecido");
 
-      // Convert the responses object to an array format for Supabase
+      // Converter respostas para formato de array para Supabase
       const responsesArray = Array.isArray(responses) 
         ? responses 
         : Object.values(responses);
 
       if (!responsesArray.length) {
-        console.log("No sub-checklist responses to save");
         return true;
       }
 
@@ -108,7 +133,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
 
       if (error) throw error;
       
-      // Update the parent response to include the sub-checklist responses
+      // Atualizar resposta pai para incluir as respostas do subchecklist
       setResponses(prev => ({
         ...prev,
         [parentQuestionId]: {

@@ -1,15 +1,39 @@
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useInspectionFetch } from "./useInspectionFetch";
-import { useResponseHandling } from "./useResponseHandling";
-import { useInspectionStatus } from "./useInspectionStatus";
-import { toast } from "sonner";
+import { useResponseHandling, ResponseData } from "./useResponseHandling";
+import { useInspectionStatus, Inspection } from "./useInspectionStatus";
 import { useQuestionsManagement } from "./useQuestionsManagement";
+import { toast } from "sonner";
 
-export function useInspectionData(inspectionId: string | undefined) {
+export interface InspectionDataHook {
+  loading: boolean;
+  inspection: Inspection | null;
+  questions: any[];
+  responses: Record<string, ResponseData>;
+  groups: any[];
+  company: any;
+  responsible: any;
+  subChecklists: Record<string, any>;
+  currentGroupId: string | null;
+  setCurrentGroupId: (id: string) => void;
+  handleResponseChange: (questionId: string, data: ResponseData) => void;
+  handleSaveInspection: () => Promise<any>;
+  handleSaveSubChecklistResponses: (subChecklistId: string, responses: Record<string, any>) => Promise<boolean>;
+  getCompletionStats: () => any;
+  getFilteredQuestions: (groupId: string | null) => any[];
+  error: string | null;
+  detailedError: any;
+  refreshData: () => Promise<void>;
+  completeInspection: () => Promise<boolean>;
+  reopenInspection: () => Promise<boolean>;
+}
+
+export function useInspectionData(inspectionId: string | undefined): InspectionDataHook {
   const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   
+  // Carregar dados da inspeção
   const {
     loading,
     error,
@@ -25,82 +49,59 @@ export function useInspectionData(inspectionId: string | undefined) {
     refreshData
   } = useInspectionFetch(inspectionId);
   
-  // Definir automaticamente o primeiro grupo quando carregado
-  useEffect(() => {
-    if (!loading && groups.length > 0 && !currentGroupId) {
-      const firstGroupId = groups[0].id;
-      console.log(`Auto-selecting first group: ${firstGroupId}`);
-      setCurrentGroupId(firstGroupId);
-    }
-  }, [loading, groups, currentGroupId]);
+  // Gerenciamento de questões
+  const { 
+    getFilteredQuestions: getQuestionsFiltered, 
+    getCompletionStats: getStats,
+    availableGroups 
+  } = useQuestionsManagement(questions, responses);
   
-  const { getFilteredQuestions, getCompletionStats: getQuestionsStats } = 
-    useQuestionsManagement(questions, responses);
+  // Memorizar resultados filtrados para o grupo atual
+  const filteredQuestions = useMemo(() => 
+    getQuestionsFiltered(currentGroupId),
+  [getQuestionsFiltered, currentGroupId]);
   
+  // Memorizar estatísticas de conclusão
+  const completionStats = useMemo(() => 
+    getStats(),
+  [getStats]);
+  
+  // Manipulação de respostas
   const {
     handleResponseChange,
-    handleSaveInspection,
+    handleSaveInspection: saveResponses,
     handleSaveSubChecklistResponses
   } = useResponseHandling(inspectionId, setResponses);
 
-  const { completeInspection: completeInspectionStatus, reopenInspection: reopenInspectionStatus } = 
-    useInspectionStatus(inspectionId, handleSaveInspection);
+  // Gerenciamento de status da inspeção
+  const { 
+    completeInspection: completeInspectionStatus, 
+    reopenInspection: reopenInspectionStatus 
+  } = useInspectionStatus(inspectionId);
   
-  // Calculate completion statistics
+  // Definir automaticamente o primeiro grupo quando carregado
+  useEffect(() => {
+    if (!loading && groups.length > 0 && !currentGroupId) {
+      setCurrentGroupId(groups[0].id);
+    }
+  }, [loading, groups, currentGroupId]);
+  
+  // Implementar métodos expostos pelo hook
+  const getFilteredQuestions = useCallback((groupId: string | null) => {
+    return getQuestionsFiltered(groupId);
+  }, [getQuestionsFiltered]);
+  
   const getCompletionStats = useCallback(() => {
-    const totalQuestions = questions.length;
-    let answeredQuestions = 0;
-    let groupStats: Record<string, { total: number; completed: number }> = {};
-    
-    // Log para debug
-    console.log(`getCompletionStats called, questions.length: ${totalQuestions}`);
-    
-    // Initialize group stats for all groups
-    groups.forEach(group => {
-      groupStats[group.id] = { total: 0, completed: 0 };
-    });
-    
-    // Count questions and answers by group
-    questions.forEach(question => {
-      const groupId = question.groupId || 'default-group';
-      
-      // Create group entry if it doesn't exist
-      if (!groupStats[groupId]) {
-        groupStats[groupId] = { total: 0, completed: 0 };
-      }
-      
-      // Increment total count
-      groupStats[groupId].total += 1;
-      
-      // Check if question is answered
-      if (responses[question.id] && responses[question.id].value !== undefined) {
-        groupStats[groupId].completed += 1;
-        answeredQuestions += 1;
-      }
-    });
-    
-    const completionPercentage = totalQuestions > 0 
-      ? Math.round((answeredQuestions / totalQuestions) * 100) 
-      : 0;
-    
-    console.log(`Stats: ${answeredQuestions}/${totalQuestions} questions answered (${completionPercentage}%)`);
-    console.log('Group stats:', groupStats);
-    
-    return {
-      totalQuestions,
-      answeredQuestions,
-      completionPercentage,
-      groupStats
-    };
-  }, [questions, responses, groups]);
+    return completionStats;
+  }, [completionStats]);
   
-  // Save inspection progress
-  const saveInspection = async () => {
+  // Salvar inspeção
+  const handleSaveInspection = async () => {
     if (!inspection) return;
     
     try {
       setSaving(true);
-      const updatedInspection = await handleSaveInspection(responses, inspection);
+      const updatedInspection = await saveResponses(responses, inspection);
       toast.success("Progresso salvo com sucesso");
       return updatedInspection;
     } catch (error: any) {
@@ -111,15 +112,15 @@ export function useInspectionData(inspectionId: string | undefined) {
     }
   };
   
-  // Complete inspection
+  // Completar inspeção
   const completeInspection = async () => {
-    if (!inspection) return;
+    if (!inspection) return false;
     
     try {
       setSaving(true);
-      await handleSaveInspection(responses, inspection);
+      await saveResponses(responses, inspection);
       
-      const updatedInspection = await completeInspectionStatus(responses, inspection);
+      const updatedInspection = await completeInspectionStatus(inspection);
       
       if (!updatedInspection) {
         throw new Error("Falha ao completar inspeção.");
@@ -135,9 +136,9 @@ export function useInspectionData(inspectionId: string | undefined) {
     }
   };
   
-  // Reopen inspection
+  // Reabrir inspeção
   const reopenInspection = async () => {
-    if (!inspection) return;
+    if (!inspection) return false;
     
     try {
       setSaving(true);
@@ -156,16 +157,6 @@ export function useInspectionData(inspectionId: string | undefined) {
       setSaving(false);
     }
   };
-  
-  // Diagnose any issues with the inspection data
-  useEffect(() => {
-    if (!loading && questions.length === 0) {
-      console.warn("No questions found for this inspection. This might be a data issue.");
-      if (inspection?.checklistId) {
-        console.log(`This inspection uses checklist ID: ${inspection.checklistId}`);
-      }
-    }
-  }, [loading, questions, inspection]);
 
   return {
     loading,
@@ -179,12 +170,12 @@ export function useInspectionData(inspectionId: string | undefined) {
     currentGroupId,
     setCurrentGroupId,
     handleResponseChange,
-    handleSaveInspection: saveInspection,
+    handleSaveInspection,
     handleSaveSubChecklistResponses,
     getCompletionStats,
     getFilteredQuestions,
     error,
-    detailedError,  // Agora retornamos detailedError para os componentes que usarem este hook
+    detailedError,
     refreshData,
     completeInspection,
     reopenInspection
