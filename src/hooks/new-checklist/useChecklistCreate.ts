@@ -2,25 +2,10 @@ import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats, NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { toast } from "sonner";
+import { frontendToDatabaseResponseType } from "@/utils/responseTypeMap";
 
-const getDatabaseType = (type: ChecklistQuestion['responseType']): string => {
-  const typeMap: Record<string, string> = {
-    'yes_no': 'sim/não',
-    'multiple_choice': 'seleção múltipla',
-    'text': 'texto',
-    'numeric': 'numérico',
-    'photo': 'foto',
-    'signature': 'assinatura',
-    'sim/não': 'sim/não',
-    'seleção múltipla': 'seleção múltipla',
-    'texto': 'texto',
-    'numérico': 'numérico',
-    'foto': 'foto',
-    'assinatura': 'assinatura'
-  };
-  
-  console.log("Converting response type:", type, "to:", typeMap[type] || 'texto');
-  return typeMap[type] || 'texto';
+const getDatabaseType = (type: string): string => {
+  return frontendToDatabaseResponseType(type);
 };
 
 const getStatusChecklist = (status: string): string => {

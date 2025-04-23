@@ -1,8 +1,8 @@
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { toast } from "sonner";
+import { frontendToDatabaseResponseType } from "@/utils/responseTypeMap";
 
 interface ChecklistUpdateParams extends Partial<ChecklistWithStats> {
   id: string;
@@ -74,7 +74,7 @@ export function useChecklistUpdate() {
             return {
               checklist_id: id,
               pergunta: q.text,
-              tipo_resposta: q.responseType,
+              tipo_resposta: frontendToDatabaseResponseType(q.responseType),
               obrigatorio: q.isRequired,
               ordem: q.order || index,
               opcoes: options,
@@ -118,7 +118,7 @@ export function useChecklistUpdate() {
             .from("checklist_itens")
             .update({
               pergunta: question.text,
-              tipo_resposta: question.responseType,
+              tipo_resposta: frontendToDatabaseResponseType(question.responseType),
               obrigatorio: question.isRequired,
               ordem: question.order,
               opcoes: options,

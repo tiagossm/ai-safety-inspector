@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { SubChecklistButton } from "@/components/new-checklist/question-editor/SubChecklistButton";
 import { toast } from "sonner";
+import { frontendToDatabaseResponseType, databaseToFrontendResponseType } from "@/utils/responseTypeMap";
 
 interface QuestionEditorProps {
   question: ChecklistQuestion;
@@ -42,12 +43,15 @@ export function QuestionEditor({
   const [showOptionsEditor, setShowOptionsEditor] = useState(false);
   const [newOption, setNewOption] = useState("");
 
+  const frontendResponseType = question.responseType && databaseToFrontendResponseType(question.responseType);
+
   const handleUpdate = (field: keyof ChecklistQuestion, value: any) => {
     if (onUpdate) {
-      onUpdate({
-        ...question,
-        [field]: value
-      });
+      let patch = { ...question, [field]: value };
+      if (field === "responseType") {
+        patch.responseType = frontendToDatabaseResponseType(value);
+      }
+      onUpdate(patch);
 
       if (field === "allowsPhoto" || field === "allowsVideo" || field === "allowsAudio" || field === "allowsFiles") {
         const status = value ? "ativada" : "desativada";
@@ -124,19 +128,8 @@ export function QuestionEditor({
           <div>
             <label className="text-sm font-medium mb-1 block">Tipo de resposta</label>
             <Select
-              value={question.responseType}
-              onValueChange={(value) => {
-                const tipoRespostaMap: Record<string, string> = {
-                  "yes_no": "sim/não",
-                  "text": "texto",
-                  "multiple_choice": "seleção múltipla",
-                  "numeric": "numérico",
-                  "photo": "foto",
-                  "signature": "assinatura"
-                };
-                const mappedValue = tipoRespostaMap[value] || value;
-                handleUpdate("responseType", mappedValue);
-              }}
+              value={frontendResponseType || ""}
+              onValueChange={(value) => handleUpdate("responseType", value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o tipo" />
