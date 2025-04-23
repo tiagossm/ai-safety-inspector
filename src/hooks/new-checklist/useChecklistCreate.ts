@@ -109,12 +109,15 @@ export function useChecklistCreate() {
             }
           }
           
-          console.log(`Preparing question ${index} for checklist ${checklistId}: ${question.text}, type: ${question.responseType} -> ${getDatabaseType(question.responseType)}`);
+          // Convert the frontend response type to database format
+          const dbResponseType = getDatabaseType(question.responseType);
+          
+          console.log(`Preparing question ${index} for checklist ${checklistId}: ${question.text}, type: ${question.responseType} -> ${dbResponseType}`);
           
           return {
             checklist_id: checklistId,
             pergunta: question.text,
-            tipo_resposta: getDatabaseType(question.responseType),
+            tipo_resposta: dbResponseType,
             obrigatorio: question.isRequired,
             opcoes: questionOptions,
             hint: questionHint,

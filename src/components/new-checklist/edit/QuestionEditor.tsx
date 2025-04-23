@@ -45,13 +45,16 @@ export function QuestionEditor({
   const [newOption, setNewOption] = useState("");
 
   // Convert database response type to frontend type for proper display
-  const frontendResponseType = question.responseType && databaseToFrontendResponseType(question.responseType);
+  const frontendResponseType = question.responseType 
+    ? databaseToFrontendResponseType(question.responseType) as "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature"
+    : "yes_no";
 
   const handleUpdate = (field: keyof ChecklistQuestion, value: any) => {
     if (onUpdate) {
       let patch = { ...question, [field]: value };
       if (field === "responseType") {
-        patch.responseType = frontendToDatabaseResponseType(value);
+        // Convert the UI value to database format
+        patch.responseType = value;
       }
       onUpdate(patch);
 
@@ -130,8 +133,10 @@ export function QuestionEditor({
           <div>
             <label className="text-sm font-medium mb-1 block">Tipo de resposta</label>
             <Select
-              value={frontendResponseType || ""}
-              onValueChange={(value) => handleUpdate("responseType", value)}
+              value={frontendResponseType}
+              onValueChange={(value: "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature") => {
+                handleUpdate("responseType", value);
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o tipo" />
@@ -167,7 +172,7 @@ export function QuestionEditor({
           </div>
         </div>
 
-        {question.responseType === "seleção múltipla" || frontendResponseType === "multiple_choice" ? (
+        {frontendResponseType === "multiple_choice" ? (
           <div className="mt-4 space-y-2">
             <div className="flex justify-between items-center">
               <label className="text-sm font-medium">Opções de resposta</label>
