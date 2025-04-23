@@ -71,20 +71,20 @@ export function useInspectionData(inspectionId: string | undefined): InspectionD
   }, [loading, groups, currentGroupId]);
 
   // Wrap save function
-  const saveInspection = useCallback(async () => {
+  const saveInspection = useCallback(async (): Promise<void> => {
     if (!inspectionId) throw new Error("ID da inspeção não fornecido");
     if (!inspection) return;
     await handleSaveInspection(responses || {}, inspection);
   }, [inspectionId, inspection, responses, handleSaveInspection]);
 
   // Wrap subchecklist save function
-  const saveSubchecklist = useCallback(async (subChecklistId: string, subchecklistResponses: Record<string, any>) => {
+  const saveSubchecklist = useCallback(async (subChecklistId: string, subchecklistResponses: Record<string, any>): Promise<void> => {
     if (!inspectionId) throw new Error("ID da inspeção não fornecido");
     await handleSaveSubChecklistResponses(subChecklistId, subchecklistResponses);
   }, [inspectionId, handleSaveSubChecklistResponses]);
 
   // Wrap completeInspection function
-  const handleCompleteInspection = useCallback(async () => {
+  const handleCompleteInspection = useCallback(async (): Promise<void> => {
     if (!inspection) throw new Error("Inspeção não carregada");
     // First save current state
     if (responses) {
@@ -95,7 +95,7 @@ export function useInspectionData(inspectionId: string | undefined): InspectionD
   }, [inspection, responses, handleSaveInspection, updateInspectionStatus]);
 
   // Wrap reopenInspection function
-  const handleReopenInspection = useCallback(async () => {
+  const handleReopenInspection = useCallback(async (): Promise<void> => {
     if (!inspection) throw new Error("Inspeção não carregada");
     await updateReopenStatus(inspection);
   }, [inspection, updateReopenStatus]);
