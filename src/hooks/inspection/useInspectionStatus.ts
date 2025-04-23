@@ -11,13 +11,13 @@ export interface Inspection {
 
 // Interface para funções de hook
 export interface InspectionStatusHook {
-  completeInspection: (inspection: Inspection) => Promise<Inspection>;
-  reopenInspection: (inspection: Inspection) => Promise<Inspection>;
+  completeInspection: (inspection: Inspection) => Promise<void>;
+  reopenInspection: (inspection: Inspection) => Promise<void>;
 }
 
 export function useInspectionStatus(inspectionId: string | undefined): InspectionStatusHook {
   // Completar inspeção - função simplificada sem acoplamento
-  const completeInspection = useCallback(async (inspection: Inspection): Promise<Inspection> => {
+  const completeInspection = useCallback(async (inspection: Inspection): Promise<void> => {
     try {
       if (!inspectionId) throw new Error("ID da inspeção não fornecido");
 
@@ -27,11 +27,6 @@ export function useInspectionStatus(inspectionId: string | undefined): Inspectio
         .eq("id", inspectionId);
 
       if (error) throw error;
-
-      return {
-        ...inspection,
-        status: "completed"
-      };
     } catch (error: any) {
       console.error("Error completing inspection:", error);
       throw new Error(`Erro ao finalizar inspeção: ${error.message || "Erro desconhecido"}`);
@@ -39,7 +34,7 @@ export function useInspectionStatus(inspectionId: string | undefined): Inspectio
   }, [inspectionId]);
 
   // Reabrir inspeção
-  const reopenInspection = useCallback(async (inspection: Inspection): Promise<Inspection> => {
+  const reopenInspection = useCallback(async (inspection: Inspection): Promise<void> => {
     try {
       if (!inspectionId) throw new Error("ID da inspeção não fornecido");
 
@@ -49,11 +44,6 @@ export function useInspectionStatus(inspectionId: string | undefined): Inspectio
         .eq("id", inspectionId);
 
       if (error) throw error;
-
-      return {
-        ...inspection,
-        status: "in_progress"
-      };
     } catch (error: any) {
       console.error("Error reopening inspection:", error);
       throw new Error(`Erro ao reabrir inspeção: ${error.message || "Erro desconhecido"}`);
