@@ -1,14 +1,15 @@
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useInspectionFetch } from "./useInspectionFetch";
-import { useResponseHandling, ResponseData } from "./useResponseHandling";
-import { useInspectionStatus, Inspection } from "./useInspectionStatus";
+import { useInspectionStatus } from "./useInspectionStatus";
 import { useQuestionsManagement } from "./useQuestionsManagement";
-import { toast } from "sonner";
+import { useResponseHandling, ResponseData } from "./useResponseHandling";
 
 export interface InspectionDataHook {
   loading: boolean;
-  inspection: Inspection | null;
+  error: string | null;
+  detailedError: any;
+  inspection: any;
   questions: any[];
   responses: Record<string, ResponseData>;
   groups: any[];
@@ -16,168 +17,106 @@ export interface InspectionDataHook {
   responsible: any;
   subChecklists: Record<string, any>;
   currentGroupId: string | null;
-  setCurrentGroupId: (id: string) => void;
-  handleResponseChange: (questionId: string, data: ResponseData) => void;
-  handleSaveInspection: () => Promise<any>;
-  handleSaveSubChecklistResponses: (subChecklistId: string, responses: Record<string, any>) => Promise<boolean>;
-  getCompletionStats: () => any;
+  handleResponseChange: (questionId: string, value: any, additionalData?: any) => void;
+  handleSaveInspection: () => Promise<void>;
+  handleSaveSubChecklistResponses: (subChecklistId: string, responses: Record<string, any>) => Promise<void>;
+  getCompletionStats: () => { percentage: number; answered: number; total: number; availableGroups?: string[] };
   getFilteredQuestions: (groupId: string | null) => any[];
-  error: string | null;
-  detailedError: any;
-  refreshData: () => Promise<void>;
-  completeInspection: () => Promise<boolean>;
-  reopenInspection: () => Promise<boolean>;
+  refreshData: () => void;
+  completeInspection: () => Promise<void>;
+  reopenInspection: () => Promise<void>;
+  setCurrentGroupId: (id: string) => void;
 }
 
 export function useInspectionData(inspectionId: string | undefined): InspectionDataHook {
   const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
   
-  // Carregar dados da inspeção
+  // Fetch basic inspection data
   const {
     loading,
     error,
     detailedError,
     inspection,
     questions,
-    responses,
     groups,
+    responses,
     company,
     responsible,
     subChecklists,
     setResponses,
-    refreshData
+    refreshData,
   } = useInspectionFetch(inspectionId);
-  
-  // Gerenciamento de questões
-  const { 
-    getFilteredQuestions: getQuestionsFiltered, 
-    getCompletionStats: getStats,
-    availableGroups 
-  } = useQuestionsManagement(questions, responses);
-  
-  // Memorizar resultados filtrados para o grupo atual
-  const filteredQuestions = useMemo(() => 
-    getQuestionsFiltered(currentGroupId),
-  [getQuestionsFiltered, currentGroupId]);
-  
-  // Memorizar estatísticas de conclusão
-  const completionStats = useMemo(() => 
-    getStats(),
-  [getStats]);
-  
-  // Manipulação de respostas
-  const {
-    handleResponseChange,
-    handleSaveInspection: saveResponses,
-    handleSaveSubChecklistResponses
-  } = useResponseHandling(inspectionId, setResponses);
 
-  // Gerenciamento de status da inspeção
-  const { 
-    completeInspection: completeInspectionStatus, 
-    reopenInspection: reopenInspectionStatus 
-  } = useInspectionStatus(inspectionId);
+  // Get status management functionality
+  const { completeInspection, reopenInspection } = useInspectionStatus(inspectionId);
   
-  // Definir automaticamente o primeiro grupo quando carregado
-  useEffect(() => {
-    if (!loading && groups.length > 0 && !currentGroupId) {
+  // Get questions management functionality
+  const { getFilteredQuestions, getCompletionStats, availableGroups } = useQuestionsManagement(
+    questions || [],
+    responses || {}
+  );
+
+  // Handle responses and saving
+  const { 
+    handleResponseChange, 
+    saveInspectionResponses, 
+    saveSubChecklistResponses 
+  } = useResponseHandling(inspectionId, responses, setResponses);
+
+  // Set initial group when data is loaded
+  useMemo(() => {
+    if (!loading && !currentGroupId && groups && groups.length > 0) {
       setCurrentGroupId(groups[0].id);
     }
   }, [loading, groups, currentGroupId]);
-  
-  // Implementar métodos expostos pelo hook
-  const getFilteredQuestions = useCallback((groupId: string | null) => {
-    return getQuestionsFiltered(groupId);
-  }, [getQuestionsFiltered]);
-  
-  const getCompletionStats = useCallback(() => {
-    return completionStats;
-  }, [completionStats]);
-  
-  // Salvar inspeção
-  const handleSaveInspection = async () => {
-    if (!inspection) return;
-    
-    try {
-      setSaving(true);
-      const updatedInspection = await saveResponses(responses, inspection);
-      toast.success("Progresso salvo com sucesso");
-      return updatedInspection;
-    } catch (error: any) {
-      toast.error(`Erro ao salvar: ${error.message || "Erro desconhecido"}`);
-      throw error;
-    } finally {
-      setSaving(false);
-    }
-  };
-  
-  // Completar inspeção
-  const completeInspection = async () => {
-    if (!inspection) return false;
-    
-    try {
-      setSaving(true);
-      await saveResponses(responses, inspection);
-      
-      const updatedInspection = await completeInspectionStatus(inspection);
-      
-      if (!updatedInspection) {
-        throw new Error("Falha ao completar inspeção.");
-      }
-      
-      await refreshData();
-      return true;
-    } catch (error: any) {
-      toast.error(`Erro ao finalizar inspeção: ${error.message || "Erro desconhecido"}`);
-      throw error;
-    } finally {
-      setSaving(false);
-    }
-  };
-  
-  // Reabrir inspeção
-  const reopenInspection = async () => {
-    if (!inspection) return false;
-    
-    try {
-      setSaving(true);
-      const updatedInspection = await reopenInspectionStatus(inspection);
-      
-      if (!updatedInspection) {
-        throw new Error("Falha ao reabrir inspeção.");
-      }
-      
-      await refreshData();
-      return true;
-    } catch (error: any) {
-      toast.error(`Erro ao reabrir inspeção: ${error.message || "Erro desconhecido"}`);
-      throw error;
-    } finally {
-      setSaving(false);
-    }
-  };
+
+  // Wrap save function
+  const handleSaveInspection = useCallback(async () => {
+    if (!inspectionId) throw new Error("ID da inspeção não fornecido");
+    await saveInspectionResponses();
+  }, [inspectionId, saveInspectionResponses]);
+
+  // Wrap subchecklist save function
+  const handleSaveSubChecklistResponses = useCallback(async (subChecklistId: string, responses: Record<string, any>) => {
+    if (!inspectionId) throw new Error("ID da inspeção não fornecido");
+    await saveSubChecklistResponses(subChecklistId, responses);
+  }, [inspectionId, saveSubChecklistResponses]);
+
+  // Wrap completeInspection function
+  const handleCompleteInspection = useCallback(async () => {
+    if (!inspection) throw new Error("Inspeção não carregada");
+    // First save current state
+    await saveInspectionResponses();
+    // Then complete inspection
+    return await completeInspection(inspection);
+  }, [inspection, saveInspectionResponses, completeInspection]);
+
+  // Wrap reopenInspection function
+  const handleReopenInspection = useCallback(async () => {
+    if (!inspection) throw new Error("Inspeção não carregada");
+    return await reopenInspection(inspection);
+  }, [inspection, reopenInspection]);
 
   return {
     loading,
+    error,
+    detailedError,
     inspection,
-    questions,
-    responses,
-    groups,
+    questions: questions || [],
+    responses: responses || {},
+    groups: groups || [],
     company,
     responsible,
-    subChecklists,
+    subChecklists: subChecklists || {},
     currentGroupId,
-    setCurrentGroupId,
     handleResponseChange,
     handleSaveInspection,
     handleSaveSubChecklistResponses,
     getCompletionStats,
     getFilteredQuestions,
-    error,
-    detailedError,
     refreshData,
-    completeInspection,
-    reopenInspection
+    completeInspection: handleCompleteInspection,
+    reopenInspection: handleReopenInspection,
+    setCurrentGroupId,
   };
 }
