@@ -74,7 +74,8 @@ export default function InspectionActionButtonsSection({
         Compartilhar
       </Button>
       <Button
-        type="submit"
+        onClick={onSubmit}
+        type="button"
         disabled={isLoading || !!submitting || hasSubmitted}
       >
         {submitting === "pending" ? (

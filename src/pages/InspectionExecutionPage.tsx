@@ -14,6 +14,7 @@ export default function InspectionExecutionPage() {
   const [saving, setSaving] = useState(false);
   const [autoSave, setAutoSave] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   
   // Redirect to the inspection creation page if no ID is provided or is "new"
   useEffect(() => {
@@ -48,32 +49,39 @@ export default function InspectionExecutionPage() {
     reopenInspection
   } = useInspectionData(skipLoading ? undefined : id);
   
+  // Set a flag when initial data loading is complete
+  useEffect(() => {
+    if (!loading && groups && groups.length > 0) {
+      setInitialLoadComplete(true);
+    }
+  }, [loading, groups]);
+  
   // Set initial group when data is loaded
   useEffect(() => {
-    if (!loading && groups && groups.length > 0 && !currentGroupId) {
+    if (initialLoadComplete && groups && groups.length > 0 && !currentGroupId) {
       const firstGroupId = groups[0].id;
       console.log(`Setting initial group to ${firstGroupId} (${groups[0].title})`);
       setCurrentGroupId(firstGroupId);
     }
-  }, [groups, currentGroupId, loading]);
+  }, [groups, currentGroupId, initialLoadComplete]);
 
   // Auto-save configuration
   useEffect(() => {
-    if (autoSave && !loading) {
+    if (autoSave && !loading && initialLoadComplete) {
       const timer = setTimeout(() => {
         onSaveProgress();
       }, 60000); // Auto-save every minute
       
       return () => clearTimeout(timer);
     }
-  }, [responses, autoSave, loading]);
+  }, [responses, autoSave, loading, initialLoadComplete]);
   
   const stats = getCompletionStats();
   const filteredQuestions = getFilteredQuestions(currentGroupId);
   
   // Debug logging
   useEffect(() => {
-    if (!loading && !skipLoading) {
+    if (!loading && !skipLoading && initialLoadComplete) {
       console.log(`Filtered questions for group ${currentGroupId}: ${filteredQuestions.length} of ${questions?.length || 0}`);
       console.log(`Available groups: ${groups?.map(g => g.id).join(', ') || 'none'}`);
       
@@ -87,7 +95,7 @@ export default function InspectionExecutionPage() {
         console.log('Questions per group:', groupCounts);
       }
     }
-  }, [currentGroupId, filteredQuestions, questions, groups, loading, skipLoading]);
+  }, [currentGroupId, filteredQuestions, questions, groups, loading, skipLoading, initialLoadComplete]);
   
   const onSaveProgress = async () => {
     if (saving) return;

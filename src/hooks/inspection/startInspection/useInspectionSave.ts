@@ -61,6 +61,8 @@ export function useInspectionSave(formData: StartInspectionFormData, validateFor
         user_id: user.id,
       };
 
+      console.log(`Saving inspection with status: ${status}, form already submitted: ${hasSubmitted}`);
+      
       const { data, error } = await supabase
         .from("inspections")
         .insert(inspectionData)
@@ -99,6 +101,7 @@ export function useInspectionSave(formData: StartInspectionFormData, validateFor
     
     const inspectionId = await saveInspection("pending");
     if (inspectionId) {
+      console.log(`Navigation to inspection view with id: ${inspectionId}`);
       navigate(`/inspections/${inspectionId}/view`);
       return true;
     }

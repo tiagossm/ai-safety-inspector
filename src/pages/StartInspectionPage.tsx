@@ -128,6 +128,7 @@ export default function StartInspectionPage() {
     
     try {
       setHasStartedInspection(true); // Set flag to prevent multiple submissions
+      console.log("Starting inspection, hasStartedInspection set to true");
       const success = await startInspection();
       if (success) {
         toast.success("Inspeção iniciada com sucesso!");

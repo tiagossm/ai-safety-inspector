@@ -175,6 +175,9 @@ export function useNewInspectionForm(checklistId: string | undefined) {
       if (error) throw error;
 
       toast.success("Inspeção criada com sucesso!");
+      
+      // Navigate after successful submission
+      console.log(`Navigating to inspection ${inspection.id} view page`);
       navigate(`/inspections/${inspection.id}/view`);
       return true;
     } catch (error: any) {
