@@ -48,7 +48,7 @@ export function useInspectionData(inspectionId: string | undefined): InspectionD
   } = useInspectionFetch(inspectionId);
 
   // Get status management functionality
-  const { completeInspection, reopenInspection } = useInspectionStatus(inspectionId);
+  const { completeInspection: updateInspectionStatus, reopenInspection: updateReopenStatus } = useInspectionStatus(inspectionId);
   
   // Get questions management functionality
   const { getFilteredQuestions, getCompletionStats, availableGroups } = useQuestionsManagement(
@@ -59,9 +59,9 @@ export function useInspectionData(inspectionId: string | undefined): InspectionD
   // Handle responses and saving
   const { 
     handleResponseChange, 
-    saveInspectionResponses, 
-    saveSubChecklistResponses 
-  } = useResponseHandling(inspectionId, responses, setResponses);
+    handleSaveInspection, 
+    handleSaveSubChecklistResponses 
+  } = useResponseHandling(inspectionId, setResponses);
 
   // Set initial group when data is loaded
   useMemo(() => {
@@ -71,31 +71,34 @@ export function useInspectionData(inspectionId: string | undefined): InspectionD
   }, [loading, groups, currentGroupId]);
 
   // Wrap save function
-  const handleSaveInspection = useCallback(async () => {
+  const saveInspection = useCallback(async () => {
     if (!inspectionId) throw new Error("ID da inspeção não fornecido");
-    await saveInspectionResponses();
-  }, [inspectionId, saveInspectionResponses]);
+    if (!inspection) return;
+    await handleSaveInspection(responses || {}, inspection);
+  }, [inspectionId, inspection, responses, handleSaveInspection]);
 
   // Wrap subchecklist save function
-  const handleSaveSubChecklistResponses = useCallback(async (subChecklistId: string, responses: Record<string, any>) => {
+  const saveSubchecklist = useCallback(async (subChecklistId: string, subchecklistResponses: Record<string, any>) => {
     if (!inspectionId) throw new Error("ID da inspeção não fornecido");
-    await saveSubChecklistResponses(subChecklistId, responses);
-  }, [inspectionId, saveSubChecklistResponses]);
+    await handleSaveSubChecklistResponses(subChecklistId, subchecklistResponses);
+  }, [inspectionId, handleSaveSubChecklistResponses]);
 
   // Wrap completeInspection function
   const handleCompleteInspection = useCallback(async () => {
     if (!inspection) throw new Error("Inspeção não carregada");
     // First save current state
-    await saveInspectionResponses();
+    if (responses) {
+      await handleSaveInspection(responses, inspection);
+    }
     // Then complete inspection
-    return await completeInspection(inspection);
-  }, [inspection, saveInspectionResponses, completeInspection]);
+    await updateInspectionStatus(inspection);
+  }, [inspection, responses, handleSaveInspection, updateInspectionStatus]);
 
   // Wrap reopenInspection function
   const handleReopenInspection = useCallback(async () => {
     if (!inspection) throw new Error("Inspeção não carregada");
-    return await reopenInspection(inspection);
-  }, [inspection, reopenInspection]);
+    await updateReopenStatus(inspection);
+  }, [inspection, updateReopenStatus]);
 
   return {
     loading,
@@ -110,8 +113,8 @@ export function useInspectionData(inspectionId: string | undefined): InspectionD
     subChecklists: subChecklists || {},
     currentGroupId,
     handleResponseChange,
-    handleSaveInspection,
-    handleSaveSubChecklistResponses,
+    handleSaveInspection: saveInspection,
+    handleSaveSubChecklistResponses: saveSubchecklist,
     getCompletionStats,
     getFilteredQuestions,
     refreshData,

@@ -17,7 +17,7 @@ export interface InspectionStatusHook {
 
 export function useInspectionStatus(inspectionId: string | undefined): InspectionStatusHook {
   // Completar inspeção - função simplificada sem acoplamento
-  const completeInspection = useCallback(async (inspection: Inspection) => {
+  const completeInspection = useCallback(async (inspection: Inspection): Promise<Inspection> => {
     try {
       if (!inspectionId) throw new Error("ID da inspeção não fornecido");
 
@@ -39,7 +39,7 @@ export function useInspectionStatus(inspectionId: string | undefined): Inspectio
   }, [inspectionId]);
 
   // Reabrir inspeção
-  const reopenInspection = useCallback(async (inspection: Inspection) => {
+  const reopenInspection = useCallback(async (inspection: Inspection): Promise<Inspection> => {
     try {
       if (!inspectionId) throw new Error("ID da inspeção não fornecido");
 
