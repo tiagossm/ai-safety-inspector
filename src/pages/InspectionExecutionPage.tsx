@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { InspectionError } from "@/components/inspection/execution/InspectionError";
 import { InspectionLayout } from "@/components/inspection/execution/InspectionLayout";
 import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
-import { InspectionDataProvider } from "@/components/inspection/execution/InspectionDataProvider";
+import { InspectionDataProvider, useInspectionDataContext } from "@/components/inspection/execution/InspectionDataProvider";
 
 // Componente principal da página de execução de inspeção
 export default function InspectionExecutionPage() {
@@ -42,6 +42,7 @@ function InspectionView() {
   const [lastSaved, setLastSaved] = React.useState<Date | null>(null);
   const [saving, setSaving] = React.useState(false);
   
+  // Usar o hook de contexto para acessar os dados da inspeção
   const {
     loading,
     inspection,
@@ -54,7 +55,6 @@ function InspectionView() {
     groups,
     subChecklists,
     currentGroupId,
-    filteredQuestions,
     handleResponseChange,
     handleSaveInspection,
     handleSaveSubChecklistResponses,
@@ -64,7 +64,12 @@ function InspectionView() {
     completeInspection,
     reopenInspection,
     setCurrentGroupId
-  } = React.useContext(InspectionDataContext);
+  } = useInspectionDataContext();
+  
+  // Obter perguntas filtradas para o grupo atual
+  const filteredQuestions = React.useMemo(() => {
+    return getFilteredQuestions(currentGroupId);
+  }, [getFilteredQuestions, currentGroupId]);
   
   // Auto-save configuration
   useEffect(() => {
