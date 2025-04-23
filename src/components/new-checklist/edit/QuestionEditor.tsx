@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,7 @@ export function QuestionEditor({
   const [showOptionsEditor, setShowOptionsEditor] = useState(false);
   const [newOption, setNewOption] = useState("");
 
+  // Convert database response type to frontend type for proper display
   const frontendResponseType = question.responseType && databaseToFrontendResponseType(question.responseType);
 
   const handleUpdate = (field: keyof ChecklistQuestion, value: any) => {
@@ -165,7 +167,7 @@ export function QuestionEditor({
           </div>
         </div>
 
-        {question.responseType === "seleção múltipla" && (
+        {question.responseType === "seleção múltipla" || frontendResponseType === "multiple_choice" ? (
           <div className="mt-4 space-y-2">
             <div className="flex justify-between items-center">
               <label className="text-sm font-medium">Opções de resposta</label>
@@ -227,7 +229,7 @@ export function QuestionEditor({
               </div>
             )}
           </div>
-        )}
+        ) : null}
 
         <div>
           <label className="text-sm font-medium mb-1 block">Dica para o inspetor</label>

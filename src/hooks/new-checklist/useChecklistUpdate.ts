@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
@@ -70,11 +71,12 @@ export function useChecklistUpdate() {
             }
 
             const options = Array.isArray(q.options) ? q.options.map((opt) => String(opt)) : [];
+            const dbResponseType = frontendToDatabaseResponseType(q.responseType);
 
             return {
               checklist_id: id,
               pergunta: q.text,
-              tipo_resposta: frontendToDatabaseResponseType(q.responseType),
+              tipo_resposta: dbResponseType,
               obrigatorio: q.isRequired,
               ordem: q.order || index,
               opcoes: options,
@@ -113,12 +115,14 @@ export function useChecklistUpdate() {
           const options = Array.isArray(question.options)
             ? question.options.map((opt) => String(opt))
             : [];
+            
+          const dbResponseType = frontendToDatabaseResponseType(question.responseType);
 
           const { error: updateError } = await supabase
             .from("checklist_itens")
             .update({
               pergunta: question.text,
-              tipo_resposta: frontendToDatabaseResponseType(question.responseType),
+              tipo_resposta: dbResponseType,
               obrigatorio: question.isRequired,
               ordem: question.order,
               opcoes: options,
