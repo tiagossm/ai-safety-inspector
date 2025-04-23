@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Input } from "@/components/ui/input";
@@ -22,10 +21,6 @@ import {
   Copy
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { 
-  ToggleGroup,
-  ToggleGroupItem 
-} from "@/components/ui/toggle-group";
 import { SubChecklistButton } from "@/components/new-checklist/question-editor/SubChecklistButton";
 import { toast } from "sonner";
 
@@ -46,15 +41,14 @@ export function QuestionEditor({
 }: QuestionEditorProps) {
   const [showOptionsEditor, setShowOptionsEditor] = useState(false);
   const [newOption, setNewOption] = useState("");
-  
+
   const handleUpdate = (field: keyof ChecklistQuestion, value: any) => {
     if (onUpdate) {
       onUpdate({
         ...question,
         [field]: value
       });
-      
-      // Provide visual feedback for certain actions
+
       if (field === "allowsPhoto" || field === "allowsVideo" || field === "allowsAudio" || field === "allowsFiles") {
         const status = value ? "ativada" : "desativada";
         const mediaType = getMediaTypeName(field);
@@ -62,7 +56,7 @@ export function QuestionEditor({
       }
     }
   };
-  
+
   const getMediaTypeName = (mediaField: string): string => {
     switch (mediaField) {
       case "allowsPhoto": return "imagem";
@@ -72,7 +66,7 @@ export function QuestionEditor({
       default: return "mídia";
     }
   };
-  
+
   const handleAddOption = () => {
     if (newOption.trim() && onUpdate) {
       const currentOptions = question.options || [];
@@ -84,7 +78,7 @@ export function QuestionEditor({
       toast.success("Opção adicionada");
     }
   };
-  
+
   const handleRemoveOption = (index: number) => {
     if (onUpdate) {
       const currentOptions = [...(question.options || [])];
@@ -96,33 +90,26 @@ export function QuestionEditor({
       toast.success("Opção removida");
     }
   };
-  
-  // Parse hint if it contains JSON to extract only the user-facing hint
+
   const parseHint = (hint?: string | null): string => {
     if (!hint) return "";
-    
+
     try {
-      // Check if hint is JSON
       if (typeof hint === 'string' && hint.startsWith("{") && hint.endsWith("}")) {
         const parsed = JSON.parse(hint);
-        // If it's our group metadata format, return empty string
         if (parsed.groupId && parsed.groupTitle) {
           return "";
         }
       }
-    } catch (e) {
-      // Not JSON, just return the hint
-    }
-    
+    } catch (e) {}
     return hint;
   };
-  
+
   const userHint = parseHint(question.hint);
-  
+
   return (
     <div className={`border rounded-md p-4 ${isSubQuestion ? 'bg-gray-50' : 'bg-white'}`}>
       <div className="space-y-4">
-        {/* Question text */}
         <div>
           <Textarea
             placeholder="Texto da pergunta"
@@ -132,14 +119,24 @@ export function QuestionEditor({
             rows={2}
           />
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Response type */}
           <div>
             <label className="text-sm font-medium mb-1 block">Tipo de resposta</label>
             <Select
               value={question.responseType}
-              onValueChange={(value) => handleUpdate("responseType", value)}
+              onValueChange={(value) => {
+                const tipoRespostaMap: Record<string, string> = {
+                  "yes_no": "sim/não",
+                  "text": "texto",
+                  "multiple_choice": "seleção múltipla",
+                  "numeric": "numérico",
+                  "photo": "foto",
+                  "signature": "assinatura"
+                };
+                const mappedValue = tipoRespostaMap[value] || value;
+                handleUpdate("responseType", mappedValue);
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o tipo" />
@@ -154,8 +151,7 @@ export function QuestionEditor({
               </SelectContent>
             </Select>
           </div>
-          
-          {/* Weight/Points */}
+
           <div>
             <label className="text-sm font-medium mb-1 block">Peso/Pontos</label>
             <Input
@@ -166,8 +162,7 @@ export function QuestionEditor({
               onChange={(e) => handleUpdate("weight", Number(e.target.value))}
             />
           </div>
-          
-          {/* Required switch */}
+
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium">Obrigatório</label>
             <Switch
@@ -176,9 +171,8 @@ export function QuestionEditor({
             />
           </div>
         </div>
-        
-        {/* Multiple choice options */}
-        {question.responseType === "multiple_choice" && (
+
+        {question.responseType === "seleção múltipla" && (
           <div className="mt-4 space-y-2">
             <div className="flex justify-between items-center">
               <label className="text-sm font-medium">Opções de resposta</label>
@@ -191,7 +185,7 @@ export function QuestionEditor({
                 {showOptionsEditor ? "Ocultar" : "Editar opções"}
               </Button>
             </div>
-            
+
             {showOptionsEditor && (
               <div className="space-y-2 mt-2 border-t pt-2">
                 {(question.options || []).map((option, index) => (
@@ -241,8 +235,7 @@ export function QuestionEditor({
             )}
           </div>
         )}
-        
-        {/* Hint text */}
+
         <div>
           <label className="text-sm font-medium mb-1 block">Dica para o inspetor</label>
           <Textarea
@@ -253,8 +246,7 @@ export function QuestionEditor({
             rows={2}
           />
         </div>
-        
-        {/* Media options */}
+
         <div>
           <label className="text-sm font-medium mb-1 block">Opções de mídia</label>
           <div className="flex flex-wrap gap-2 mt-1">
@@ -270,7 +262,7 @@ export function QuestionEditor({
               <Image className="h-4 w-4" />
               <span>Imagem</span>
             </Button>
-            
+
             <Button
               type="button"
               variant={question.allowsVideo ? "default" : "outline"}
@@ -283,7 +275,7 @@ export function QuestionEditor({
               <Video className="h-4 w-4" />
               <span>Vídeo</span>
             </Button>
-            
+
             <Button
               type="button"
               variant={question.allowsAudio ? "default" : "outline"}
@@ -296,7 +288,7 @@ export function QuestionEditor({
               <Mic className="h-4 w-4" />
               <span>Áudio</span>
             </Button>
-            
+
             <Button
               type="button"
               variant={question.allowsFiles ? "default" : "outline"}
@@ -311,8 +303,7 @@ export function QuestionEditor({
             </Button>
           </div>
         </div>
-        
-        {/* Action buttons */}
+
         <div className="flex justify-between">
           {onDelete && (
             <Button
@@ -331,9 +322,8 @@ export function QuestionEditor({
               Excluir
             </Button>
           )}
-          
+
           <div className="flex gap-2 ml-auto">
-            {/* Only show Sub-checklist button for parent questions */}
             {!isSubQuestion && (
               <SubChecklistButton
                 parentQuestionId={question.id}
