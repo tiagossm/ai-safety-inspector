@@ -23,7 +23,9 @@ export default function StartInspectionPage() {
   const [sharableLink, setSharableLink] = useState<string>("");
   const [debugMode, setDebugMode] = useState<boolean>(false);
   const [debugClickCount, setDebugClickCount] = useState<number>(0);
-  const [hasStartedInspection, setHasStartedInspection] = useState<boolean>(false);
+  const [createdInspectionId, setCreatedInspectionId] = useState<string | null>(
+    sessionStorage.getItem("last_created_inspection_id")
+  );
   
   const checklistQuery = useChecklistById(checklistId || "");
   
@@ -49,6 +51,18 @@ export default function StartInspectionPage() {
   const methods = useForm({
     defaultValues: formData
   });
+
+  // Check if we should redirect based on session storage
+  useEffect(() => {
+    const formSubmissionKey = `inspection_submitted_${checklistId || window.location.pathname}`;
+    const wasSubmitted = sessionStorage.getItem(formSubmissionKey) === "true";
+    const inspectionId = sessionStorage.getItem("last_created_inspection_id");
+    
+    if (wasSubmitted && inspectionId) {
+      console.log(`This inspection was already created. Redirecting to: ${inspectionId}`);
+      navigate(`/inspections/${inspectionId}/view`, { replace: true });
+    }
+  }, [checklistId, navigate]);
 
   // Sync form data from useStartInspection to React Hook Form
   useEffect(() => {
@@ -89,7 +103,6 @@ export default function StartInspectionPage() {
             });
           } catch (shareError) {
             console.log("Share API error or user canceled:", shareError);
-            // This is not an error we need to show to the user
           }
         }
       }
@@ -108,46 +121,32 @@ export default function StartInspectionPage() {
     );
   };
 
-  const handleStartInspection = async () => {
-    // Prevent multiple inspections from being started
-    if (hasStartedInspection) {
-      console.log("Inspection already started, preventing duplicate submission");
-      return false;
-    }
-    
-    // Get current form data from React Hook Form
-    const formValues = methods.getValues();
-    
-    // Update the formData in useStartInspection if needed
-    Object.keys(formValues).forEach(key => {
-      if (formValues[key] !== formData[key]) {
-        // Type-safe approach: Cast key to keyof typeof formData to ensure it's a valid key
-        updateFormField(key as keyof typeof formData, formValues[key]);
-      }
-    });
-    
+  // Make the startInspection function available to the InspectionActionButtonsSection
+  window.startInspection = async () => {
     try {
-      setHasStartedInspection(true); // Set flag to prevent multiple submissions
-      console.log("Starting inspection, hasStartedInspection set to true");
+      // Get current form data from React Hook Form
+      const formValues = methods.getValues();
+      
+      // Update the formData in useStartInspection if needed
+      Object.keys(formValues).forEach(key => {
+        if (formValues[key] !== formData[key]) {
+          updateFormField(key as keyof typeof formData, formValues[key]);
+        }
+      });
+      
       const success = await startInspection();
       if (success) {
         toast.success("Inspeção iniciada com sucesso!");
+        // Store the inspection ID in session storage
+        setCreatedInspectionId(typeof success === 'string' ? success : null);
+        return { success: true, inspectionId: typeof success === 'string' ? success : null };
       }
-      return success;
+      return { success: false };
     } catch (error) {
-      setHasStartedInspection(false); // Reset flag on error
       handleError(error, "Não foi possível iniciar a inspeção");
-      return false;
+      return { success: false, error };
     }
   };
-
-  const handleFormSubmit = methods.handleSubmit(async () => {
-    if (hasStartedInspection) {
-      console.log("Form already submitted, preventing duplicate submission");
-      return;
-    }
-    await handleStartInspection();
-  });
 
   if (checklistLoading || checklistQuery.isLoading) {
     return (
@@ -186,7 +185,7 @@ export default function StartInspectionPage() {
   return (
     <div className="container max-w-5xl py-8">
       <FormProvider {...methods}>
-        <form onSubmit={handleFormSubmit}>
+        <form>
           <ChecklistHeaderSection
             checklist={checklist}
             draftSaved={draftSaved}
@@ -198,9 +197,7 @@ export default function StartInspectionPage() {
           <InspectionTabsSection
             formData={formData}
             updateFormField={(field: string, value: any) => {
-              // Type-safe approach: Cast field to keyof typeof formData
               updateFormField(field as keyof typeof formData, value);
-              // Use type assertion for methods.setValue too
               methods.setValue(field as keyof typeof formData, value);
             }}
             formErrors={formErrors}
@@ -215,7 +212,7 @@ export default function StartInspectionPage() {
             cancelAndGoBack={cancelAndGoBack}
             saveAsDraft={saveAsDraft}
             handleShare={handleShare}
-            handleStartInspection={handleStartInspection}
+            inspectionId={createdInspectionId || undefined}
           />
         </form>
       </FormProvider>
@@ -229,4 +226,11 @@ export default function StartInspectionPage() {
       />
     </div>
   );
+}
+
+// Add global type for window object
+declare global {
+  interface Window {
+    startInspection?: () => Promise<{ success: boolean; inspectionId?: string | null; error?: any }>;
+  }
 }

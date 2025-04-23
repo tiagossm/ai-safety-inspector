@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -26,8 +27,25 @@ export function useNewInspectionForm(checklistId: string | undefined) {
   const [inspectionType, setInspectionType] = useState<string>("internal");
   const [priority, setPriority] = useState<string>("medium");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [createdInspectionId, setCreatedInspectionId] = useState<string | null>(null);
 
-  const hasFetched = useRef(false); // ⛔ evita múltiplas chamadas e looping
+  const hasFetched = useRef(false);
+  
+  // Check for session storage for already submitted inspections
+  useEffect(() => {
+    if (!checklistId) return;
+    
+    const formSubmissionKey = `inspection_submitted_${checklistId}`;
+    const wasSubmitted = sessionStorage.getItem(formSubmissionKey) === "true";
+    const savedId = sessionStorage.getItem("last_created_inspection_id");
+    
+    if (wasSubmitted && savedId) {
+      console.log(`This inspection was already created (ID: ${savedId}). Redirecting...`);
+      setCreatedInspectionId(savedId);
+      setHasSubmitted(true);
+      navigate(`/inspections/${savedId}/view`, { replace: true });
+    }
+  }, [checklistId, navigate]);
 
   useEffect(() => {
     if (!checklistId) {
@@ -114,8 +132,23 @@ export function useNewInspectionForm(checklistId: string | undefined) {
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
-    if (hasSubmitted) {
+    // Check for existing inspection in session storage
+    const formSubmissionKey = `inspection_submitted_${checklistId}`;
+    const wasSubmitted = sessionStorage.getItem(formSubmissionKey) === "true";
+    const savedId = sessionStorage.getItem("last_created_inspection_id");
+    
+    if (wasSubmitted && savedId) {
+      console.log(`This inspection was already created (ID: ${savedId}). Redirecting...`);
+      navigate(`/inspections/${savedId}/view`, { replace: true });
+      return true;
+    }
+
+    // Or check component state
+    if (hasSubmitted || createdInspectionId) {
       console.log("Form already submitted, preventing duplicate submission");
+      if (createdInspectionId) {
+        navigate(`/inspections/${createdInspectionId}/view`, { replace: true });
+      }
       return false;
     }
 
@@ -123,6 +156,7 @@ export function useNewInspectionForm(checklistId: string | undefined) {
       toast.error("Preencha todos os campos obrigatórios");
       return false;
     }
+    
     if (!user?.id) {
       toast.error("Usuário não autenticado");
       return false;
@@ -166,9 +200,18 @@ export function useNewInspectionForm(checklistId: string | undefined) {
 
       if (error) throw error;
 
+      // Save inspection ID to session storage to prevent duplicate submissions
+      if (inspection?.id) {
+        sessionStorage.setItem(formSubmissionKey, "true");
+        sessionStorage.setItem("last_created_inspection_id", inspection.id);
+        setCreatedInspectionId(inspection.id);
+      }
+
       toast.success("Inspeção criada com sucesso!");
       console.log(`Navigating to inspection ${inspection.id} view page`);
-      navigate(`/inspections/${inspection.id}/view`);
+      
+      // Use replace to prevent back navigation to form
+      navigate(`/inspections/${inspection.id}/view`, { replace: true });
       return true;
 
     } catch (error: any) {
@@ -210,6 +253,7 @@ export function useNewInspectionForm(checklistId: string | undefined) {
     inspectionType,
     priority,
     errors,
+    createdInspectionId,
     setCompanyData,
     setLocation,
     setNotes,

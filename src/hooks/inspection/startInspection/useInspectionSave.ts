@@ -15,7 +15,12 @@ export function useInspectionSave(formData: StartInspectionFormData, validateFor
   const [draftSaved, setDraftSaved] = useState<Date | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState<boolean>(false);
 
+  // Check if we've already submitted this inspection
+  const formSubmissionKey = `inspection_submitted_${formData.checklistId || window.location.pathname}`;
+  const isAlreadySubmitted = sessionStorage.getItem(formSubmissionKey) === "true";
+
   const saveInspection = async (status: 'draft' | 'pending' = "pending") => {
+    // For drafts, we don't need full validation
     if (status === "pending" && !validateForm()) {
       toast.error("Por favor, corrija os erros antes de prosseguir");
       return false;
@@ -26,10 +31,26 @@ export function useInspectionSave(formData: StartInspectionFormData, validateFor
       return false;
     }
     
-    // Prevent duplicate submissions
+    // Prevent duplicate submissions for pending status
     if (hasSubmitted && status === 'pending') {
-      console.log("Preventing duplicate submission - inspection already submitted");
+      console.log(`Preventing duplicate submission - inspection already submitted (status: ${status})`);
+      
+      // If already submitted and we have an ID stored, return it
+      const savedId = sessionStorage.getItem("last_created_inspection_id");
+      if (savedId) {
+        return savedId;
+      }
+      
       return false;
+    }
+    
+    // Check session storage to prevent duplicate submissions across page loads
+    if (isAlreadySubmitted && status === 'pending') {
+      console.log("This inspection was already submitted in this session");
+      const savedId = sessionStorage.getItem("last_created_inspection_id");
+      if (savedId) {
+        return savedId;
+      }
     }
 
     setSubmitting(status);
@@ -73,16 +94,21 @@ export function useInspectionSave(formData: StartInspectionFormData, validateFor
 
       if (data) {
         if (status === 'pending') {
+          // Mark as submitted both in component state and in session storage
           setHasSubmitted(true);
+          sessionStorage.setItem(formSubmissionKey, "true");
+          sessionStorage.setItem("last_created_inspection_id", data.id);
         }
         
         toast.success(status === "draft"
           ? "Rascunho salvo com sucesso"
           : "Inspeção iniciada com sucesso"
         );
+        
         localStorage.removeItem("inspection_draft");
         return data.id;
       }
+      return false;
     } catch (err: any) {
       console.error("Error saving inspection:", err);
       toast.error(`Erro ao salvar inspeção: ${err.message}`);
@@ -93,17 +119,22 @@ export function useInspectionSave(formData: StartInspectionFormData, validateFor
   };
 
   const startInspection = async () => {
-    // Prevent multiple submissions
-    if (hasSubmitted) {
+    // Check if already submitted
+    if (hasSubmitted || isAlreadySubmitted) {
       console.log("Inspection already submitted, preventing duplicate call");
+      const savedId = sessionStorage.getItem("last_created_inspection_id");
+      
+      if (savedId) {
+        console.log(`Returning already created inspection ID: ${savedId}`);
+        return savedId;
+      }
       return false;
     }
     
     const inspectionId = await saveInspection("pending");
     if (inspectionId) {
       console.log(`Navigation to inspection view with id: ${inspectionId}`);
-      navigate(`/inspections/${inspectionId}/view`);
-      return true;
+      return inspectionId;
     }
     return false;
   };
