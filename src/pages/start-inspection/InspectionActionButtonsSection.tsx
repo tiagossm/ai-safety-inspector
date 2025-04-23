@@ -45,7 +45,7 @@ export default function InspectionActionButtonsSection({
     }
   }, [inspectionId, navigate]);
 
-  const handleStartInspection = async (formData: any) => {
+  const handleStartInspection = async () => {
     // Prevent submission if already submitted or in progress
     if (isSubmitting || isCompleted) {
       console.log("Preventing duplicate submission - already submitted or in progress");
@@ -56,7 +56,7 @@ export default function InspectionActionButtonsSection({
       setIsSubmitting(true);
       
       // Create inspection in backend
-      const result = await window.startInspection?.(formData);
+      const result = await window.startInspection?.();
       
       if (result && result.success && result.inspectionId) {
         // Mark this form as successfully submitted
@@ -144,3 +144,4 @@ export default function InspectionActionButtonsSection({
     </div>
   );
 }
+
