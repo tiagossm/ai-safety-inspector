@@ -13,6 +13,7 @@ export function useInspectionSave(formData: StartInspectionFormData, validateFor
   const { user } = useAuth();
 
   const [draftSaved, setDraftSaved] = useState<Date | null>(null);
+  const [hasSubmitted, setHasSubmitted] = useState<boolean>(false);
 
   const saveInspection = async (status: 'draft' | 'pending' = "pending") => {
     if (status === "pending" && !validateForm()) {
@@ -22,6 +23,12 @@ export function useInspectionSave(formData: StartInspectionFormData, validateFor
 
     if (!user?.id) {
       toast.error("Usuário não autenticado");
+      return false;
+    }
+    
+    // Prevent duplicate submissions
+    if (hasSubmitted && status === 'pending') {
+      console.log("Preventing duplicate submission - inspection already submitted");
       return false;
     }
 
@@ -63,6 +70,10 @@ export function useInspectionSave(formData: StartInspectionFormData, validateFor
       if (error) throw error;
 
       if (data) {
+        if (status === 'pending') {
+          setHasSubmitted(true);
+        }
+        
         toast.success(status === "draft"
           ? "Rascunho salvo com sucesso"
           : "Inspeção iniciada com sucesso"
@@ -80,6 +91,12 @@ export function useInspectionSave(formData: StartInspectionFormData, validateFor
   };
 
   const startInspection = async () => {
+    // Prevent multiple submissions
+    if (hasSubmitted) {
+      console.log("Inspection already submitted, preventing duplicate call");
+      return false;
+    }
+    
     const inspectionId = await saveInspection("pending");
     if (inspectionId) {
       navigate(`/inspections/${inspectionId}/view`);

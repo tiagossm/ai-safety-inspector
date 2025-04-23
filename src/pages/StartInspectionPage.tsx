@@ -23,6 +23,7 @@ export default function StartInspectionPage() {
   const [sharableLink, setSharableLink] = useState<string>("");
   const [debugMode, setDebugMode] = useState<boolean>(false);
   const [debugClickCount, setDebugClickCount] = useState<number>(0);
+  const [hasStartedInspection, setHasStartedInspection] = useState<boolean>(false);
   
   const checklistQuery = useChecklistById(checklistId || "");
   
@@ -108,6 +109,12 @@ export default function StartInspectionPage() {
   };
 
   const handleStartInspection = async () => {
+    // Prevent multiple inspections from being started
+    if (hasStartedInspection) {
+      console.log("Inspection already started, preventing duplicate submission");
+      return false;
+    }
+    
     // Get current form data from React Hook Form
     const formValues = methods.getValues();
     
@@ -120,18 +127,24 @@ export default function StartInspectionPage() {
     });
     
     try {
+      setHasStartedInspection(true); // Set flag to prevent multiple submissions
       const success = await startInspection();
       if (success) {
         toast.success("Inspeção iniciada com sucesso!");
       }
       return success;
     } catch (error) {
+      setHasStartedInspection(false); // Reset flag on error
       handleError(error, "Não foi possível iniciar a inspeção");
       return false;
     }
   };
 
   const handleFormSubmit = methods.handleSubmit(async () => {
+    if (hasStartedInspection) {
+      console.log("Form already submitted, preventing duplicate submission");
+      return;
+    }
     await handleStartInspection();
   });
 

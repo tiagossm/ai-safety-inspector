@@ -16,6 +16,7 @@ export function useNewInspectionForm(checklistId: string | undefined) {
   const [checklist, setChecklist] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   const [companyId, setCompanyId] = useState<string>("");
   const [companyData, setCompanyData] = useState<any>(null);
@@ -113,17 +114,26 @@ export function useNewInspectionForm(checklistId: string | undefined) {
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    
+    // Prevent duplicate submissions
+    if (hasSubmitted) {
+      console.log("Form already submitted, preventing duplicate submission");
+      return false;
+    }
+    
     if (!validateForm()) {
       toast.error("Preencha todos os campos obrigatórios");
-      return;
+      return false;
     }
     if (!user?.id) {
       toast.error("Usuário não autenticado");
-      return;
+      return false;
     }
 
     try {
       setSubmitting(true);
+      setHasSubmitted(true); // Mark as submitted to prevent duplicates
+      
       const formattedCNAE = formatCNAE(companyData.cnae);
       const formattedDate = scheduledDate ? scheduledDate.toISOString() : null;
 
@@ -166,10 +176,12 @@ export function useNewInspectionForm(checklistId: string | undefined) {
 
       toast.success("Inspeção criada com sucesso!");
       navigate(`/inspections/${inspection.id}/view`);
-
+      return true;
     } catch (error: any) {
       console.error("Error creating inspection:", error);
       toast.error(`Erro ao criar inspeção: ${error.message}`);
+      setHasSubmitted(false); // Reset on error
+      return false;
     } finally {
       setSubmitting(false);
     }

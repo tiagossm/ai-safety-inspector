@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Share2, ChevronRight } from "lucide-react";
 import { useFormContext } from "react-hook-form";
@@ -22,13 +22,20 @@ export default function InspectionActionButtonsSection({
   handleStartInspection,
 }: InspectionActionButtonsSectionProps) {
   const { handleSubmit } = useFormContext();
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   const onSubmit = handleSubmit(async () => {
+    if (hasSubmitted) {
+      console.log("Form already submitted, preventing duplicate submission");
+      return;
+    }
+    
     try {
+      setHasSubmitted(true);
       await handleStartInspection();
     } catch (error) {
       console.error("Error during form submission:", error);
-      // The error is already handled in handleStartInspection
+      setHasSubmitted(false); // Reset on error
     }
   });
 
@@ -37,7 +44,7 @@ export default function InspectionActionButtonsSection({
       <Button
         variant="outline"
         onClick={cancelAndGoBack}
-        disabled={isLoading || !!submitting}
+        disabled={isLoading || !!submitting || hasSubmitted}
         type="button"
       >
         Cancelar
@@ -45,7 +52,7 @@ export default function InspectionActionButtonsSection({
       <Button
         variant="outline"
         onClick={saveAsDraft}
-        disabled={isLoading || !!submitting}
+        disabled={isLoading || !!submitting || hasSubmitted}
         type="button"
       >
         {submitting === "draft" ? (
@@ -60,7 +67,7 @@ export default function InspectionActionButtonsSection({
       <Button
         variant="outline"
         onClick={handleShare}
-        disabled={isLoading || !!submitting}
+        disabled={isLoading || !!submitting || hasSubmitted}
         type="button"
       >
         <Share2 className="mr-2 h-4 w-4" />
@@ -68,7 +75,7 @@ export default function InspectionActionButtonsSection({
       </Button>
       <Button
         type="submit"
-        disabled={isLoading || !!submitting}
+        disabled={isLoading || !!submitting || hasSubmitted}
       >
         {submitting === "pending" ? (
           <>

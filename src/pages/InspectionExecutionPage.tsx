@@ -15,14 +15,17 @@ export default function InspectionExecutionPage() {
   const [autoSave, setAutoSave] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   
+  // Redirect to the inspection creation page if no ID is provided or is "new"
   useEffect(() => {
-    if (id === "new") {
+    if (!id || id === "new") {
+      console.log("No inspection ID provided or ID is 'new', redirecting to creation page");
       navigate("/inspections/new");
       return;
     }
   }, [id, navigate]);
   
-  const skipLoading = id === "new";
+  // Skip loading if we're redirecting anyway
+  const skipLoading = !id || id === "new";
   
   const {
     loading,
@@ -70,9 +73,9 @@ export default function InspectionExecutionPage() {
   
   // Debug logging
   useEffect(() => {
-    if (!loading) {
-      console.log(`Filtered questions for group ${currentGroupId}: ${filteredQuestions.length} of ${questions.length}`);
-      console.log(`Available groups: ${groups.map(g => g.id).join(', ')}`);
+    if (!loading && !skipLoading) {
+      console.log(`Filtered questions for group ${currentGroupId}: ${filteredQuestions.length} of ${questions?.length || 0}`);
+      console.log(`Available groups: ${groups?.map(g => g.id).join(', ') || 'none'}`);
       
       if (questions && questions.length > 0) {
         const groupCounts = questions.reduce((acc: Record<string, number>, q) => {
@@ -84,7 +87,7 @@ export default function InspectionExecutionPage() {
         console.log('Questions per group:', groupCounts);
       }
     }
-  }, [currentGroupId, filteredQuestions, questions, groups, loading]);
+  }, [currentGroupId, filteredQuestions, questions, groups, loading, skipLoading]);
   
   const onSaveProgress = async () => {
     if (saving) return;
@@ -148,7 +151,8 @@ export default function InspectionExecutionPage() {
     return Promise.resolve();
   };
 
-  if (id === "new") {
+  // If we're redirecting, don't render anything
+  if (!id || id === "new") {
     return null;
   }
 
