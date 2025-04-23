@@ -1,12 +1,10 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { Database } from "@/integrations/supabase/types";
 
-// Define ApprovalStatus type from Database Enums
 type ApprovalStatus = Database["public"]["Enums"]["approval_status"];
 
 export function useNewInspectionForm(checklistId: string | undefined) {
@@ -29,12 +27,17 @@ export function useNewInspectionForm(checklistId: string | undefined) {
   const [priority, setPriority] = useState<string>("medium");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const hasFetched = useRef(false); // ⛔ evita múltiplas chamadas e looping
+
   useEffect(() => {
     if (!checklistId) {
       toast.error("ID do checklist não fornecido");
       navigate("/inspections");
       return;
     }
+
+    if (hasFetched.current) return;
+    hasFetched.current = true;
 
     const fetchChecklist = async () => {
       try {
@@ -45,33 +48,30 @@ export function useNewInspectionForm(checklistId: string | undefined) {
           .eq("id", checklistId)
           .single();
 
-        if (error) throw error;
-        if (!data) {
-          toast.error("Checklist não encontrado");
+        if (error || !data) {
+          toast.error("Checklist não encontrado ou erro ao buscar dados");
           navigate("/inspections");
           return;
         }
 
-        // Debug information
-        console.log(`Fetched checklist ${data.id} with ${data.checklist_itens?.length || 0} questions`);
         setChecklist(data);
 
         if (data.company_id) {
-          const { data: companyData, error: companyError } = await supabase
+          const { data: companyData } = await supabase
             .from("companies")
             .select("*")
             .eq("id", data.company_id)
             .single();
 
-          if (!companyError && companyData) {
+          if (companyData) {
             setCompanyId(companyData.id);
             setCompanyData(companyData);
             setLocation(companyData.address || "");
           }
         }
       } catch (error) {
-        console.error("Error fetching checklist:", error);
-        toast.error("Erro ao carregar o checklist");
+        console.error("Erro ao buscar checklist:", error);
+        toast.error("Erro ao carregar checklist");
       } finally {
         setLoading(false);
       }
@@ -88,7 +88,6 @@ export function useNewInspectionForm(checklistId: string | undefined) {
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-
     if (!companyId) newErrors.company = "Selecione uma empresa";
     if (!companyData?.cnae) newErrors.cnae = "CNAE é obrigatório";
     else if (!/^\d{2}\.\d{2}-\d$/.test(companyData.cnae)) newErrors.cnae = "CNAE deve estar no formato 00.00-0";
@@ -114,13 +113,12 @@ export function useNewInspectionForm(checklistId: string | undefined) {
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    
-    // Prevent duplicate submissions
+
     if (hasSubmitted) {
       console.log("Form already submitted, preventing duplicate submission");
       return false;
     }
-    
+
     if (!validateForm()) {
       toast.error("Preencha todos os campos obrigatórios");
       return false;
@@ -132,13 +130,10 @@ export function useNewInspectionForm(checklistId: string | undefined) {
 
     try {
       setSubmitting(true);
-      setHasSubmitted(true); // Mark as submitted to prevent duplicates
-      
+      setHasSubmitted(true);
+
       const formattedCNAE = formatCNAE(companyData.cnae);
       const formattedDate = scheduledDate ? scheduledDate.toISOString() : null;
-
-      // Debug info
-      console.log(`Creating inspection for checklist ${checklistId} with ${checklist?.checklist_itens?.length || 0} questions`);
 
       const inspectionData = {
         checklist_id: checklistId,
@@ -163,9 +158,6 @@ export function useNewInspectionForm(checklistId: string | undefined) {
         }
       };
 
-      // Log the inspection data before submission
-      console.log("Submitting inspection with data:", inspectionData);
-
       const { data: inspection, error } = await supabase
         .from("inspections")
         .insert(inspectionData)
@@ -175,15 +167,14 @@ export function useNewInspectionForm(checklistId: string | undefined) {
       if (error) throw error;
 
       toast.success("Inspeção criada com sucesso!");
-      
-      // Navigate after successful submission
       console.log(`Navigating to inspection ${inspection.id} view page`);
       navigate(`/inspections/${inspection.id}/view`);
       return true;
+
     } catch (error: any) {
       console.error("Error creating inspection:", error);
       toast.error(`Erro ao criar inspeção: ${error.message}`);
-      setHasSubmitted(false); // Reset on error
+      setHasSubmitted(false);
       return false;
     } finally {
       setSubmitting(false);
