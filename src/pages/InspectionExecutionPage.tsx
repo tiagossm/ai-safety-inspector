@@ -9,7 +9,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, RefreshCw, ArrowLeft } from "lucide-react";
 import { InspectionLayout } from "@/components/inspection/execution/InspectionLayout";
 import { InspectionError } from "@/components/inspection/execution/InspectionError";
-import { useInspectionFetch } from "@/services/inspection/useInspectionFetch";
+// Change the import path to use the hook from hooks instead of services
+import { useInspectionFetch } from "@/hooks/inspection/useInspectionFetch";
 
 export default function InspectionExecutionPage() {
   const { id } = useParams<{ id: string }>();
