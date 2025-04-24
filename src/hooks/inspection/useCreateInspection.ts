@@ -2,14 +2,23 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/components/AuthProvider";
+import { Database } from "@/integrations/supabase/types";
+
+type ApprovalStatus = Database["public"]["Enums"]["approval_status"];
 
 export function useCreateInspection() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const createInspection = async (checklistId: string) => {
     if (!checklistId) {
       throw new Error("ID do checklist não fornecido");
+    }
+
+    if (!user?.id) {
+      throw new Error("Usuário não autenticado");
     }
 
     setCreating(true);
@@ -32,8 +41,10 @@ export function useCreateInspection() {
         .from("inspections")
         .insert({
           checklist_id: checklistId,
+          user_id: user.id,
           status: "pending",
-          approval_status: "pending",
+          approval_status: "pending" as ApprovalStatus,
+          cnae: "00.00-0", // Default CNAE code as it's required
           checklist: {
             title: checklist.title,
             description: checklist.description || "",
