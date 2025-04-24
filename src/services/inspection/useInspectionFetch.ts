@@ -2,7 +2,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { fetchInspectionData } from "@/services/inspection/inspectionFetchService";
+// Remove the conflicting import since we're defining the function locally
+// import { fetchInspectionData } from "@/services/inspection/inspectionFetchService";
 
 export async function fetchInspectionData(inspectionId) {
   try {
