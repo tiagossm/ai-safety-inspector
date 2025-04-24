@@ -1,6 +1,6 @@
-
 import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { INSPECTION_STATUSES } from "@/types/inspection";
 
 export interface ResponseData {
   value?: any;
@@ -27,7 +27,6 @@ export function useResponseHandling(
   inspectionId: string | undefined, 
   setResponses: React.Dispatch<React.SetStateAction<Record<string, ResponseData>>>
 ) {
-  // Atualizar uma resposta individual
   const handleResponseChange = useCallback((questionId: string, data: ResponseData) => {
     if (!questionId) {
       console.error("Question ID is required for response change");
@@ -43,7 +42,6 @@ export function useResponseHandling(
     }));
   }, [setResponses]);
 
-  // Salvar todas as respostas da inspeção
   const handleSaveInspection = useCallback(async (
     responses: Record<string, ResponseData>, 
     inspection: any
@@ -75,17 +73,17 @@ export function useResponseHandling(
 
       if (error) throw error;
 
-      if (inspection?.status === "pending") {
+      if (inspection?.status === INSPECTION_STATUSES.PENDING) {
         const { error: updateError } = await supabase
           .from("inspections")
-          .update({ status: "in_progress" })
+          .update({ status: INSPECTION_STATUSES.IN_PROGRESS })
           .eq("id", inspectionId);
 
         if (updateError) throw updateError;
 
         return {
           ...inspection,
-          status: "in_progress"
+          status: INSPECTION_STATUSES.IN_PROGRESS
         };
       }
 
@@ -96,22 +94,20 @@ export function useResponseHandling(
     }
   }, [inspectionId]);
 
-  // Salvar respostas do subchecklist com tipo de retorno corrigido para Promise<void>
   const handleSaveSubChecklistResponses = useCallback(async (
     parentQuestionId: string, 
     responses: Record<string, any>
-  ): Promise<void> => { // Changed return type from Promise<boolean> to Promise<void>
+  ): Promise<void> => {
     try {
       if (!inspectionId) throw new Error("ID da inspeção não fornecido");
       if (!parentQuestionId) throw new Error("ID da pergunta pai não fornecido");
 
-      // Converter respostas para formato de array para Supabase
       const responsesArray = Array.isArray(responses) 
         ? responses 
         : Object.values(responses);
 
       if (!responsesArray.length) {
-        return; // Changed from "return true" to just "return" for void
+        return;
       }
 
       const formattedResponses = responsesArray.map(response => ({
@@ -133,7 +129,6 @@ export function useResponseHandling(
 
       if (error) throw error;
       
-      // Atualizar resposta pai para incluir as respostas do subchecklist
       setResponses(prev => ({
         ...prev,
         [parentQuestionId]: {
@@ -142,7 +137,7 @@ export function useResponseHandling(
         }
       }));
 
-      return; // Changed from "return true" to just "return" for void
+      return;
     } catch (error: any) {
       console.error("Error saving sub-checklist responses:", error);
       throw new Error(`Erro ao salvar respostas do sub-checklist: ${error.message || "Erro desconhecido"}`);

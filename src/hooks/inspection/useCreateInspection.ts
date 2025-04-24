@@ -3,14 +3,14 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/components/AuthProvider";
-import { Database } from "@/integrations/supabase/types";
-
-type ApprovalStatus = Database["public"]["Enums"]["approval_status"];
+import { AuthUser } from "@/hooks/auth/useAuthState";
+import { INSPECTION_STATUSES } from "@/types/inspection";
 
 export function useCreateInspection() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const extendedUser = user as AuthUser | null;
 
   const createInspection = async (checklistId: string) => {
     if (!checklistId) {
@@ -42,8 +42,7 @@ export function useCreateInspection() {
         .insert({
           checklist_id: checklistId,
           user_id: user.id,
-          status: "pending",
-          approval_status: "pending" as ApprovalStatus,
+          status: INSPECTION_STATUSES.PENDING,
           cnae: "00.00-0", // Default CNAE code as it's required
           checklist: {
             title: checklist.title,
@@ -51,7 +50,7 @@ export function useCreateInspection() {
             total_questions: checklist.total_questions || 0
           }
         })
-        .select()
+        .select("id, status, created_at, updated_at")
         .single();
 
       if (inspectionError) {
