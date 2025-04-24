@@ -96,11 +96,11 @@ export function useResponseHandling(
     }
   }, [inspectionId]);
 
-  // Salvar respostas do subchecklist com tipo de retorno consistente
+  // Salvar respostas do subchecklist com tipo de retorno corrigido para Promise<void>
   const handleSaveSubChecklistResponses = useCallback(async (
     parentQuestionId: string, 
     responses: Record<string, any>
-  ): Promise<boolean> => {
+  ): Promise<void> => { // Changed return type from Promise<boolean> to Promise<void>
     try {
       if (!inspectionId) throw new Error("ID da inspeção não fornecido");
       if (!parentQuestionId) throw new Error("ID da pergunta pai não fornecido");
@@ -111,7 +111,7 @@ export function useResponseHandling(
         : Object.values(responses);
 
       if (!responsesArray.length) {
-        return true;
+        return; // Changed from "return true" to just "return" for void
       }
 
       const formattedResponses = responsesArray.map(response => ({
@@ -142,7 +142,7 @@ export function useResponseHandling(
         }
       }));
 
-      return true;
+      return; // Changed from "return true" to just "return" for void
     } catch (error: any) {
       console.error("Error saving sub-checklist responses:", error);
       throw new Error(`Erro ao salvar respostas do sub-checklist: ${error.message || "Erro desconhecido"}`);
