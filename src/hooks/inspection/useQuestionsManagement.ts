@@ -19,7 +19,7 @@ export interface ResponseData {
 export function useQuestionsManagement(
   questions: Question[], 
   responses: Record<string, ResponseData>,
-  setResponses?: (responses: Record<string, ResponseData>) => void
+  setResponses?: (responses: Record<string, ResponseData> | ((prev: Record<string, ResponseData>) => Record<string, ResponseData>)) => void
 ) {
   // Normalizar questões uma única vez com useMemo
   const normalizedQuestions = useMemo(() => {
