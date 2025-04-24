@@ -100,7 +100,7 @@ const processResponses = (responsesData) => {
 /**
  * Fetches all data needed for an inspection
  */
-export const fetchInspectionData = async (inspectionId) => {
+export async function fetchInspectionData(inspectionId) {
   console.log(`Fetching inspection data for ID: ${inspectionId}`);
   
   if (!inspectionId) {
@@ -298,4 +298,4 @@ export const fetchInspectionData = async (inspectionId) => {
       subChecklists: {},
     };
   }
-};
+}

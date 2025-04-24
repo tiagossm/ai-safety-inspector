@@ -1,8 +1,10 @@
-// src/services/inspection/inspectionFetchService.ts
 
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { fetchInspectionData } from "@/services/inspection/inspectionFetchService";
 
-export async function fetchInspectionData(inspectionId: string) {
+export async function fetchInspectionData(inspectionId) {
   try {
     const { data, error } = await supabase
       .from("checklists")
@@ -21,7 +23,7 @@ export async function fetchInspectionData(inspectionId: string) {
       responsible: null,
       subChecklists: {},
     };
-  } catch (err: any) {
+  } catch (err) {
     console.error("Erro em fetchInspectionData:", err);
     return {
       error: err.message || "Erro desconhecido",

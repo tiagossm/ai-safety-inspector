@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -36,7 +36,7 @@ export default function InspectionExecutionPage() {
   } = useInspectionFetch(id);
 
   // Set initial group when data is loaded
-  useEffect(() => {
+  React.useEffect(() => {
     if (!loading && !currentGroupId && groups && groups.length > 0) {
       setCurrentGroupId(groups[0].id);
     }
@@ -113,10 +113,8 @@ export default function InspectionExecutionPage() {
     
     setSaving(true);
     try {
-      // Implementation to be completed in future iterations
-      // This would call an API to save the inspection responses
-      
-      // Mock implementation for now
+      // Implementation to be added later
+      // For now just simulate a delay
       await new Promise(resolve => setTimeout(resolve, 800));
       
       setLastSaved(new Date());
@@ -134,10 +132,8 @@ export default function InspectionExecutionPage() {
     if (!id) return;
     
     try {
-      // Implementation to be completed in future iterations
-      // This would call an API to save the subchecklist responses
-      
-      // Mock implementation for now
+      // Implementation to be added later
+      // For now just simulate a delay
       await new Promise(resolve => setTimeout(resolve, 500));
       
       toast.success("Sub-checklist salvo com sucesso");
@@ -155,10 +151,7 @@ export default function InspectionExecutionPage() {
     
     try {
       setSaving(true);
-      // Implementation to be completed in future iterations
-      // This would call an API to mark the inspection as completed
-      
-      // Mock implementation for now
+      // Implementation to be added later
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast.success("Inspeção finalizada com sucesso");
@@ -177,10 +170,7 @@ export default function InspectionExecutionPage() {
     
     try {
       setSaving(true);
-      // Implementation to be completed in future iterations
-      // This would call an API to reopen the inspection
-      
-      // Mock implementation for now
+      // Implementation to be added later
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast.success("Inspeção reaberta com sucesso");
