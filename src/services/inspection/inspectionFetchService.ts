@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { normalizeResponseType } from "@/utils/inspection/normalizationUtils";
@@ -94,7 +95,16 @@ export async function fetchInspectionData(inspectionId) {
   try {
     const { data: inspectionData, error: inspectionError } = await supabase
       .from("inspections")
-      .select(`*, companies:company_id(id, fantasy_name, cnpj)`) // Removido join com checklist
+      .select(`
+        id, 
+        status,
+        checklist_id,
+        company_id,
+        responsible_id,
+        scheduled_date,
+        location,
+        companies:company_id(id, fantasy_name, cnpj)
+      `)
       .eq("id", inspectionId)
       .single();
 

@@ -62,7 +62,7 @@ export function useNewInspectionForm(checklistId: string | undefined) {
         setLoading(true);
         const { data, error } = await supabase
           .from("checklists")
-          .select("*, checklist_itens(*)")
+          .select("id, title, description, total_questions, company_id, checklist_itens(id)")
           .eq("id", checklistId)
           .single();
 
@@ -77,7 +77,7 @@ export function useNewInspectionForm(checklistId: string | undefined) {
         if (data.company_id) {
           const { data: companyData } = await supabase
             .from("companies")
-            .select("*")
+            .select("id, fantasy_name, address, cnae")
             .eq("id", data.company_id)
             .single();
 
@@ -195,7 +195,7 @@ export function useNewInspectionForm(checklistId: string | undefined) {
       const { data: inspection, error } = await supabase
         .from("inspections")
         .insert(inspectionData)
-        .select()
+        .select("id, status, created_at, updated_at")
         .single();
 
       if (error) throw error;

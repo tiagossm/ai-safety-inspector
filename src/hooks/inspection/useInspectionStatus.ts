@@ -16,7 +16,7 @@ export function useInspectionStatus(inspectionId: string | undefined) {
         .from("inspections")
         .update({ status: "completed" })
         .eq("id", inspectionId)
-        .select()
+        .select("id, status, created_at, updated_at")
         .single();
 
       if (error) throw error;
@@ -42,7 +42,7 @@ export function useInspectionStatus(inspectionId: string | undefined) {
         .from("inspections")
         .update({ status: "in_progress" })
         .eq("id", inspectionId)
-        .select()
+        .select("id, status, created_at, updated_at")
         .single();
 
       if (error) throw error;

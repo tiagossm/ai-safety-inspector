@@ -9,8 +9,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, RefreshCw, ArrowLeft } from "lucide-react";
 import { InspectionLayout } from "@/components/inspection/execution/InspectionLayout";
 import { InspectionError } from "@/components/inspection/execution/InspectionError";
-// Change the import path to use the hook from hooks instead of services
 import { useInspectionFetch } from "@/hooks/inspection/useInspectionFetch";
+import { useInspectionStatus } from "@/hooks/inspection/useInspectionStatus";
+import { useResponseHandling } from "@/hooks/inspection/useResponseHandling";
 
 export default function InspectionExecutionPage() {
   const { id } = useParams<{ id: string }>();
@@ -35,6 +36,16 @@ export default function InspectionExecutionPage() {
     setResponses,
     refreshData
   } = useInspectionFetch(id);
+
+  // Get inspection status management functions
+  const { completeInspection, reopenInspection } = useInspectionStatus(id);
+
+  // Get response handling functions
+  const {
+    handleResponseChange,
+    handleSaveInspection,
+    handleSaveSubChecklistResponses
+  } = useResponseHandling(id, setResponses);
 
   // Set initial group when data is loaded
   React.useEffect(() => {
@@ -94,30 +105,13 @@ export default function InspectionExecutionPage() {
     return questions.filter(q => (q.groupId || 'default-group') === groupId);
   };
 
-  // Handle response changes
-  const handleResponseChange = (questionId: string, value: any, additionalData?: any) => {
-    if (!responses) return;
-    
-    setResponses({
-      ...responses,
-      [questionId]: {
-        ...(responses[questionId] || {}),
-        value,
-        ...(additionalData || {})
-      }
-    });
-  };
-
   // Save inspection progress
   const handleSaveProgress = async () => {
     if (saving || !id || !inspection) return;
     
     setSaving(true);
     try {
-      // Implementation to be added later
-      // For now just simulate a delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
+      await handleSaveInspection(responses, inspection);
       setLastSaved(new Date());
       toast.success("Progresso salvo com sucesso");
     } catch (error: any) {
@@ -128,33 +122,14 @@ export default function InspectionExecutionPage() {
     }
   };
 
-  // Handle subchecklist responses
-  const handleSaveSubChecklistResponses = async (subChecklistId: string, subResponses: Record<string, any>) => {
-    if (!id) return;
-    
-    try {
-      // Implementation to be added later
-      // For now just simulate a delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      toast.success("Sub-checklist salvo com sucesso");
-      return;
-    } catch (error: any) {
-      console.error("Error saving sub-checklist:", error);
-      toast.error(`Erro ao salvar sub-checklist: ${error.message || 'Erro desconhecido'}`);
-      throw error;
-    }
-  };
-
   // Complete inspection
   const handleCompleteInspection = async () => {
     if (!id || !inspection) return;
     
     try {
       setSaving(true);
-      // Implementation to be added later
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await handleSaveInspection(responses, inspection);
+      await completeInspection(inspection);
       toast.success("Inspeção finalizada com sucesso");
       refreshData();
     } catch (error: any) {
@@ -171,9 +146,7 @@ export default function InspectionExecutionPage() {
     
     try {
       setSaving(true);
-      // Implementation to be added later
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      const updatedInspection = await reopenInspection(inspection);
       toast.success("Inspeção reaberta com sucesso");
       refreshData();
     } catch (error: any) {

@@ -16,7 +16,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
   const [responsible, setResponsible] = useState<any>(null);
   const [subChecklists, setSubChecklists] = useState<Record<string, any>>({});
 
-  const fetchAttemptedRef = useRef(false); // 🔒 Prevents multiple executions
+  const fetchAttemptedRef = useRef(false);
   const maxRetries = 2;
   const retryRef = useRef(0);
 

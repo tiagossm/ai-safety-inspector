@@ -26,7 +26,7 @@ export function useOptimizedChecklistData({ checklistId, enabled = true }: UseOp
             title, 
             description, 
             is_template, 
-            status_checklist, 
+            status, 
             category, 
             responsible_id,
             company_id,

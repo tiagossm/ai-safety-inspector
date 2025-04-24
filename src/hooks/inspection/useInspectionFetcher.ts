@@ -20,11 +20,22 @@ export function useInspectionFetcher() {
         throw new Error("Usuário não autenticado");
       }
 
-      // Fetch inspections without trying to join on responsible_id directly
+      // Fetch inspections with explicit column selection
       let query = supabase
         .from("inspections")
         .select(`
-          *,
+          id,
+          status,
+          created_at,
+          updated_at,
+          checklist_id,
+          company_id,
+          responsible_id,
+          scheduled_date,
+          location,
+          priority,
+          metadata,
+          sync_status,
           companies:company_id(id, fantasy_name),
           checklist:checklist_id(id, title, description, total_questions)
         `);

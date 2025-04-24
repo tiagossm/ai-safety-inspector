@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -34,7 +35,18 @@ export function useOptimizedInspections() {
       let query = supabase
         .from("inspections")
         .select(`
-          *,
+          id,
+          status,
+          checklist_id,
+          company_id,
+          responsible_id,
+          scheduled_date,
+          created_at,
+          updated_at,
+          location,
+          priority,
+          metadata,
+          inspection_type,
           companies:company_id(id, fantasy_name),
           checklist:checklist_id(id, title, description, total_questions)
         `);
