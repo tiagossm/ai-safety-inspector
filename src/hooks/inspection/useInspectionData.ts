@@ -1,7 +1,7 @@
 
 import { useInspectionFetch } from "@/hooks/inspection/useInspectionFetch";
 import { useInspectionStatus } from "@/hooks/inspection/useInspectionStatus";
-import { useQuestionsManagement } from "@/hooks/inspection/useQuestionsManagement";
+import { useQuestionsManagement, Question } from "@/hooks/inspection/useQuestionsManagement";
 import { useResponseHandling } from "@/hooks/inspection/useResponseHandling";
 
 // Export type for the hook return value
@@ -44,7 +44,12 @@ export function useInspectionData(inspectionId: string | undefined): InspectionD
   const { completeInspection, reopenInspection } = useInspectionStatus(inspectionId);
   
   // Use the questions management hook for handling responses
-  const { handleResponseChange } = useQuestionsManagement(responses, setResponses);
+  // Pass questions as Question[] and also pass setResponses to the hook
+  const { handleResponseChange } = useQuestionsManagement(
+    questions as Question[], 
+    responses, 
+    setResponses
+  );
 
   return {
     loading,

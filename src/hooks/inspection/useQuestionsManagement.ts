@@ -16,7 +16,11 @@ export interface ResponseData {
   [key: string]: any;
 }
 
-export function useQuestionsManagement(questions: Question[], responses: Record<string, ResponseData>) {
+export function useQuestionsManagement(
+  questions: Question[], 
+  responses: Record<string, ResponseData>,
+  setResponses?: (responses: Record<string, ResponseData>) => void
+) {
   // Normalizar questões uma única vez com useMemo
   const normalizedQuestions = useMemo(() => {
     if (!Array.isArray(questions) || questions.length === 0) {
@@ -68,9 +72,26 @@ export function useQuestionsManagement(questions: Question[], responses: Record<
     };
   }, [normalizedQuestions, responses, availableGroups]);
 
+  // Add a function to handle response changes
+  const handleResponseChange = useCallback((questionId: string, data: any) => {
+    if (!setResponses) {
+      console.warn("setResponses function not provided to useQuestionsManagement");
+      return;
+    }
+
+    setResponses((prev) => ({
+      ...prev,
+      [questionId]: {
+        ...(prev?.[questionId] || {}),
+        ...data
+      }
+    }));
+  }, [setResponses]);
+
   return {
     getFilteredQuestions,
     getCompletionStats,
-    availableGroups
+    availableGroups,
+    handleResponseChange
   };
 }
