@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { fetchInspectionData } from "@/services/inspection/inspectionFetchService";
 import { toast } from "sonner";
 
@@ -13,12 +13,13 @@ export function useInspectionFetch(inspectionId: string | undefined) {
   const [company, setCompany] = useState<any>(null);
   const [responsible, setResponsible] = useState<any>(null);
   const [subChecklists, setSubChecklists] = useState<Record<string, any>>({});
-  const [fetchAttempted, setFetchAttempted] = useState(false);
+
+  const fetchAttemptedRef = useRef(false); // 🔒 Impede múltiplas execuções
 
   const fetchData = useCallback(async () => {
-    if (!inspectionId || fetchAttempted) return;
+    if (!inspectionId || fetchAttemptedRef.current) return;
 
-    setFetchAttempted(true);
+    fetchAttemptedRef.current = true;
     setLoading(true);
     setError(null);
     setDetailedError(null);
@@ -48,7 +49,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
     } finally {
       setLoading(false);
     }
-  }, [inspectionId, fetchAttempted]);
+  }, [inspectionId]);
 
   useEffect(() => {
     fetchData();
