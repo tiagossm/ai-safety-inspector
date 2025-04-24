@@ -13,18 +13,20 @@ export function useInspectionFetch(inspectionId: string | undefined) {
   const [company, setCompany] = useState<any>(null);
   const [responsible, setResponsible] = useState<any>(null);
   const [subChecklists, setSubChecklists] = useState<Record<string, any>>({});
+  const [fetchAttempted, setFetchAttempted] = useState(false);
 
   const fetchData = useCallback(async () => {
-    if (!inspectionId) {
-      setError("ID da inspeção não fornecido");
-      setLoading(false);
-      return;
-    }
+    if (!inspectionId || fetchAttempted) return;
+
+    setFetchAttempted(true);
+    setLoading(true);
+    setError(null);
+    setDetailedError(null);
 
     try {
-      setLoading(true);
       const data = await fetchInspectionData(inspectionId);
 
+      if (!data || typeof data !== "object") throw new Error("Dados inválidos recebidos");
       if (data.error) throw new Error(data.error);
 
       setInspection(data.inspection || null);
@@ -32,7 +34,6 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         ...q,
         groupId: q.groupId || "default-group"
       })));
-
       setGroups((data.groups && data.groups.length > 0) ? data.groups : [{ id: "default-group", title: "Geral", order: 0 }]);
       setResponses(data.responses || {});
       setCompany(data.company || null);
@@ -40,13 +41,14 @@ export function useInspectionFetch(inspectionId: string | undefined) {
       setSubChecklists(data.subChecklists || {});
     } catch (err: any) {
       console.error("Erro ao buscar dados da inspeção:", err);
-      setError(err.message || "Erro desconhecido");
+      const msg = err?.message || "Erro desconhecido";
+      setError(msg);
       setDetailedError(err);
-      toast.error(`Erro ao carregar dados da inspeção: ${err.message}`);
+      toast.error(`Erro ao carregar inspeção: ${msg}`);
     } finally {
       setLoading(false);
     }
-  }, [inspectionId]);
+  }, [inspectionId, fetchAttempted]);
 
   useEffect(() => {
     fetchData();
