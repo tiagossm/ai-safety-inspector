@@ -8,7 +8,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
   const [detailedError, setDetailedError] = useState<any>(null);
   const [inspection, setInspection] = useState<any>(null);
   const [questions, setQuestions] = useState<any[]>([]);
-  const [groups, setGroups] = useState<any[]>([]);
+  const [groups, setGroups] = useState<any[]>([{ id: "default-group", title: "Geral", order: 0 }]);
   const [responses, setResponses] = useState<Record<string, any>>({});
   const [company, setCompany] = useState<any>(null);
   const [responsible, setResponsible] = useState<any>(null);
@@ -21,58 +21,36 @@ export function useInspectionFetch(inspectionId: string | undefined) {
       return;
     }
 
-    setLoading(true);
-    setError(null);
-    setDetailedError(null);
-
     try {
+      setLoading(true);
       const data = await fetchInspectionData(inspectionId);
 
-      setError(data.error);
-      setDetailedError(data.detailedError);
-      setInspection(data.inspection);
+      if (data.error) throw new Error(data.error);
 
-      if (data.questions && data.questions.length > 0) {
-        const normalizedQuestions = data.questions.map((q: any) => ({
-          ...q,
-          groupId: q.groupId || "default-group"
-        }));
-        setQuestions(normalizedQuestions);
-      } else {
-        setQuestions([]);
-      }
+      setInspection(data.inspection || null);
+      setQuestions((data.questions || []).map((q: any) => ({
+        ...q,
+        groupId: q.groupId || "default-group"
+      })));
 
-      if (data.groups && data.groups.length > 0) {
-        setGroups(data.groups);
-      } else {
-        setGroups([{ id: "default-group", title: "Geral", order: 0 }]);
-      }
-
+      setGroups((data.groups && data.groups.length > 0) ? data.groups : [{ id: "default-group", title: "Geral", order: 0 }]);
       setResponses(data.responses || {});
-      setCompany(data.company);
-      setResponsible(data.responsible);
+      setCompany(data.company || null);
+      setResponsible(data.responsible || null);
       setSubChecklists(data.subChecklists || {});
     } catch (err: any) {
-      console.error("Error in useInspectionFetch:", err);
+      console.error("Erro ao buscar dados da inspeção:", err);
       setError(err.message || "Erro desconhecido");
       setDetailedError(err);
       toast.error(`Erro ao carregar dados da inspeção: ${err.message}`);
     } finally {
       setLoading(false);
     }
-  }, [inspectionId]); // ✅ Dependência corrigida (sem `groups` para evitar loop infinito)
+  }, [inspectionId]);
 
   useEffect(() => {
-    if (inspectionId) {
-      fetchData();
-    } else {
-      setLoading(false);
-      setGroups([{ id: "default-group", title: "Geral", order: 0 }]);
-      setQuestions([]);
-      setResponses({});
-      setSubChecklists({});
-    }
-  }, [fetchData, inspectionId]);
+    fetchData();
+  }, [fetchData]);
 
   return {
     loading,
