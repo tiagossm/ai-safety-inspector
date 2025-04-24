@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useCreateInspection } from "@/hooks/inspection/useCreateInspection";
 
 export default function NewInspectionPage() {
   const [loading, setLoading] = useState(true);
@@ -12,6 +13,7 @@ export default function NewInspectionPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
+  const { createInspection, creating, error: creationError } = useCreateInspection();
 
   // Get checklist ID from either route param or query param
   const checklistId = id || searchParams.get("checklistId") || "";
@@ -23,33 +25,41 @@ export default function NewInspectionPage() {
       return;
     }
 
-    // Redirect to the inspection execution page
-    let timer = setTimeout(() => {
-      navigate(`/inspections/${checklistId}/view`, { replace: true });
-    }, 80);
+    const initializeInspection = async () => {
+      try {
+        const inspection = await createInspection(checklistId);
+        // Only redirect after successful creation
+        navigate(`/inspections/${inspection.id}/view`, { replace: true });
+      } catch (err) {
+        setError((err as Error).message);
+        setLoading(false);
+      }
+    };
 
-    return () => clearTimeout(timer);
-  }, [checklistId, navigate]);
+    initializeInspection();
+  }, [checklistId, navigate, createInspection]);
 
-  if (loading && !error) {
+  if ((loading || creating) && !error) {
     return (
       <div className="py-20 text-center">
         <div className="animate-pulse mx-auto w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mb-4">
           <div className="w-6 h-6 rounded-full bg-primary/40"></div>
         </div>
-        <p className="text-muted-foreground">Redirecionando para a tela de inspeção...</p>
+        <p className="text-muted-foreground">
+          {creating ? "Criando nova inspeção..." : "Inicializando..."}
+        </p>
       </div>
     );
   }
 
-  if (error) {
+  if (error || creationError) {
     return (
       <div className="py-10 max-w-3xl mx-auto px-4">
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-5 w-5" />
           <AlertTitle className="text-base font-medium">Erro ao iniciar inspeção</AlertTitle>
           <AlertDescription className="mt-2">
-            <p>{error}</p>
+            <p>{error || creationError}</p>
             <div className="flex space-x-3 pt-4">
               <Button variant="outline" onClick={() => navigate("/checklists")} className="text-sm">
                 Voltar para Checklists
