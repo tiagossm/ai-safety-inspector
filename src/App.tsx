@@ -53,8 +53,6 @@ function App() {
             <Route path="inspections/:id" element={<SimpleInspectionPage />} />
             
             {/* Redirect old routes to new ones */}
-            <Route path="inspections/start/:checklistId" element={<Navigate to="/inspections/new/:checklistId" replace />} />
-            <Route path="inspections/start" element={<Navigate to="/inspections/new" replace />} />
             <Route path="checklists" element={<Navigate to="/new-checklists" replace />} />
             <Route path="checklists/create" element={<Navigate to="/new-checklists/create" replace />} />
             <Route path="checklists/:id" element={<Navigate to="/new-checklists/:id" replace />} />

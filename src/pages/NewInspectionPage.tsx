@@ -6,11 +6,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-/**
- * Esta tela serve apenas para garantir retrocompatibilidade:
- * Assim que ela checa um checklistId válido (de parâmetro da URL ou query),
- * redireciona automaticamente para a página real de início de inspeção.
- */
 export default function NewInspectionPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,20 +13,19 @@ export default function NewInspectionPage() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
 
-  // Permite receber tanto rotas /inspections/new/:id quanto /inspections/new?checklistId=...
+  // Get checklist ID from either route param or query param
   const checklistId = id || searchParams.get("checklistId") || "";
 
   useEffect(() => {
-    // Redireciona para o novo fluxo se houver checklistId válido
     if (!checklistId) {
       setError("ID do checklist não fornecido. Verifique a URL.");
       setLoading(false);
       return;
     }
 
-    // Evita loops de re-renderização realizando o redirect dentro do useEffect
+    // Redirect to the inspection execution page
     let timer = setTimeout(() => {
-      navigate(`/inspections/start/${checklistId}`, { replace: true });
+      navigate(`/inspections/${checklistId}/view`, { replace: true });
     }, 80);
 
     return () => clearTimeout(timer);
@@ -43,7 +37,7 @@ export default function NewInspectionPage() {
         <div className="animate-pulse mx-auto w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center mb-4">
           <div className="w-6 h-6 rounded-full bg-primary/40"></div>
         </div>
-        <p className="text-muted-foreground">Redirecionando para a nova tela de inspeção...</p>
+        <p className="text-muted-foreground">Redirecionando para a tela de inspeção...</p>
       </div>
     );
   }
@@ -71,6 +65,5 @@ export default function NewInspectionPage() {
     );
   }
 
-  // Nunca renderiza outra interface!
   return null;
 }
