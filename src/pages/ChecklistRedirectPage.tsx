@@ -12,10 +12,10 @@ export default function ChecklistRedirectPage() {
   useEffect(() => {
     if (!isLoading) {
       if (checklist) {
-        // Redirecionar para a página de início de inspeção com o ID do checklist
-        navigate(`/inspections/start/${id}`);
+        // Redirect to the new inspection page with checklist ID
+        navigate(`/inspections/new/${id}`);
       } else {
-        // Se não encontrar o checklist, voltar para a lista
+        // If no checklist found, go back to list
         navigate("/checklists");
       }
     }

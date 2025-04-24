@@ -1,4 +1,3 @@
-
 import { Suspense, lazy } from "react";
 import { Route, Routes } from "react-router-dom";
 import { RequireAuth } from "@/components/RequireAuth";
@@ -17,10 +16,8 @@ import NewChecklistDetails from "./NewChecklistDetails";
 import NewInspectionPage from "./NewInspectionPage";
 import InspectionExecutionPage from "./InspectionExecutionPage";
 import ChecklistRedirectPage from "./ChecklistRedirectPage";
-import StartInspectionPage from "./StartInspectionPage";
 import SimpleInspectionPage from "./SimpleInspectionPage";
 
-// Export the routes as an array instead of a component
 export const checklistRoutes = [
   <Route key="checklists" path="/checklists" element={<RequireAuth><Checklists /></RequireAuth>} />,
   <Route key="checklists-id" path="/checklists/:id" element={<RequireAuth><ChecklistDetails /></RequireAuth>} />,
@@ -36,8 +33,6 @@ export const checklistRoutes = [
   
   // Updated inspection routes - Order matters for correct matching (most specific first)
   <Route key="inspections-redirect-id" path="/inspections/redirect/:id" element={<RequireAuth><ChecklistRedirectPage /></RequireAuth>} />,
-  <Route key="inspections-start-id" path="/inspections/start/:checklistId" element={<RequireAuth><StartInspectionPage /></RequireAuth>} />,
-  <Route key="inspections-start" path="/inspections/start" element={<RequireAuth><StartInspectionPage /></RequireAuth>} />,
   <Route key="inspections-new-with-id" path="/inspections/new/:id" element={<RequireAuth><NewInspectionPage /></RequireAuth>} />,
   <Route key="inspections-new" path="/inspections/new" element={<RequireAuth><NewInspectionPage /></RequireAuth>} />,
   <Route key="inspections-id-view" path="/inspections/:id/view" element={<RequireAuth><InspectionExecutionPage /></RequireAuth>} />,

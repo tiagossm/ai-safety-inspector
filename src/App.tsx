@@ -1,4 +1,3 @@
-
 import { Routes, Route, Navigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { AuthProvider } from "@/components/AuthProvider";
@@ -48,15 +47,14 @@ function App() {
             {/* Inspection routes - Order matters for correct matching! */}
             <Route path="inspections" element={<Inspections />} />
             <Route path="inspections/redirect/:id" element={<ChecklistRedirectPage />} />
-            {/* Substituímos a rota antiga pela nova tela de iniciar inspeções */}
-            <Route path="inspections/start/:checklistId" element={<StartInspectionPage />} />
-            <Route path="inspections/start" element={<StartInspectionPage />} />
             <Route path="inspections/new/:id" element={<NewInspectionPage />} />
             <Route path="inspections/new" element={<NewInspectionPage />} />
             <Route path="inspections/:id/view" element={<InspectionExecutionPage />} />
             <Route path="inspections/:id" element={<SimpleInspectionPage />} />
             
             {/* Redirect old routes to new ones */}
+            <Route path="inspections/start/:checklistId" element={<Navigate to="/inspections/new/:checklistId" replace />} />
+            <Route path="inspections/start" element={<Navigate to="/inspections/new" replace />} />
             <Route path="checklists" element={<Navigate to="/new-checklists" replace />} />
             <Route path="checklists/create" element={<Navigate to="/new-checklists/create" replace />} />
             <Route path="checklists/:id" element={<Navigate to="/new-checklists/:id" replace />} />
