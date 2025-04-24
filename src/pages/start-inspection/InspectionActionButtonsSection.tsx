@@ -25,23 +25,19 @@ export default function InspectionActionButtonsSection({
   const { handleSubmit } = useFormContext();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
 
+  // Use effect to handle navigation after successful inspection creation
   useEffect(() => {
-    // Check if we already have an inspection ID and should redirect
     if (inspectionId) {
-      console.log(`Inspection already exists with ID: ${inspectionId}`);
-      setIsCompleted(true);
-      
-      // Redirect to view page instead of staying in the form
+      console.log(`Redirecting to inspection view with ID: ${inspectionId}`);
       navigate(`/inspections/${inspectionId}/view`, { replace: true });
     }
   }, [inspectionId, navigate]);
 
-  // Definir a função de tratamento de inspeção para receber dados de formulário opcionalmente
+  // Handle inspection start
   const handleStartInspection = async (formData?: any) => {
-    if (isSubmitting || isCompleted) {
-      console.log("Preventing duplicate submission - already submitted or in progress");
+    if (isSubmitting) {
+      console.log("Preventing duplicate submission - already in progress");
       return;
     }
 
@@ -50,34 +46,15 @@ export default function InspectionActionButtonsSection({
       
       const result = await window.startInspection?.();
       
-      if (result && result.success && result.inspectionId) {
-        // Store only temporarily until navigation happens
-        console.log(`Inspection created successfully, redirecting to: ${result.inspectionId}`);
-        setIsCompleted(true);
-        
-        // Add a small delay to allow state updates
-        setTimeout(() => {
-          navigate(`/inspections/${result.inspectionId}/view`, { replace: true });
-        }, 50);
+      if (result?.success && result.inspectionId) {
+        console.log(`Inspection created successfully: ${result.inspectionId}`);
+        // Navigation will be handled by the useEffect above
       }
     } catch (error) {
       console.error("Error starting inspection:", error);
       setIsSubmitting(false);
     }
   };
-
-  if (isCompleted) {
-    return (
-      <div className="flex flex-col sm:flex-row justify-end items-center gap-3 mt-6">
-        <Button variant="outline" onClick={cancelAndGoBack} type="button">
-          Voltar
-        </Button>
-        <Button disabled type="button">
-          Inspeção já iniciada
-        </Button>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col sm:flex-row justify-end items-center gap-3 mt-6">
@@ -89,6 +66,7 @@ export default function InspectionActionButtonsSection({
       >
         Cancelar
       </Button>
+      
       <Button
         variant="outline"
         onClick={saveAsDraft}
@@ -104,6 +82,7 @@ export default function InspectionActionButtonsSection({
           "Salvar como Rascunho"
         )}
       </Button>
+      
       <Button
         variant="outline"
         onClick={handleShare}
@@ -113,6 +92,7 @@ export default function InspectionActionButtonsSection({
         <Share2 className="mr-2 h-4 w-4" />
         Compartilhar
       </Button>
+      
       <Button
         onClick={handleSubmit(handleStartInspection)}
         disabled={isLoading || !!submitting || isSubmitting}

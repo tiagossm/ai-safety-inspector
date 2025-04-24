@@ -1,6 +1,5 @@
 
 import { useCallback } from "react";
-import { toast } from "sonner";
 
 export function useLocalDraft(formData: any, setFormData: any, setDraftSaved: any) {
   const saveLocalDraft = useCallback(() => {
@@ -31,7 +30,8 @@ export function useLocalDraft(formData: any, setFormData: any, setDraftSaved: an
 
   const discardDraft = () => {
     localStorage.removeItem('inspection_draft');
-    window.location.reload();
+    setFormData({});
+    setDraftSaved(null);
   };
 
   return { saveLocalDraft, loadLocalDraft, discardDraft };

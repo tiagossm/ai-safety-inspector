@@ -11,12 +11,17 @@ type SubmittingState = false | 'draft' | 'pending';
 export function useInspectionSave(formData: StartInspectionFormData, validateForm: () => boolean, updateFormField: any, setSubmitting: (val: SubmittingState) => void) {
   const navigate = useNavigate();
   const { user } = useAuth();
-
   const [draftSaved, setDraftSaved] = useState<Date | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState<boolean>(false);
 
   const saveInspection = async (status: 'draft' | 'pending' = "pending") => {
-    // For drafts, we don't need full validation
+    // Prevent multiple submissions
+    if (hasSubmitted && status === 'pending') {
+      console.log(`Preventing duplicate submission - inspection already submitted`);
+      return false;
+    }
+
+    // For pending status, validate form
     if (status === "pending" && !validateForm()) {
       toast.error("Por favor, corrija os erros antes de prosseguir");
       return false;
@@ -24,12 +29,6 @@ export function useInspectionSave(formData: StartInspectionFormData, validateFor
 
     if (!user?.id) {
       toast.error("Usuário não autenticado");
-      return false;
-    }
-    
-    // Prevent duplicate submissions for pending status
-    if (hasSubmitted && status === 'pending') {
-      console.log(`Preventing duplicate submission - inspection already submitted (status: ${status})`);
       return false;
     }
 
@@ -62,7 +61,7 @@ export function useInspectionSave(formData: StartInspectionFormData, validateFor
         user_id: user.id,
       };
 
-      console.log(`Saving inspection with status: ${status}, form already submitted: ${hasSubmitted}`);
+      console.log(`Saving inspection with status: ${status}`);
       
       const { data, error } = await supabase
         .from("inspections")
@@ -73,17 +72,17 @@ export function useInspectionSave(formData: StartInspectionFormData, validateFor
       if (error) throw error;
 
       if (data) {
+        // Mark as submitted and clear draft immediately
         if (status === 'pending') {
-          // Mark as submitted in component state
           setHasSubmitted(true);
         }
+        localStorage.removeItem("inspection_draft");
         
         toast.success(status === "draft"
           ? "Rascunho salvo com sucesso"
           : "Inspeção iniciada com sucesso"
         );
         
-        localStorage.removeItem("inspection_draft");
         return data.id;
       }
       return false;
@@ -97,31 +96,21 @@ export function useInspectionSave(formData: StartInspectionFormData, validateFor
   };
 
   const startInspection = async () => {
-    // Check if already submitted
     if (hasSubmitted) {
       console.log("Inspection already submitted, preventing duplicate call");
       return false;
     }
     
-    const inspectionId = await saveInspection("pending");
-    if (inspectionId) {
-      console.log(`Navigation to inspection view with id: ${inspectionId}`);
-      return inspectionId;
-    }
-    return false;
+    return await saveInspection("pending");
   };
 
   const saveAsDraft = async () => {
-    const inspectionId = await saveInspection("draft");
-    if (inspectionId) {
-      navigate("/inspections");
-      return inspectionId;
-    }
-    return false;
+    return await saveInspection("draft");
   };
 
   const cancelAndGoBack = () => {
-    navigate("/inspections");
+    localStorage.removeItem("inspection_draft");
+    navigate("/inspections", { replace: true });
   };
 
   return { draftSaved, setDraftSaved, startInspection, saveAsDraft, cancelAndGoBack };
