@@ -2,23 +2,19 @@
 
 import { supabase } from "@/lib/supabaseClient";
 
-// Versão leve apenas para testes no Lovable
 export async function fetchInspectionData(inspectionId: string) {
   try {
-    // Busca dados básicos do checklist
-    const { data: checklist, error } = await supabase
+    const { data, error } = await supabase
       .from("checklists")
       .select("id, title, description")
       .eq("id", inspectionId)
       .single();
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
     return {
-      inspection: checklist,
-      questions: [],
+      inspection: data,
+      questions: [], // ← evita sobrecarga
       groups: [],
       responses: {},
       company: null,
