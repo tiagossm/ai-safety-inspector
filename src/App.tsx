@@ -1,3 +1,4 @@
+
 import { Routes, Route, Navigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { AuthProvider } from "@/components/AuthProvider";
@@ -17,7 +18,6 @@ import NewChecklistEdit from "@/pages/NewChecklistEdit";
 import NewChecklistDetails from "@/pages/NewChecklistDetails";
 import NewInspectionPage from "@/pages/NewInspectionPage";
 import SimpleInspectionPage from "@/pages/SimpleInspectionPage";
-import StartInspectionPage from "@/pages/StartInspectionPage";
 import Inspections from "@/pages/Inspections";
 import { Users } from "@/pages/Users";
 import ChecklistRedirectPage from "@/pages/ChecklistRedirectPage";
