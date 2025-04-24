@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Share2, ChevronRight } from "lucide-react";
 import { useFormContext } from "react-hook-form";
@@ -26,14 +25,6 @@ export default function InspectionActionButtonsSection({
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Use effect to handle navigation after successful inspection creation
-  useEffect(() => {
-    if (inspectionId) {
-      console.log(`Redirecting to inspection view with ID: ${inspectionId}`);
-      navigate(`/inspections/${inspectionId}/view`, { replace: true });
-    }
-  }, [inspectionId, navigate]);
-
   // Handle inspection start
   const handleStartInspection = async (formData?: any) => {
     if (isSubmitting) {
@@ -48,7 +39,8 @@ export default function InspectionActionButtonsSection({
       
       if (result?.success && result.inspectionId) {
         console.log(`Inspection created successfully: ${result.inspectionId}`);
-        // Navigation will be handled by the useEffect above
+        localStorage.removeItem('inspection_draft');
+        navigate(`/inspections/${result.inspectionId}/view`, { replace: true });
       }
     } catch (error) {
       console.error("Error starting inspection:", error);

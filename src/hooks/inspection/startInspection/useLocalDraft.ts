@@ -4,8 +4,11 @@ import { useCallback } from "react";
 export function useLocalDraft(formData: any, setFormData: any, setDraftSaved: any) {
   const saveLocalDraft = useCallback(() => {
     try {
-      localStorage.setItem('inspection_draft', JSON.stringify(formData));
-      setDraftSaved(new Date());
+      if (formData && Object.keys(formData).length > 0) {
+        localStorage.setItem('inspection_draft', JSON.stringify(formData));
+        setDraftSaved(new Date());
+        console.log("Local draft saved successfully");
+      }
     } catch (err) {
       console.error("Error saving local draft:", err);
     }
@@ -20,6 +23,7 @@ export function useLocalDraft(formData: any, setFormData: any, setDraftSaved: an
           parsedData.scheduledDate = new Date(parsedData.scheduledDate);
         }
         setFormData(parsedData);
+        console.log("Local draft loaded successfully");
         return true;
       }
     } catch (err) {
@@ -32,6 +36,7 @@ export function useLocalDraft(formData: any, setFormData: any, setDraftSaved: an
     localStorage.removeItem('inspection_draft');
     setFormData({});
     setDraftSaved(null);
+    console.log("Local draft discarded");
   };
 
   return { saveLocalDraft, loadLocalDraft, discardDraft };

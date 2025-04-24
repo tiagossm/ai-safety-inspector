@@ -2,14 +2,12 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { StartInspectionFormData } from "../useStartInspection";
 
 type SubmittingState = false | 'draft' | 'pending';
 
 export function useInspectionSave(formData: StartInspectionFormData, validateForm: () => boolean, updateFormField: any, setSubmitting: (val: SubmittingState) => void) {
-  const navigate = useNavigate();
   const { user } = useAuth();
   const [draftSaved, setDraftSaved] = useState<Date | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState<boolean>(false);
@@ -67,16 +65,15 @@ export function useInspectionSave(formData: StartInspectionFormData, validateFor
         .from("inspections")
         .insert(inspectionData)
         .select("id")
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
       if (data) {
-        // Mark as submitted and clear draft immediately
         if (status === 'pending') {
           setHasSubmitted(true);
+          localStorage.removeItem("inspection_draft");
         }
-        localStorage.removeItem("inspection_draft");
         
         toast.success(status === "draft"
           ? "Rascunho salvo com sucesso"
@@ -110,7 +107,7 @@ export function useInspectionSave(formData: StartInspectionFormData, validateFor
 
   const cancelAndGoBack = () => {
     localStorage.removeItem("inspection_draft");
-    navigate("/inspections", { replace: true });
+    window.location.href = "/inspections";
   };
 
   return { draftSaved, setDraftSaved, startInspection, saveAsDraft, cancelAndGoBack };
