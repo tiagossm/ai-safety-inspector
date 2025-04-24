@@ -2,7 +2,6 @@
 import React from "react";
 import { InspectionHeader } from "@/components/inspection/InspectionHeader";
 import { QuestionGroups } from "@/components/inspection/QuestionGroups";
-import { QuestionsPanel } from "@/components/inspection/QuestionsPanel";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ActionButtons } from "./ActionButtons";
@@ -174,17 +173,96 @@ export function InspectionLayout({
         
         <div className="md:col-span-3">
           <Card>
-            <QuestionsPanel
-              loading={loading}
-              currentGroupId={effectiveCurrentGroupId}
-              filteredQuestions={filteredQuestions}
-              questions={questions}
-              responses={responses}
-              groups={displayGroups}
-              onResponseChange={onResponseChange}
-              onSaveSubChecklistResponses={onSaveSubChecklistResponses}
-              subChecklists={subChecklists}
-            />
+            <div className="p-4">
+              <h3 className="text-lg font-semibold mb-4">
+                {groups.find(g => g.id === effectiveCurrentGroupId)?.title || "Perguntas"}
+              </h3>
+              
+              {filteredQuestions.length > 0 ? (
+                <div className="space-y-4">
+                  {filteredQuestions.map((question, index) => (
+                    <div key={question.id} className="border rounded-lg p-4">
+                      <h4 className="font-medium mb-2 flex justify-between">
+                        <span>{index + 1}. {question.pergunta || question.text}</span>
+                        {question.obrigatorio && (
+                          <span className="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded">
+                            Obrigatório
+                          </span>
+                        )}
+                      </h4>
+                      
+                      <div className="mt-3">
+                        {/* Simple response input based on type */}
+                        {(question.tipo_resposta === 'yes_no' || question.responseType === 'yes_no') ? (
+                          <div className="flex gap-2">
+                            <button
+                              className={`px-3 py-1 rounded text-sm ${
+                                responses[question.id]?.value === 'sim' 
+                                  ? 'bg-green-500 text-white' 
+                                  : 'bg-gray-100'
+                              }`}
+                              onClick={() => onResponseChange(question.id, 'sim')}
+                            >
+                              Sim
+                            </button>
+                            <button
+                              className={`px-3 py-1 rounded text-sm ${
+                                responses[question.id]?.value === 'não' 
+                                  ? 'bg-red-500 text-white' 
+                                  : 'bg-gray-100'
+                              }`}
+                              onClick={() => onResponseChange(question.id, 'não')}
+                            >
+                              Não
+                            </button>
+                            <button
+                              className={`px-3 py-1 rounded text-sm ${
+                                responses[question.id]?.value === 'n/a' 
+                                  ? 'bg-gray-500 text-white' 
+                                  : 'bg-gray-100'
+                              }`}
+                              onClick={() => onResponseChange(question.id, 'n/a')}
+                            >
+                              N/A
+                            </button>
+                          </div>
+                        ) : (
+                          <textarea
+                            className="w-full border rounded p-2 text-sm"
+                            rows={3}
+                            placeholder="Digite sua resposta..."
+                            value={responses[question.id]?.value || ''}
+                            onChange={(e) => onResponseChange(question.id, e.target.value)}
+                          />
+                        )}
+                      </div>
+                      
+                      {/* Comment section */}
+                      <div className="mt-3">
+                        <p className="text-sm font-medium text-gray-600 mb-1">Comentário:</p>
+                        <textarea
+                          className="w-full border rounded p-2 text-sm"
+                          rows={2}
+                          placeholder="Adicione um comentário (opcional)"
+                          value={responses[question.id]?.comment || ''}
+                          onChange={(e) => onResponseChange(
+                            question.id, 
+                            responses[question.id]?.value,
+                            { comment: e.target.value }
+                          )}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-500">
+                    Nenhuma pergunta disponível neste grupo
+                  </p>
+                </div>
+              )}
+            </div>
           </Card>
         </div>
       </div>

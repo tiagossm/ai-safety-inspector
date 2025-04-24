@@ -1,52 +1,58 @@
 
 import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
-// Interface para inspeção
-export interface Inspection {
-  id: string;
-  status: string;
-  [key: string]: any;
-}
+export function useInspectionStatus(inspectionId: string | undefined) {
+  // Mark inspection as completed
+  const completeInspection = useCallback(async (inspection: any) => {
+    if (!inspectionId) {
+      toast.error("ID da inspeção não fornecido");
+      return inspection;
+    }
 
-// Interface para funções de hook
-export interface InspectionStatusHook {
-  completeInspection: (inspection: Inspection) => Promise<void>;
-  reopenInspection: (inspection: Inspection) => Promise<void>;
-}
-
-export function useInspectionStatus(inspectionId: string | undefined): InspectionStatusHook {
-  // Completar inspeção - função simplificada sem acoplamento
-  const completeInspection = useCallback(async (inspection: Inspection): Promise<void> => {
     try {
-      if (!inspectionId) throw new Error("ID da inspeção não fornecido");
-
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("inspections")
         .update({ status: "completed" })
-        .eq("id", inspectionId);
+        .eq("id", inspectionId)
+        .select()
+        .single();
 
       if (error) throw error;
+
+      toast.success("Inspeção finalizada com sucesso");
+      return data;
     } catch (error: any) {
       console.error("Error completing inspection:", error);
-      throw new Error(`Erro ao finalizar inspeção: ${error.message || "Erro desconhecido"}`);
+      toast.error(`Erro ao finalizar inspeção: ${error.message}`);
+      return inspection;
     }
   }, [inspectionId]);
 
-  // Reabrir inspeção
-  const reopenInspection = useCallback(async (inspection: Inspection): Promise<void> => {
-    try {
-      if (!inspectionId) throw new Error("ID da inspeção não fornecido");
+  // Reopen a completed inspection
+  const reopenInspection = useCallback(async (inspection: any) => {
+    if (!inspectionId) {
+      toast.error("ID da inspeção não fornecido");
+      return inspection;
+    }
 
-      const { error } = await supabase
+    try {
+      const { data, error } = await supabase
         .from("inspections")
         .update({ status: "in_progress" })
-        .eq("id", inspectionId);
+        .eq("id", inspectionId)
+        .select()
+        .single();
 
       if (error) throw error;
+
+      toast.success("Inspeção reaberta com sucesso");
+      return data;
     } catch (error: any) {
       console.error("Error reopening inspection:", error);
-      throw new Error(`Erro ao reabrir inspeção: ${error.message || "Erro desconhecido"}`);
+      toast.error(`Erro ao reabrir inspeção: ${error.message}`);
+      return inspection;
     }
   }, [inspectionId]);
 
