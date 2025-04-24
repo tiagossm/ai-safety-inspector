@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { fetchInspectionData } from "@/services/inspection/inspectionFetchService";
 import { toast } from "sonner";
@@ -61,7 +60,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
     } finally {
       setLoading(false);
     }
-  }, [inspectionId]); // Removido 'groups' da dependência para evitar loop infinito
+  }, [inspectionId]); // ✅ Dependência corrigida (sem `groups` para evitar loop infinito)
 
   useEffect(() => {
     if (inspectionId) {
