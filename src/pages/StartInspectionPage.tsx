@@ -23,9 +23,7 @@ export default function StartInspectionPage() {
   const [sharableLink, setSharableLink] = useState<string>("");
   const [debugMode, setDebugMode] = useState<boolean>(false);
   const [debugClickCount, setDebugClickCount] = useState<number>(0);
-  const [createdInspectionId, setCreatedInspectionId] = useState<string | null>(
-    sessionStorage.getItem("last_created_inspection_id")
-  );
+  const [createdInspectionId, setCreatedInspectionId] = useState<string | null>(null);
   
   const checklistQuery = useChecklistById(checklistId || "");
   
@@ -51,18 +49,6 @@ export default function StartInspectionPage() {
   const methods = useForm({
     defaultValues: formData
   });
-
-  // Check if we should redirect based on session storage
-  useEffect(() => {
-    const formSubmissionKey = `inspection_submitted_${checklistId || window.location.pathname}`;
-    const wasSubmitted = sessionStorage.getItem(formSubmissionKey) === "true";
-    const inspectionId = sessionStorage.getItem("last_created_inspection_id");
-    
-    if (wasSubmitted && inspectionId) {
-      console.log(`This inspection was already created. Redirecting to: ${inspectionId}`);
-      navigate(`/inspections/${inspectionId}/view`, { replace: true });
-    }
-  }, [checklistId, navigate]);
 
   // Sync form data from useStartInspection to React Hook Form
   useEffect(() => {
@@ -134,12 +120,11 @@ export default function StartInspectionPage() {
         }
       });
       
-      const success = await startInspection();
-      if (success) {
+      const inspectionId = await startInspection();
+      if (inspectionId) {
         toast.success("Inspeção iniciada com sucesso!");
-        // Store the inspection ID in session storage
-        setCreatedInspectionId(typeof success === 'string' ? success : null);
-        return { success: true, inspectionId: typeof success === 'string' ? success : null };
+        setCreatedInspectionId(typeof inspectionId === 'string' ? inspectionId : null);
+        return { success: true, inspectionId: typeof inspectionId === 'string' ? inspectionId : null };
       }
       return { success: false };
     } catch (error) {

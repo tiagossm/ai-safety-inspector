@@ -28,16 +28,13 @@ export default function InspectionActionButtonsSection({
   const [isCompleted, setIsCompleted] = useState(false);
 
   useEffect(() => {
-    const formSubmissionKey = `inspection_submitted_${inspectionId || window.location.pathname}`;
-    
-    if (sessionStorage.getItem(formSubmissionKey) === "true") {
-      console.log("Form was already submitted successfully in this session");
+    // Check if we already have an inspection ID and should redirect
+    if (inspectionId) {
+      console.log(`Inspection already exists with ID: ${inspectionId}`);
       setIsCompleted(true);
       
-      if (inspectionId) {
-        console.log(`Redirecting to already created inspection: ${inspectionId}`);
-        navigate(`/inspections/${inspectionId}/view`, { replace: true });
-      }
+      // Redirect to view page instead of staying in the form
+      navigate(`/inspections/${inspectionId}/view`, { replace: true });
     }
   }, [inspectionId, navigate]);
 
@@ -54,14 +51,14 @@ export default function InspectionActionButtonsSection({
       const result = await window.startInspection?.();
       
       if (result && result.success && result.inspectionId) {
-        const formSubmissionKey = `inspection_submitted_${inspectionId || window.location.pathname}`;
-        sessionStorage.setItem(formSubmissionKey, "true");
-        sessionStorage.setItem("last_created_inspection_id", result.inspectionId);
-        
+        // Store only temporarily until navigation happens
         console.log(`Inspection created successfully, redirecting to: ${result.inspectionId}`);
         setIsCompleted(true);
         
-        navigate(`/inspections/${result.inspectionId}/view`, { replace: true });
+        // Add a small delay to allow state updates
+        setTimeout(() => {
+          navigate(`/inspections/${result.inspectionId}/view`, { replace: true });
+        }, 50);
       }
     } catch (error) {
       console.error("Error starting inspection:", error);

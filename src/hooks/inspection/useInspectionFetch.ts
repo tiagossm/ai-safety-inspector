@@ -35,6 +35,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
     try {
       console.log(`Fetching inspection data for ID: ${inspectionId} (attempt ${retryRef.current + 1})`);
       
+      // Using the imported fetchInspectionData function from inspectionFetchService
       const data = await fetchInspectionData(inspectionId);
 
       if (!data || typeof data !== "object") throw new Error("Dados inválidos recebidos");
