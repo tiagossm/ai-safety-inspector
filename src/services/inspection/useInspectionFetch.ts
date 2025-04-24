@@ -1,6 +1,6 @@
 // src/services/inspection/inspectionFetchService.ts
 
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/integrations/supabase/client";
 
 export async function fetchInspectionData(inspectionId: string) {
   try {
