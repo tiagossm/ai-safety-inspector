@@ -1,9 +1,10 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { normalizeResponseType } from "@/utils/inspection/normalizationUtils";
 
 /**
- * Processa os itens do checklist para o formato necessário
+ * Processes checklist items into normalized format
  */
 const processChecklistItems = (items) => {
   console.log(`Processing ${items?.length || 0} checklist items`);
@@ -13,16 +14,16 @@ const processChecklistItems = (items) => {
     return { parsedQuestions: [], groupsMap: new Map() };
   }
   
-  // Criar um mapa para os grupos
+  // Create a map for groups
   const groupsMap = new Map();
   groupsMap.set("default-group", { id: "default-group", title: "Geral", order: 0 });
   
-  // Processar as questões
+  // Process questions
   const parsedQuestions = items.map((item, index) => {
-    // Garantir que cada item tenha um groupId, usando default-group se não tiver
+    // Ensure each item has a groupId, using default-group if not present
     const groupId = item.group_id || "default-group";
     
-    // Adicionar o grupo ao mapa se não existir
+    // Add the group to the map if it doesn't exist
     if (item.group_id && !groupsMap.has(item.group_id)) {
       groupsMap.set(item.group_id, {
         id: item.group_id,
@@ -31,7 +32,7 @@ const processChecklistItems = (items) => {
       });
     }
     
-    // Normalizar as opções (se existirem)
+    // Normalize options (if they exist)
     let options = [];
     if (item.opcoes) {
       try {
@@ -47,7 +48,7 @@ const processChecklistItems = (items) => {
       }
     }
     
-    // Criar objeto de questão normalizado
+    // Create normalized question object
     return {
       id: item.id,
       text: item.pergunta,
@@ -69,12 +70,12 @@ const processChecklistItems = (items) => {
     };
   });
   
-  console.log(`Parsed ${parsedQuestions.length} questions with ${groupsMap.size} groups`);
+  console.log(`Processed ${parsedQuestions.length} questions with ${groupsMap.size} groups`);
   return { parsedQuestions, groupsMap };
 };
 
 /**
- * Processa as respostas da inspeção
+ * Processes inspection responses
  */
 const processResponses = (responsesData) => {
   if (!responsesData || responsesData.length === 0) {
@@ -97,7 +98,7 @@ const processResponses = (responsesData) => {
 };
 
 /**
- * Busca todos os dados necessários para uma inspeção
+ * Fetches all data needed for an inspection
  */
 export const fetchInspectionData = async (inspectionId) => {
   console.log(`Fetching inspection data for ID: ${inspectionId}`);
@@ -118,7 +119,7 @@ export const fetchInspectionData = async (inspectionId) => {
   }
 
   try {
-    // Buscar dados da inspeção
+    // Fetch inspection data
     const { data: inspectionData, error: inspectionError } = await supabase
       .from("inspections")
       .select(`
@@ -161,7 +162,7 @@ export const fetchInspectionData = async (inspectionId) => {
 
     console.log("Inspection data loaded:", inspectionData);
 
-    // Formatar dados da inspeção
+    // Format inspection data
     const inspection = {
       id: inspectionData.id,
       title: inspectionData.checklist?.title || "Inspeção sem título",
@@ -174,28 +175,46 @@ export const fetchInspectionData = async (inspectionId) => {
       status: inspectionData.status || "pending",
     };
 
-    // Extrair informações da empresa
+    // Extract company information
     const company = inspectionData.companies ? {
       id: inspectionData.companies.id,
       fantasy_name: inspectionData.companies.fantasy_name,
       cnpj: inspectionData.companies.cnpj
     } : null;
 
-    // Buscar dados do responsável
+    // Fetch responsible user data
     let responsible = null;
     if (inspectionData.responsible_id) {
-      const { data: userData } = await supabase
+      const { data: userData, error: userError } = await supabase
         .from("users")
         .select("id, name, email, position")
         .eq("id", inspectionData.responsible_id)
         .single();
       
-      if (userData) {
+      if (userError) {
+        console.warn("Error fetching responsible user:", userError);
+      } else if (userData) {
         responsible = userData;
       }
     }
 
-    // Buscar itens do checklist
+    // Handle case where there's no checklist_id
+    if (!inspectionData.checklist_id) {
+      console.error("Inspection has no checklist_id:", inspectionId);
+      return {
+        error: "Inspeção não possui um checklist associado",
+        detailedError: { message: "checklist_id não encontrado na inspeção" },
+        inspection,
+        questions: [],
+        groups: [{ id: "default-group", title: "Geral", order: 0 }],
+        responses: {},
+        company,
+        responsible,
+        subChecklists: {},
+      };
+    }
+
+    // Fetch checklist items
     const { data: checklistItems, error: checklistError } = await supabase
       .from("checklist_itens")
       .select("*")
@@ -219,16 +238,16 @@ export const fetchInspectionData = async (inspectionId) => {
 
     console.log(`Loaded ${checklistItems?.length || 0} checklist items from database`);
 
-    // Processar questões e grupos
+    // Process questions and groups
     const { parsedQuestions, groupsMap } = processChecklistItems(checklistItems);
     
-    // Converter mapa de grupos para array ordenado
+    // Convert groups map to sorted array
     const groups = Array.from(groupsMap.values()).sort((a, b) => a.order - b.order);
     
-    // Log para debug
+    // Log for debugging
     console.log(`Processed ${parsedQuestions.length} questions with ${groups.length} groups`);
     if (parsedQuestions.length > 0) {
-      // Verificar distribuição de grupos
+      // Check group distribution
       const groupDistribution = parsedQuestions.reduce((acc, q) => {
         const grp = q.groupId || "undefined";
         acc[grp] = (acc[grp] || 0) + 1;
@@ -238,15 +257,19 @@ export const fetchInspectionData = async (inspectionId) => {
       console.log("Questions per group:", groupDistribution);
     }
 
-    // Buscar respostas
-    const { data: responsesData } = await supabase
+    // Fetch responses
+    const { data: responsesData, error: responsesError } = await supabase
       .from("inspection_responses")
       .select("*")
       .eq("inspection_id", inspectionId);
 
-    const responses = processResponses(responsesData);
+    if (responsesError) {
+      console.warn("Error fetching responses:", responsesError);
+    }
+
+    const responses = processResponses(responsesData || []);
     
-    // Dados de subchecklists simplificados por enquanto
+    // Simplified subchecklist data for now
     const subChecklists = {};
 
     return {
@@ -261,8 +284,7 @@ export const fetchInspectionData = async (inspectionId) => {
       subChecklists,
     };
   } catch (err) {
-    console.error("Error fetching inspection data:", err);
-    toast.error(`Erro ao carregar inspeção: ${err.message || "Erro desconhecido"}`);
+    console.error("Error in fetchInspectionData:", err);
     
     return {
       error: err.message || "Erro ao carregar inspeção",
