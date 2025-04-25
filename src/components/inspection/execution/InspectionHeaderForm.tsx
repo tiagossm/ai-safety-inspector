@@ -40,6 +40,11 @@ import {
   InspectionHeaderFormProps 
 } from "@/hooks/inspection/useInspectionHeaderForm";
 
+const coordinatesSchema = z.object({
+  latitude: z.number(),
+  longitude: z.number()
+}).nullable().optional();
+
 const inspectionFormSchema = z.object({
   companyId: z.string().uuid({ message: "Selecione uma empresa válida" }),
   responsibleId: z.string().uuid({ message: "Selecione um responsável válido" }),
@@ -48,10 +53,7 @@ const inspectionFormSchema = z.object({
   inspectionType: z.string().min(1, "Tipo de inspeção é obrigatório"),
   priority: z.string().default("medium"),
   notes: z.string().optional(),
-  coordinates: z.object({
-    latitude: z.number(),
-    longitude: z.number()
-  }).optional().nullable()
+  coordinates: coordinatesSchema
 });
 
 export function InspectionHeaderForm({
@@ -109,6 +111,13 @@ export function InspectionHeaderForm({
 
   const onSubmit = async (data: InspectionFormValues) => {
     try {
+      if (data.coordinates && (
+          typeof data.coordinates.latitude !== 'number' ||
+          typeof data.coordinates.longitude !== 'number'
+      )) {
+        data.coordinates = null;
+      }
+      
       await updateInspectionData(data);
       onSave();
     } catch (error) {
@@ -118,7 +127,16 @@ export function InspectionHeaderForm({
 
   const handleSaveAsDraft = async () => {
     try {
-      await saveAsDraft(form.getValues());
+      const formData = form.getValues();
+      
+      if (formData.coordinates && (
+          typeof formData.coordinates.latitude !== 'number' ||
+          typeof formData.coordinates.longitude !== 'number'
+      )) {
+        formData.coordinates = null;
+      }
+      
+      await saveAsDraft(formData);
     } catch (error) {
       // Error is handled by the hook
     }

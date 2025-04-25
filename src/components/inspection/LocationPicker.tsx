@@ -29,7 +29,7 @@ interface LocationPickerProps {
   value: string;
   onChange: (value: string) => void;
   onCoordinatesChange?: (coords: { latitude: number; longitude: number; } | null) => void;
-  coordinates?: { latitude: number; longitude: number; } | null;
+  coordinates?: { latitude?: number; longitude?: number; } | null;
   disabled?: boolean;
 }
 
@@ -59,7 +59,9 @@ export function LocationPicker({
   const initializeMap = () => {
     if (!mapRef.current || !window.google) return;
     
-    const initialPosition = coordinates 
+    const initialPosition = coordinates && 
+                          typeof coordinates.latitude === 'number' && 
+                          typeof coordinates.longitude === 'number' 
       ? { lat: coordinates.latitude, lng: coordinates.longitude }
       : { lat: -23.5505, lng: -46.6333 }; // São Paulo como padrão
     
@@ -288,7 +290,7 @@ export function LocationPicker({
                 </div>
                 <div className="p-2 flex justify-between">
                   <span className="text-xs text-gray-500">
-                    {coordinates 
+                    {coordinates && typeof coordinates.latitude === 'number' && typeof coordinates.longitude === 'number'
                       ? `Lat: ${coordinates.latitude.toFixed(6)}, Long: ${coordinates.longitude.toFixed(6)}` 
                       : 'Nenhuma coordenada selecionada'}
                   </span>
@@ -347,7 +349,7 @@ export function LocationPicker({
         </div>
       </div>
       
-      {coordinates && (
+      {coordinates && typeof coordinates.latitude === 'number' && typeof coordinates.longitude === 'number' && (
         <div className="mt-1 text-xs text-muted-foreground">
           Coordenadas: Lat {coordinates.latitude.toFixed(6)}, Long {coordinates.longitude.toFixed(6)}
         </div>

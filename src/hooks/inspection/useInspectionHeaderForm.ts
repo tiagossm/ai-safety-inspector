@@ -13,8 +13,8 @@ export interface InspectionFormValues {
   notes?: string;
   // Ensure coordinates is either a complete object with both properties or null
   coordinates?: { 
-    latitude: number; 
-    longitude: number; 
+    latitude?: number; 
+    longitude?: number; 
   } | null;
 }
 
@@ -50,7 +50,11 @@ export function useInspectionHeaderForm(inspectionId: string | undefined) {
         priority: data.priority || "medium",
         metadata: {
           notes: data.notes || "",
-          coordinates: data.coordinates || null,
+          // Ensure coordinates are valid or set to null
+          coordinates: data.coordinates && 
+                      typeof data.coordinates.latitude === 'number' && 
+                      typeof data.coordinates.longitude === 'number' ? 
+                      data.coordinates : null,
         },
         updated_at: new Date().toISOString()
       };
@@ -94,18 +98,18 @@ export function useInspectionHeaderForm(inspectionId: string | undefined) {
       setUpdating(true);
       setError(null);
 
-      // Ensure coordinates is properly formatted before saving
-      let formattedData = { ...data };
+      // Process coordinates to ensure they're valid
+      let processedData = { ...data };
       
-      // If coordinates exist but are incomplete, set to null
-      if (formattedData.coordinates && 
-          (typeof formattedData.coordinates.latitude !== 'number' || 
-           typeof formattedData.coordinates.longitude !== 'number')) {
-        formattedData.coordinates = null;
+      // If coordinates exist but are incomplete or invalid, set to null
+      if (processedData.coordinates &&
+          (typeof processedData.coordinates.latitude !== 'number' || 
+           typeof processedData.coordinates.longitude !== 'number')) {
+        processedData.coordinates = null;
       }
 
       const updateData = {
-        ...formattedData,
+        ...processedData,
         status: 'Pendente',
         updated_at: new Date().toISOString()
       };
