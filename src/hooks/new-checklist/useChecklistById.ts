@@ -177,7 +177,7 @@ export function useChecklistById(checklistId: string | undefined) {
           return {
             id: question.id,
             text: question.pergunta,
-            description: question.descricao || "", // Fixed: using descricao instead of description
+            description: question.description || "", // Use description instead of descricao
             responseType: normalizedType,
             isRequired: question.obrigatorio,
             order: question.ordem,
