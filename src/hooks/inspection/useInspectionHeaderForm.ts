@@ -11,7 +11,7 @@ export interface InspectionFormValues {
   inspectionType: string;
   priority: string;
   notes?: string;
-  // Update coordinates type to ensure both latitude and longitude are required when coordinates are provided
+  // Ensure coordinates is either a complete object with both properties or null
   coordinates?: { 
     latitude: number; 
     longitude: number; 
@@ -94,8 +94,18 @@ export function useInspectionHeaderForm(inspectionId: string | undefined) {
       setUpdating(true);
       setError(null);
 
+      // Ensure coordinates is properly formatted before saving
+      let formattedData = { ...data };
+      
+      // If coordinates exist but are incomplete, set to null
+      if (formattedData.coordinates && 
+          (typeof formattedData.coordinates.latitude !== 'number' || 
+           typeof formattedData.coordinates.longitude !== 'number')) {
+        formattedData.coordinates = null;
+      }
+
       const updateData = {
-        ...data,
+        ...formattedData,
         status: 'Pendente',
         updated_at: new Date().toISOString()
       };

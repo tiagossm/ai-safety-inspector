@@ -130,16 +130,18 @@ export function LocationPicker({
       
       const { latitude, longitude } = position.coords;
       
-      onCoordinatesChange?.({ latitude, longitude });
-      updateAddressFromCoordinates(latitude, longitude);
-      
-      if (mapInstanceRef.current && markerRef.current) {
-        const latlng = { lat: latitude, lng: longitude };
-        mapInstanceRef.current.setCenter(latlng);
-        markerRef.current.setPosition(latlng);
+      if (typeof latitude === 'number' && typeof longitude === 'number') {
+        onCoordinatesChange?.({ latitude, longitude });
+        updateAddressFromCoordinates(latitude, longitude);
+        
+        if (mapInstanceRef.current && markerRef.current) {
+          const latlng = { lat: latitude, lng: longitude };
+          mapInstanceRef.current.setCenter(latlng);
+          markerRef.current.setPosition(latlng);
+        }
+        
+        toast.success("Localização atual detectada");
       }
-      
-      toast.success("Localização atual detectada");
     } catch (err: any) {
       console.error("Geolocation error:", err);
       
@@ -194,15 +196,19 @@ export function LocationPicker({
           const latitude = parseFloat(result.lat);
           const longitude = parseFloat(result.lon);
           
-          onCoordinatesChange?.({ latitude, longitude });
-          
-          if (mapInstanceRef.current && markerRef.current) {
-            const latlng = { lat: latitude, lng: longitude };
-            mapInstanceRef.current.setCenter(latlng);
-            markerRef.current.setPosition(latlng);
+          if (!isNaN(latitude) && !isNaN(longitude)) {
+            onCoordinatesChange?.({ latitude, longitude });
+            
+            if (mapInstanceRef.current && markerRef.current) {
+              const latlng = { lat: latitude, lng: longitude };
+              mapInstanceRef.current.setCenter(latlng);
+              markerRef.current.setPosition(latlng);
+            }
+            
+            toast.success("Localização encontrada");
+          } else {
+            toast.warning("Coordenadas inválidas recebidas");
           }
-          
-          toast.success("Localização encontrada");
         } else {
           toast.warning("Endereço não encontrado");
         }

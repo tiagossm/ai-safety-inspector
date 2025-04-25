@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -67,11 +66,9 @@ export function InspectionHeaderForm({
   const { updateInspectionData, validateRequiredFields, saveAsDraft, updating } = useInspectionHeaderForm(inspectionId);
   const [progress, setProgress] = useState(0);
 
-  // Process coordinates to ensure they match the required type
   const processCoordinates = (coords: any) => {
     if (!coords) return null;
     
-    // Ensure both latitude and longitude are numbers
     if (typeof coords.latitude === 'number' && typeof coords.longitude === 'number') {
       return {
         latitude: coords.latitude,
@@ -81,7 +78,6 @@ export function InspectionHeaderForm({
     return null;
   };
 
-  // Set default form values from inspection data with proper typing
   const defaultValues: Partial<InspectionFormValues> = {
     companyId: company?.id || "",
     responsibleId: responsible?.id || "",
@@ -98,14 +94,12 @@ export function InspectionHeaderForm({
     defaultValues,
   });
 
-  // Calculate form completion progress
   const calculateProgress = (data: Partial<InspectionFormValues>) => {
     const requiredFields = ['companyId', 'responsibleId', 'location', 'inspectionType'];
     const filledFields = requiredFields.filter(field => !!data[field as keyof InspectionFormValues]);
     return (filledFields.length / requiredFields.length) * 100;
   };
 
-  // Update progress when form values change
   React.useEffect(() => {
     const subscription = form.watch((value) => {
       setProgress(calculateProgress(value));
@@ -169,7 +163,6 @@ export function InspectionHeaderForm({
             
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {/* Empresa */}
                 <FormField
                   control={form.control}
                   name="companyId"
@@ -190,7 +183,6 @@ export function InspectionHeaderForm({
                   )}
                 />
                 
-                {/* Responsável e Data Agendada */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={form.control}
@@ -232,7 +224,6 @@ export function InspectionHeaderForm({
                   />
                 </div>
 
-                {/* Localização */}
                 <FormField
                   control={form.control}
                   name="location"
@@ -244,7 +235,7 @@ export function InspectionHeaderForm({
                           value={field.value}
                           onChange={(value) => field.onChange(value)}
                           onCoordinatesChange={(coords) => {
-                            if (coords) {
+                            if (coords && typeof coords.latitude === 'number' && typeof coords.longitude === 'number') {
                               form.setValue('coordinates', {
                                 latitude: coords.latitude,
                                 longitude: coords.longitude
@@ -253,6 +244,7 @@ export function InspectionHeaderForm({
                               form.setValue('coordinates', null);
                             }
                           }}
+                          coordinates={form.watch('coordinates')}
                           disabled={!isEditable}
                         />
                       </FormControl>
@@ -261,7 +253,6 @@ export function InspectionHeaderForm({
                   )}
                 />
 
-                {/* Tipo de Inspeção e Prioridade */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={form.control}
@@ -339,7 +330,6 @@ export function InspectionHeaderForm({
                   />
                 </div>
 
-                {/* Anotações */}
                 <FormField
                   control={form.control}
                   name="notes"
