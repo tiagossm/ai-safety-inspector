@@ -62,7 +62,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
 
   // Upload media file for a question
   const handleMediaUpload = useCallback(async (questionId: string, file: File): Promise<string | null> => {
-    if (!file) return null;
+    if (!file || !inspectionId) return null;
     
     try {
       // Ensure the bucket exists
@@ -99,7 +99,18 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
       
       // Add the URL to the response
       const fileUrl = urlData.publicUrl;
-      handleMediaChange(questionId, [...(responses[questionId]?.mediaUrls || []), fileUrl]);
+      
+      // Use setResponses to get the current state safely
+      setResponses(currentResponses => {
+        const currentMediaUrls = currentResponses[questionId]?.mediaUrls || [];
+        return {
+          ...currentResponses,
+          [questionId]: {
+            ...currentResponses[questionId],
+            mediaUrls: [...currentMediaUrls, fileUrl]
+          }
+        };
+      });
       
       return fileUrl;
     } catch (error: any) {
@@ -107,10 +118,10 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
       toast.error(`Erro ao enviar mídia: ${error.message}`);
       return null;
     }
-  }, [inspectionId, handleMediaChange, responses]);
+  }, [inspectionId, setResponses]);
 
   // Save all inspection responses to Supabase
-  const handleSaveInspection = useCallback(async (responses: Record<string, any>, inspection: any) => {
+  const handleSaveInspection = useCallback(async (currentResponses: Record<string, any>, inspection: any) => {
     if (!inspectionId) {
       toast.error("ID da inspeção não fornecido");
       return;
@@ -132,7 +143,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
       }
       
       // Format responses for saving
-      const responsesToSave = Object.entries(responses).map(([questionId, response]) => ({
+      const responsesToSave = Object.entries(currentResponses).map(([questionId, response]) => ({
         inspection_id: inspectionId,
         question_id: questionId,
         answer: response.value || null,

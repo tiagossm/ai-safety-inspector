@@ -2,8 +2,8 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, Save, CheckCircle, RefreshCw } from "lucide-react";
-import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 interface FloatingActionButtonsProps {
   saving: boolean;

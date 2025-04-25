@@ -7,6 +7,7 @@ import { MediaAttachments } from "./MediaAttachments";
 interface PhotoInputProps {
   mediaUrls?: string[];
   onAddMedia: () => void;
+  onDeleteMedia?: (index: number) => void;
   allowsPhoto?: boolean;
   allowsVideo?: boolean;
   allowsAudio?: boolean;
@@ -16,6 +17,7 @@ interface PhotoInputProps {
 export function PhotoInput({
   mediaUrls = [],
   onAddMedia,
+  onDeleteMedia,
   allowsPhoto = true,
   allowsVideo = false,
   allowsAudio = false,
@@ -90,7 +92,7 @@ export function PhotoInput({
         )}
       </div>
       
-      <MediaAttachments mediaUrls={mediaUrls} />
+      <MediaAttachments mediaUrls={mediaUrls} onDelete={onDeleteMedia} />
     </div>
   );
 }

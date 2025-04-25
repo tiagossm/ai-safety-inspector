@@ -1,196 +1,158 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ChecklistWithStats, ChecklistQuestion } from "@/types/newChecklist";
-import { normalizeResponseType } from "@/utils/inspection/normalizationUtils";
 
-// Function to validate UUID format
-const isValidUUID = (id: string): boolean => {
-  if (!id) return false;
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(id);
-};
+export function useChecklistById(checklistId: string | undefined) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [checklist, setChecklist] = useState<any>(null);
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [groups, setGroups] = useState<any[]>([]);
 
-// Helper function to transform raw checklist data to the expected format
-const transformChecklistData = (data: any): ChecklistWithStats => {
-  if (!data) return null;
-  
-  return {
-    id: data.id,
-    title: data.title || "",
-    description: data.description || "",
-    isTemplate: data.is_template || false,
-    status: data.status || "active",
-    category: data.category || "",
-    responsibleId: data.responsible_id || null,
-    companyId: data.company_id || null,
-    userId: data.user_id || null,
-    createdAt: data.created_at,
-    updatedAt: data.updated_at,
-    dueDate: data.due_date,
-    isSubChecklist: data.is_sub_checklist || false,
-    origin: data.origin || "manual",
-    totalQuestions: data.total_questions || 0,
-    completedQuestions: 0,
-    questions: [], // Will be populated by separate query if needed
-    groups: []     // Will be populated by separate query if needed
-  };
-};
-
-// Helper function to ensure options are in string array format
-const normalizeOptionsArray = (options: any): string[] => {
-  if (!options) return [];
-  
-  // If it's already an array, make sure all elements are strings
-  if (Array.isArray(options)) {
-    return options.map(opt => String(opt));
-  }
-  
-  // If it's a string, try to parse it as JSON
-  if (typeof options === 'string') {
-    try {
-      const parsed = JSON.parse(options);
-      if (Array.isArray(parsed)) {
-        return parsed.map(opt => String(opt));
-      }
-      return [];
-    } catch (e) {
-      // Not valid JSON, just return as a single item array
-      return [options];
-    }
-  }
-  
-  // If it's an object, convert to array of strings
-  if (typeof options === 'object') {
-    return Object.values(options).map(value => String(value));
-  }
-  
-  // Fallback
-  return [];
-};
-
-export function useChecklistById(id: string) {
-  return useQuery({
-    queryKey: ["checklists", id],
-    queryFn: async () => {
-      // Skip query if ID is empty or "editor"
-      if (!id || id === "editor") {
-        return null;
+  useEffect(() => {
+    async function fetchChecklistData() {
+      if (!checklistId) {
+        setLoading(false);
+        setError("ID do checklist não fornecido");
+        return;
       }
 
-      // Validate UUID format to prevent DB errors
-      if (!isValidUUID(id)) {
-        console.error("Invalid UUID format:", id);
-        throw new Error("ID de checklist inválido");
-      }
-
-      console.log(`Fetching checklist with ID: ${id}`);
       try {
-        // First, get the basic checklist data
+        setLoading(true);
+        setError(null);
+
+        // Fetch checklist data
         const { data: checklistData, error: checklistError } = await supabase
           .from("checklists")
           .select("*")
-          .eq("id", id)
+          .eq("id", checklistId)
           .single();
 
         if (checklistError) {
-          console.error("Error fetching checklist:", checklistError);
-          throw checklistError;
+          throw new Error(`Erro ao buscar checklist: ${checklistError.message}`);
         }
 
-        // Then, get the checklist items/questions
-        const { data: questionData, error: questionError } = await supabase
-          .from("checklist_itens")
+        if (!checklistData) {
+          throw new Error("Checklist não encontrado");
+        }
+
+        setChecklist(checklistData);
+
+        // Fetch questions
+        const { data: questionsData, error: questionsError } = await supabase
+          .from("checklist_questions")
           .select("*")
-          .eq("checklist_id", id)
-          .order("ordem", { ascending: true });
+          .eq("checklist_id", checklistId)
+          .order("order", { ascending: true });
 
-        if (questionError) {
-          console.error("Error fetching checklist questions:", questionError);
-          // Don't throw, we can still return the checklist without questions
+        if (questionsError) {
+          throw new Error(`Erro ao buscar perguntas: ${questionsError.message}`);
         }
 
-        // Transform the raw data into the expected format
-        const transformedData = transformChecklistData(checklistData);
-        
-        // Add questions if we have them
-        if (questionData) {
-          // Process questions to group by section/group
-          const groups = new Map();
-          const DEFAULT_GROUP = { id: 'default', title: 'Geral', order: 0 };
-          groups.set(DEFAULT_GROUP.id, DEFAULT_GROUP);
+        // Fetch groups
+        const { data: groupsData, error: groupsError } = await supabase
+          .from("checklist_groups")
+          .select("*")
+          .eq("checklist_id", checklistId)
+          .order("order", { ascending: true });
 
-          // Map questions to the expected format with properly typed responseType
-          const typedQuestions: ChecklistQuestion[] = questionData.map(item => {
-            // Extract any group info from hint if available
-            let groupId = DEFAULT_GROUP.id;
-            if (item.hint) {
-              try {
-                const hint = typeof item.hint === 'string' ? JSON.parse(item.hint) : item.hint;
-                if (hint.groupId && hint.groupTitle) {
-                  groupId = hint.groupId;
-                  if (!groups.has(groupId)) {
-                    groups.set(groupId, {
-                      id: groupId,
-                      title: hint.groupTitle,
-                      order: hint.groupIndex || groups.size
-                    });
-                  }
-                }
-              } catch (e) {
-                // Ignore parsing errors and keep default group
-              }
-            }
+        if (groupsError) {
+          throw new Error(`Erro ao buscar grupos: ${groupsError.message}`);
+        }
 
-            // Normalize the response type to ensure it matches the expected union type
-            // Using type assertion to ensure TypeScript knows this is the correct type
-            const normalizedType = normalizeResponseType(item.tipo_resposta);
-
-            // Handle options and ensure they're in string array format
-            const options = normalizeOptionsArray(item.opcoes);
-
-            // Transform question format with normalized responseType
-            const question: ChecklistQuestion = {
-              id: item.id,
-              text: item.pergunta,
-              responseType: normalizedType,
-              isRequired: item.obrigatorio,
-              weight: item.weight || 1,
-              allowsPhoto: item.permite_foto || false,
-              allowsVideo: item.permite_video || false,
-              allowsAudio: item.permite_audio || false,
-              allowsFiles: item.permite_files || false,
-              order: item.ordem,
-              options: options,
-              hint: item.hint,
-              groupId,
-              parentQuestionId: item.parent_item_id,
-              conditionValue: item.condition_value,
-              hasSubChecklist: !!item.sub_checklist_id,
-              subChecklistId: item.sub_checklist_id
-            };
-            
-            return question;
-          });
+        // Process questions to add normalized response types and group references
+        const processedQuestions = questionsData.map((question) => {
+          // Normalize response type
+          const normalizedType = normalizeResponseType(question.response_type);
           
-          // Assign the typed questions array to the transformed data
-          transformedData.questions = typedQuestions;
+          // Parse options if they exist and are in string format
+          let options = question.options;
+          if (typeof options === 'string') {
+            try {
+              options = JSON.parse(options);
+            } catch (e) {
+              // If parsing fails, keep as string
+              console.warn(`Failed to parse options for question ${question.id}:`, e);
+            }
+          }
+          
+          return {
+            id: question.id,
+            text: question.text,
+            description: question.description,
+            responseType: normalizedType,
+            required: question.required,
+            order: question.order,
+            groupId: question.group_id,
+            options: options,
+            metadata: question.metadata || {},
+            createdAt: question.created_at,
+            updatedAt: question.updated_at
+          };
+        });
 
-          // Add the extracted groups
-          transformedData.groups = Array.from(groups.values())
-            .sort((a, b) => a.order - b.order);
-        }
+        // Process groups
+        const processedGroups = groupsData.map((group) => ({
+          id: group.id,
+          title: group.title,
+          description: group.description,
+          order: group.order,
+          createdAt: group.created_at,
+          updatedAt: group.updated_at
+        }));
 
-        return transformedData;
-      } catch (err) {
-        console.error("Error in checklist fetch:", err);
-        toast.error("Não foi possível carregar o checklist. Verifique sua conexão ou tente novamente.");
-        throw err;
+        setQuestions(processedQuestions);
+        setGroups(processedGroups);
+      } catch (err: any) {
+        console.error("Error in useChecklistById:", err);
+        setError(err.message || "Erro ao carregar checklist");
+        toast.error(err.message || "Erro ao carregar checklist");
+      } finally {
+        setLoading(false);
       }
-    },
-    enabled: !!id && id !== "editor", // Only run query if ID exists and isn't "editor"
-    retry: 1,
-    gcTime: 300000, // 5 minutes
-    staleTime: 60000, // 1 minute
-  });
+    }
+
+    fetchChecklistData();
+  }, [checklistId]);
+
+  // Normalize response type function
+  const normalizeResponseType = (responseType: string): "text" | "yes_no" | "multiple_choice" | "numeric" | "photo" | "signature" => {
+    if (!responseType) return "text";
+    
+    const type = responseType.toLowerCase();
+    
+    if (type.includes("sim") || type.includes("não") || type.includes("nao") || type.includes("yes") || type.includes("no")) {
+      return "yes_no";
+    }
+    
+    if (type.includes("múltipla") || type.includes("multipla") || type.includes("multiple") || type.includes("choice")) {
+      return "multiple_choice";
+    }
+    
+    if (type.includes("número") || type.includes("numero") || type.includes("numeric")) {
+      return "numeric";
+    }
+    
+    if (type.includes("texto") || type.includes("text")) {
+      return "text";
+    }
+    
+    if (type.includes("foto") || type.includes("photo") || type.includes("imagem") || type.includes("image")) {
+      return "photo";
+    }
+    
+    if (type.includes("assinatura") || type.includes("signature")) {
+      return "signature";
+    }
+    
+    return "text"; // Default to text if no match is found
+  };
+
+  return {
+    loading,
+    error,
+    checklist,
+    questions,
+    groups
+  };
 }
