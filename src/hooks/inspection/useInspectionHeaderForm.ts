@@ -14,14 +14,14 @@ export interface InspectionFormValues {
   coordinates?: { latitude: number; longitude: number } | null;
 }
 
-export type InspectionHeaderFormProps = {
+export interface InspectionHeaderFormProps {
   inspectionId: string;
   inspection: any;
   company: any;
   responsible: any;
   isEditable?: boolean;
   onSave: () => void;
-};
+}
 
 export function useInspectionHeaderForm(inspectionId: string | undefined) {
   const [updating, setUpdating] = useState(false);

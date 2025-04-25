@@ -35,8 +35,11 @@ import { ResponsibleSelector } from "@/components/inspection/ResponsibleSelector
 import { DateTimePicker } from "@/components/inspection/DateTimePicker";
 import { LocationPicker } from "@/components/inspection/LocationPicker";
 import { cn } from "@/lib/utils";
-import { useInspectionHeaderForm } from "@/hooks/inspection/useInspectionHeaderForm";
-import type { InspectionFormValues } from "@/hooks/inspection/useInspectionHeaderForm";
+import { 
+  useInspectionHeaderForm, 
+  InspectionFormValues, 
+  InspectionHeaderFormProps 
+} from "@/hooks/inspection/useInspectionHeaderForm";
 
 const inspectionFormSchema = z.object({
   companyId: z.string().uuid({ message: "Selecione uma empresa válida" }),
