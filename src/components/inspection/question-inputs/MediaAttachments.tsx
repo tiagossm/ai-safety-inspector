@@ -1,12 +1,14 @@
 
 import React from "react";
-import { Download, FileText, Mic, Video } from "lucide-react";
+import { Download, FileText, Mic, Video, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface MediaAttachmentsProps {
   mediaUrls: string[] | undefined;
+  onDelete?: (url: string) => void;
 }
 
-export function MediaAttachments({ mediaUrls }: MediaAttachmentsProps) {
+export function MediaAttachments({ mediaUrls, onDelete }: MediaAttachmentsProps) {
   if (!mediaUrls || mediaUrls.length === 0) return null;
   
   return (
@@ -40,14 +42,27 @@ export function MediaAttachments({ mediaUrls }: MediaAttachmentsProps) {
               )}
               
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                <a 
-                  href={url} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="bg-white p-1 rounded-full shadow"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                </a>
+                <div className="flex gap-1">
+                  <a 
+                    href={url} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="bg-white p-1 rounded-full shadow"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                  </a>
+                  
+                  {onDelete && (
+                    <Button
+                      onClick={() => onDelete(url)}
+                      size="icon"
+                      variant="destructive"
+                      className="h-6 w-6 rounded-full p-1"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           );

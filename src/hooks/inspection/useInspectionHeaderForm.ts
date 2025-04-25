@@ -5,13 +5,13 @@ import { toast } from "sonner";
 
 export interface InspectionFormValues {
   companyId: string;
-  responsibleIds: string[]; // Changed from responsibleId to responsibleIds (array)
+  responsibleIds: string[]; // Array for multiple responsible users
   scheduledDate?: Date | null;
   location: string;
   inspectionType: string;
   priority: string;
   notes?: string;
-  // Updated coordinates type to handle all possible cases including optional properties
+  // Updated coordinates type to handle all possible cases
   coordinates?: { 
     latitude?: number; 
     longitude?: number; 
@@ -43,7 +43,7 @@ export function useInspectionHeaderForm(inspectionId: string | undefined) {
       // Format the update data
       const updateData = {
         company_id: data.companyId,
-        responsible_ids: data.responsibleIds, // Changed to array
+        responsible_ids: data.responsibleIds, // Using the array of responsible IDs
         scheduled_date: data.scheduledDate ? data.scheduledDate.toISOString() : null,
         location: data.location || null,
         inspection_type: data.inspectionType,
@@ -114,7 +114,7 @@ export function useInspectionHeaderForm(inspectionId: string | undefined) {
   const validateRequiredFields = useCallback((data: InspectionFormValues): boolean => {
     return !!(
       data.companyId &&
-      data.responsibleIds && data.responsibleIds.length > 0 && // Check array length
+      data.responsibleIds && data.responsibleIds.length > 0 &&
       data.location &&
       data.inspectionType
     );

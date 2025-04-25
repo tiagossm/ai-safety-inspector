@@ -1,53 +1,43 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-export async function createBucketIfNeeded(bucketName: string): Promise<boolean> {
+export async function createBucketIfNeeded(bucketName: string, isPublic: boolean = true): Promise<boolean> {
   try {
-    // Check if the bucket exists
-    const { data: buckets, error: bucketsError } = await supabase
-      .storage
-      .listBuckets();
+    // Check if bucket exists
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const bucketExists = buckets?.some(bucket => bucket.name === bucketName);
     
-    if (bucketsError) {
-      console.error("Error checking buckets:", bucketsError);
-      return false;
-    }
-    
-    // If the bucket doesn't exist, create it
-    if (!buckets.find(b => b.name === bucketName)) {
-      console.log(`Bucket ${bucketName} does not exist, creating...`);
+    if (!bucketExists) {
+      // Create the bucket if it doesn't exist
+      const { data, error } = await supabase.storage.createBucket(bucketName, {
+        public: isPublic
+      });
       
-      const { error: createError } = await supabase
-        .storage
-        .createBucket(bucketName, {
-          public: true,
-          fileSizeLimit: 52428800 // 50MB
-        });
-      
-      if (createError) {
-        console.error("Error creating bucket:", createError);
+      if (error) {
+        console.error("Error creating bucket:", error);
         return false;
       }
       
-      console.log(`Bucket ${bucketName} created successfully`);
+      console.log(`Created bucket: ${bucketName}`);
       
-      // Set the bucket policy to public
-      const { error: policyError } = await supabase
-        .storage
-        .from(bucketName)
-        .createSignedUrl('dummy.txt', 60); // This is just to test if we can create URLs
-      
-      if (policyError && !policyError.message.includes('not found')) {
-        console.error("Error setting bucket policy:", policyError);
-        // Continue anyway as we might still be able to use the bucket
+      // Set up RLS policy for public access if needed
+      if (isPublic) {
+        const { error: policyError } = await supabase
+          .rpc('create_storage_policy', { 
+            bucket_name: bucketName,
+            policy_name: `${bucketName}_public_policy`,
+            definition: `storage.bucket_id() = '${bucketName}'`
+          });
+        
+        if (policyError) {
+          console.error("Error creating bucket policy:", policyError);
+        }
       }
-    } else {
-      console.log(`Bucket ${bucketName} already exists`);
     }
     
     return true;
   } catch (error) {
-    console.error("Error in createBucketIfNeeded:", error);
+    console.error("Error checking/creating bucket:", error);
     return false;
   }
 }

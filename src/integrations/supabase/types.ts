@@ -929,6 +929,7 @@ export type Database = {
           priority: string | null
           report_url: string | null
           responsible_id: string | null
+          responsible_ids: string[] | null
           risks: Json | null
           scheduled_date: string | null
           status: string | null
@@ -957,6 +958,7 @@ export type Database = {
           priority?: string | null
           report_url?: string | null
           responsible_id?: string | null
+          responsible_ids?: string[] | null
           risks?: Json | null
           scheduled_date?: string | null
           status?: string | null
@@ -985,6 +987,7 @@ export type Database = {
           priority?: string | null
           report_url?: string | null
           responsible_id?: string | null
+          responsible_ids?: string[] | null
           risks?: Json | null
           scheduled_date?: string | null
           status?: string | null

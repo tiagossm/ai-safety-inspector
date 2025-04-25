@@ -40,6 +40,8 @@ import {
   InspectionFormValues, 
   InspectionHeaderFormProps 
 } from "@/hooks/inspection/useInspectionHeaderForm";
+import { QRCodeGenerator } from "@/components/inspection/sharing/QRCodeGenerator";
+import { ShareLinkGenerator } from "@/components/inspection/sharing/ShareLinkGenerator";
 
 // Update the coordinates schema to match the new type in InspectionFormValues
 const coordinatesSchema = z.object({
@@ -153,18 +155,6 @@ export function InspectionHeaderForm({
     } catch (error) {
       // Error is handled by the hook
     }
-  };
-
-  const handleGenerateQR = () => {
-    // Implement QR code generation
-    console.log("Generate QR Code for inspection:", inspectionId);
-    // You can implement this feature with a modal displaying a QR code
-  };
-
-  const handleShareInspection = () => {
-    // Implement sharing functionality
-    console.log("Share inspection:", inspectionId);
-    // You can implement this with a copy to clipboard feature for the inspection URL
   };
 
   const handleShowLogs = () => {
@@ -504,25 +494,13 @@ export function InspectionHeaderForm({
               Logs
             </Button>
             
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleShareInspection}
-              size="sm"
-            >
-              <Share className="h-4 w-4 mr-2" />
-              Compartilhar
-            </Button>
+            <ShareLinkGenerator 
+              inspectionId={inspectionId} 
+            />
             
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleGenerateQR}
-              size="sm"
-            >
-              <QrCode className="h-4 w-4 mr-2" />
-              QR Code
-            </Button>
+            <QRCodeGenerator 
+              inspectionId={inspectionId} 
+            />
           </CardFooter>
         </>
       )}
