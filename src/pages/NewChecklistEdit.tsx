@@ -20,7 +20,7 @@ export default function NewChecklistEdit() {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
   
-  const { data: checklist, isLoading, error, refetch } = useChecklistById(id || "");
+  const { checklist, loading, error, refetch } = useChecklistById(id || "");
   const editorContext = useChecklistEditorContext();
   
   const handleSave = async (): Promise<void> => {
@@ -53,7 +53,7 @@ export default function NewChecklistEdit() {
   if (error) {
     return (
       <ChecklistErrorState 
-        error={error as Error} 
+        error={error instanceof Error ? error : new Error(String(error))} 
         onRetry={() => refetch()} 
       />
     );
@@ -63,7 +63,7 @@ export default function NewChecklistEdit() {
     title: checklist?.title || "",
     description: checklist?.description || "",
     category: checklist?.category || "",
-    isTemplate: checklist?.isTemplate || false,  // Now correctly accessing isTemplate
+    isTemplate: checklist?.isTemplate || false,
     status: checklist?.status === "inactive" ? "inactive" : "active",
     questions: [],
     groups: [],

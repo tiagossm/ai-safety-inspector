@@ -13,7 +13,7 @@ import { ChecklistGroup, ChecklistQuestion } from "@/types/newChecklist";
 export function useChecklistEditorContext() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { data: checklist, isLoading, error, refetch } = useChecklistById(id || "");
+  const { checklist, loading, error, refetch } = useChecklistById(id || "");
   
   // Use our refactored hooks for state management
   const {
@@ -128,7 +128,7 @@ export function useChecklistEditorContext() {
   // Handle errors
   useEffect(() => {
     if (error) {
-      handleError(error, "Erro ao carregar checklist");
+      handleError(error instanceof Error ? error : new Error(String(error)), "Erro ao carregar checklist");
       navigate("/new-checklists");
     }
   }, [error, navigate]);
@@ -184,7 +184,7 @@ export function useChecklistEditorContext() {
       return false;
     } catch (error) {
       setIsSubmitting(false);
-      handleError(error, "Erro ao salvar o checklist");
+      handleError(error instanceof Error ? error : new Error(String(error)), "Erro ao salvar o checklist");
       return false;
     }
   }, [handleSubmit, setIsSubmitting]);
@@ -214,7 +214,7 @@ export function useChecklistEditorContext() {
       return true;
     } catch (error) {
       setIsSubmitting(false);
-      handleError(error, "Erro ao preparar inspeção");
+      handleError(error instanceof Error ? error : new Error(String(error)), "Erro ao preparar inspeção");
       return false;
     }
   }, [handleSubmit, id, navigate, setIsSubmitting]);
@@ -234,7 +234,7 @@ export function useChecklistEditorContext() {
     nonEmptyGroups,
     isSubmitting,
     enableAllMedia,
-    isLoading,
+    isLoading: loading,
     error,
     
     // Setters

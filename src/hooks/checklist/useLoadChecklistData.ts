@@ -76,7 +76,7 @@ export function useLoadChecklistData() {
         }
 
         if (checklistQuery.error) {
-          setError(`Erro ao carregar checklist: ${checklistQuery.error}`);
+          setError(`Erro ao carregar checklist: ${checklistQuery.error instanceof Error ? checklistQuery.error.message : String(checklistQuery.error)}`);
           setLoading(false);
           return;
         }

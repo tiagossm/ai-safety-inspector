@@ -21,8 +21,8 @@ export default function NewChecklistDetails() {
   const { toast } = useToast();
 
   const {
-    data: checklist,
-    isLoading,
+    checklist,
+    loading,
     error,
     refetch
   } = useChecklistById(id as string);
@@ -54,12 +54,12 @@ export default function NewChecklistDetails() {
     }
   };
 
-  if (isLoading) {
+  if (loading) {
     return <ChecklistLoadingState />;
   }
 
   if (error) {
-    return <ChecklistErrorState error={error} onRetry={() => refetch()} />;
+    return <ChecklistErrorState error={error instanceof Error ? error : new Error(String(error))} onRetry={() => refetch()} />;
   }
 
   if (!checklist) {
