@@ -18,7 +18,7 @@ interface InspectionDetailsFormProps {
   companyId: string;
   companyData: any;
   setCompanyData: (data: any) => void;
-  responsibleId: string;
+  responsibleId: string; // Will be used as the first item in responsibleIds array
   location: string;
   setLocation: (value: string) => void;
   notes: string;
@@ -88,6 +88,17 @@ export function InspectionDetailsForm({
     );
   }
   
+  // Convert single responsibleId to array for multi-select compatibility
+  const responsibleIds = responsibleId ? [responsibleId] : [];
+  
+  // Adapter function to maintain backward compatibility
+  const handleResponsibleMultiSelect = (ids: string[], data: any[]) => {
+    // If at least one responsible is selected, use the first one for backward compatibility
+    const firstId = ids.length > 0 ? ids[0] : "";
+    const firstData = data.length > 0 ? data[0] : null;
+    handleResponsibleSelect(firstId, firstData);
+  };
+  
   return (
     <Card>
       <CardHeader>
@@ -143,7 +154,7 @@ export function InspectionDetailsForm({
           </div>
         )}
         
-        {/* Responsible */}
+        {/* Responsible - Updated to use the multi-select version */}
         <div>
           <Label htmlFor="responsible" className="flex items-center">
             <User className="h-4 w-4 mr-1" />
@@ -151,8 +162,8 @@ export function InspectionDetailsForm({
           </Label>
           <div className="mt-1.5">
             <ResponsibleSelector
-              value={responsibleId}
-              onSelect={handleResponsibleSelect}
+              value={responsibleIds}
+              onSelect={handleResponsibleMultiSelect}
             />
             {errors.responsible && (
               <span className="text-sm text-destructive">{errors.responsible}</span>

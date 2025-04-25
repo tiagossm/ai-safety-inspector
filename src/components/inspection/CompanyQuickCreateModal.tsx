@@ -80,6 +80,16 @@ export function CompanyQuickCreateModal({
         return;
       }
 
+      // Get the current user's ID from the auth session
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user?.id;
+
+      if (!userId) {
+        toast.error("Usuário não autenticado");
+        setIsSubmitting(false);
+        return;
+      }
+
       // Insert the new company
       const { data: newCompany, error } = await supabase
         .from("companies")
@@ -88,6 +98,7 @@ export function CompanyQuickCreateModal({
           cnpj: normalizedCNPJ,
           address: values.address || null,
           status: "active",
+          user_id: userId // Add the required user_id field
         })
         .select()
         .single();

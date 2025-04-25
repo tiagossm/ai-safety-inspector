@@ -11,7 +11,7 @@ export interface InspectionFormValues {
   inspectionType: string;
   priority: string;
   notes?: string;
-  // Updated coordinates type to allow null values for latitude and longitude
+  // Update coordinates type definition to correctly handle nullability
   coordinates?: { 
     latitude: number; 
     longitude: number; 
