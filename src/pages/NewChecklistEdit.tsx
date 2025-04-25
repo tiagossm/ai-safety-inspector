@@ -20,7 +20,7 @@ export default function NewChecklistEdit() {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
   
-  const { checklist, loading, error, refetch } = useChecklistById(id || "");
+  const { checklist, isLoading, error, refetch } = useChecklistById(id || "");
   const editorContext = useChecklistEditorContext();
   
   const handleSave = async (): Promise<void> => {

@@ -13,7 +13,7 @@ import { ChecklistGroup, ChecklistQuestion } from "@/types/newChecklist";
 export function useChecklistEditorContext() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { checklist, loading, error, refetch } = useChecklistById(id || "");
+  const { checklist, isLoading: loading, error, refetch } = useChecklistById(id || "");
   
   // Use our refactored hooks for state management
   const {

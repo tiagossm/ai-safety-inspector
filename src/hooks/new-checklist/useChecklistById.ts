@@ -1,7 +1,75 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
+import { ChecklistWithStats, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
+
+// Function to validate UUID format
+const isValidUUID = (id: string): boolean => {
+  if (!id) return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+};
+
+// Helper function to normalize response type
+const normalizeResponseType = (responseType: string): "text" | "yes_no" | "multiple_choice" | "numeric" | "photo" | "signature" => {
+  if (!responseType) return "text";
+  
+  const type = responseType.toLowerCase();
+  
+  if (type.includes("sim") || type.includes("não") || type.includes("nao") || type.includes("yes") || type.includes("no")) {
+    return "yes_no";
+  }
+  
+  if (type.includes("múltipla") || type.includes("multipla") || type.includes("multiple") || type.includes("choice")) {
+    return "multiple_choice";
+  }
+  
+  if (type.includes("número") || type.includes("numero") || type.includes("numeric")) {
+    return "numeric";
+  }
+  
+  if (type.includes("texto") || type.includes("text")) {
+    return "text";
+  }
+  
+  if (type.includes("foto") || type.includes("photo") || type.includes("imagem") || type.includes("image")) {
+    return "photo";
+  }
+  
+  if (type.includes("assinatura") || type.includes("signature")) {
+    return "signature";
+  }
+  
+  return "text"; // Default to text if no match is found
+};
+
+// Helper function to transform raw checklist data
+const transformChecklistData = (data: any): ChecklistWithStats | null => {
+  if (!data) return null;
+  
+  return {
+    id: data.id,
+    title: data.title || "",
+    description: data.description || "",
+    isTemplate: data.is_template || false,
+    status: data.status || "active",
+    category: data.category || "",
+    responsibleId: data.responsible_id || null,
+    companyId: data.company_id || null,
+    userId: data.user_id || null,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+    dueDate: data.due_date,
+    isSubChecklist: data.is_sub_checklist || false,
+    origin: data.origin || "manual",
+    totalQuestions: data.total_questions || 0,
+    completedQuestions: 0,
+    questions: [], // Will be populated separately
+    groups: []     // Will be populated separately
+  };
+};
 
 export function useChecklistById(checklistId: string | undefined) {
   const query = useQuery({
@@ -11,7 +79,14 @@ export function useChecklistById(checklistId: string | undefined) {
         throw new Error("ID do checklist não fornecido");
       }
 
+      // Validate UUID format to prevent DB errors
+      if (!isValidUUID(checklistId)) {
+        console.error("Invalid UUID format:", checklistId);
+        throw new Error("ID de checklist inválido");
+      }
+
       try {
+        console.log(`Fetching checklist with ID: ${checklistId}`);
         // Fetch checklist data
         const { data: checklistData, error: checklistError } = await supabase
           .from("checklists")
@@ -95,7 +170,8 @@ export function useChecklistById(checklistId: string | undefined) {
             parentQuestionId: question.parent_item_id || null,
             conditionValue: question.condition_value || null,
             createdAt: question.created_at,
-            updatedAt: question.updated_at
+            updatedAt: question.updated_at,
+            weight: question.weight || 1
           };
         });
 
@@ -104,8 +180,16 @@ export function useChecklistById(checklistId: string | undefined) {
           (a: any, b: any) => a.order - b.order
         );
 
+        // Transform the data to expected format with camelCase properties
+        const checklist = transformChecklistData(checklistData);
+        if (checklist) {
+          checklist.questions = processedQuestions;
+          checklist.groups = processedGroups;
+          checklist.totalQuestions = processedQuestions.length;
+        }
+
         return {
-          checklist: checklistData,
+          checklist,
           questions: processedQuestions,
           groups: processedGroups
         };
@@ -117,39 +201,6 @@ export function useChecklistById(checklistId: string | undefined) {
     staleTime: 60000, // 1 minute
   });
 
-  // Normalize response type function
-  const normalizeResponseType = (responseType: string): "text" | "yes_no" | "multiple_choice" | "numeric" | "photo" | "signature" => {
-    if (!responseType) return "text";
-    
-    const type = responseType.toLowerCase();
-    
-    if (type.includes("sim") || type.includes("não") || type.includes("nao") || type.includes("yes") || type.includes("no")) {
-      return "yes_no";
-    }
-    
-    if (type.includes("múltipla") || type.includes("multipla") || type.includes("multiple") || type.includes("choice")) {
-      return "multiple_choice";
-    }
-    
-    if (type.includes("número") || type.includes("numero") || type.includes("numeric")) {
-      return "numeric";
-    }
-    
-    if (type.includes("texto") || type.includes("text")) {
-      return "text";
-    }
-    
-    if (type.includes("foto") || type.includes("photo") || type.includes("imagem") || type.includes("image")) {
-      return "photo";
-    }
-    
-    if (type.includes("assinatura") || type.includes("signature")) {
-      return "signature";
-    }
-    
-    return "text"; // Default to text if no match is found
-  };
-
   return {
     data: query.data,
     isLoading: query.isLoading,
@@ -158,7 +209,7 @@ export function useChecklistById(checklistId: string | undefined) {
     refetch: query.refetch,
     // Also provide legacy API format for compatibility
     loading: query.isLoading,
-    checklist: query.data?.checklist,
+    checklist: query.data?.checklist || null,
     questions: query.data?.questions || [],
     groups: query.data?.groups || []
   };

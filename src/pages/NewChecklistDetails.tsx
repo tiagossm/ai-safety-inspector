@@ -22,7 +22,7 @@ export default function NewChecklistDetails() {
 
   const {
     checklist,
-    loading,
+    isLoading,
     error,
     refetch
   } = useChecklistById(id as string);
@@ -54,19 +54,21 @@ export default function NewChecklistDetails() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return <ChecklistLoadingState />;
   }
 
   if (error) {
-    return <ChecklistErrorState error={error instanceof Error ? error : new Error(String(error))} onRetry={() => refetch()} />;
+    return <ChecklistErrorState 
+      error={error instanceof Error ? error : new Error(String(error))} 
+      onRetry={() => refetch()} 
+    />;
   }
 
   if (!checklist) {
     return <ChecklistErrorState error={new Error("Checklist não encontrado")} />;
   }
 
-  // Now the checklist data should be properly formatted with the expected properties
   return (
     <div className="space-y-6">
       <ChecklistDetailsHeader 
