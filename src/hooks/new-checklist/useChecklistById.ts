@@ -71,6 +71,34 @@ const transformChecklistData = (data: any): ChecklistWithStats | null => {
   };
 };
 
+// Helper function to ensure options are always an array of strings
+const normalizeOptions = (options: any): string[] => {
+  if (!options) return [];
+  
+  if (Array.isArray(options)) {
+    // Ensure all items are strings
+    return options.map(item => String(item));
+  } 
+  
+  if (typeof options === 'string') {
+    try {
+      // Try to parse if it's a JSON string
+      const parsedOptions = JSON.parse(options);
+      if (Array.isArray(parsedOptions)) {
+        return parsedOptions.map(item => String(item));
+      }
+      // If parsed but not an array, wrap in array
+      return [String(parsedOptions)];
+    } catch (e) {
+      // If not valid JSON, treat as single string option
+      return [options];
+    }
+  }
+  
+  // If it's an object or something else, stringify it
+  return [String(options)];
+};
+
 export function useChecklistById(checklistId: string | undefined) {
   const query = useQuery({
     queryKey: ["checklists", checklistId],
@@ -119,19 +147,12 @@ export function useChecklistById(checklistId: string | undefined) {
         groupsMap.set("default", defaultGroup);
 
         // Process questions to normalize formats
-        const processedQuestions = questionsData.map((question) => {
+        const processedQuestions: ChecklistQuestion[] = questionsData.map((question) => {
           // Normalize response type
           const normalizedType = normalizeResponseType(question.tipo_resposta);
           
-          // Parse options if they exist
-          let options = question.opcoes || [];
-          if (typeof options === 'string') {
-            try {
-              options = JSON.parse(options);
-            } catch (e) {
-              options = [];
-            }
-          }
+          // Parse options if they exist and ensure they're in the expected format
+          let normalizedOptions = normalizeOptions(question.opcoes);
           
           // Extract group info from hint if it exists
           let groupId = "default";
@@ -156,12 +177,12 @@ export function useChecklistById(checklistId: string | undefined) {
           return {
             id: question.id,
             text: question.pergunta,
-            description: question.descricao || "",
+            description: question.descricao || "", // Fixed: using descricao instead of description
             responseType: normalizedType,
             isRequired: question.obrigatorio,
             order: question.ordem,
             groupId: groupId,
-            options: options || [],
+            options: normalizedOptions, // Using normalized options that are guaranteed to be string[]
             metadata: {}, // Default empty metadata
             allowsPhoto: question.permite_foto || false,
             allowsVideo: question.permite_video || false,

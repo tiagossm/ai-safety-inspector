@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -116,7 +115,8 @@ export function useChecklistEditorContext() {
           allowsAudio: false,
           allowsFiles: false,
           order: 0,
-          groupId: "default"
+          groupId: "default",
+          options: [] // Properly initialize options as an empty array
         };
         
         setGroups([defaultGroup]);
