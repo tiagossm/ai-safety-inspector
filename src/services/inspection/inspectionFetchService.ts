@@ -161,14 +161,18 @@ export async function fetchInspectionData(inspectionId) {
     let notesFromMeta = '';
     let coordinatesFromMeta = { latitude: 0, longitude: 0 };
     
-    if (typeof metadata === 'object') {
-      if (metadata.notes && typeof metadata.notes === 'string') {
+    if (typeof metadata === 'object' && metadata !== null && !Array.isArray(metadata)) {
+      if ('notes' in metadata && typeof metadata.notes === 'string') {
         notesFromMeta = metadata.notes;
       }
       
-      if (metadata.coordinates && typeof metadata.coordinates === 'object') {
+      if ('coordinates' in metadata && 
+          typeof metadata.coordinates === 'object' && 
+          metadata.coordinates !== null && 
+          !Array.isArray(metadata.coordinates)) {
         const coords = metadata.coordinates;
-        if (typeof coords.latitude === 'number' && typeof coords.longitude === 'number') {
+        if ('latitude' in coords && typeof coords.latitude === 'number' && 
+            'longitude' in coords && typeof coords.longitude === 'number') {
           coordinatesFromMeta = {
             latitude: coords.latitude,
             longitude: coords.longitude

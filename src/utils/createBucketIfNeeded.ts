@@ -20,10 +20,10 @@ export async function createBucketIfNeeded(bucketName: string, isPublic: boolean
       
       console.log(`Created bucket: ${bucketName}`);
       
-      // Set up RLS policy for public access if needed
+      // Set up access for public buckets
       if (isPublic) {
         try {
-          // We'll use SQL directly since the RPC function may not exist
+          // Test access by creating a signed URL
           const { error: policyError } = await supabase.storage
             .from(bucketName)
             .createSignedUrl('dummy.txt', 1); // Just to test access

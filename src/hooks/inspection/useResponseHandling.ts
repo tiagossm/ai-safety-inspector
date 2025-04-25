@@ -183,7 +183,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
           .from("inspection_responses")
           .update({
             sub_checklist_responses: {
-              ...existingResponse.sub_checklist_responses,
+              ...((existingResponse.sub_checklist_responses as Record<string, any>) || {}),
               [subChecklistId]: subResponses
             },
             updated_at: new Date().toISOString()
