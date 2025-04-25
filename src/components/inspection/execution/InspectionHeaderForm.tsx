@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -82,7 +81,6 @@ export function InspectionHeaderForm({
     return null;
   };
 
-  // Transform responsible to array if needed
   const initialResponsibleIds = responsible?.id ? [responsible.id] : [];
 
   const defaultValues: Partial<InspectionFormValues> = {
@@ -169,7 +167,6 @@ export function InspectionHeaderForm({
     setShowHistoryLog(!showHistoryLog);
   };
 
-  // Display the appropriate icon and color for inspection types
   const getInspectionTypeIcon = (type: string) => {
     switch (type) {
       case "internal":
@@ -222,7 +219,6 @@ export function InspectionHeaderForm({
           <CardContent>
             <Progress value={progress} className="mb-4" />
             
-            {/* Warning for required fields */}
             {progress < 100 && (
               <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4 flex items-start">
                 <span className="text-amber-600 mr-2">⚠</span>
@@ -251,7 +247,6 @@ export function InspectionHeaderForm({
                           value={field.value}
                           onSelect={(id, data) => {
                             field.onChange(id);
-                            // If company has an address, auto-fill location
                             if (data?.address && !form.getValues().location) {
                               form.setValue('location', data.address);
                             }
@@ -464,7 +459,6 @@ export function InspectionHeaderForm({
                     <h4 className="text-sm font-medium mb-2">Histórico de Alterações</h4>
                     <div className="text-xs space-y-1 max-h-32 overflow-y-auto">
                       <p className="text-gray-500">Carregando histórico...</p>
-                      {/* This would be populated with actual history data */}
                     </div>
                   </div>
                 )}
