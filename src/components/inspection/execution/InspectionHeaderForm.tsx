@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -40,9 +41,10 @@ import {
   InspectionHeaderFormProps 
 } from "@/hooks/inspection/useInspectionHeaderForm";
 
+// Update the coordinates schema to match the new type in InspectionFormValues
 const coordinatesSchema = z.object({
-  latitude: z.number(),
-  longitude: z.number()
+  latitude: z.number().optional(),
+  longitude: z.number().optional()
 }).nullable().optional();
 
 const inspectionFormSchema = z.object({
@@ -120,10 +122,12 @@ export function InspectionHeaderForm({
 
   const onSubmit = async (data: InspectionFormValues) => {
     try {
+      // Ensure coordinates are properly validated before submitting
       if (data.coordinates && (
           typeof data.coordinates.latitude !== 'number' ||
           typeof data.coordinates.longitude !== 'number'
       )) {
+        // Set coordinates to null if they're invalid
         data.coordinates = null;
       }
       

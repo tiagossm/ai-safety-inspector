@@ -11,10 +11,10 @@ export interface InspectionFormValues {
   inspectionType: string;
   priority: string;
   notes?: string;
-  // Fix coordinates type definition to handle optional properties or null values
+  // Updated coordinates type to handle all possible cases including optional properties
   coordinates?: { 
-    latitude: number; 
-    longitude: number; 
+    latitude?: number; 
+    longitude?: number; 
   } | null;
 }
 
