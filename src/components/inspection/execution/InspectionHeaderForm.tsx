@@ -67,6 +67,20 @@ export function InspectionHeaderForm({
   const { updateInspectionData, validateRequiredFields, saveAsDraft, updating } = useInspectionHeaderForm(inspectionId);
   const [progress, setProgress] = useState(0);
 
+  // Process coordinates to ensure they match the required type
+  const processCoordinates = (coords: any) => {
+    if (!coords) return null;
+    
+    // Ensure both latitude and longitude are numbers
+    if (typeof coords.latitude === 'number' && typeof coords.longitude === 'number') {
+      return {
+        latitude: coords.latitude,
+        longitude: coords.longitude
+      };
+    }
+    return null;
+  };
+
   // Set default form values from inspection data with proper typing
   const defaultValues: Partial<InspectionFormValues> = {
     companyId: company?.id || "",
@@ -76,7 +90,7 @@ export function InspectionHeaderForm({
     notes: inspection?.metadata?.notes || "",
     inspectionType: inspection?.inspection_type || "",
     priority: inspection?.priority || "medium",
-    coordinates: inspection?.metadata?.coordinates || null
+    coordinates: processCoordinates(inspection?.metadata?.coordinates)
   };
 
   const form = useForm<InspectionFormValues>({
@@ -229,9 +243,16 @@ export function InspectionHeaderForm({
                         <LocationPicker
                           value={field.value}
                           onChange={(value) => field.onChange(value)}
-                          onCoordinatesChange={(coords) => 
-                            form.setValue('coordinates', coords)
-                          }
+                          onCoordinatesChange={(coords) => {
+                            if (coords) {
+                              form.setValue('coordinates', {
+                                latitude: coords.latitude,
+                                longitude: coords.longitude
+                              });
+                            } else {
+                              form.setValue('coordinates', null);
+                            }
+                          }}
                           disabled={!isEditable}
                         />
                       </FormControl>
