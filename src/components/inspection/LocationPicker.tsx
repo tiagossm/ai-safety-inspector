@@ -1,5 +1,6 @@
+
 import React, { useRef, useEffect, useState } from "react";
-import { MapPin, Navigation, CircleHelp, Search, XCircle } from "lucide-react";
+import { MapPin, Navigation, CircleHelp, Search, XCircle, MapPinIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +11,7 @@ import {
 } from "@/components/ui/popover";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Card } from "@/components/ui/card";
 
 declare global {
   interface Window {
@@ -42,9 +44,14 @@ export function LocationPicker({
 }: LocationPickerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showMap, setShowMap] = useState(false);
+  const [cep, setCep] = useState("");
+  const [showMiniMap, setShowMiniMap] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
+  const miniMapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markerRef = useRef<any>(null);
+  const miniMapInstanceRef = useRef<any>(null);
+  const miniMarkerRef = useRef<any>(null);
   
   useEffect(() => {
     if (showMap && mapRef.current && !mapInstanceRef.current) {
@@ -55,6 +62,23 @@ export function LocationPicker({
       }
     }
   }, [showMap, coordinates]);
+
+  useEffect(() => {
+    if (coordinates?.latitude && coordinates?.longitude && miniMapRef.current && !miniMapInstanceRef.current) {
+      if (window.google && window.google.maps) {
+        initializeMiniMap();
+      } else {
+        setShowMiniMap(false); // Don't show mini map if Google Maps not available
+      }
+    }
+  }, [coordinates, showMiniMap]);
+
+  // Show mini map when we have coordinates
+  useEffect(() => {
+    if (coordinates?.latitude && coordinates?.longitude) {
+      setShowMiniMap(true);
+    }
+  }, [coordinates]);
 
   const initializeMap = () => {
     if (!mapRef.current || !window.google) return;
@@ -90,6 +114,32 @@ export function LocationPicker({
         onCoordinatesChange?.(newCoords);
         updateAddressFromCoordinates(newCoords.latitude, newCoords.longitude);
       }
+    });
+  };
+
+  const initializeMiniMap = () => {
+    if (!miniMapRef.current || !window.google || !coordinates) return;
+
+    const position = { 
+      lat: coordinates.latitude as number, 
+      lng: coordinates.longitude as number 
+    };
+
+    miniMapInstanceRef.current = new window.google.maps.Map(miniMapRef.current, {
+      center: position,
+      zoom: 15,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false,
+      zoomControl: false,
+      draggable: false
+    });
+    
+    miniMarkerRef.current = new window.google.maps.Marker({
+      position: position,
+      map: miniMapInstanceRef.current,
+      draggable: false,
+      title: "Localização da inspeção"
     });
   };
 
@@ -143,6 +193,7 @@ export function LocationPicker({
         }
         
         toast.success("Localização atual detectada");
+        setShowMiniMap(true);
       }
     } catch (err: any) {
       console.error("Geolocation error:", err);
@@ -208,6 +259,7 @@ export function LocationPicker({
             }
             
             toast.success("Localização encontrada");
+            setShowMiniMap(true);
           } else {
             toast.warning("Coordenadas inválidas recebidas");
           }
@@ -223,42 +275,77 @@ export function LocationPicker({
     }
   };
 
+  const searchCEP = async (cep: string) => {
+    if (!cep || cep.length !== 9) return;
+    
+    setIsLoading(true);
+    
+    try {
+      const cleanCep = cep.replace(/\D/g, '');
+      const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (!data.erro) {
+          // Format the address from ViaCEP
+          const formattedAddress = `${data.logradouro}, ${data.bairro}, ${data.localidade} - ${data.uf}, ${data.cep}`;
+          onChange(formattedAddress);
+          
+          // Search for coordinates of the address
+          await searchAddress();
+        } else {
+          toast.error("CEP não encontrado");
+        }
+      }
+    } catch (err) {
+      console.error("CEP search error:", err);
+      toast.error("Erro ao buscar CEP");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCEPChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    
+    // Format CEP as 12345-678
+    const formatted = value
+      .replace(/\D/g, '')
+      .replace(/^(\d{5})(\d)/, '$1-$2')
+      .substring(0, 9);
+      
+    setCep(formatted);
+  };
+
   const clearLocation = () => {
     onChange("");
     onCoordinatesChange?.(null);
+    setCep("");
+    setShowMiniMap(false);
   };
 
   return (
     <div className="relative">
       <div className="flex flex-col space-y-2">
-        <div className="flex gap-2">
-          {value ? (
-            <Textarea
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              placeholder="Endereço ou descrição do local"
-              className="min-h-[80px] flex-grow"
-              disabled={disabled}
-            />
-          ) : (
-            <Input 
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              placeholder="Endereço ou descrição do local"
-              className="flex-grow"
-              disabled={disabled}
-            />
-          )}
-        </div>
-        
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <Input
+            value={cep}
+            onChange={handleCEPChange}
+            placeholder="CEP (12345-678)"
+            className="md:col-span-1"
+            disabled={disabled || isLoading}
+            onBlur={() => cep.length === 9 && searchCEP(cep)}
+          />
+          
+          <div className="md:col-span-2 flex gap-2">
             <Button
               type="button"
               size="sm"
               variant="outline"
               onClick={getCurrentLocation}
               disabled={isLoading || disabled}
+              className="flex-1"
             >
               <Navigation className="w-4 h-4 mr-2" />
               Usar GPS
@@ -271,6 +358,7 @@ export function LocationPicker({
                   size="sm"
                   variant="outline"
                   disabled={disabled}
+                  className="flex-1"
                 >
                   <MapPin className="w-4 h-4 mr-2" />
                   {coordinates ? "Ver no Mapa" : "Selecionar no Mapa"}
@@ -298,7 +386,29 @@ export function LocationPicker({
               </PopoverContent>
             </Popover>
           </div>
-          
+        </div>
+        
+        <div className="flex gap-2">
+          {value ? (
+            <Textarea
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder="Endereço ou descrição do local"
+              className="min-h-[80px] flex-grow"
+              disabled={disabled}
+            />
+          ) : (
+            <Input 
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              placeholder="Endereço ou descrição do local"
+              className="flex-grow"
+              disabled={disabled}
+            />
+          )}
+        </div>
+        
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Button
               type="button"
@@ -323,33 +433,49 @@ export function LocationPicker({
                 <span className="sr-only">Limpar</span>
               </Button>
             )}
-            
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="rounded-full w-6 h-6 p-0"
-                  >
-                    <CircleHelp className="w-4 h-4" />
-                    <span className="sr-only">Ajuda</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="text-xs max-w-[200px]">
-                    Digite um endereço ou use o GPS para detectar sua localização atual.
-                    Você também pode selecionar a localização diretamente no mapa.
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
           </div>
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="rounded-full w-6 h-6 p-0"
+                >
+                  <CircleHelp className="w-4 h-4" />
+                  <span className="sr-only">Ajuda</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="text-xs max-w-[200px]">
+                  Digite um CEP para busca automática, use o GPS para detectar sua localização atual,
+                  ou selecione a localização diretamente no mapa.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
       
-      {coordinates && typeof coordinates.latitude === 'number' && typeof coordinates.longitude === 'number' && (
+      {/* Mini map preview */}
+      {showMiniMap && coordinates && typeof coordinates.latitude === 'number' && typeof coordinates.longitude === 'number' && (
+        <Card className="mt-2 overflow-hidden">
+          <div className="flex items-center p-2 bg-gray-50 border-b">
+            <MapPinIcon className="h-3 w-3 mr-1 text-red-600" />
+            <span className="text-xs text-muted-foreground">
+              Lat: {coordinates.latitude.toFixed(6)}, Long: {coordinates.longitude.toFixed(6)}
+            </span>
+          </div>
+          <div 
+            ref={miniMapRef}
+            className="h-[120px] w-full"
+          ></div>
+        </Card>
+      )}
+      
+      {coordinates && typeof coordinates.latitude === 'number' && typeof coordinates.longitude === 'number' && !showMiniMap && (
         <div className="mt-1 text-xs text-muted-foreground">
           Coordenadas: Lat {coordinates.latitude.toFixed(6)}, Long {coordinates.longitude.toFixed(6)}
         </div>

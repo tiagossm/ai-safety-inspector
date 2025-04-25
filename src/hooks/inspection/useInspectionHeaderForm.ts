@@ -5,16 +5,16 @@ import { toast } from "sonner";
 
 export interface InspectionFormValues {
   companyId: string;
-  responsibleId: string;
+  responsibleIds: string[]; // Changed from responsibleId to responsibleIds (array)
   scheduledDate?: Date | null;
   location: string;
   inspectionType: string;
   priority: string;
   notes?: string;
-  // Ensure coordinates is either a complete object with both properties or null
+  // Updated coordinates type to allow null values for latitude and longitude
   coordinates?: { 
-    latitude?: number; 
-    longitude?: number; 
+    latitude: number; 
+    longitude: number; 
   } | null;
 }
 
@@ -43,7 +43,7 @@ export function useInspectionHeaderForm(inspectionId: string | undefined) {
       // Format the update data
       const updateData = {
         company_id: data.companyId,
-        responsible_id: data.responsibleId,
+        responsible_ids: data.responsibleIds, // Changed to array
         scheduled_date: data.scheduledDate ? data.scheduledDate.toISOString() : null,
         location: data.location || null,
         inspection_type: data.inspectionType,
@@ -68,6 +68,37 @@ export function useInspectionHeaderForm(inspectionId: string | undefined) {
       if (updateError) throw updateError;
 
       toast.success("Dados da inspeção atualizados com sucesso");
+      
+      // If we have responsibleIds, send notifications
+      if (data.responsibleIds && data.responsibleIds.length > 0) {
+        try {
+          // Fetch user emails based on responsibleIds
+          const { data: responsibles, error: userError } = await supabase
+            .from("users")
+            .select("id, email, name")
+            .in("id", data.responsibleIds);
+            
+          if (!userError && responsibles) {
+            // Call the edge function to send notifications
+            await supabase.functions.invoke('send-inspection-notifications', {
+              body: {
+                inspectionId,
+                responsibles,
+                inspectionData: {
+                  company: data.companyId,
+                  scheduledDate: data.scheduledDate,
+                  location: data.location,
+                  inspectionType: data.inspectionType
+                }
+              }
+            });
+          }
+        } catch (notifError) {
+          console.error("Error sending notifications:", notifError);
+          // Don't throw here, as we want the main function to succeed even if notifications fail
+        }
+      }
+      
       return true;
     } catch (err: any) {
       console.error("Error updating inspection data:", err);
@@ -83,7 +114,7 @@ export function useInspectionHeaderForm(inspectionId: string | undefined) {
   const validateRequiredFields = useCallback((data: InspectionFormValues): boolean => {
     return !!(
       data.companyId &&
-      data.responsibleId &&
+      data.responsibleIds && data.responsibleIds.length > 0 && // Check array length
       data.location &&
       data.inspectionType
     );

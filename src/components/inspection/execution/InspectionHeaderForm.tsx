@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -28,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress"; 
-import { ChevronDown, ChevronUp, Save } from "lucide-react";
+import { ChevronDown, ChevronUp, Save, QrCode, Share, FileText } from "lucide-react";
 import { CompanySelector } from "@/components/inspection/CompanySelector";
 import { ResponsibleSelector } from "@/components/inspection/ResponsibleSelector";
 import { DateTimePicker } from "@/components/inspection/DateTimePicker";
@@ -47,7 +48,7 @@ const coordinatesSchema = z.object({
 
 const inspectionFormSchema = z.object({
   companyId: z.string().uuid({ message: "Selecione uma empresa válida" }),
-  responsibleId: z.string().uuid({ message: "Selecione um responsável válido" }),
+  responsibleIds: z.array(z.string()).min(1, "Selecione pelo menos um responsável"),
   scheduledDate: z.date().optional().nullable(),
   location: z.string().min(1, "Localização é obrigatória"),
   inspectionType: z.string().min(1, "Tipo de inspeção é obrigatório"),
@@ -65,6 +66,7 @@ export function InspectionHeaderForm({
   onSave,
 }: InspectionHeaderFormProps) {
   const [expanded, setExpanded] = useState(true);
+  const [showHistoryLog, setShowHistoryLog] = useState(false);
   const { updateInspectionData, validateRequiredFields, saveAsDraft, updating } = useInspectionHeaderForm(inspectionId);
   const [progress, setProgress] = useState(0);
 
@@ -80,9 +82,12 @@ export function InspectionHeaderForm({
     return null;
   };
 
+  // Transform responsible to array if needed
+  const initialResponsibleIds = responsible?.id ? [responsible.id] : [];
+
   const defaultValues: Partial<InspectionFormValues> = {
     companyId: company?.id || "",
-    responsibleId: responsible?.id || "",
+    responsibleIds: initialResponsibleIds,
     scheduledDate: inspection?.scheduled_date ? new Date(inspection.scheduled_date) : null,
     location: inspection?.location || "",
     notes: inspection?.metadata?.notes || "",
@@ -97,9 +102,15 @@ export function InspectionHeaderForm({
   });
 
   const calculateProgress = (data: Partial<InspectionFormValues>) => {
-    const requiredFields = ['companyId', 'responsibleId', 'location', 'inspectionType'];
-    const filledFields = requiredFields.filter(field => !!data[field as keyof InspectionFormValues]);
-    return (filledFields.length / requiredFields.length) * 100;
+    const requiredFields = ['companyId', 'responsibleIds', 'location', 'inspectionType'];
+    let filledCount = 0;
+    
+    if (data.companyId) filledCount++;
+    if (data.responsibleIds && data.responsibleIds.length > 0) filledCount++;
+    if (data.location) filledCount++;
+    if (data.inspectionType) filledCount++;
+    
+    return (filledCount / requiredFields.length) * 100;
   };
 
   React.useEffect(() => {
@@ -142,6 +153,38 @@ export function InspectionHeaderForm({
     }
   };
 
+  const handleGenerateQR = () => {
+    // Implement QR code generation
+    console.log("Generate QR Code for inspection:", inspectionId);
+    // You can implement this feature with a modal displaying a QR code
+  };
+
+  const handleShareInspection = () => {
+    // Implement sharing functionality
+    console.log("Share inspection:", inspectionId);
+    // You can implement this with a copy to clipboard feature for the inspection URL
+  };
+
+  const handleShowLogs = () => {
+    setShowHistoryLog(!showHistoryLog);
+  };
+
+  // Display the appropriate icon and color for inspection types
+  const getInspectionTypeIcon = (type: string) => {
+    switch (type) {
+      case "internal":
+        return "🏢"; // Internal
+      case "external":
+        return "🌐"; // External
+      case "audit":
+        return "📋"; // Audit
+      case "routine":
+        return "🔄"; // Routine
+      default:
+        return "❓"; // Unknown
+    }
+  };
+
   return (
     <Card className="mb-6">
       <CardHeader 
@@ -179,6 +222,22 @@ export function InspectionHeaderForm({
           <CardContent>
             <Progress value={progress} className="mb-4" />
             
+            {/* Warning for required fields */}
+            {progress < 100 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4 flex items-start">
+                <span className="text-amber-600 mr-2">⚠</span>
+                <div className="text-sm text-amber-700">
+                  <p className="font-medium">Dados obrigatórios pendentes</p>
+                  <ul className="list-disc pl-5 mt-1">
+                    {!form.getValues().companyId && <li>Empresa</li>}
+                    {(!form.getValues().responsibleIds || form.getValues().responsibleIds.length === 0) && <li>Responsável</li>}
+                    {!form.getValues().location && <li>Localização</li>}
+                    {!form.getValues().inspectionType && <li>Tipo de Inspeção</li>}
+                  </ul>
+                </div>
+              </div>
+            )}
+            
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
@@ -190,7 +249,13 @@ export function InspectionHeaderForm({
                       <FormControl>
                         <CompanySelector
                           value={field.value}
-                          onSelect={(id, data) => field.onChange(id)}
+                          onSelect={(id, data) => {
+                            field.onChange(id);
+                            // If company has an address, auto-fill location
+                            if (data?.address && !form.getValues().location) {
+                              form.setValue('location', data.address);
+                            }
+                          }}
                           className={cn(
                             !isEditable && "opacity-70 pointer-events-none"
                           )}
@@ -204,14 +269,14 @@ export function InspectionHeaderForm({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={form.control}
-                    name="responsibleId"
+                    name="responsibleIds"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Responsável <span className="text-destructive">*</span></FormLabel>
+                        <FormLabel>Responsável(is) <span className="text-destructive">*</span></FormLabel>
                         <FormControl>
                           <ResponsibleSelector
                             value={field.value}
-                            onSelect={(id, data) => field.onChange(id)}
+                            onSelect={(ids, data) => field.onChange(ids)}
                             className={cn(
                               !isEditable && "opacity-70 pointer-events-none"
                             )}
@@ -285,14 +350,42 @@ export function InspectionHeaderForm({
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Selecione o tipo" />
+                              <SelectValue placeholder="Selecione o tipo">
+                                {field.value && (
+                                  <div className="flex items-center">
+                                    <span className="mr-2">{getInspectionTypeIcon(field.value)}</span>
+                                    <span>
+                                      {field.value === "internal" ? "Interna" :
+                                       field.value === "external" ? "Externa" :
+                                       field.value === "audit" ? "Auditoria" :
+                                       field.value === "routine" ? "Rotina" : field.value}
+                                    </span>
+                                  </div>
+                                )}
+                              </SelectValue>
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="internal">Interna</SelectItem>
-                            <SelectItem value="external">Externa</SelectItem>
-                            <SelectItem value="audit">Auditoria</SelectItem>
-                            <SelectItem value="routine">Rotina</SelectItem>
+                            <SelectItem value="internal">
+                              <div className="flex items-center">
+                                <span className="mr-2">🏢</span> Interna
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="external">
+                              <div className="flex items-center">
+                                <span className="mr-2">🌐</span> Externa
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="audit">
+                              <div className="flex items-center">
+                                <span className="mr-2">📋</span> Auditoria
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="routine">
+                              <div className="flex items-center">
+                                <span className="mr-2">🔄</span> Rotina
+                              </div>
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -365,16 +458,27 @@ export function InspectionHeaderForm({
                     </FormItem>
                   )}
                 />
+
+                {showHistoryLog && (
+                  <div className="border rounded-md p-3 bg-gray-50">
+                    <h4 className="text-sm font-medium mb-2">Histórico de Alterações</h4>
+                    <div className="text-xs space-y-1 max-h-32 overflow-y-auto">
+                      <p className="text-gray-500">Carregando histórico...</p>
+                      {/* This would be populated with actual history data */}
+                    </div>
+                  </div>
+                )}
               </form>
             </Form>
           </CardContent>
 
-          <CardFooter className="flex justify-between border-t pt-6">
+          <CardFooter className="flex flex-wrap gap-2 border-t pt-6">
             <Button
               type="button"
               variant="outline"
               onClick={handleSaveAsDraft}
               disabled={updating || !isEditable}
+              size="sm"
             >
               Salvar Rascunho
             </Button>
@@ -384,11 +488,43 @@ export function InspectionHeaderForm({
                 type="button"
                 onClick={form.handleSubmit(onSubmit)}
                 disabled={updating || progress !== 100}
+                size="sm"
               >
                 <Save className="h-4 w-4 mr-2" />
                 {updating ? "Salvando..." : "Salvar Dados da Inspeção"}
               </Button>
             )}
+            
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleShowLogs}
+              size="sm"
+              className="ml-auto"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Logs
+            </Button>
+            
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleShareInspection}
+              size="sm"
+            >
+              <Share className="h-4 w-4 mr-2" />
+              Compartilhar
+            </Button>
+            
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleGenerateQR}
+              size="sm"
+            >
+              <QrCode className="h-4 w-4 mr-2" />
+              QR Code
+            </Button>
           </CardFooter>
         </>
       )}
