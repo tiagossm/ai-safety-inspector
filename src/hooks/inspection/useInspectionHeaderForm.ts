@@ -11,6 +11,7 @@ export interface InspectionFormValues {
   inspectionType: string;
   priority: string;
   notes?: string;
+  // Update coordinates type to ensure both latitude and longitude are required when coordinates are provided
   coordinates?: { 
     latitude: number; 
     longitude: number; 

@@ -28,8 +28,8 @@ declare global {
 interface LocationPickerProps {
   value: string;
   onChange: (value: string) => void;
-  onCoordinatesChange?: (coords: { latitude: number; longitude: number } | null) => void;
-  coordinates?: { latitude: number; longitude: number } | null;
+  onCoordinatesChange?: (coords: { latitude: number; longitude: number; } | null) => void;
+  coordinates?: { latitude: number; longitude: number; } | null;
   disabled?: boolean;
 }
 
@@ -80,12 +80,14 @@ export function LocationPicker({
     
     window.google.maps.event.addListener(markerRef.current, 'dragend', () => {
       const position = markerRef.current.getPosition();
-      const newCoords = { 
-        latitude: position.lat(), 
-        longitude: position.lng() 
-      };
-      onCoordinatesChange?.(newCoords);
-      updateAddressFromCoordinates(newCoords.latitude, newCoords.longitude);
+      if (position) {
+        const newCoords = { 
+          latitude: position.lat(), 
+          longitude: position.lng() 
+        };
+        onCoordinatesChange?.(newCoords);
+        updateAddressFromCoordinates(newCoords.latitude, newCoords.longitude);
+      }
     });
   };
 
