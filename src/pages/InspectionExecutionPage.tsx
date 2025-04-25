@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -9,9 +9,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, RefreshCw, ArrowLeft } from "lucide-react";
 import { InspectionLayout } from "@/components/inspection/execution/InspectionLayout";
 import { InspectionError } from "@/components/inspection/execution/InspectionError";
+import { InspectionHeaderForm } from "@/components/inspection/execution/InspectionHeaderForm";
 import { useInspectionFetch } from "@/hooks/inspection/useInspectionFetch";
 import { useInspectionStatus } from "@/hooks/inspection/useInspectionStatus";
 import { useResponseHandling } from "@/hooks/inspection/useResponseHandling";
+import { INSPECTION_STATUSES } from "@/types/inspection";
 
 export default function InspectionExecutionPage() {
   const { id } = useParams<{ id: string }>();
@@ -53,6 +55,11 @@ export default function InspectionExecutionPage() {
       setCurrentGroupId(groups[0].id);
     }
   }, [loading, groups, currentGroupId]);
+
+  // Calculate if the inspection is editable (only when status is 'Pendente' or 'Em Andamento')
+  const isInspectionEditable = () => {
+    return inspection && [INSPECTION_STATUSES.PENDING, INSPECTION_STATUSES.IN_PROGRESS].includes(inspection.status);
+  };
 
   // Calculate stats for completion progress
   const calculateStats = () => {
@@ -157,6 +164,11 @@ export default function InspectionExecutionPage() {
     }
   };
 
+  // Handle inspection form save
+  const handleInspectionDataSave = () => {
+    refreshData();
+  };
+
   // Mock functions for action plan and report generation
   const handleViewActionPlan = async () => {
     toast.info("Funcionalidade de Plano de Ação em desenvolvimento");
@@ -211,34 +223,62 @@ export default function InspectionExecutionPage() {
   // Calculate stats
   const stats = calculateStats();
 
+  // Check if the minimum required data is available to show the checklist
+  const hasRequiredData = inspection && company?.id && responsible?.id;
+
   return (
     <div className="container max-w-7xl mx-auto py-6">
-      <InspectionLayout
-        loading={loading}
-        inspection={inspection}
-        company={company}
-        responsible={responsible}
-        questions={questions || []}
-        responses={responses}
-        groups={groups || []}
-        subChecklists={subChecklists}
-        currentGroupId={currentGroupId}
-        filteredQuestions={filteredQuestions}
-        stats={stats}
-        saving={saving}
-        autoSave={autoSave}
-        lastSaved={lastSaved}
-        setAutoSave={setAutoSave}
-        setCurrentGroupId={setCurrentGroupId}
-        onSaveProgress={handleSaveProgress}
-        onCompleteInspection={handleCompleteInspection}
-        onReopenInspection={handleReopenInspection}
-        onViewActionPlan={handleViewActionPlan}
-        onGenerateReport={handleGenerateReport}
-        refreshData={refreshData}
-        onResponseChange={handleResponseChange}
-        onSaveSubChecklistResponses={handleSaveSubChecklistResponses}
-      />
+      {/* Inspection Header Form */}
+      {inspection && (
+        <InspectionHeaderForm
+          inspectionId={id}
+          inspection={inspection}
+          company={company}
+          responsible={responsible}
+          isEditable={isInspectionEditable()}
+          onSave={handleInspectionDataSave}
+        />
+      )}
+
+      {/* Show checklist only if minimum required data is available */}
+      {hasRequiredData ? (
+        <InspectionLayout
+          loading={loading}
+          inspection={inspection}
+          company={company}
+          responsible={responsible}
+          questions={questions || []}
+          responses={responses}
+          groups={groups || []}
+          subChecklists={subChecklists}
+          currentGroupId={currentGroupId}
+          filteredQuestions={filteredQuestions}
+          stats={stats}
+          saving={saving}
+          autoSave={autoSave}
+          lastSaved={lastSaved}
+          setAutoSave={setAutoSave}
+          setCurrentGroupId={setCurrentGroupId}
+          onSaveProgress={handleSaveProgress}
+          onCompleteInspection={handleCompleteInspection}
+          onReopenInspection={handleReopenInspection}
+          onViewActionPlan={handleViewActionPlan}
+          onGenerateReport={handleGenerateReport}
+          refreshData={refreshData}
+          onResponseChange={handleResponseChange}
+          onSaveSubChecklistResponses={handleSaveSubChecklistResponses}
+        />
+      ) : (
+        !loading && (
+          <Card className="p-6 text-center">
+            <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Dados Obrigatórios Pendentes</h2>
+            <p className="text-muted-foreground mb-4">
+              Por favor, preencha os dados obrigatórios da inspeção acima para visualizar o checklist.
+            </p>
+          </Card>
+        )
+      )}
     </div>
   );
 }
