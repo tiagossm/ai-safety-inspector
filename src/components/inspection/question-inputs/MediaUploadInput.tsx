@@ -1,10 +1,10 @@
 
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { Camera, Video, Mic, File, Upload, X, Loader2 } from "lucide-react";
+import { Camera, Video, Mic, File } from "lucide-react";
 import { MediaAttachments } from "./MediaAttachments";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
+import { toast } from "sonner";
 
 interface MediaUploadInputProps {
   mediaUrls: string[];
@@ -18,159 +18,139 @@ interface MediaUploadInputProps {
 export function MediaUploadInput({
   mediaUrls = [],
   onMediaChange,
-  allowsPhoto = true,
-  allowsVideo = false, 
+  allowsPhoto = false,
+  allowsVideo = false,
   allowsAudio = false,
   allowsFiles = false
 }: MediaUploadInputProps) {
-  const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { uploadFile, progress } = useMediaUpload();
-
+  const { uploadFile, uploadMedia, isUploading, progress } = useMediaUpload();
+  
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
     
     try {
-      setIsUploading(true);
-      
-      // Check file type against allowed types
-      const isImage = file.type.startsWith('image/');
-      const isVideoFile = file.type.startsWith('video/');
-      const isAudioFile = file.type.startsWith('audio/');
-      
-      if (isImage && !allowsPhoto) {
-        toast.error("Este item não permite upload de imagens");
-        return;
-      }
-      
-      if (isVideoFile && !allowsVideo) {
-        toast.error("Este item não permite upload de vídeos");
-        return;
-      }
-      
-      if (isAudioFile && !allowsAudio) {
-        toast.error("Este item não permite upload de áudios");
-        return;
-      }
-      
-      if (!isImage && !isVideoFile && !isAudioFile && !allowsFiles) {
-        toast.error("Este item não permite upload deste tipo de arquivo");
-        return;
-      }
-      
+      const file = files[0];
       const result = await uploadFile(file);
       
-      if (result && result.url) {
-        // Append to existing media URLs
-        const updatedMediaUrls = [...mediaUrls, result.url];
-        onMediaChange(updatedMediaUrls);
-        toast.success(`${file.name} enviado com sucesso`);
+      if (result?.url) {
+        onMediaChange([...mediaUrls, result.url]);
+        toast.success("Arquivo enviado com sucesso!");
       }
     } catch (error) {
       console.error("Error uploading file:", error);
-      toast.error(`Erro ao enviar arquivo: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
-    } finally {
-      setIsUploading(false);
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+      toast.error("Erro ao enviar arquivo.");
     }
   };
   
-  const handleRemoveMedia = (urlToRemove: string) => {
-    const updatedMediaUrls = mediaUrls.filter(url => url !== urlToRemove);
-    onMediaChange(updatedMediaUrls);
-    toast.success("Mídia removida");
+  const handleMediaCapture = async (type: 'photo' | 'video' | 'audio') => {
+    toast.info(`Captura de ${type === 'photo' ? 'foto' : type === 'video' ? 'vídeo' : 'áudio'} será implementada em breve.`);
+    
+    // Simulate a media upload for demonstration
+    const mockUrl = `https://placehold.co/300x200?text=${type}+${Date.now()}`;
+    onMediaChange([...mediaUrls, mockUrl]);
   };
   
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
+  const handleDeleteMedia = (urlToDelete: string) => {
+    const updatedUrls = mediaUrls.filter(url => url !== urlToDelete);
+    onMediaChange(updatedUrls);
+    toast.success("Anexo removido.");
   };
   
   return (
-    <div className="space-y-3 mt-2">
+    <div className="space-y-4">
+      {/* Media Buttons */}
       <div className="flex flex-wrap gap-2">
         {allowsPhoto && (
-          <Button
+          <Button 
             type="button"
-            size="sm"
             variant="outline"
-            className="text-xs flex items-center gap-1"
-            onClick={triggerFileInput}
+            size="sm"
+            onClick={() => handleMediaCapture('photo')}
             disabled={isUploading}
+            className="flex items-center"
           >
-            {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+            <Camera className="h-4 w-4 mr-2" />
             <span>Foto</span>
           </Button>
         )}
         
         {allowsVideo && (
-          <Button
+          <Button 
             type="button"
-            size="sm"
             variant="outline"
-            className="text-xs flex items-center gap-1"
-            onClick={triggerFileInput}
+            size="sm"
+            onClick={() => handleMediaCapture('video')}
             disabled={isUploading}
+            className="flex items-center"
           >
-            {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Video className="h-3.5 w-3.5" />}
+            <Video className="h-4 w-4 mr-2" />
             <span>Vídeo</span>
           </Button>
         )}
         
         {allowsAudio && (
-          <Button
+          <Button 
             type="button"
-            size="sm"
             variant="outline"
-            className="text-xs flex items-center gap-1"
-            onClick={triggerFileInput}
+            size="sm"
+            onClick={() => handleMediaCapture('audio')}
             disabled={isUploading}
+            className="flex items-center"
           >
-            {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mic className="h-3.5 w-3.5" />}
+            <Mic className="h-4 w-4 mr-2" />
             <span>Áudio</span>
           </Button>
         )}
         
         {allowsFiles && (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="text-xs flex items-center gap-1"
-            onClick={triggerFileInput}
-            disabled={isUploading}
-          >
-            {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <File className="h-3.5 w-3.5" />}
-            <span>Arquivo</span>
-          </Button>
+          <div>
+            <input
+              type="file"
+              id="file-upload"
+              onChange={handleFileUpload}
+              className="hidden"
+              disabled={isUploading}
+            />
+            <label htmlFor="file-upload">
+              <Button 
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isUploading}
+                className="flex items-center cursor-pointer"
+                asChild
+              >
+                <span>
+                  <File className="h-4 w-4 mr-2" />
+                  <span>Arquivo</span>
+                </span>
+              </Button>
+            </label>
+          </div>
         )}
       </div>
       
-      {/* Hidden file input */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileUpload}
-        className="hidden"
-        accept={`${allowsPhoto ? 'image/*,' : ''}${allowsVideo ? 'video/*,' : ''}${allowsAudio ? 'audio/*,' : ''}${allowsFiles ? '*' : ''}`}
-      />
-      
+      {/* Progress bar when uploading */}
       {isUploading && (
-        <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
-          <div 
-            className="bg-primary h-1.5 rounded-full transition-all duration-300 ease-in-out" 
-            style={{ width: `${progress}%` }}
-          />
+        <div className="w-full">
+          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <p className="text-xs text-center mt-1">Enviando... {progress}%</p>
         </div>
       )}
       
-      <MediaAttachments 
-        mediaUrls={mediaUrls} 
-        onDelete={handleRemoveMedia}
-      />
+      {/* Display uploaded media */}
+      {mediaUrls.length > 0 && (
+        <MediaAttachments 
+          mediaUrls={mediaUrls} 
+          onDelete={handleDeleteMedia}
+        />
+      )}
     </div>
   );
 }

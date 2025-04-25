@@ -86,17 +86,14 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
     });
   }, [response, onResponseChange]);
   
-  const handleAddMedia = useCallback(() => {
-    console.log("Attempting to add media to question:", question.id);
-    
-    const mediaUrls = response?.mediaUrls || [];
-    const mockMediaUrl = `https://placehold.co/300x200?text=Media+${mediaUrls.length + 1}`;
+  const handleMediaChange = useCallback((mediaUrls: string[]) => {
+    console.log("Media URLs updated:", mediaUrls);
     
     onResponseChange({
       ...response,
-      mediaUrls: [...mediaUrls, mockMediaUrl]
+      mediaUrls
     });
-  }, [question.id, response, onResponseChange]);
+  }, [response, onResponseChange]);
   
   const shouldBeVisible = useCallback(() => {
     if (!question.parentQuestionId && !question.parent_item_id) {
@@ -142,17 +139,9 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
               question={question}
               response={response}
               onResponseChange={handleValueChange}
-              onAddMedia={handleAddMedia}
+              onMediaChange={handleMediaChange}
             />
           </div>
-          
-          <MediaControls
-            allowsPhoto={allowsPhoto}
-            allowsVideo={allowsVideo}
-            allowsAudio={allowsAudio}
-            allowsFiles={allowsFiles}
-            handleAddMedia={handleAddMedia}
-          />
           
           <div className="flex justify-between items-center mt-3">
             <CommentSection 

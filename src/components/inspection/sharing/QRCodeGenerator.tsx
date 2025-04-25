@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { QrCode, Download, Copy } from "lucide-react";
 import { toast } from "sonner";
-import QRCode from "qrcode.react";
+import { QRCodeCanvas } from "qrcode.react"; // Changed from default import to named import
 
 interface QRCodeGeneratorProps {
   inspectionId: string;
@@ -72,13 +72,12 @@ export function QRCodeGenerator({ inspectionId, size = 250, label = "Gerar QR Co
         </DialogHeader>
         
         <div className="flex flex-col items-center justify-center p-4">
-          <QRCode 
+          <QRCodeCanvas 
             id="qr-code"
             value={shareUrl} 
             size={size} 
             level="H" 
             includeMargin={true}
-            renderAs="canvas"
           />
           
           <p className="mt-4 text-center text-sm text-muted-foreground">

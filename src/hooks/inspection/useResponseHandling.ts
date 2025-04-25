@@ -3,6 +3,15 @@ import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+export interface ResponseData {
+  value?: any;
+  comment?: string;
+  actionPlan?: string;
+  mediaUrls?: string[];
+  subChecklistResponses?: Record<string, any>;
+  updatedAt?: string;
+}
+
 export function useResponseHandling(inspectionId: string | undefined, setResponses: (responses: Record<string, any>) => void) {
   const [savingResponses, setSavingResponses] = useState(false);
 
@@ -111,7 +120,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
           // Insert new response
           return supabase
             .from("inspection_responses")
-            .insert([response]);
+            .insert(response);
         }
       });
       
@@ -184,14 +193,15 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
         // Create a new response for the parent with sub-checklist data
         await supabase
           .from("inspection_responses")
-          .insert([{
+          .insert({
             inspection_id: inspectionId,
             question_id: parentQuestionId,
+            answer: null, // Add a null answer as it's required
             sub_checklist_responses: {
               [subChecklistId]: subResponses
             },
             updated_at: new Date().toISOString()
-          }]);
+          });
       }
       
       toast.success("Respostas do sub-checklist salvas com sucesso");

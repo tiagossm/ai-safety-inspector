@@ -154,8 +154,28 @@ export async function fetchInspectionData(inspectionId) {
 
     console.log("Checklist data:", checklistRes.data);
 
-    // Process metadata
+    // Process metadata with type checking
     const metadata = inspectionData.metadata || {};
+    
+    // Extract notes and coordinates with type checking
+    let notesFromMeta = '';
+    let coordinatesFromMeta = { latitude: 0, longitude: 0 };
+    
+    if (typeof metadata === 'object') {
+      if (metadata.notes && typeof metadata.notes === 'string') {
+        notesFromMeta = metadata.notes;
+      }
+      
+      if (metadata.coordinates && typeof metadata.coordinates === 'object') {
+        const coords = metadata.coordinates;
+        if (typeof coords.latitude === 'number' && typeof coords.longitude === 'number') {
+          coordinatesFromMeta = {
+            latitude: coords.latitude,
+            longitude: coords.longitude
+          };
+        }
+      }
+    }
     
     const inspection = {
       id: inspectionData.id,
@@ -168,8 +188,8 @@ export async function fetchInspectionData(inspectionId) {
       scheduledDate: inspectionData.scheduled_date,
       locationName: inspectionData.location,
       status: inspectionData.status || "pending",
-      notes: metadata.notes,
-      coordinates: metadata.coordinates,
+      notes: notesFromMeta,
+      coordinates: coordinatesFromMeta,
       inspectionType: inspectionData.inspection_type,
       priority: inspectionData.priority || "medium",
     };
