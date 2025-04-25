@@ -67,8 +67,8 @@ export function InspectionHeaderForm({
   const { updateInspectionData, validateRequiredFields, saveAsDraft, updating } = useInspectionHeaderForm(inspectionId);
   const [progress, setProgress] = useState(0);
 
-  // Set default form values from inspection data
-  const defaultValues: Partial<InspectionFormValues> = {
+  // Set default form values from inspection data with proper typing
+  const defaultValues = {
     companyId: company?.id || "",
     responsibleId: responsible?.id || "",
     scheduledDate: inspection?.scheduled_date ? new Date(inspection.scheduled_date) : null,
@@ -77,11 +77,11 @@ export function InspectionHeaderForm({
     inspectionType: inspection?.inspection_type || "",
     priority: inspection?.priority || "medium",
     coordinates: inspection?.metadata?.coordinates || null
-  };
+  } as Partial<InspectionFormValues>;
 
   const form = useForm<InspectionFormValues>({
     resolver: zodResolver(inspectionFormSchema),
-    defaultValues,
+    defaultValues: defaultValues,
   });
 
   // Calculate form completion progress
