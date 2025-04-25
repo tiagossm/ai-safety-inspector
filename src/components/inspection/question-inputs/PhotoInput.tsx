@@ -7,7 +7,7 @@ import { MediaAttachments } from "./MediaAttachments";
 interface PhotoInputProps {
   mediaUrls?: string[];
   onAddMedia: () => void;
-  onDeleteMedia?: (index: number) => void;
+  onDeleteMedia?: (urlToDelete: string) => void;
   allowsPhoto?: boolean;
   allowsVideo?: boolean;
   allowsAudio?: boolean;

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 export interface MediaAttachmentsProps {
   mediaUrls: string[];
-  onDelete?: (index: number) => void;
+  onDelete?: (urlToDelete: string) => void;
 }
 
 export function MediaAttachments({ mediaUrls, onDelete }: MediaAttachmentsProps) {
@@ -40,7 +40,7 @@ export function MediaAttachments({ mediaUrls, onDelete }: MediaAttachmentsProps)
                 variant="destructive"
                 size="icon"
                 className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => onDelete(index)}
+                onClick={() => onDelete(url)}
               >
                 <X className="h-3 w-3" />
               </Button>

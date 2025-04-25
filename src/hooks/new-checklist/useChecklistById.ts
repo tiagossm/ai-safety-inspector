@@ -38,68 +38,82 @@ export function useChecklistById(checklistId: string | undefined) {
 
         setChecklist(checklistData);
 
-        // Fetch questions
+        // Fetch questions from checklist_itens table
         const { data: questionsData, error: questionsError } = await supabase
-          .from("checklist_questions")
+          .from("checklist_itens")
           .select("*")
           .eq("checklist_id", checklistId)
-          .order("order", { ascending: true });
+          .order("ordem", { ascending: true });
 
         if (questionsError) {
           throw new Error(`Erro ao buscar perguntas: ${questionsError.message}`);
         }
 
-        // Fetch groups
-        const { data: groupsData, error: groupsError } = await supabase
-          .from("checklist_groups")
-          .select("*")
-          .eq("checklist_id", checklistId)
-          .order("order", { ascending: true });
+        // No separate groups table in the schema, so we'll extract group info from question hints
+        const groupsMap = new Map();
+        const defaultGroup = { id: "default", title: "Geral", order: 0 };
+        groupsMap.set("default", defaultGroup);
 
-        if (groupsError) {
-          throw new Error(`Erro ao buscar grupos: ${groupsError.message}`);
-        }
-
-        // Process questions to add normalized response types and group references
+        // Process questions to add normalized response types and extract group information
         const processedQuestions = questionsData.map((question) => {
           // Normalize response type
-          const normalizedType = normalizeResponseType(question.response_type);
+          const normalizedType = normalizeResponseType(question.tipo_resposta);
           
-          // Parse options if they exist and are in string format
-          let options = question.options;
+          // Parse options if they exist
+          let options = question.opcoes;
           if (typeof options === 'string') {
             try {
               options = JSON.parse(options);
             } catch (e) {
-              // If parsing fails, keep as string
-              console.warn(`Failed to parse options for question ${question.id}:`, e);
+              options = [];
+            }
+          }
+          
+          // Extract group info from hint if it exists
+          let groupId = "default";
+          if (question.hint) {
+            try {
+              const hintData = JSON.parse(question.hint);
+              if (hintData && hintData.groupId && hintData.groupTitle) {
+                groupId = hintData.groupId;
+                if (!groupsMap.has(groupId)) {
+                  groupsMap.set(groupId, {
+                    id: groupId,
+                    title: hintData.groupTitle,
+                    order: hintData.groupOrder || 0
+                  });
+                }
+              }
+            } catch (e) {
+              // If parsing fails, keep default group
             }
           }
           
           return {
             id: question.id,
-            text: question.text,
-            description: question.description,
+            text: question.pergunta,
+            description: question.description || "",
             responseType: normalizedType,
-            required: question.required,
-            order: question.order,
-            groupId: question.group_id,
-            options: options,
+            isRequired: question.obrigatorio,
+            order: question.ordem,
+            groupId: groupId,
+            options: options || [],
             metadata: question.metadata || {},
+            allowsPhoto: question.permite_foto || false,
+            allowsVideo: question.permite_video || false,
+            allowsAudio: question.permite_audio || false,
+            allowsFiles: question.permite_files || false,
+            parentQuestionId: question.parent_item_id || null,
+            conditionValue: question.condition_value || null,
             createdAt: question.created_at,
             updatedAt: question.updated_at
           };
         });
 
-        // Process groups
-        const processedGroups = groupsData.map((group) => ({
-          id: group.id,
-          title: group.title,
-          description: group.description,
-          order: group.order,
-          createdAt: group.created_at,
-          updatedAt: group.updated_at
-        }));
+        // Convert the groups map to an array and sort by order
+        const processedGroups = Array.from(groupsMap.values()).sort(
+          (a: any, b: any) => a.order - b.order
+        );
 
         setQuestions(processedQuestions);
         setGroups(processedGroups);
