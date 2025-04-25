@@ -1,129 +1,65 @@
 
-import { toast } from "sonner";
-
 /**
- * Normalizes response type to a consistent format
+ * Normalizes various response type formats into a standard format
+ * @param responseType The original response type string
+ * @returns A normalized response type string
  */
-export const normalizeResponseType = (tipo: string): "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature" => {
-  if (!tipo) return "text";
+export const normalizeResponseType = (responseType: string): string => {
+  if (!responseType) return "text";
   
-  const type = tipo.toLowerCase();
+  const type = responseType.toLowerCase();
   
-  if (type.includes('sim/não') || type.includes('sim/nao') || type.includes('yes_no') || type.includes('yes/no')) {
+  if (type.includes("sim") || type.includes("não") || type.includes("nao") || type.includes("yes") || type.includes("no")) {
     return "yes_no";
-  } else if (type.includes('texto') || type.includes('text')) {
-    return "text";
-  } else if (type.includes('número') || type.includes('number') || type.includes('numeric') || type.includes('numérico')) {
-    return "numeric";
-  } else if (type.includes('múltipla escolha') || type.includes('multiple_choice') || type.includes('múltipla')) {
+  }
+  
+  if (type.includes("múltipla") || type.includes("multipla") || type.includes("multiple") || type.includes("choice")) {
     return "multiple_choice";
-  } else if (type.includes('foto') || type.includes('photo')) {
+  }
+  
+  if (type.includes("número") || type.includes("numero") || type.includes("numeric")) {
+    return "numeric";
+  }
+  
+  if (type.includes("texto") || type.includes("text")) {
+    return "text";
+  }
+  
+  if (type.includes("foto") || type.includes("photo") || type.includes("imagem") || type.includes("image")) {
     return "photo";
-  } else if (type.includes('signature') || type.includes('assinatura')) {
+  }
+  
+  if (type.includes("assinatura") || type.includes("signature")) {
     return "signature";
   }
   
-  // Default to text if no match found
-  return "text";
+  return type;
 };
 
 /**
- * Processes checklist items to normalize data
+ * Determines whether a response is considered negative (e.g., "não", false, etc.)
+ * @param value The response value to check
+ * @returns True if the response is negative, false otherwise
  */
-export const processChecklistItems = (
-  checklistItems: any[] | null, 
-  defaultGroupId: string = "default-group"
-) => {
-  if (!checklistItems || checklistItems.length === 0) {
-    console.warn("No checklist items found for processing");
-    return { parsedQuestions: [], groupsMap: new Map() };
+export const isNegativeResponse = (value: any): boolean => {
+  if (value === false) return true;
+  if (typeof value === "string") {
+    const lowerValue = value.toLowerCase();
+    return lowerValue === "não" || lowerValue === "nao" || lowerValue === "no" || lowerValue === "false";
   }
-  
-  console.log(`Processing ${checklistItems.length} checklist items`);
-  
-  const DEFAULT_GROUP = { id: defaultGroupId, title: "Geral", order: 0 };
-  const groupsMap = new Map<string, any>();
-  groupsMap.set(DEFAULT_GROUP.id, DEFAULT_GROUP);
-
-  const parsedQuestions = checklistItems.map((item: any) => {
-    let groupId = DEFAULT_GROUP.id;
-    let hint = null;
-
-    try {
-      // Parse hint if it's a string
-      if (typeof item.hint === "string" && item.hint) {
-        try {
-          hint = JSON.parse(item.hint);
-        } catch (e) {
-          hint = { text: item.hint };
-          console.warn(`Failed to parse hint as JSON for item ${item.id}:`, e);
-        }
-      } else if (item.hint && typeof item.hint === "object") {
-        hint = item.hint;
-      }
-
-      // Extract group information from hint
-      if (hint?.groupId && hint?.groupTitle) {
-        groupId = hint.groupId;
-        if (!groupsMap.has(groupId)) {
-          groupsMap.set(groupId, {
-            id: groupId,
-            title: hint.groupTitle,
-            order: hint.groupIndex || 0,
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Error processing hint for item:", item.id, error);
-    }
-
-    // Always ensure each question has a valid groupId
-    const finalGroupId = groupId || DEFAULT_GROUP.id;
-
-    const processedQuestion = {
-      id: item.id,
-      text: item.pergunta,
-      responseType: normalizeResponseType(item.tipo_resposta),
-      options: item.opcoes,
-      isRequired: item.obrigatorio,
-      order: item.ordem,
-      groupId: finalGroupId, // Ensuring every question has a groupId
-      parentQuestionId: item.parent_item_id || null,
-      parentValue: item.condition_value || null,
-      hint: item.hint || null,
-      subChecklistId: item.sub_checklist_id,
-      hasSubChecklist: !!item.sub_checklist_id,
-      allowsPhoto: item.permite_foto || false,
-      allowsVideo: item.permite_video || false,
-      allowsAudio: item.permite_audio || false,
-      allowsFiles: item.permite_files || false,
-      weight: item.weight || 1,
-    };
-
-    console.log(`Processed question ${item.id} with groupId ${finalGroupId}`);
-    return processedQuestion;
-  });
-
-  console.log(`Processed ${parsedQuestions.length} questions with ${groupsMap.size} groups`);
-  console.log("Available groups:", Array.from(groupsMap.values()).map(g => g.id));
-
-  return { parsedQuestions, groupsMap };
+  return false;
 };
 
 /**
- * Processes responses data into a structured format
+ * Determines whether a response is considered positive (e.g., "sim", true, etc.)
+ * @param value The response value to check
+ * @returns True if the response is positive, false otherwise
  */
-export const processResponses = (responsesData: any[] | null): Record<string, any> => {
-  if (!responsesData) return {};
-  
-  return responsesData.reduce((acc: Record<string, any>, r) => {
-    acc[r.question_id] = {
-      value: r.answer,
-      comment: r.notes,
-      actionPlan: r.action_plan,
-      mediaUrls: r.media_urls || [],
-      subChecklistResponses: r.sub_checklist_responses || {},
-    };
-    return acc;
-  }, {});
+export const isPositiveResponse = (value: any): boolean => {
+  if (value === true) return true;
+  if (typeof value === "string") {
+    const lowerValue = value.toLowerCase();
+    return lowerValue === "sim" || lowerValue === "yes" || lowerValue === "true";
+  }
+  return false;
 };

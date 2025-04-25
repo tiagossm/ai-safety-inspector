@@ -2,6 +2,7 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { createBucketIfNeeded } from "@/utils/createBucketIfNeeded";
 
 export interface ResponseData {
   value?: any;
@@ -58,6 +59,55 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
       };
     });
   }, [setResponses]);
+
+  // Upload media file for a question
+  const handleMediaUpload = useCallback(async (questionId: string, file: File): Promise<string | null> => {
+    if (!file) return null;
+    
+    try {
+      // Ensure the bucket exists
+      const bucketName = "inspection-media";
+      const bucketReady = await createBucketIfNeeded(bucketName);
+      
+      if (!bucketReady) {
+        toast.error("Não foi possível acessar o armazenamento de mídia");
+        return null;
+      }
+      
+      // Generate a unique file name
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${inspectionId}/${questionId}/${Date.now()}.${fileExt}`;
+      
+      // Upload the file
+      const { data, error } = await supabase.storage
+        .from(bucketName)
+        .upload(fileName, file, {
+          cacheControl: "3600",
+          upsert: true
+        });
+      
+      if (error) {
+        console.error("Error uploading media:", error);
+        toast.error(`Erro ao enviar mídia: ${error.message}`);
+        return null;
+      }
+      
+      // Get the public URL
+      const { data: urlData } = supabase.storage
+        .from(bucketName)
+        .getPublicUrl(fileName);
+      
+      // Add the URL to the response
+      const fileUrl = urlData.publicUrl;
+      handleMediaChange(questionId, [...(responses[questionId]?.mediaUrls || []), fileUrl]);
+      
+      return fileUrl;
+    } catch (error: any) {
+      console.error("Error in media upload:", error);
+      toast.error(`Erro ao enviar mídia: ${error.message}`);
+      return null;
+    }
+  }, [inspectionId, handleMediaChange, responses]);
 
   // Save all inspection responses to Supabase
   const handleSaveInspection = useCallback(async (responses: Record<string, any>, inspection: any) => {
@@ -183,7 +233,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
           .from("inspection_responses")
           .update({
             sub_checklist_responses: {
-              ...((existingResponse.sub_checklist_responses as Record<string, any>) || {}),
+              ...(existingResponse.sub_checklist_responses as Record<string, any> || {}),
               [subChecklistId]: subResponses
             },
             updated_at: new Date().toISOString()
@@ -217,6 +267,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
   return {
     handleResponseChange,
     handleMediaChange,
+    handleMediaUpload,
     handleSaveInspection,
     handleSaveSubChecklistResponses,
     savingResponses

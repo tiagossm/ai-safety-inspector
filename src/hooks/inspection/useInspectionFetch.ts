@@ -1,7 +1,5 @@
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { useState, useEffect, useCallback } from "react";
 import { fetchInspectionData } from "@/services/inspection/inspectionFetchService";
 
 export function useInspectionFetch(inspectionId: string | undefined) {
@@ -10,15 +8,12 @@ export function useInspectionFetch(inspectionId: string | undefined) {
   const [detailedError, setDetailedError] = useState<any>(null);
   const [inspection, setInspection] = useState<any>(null);
   const [questions, setQuestions] = useState<any[]>([]);
-  const [groups, setGroups] = useState<any[]>([{ id: "default-group", title: "Geral", order: 0 }]);
+  const [groups, setGroups] = useState<any[]>([]);
   const [responses, setResponses] = useState<Record<string, any>>({});
   const [company, setCompany] = useState<any>(null);
   const [responsible, setResponsible] = useState<any>(null);
+  const [responsibles, setResponsibles] = useState<any[]>([]);
   const [subChecklists, setSubChecklists] = useState<Record<string, any>>({});
-
-  const fetchAttemptedRef = useRef(false);
-  const maxRetries = 2;
-  const retryRef = useRef(0);
 
   const fetchData = useCallback(async () => {
     if (!inspectionId) {
@@ -27,78 +22,52 @@ export function useInspectionFetch(inspectionId: string | undefined) {
       return;
     }
 
-    // Set loading and reset errors
-    setLoading(true);
-    setError(null);
-    setDetailedError(null);
-    
     try {
-      console.log(`Fetching inspection data for ID: ${inspectionId} (attempt ${retryRef.current + 1})`);
+      setLoading(true);
       
-      // Using the imported fetchInspectionData function from inspectionFetchService
-      const data = await fetchInspectionData(inspectionId);
-
-      if (!data || typeof data !== "object") throw new Error("Dados inválidos recebidos");
-      if (data.error) throw new Error(data.error);
-
-      // Reset fetch attempt tracking - successful fetch
-      fetchAttemptedRef.current = true;
-      retryRef.current = 0;
-
-      // Set all the data states
-      setInspection(data.inspection || null);
+      console.log(`Fetching inspection data for ID: ${inspectionId}`);
       
-      // Ensure questions have a groupId
-      const processedQuestions = (data.questions || []).map((q: any) => ({
-        ...q,
-        groupId: q.groupId || "default-group"
-      }));
-      setQuestions(processedQuestions);
+      const result = await fetchInspectionData(inspectionId);
       
-      // Ensure we have at least a default group
-      setGroups((data.groups && data.groups.length > 0) 
-        ? data.groups 
-        : [{ id: "default-group", title: "Geral", order: 0 }]);
+      if (result.error) {
+        console.error("Error fetching inspection:", result.error);
+        setError(result.error);
+        setDetailedError(result.detailedError);
+        return;
+      }
       
-      setResponses(data.responses || {});
-      setCompany(data.company || null);
-      setResponsible(data.responsible || null);
-      setSubChecklists(data.subChecklists || {});
+      console.log("Successfully loaded inspection data:", {
+        questions: result.questions?.length || 0,
+        responses: Object.keys(result.responses || {}).length || 0,
+        groups: result.groups?.length || 0
+      });
+      
+      setInspection(result.inspection);
+      setQuestions(result.questions || []);
+      setGroups(result.groups || []);
+      setResponses(result.responses || {});
+      setCompany(result.company);
+      setResponsible(result.responsible);
+      setResponsibles(result.responsibles || []);
+      setSubChecklists(result.subChecklists || {});
+      setError(null);
+      setDetailedError(null);
     } catch (err: any) {
-      console.error("Error fetching inspection data:", err);
-      const msg = err?.message || "Erro desconhecido";
-      setError(msg);
+      console.error("Error in useInspectionFetch:", err);
+      setError(err.message || "Erro ao carregar inspeção");
       setDetailedError(err);
-      
-      // No automatic retries - let user manually retry instead
     } finally {
       setLoading(false);
     }
   }, [inspectionId]);
 
-  // Only fetch on mount or when inspectionId changes
-  useEffect(() => {
-    // Reset fetch flag when inspectionId changes
-    if (inspectionId) {
-      fetchAttemptedRef.current = false;
-      retryRef.current = 0;
-    }
-
-    // Only fetch if we haven't tried already for this inspectionId
-    if (inspectionId && !fetchAttemptedRef.current) {
-      fetchData();
-    }
-  }, [inspectionId, fetchData]);
-
-  // Function to manually refresh data
   const refreshData = useCallback(() => {
-    if (!inspectionId) return;
-    
-    // Reset fetch flag to allow retry
-    fetchAttemptedRef.current = false;
-    retryRef.current = 0;
     fetchData();
-  }, [inspectionId, fetchData]);
+  }, [fetchData]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData, inspectionId]);
 
   return {
     loading,
@@ -110,6 +79,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
     responses,
     company,
     responsible,
+    responsibles,
     subChecklists,
     setResponses,
     refreshData,

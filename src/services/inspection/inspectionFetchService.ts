@@ -88,6 +88,7 @@ export async function fetchInspectionData(inspectionId) {
       responses: {},
       company: null,
       responsible: null,
+      responsibles: [],
       subChecklists: {},
     };
   }
@@ -125,6 +126,7 @@ export async function fetchInspectionData(inspectionId) {
         responses: {},
         company: null,
         responsible: null,
+        responsibles: [],
         subChecklists: {},
       };
     }
@@ -142,6 +144,7 @@ export async function fetchInspectionData(inspectionId) {
         responses: {},
         company: inspectionData.companies,
         responsible: null,
+        responsibles: [],
         subChecklists: {},
       };
     }
@@ -154,31 +157,42 @@ export async function fetchInspectionData(inspectionId) {
 
     console.log("Checklist data:", checklistRes.data);
 
-    // Process metadata with type checking
-    const metadata = inspectionData.metadata || {};
-    
-    // Extract notes and coordinates with type checking
+    // Process metadata with type safety
+    let metadataObj = {};
     let notesFromMeta = '';
     let coordinatesFromMeta = { latitude: 0, longitude: 0 };
     
-    if (typeof metadata === 'object' && metadata !== null && !Array.isArray(metadata)) {
-      if ('notes' in metadata && typeof metadata.notes === 'string') {
-        notesFromMeta = metadata.notes;
-      }
-      
-      if ('coordinates' in metadata && 
-          typeof metadata.coordinates === 'object' && 
-          metadata.coordinates !== null && 
-          !Array.isArray(metadata.coordinates)) {
-        const coords = metadata.coordinates;
-        if ('latitude' in coords && typeof coords.latitude === 'number' && 
-            'longitude' in coords && typeof coords.longitude === 'number') {
-          coordinatesFromMeta = {
-            latitude: coords.latitude,
-            longitude: coords.longitude
-          };
+    try {
+      if (inspectionData.metadata) {
+        if (typeof inspectionData.metadata === 'string') {
+          metadataObj = JSON.parse(inspectionData.metadata);
+        } else {
+          metadataObj = inspectionData.metadata;
+        }
+        
+        if (metadataObj && typeof metadataObj === 'object') {
+          // Extract notes
+          if ('notes' in metadataObj && typeof metadataObj.notes === 'string') {
+            notesFromMeta = metadataObj.notes;
+          }
+          
+          // Extract coordinates
+          if ('coordinates' in metadataObj && 
+              typeof metadataObj.coordinates === 'object' && 
+              metadataObj.coordinates !== null) {
+            const coords = metadataObj.coordinates;
+            if ('latitude' in coords && typeof coords.latitude === 'number' && 
+                'longitude' in coords && typeof coords.longitude === 'number') {
+              coordinatesFromMeta = {
+                latitude: coords.latitude,
+                longitude: coords.longitude
+              };
+            }
+          }
         }
       }
+    } catch (e) {
+      console.error("Error processing inspection metadata:", e);
     }
     
     const inspection = {
@@ -253,6 +267,30 @@ export async function fetchInspectionData(inspectionId) {
 
     const responses = processResponses(responsesData || []);
 
+    // Load sub-checklists if any questions have them
+    const subChecklistIds = parsedQuestions
+      .filter(q => q.hasSubChecklist && q.subChecklistId)
+      .map(q => q.subChecklistId);
+    
+    const subChecklists = {};
+    
+    if (subChecklistIds.length > 0) {
+      const { data: subChecklistsData } = await supabase
+        .from("checklists")
+        .select("id, title, description")
+        .in("id", subChecklistIds);
+        
+      if (subChecklistsData) {
+        for (const subChecklist of subChecklistsData) {
+          subChecklists[subChecklist.id] = {
+            ...subChecklist,
+            questions: [], // Will be populated if needed
+            loaded: false
+          };
+        }
+      }
+    }
+
     return {
       error: null,
       detailedError: null,
@@ -263,7 +301,7 @@ export async function fetchInspectionData(inspectionId) {
       company,
       responsible,
       responsibles,
-      subChecklists: {},
+      subChecklists,
     };
   } catch (err) {
     console.error("Error in fetchInspectionData:", err);
@@ -276,6 +314,7 @@ export async function fetchInspectionData(inspectionId) {
       responses: {},
       company: null,
       responsible: null,
+      responsibles: [],
       subChecklists: {},
     };
   }
