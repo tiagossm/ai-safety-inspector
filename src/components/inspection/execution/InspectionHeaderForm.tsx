@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -15,14 +14,12 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -31,45 +28,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AlertTriangle, ChevronDown, ChevronUp, Save, Share, QrCode, Logs } from "lucide-react";
+import { Progress } from "@/components/ui/progress"; 
+import { ChevronDown, ChevronUp, Save } from "lucide-react";
 import { CompanySelector } from "@/components/inspection/CompanySelector";
 import { ResponsibleSelector } from "@/components/inspection/ResponsibleSelector";
 import { DateTimePicker } from "@/components/inspection/DateTimePicker";
 import { LocationPicker } from "@/components/inspection/LocationPicker";
-import { INSPECTION_STATUSES, InspectionStatus } from "@/types/inspection";
 import { cn } from "@/lib/utils";
 import { useInspectionHeaderForm } from "@/hooks/inspection/useInspectionHeaderForm";
+import type { InspectionFormValues } from "@/hooks/inspection/useInspectionHeaderForm";
 
-// Validation schema
 const inspectionFormSchema = z.object({
   companyId: z.string().uuid({ message: "Selecione uma empresa válida" }),
-  cnae: z.string().regex(/^\d{2}\.\d{2}-\d$/, {
-    message: "CNAE deve estar no formato 00.00-0",
-  }),
   responsibleId: z.string().uuid({ message: "Selecione um responsável válido" }),
-  scheduledDate: z.date().optional(),
-  location: z.string().optional(),
-  coordinates: z
-    .object({
-      latitude: z.number(),
-      longitude: z.number(),
-    })
-    .optional(),
-  notes: z.string().optional(),
-  inspectionType: z.string().default("internal"),
+  scheduledDate: z.date().optional().nullable(),
+  location: z.string().min(1, "Localização é obrigatória"),
+  inspectionType: z.string().min(1, "Tipo de inspeção é obrigatório"),
   priority: z.string().default("medium"),
+  notes: z.string().optional(),
+  coordinates: z.object({
+    latitude: z.number(),
+    longitude: z.number()
+  }).optional().nullable()
 });
-
-export type InspectionFormValues = z.infer<typeof inspectionFormSchema>;
-
-interface InspectionHeaderFormProps {
-  inspectionId: string;
-  inspection: any;
-  company: any;
-  responsible: any;
-  isEditable: boolean;
-  onSave: () => void;
-}
 
 export function InspectionHeaderForm({
   inspectionId,
@@ -80,23 +61,19 @@ export function InspectionHeaderForm({
   onSave,
 }: InspectionHeaderFormProps) {
   const [expanded, setExpanded] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const { updateInspectionData } = useInspectionHeaderForm(inspectionId);
-
-  const toggleExpand = () => {
-    setExpanded(!expanded);
-  };
+  const { updateInspectionData, validateRequiredFields, saveAsDraft, updating } = useInspectionHeaderForm(inspectionId);
+  const [progress, setProgress] = useState(0);
 
   // Set default form values from inspection data
   const defaultValues: Partial<InspectionFormValues> = {
     companyId: company?.id || "",
-    cnae: inspection?.cnae || "",
     responsibleId: responsible?.id || "",
-    scheduledDate: inspection?.scheduled_date ? new Date(inspection.scheduled_date) : undefined,
+    scheduledDate: inspection?.scheduled_date ? new Date(inspection.scheduled_date) : null,
     location: inspection?.location || "",
     notes: inspection?.metadata?.notes || "",
-    inspectionType: inspection?.inspection_type || "internal",
+    inspectionType: inspection?.inspection_type || "",
     priority: inspection?.priority || "medium",
+    coordinates: inspection?.metadata?.coordinates || null
   };
 
   const form = useForm<InspectionFormValues>({
@@ -104,65 +81,35 @@ export function InspectionHeaderForm({
     defaultValues,
   });
 
+  // Calculate form completion progress
+  const calculateProgress = (data: Partial<InspectionFormValues>) => {
+    const requiredFields = ['companyId', 'responsibleId', 'location', 'inspectionType'];
+    const filledFields = requiredFields.filter(field => !!data[field as keyof InspectionFormValues]);
+    return (filledFields.length / requiredFields.length) * 100;
+  };
+
+  // Update progress when form values change
+  React.useEffect(() => {
+    const subscription = form.watch((value) => {
+      setProgress(calculateProgress(value));
+    });
+    return () => subscription.unsubscribe();
+  }, [form.watch]);
+
   const onSubmit = async (data: InspectionFormValues) => {
     try {
-      setSaving(true);
       await updateInspectionData(data);
-      toast.success("Dados da inspeção atualizados com sucesso");
       onSave();
-    } catch (error: any) {
-      console.error("Error updating inspection data:", error);
-      toast.error(`Erro ao atualizar dados: ${error.message}`);
-    } finally {
-      setSaving(false);
+    } catch (error) {
+      // Error is handled by the hook
     }
   };
 
-  const handleShareInspection = () => {
-    // TO DO: Implement share functionality
-    toast.info("Funcionalidade de compartilhamento em desenvolvimento");
-  };
-
-  const handleGenerateQrCode = () => {
-    // TO DO: Implement QR code generation
-    toast.info("Geração de QR Code em desenvolvimento");
-  };
-
-  const handleViewLogs = () => {
-    // TO DO: Implement logs view
-    toast.info("Visualização de logs em desenvolvimento");
-  };
-
-  // Function to determine if form is valid enough to proceed
-  const isFormValid = () => {
-    const { companyId, responsibleId } = form.getValues();
-    return !!companyId && !!responsibleId;
-  };
-
-  // Helper to handle company selection
-  const handleCompanySelect = (id: string, data: any) => {
-    form.setValue("companyId", id, { shouldValidate: true });
-    if (data?.cnae) {
-      form.setValue("cnae", data.cnae, { shouldValidate: true });
-    }
-    if (data?.address) {
-      form.setValue("location", data.address);
-    }
-  };
-
-  // Helper to handle responsible selection
-  const handleResponsibleSelect = (id: string, data: any) => {
-    form.setValue("responsibleId", id, { shouldValidate: true });
-  };
-
-  // Helper to handle location and coordinates
-  const handleLocationChange = (value: string) => {
-    form.setValue("location", value);
-  };
-
-  const handleCoordinatesChange = (coords: { latitude: number; longitude: number } | null) => {
-    if (coords) {
-      form.setValue("coordinates", coords);
+  const handleSaveAsDraft = async () => {
+    try {
+      await saveAsDraft(form.getValues());
+    } catch (error) {
+      // Error is handled by the hook
     }
   };
 
@@ -173,14 +120,14 @@ export function InspectionHeaderForm({
           "flex flex-row items-center justify-between space-y-0 cursor-pointer",
           !expanded && "pb-3"
         )} 
-        onClick={toggleExpand}
+        onClick={() => setExpanded(!expanded)}
       >
         <div>
           <CardTitle>Dados da Inspeção</CardTitle>
           <CardDescription>
-            {isFormValid() 
-              ? "Informações configuradas para esta inspeção" 
-              : "Preencha os dados obrigatórios antes de prosseguir"}
+            {progress === 100 
+              ? "Todos os dados obrigatórios preenchidos"
+              : `${Math.round(progress)}% dos dados obrigatórios preenchidos`}
           </CardDescription>
         </div>
         <div className="flex space-x-2 items-center">
@@ -201,55 +148,31 @@ export function InspectionHeaderForm({
       {expanded && (
         <>
           <CardContent>
+            <Progress value={progress} className="mb-4" />
+            
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {/* Empresa e CNAE */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="companyId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Empresa <span className="text-destructive">*</span></FormLabel>
-                        <FormControl>
-                          <CompanySelector
-                            value={field.value}
-                            onSelect={handleCompanySelect}
-                            className={cn(
-                              !isEditable && "opacity-70 pointer-events-none"
-                            )}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="cnae"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>CNAE <span className="text-destructive">*</span></FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            disabled={!isEditable}
-                            placeholder="00.00-0"
-                          />
-                        </FormControl>
-                        {field.value && !/^\d{2}\.\d{2}-\d$/.test(field.value) && (
-                          <div className="text-sm text-amber-500 flex items-center mt-1">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            O CNAE deve estar no formato 00.00-0
-                          </div>
-                        )}
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
+                {/* Empresa */}
+                <FormField
+                  control={form.control}
+                  name="companyId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Empresa <span className="text-destructive">*</span></FormLabel>
+                      <FormControl>
+                        <CompanySelector
+                          value={field.value}
+                          onSelect={(id, data) => field.onChange(id)}
+                          className={cn(
+                            !isEditable && "opacity-70 pointer-events-none"
+                          )}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
                 {/* Responsável e Data Agendada */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
@@ -261,7 +184,7 @@ export function InspectionHeaderForm({
                         <FormControl>
                           <ResponsibleSelector
                             value={field.value}
-                            onSelect={handleResponsibleSelect}
+                            onSelect={(id, data) => field.onChange(id)}
                             className={cn(
                               !isEditable && "opacity-70 pointer-events-none"
                             )}
@@ -287,9 +210,6 @@ export function InspectionHeaderForm({
                             )}
                           />
                         </FormControl>
-                        <FormDescription>
-                          Opcional: Defina uma data para lembrete
-                        </FormDescription>
                       </FormItem>
                     )}
                   />
@@ -301,34 +221,18 @@ export function InspectionHeaderForm({
                   name="location"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Localização</FormLabel>
+                      <FormLabel>Localização <span className="text-destructive">*</span></FormLabel>
                       <FormControl>
                         <LocationPicker
-                          value={field.value || ""}
-                          onChange={handleLocationChange}
-                          onCoordinatesChange={handleCoordinatesChange}
+                          value={field.value}
+                          onChange={(value) => field.onChange(value)}
+                          onCoordinatesChange={(coords) => 
+                            form.setValue('coordinates', coords)
+                          }
                           disabled={!isEditable}
                         />
                       </FormControl>
-                    </FormItem>
-                  )}
-                />
-
-                {/* Anotações */}
-                <FormField
-                  control={form.control}
-                  name="notes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Anotações</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          {...field}
-                          placeholder="Observações adicionais sobre a inspeção"
-                          disabled={!isEditable}
-                          className="min-h-[100px]"
-                        />
-                      </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -340,7 +244,7 @@ export function InspectionHeaderForm({
                     name="inspectionType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Tipo de Inspeção</FormLabel>
+                        <FormLabel>Tipo de Inspeção <span className="text-destructive">*</span></FormLabel>
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
@@ -358,6 +262,7 @@ export function InspectionHeaderForm({
                             <SelectItem value="routine">Rotina</SelectItem>
                           </SelectContent>
                         </Select>
+                        <FormMessage />
                       </FormItem>
                     )}
                   />
@@ -409,49 +314,47 @@ export function InspectionHeaderForm({
                     )}
                   />
                 </div>
+
+                {/* Anotações */}
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Anotações</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          placeholder="Observações adicionais sobre a inspeção"
+                          disabled={!isEditable}
+                          className="min-h-[100px]"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
               </form>
             </Form>
           </CardContent>
 
-          <CardFooter className="flex flex-wrap justify-between gap-2 border-t pt-6">
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleShareInspection}
-                type="button"
-              >
-                <Share className="h-4 w-4 mr-2" />
-                Compartilhar
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleGenerateQrCode}
-                type="button"
-              >
-                <QrCode className="h-4 w-4 mr-2" />
-                QR Code
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleViewLogs}
-                type="button"
-              >
-                <Logs className="h-4 w-4 mr-2" />
-                Logs
-              </Button>
-            </div>
+          <CardFooter className="flex justify-between border-t pt-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleSaveAsDraft}
+              disabled={updating || !isEditable}
+            >
+              Salvar Rascunho
+            </Button>
             
             {isEditable && (
               <Button
                 type="button"
                 onClick={form.handleSubmit(onSubmit)}
-                disabled={saving || !form.formState.isDirty}
+                disabled={updating || progress !== 100}
               >
                 <Save className="h-4 w-4 mr-2" />
-                {saving ? "Salvando..." : "Salvar Dados da Inspeção"}
+                {updating ? "Salvando..." : "Salvar Dados da Inspeção"}
               </Button>
             )}
           </CardFooter>
