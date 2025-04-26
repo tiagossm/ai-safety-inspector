@@ -1,5 +1,6 @@
 
 import { Navigate, RouteObject } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 
 // We need a basic Layout component to replace the missing Layout import
 const Layout = ({ children }: { children: React.ReactNode }) => {
@@ -46,7 +47,7 @@ import SharedInspectionView from "@/pages/SharedInspectionView";
 export const router = [
   {
     path: "/",
-    element: <Layout />,
+    element: <Layout><Outlet /></Layout>,
     errorElement: <ErrorPage />,
     children: [
       {
