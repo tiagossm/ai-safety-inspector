@@ -1,23 +1,21 @@
 
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription,
-  DialogFooter
-} from "@/components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Copy, Check, Share2, QrCode } from "lucide-react";
 import QRCode from "react-qr-code";
 import { toast } from "sonner";
-import { DatePicker } from "@/components/ui/date-picker";
-import { addDays } from "date-fns";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { 
+  Share2, 
+  Copy, 
+  Download, 
+  Mail, 
+  QrCode, 
+  CalendarClock,
+  Loader2
+} from "lucide-react";
 
 interface ShareInspectionDialogProps {
   open: boolean;
@@ -30,62 +28,78 @@ export function ShareInspectionDialog({
   onOpenChange,
   inspectionId
 }: ShareInspectionDialogProps) {
-  const [copied, setCopied] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [shareLink, setShareLink] = useState("");
+  const [shareUrl, setShareUrl] = useState("");
   const [expirationEnabled, setExpirationEnabled] = useState(false);
-  const [expirationDate, setExpirationDate] = useState<Date | undefined>(addDays(new Date(), 7));
+  const [expirationDays, setExpirationDays] = useState(7);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showQrCode, setShowQrCode] = useState(false);
   
-  // Generate a share link
-  const generateShareLink = () => {
-    setIsGenerating(true);
+  // Generate share link when dialog opens
+  React.useEffect(() => {
+    if (open && !shareUrl) {
+      generateShareLink();
+    }
+  }, [open]);
+  
+  const generateShareLink = async () => {
+    if (!inspectionId) {
+      toast.error("ID da inspeção não encontrado");
+      return;
+    }
     
-    // Simulate API call to generate a token
-    setTimeout(() => {
+    setIsLoading(true);
+    
+    try {
+      // In a real implementation, this would make an API call to generate a token
+      // For now, we'll simulate a short delay and generate a fake URL
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
       const token = Math.random().toString(36).substring(2, 15);
       const baseUrl = window.location.origin;
       const link = `${baseUrl}/share/${inspectionId}?token=${token}`;
       
-      if (expirationEnabled && expirationDate) {
-        // Add expiration to the link if enabled
-        const expiry = expirationDate.getTime();
-        setShareLink(`${link}&expires=${expiry}`);
-      } else {
-        setShareLink(link);
-      }
-      
-      setIsGenerating(false);
-    }, 800);
+      setShareUrl(link);
+    } catch (error) {
+      console.error("Error generating share link:", error);
+      toast.error("Erro ao gerar link de compartilhamento");
+    } finally {
+      setIsLoading(false);
+    }
   };
   
-  // Copy link to clipboard
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(shareLink);
-    setCopied(true);
-    toast.success("Link copiado para a área de transferência");
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("Link copiado para a área de transferência");
+    } catch (error) {
+      console.error("Error copying to clipboard:", error);
+      toast.error("Erro ao copiar para a área de transferência");
+    }
+  };
+  
+  const sendEmail = () => {
+    const subject = encodeURIComponent("Link para preenchimento de inspeção");
+    const body = encodeURIComponent(`Acesse o link para preencher a inspeção: ${shareUrl}`);
+    window.open(`mailto:?subject=${subject}&body=${body}`);
+  };
+  
+  const downloadQrCode = () => {
+    toast.info("Funcionalidade de download de QR Code em desenvolvimento");
+  };
+  
+  const regenerateLink = () => {
+    setShareUrl("");
+    generateShareLink();
+  };
+  
+  const handleExpirationChange = (checked: boolean) => {
+    setExpirationEnabled(checked);
     
-    setTimeout(() => setCopied(false), 2000);
-  };
-  
-  // Share using Web Share API if available
-  const shareWithNative = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: 'Compartilhar Inspeção',
-        text: 'Acesse esta inspeção compartilhada',
-        url: shareLink,
-      })
-      .catch((error) => console.log('Error sharing:', error));
-    } else {
-      copyToClipboard();
+    // If enabling expiration, update the share link
+    if (checked && shareUrl) {
+      regenerateLink();
     }
   };
-  
-  React.useEffect(() => {
-    if (open && !shareLink) {
-      generateShareLink();
-    }
-  }, [open]);
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -95,98 +109,127 @@ export function ShareInspectionDialog({
             <Share2 className="h-5 w-5 mr-2" />
             Compartilhar Inspeção
           </DialogTitle>
-          <DialogDescription>
-            Compartilhe um link seguro para visualização e preenchimento da inspeção
-          </DialogDescription>
         </DialogHeader>
         
-        <Tabs defaultValue="link" className="w-full">
-          <TabsList className="grid grid-cols-2 mb-4">
-            <TabsTrigger value="link">Link</TabsTrigger>
-            <TabsTrigger value="qrcode">QR Code</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="link" className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="share-link">Link para compartilhamento</Label>
-              <div className="flex space-x-2">
-                <Input
-                  id="share-link"
-                  value={shareLink}
-                  readOnly
-                  className="flex-1"
-                />
-                <Button 
-                  type="button" 
-                  size="icon" 
-                  onClick={copyToClipboard}
-                  variant="outline"
-                >
-                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-center space-x-2">
-                <Switch 
-                  checked={expirationEnabled} 
-                  onCheckedChange={setExpirationEnabled} 
-                  id="expiration"
-                />
-                <Label htmlFor="expiration">Definir data de expiração</Label>
-              </div>
-              
-              {expirationEnabled && (
-                <div className="space-y-2">
-                  <Label htmlFor="expiry-date">Data de Expiração</Label>
-                  <DatePicker
-                    date={expirationDate}
-                    setDate={setExpirationDate}
-                    disabled={(date) => date < new Date()}
-                  />
+        {showQrCode ? (
+          <div className="py-6">
+            <div className="bg-white p-4 rounded-md flex items-center justify-center">
+              {isLoading ? (
+                <div className="h-[200px] w-[200px] flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
+              ) : (
+                <QRCode value={shareUrl || "waiting"} size={200} />
               )}
             </div>
-          </TabsContent>
-          
-          <TabsContent value="qrcode" className="space-y-4">
-            <div className="flex justify-center p-4 bg-white">
-              <QRCode value={shareLink || ' '} size={200} />
+            
+            <div className="flex justify-center mt-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={downloadQrCode}
+                disabled={isLoading}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download QR Code
+              </Button>
             </div>
-            <p className="text-sm text-center text-muted-foreground">
-              Escaneie este QR Code para acessar a inspeção
-            </p>
-          </TabsContent>
-        </Tabs>
+          </div>
+        ) : (
+          <div className="py-4 space-y-4">
+            <div>
+              <Label htmlFor="share-link">Link de compartilhamento</Label>
+              <div className="flex mt-1">
+                <Input
+                  id="share-link"
+                  value={shareUrl}
+                  readOnly
+                  className="flex-1 pr-10"
+                  disabled={isLoading}
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="ml-2"
+                  onClick={copyToClipboard}
+                  disabled={isLoading || !shareUrl}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Compartilhe este link para permitir o preenchimento da inspeção
+              </p>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <CalendarClock className="h-4 w-4 text-muted-foreground" />
+              <div className="grid gap-2 flex-1">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="expiration-switch">Expiração do link</Label>
+                  <Switch
+                    id="expiration-switch"
+                    checked={expirationEnabled}
+                    onCheckedChange={handleExpirationChange}
+                    disabled={isLoading}
+                  />
+                </div>
+                {expirationEnabled && (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min="1"
+                      max="365"
+                      value={expirationDays}
+                      onChange={(e) => setExpirationDays(Number(e.target.value))}
+                      className="w-20"
+                      disabled={isLoading}
+                    />
+                    <span className="text-sm">dias</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
         
-        <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:gap-0">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            className="sm:order-1"
+        <DialogFooter className="sm:justify-between">
+          <Button 
+            variant="outline" 
+            type="button" 
+            onClick={regenerateLink}
+            disabled={isLoading}
           >
-            Fechar
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              "Gerar novo link"
+            )}
           </Button>
-          <div className="flex gap-2 w-full sm:w-auto">
-            <Button 
-              type="button"
-              variant="default"
-              className="flex-1 sm:flex-none"
-              onClick={copyToClipboard}
+          
+          <div className="flex space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowQrCode(!showQrCode)}
+              disabled={isLoading}
             >
-              {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-              Copiar
+              {showQrCode ? (
+                "Voltar ao link"
+              ) : (
+                <>
+                  <QrCode className="h-4 w-4 mr-2" />
+                  Gerar QR Code
+                </>
+              )}
             </Button>
-            <Button 
+            
+            <Button
               type="button"
-              variant="default"
-              className="flex-1 sm:flex-none"
-              onClick={shareWithNative}
+              onClick={sendEmail}
+              disabled={isLoading || !shareUrl}
             >
-              <Share2 className="h-4 w-4 mr-2" />
-              Compartilhar
+              <Mail className="h-4 w-4 mr-2" />
+              Email
             </Button>
           </div>
         </DialogFooter>

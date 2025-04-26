@@ -1,19 +1,18 @@
 
 import React, { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription,
-  DialogFooter
-} from "@/components/ui/dialog";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { Trash2, Loader2 } from "lucide-react";
 
 interface DeleteInspectionDialogProps {
   open: boolean;
@@ -30,89 +29,65 @@ export function DeleteInspectionDialog({
   inspectionTitle,
   onDeleted
 }: DeleteInspectionDialogProps) {
-  const [confirmationText, setConfirmationText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   
   const handleDelete = async () => {
-    if (confirmationText !== "EXCLUIR") return;
+    if (!inspectionId) {
+      toast.error("ID da inspeção não fornecido");
+      return;
+    }
     
     setIsDeleting(true);
     
     try {
-      // Simulate deletion API call
+      // In a real implementation, this would make an API call to delete the inspection
+      // For now, we'll simulate a short delay
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      toast.success("Inspeção excluída com sucesso!");
-      onOpenChange(false);
+      toast.success("Inspeção excluída com sucesso");
       onDeleted();
     } catch (error) {
       console.error("Error deleting inspection:", error);
-      toast.error("Erro ao excluir inspeção. Tente novamente.");
+      toast.error("Erro ao excluir inspeção");
     } finally {
       setIsDeleting(false);
-      setConfirmationText("");
+      onOpenChange(false);
     }
   };
   
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center text-destructive">
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center text-destructive">
             <Trash2 className="h-5 w-5 mr-2" />
             Excluir Inspeção
-          </DialogTitle>
-          <DialogDescription>
-            Esta ação não pode ser desfeita. A inspeção será permanentemente excluída.
-          </DialogDescription>
-        </DialogHeader>
-        
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Atenção</AlertTitle>
-          <AlertDescription>
-            Você está prestes a excluir a inspeção: 
-            <span className="font-medium block mt-1">{inspectionTitle || "Inspeção"}</span>
-          </AlertDescription>
-        </Alert>
-        
-        <div className="space-y-2">
-          <Label htmlFor="confirm">
-            Digite <span className="font-bold">EXCLUIR</span> para confirmar
-          </Label>
-          <Input
-            id="confirm"
-            value={confirmationText}
-            onChange={(e) => setConfirmationText(e.target.value)}
-            className="border-destructive focus-visible:ring-destructive"
-            autoComplete="off"
-          />
-        </div>
-        
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button 
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            className="sm:order-1"
-          >
-            Cancelar
-          </Button>
-          <Button 
-            type="button"
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            Tem certeza que deseja excluir a inspeção <strong>{inspectionTitle}</strong>?
+            <br />
+            <br />
+            Esta ação não poderá ser desfeita e todos os dados associados serão permanentemente excluídos.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+          <Button
             variant="destructive"
             onClick={handleDelete}
-            disabled={confirmationText !== "EXCLUIR" || isDeleting}
+            disabled={isDeleting}
           >
             {isDeleting ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <>
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Excluindo...
+              </>
             ) : (
-              <Trash2 className="h-4 w-4 mr-2" />
+              "Excluir"
             )}
-            Excluir Permanentemente
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

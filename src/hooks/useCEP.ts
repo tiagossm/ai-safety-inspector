@@ -1,30 +1,18 @@
 
 import { useState } from "react";
 
-interface Address {
-  cep: string;
-  logradouro: string;
-  complemento: string;
-  bairro: string;
-  localidade: string;
-  uf: string;
-  ibge: string;
-  gia: string;
-  ddd: string;
-  siafi: string;
-}
-
 export function useCEP() {
-  const [address, setAddress] = useState<Address | null>(null);
+  const [address, setAddress] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchAddress = async (cep: string) => {
-    // Clean up the CEP format
+    // Clean up CEP, removing non-numeric characters
     const cleanCep = cep.replace(/\D/g, '');
     
+    // Validate CEP length
     if (cleanCep.length !== 8) {
-      setError('CEP deve conter 8 dígitos');
+      setError("CEP inválido. O CEP deve ter 8 dígitos.");
       return;
     }
     
@@ -36,13 +24,15 @@ export function useCEP() {
       const data = await response.json();
       
       if (data.erro) {
-        setError('CEP não encontrado');
+        setError("CEP não encontrado");
         setAddress(null);
       } else {
         setAddress(data);
+        setError(null);
       }
     } catch (err) {
-      setError('Erro ao buscar o endereço');
+      console.error("Error fetching CEP:", err);
+      setError("Erro ao buscar endereço");
       setAddress(null);
     } finally {
       setLoading(false);

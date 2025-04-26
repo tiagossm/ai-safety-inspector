@@ -21,6 +21,7 @@ export default function NewInspectionExecutionPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isPanelExpanded, setIsPanelExpanded] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [viewMode, setViewMode] = useState<"read" | "edit">("edit");
 
   // Use the inspection data hook to fetch all necessary data
   const {
@@ -60,6 +61,20 @@ export default function NewInspectionExecutionPage() {
   };
 
   const stats = calculateCompletionStats();
+
+  // Check if the current user is offline
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  
+  useEffect(() => {
+    const handleOnlineStatus = () => setIsOffline(!navigator.onLine);
+    window.addEventListener('online', handleOnlineStatus);
+    window.addEventListener('offline', handleOnlineStatus);
+    
+    return () => {
+      window.removeEventListener('online', handleOnlineStatus);
+      window.removeEventListener('offline', handleOnlineStatus);
+    };
+  }, []);
 
   // Handle the share button click
   const handleShare = () => {
@@ -104,6 +119,11 @@ export default function NewInspectionExecutionPage() {
     setEditMode(true);
   };
 
+  // Toggle view mode between read and edit
+  const toggleViewMode = () => {
+    setViewMode(prev => prev === "read" ? "edit" : "read");
+  };
+
   // Show loading state
   if (loading) {
     return (
@@ -133,29 +153,45 @@ export default function NewInspectionExecutionPage() {
 
   const isInspectionEditable = ["Pendente", "Em Andamento"].includes(inspection.status);
 
+  // Check if this is a shared view (simplified interface)
+  const isSharedView = window.location.pathname.includes('/share/');
+
   return (
     <div className="container max-w-7xl mx-auto py-4 pb-24 relative">
+      {isOffline && (
+        <div className="bg-amber-100 text-amber-800 px-4 py-2 mb-4 rounded-md flex items-center justify-between">
+          <div className="flex items-center">
+            <span className="font-medium">Modo Offline</span>
+            <span className="ml-2 text-sm">Suas alterações serão salvas localmente e sincronizadas quando estiver online.</span>
+          </div>
+        </div>
+      )}
+      
       {/* Header with progress */}
       <InspectionHeader 
         title={inspection.title || "Inspeção sem título"}
         description={inspection.description || ""}
         status={inspection.status}
         stats={stats}
+        viewMode={viewMode}
+        onToggleViewMode={isInspectionEditable && !isSharedView ? toggleViewMode : undefined}
       />
 
       {/* Expandable Panel for Inspection Data */}
-      <InspectionExpandablePanel
-        inspection={inspection}
-        company={company}
-        responsible={responsible}
-        responsibles={responsibles || []}
-        isExpanded={isPanelExpanded}
-        onToggleExpand={() => setIsPanelExpanded(!isPanelExpanded)}
-        editMode={editMode}
-        setEditMode={setEditMode}
-        onSave={refreshData}
-        isEditable={isInspectionEditable}
-      />
+      {!isSharedView && (
+        <InspectionExpandablePanel
+          inspection={inspection}
+          company={company}
+          responsible={responsible}
+          responsibles={responsibles || []}
+          isExpanded={isPanelExpanded}
+          onToggleExpand={() => setIsPanelExpanded(!isPanelExpanded)}
+          editMode={editMode}
+          setEditMode={setEditMode}
+          onSave={refreshData}
+          isEditable={isInspectionEditable && viewMode === "edit"}
+        />
+      )}
 
       {/* Questions Panel */}
       <QuestionsPanel
@@ -165,21 +201,23 @@ export default function NewInspectionExecutionPage() {
         onResponseChange={handleResponseChange}
         onMediaChange={handleMediaChange}
         onMediaUpload={handleMediaUpload}
-        isEditable={isInspectionEditable}
+        isEditable={isInspectionEditable && viewMode === "edit"}
       />
       
-      {/* Floating Action Menu */}
-      <FloatingActionMenu
-        onSaveProgress={handleSaveProgress}
-        onCompleteInspection={handleCompleteInspection}
-        onEditData={handleEditData}
-        onShare={handleShare}
-        onDelete={handleDelete}
-        isEditable={isInspectionEditable}
-        isSaving={savingResponses}
-        isCompleted={inspection.status === "Concluída"}
-        onReopenInspection={() => reopenInspection(inspection)}
-      />
+      {/* Floating Action Menu - only show in non-shared view */}
+      {!isSharedView && (
+        <FloatingActionMenu
+          onSaveProgress={handleSaveProgress}
+          onCompleteInspection={handleCompleteInspection}
+          onEditData={handleEditData}
+          onShare={handleShare}
+          onDelete={handleDelete}
+          isEditable={isInspectionEditable}
+          isSaving={savingResponses}
+          isCompleted={inspection.status === "Concluída"}
+          onReopenInspection={() => reopenInspection(inspection)}
+        />
+      )}
       
       {/* Share Dialog */}
       <ShareInspectionDialog

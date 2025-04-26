@@ -5,9 +5,9 @@ import { MessageSquare, ClipboardList } from "lucide-react";
 
 interface ResponseActionsProps {
   isCommentOpen: boolean;
-  setIsCommentOpen: (open: boolean) => void;
+  setIsCommentOpen: (isOpen: boolean) => void;
   isActionPlanOpen: boolean;
-  setIsActionPlanOpen: (open: boolean) => void;
+  setIsActionPlanOpen: (isOpen: boolean) => void;
   hasNegativeResponse: boolean;
 }
 
@@ -19,14 +19,16 @@ export function ResponseActions({
   hasNegativeResponse
 }: ResponseActionsProps) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex items-center gap-2 flex-wrap">
       <Button
         variant="ghost"
         size="sm"
+        className={`text-xs flex items-center ${
+          isCommentOpen ? "bg-slate-100" : ""
+        }`}
         onClick={() => setIsCommentOpen(!isCommentOpen)}
-        className={`text-xs ${isCommentOpen ? 'bg-muted' : ''}`}
       >
-        <MessageSquare className="h-3 w-3 mr-1" />
+        <MessageSquare className="h-3.5 w-3.5 mr-1" />
         {isCommentOpen ? "Ocultar comentário" : "Adicionar comentário"}
       </Button>
       
@@ -34,10 +36,12 @@ export function ResponseActions({
         <Button
           variant="ghost"
           size="sm"
+          className={`text-xs flex items-center text-red-600 hover:text-red-700 hover:bg-red-50 ${
+            isActionPlanOpen ? "bg-red-50" : ""
+          }`}
           onClick={() => setIsActionPlanOpen(!isActionPlanOpen)}
-          className={`text-xs ${isActionPlanOpen ? 'bg-muted' : ''}`}
         >
-          <ClipboardList className="h-3 w-3 mr-1" />
+          <ClipboardList className="h-3.5 w-3.5 mr-1" />
           {isActionPlanOpen ? "Ocultar plano de ação" : "Adicionar plano de ação"}
         </Button>
       )}

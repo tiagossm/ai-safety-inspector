@@ -1,143 +1,238 @@
 
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { 
-  SaveAll, 
+  Save, 
   CheckCircle, 
-  Settings, 
-  Trash, 
+  Edit, 
+  Trash2, 
   Share2, 
+  RefreshCw, 
+  X, 
   MoreVertical,
-  X
+  FileEdit
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface FloatingActionMenuProps {
   onSaveProgress: () => Promise<void>;
-  onCompleteInspection: () => Promise<void>;
-  onReopenInspection: () => Promise<void>;
-  onEditData: () => void;
-  onShare: () => void;
-  onDelete: () => void;
+  onCompleteInspection?: () => Promise<void>;
+  onEditData?: () => void;
+  onShare?: () => void;
+  onDelete?: () => void;
   isEditable: boolean;
   isSaving: boolean;
   isCompleted: boolean;
+  onReopenInspection?: () => Promise<void>;
 }
 
 export function FloatingActionMenu({
   onSaveProgress,
   onCompleteInspection,
-  onReopenInspection,
   onEditData,
   onShare,
   onDelete,
   isEditable,
   isSaving,
-  isCompleted
+  isCompleted,
+  onReopenInspection
 }: FloatingActionMenuProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   
   const toggleMenu = () => {
-    setIsOpen(!isOpen);
+    setIsExpanded(!isExpanded);
   };
   
-  const handleAction = (action: () => void | Promise<void>) => {
-    action();
-    setIsOpen(false);
+  const handleAction = async (action: () => Promise<void>) => {
+    try {
+      await action();
+    } catch (error) {
+      console.error("Error executing action:", error);
+      toast.error("Erro ao executar ação. Tente novamente.");
+    } finally {
+      setIsExpanded(false);
+    }
   };
   
-  return (
-    <div className="fixed bottom-6 right-6 flex flex-col items-end z-50">
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div 
-            className="flex flex-col-reverse gap-2 mb-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.2 }}
-          >
-            {/* Save progress button */}
+  // For mobile, show a dropdown menu
+  const isMobile = window.innerWidth < 768;
+
+  if (isMobile) {
+    return (
+      <div className="fixed bottom-6 right-6 z-50">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              size="icon"
+              className="h-14 w-14 rounded-full shadow-lg bg-primary hover:bg-primary/90"
+            >
+              <MoreVertical className="h-6 w-6" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
             {isEditable && !isCompleted && (
-              <Button 
-                variant="default" 
-                size="icon" 
-                className="shadow-lg bg-primary hover:bg-primary/90"
+              <>
+                <DropdownMenuItem
+                  onClick={() => onSaveProgress()}
+                  disabled={isSaving}
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  Salvar Progresso
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem
+                  onClick={() => onCompleteInspection && onCompleteInspection()}
+                  disabled={isSaving}
+                >
+                  <CheckCircle className="mr-2 h-4 w-4" />
+                  Finalizar Inspeção
+                </DropdownMenuItem>
+              </>
+            )}
+            
+            {isCompleted && onReopenInspection && (
+              <DropdownMenuItem
+                onClick={() => onReopenInspection()}
+                disabled={isSaving}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Reabrir Inspeção
+              </DropdownMenuItem>
+            )}
+            
+            <DropdownMenuItem
+              onClick={() => onEditData && onEditData()}
+              disabled={isSaving}
+            >
+              <FileEdit className="mr-2 h-4 w-4" />
+              Editar Dados
+            </DropdownMenuItem>
+            
+            <DropdownMenuItem
+              onClick={() => onShare && onShare()}
+              disabled={isSaving}
+            >
+              <Share2 className="mr-2 h-4 w-4" />
+              Compartilhar
+            </DropdownMenuItem>
+            
+            <DropdownMenuItem
+              onClick={() => onDelete && onDelete()}
+              disabled={isSaving}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Excluir
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    );
+  }
+
+  // For desktop, show the speed dial style menu
+  return (
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
+      {isExpanded && (
+        <>
+          {isEditable && !isCompleted && (
+            <>
+              <Button
+                className="flex items-center gap-2 shadow-md transition-transform transform hover:scale-105"
                 onClick={() => handleAction(onSaveProgress)}
                 disabled={isSaving}
               >
-                <SaveAll size={20} />
+                <Save className="h-4 w-4" />
+                <span>Salvar Progresso</span>
               </Button>
-            )}
-            
-            {/* Complete or reopen inspection button */}
-            {isEditable ? (
-              !isCompleted ? (
-                <Button 
-                  variant="default" 
-                  size="icon" 
-                  className="shadow-lg bg-green-600 hover:bg-green-700"
-                  onClick={() => handleAction(onCompleteInspection)}
+              
+              {onCompleteInspection && (
+                <Button
+                  variant="default"
+                  className="flex items-center gap-2 shadow-md transition-transform transform hover:scale-105"
+                  onClick={() => onCompleteInspection()}
                   disabled={isSaving}
                 >
-                  <CheckCircle size={20} />
+                  <CheckCircle className="h-4 w-4" />
+                  <span>Finalizar Inspeção</span>
                 </Button>
-              ) : (
-                <Button 
-                  variant="default" 
-                  size="icon" 
-                  className="shadow-lg bg-amber-600 hover:bg-amber-700"
-                  onClick={() => handleAction(onReopenInspection)}
-                  disabled={isSaving}
-                >
-                  <CheckCircle size={20} />
-                </Button>
-              )
-            ) : null}
-            
-            {/* Edit data button */}
-            <Button 
-              variant="default" 
-              size="icon" 
-              className="shadow-lg bg-blue-600 hover:bg-blue-700"
-              onClick={() => handleAction(onEditData)}
+              )}
+            </>
+          )}
+          
+          {isCompleted && onReopenInspection && (
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 shadow-md bg-white transition-transform transform hover:scale-105"
+              onClick={() => onReopenInspection()}
+              disabled={isSaving}
             >
-              <Settings size={20} />
+              <RefreshCw className="h-4 w-4" />
+              <span>Reabrir Inspeção</span>
             </Button>
-            
-            {/* Share button */}
-            <Button 
-              variant="default" 
-              size="icon" 
-              className="shadow-lg bg-purple-600 hover:bg-purple-700"
-              onClick={() => handleAction(onShare)}
+          )}
+          
+          {onEditData && (
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 shadow-md bg-white transition-transform transform hover:scale-105"
+              onClick={() => {
+                onEditData();
+                setIsExpanded(false);
+              }}
+              disabled={isSaving}
             >
-              <Share2 size={20} />
+              <FileEdit className="h-4 w-4" />
+              <span>Editar Dados</span>
             </Button>
-            
-            {/* Delete button */}
-            {isEditable && (
-              <Button 
-                variant="default" 
-                size="icon" 
-                className="shadow-lg bg-red-600 hover:bg-red-700"
-                onClick={() => handleAction(onDelete)}
-              >
-                <Trash size={20} />
-              </Button>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+          
+          {onShare && (
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 shadow-md bg-white transition-transform transform hover:scale-105"
+              onClick={() => {
+                onShare();
+                setIsExpanded(false);
+              }}
+              disabled={isSaving}
+            >
+              <Share2 className="h-4 w-4" />
+              <span>Compartilhar</span>
+            </Button>
+          )}
+          
+          {onDelete && (
+            <Button
+              variant="destructive"
+              className="flex items-center gap-2 shadow-md transition-transform transform hover:scale-105"
+              onClick={() => {
+                onDelete();
+                setIsExpanded(false);
+              }}
+              disabled={isSaving}
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>Excluir</span>
+            </Button>
+          )}
+        </>
+      )}
       
-      {/* Main toggle button */}
       <Button
-        variant="default"
         size="icon"
-        className="h-14 w-14 rounded-full shadow-lg"
+        className={`h-14 w-14 rounded-full shadow-lg transition-transform transform hover:scale-105 ${
+          isExpanded ? "bg-destructive hover:bg-destructive/90" : "bg-primary hover:bg-primary/90"
+        }`}
         onClick={toggleMenu}
       >
-        {isOpen ? <X size={24} /> : <MoreVertical size={24} />}
+        {isExpanded ? <X className="h-6 w-6" /> : <MoreVertical className="h-6 w-6" />}
       </Button>
     </div>
   );
