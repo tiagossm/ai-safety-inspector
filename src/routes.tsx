@@ -1,9 +1,10 @@
 
+import React from 'react';
 import { Navigate, RouteObject } from "react-router-dom";
 import { Outlet } from "react-router-dom";
 
-// We need a basic Layout component to replace the missing Layout import
-const Layout = ({ children }: { children: React.ReactNode }) => {
+// Updated Layout component to explicitly accept children
+const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   return (
     <div className="app-layout">
       {children}
@@ -11,7 +12,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// For the missing page components, we'll create placeholder components
+// Placeholder page components
 const PlaceholderPage = ({ title }: { title: string }) => (
   <div className="container py-8">
     <h1 className="text-2xl font-bold mb-4">{title}</h1>
