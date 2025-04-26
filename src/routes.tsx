@@ -7,7 +7,7 @@ import { Outlet } from "react-router-dom";
 const Layout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   return (
     <div className="app-layout">
-      {children}
+      {children || <Outlet />}
     </div>
   );
 };
