@@ -10,7 +10,7 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { QrCode, Download, Share2 } from "lucide-react";
-import { QRCode } from "react-qr-code";
+import QRCode from "react-qr-code";
 import { toast } from "sonner";
 
 interface ShareQRCodeButtonProps {

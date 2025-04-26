@@ -1,37 +1,49 @@
 
-import { createBrowserRouter, Navigate } from "react-router-dom";
-import Layout from "@/components/layout/Layout";
+import { Navigate, RouteObject } from "react-router-dom";
 
-import ChecklistPage from "@/pages/ChecklistPage";
-import ChecklistDetails from "@/pages/ChecklistDetails";
+// We need a basic Layout component to replace the missing Layout import
+const Layout = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <div className="app-layout">
+      {children}
+    </div>
+  );
+};
 
-import HomePage from "@/pages/HomePage";
-import CompaniesPage from "@/pages/CompaniesPage";
+// For the missing page components, we'll create placeholder components
+const PlaceholderPage = ({ title }: { title: string }) => (
+  <div className="container py-8">
+    <h1 className="text-2xl font-bold mb-4">{title}</h1>
+    <p>This page is under construction.</p>
+  </div>
+);
 
-import LoginPage from "@/pages/LoginPage";
-import RegisterPage from "@/pages/RegisterPage";
-import ResetPasswordPage from "@/pages/ResetPasswordPage";
+const HomePage = () => <PlaceholderPage title="Home" />;
+const ChecklistPage = () => <PlaceholderPage title="Checklist" />;
+const ChecklistDetails = () => <PlaceholderPage title="Checklist Details" />;
+const CompaniesPage = () => <PlaceholderPage title="Companies" />;
+const LoginPage = () => <PlaceholderPage title="Login" />;
+const RegisterPage = () => <PlaceholderPage title="Register" />;
+const ResetPasswordPage = () => <PlaceholderPage title="Reset Password" />;
+const DocumentsPage = () => <PlaceholderPage title="Documents" />;
+const DocumentDetails = () => <PlaceholderPage title="Document Details" />;
+const InspectionsPage = () => <PlaceholderPage title="Inspections" />;
+const InspectionCreate = () => <PlaceholderPage title="Create Inspection" />;
+const UsersPage = () => <PlaceholderPage title="Users" />;
+const ProfilePage = () => <PlaceholderPage title="Profile" />;
+const SettingsPage = () => <PlaceholderPage title="Settings" />;
+const ErrorPage = () => <PlaceholderPage title="Error" />;
 
-import DocumentsPage from "@/pages/DocumentsPage";
-import DocumentDetails from "@/pages/DocumentDetails";
-
+// Import only the components we already have
 import Checklists from "@/pages/Checklists";
 import NewChecklistDetails from "@/pages/NewChecklistDetails";
 import NewChecklistEdit from "@/pages/NewChecklistEdit";
 import NewChecklistCreate from "@/pages/NewChecklistCreate";
-
-import InspectionsPage from "@/pages/InspectionsPage";
-import InspectionCreate from "@/pages/InspectionCreate";
 import InspectionExecutionPage from "@/pages/InspectionExecutionPage";
 import NewInspectionExecutionPage from "@/pages/NewInspectionExecutionPage";
 import SharedInspectionView from "@/pages/SharedInspectionView";
 
-import UsersPage from "@/pages/UsersPage";
-import ProfilePage from "@/pages/ProfilePage";
-import SettingsPage from "@/pages/SettingsPage";
-import ErrorPage from "@/pages/ErrorPage";
-
-export const router = createBrowserRouter([
+export const router = [
   {
     path: "/",
     element: <Layout />,
@@ -123,4 +135,8 @@ export const router = createBrowserRouter([
     path: "/share/:id",
     element: <SharedInspectionView />,
   },
-]);
+];
+
+export default function Routes() {
+  return router;
+}

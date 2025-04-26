@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Copy, Check, Share2, QrCode } from "lucide-react";
-import { QRCode } from "react-qr-code";
+import QRCode from "react-qr-code";
 import { toast } from "sonner";
 import { DatePicker } from "@/components/ui/date-picker";
 import { addDays } from "date-fns";
