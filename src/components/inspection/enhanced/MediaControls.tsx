@@ -87,7 +87,7 @@ export function MediaControls({
       
       const recorder = new MediaRecorder(stream, { 
         mimeType: 'audio/webm' 
-      }) as MediaRecorder;
+      });
       
       const chunks: Blob[] = [];
       
