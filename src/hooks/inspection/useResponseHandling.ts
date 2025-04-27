@@ -226,7 +226,9 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
       setResponses((prev) => {
         const currentResponse = prev[parentQuestionId] || {};
         // Ensure currentResponse.subChecklistResponses is an object
-        const currentSubResponses = currentResponse.subChecklistResponses || {};
+        const currentSubResponses = typeof currentResponse.subChecklistResponses === 'object' && currentResponse.subChecklistResponses !== null 
+          ? currentResponse.subChecklistResponses 
+          : {};
         
         return {
           ...prev,
