@@ -85,9 +85,7 @@ export function MediaControls({
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      const recorder: MediaRecorder = new MediaRecorder(stream, { 
-        mimeType: 'audio/webm' 
-      });
+      const recorder = new MediaRecorder(stream);
       
       const chunks: Blob[] = [];
       
