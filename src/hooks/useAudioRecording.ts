@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 export const useAudioRecording = (onMediaUpload: (file: File) => Promise<string | null>) => {
   const [isRecording, setIsRecording] = useState(false);

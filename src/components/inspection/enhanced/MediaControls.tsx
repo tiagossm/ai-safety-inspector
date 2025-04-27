@@ -4,7 +4,7 @@ import { MediaCaptureButtons } from "./MediaCaptureButtons";
 import { MediaList } from "./MediaList";
 import { MediaPreviewDialog } from "./MediaPreviewDialog";
 import { useAudioRecording } from "@/hooks/useAudioRecording";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 interface MediaControlsProps {
   allowsPhoto?: boolean;
