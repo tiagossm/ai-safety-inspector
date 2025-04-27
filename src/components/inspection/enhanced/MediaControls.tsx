@@ -1,8 +1,10 @@
+
 import React, { useRef, useState } from "react";
 import { MediaCaptureButtons } from "./MediaCaptureButtons";
 import { MediaList } from "./MediaList";
 import { MediaPreviewDialog } from "./MediaPreviewDialog";
 import { useAudioRecording } from "@/hooks/useAudioRecording";
+import { toast } from "@/components/ui/use-toast";
 
 interface MediaControlsProps {
   allowsPhoto?: boolean;
@@ -48,7 +50,10 @@ export function MediaControls({
       (allowsFiles && !['image', 'video', 'audio'].includes(fileType));
 
     if (!isValidFile) {
-      toast.error("Tipo de arquivo não permitido");
+      toast({
+        title: "Tipo de arquivo não permitido",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -56,13 +61,19 @@ export function MediaControls({
       setIsUploading(true);
       const url = await onMediaUpload(file);
       if (url) {
-        toast.success("Mídia adicionada com sucesso");
+        toast({
+          title: "Mídia adicionada com sucesso",
+          variant: "default"
+        });
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
       }
     } catch (error: any) {
-      toast.error(`Erro ao adicionar mídia: ${error.message}`);
+      toast({
+        title: `Erro ao adicionar mídia: ${error.message}`,
+        variant: "destructive"
+      });
     } finally {
       setIsUploading(false);
     }
@@ -77,7 +88,10 @@ export function MediaControls({
   const handleRemoveMedia = (urlToRemove: string) => {
     const updatedUrls = mediaUrls.filter(url => url !== urlToRemove);
     onMediaChange(updatedUrls);
-    toast.success("Mídia removida com sucesso");
+    toast({
+      title: "Mídia removida com sucesso",
+      variant: "default"
+    });
   };
 
   if (!allowsPhoto && !allowsVideo && !allowsAudio && !allowsFiles) {
