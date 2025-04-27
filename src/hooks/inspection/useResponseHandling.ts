@@ -225,6 +225,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
       // Update the parent question's response with the sub-checklist responses
       setResponses((prev) => {
         const currentResponse = prev[parentQuestionId] || {};
+        // Ensure currentResponse.subChecklistResponses is an object
         const currentSubResponses = currentResponse.subChecklistResponses || {};
         
         return {
@@ -247,9 +248,11 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
         .eq("question_id", parentQuestionId)
         .single();
       
+      // Ensure sub_checklist_responses is an object
+      const currentSubResponses = parentResponse?.sub_checklist_responses || {};
+      
       if (parentResponse) {
         // Update existing response
-        const currentSubResponses = parentResponse.sub_checklist_responses || {};
         await supabase
           .from("inspection_responses")
           .update({
