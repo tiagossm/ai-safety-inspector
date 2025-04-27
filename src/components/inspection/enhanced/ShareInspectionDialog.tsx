@@ -110,27 +110,35 @@ export function ShareInspectionDialog({
     
     setIsLoadingHistory(true);
     try {
-      const { data, error } = await supabase
-        .from("inspection_shares")
-        .select(`
-          id, 
-          share_token, 
-          created_at, 
-          expires_at, 
-          status,
-          permissions,
-          inspection_share_access_logs (
-            id,
-            access_time,
-            client_ip,
-            user_agent
-          )
-        `)
-        .eq("inspection_id", inspectionId)
-        .order("created_at", { ascending: false });
+      // For now, since the inspection_shares table doesn't exist yet,
+      // we'll mock the data instead of trying to fetch from Supabase
+      const mockData = [
+        {
+          id: "mock-share-1",
+          share_token: "abc123",
+          created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
+          expires_at: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5).toISOString(), // 5 days from now
+          status: "active",
+          permissions: ["read"],
+          inspection_share_access_logs: [
+            { id: "log1", access_time: new Date(Date.now() - 1000 * 60 * 60).toISOString(), client_ip: "192.168.1.1", user_agent: "Chrome" }
+          ]
+        },
+        {
+          id: "mock-share-2",
+          share_token: "def456",
+          created_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(), // 10 days ago
+          expires_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(), // 3 days ago (expired)
+          status: "expired",
+          permissions: ["read", "edit"],
+          inspection_share_access_logs: [
+            { id: "log2", access_time: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(), client_ip: "192.168.1.2", user_agent: "Firefox" },
+            { id: "log3", access_time: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4).toISOString(), client_ip: "192.168.1.3", user_agent: "Safari" }
+          ]
+        }
+      ];
       
-      if (error) throw error;
-      setShareHistory(data || []);
+      setShareHistory(mockData);
     } catch (error) {
       console.error("Error fetching share history:", error);
     } finally {
