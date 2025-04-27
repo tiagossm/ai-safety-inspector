@@ -1,11 +1,7 @@
-
 import React, { useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Camera, Video, File, Mic, Loader2 } from "lucide-react";
-import { toast } from "sonner";
-import { MediaPreview } from "./MediaPreview";
+import { MediaCaptureButtons } from "./MediaCaptureButtons";
+import { MediaList } from "./MediaList";
 import { MediaPreviewDialog } from "./MediaPreviewDialog";
-import { AIAnalysisButton } from "./AIAnalysisButton";
 import { useAudioRecording } from "@/hooks/useAudioRecording";
 
 interface MediaControlsProps {
@@ -72,16 +68,16 @@ export function MediaControls({
     }
   };
 
-  const handleRemoveMedia = (urlToRemove: string) => {
-    const updatedUrls = mediaUrls.filter(url => url !== urlToRemove);
-    onMediaChange(updatedUrls);
-    toast.success("Mídia removida com sucesso");
-  };
-
   const handleAddMedia = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
+  };
+
+  const handleRemoveMedia = (urlToRemove: string) => {
+    const updatedUrls = mediaUrls.filter(url => url !== urlToRemove);
+    onMediaChange(updatedUrls);
+    toast.success("Mídia removida com sucesso");
   };
 
   if (!allowsPhoto && !allowsVideo && !allowsAudio && !allowsFiles) {
@@ -103,90 +99,27 @@ export function MediaControls({
         ].filter(Boolean).join(',')}
       />
 
-      <div className="flex flex-wrap gap-2">
-        {allowsPhoto && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleAddMedia}
-            disabled={disabled || isUploading}
-            className="flex items-center"
-          >
-            {isUploading ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Camera className="h-4 w-4 mr-2" />
-            )}
-            <span>Foto</span>
-          </Button>
-        )}
-        
-        {allowsVideo && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleAddMedia}
-            disabled={disabled || isUploading}
-            className="flex items-center"
-          >
-            <Video className="h-4 w-4 mr-2" />
-            <span>Vídeo</span>
-          </Button>
-        )}
-        
-        {allowsAudio && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={isRecording ? stopRecording : startRecording}
-            disabled={disabled || isUploading}
-            className={`flex items-center ${isRecording ? 'bg-red-100 border-red-500' : ''}`}
-          >
-            <Mic className={`h-4 w-4 mr-2 ${isRecording ? 'text-red-500' : ''}`} />
-            <span>{isRecording ? 'Parar Gravação' : 'Gravar Áudio'}</span>
-          </Button>
-        )}
-        
-        {allowsFiles && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleAddMedia}
-            disabled={disabled || isUploading}
-            className="flex items-center"
-          >
-            <File className="h-4 w-4 mr-2" />
-            <span>Arquivo</span>
-          </Button>
-        )}
+      <MediaCaptureButtons 
+        allowsPhoto={allowsPhoto}
+        allowsVideo={allowsVideo}
+        allowsAudio={allowsAudio}
+        allowsFiles={allowsFiles}
+        disabled={disabled}
+        isUploading={isUploading}
+        isRecording={isRecording}
+        onAddMedia={handleAddMedia}
+        onStartRecording={startRecording}
+        onStopRecording={stopRecording}
+      />
 
-        {mediaUrls.length > 0 && onAIAnalysis && (
-          <AIAnalysisButton 
-            questionId={questionId}
-            mediaUrls={mediaUrls}
-            questionText={questionText}
-            onAnalysisComplete={onAIAnalysis}
-            disabled={disabled || mediaUrls.length === 0}
-          />
-        )}
-      </div>
-
-      {mediaUrls.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-2">
-          {mediaUrls.map((url, index) => (
-            <MediaPreview 
-              key={`${url}-${index}`}
-              url={url}
-              onPreview={setPreviewUrl}
-              onRemove={handleRemoveMedia}
-            />
-          ))}
-        </div>
-      )}
+      <MediaList 
+        mediaUrls={mediaUrls}
+        questionId={questionId}
+        questionText={questionText}
+        onPreview={setPreviewUrl}
+        onRemove={handleRemoveMedia}
+        onAIAnalysis={onAIAnalysis}
+      />
 
       <MediaPreviewDialog 
         previewUrl={previewUrl}
