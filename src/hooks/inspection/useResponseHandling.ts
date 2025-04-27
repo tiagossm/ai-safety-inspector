@@ -275,7 +275,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
           .insert({
             inspection_id: inspectionId,
             question_id: parentQuestionId,
-            answer: "", // Adding required field with empty string
+            answer: "", // Adding required answer field with empty string
             sub_checklist_responses: {
               [subChecklistId]: subResponses
             },
