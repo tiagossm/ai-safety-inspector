@@ -1,9 +1,12 @@
+
 import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, Video, File, Mic, Trash2, Eye, Loader2 } from "lucide-react";
+import { Camera, Video, File, Mic, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogTitle, DialogHeader } from "@/components/ui/dialog";
+import { MediaPreview } from "./MediaPreview";
+import { MediaPreviewDialog } from "./MediaPreviewDialog";
 import { AIAnalysisButton } from "./AIAnalysisButton";
+import { useAudioRecording } from "@/hooks/useAudioRecording";
 
 interface MediaControlsProps {
   allowsPhoto?: boolean;
@@ -34,10 +37,8 @@ export function MediaControls({
 }: MediaControlsProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [audioRecorder, setAudioRecorder] = useState<MediaRecorder | null>(null);
-  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { isRecording, startRecording, stopRecording } = useAudioRecording(onMediaUpload);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -77,169 +78,9 @@ export function MediaControls({
     toast.success("Mídia removida com sucesso");
   };
 
-  const handlePreview = (url: string) => {
-    setPreviewUrl(url);
-  };
-
-  const startAudioRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
-      const recorder = new MediaRecorder(stream);
-      
-      const chunks: Blob[] = [];
-      
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          chunks.push(e.data);
-        }
-      };
-      
-      recorder.onstop = async () => {
-        const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-        const audioFile = new File([audioBlob], `audio-${Date.now()}.webm`, { type: 'audio/webm' });
-        
-        try {
-          setIsUploading(true);
-          const url = await onMediaUpload(audioFile);
-          if (url) {
-            toast.success("Áudio gravado com sucesso");
-          }
-        } catch (error: any) {
-          toast.error(`Erro ao salvar áudio: ${error.message}`);
-        } finally {
-          setIsUploading(false);
-          setAudioChunks([]);
-        }
-      };
-      
-      setAudioRecorder(recorder);
-      setAudioChunks(chunks);
-      recorder.start();
-      setIsRecording(true);
-    } catch (error) {
-      console.error("Error starting audio recording:", error);
-      toast.error("Não foi possível iniciar a gravação de áudio");
-    }
-  };
-  
-  const stopAudioRecording = () => {
-    if (audioRecorder && audioRecorder.state !== "inactive") {
-      audioRecorder.stop();
-      audioRecorder.stream?.getTracks().forEach(track => track.stop());
-      setIsRecording(false);
-    }
-  };
-
   const handleAddMedia = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
-    }
-  };
-
-  const renderMediaPreview = (url: string) => {
-    if (url.match(/\.(jpeg|jpg|gif|png)$/i)) {
-      return (
-        <div className="relative group hover:opacity-90 transition-opacity">
-          <img src={url} alt="Media preview" className="h-16 w-16 object-cover rounded-md" />
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
-            <Button 
-              size="icon" 
-              variant="ghost" 
-              className="h-8 w-8 bg-white/30 hover:bg-white/50"
-              onClick={() => handlePreview(url)}
-            >
-              <Eye className="h-4 w-4 text-white" />
-            </Button>
-            <Button 
-              size="icon" 
-              variant="ghost" 
-              className="h-8 w-8 bg-white/30 hover:bg-red-500/50 ml-1"
-              onClick={() => handleRemoveMedia(url)}
-            >
-              <Trash2 className="h-4 w-4 text-white" />
-            </Button>
-          </div>
-        </div>
-      );
-    } else if (url.match(/\.(mp4|webm|ogg)$/i)) {
-      return (
-        <div className="relative group hover:opacity-90 transition-opacity">
-          <div className="h-16 w-16 flex items-center justify-center bg-muted rounded-md">
-            <Video className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
-            <Button 
-              size="icon" 
-              variant="ghost" 
-              className="h-8 w-8 bg-white/30 hover:bg-white/50"
-              onClick={() => handlePreview(url)}
-            >
-              <Eye className="h-4 w-4 text-white" />
-            </Button>
-            <Button 
-              size="icon" 
-              variant="ghost" 
-              className="h-8 w-8 bg-white/30 hover:bg-red-500/50 ml-1"
-              onClick={() => handleRemoveMedia(url)}
-            >
-              <Trash2 className="h-4 w-4 text-white" />
-            </Button>
-          </div>
-        </div>
-      );
-    } else if (url.match(/\.(mp3|wav)$/i)) {
-      return (
-        <div className="relative group hover:opacity-90 transition-opacity">
-          <div className="h-16 w-16 flex items-center justify-center bg-muted rounded-md">
-            <Mic className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
-            <Button 
-              size="icon" 
-              variant="ghost" 
-              className="h-8 w-8 bg-white/30 hover:bg-white/50"
-              onClick={() => handlePreview(url)}
-            >
-              <Eye className="h-4 w-4 text-white" />
-            </Button>
-            <Button 
-              size="icon" 
-              variant="ghost" 
-              className="h-8 w-8 bg-white/30 hover:bg-red-500/50 ml-1"
-              onClick={() => handleRemoveMedia(url)}
-            >
-              <Trash2 className="h-4 w-4 text-white" />
-            </Button>
-          </div>
-        </div>
-      );
-    } else {
-      return (
-        <div className="relative group hover:opacity-90 transition-opacity">
-          <div className="h-16 w-16 flex items-center justify-center bg-muted rounded-md">
-            <File className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-md">
-            <Button 
-              size="icon" 
-              variant="ghost" 
-              className="h-8 w-8 bg-white/30 hover:bg-white/50"
-              onClick={() => handlePreview(url)}
-            >
-              <Eye className="h-4 w-4 text-white" />
-            </Button>
-            <Button 
-              size="icon" 
-              variant="ghost" 
-              className="h-8 w-8 bg-white/30 hover:bg-red-500/50 ml-1"
-              onClick={() => handleRemoveMedia(url)}
-            >
-              <Trash2 className="h-4 w-4 text-white" />
-            </Button>
-          </div>
-        </div>
-      );
     }
   };
 
@@ -300,7 +141,7 @@ export function MediaControls({
             type="button"
             variant="outline"
             size="sm"
-            onClick={isRecording ? stopAudioRecording : startAudioRecording}
+            onClick={isRecording ? stopRecording : startRecording}
             disabled={disabled || isUploading}
             className={`flex items-center ${isRecording ? 'bg-red-100 border-red-500' : ''}`}
           >
@@ -337,43 +178,20 @@ export function MediaControls({
       {mediaUrls.length > 0 && (
         <div className="flex flex-wrap gap-2 mt-2">
           {mediaUrls.map((url, index) => (
-            <div key={`${url}-${index}`} className="relative">
-              {renderMediaPreview(url)}
-            </div>
+            <MediaPreview 
+              key={`${url}-${index}`}
+              url={url}
+              onPreview={setPreviewUrl}
+              onRemove={handleRemoveMedia}
+            />
           ))}
         </div>
       )}
 
-      <Dialog open={!!previewUrl} onOpenChange={(open) => !open && setPreviewUrl(null)}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Pré-visualização</DialogTitle>
-          </DialogHeader>
-          
-          <div className="flex items-center justify-center p-4">
-            {previewUrl && previewUrl.match(/\.(jpeg|jpg|gif|png)$/i) ? (
-              <img src={previewUrl} alt="Preview" className="max-h-[70vh] max-w-full object-contain" />
-            ) : previewUrl && previewUrl.match(/\.(mp4|webm|ogg)$/i) ? (
-              <video src={previewUrl} controls className="max-h-[70vh] max-w-full" />
-            ) : previewUrl && previewUrl.match(/\.(mp3|wav|webm)$/i) ? (
-              <audio src={previewUrl} controls className="w-full" />
-            ) : (
-              <div className="p-8 text-center">
-                <File className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                <p>Pré-visualização não disponível para este tipo de arquivo.</p>
-                <a 
-                  href={previewUrl || '#'} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="text-blue-600 hover:underline mt-2 inline-block"
-                >
-                  Abrir em nova janela
-                </a>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <MediaPreviewDialog 
+        previewUrl={previewUrl}
+        onOpenChange={(open) => !open && setPreviewUrl(null)}
+      />
     </div>
   );
 }
