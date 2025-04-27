@@ -225,13 +225,14 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
       // Update the parent question's response with the sub-checklist responses
       setResponses((prev) => {
         const currentResponse = prev[parentQuestionId] || {};
+        const currentSubResponses = currentResponse.subChecklistResponses || {};
         
         return {
           ...prev,
           [parentQuestionId]: {
             ...currentResponse,
             subChecklistResponses: {
-              ...(currentResponse.subChecklistResponses || {}),
+              ...currentSubResponses,
               [subChecklistId]: subResponses
             }
           }
@@ -248,11 +249,12 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
       
       if (parentResponse) {
         // Update existing response
+        const currentSubResponses = parentResponse.sub_checklist_responses || {};
         await supabase
           .from("inspection_responses")
           .update({
             sub_checklist_responses: {
-              ...(parentResponse.sub_checklist_responses || {}),
+              ...currentSubResponses,
               [subChecklistId]: subResponses
             },
             updated_at: new Date().toISOString()
@@ -260,12 +262,13 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
           .eq("inspection_id", inspectionId)
           .eq("question_id", parentQuestionId);
       } else {
-        // Create new response
+        // Create new response - must include the required 'answer' field
         await supabase
           .from("inspection_responses")
           .insert({
             inspection_id: inspectionId,
             question_id: parentQuestionId,
+            answer: "", // Adding required field with empty string
             sub_checklist_responses: {
               [subChecklistId]: subResponses
             },
