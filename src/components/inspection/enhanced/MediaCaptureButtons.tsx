@@ -14,6 +14,8 @@ interface MediaCaptureButtonsProps {
   onAddMedia: () => void;
   onStartRecording: () => void;
   onStopRecording: () => void;
+  onPhotoCapture?: () => void;
+  onVideoCapture?: () => void;
 }
 
 export function MediaCaptureButtons({
@@ -26,7 +28,9 @@ export function MediaCaptureButtons({
   isRecording = false,
   onAddMedia,
   onStartRecording,
-  onStopRecording
+  onStopRecording,
+  onPhotoCapture,
+  onVideoCapture
 }: MediaCaptureButtonsProps) {
   return (
     <div className="flex flex-wrap gap-2">
@@ -35,7 +39,7 @@ export function MediaCaptureButtons({
           type="button"
           variant="outline"
           size="sm"
-          onClick={onAddMedia}
+          onClick={onPhotoCapture || onAddMedia}
           disabled={disabled || isUploading}
           className="flex items-center"
         >
@@ -53,7 +57,7 @@ export function MediaCaptureButtons({
           type="button"
           variant="outline"
           size="sm"
-          onClick={onAddMedia}
+          onClick={onVideoCapture || onAddMedia}
           disabled={disabled || isUploading}
           className="flex items-center"
         >

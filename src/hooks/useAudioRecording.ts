@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 export const useAudioRecording = (onMediaUpload: (file: File) => Promise<string | null>) => {
   const [isRecording, setIsRecording] = useState(false);
@@ -27,16 +27,10 @@ export const useAudioRecording = (onMediaUpload: (file: File) => Promise<string 
         try {
           const url = await onMediaUpload(audioFile);
           if (url) {
-            toast({
-              title: "Áudio gravado com sucesso",
-              variant: "default"
-            });
+            toast.success("Áudio gravado com sucesso");
           }
         } catch (error: any) {
-          toast({
-            title: `Erro ao salvar áudio: ${error.message}`,
-            variant: "destructive"
-          });
+          toast.error(`Erro ao salvar áudio: ${error.message}`);
         } finally {
           setAudioChunks([]);
         }
@@ -46,12 +40,16 @@ export const useAudioRecording = (onMediaUpload: (file: File) => Promise<string 
       setAudioChunks(chunks);
       recorder.start();
       setIsRecording(true);
+
+      // Auto-stop after 3 minutes (180000ms)
+      setTimeout(() => {
+        if (recorder && recorder.state !== "inactive") {
+          stopRecording();
+        }
+      }, 180000);
     } catch (error) {
       console.error("Error starting audio recording:", error);
-      toast({
-        title: "Não foi possível iniciar a gravação de áudio",
-        variant: "destructive"
-      });
+      toast.error("Não foi possível iniciar a gravação de áudio");
     }
   };
 
