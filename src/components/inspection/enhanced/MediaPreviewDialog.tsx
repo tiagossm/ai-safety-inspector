@@ -1,8 +1,12 @@
 
-import React, { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { File, Download, ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import React from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { File, Video, Mic, Image } from "lucide-react";
 
 interface MediaPreviewDialogProps {
   previewUrl: string | null;
@@ -10,67 +14,71 @@ interface MediaPreviewDialogProps {
 }
 
 export function MediaPreviewDialog({ previewUrl, onOpenChange }: MediaPreviewDialogProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  
   if (!previewUrl) return null;
-
-  const isImage = previewUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i);
-  const isVideo = previewUrl.match(/\.(mp4|webm|ogg|mov)$/i);
-  const isAudio = previewUrl.match(/\.(mp3|wav|ogg|m4a|webm)$/i);
   
-  const handleDownload = () => {
-    const link = document.createElement('a');
-    link.href = previewUrl;
-    link.download = previewUrl.split('/').pop() || 'download';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  // Determine media type
+  const isImage = previewUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i) !== null;
+  const isVideo = previewUrl.match(/\.(mp4|webm|mov|ogg|avi)$/i) !== null;
+  const isAudio = previewUrl.match(/\.(mp3|wav|ogg|m4a|webm)$/i) !== null;
+  
+  // Get the file name from the URL
+  const fileName = previewUrl.split('/').pop() || "Arquivo";
 
   return (
     <Dialog open={!!previewUrl} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Visualizar mídia</DialogTitle>
-          <DialogDescription className="text-xs">
-            {previewUrl.split('/').pop()}
-          </DialogDescription>
+          <DialogTitle>{fileName}</DialogTitle>
         </DialogHeader>
-        
-        <div className="flex items-center justify-center p-4">
-          {isImage ? (
-            <img src={previewUrl} alt="Preview" className="max-h-[70vh] max-w-full object-contain" />
-          ) : isVideo ? (
-            <video src={previewUrl} controls className="max-h-[70vh] max-w-full" />
-          ) : isAudio ? (
-            <audio src={previewUrl} controls className="w-full" />
-          ) : (
-            <div className="p-8 text-center">
-              <File className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-              <p>Pré-visualização não disponível para este tipo de arquivo.</p>
-              <a 
-                href={previewUrl} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="text-primary hover:underline mt-2 inline-block"
+        <div className="flex flex-col items-center justify-center">
+          {isImage && (
+            <img
+              src={previewUrl}
+              alt="Visualização"
+              className="max-h-[70vh] max-w-full object-contain rounded-md"
+            />
+          )}
+          
+          {isVideo && (
+            <video
+              src={previewUrl}
+              controls
+              className="max-h-[70vh] max-w-full rounded-md"
+            >
+              Seu navegador não suporta a reprodução de vídeos.
+            </video>
+          )}
+          
+          {isAudio && (
+            <div className="w-full max-w-md p-4 bg-muted rounded-md">
+              <Mic className="h-8 w-8 mx-auto mb-4 text-primary" />
+              <audio
+                src={previewUrl}
+                controls
+                className="w-full"
               >
-                Abrir em nova janela
+                Seu navegador não suporta a reprodução de áudio.
+              </audio>
+            </div>
+          )}
+          
+          {!isImage && !isVideo && !isAudio && (
+            <div className="flex flex-col items-center justify-center p-8">
+              <File className="h-16 w-16 mb-4 text-primary" />
+              <p className="text-center mb-4">
+                Este tipo de arquivo não pode ser visualizado diretamente.
+              </p>
+              <a
+                href={previewUrl}
+                download={fileName}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-primary text-white px-4 py-2 rounded hover:bg-primary/90 transition-colors"
+              >
+                Baixar arquivo
               </a>
             </div>
           )}
-        </div>
-        
-        <div className="flex justify-between items-center">
-          <div></div>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={handleDownload}
-            className="flex items-center gap-1"
-          >
-            <Download className="h-4 w-4" />
-            <span>Download</span>
-          </Button>
         </div>
       </DialogContent>
     </Dialog>

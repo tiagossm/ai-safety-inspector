@@ -27,6 +27,12 @@ export function MediaList({
   const hasMoreItems = mediaUrls.length > MAX_DISPLAY;
   const displayUrls = hasMoreItems ? mediaUrls.slice(0, MAX_DISPLAY) : mediaUrls;
   
+  const handleAIAnalysis = (comment: string, actionPlan?: string) => {
+    if (onAIAnalysis) {
+      onAIAnalysis(comment, actionPlan);
+    }
+  };
+  
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2 mt-2">
@@ -34,8 +40,8 @@ export function MediaList({
           <MediaPreview 
             key={`${url}-${index}`}
             url={url}
-            onPreview={onPreview}
-            onRemove={onRemove}
+            onPreview={() => onPreview(url)}
+            onRemove={() => onRemove(url)}
           />
         ))}
         {hasMoreItems && (
@@ -53,7 +59,7 @@ export function MediaList({
           questionId={questionId}
           mediaUrls={mediaUrls}
           questionText={questionText}
-          onAnalysisComplete={onAIAnalysis}
+          onAnalysisComplete={handleAIAnalysis}
           disabled={mediaUrls.length === 0}
         />
       )}

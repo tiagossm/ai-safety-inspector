@@ -22,20 +22,29 @@ export function AIAnalysisButton({
   const [analyzing, setAnalyzing] = useState(false);
   
   const handleAnalyze = async () => {
-    if (analyzing) return;
+    if (analyzing || disabled || mediaUrls.length === 0) return;
     
     try {
       setAnalyzing(true);
       toast.info("Analisando mídia com IA...");
       
-      // Simulate AI analysis (replace with actual API call in production)
+      // Simulação de análise de IA (em produção, seria substituído por uma chamada API real)
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Generate AI-based comment and action plan
-      const comment = `Análise automática: Esta mídia mostra evidências relacionadas à questão "${questionText.substring(0, 50)}...".`;
-      const actionPlan = questionText.includes("não") || questionText.includes("problema") ? 
-        "Recomendamos verificar os procedimentos de segurança descritos no manual de operações." : 
-        undefined;
+      // Generate AI-based comment based on question text
+      let comment = '';
+      let actionPlan = undefined;
+      
+      const isNegativeQuestion = questionText.toLowerCase().includes("problema") || 
+                                 questionText.toLowerCase().includes("não") ||
+                                 questionText.toLowerCase().includes("dificuldade");
+      
+      if (isNegativeQuestion) {
+        comment = `Análise automática: As imagens indicam um possível problema relacionado à questão "${questionText.substring(0, 50)}..."`;
+        actionPlan = "Recomendamos verificar os procedimentos de segurança descritos no manual de operações e realizar nova inspeção em 7 dias.";
+      } else {
+        comment = `Análise automática: As imagens confirmam a conformidade em relação à questão "${questionText.substring(0, 50)}..."`;
+      }
       
       onAnalysisComplete(comment, actionPlan);
       toast.success("Análise de IA concluída com sucesso");
