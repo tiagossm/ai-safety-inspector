@@ -1,4 +1,3 @@
-
 import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, Video, File, Mic, Trash2, Eye, Loader2 } from "lucide-react";
@@ -60,9 +59,7 @@ export function MediaControls({
       setIsUploading(true);
       const url = await onMediaUpload(file);
       if (url) {
-        // File was successfully uploaded and added to mediaUrls via onMediaUpload
         toast.success("Mídia adicionada com sucesso");
-        // Reset the file input for future uploads
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
@@ -87,8 +84,11 @@ export function MediaControls({
   const startAudioRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const options = { mimeType: 'audio/webm' };
-      const recorder = new MediaRecorder(stream, options);
+      
+      const recorder = new MediaRecorder(stream, { 
+        mimeType: 'audio/webm' 
+      }) as MediaRecorder;
+      
       const chunks: Blob[] = [];
       
       recorder.ondataavailable = (e) => {
@@ -128,7 +128,6 @@ export function MediaControls({
   const stopAudioRecording = () => {
     if (audioRecorder && audioRecorder.state !== "inactive") {
       audioRecorder.stop();
-      // Stop all audio tracks
       audioRecorder.stream?.getTracks().forEach(track => track.stop());
       setIsRecording(false);
     }
@@ -246,14 +245,12 @@ export function MediaControls({
     }
   };
 
-  // If no media types are allowed, don't render anything
   if (!allowsPhoto && !allowsVideo && !allowsAudio && !allowsFiles) {
     return null;
   }
 
   return (
     <div className="space-y-4">
-      {/* Hidden file input */}
       <input
         type="file"
         ref={fileInputRef}
@@ -267,7 +264,6 @@ export function MediaControls({
         ].filter(Boolean).join(',')}
       />
 
-      {/* Media upload buttons */}
       <div className="flex flex-wrap gap-2">
         {allowsPhoto && (
           <Button
@@ -340,7 +336,6 @@ export function MediaControls({
         )}
       </div>
 
-      {/* Media previews */}
       {mediaUrls.length > 0 && (
         <div className="flex flex-wrap gap-2 mt-2">
           {mediaUrls.map((url, index) => (
@@ -351,7 +346,6 @@ export function MediaControls({
         </div>
       )}
 
-      {/* Media preview dialog */}
       <Dialog open={!!previewUrl} onOpenChange={(open) => !open && setPreviewUrl(null)}>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
