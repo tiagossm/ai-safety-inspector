@@ -248,8 +248,10 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
         .eq("question_id", parentQuestionId)
         .single();
       
-      // Ensure sub_checklist_responses is an object
-      const currentSubResponses = parentResponse?.sub_checklist_responses || {};
+      // Ensure sub_checklist_responses is an object and handle the case where it might be null/undefined
+      const currentSubResponses = typeof parentResponse?.sub_checklist_responses === 'object' && parentResponse?.sub_checklist_responses !== null
+        ? parentResponse.sub_checklist_responses 
+        : {};
       
       if (parentResponse) {
         // Update existing response
