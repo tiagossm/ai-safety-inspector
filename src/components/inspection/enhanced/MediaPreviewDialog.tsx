@@ -16,7 +16,7 @@ export function MediaPreviewDialog({ previewUrl, onOpenChange }: MediaPreviewDia
 
   const isImage = previewUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i);
   const isVideo = previewUrl.match(/\.(mp4|webm|ogg|mov)$/i);
-  const isAudio = previewUrl.match(/\.(mp3|wav|ogg|m4a)$/i);
+  const isAudio = previewUrl.match(/\.(mp3|wav|ogg|m4a|webm)$/i);
   
   const handleDownload = () => {
     const link = document.createElement('a');

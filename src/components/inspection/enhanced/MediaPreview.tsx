@@ -10,7 +10,12 @@ interface MediaPreviewProps {
 }
 
 export function MediaPreview({ url, onPreview, onRemove }: MediaPreviewProps) {
-  if (url.match(/\.(jpeg|jpg|gif|png)$/i)) {
+  // Check for media types
+  const isImage = url.match(/\.(jpeg|jpg|gif|png|webp)$/i);
+  const isVideo = url.match(/\.(mp4|webm|mov|ogg|avi)$/i);
+  const isAudio = url.match(/\.(mp3|wav|ogg|m4a|webm)$/i);
+
+  if (isImage) {
     return (
       <div className="relative group hover:opacity-90 transition-opacity">
         <img src={url} alt="Media preview" className="h-16 w-16 object-cover rounded-md" />
@@ -36,12 +41,10 @@ export function MediaPreview({ url, onPreview, onRemove }: MediaPreviewProps) {
     );
   }
 
-  const IconComponent = url.match(/\.(mp4|webm|ogg)$/i) 
-    ? Video 
-    : url.match(/\.(mp3|wav)$/i) 
-      ? Mic 
-      : File;
-
+  // Choose appropriate icon based on media type
+  const IconComponent = isVideo ? Video : isAudio ? Mic : File;
+  
+  // For non-image files, show an icon with the file type
   return (
     <div className="relative group hover:opacity-90 transition-opacity">
       <div className="h-16 w-16 flex items-center justify-center bg-muted rounded-md">

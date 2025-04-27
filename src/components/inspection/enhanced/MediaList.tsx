@@ -48,7 +48,7 @@ export function MediaList({
         )}
       </div>
       
-      {onAIAnalysis && (
+      {onAIAnalysis && mediaUrls.length > 0 && (
         <AIAnalysisButton 
           questionId={questionId}
           mediaUrls={mediaUrls}
