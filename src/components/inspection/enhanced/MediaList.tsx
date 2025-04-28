@@ -10,6 +10,8 @@ interface MediaListProps {
   onPreview: (url: string) => void;
   onRemove: (url: string) => void;
   onAIAnalysis?: (comment: string, actionPlan?: string) => void;
+  previewSize?: "sm" | "md" | "lg";
+  showAIButton?: boolean;
 }
 
 export function MediaList({
@@ -18,9 +20,11 @@ export function MediaList({
   questionText,
   onPreview,
   onRemove,
-  onAIAnalysis
+  onAIAnalysis,
+  previewSize = "md",
+  showAIButton = true
 }: MediaListProps) {
-  if (mediaUrls.length === 0) return null;
+  if (!mediaUrls || mediaUrls.length === 0) return null;
   
   // Maximum number of media items to show before showing a count
   const MAX_DISPLAY = 5;
@@ -34,19 +38,24 @@ export function MediaList({
   };
   
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-2 mt-2">
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-2">
         {displayUrls.map((url, index) => (
           <MediaPreview 
             key={`${url}-${index}`}
             url={url}
             onPreview={() => onPreview(url)}
             onRemove={() => onRemove(url)}
+            size={previewSize}
           />
         ))}
         {hasMoreItems && (
           <div 
-            className="h-16 w-16 bg-muted rounded-md flex items-center justify-center cursor-pointer hover:bg-muted/80"
+            className={`bg-muted rounded-md flex items-center justify-center cursor-pointer hover:bg-muted/80 ${
+              previewSize === "sm" ? "h-12 w-12" : 
+              previewSize === "lg" ? "h-24 w-24" : 
+              "h-16 w-16"
+            }`}
             onClick={() => onPreview(mediaUrls[MAX_DISPLAY])}
           >
             <span className="text-sm font-medium">+{mediaUrls.length - MAX_DISPLAY}</span>
@@ -54,7 +63,7 @@ export function MediaList({
         )}
       </div>
       
-      {onAIAnalysis && mediaUrls.length > 0 && (
+      {showAIButton && onAIAnalysis && mediaUrls.length > 0 && (
         <AIAnalysisButton 
           questionId={questionId}
           mediaUrls={mediaUrls}

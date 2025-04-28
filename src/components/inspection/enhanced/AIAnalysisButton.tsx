@@ -10,6 +10,8 @@ interface AIAnalysisButtonProps {
   questionText: string;
   onAnalysisComplete: (comment: string, actionPlan?: string) => void;
   disabled?: boolean;
+  size?: "default" | "sm" | "lg" | "icon";
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
 }
 
 export function AIAnalysisButton({
@@ -17,7 +19,9 @@ export function AIAnalysisButton({
   mediaUrls,
   questionText,
   onAnalysisComplete,
-  disabled = false
+  disabled = false,
+  size = "sm",
+  variant = "outline"
 }: AIAnalysisButtonProps) {
   const [analyzing, setAnalyzing] = useState(false);
   
@@ -59,8 +63,8 @@ export function AIAnalysisButton({
   return (
     <Button
       type="button"
-      variant="outline"
-      size="sm"
+      variant={variant}
+      size={size}
       disabled={disabled || analyzing || mediaUrls.length === 0}
       onClick={handleAnalyze}
       className="flex items-center"

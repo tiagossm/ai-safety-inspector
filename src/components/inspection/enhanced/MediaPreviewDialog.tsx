@@ -1,20 +1,35 @@
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
-import { File, Video, Mic, Image } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { File, Video, Mic, Image, ChevronLeft, ChevronRight, Download } from "lucide-react";
 
 interface MediaPreviewDialogProps {
   previewUrl: string | null;
   onOpenChange: (open: boolean) => void;
+  mediaUrls?: string[];
 }
 
-export function MediaPreviewDialog({ previewUrl, onOpenChange }: MediaPreviewDialogProps) {
+export function MediaPreviewDialog({ 
+  previewUrl, 
+  onOpenChange,
+  mediaUrls = []
+}: MediaPreviewDialogProps) {
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
+  
   if (!previewUrl) return null;
+  
+  // Find the index of the current preview URL in the media URLs array
+  const urlIndex = mediaUrls.indexOf(previewUrl);
+  if (urlIndex >= 0 && currentIndex !== urlIndex) {
+    setCurrentIndex(urlIndex);
+  }
   
   // Determine media type
   const isImage = previewUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i) !== null;
@@ -23,14 +38,79 @@ export function MediaPreviewDialog({ previewUrl, onOpenChange }: MediaPreviewDia
   
   // Get the file name from the URL
   const fileName = previewUrl.split('/').pop() || "Arquivo";
+  
+  // Navigation handlers
+  const handlePrevious = () => {
+    if (mediaUrls.length > 1) {
+      const newIndex = currentIndex > 0 ? currentIndex - 1 : mediaUrls.length - 1;
+      setCurrentIndex(newIndex);
+      // Update the preview URL by calling onOpenChange with false and then true
+      const newUrl = mediaUrls[newIndex];
+      onOpenChange(false);
+      setTimeout(() => onOpenChange(true), 0);
+    }
+  };
+  
+  const handleNext = () => {
+    if (mediaUrls.length > 1) {
+      const newIndex = currentIndex < mediaUrls.length - 1 ? currentIndex + 1 : 0;
+      setCurrentIndex(newIndex);
+      // Update the preview URL
+      const newUrl = mediaUrls[newIndex];
+      onOpenChange(false);
+      setTimeout(() => onOpenChange(true), 0);
+    }
+  };
+  
+  const handleDownload = () => {
+    if (previewUrl) {
+      const link = document.createElement('a');
+      link.href = previewUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
 
   return (
     <Dialog open={!!previewUrl} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{fileName}</DialogTitle>
+          <DialogTitle className="flex items-center justify-between">
+            <span>{fileName}</span>
+            <div className="flex items-center gap-2">
+              {mediaUrls.length > 1 && (
+                <span className="text-sm text-muted-foreground">
+                  {currentIndex + 1} / {mediaUrls.length}
+                </span>
+              )}
+            </div>
+          </DialogTitle>
         </DialogHeader>
-        <div className="flex flex-col items-center justify-center">
+        
+        <div className="flex flex-col items-center justify-center relative">
+          {mediaUrls.length > 1 && (
+            <>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10"
+                onClick={handlePrevious}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="absolute right-0 top-1/2 transform -translate-y-1/2 z-10"
+                onClick={handleNext}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+        
           {isImage && (
             <img
               src={previewUrl}
@@ -68,18 +148,20 @@ export function MediaPreviewDialog({ previewUrl, onOpenChange }: MediaPreviewDia
               <p className="text-center mb-4">
                 Este tipo de arquivo não pode ser visualizado diretamente.
               </p>
-              <a
-                href={previewUrl}
-                download={fileName}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-primary text-white px-4 py-2 rounded hover:bg-primary/90 transition-colors"
-              >
-                Baixar arquivo
-              </a>
             </div>
           )}
         </div>
+        
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={handleDownload}
+            className="flex items-center gap-2"
+          >
+            <Download className="h-4 w-4" />
+            <span>Baixar</span>
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
