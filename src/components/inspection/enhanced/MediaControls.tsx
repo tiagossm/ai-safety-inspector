@@ -417,27 +417,30 @@ export function MediaControls({
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2">
-        <MediaCaptureButtons 
-          allowsPhoto={allowsPhoto}
-          allowsVideo={allowsVideo}
-          allowsAudio={allowsAudio}
-          allowsFiles={allowsFiles}
-          disabled={disabled}
-          isUploading={isUploading}
-          isRecording={isRecording}
-          onAddMedia={handleAddMedia}
-          onStartRecording={startRecording}
-          onStopRecording={stopRecording}
-          onPhotoCapture={handlePhotoCapture}
-          onVideoCapture={handleVideoCapture}
-        />
+      <div className="flex items-center justify-between">
+        <div className="flex flex-wrap gap-2">
+          <MediaCaptureButtons 
+            allowsPhoto={allowsPhoto}
+            allowsVideo={allowsVideo}
+            allowsAudio={allowsAudio}
+            allowsFiles={allowsFiles}
+            disabled={disabled}
+            isUploading={isUploading}
+            isRecording={isRecording}
+            onAddMedia={handleAddMedia}
+            onStartRecording={startRecording}
+            onStopRecording={stopRecording}
+            onPhotoCapture={handlePhotoCapture}
+            onVideoCapture={handleVideoCapture}
+          />
+        </div>
 
         {onAIAnalysis && (
           <Button
             variant="outline"
             size="sm"
             onClick={() => setShowAIAnalysis(!showAIAnalysis)}
+            className="ml-auto"
           >
             <Brain className="h-4 w-4 mr-2" />
             {showAIAnalysis ? "Desativar IA" : "Ativar IA"}
@@ -446,29 +449,37 @@ export function MediaControls({
       </div>
 
       {mediaUrls.length > 0 && (
-        <div className="flex flex-wrap gap-2 p-2 bg-gray-50 rounded-md">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 p-3 bg-gray-50 rounded-md">
           {mediaUrls.map((url, index) => (
             <MediaPreview
               key={`${url}-${index}`}
               url={url}
               onPreview={() => setPreviewUrl(url)}
               onRemove={() => handleRemoveMedia(url)}
-              size="md"
+              size="lg"
+              className="aspect-square w-full h-auto"
             />
           ))}
         </div>
       )}
 
       {showAIAnalysis && onAIAnalysis && mediaUrls.length > 0 && (
-        <AIAnalysisButton
-          questionId={questionId}
-          mediaUrls={mediaUrls}
-          questionText={questionText}
-          onAnalysisComplete={onAIAnalysis}
-          disabled={mediaUrls.length === 0}
-          size="sm"
-          variant="outline"
-        />
+        <div className="p-3 border rounded-md bg-blue-50">
+          <div className="flex items-center mb-2">
+            <Brain className="h-4 w-4 text-blue-600 mr-2" />
+            <h3 className="text-sm font-medium text-blue-700">Análise de Inteligência Artificial</h3>
+          </div>
+          <AIAnalysisButton
+            questionId={questionId}
+            mediaUrls={mediaUrls}
+            questionText={questionText}
+            onAnalysisComplete={onAIAnalysis}
+            disabled={mediaUrls.length === 0}
+            size="sm"
+            variant="default"
+            className="w-full"
+          />
+        </div>
       )}
 
       <MediaPreviewDialog 

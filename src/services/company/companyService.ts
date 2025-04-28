@@ -9,7 +9,7 @@ export async function fetchCompanies() {
   try {
     const { data, error } = await supabase
       .from("companies")
-      .select("id, fantasy_name")
+      .select("id, fantasy_name, cnpj, cnae, address")
       .eq("status", "active")
       .order("fantasy_name", { ascending: true });
 
@@ -35,7 +35,7 @@ export async function fetchCompanyNameById(companyId: string) {
   try {
     const { data, error } = await supabase
       .from('companies')
-      .select('fantasy_name')
+      .select('fantasy_name, cnpj, cnae, address')
       .eq('id', companyId)
       .maybeSingle();
 
@@ -43,9 +43,35 @@ export async function fetchCompanyNameById(companyId: string) {
       throw error;
     }
 
-    return data?.fantasy_name || null;
+    return data || null;
   } catch (error) {
     console.error("Error fetching company name:", error);
+    return null;
+  }
+}
+
+/**
+ * Fetches full company details by ID
+ */
+export async function fetchCompanyById(companyId: string) {
+  if (!companyId) {
+    return null;
+  }
+  
+  try {
+    const { data, error } = await supabase
+      .from('companies')
+      .select('*')
+      .eq('id', companyId)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    return data || null;
+  } catch (error) {
+    console.error("Error fetching company details:", error);
     return null;
   }
 }

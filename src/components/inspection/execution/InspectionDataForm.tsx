@@ -1,14 +1,18 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, MapPin } from "lucide-react";
-import { ComboboxDemo, MultiSelect } from "@/components/ui/combobox";
+import { Loader2, MapPin, AlertCircle } from "lucide-react";
 import { useCEP } from "@/hooks/useCEP";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { CompanySelector } from "@/components/inspection/CompanySelector";
+import { ResponsibleSelector } from "@/components/inspection/ResponsibleSelector";
+import { useFormSelectionData } from "@/hooks/inspection/useFormSelectionData";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface InspectionDataFormProps {
   inspection: any;
@@ -24,11 +28,26 @@ export function InspectionDataForm({
   inspection,
   company,
   responsible,
-  responsibles,
+  responsibles: providedResponsibles,
   onSave,
   onCancel,
   isSaving
 }: InspectionDataFormProps) {
+  // Load companies and responsibles data
+  const {
+    companies,
+    responsibles: fetchedResponsibles,
+    loadingCompanies,
+    loadingResponsibles,
+    errorCompanies,
+    errorResponsibles
+  } = useFormSelectionData();
+  
+  // Combined responsibles from props and fetched
+  const allResponsibles = [...(providedResponsibles || []), ...fetchedResponsibles].filter(
+    (v, i, a) => a.findIndex(t => t.id === v.id) === i
+  );
+  
   const [formData, setFormData] = useState({
     companyId: company?.id || "",
     responsibleIds: responsible ? [responsible.id] : [],
@@ -106,6 +125,14 @@ export function InspectionDataForm({
     }
   };
 
+  const handleCompanySelect = (companyId: string, selectedCompany: any) => {
+    setFormData(prev => ({
+      ...prev,
+      companyId,
+      location: selectedCompany?.address || prev.location
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave({
@@ -119,22 +146,52 @@ export function InspectionDataForm({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="companyId">Empresa</Label>
-          <ComboboxDemo
-            value={formData.companyId}
-            onChange={(value) => handleSelectChange("companyId", value)}
-            options={[{ label: company?.name || "Selecione uma empresa", value: company?.id || "" }]}
-            placeholder="Selecione uma empresa"
-          />
+          {errorCompanies ? (
+            <Alert variant="destructive" className="py-2">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-xs ml-2">
+                {errorCompanies}
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <div className="flex flex-col relative z-30">
+              <CompanySelector
+                value={formData.companyId}
+                onSelect={handleCompanySelect}
+                className={loadingCompanies ? "opacity-50 pointer-events-none" : ""}
+              />
+              {loadingCompanies && (
+                <div className="absolute right-10 top-3">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="responsibleIds">Responsável(is)</Label>
-          <MultiSelect
-            options={(responsibles || []).map(r => ({ label: r.name, value: r.id }))}
-            selected={formData.responsibleIds}
-            onChange={(values) => handleMultiSelectChange("responsibleIds", values)}
-            placeholder="Selecione um ou mais responsáveis"
-          />
+          {errorResponsibles ? (
+            <Alert variant="destructive" className="py-2">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-xs ml-2">
+                {errorResponsibles}
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <div className="flex flex-col relative z-20">
+              <ResponsibleSelector
+                value={formData.responsibleIds}
+                onSelect={(values, data) => handleMultiSelectChange("responsibleIds", values)}
+                className={loadingResponsibles ? "opacity-50 pointer-events-none" : ""}
+              />
+              {loadingResponsibles && (
+                <div className="absolute right-10 top-3">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress"; 
-import { ChevronDown, ChevronUp, Save, QrCode, Share, FileText } from "lucide-react";
+import { ChevronDown, ChevronUp, Save, QrCode, Share, FileText, Edit, Check, X } from "lucide-react";
 import { CompanySelector } from "@/components/inspection/CompanySelector";
 import { ResponsibleSelector } from "@/components/inspection/ResponsibleSelector";
 import { DateTimePicker } from "@/components/inspection/DateTimePicker";
@@ -42,7 +42,6 @@ import {
 import { QRCodeGenerator } from "@/components/inspection/sharing/QRCodeGenerator";
 import { ShareLinkGenerator } from "@/components/inspection/sharing/ShareLinkGenerator";
 
-// Update the coordinates schema to match the new type in InspectionFormValues
 const coordinatesSchema = z.object({
   latitude: z.number().optional(),
   longitude: z.number().optional()
@@ -124,19 +123,17 @@ export function InspectionHeaderForm({
 
   const onSubmit = async (data: InspectionFormValues) => {
     try {
-      // Ensure coordinates are properly validated before submitting
       if (data.coordinates && (
           typeof data.coordinates.latitude !== 'number' ||
           typeof data.coordinates.longitude !== 'number'
       )) {
-        // Set coordinates to null if they're invalid
         data.coordinates = null;
       }
       
       await updateInspectionData(data);
+      setIsEditing(false);
       onSave();
     } catch (error) {
-      // Error is handled by the hook
     }
   };
 
@@ -153,7 +150,6 @@ export function InspectionHeaderForm({
       
       await saveAsDraft(formData);
     } catch (error) {
-      // Error is handled by the hook
     }
   };
 
@@ -182,10 +178,9 @@ export function InspectionHeaderForm({
         className={cn(
           "flex flex-row items-center justify-between space-y-0",
           !expanded && "pb-3"
-        )} 
-        onClick={() => setExpanded(!expanded)}
+        )}
       >
-        <div className="flex-1">
+        <div className="flex-1" onClick={() => setExpanded(!expanded)}>
           <CardTitle>Dados da Inspeção</CardTitle>
           <CardDescription>
             {progress === 100 
@@ -196,13 +191,36 @@ export function InspectionHeaderForm({
         
         <div className="flex items-center gap-2">
           {isEditable && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsEditing(!isEditing)}
-            >
-              {isEditing ? "Cancelar Edição" : "Editar"}
-            </Button>
+            isEditing ? (
+              <div className="flex gap-2">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => {
+                    setIsEditing(false);
+                    form.reset(defaultValues);
+                  }}
+                >
+                  <X className="h-4 w-4 mr-1" /> Cancelar
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={form.handleSubmit(onSubmit)}
+                  disabled={updating}
+                >
+                  <Check className="h-4 w-4 mr-1" /> Salvar
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditing(true)}
+              >
+                <Edit className="h-4 w-4 mr-1" /> Editar
+              </Button>
+            )
           )}
           <Button
             variant="ghost"
@@ -471,26 +489,31 @@ export function InspectionHeaderForm({
           </CardContent>
 
           <CardFooter className="flex flex-wrap gap-2 border-t pt-6">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleSaveAsDraft}
-              disabled={updating || !isEditing}
-              size="sm"
-            >
-              Salvar Rascunho
-            </Button>
-            
             {isEditing && (
-              <Button
-                type="button"
-                onClick={form.handleSubmit(onSubmit)}
-                disabled={updating || progress !== 100}
-                size="sm"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {updating ? "Salvando..." : "Salvar Dados da Inspeção"}
-              </Button>
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const formData = form.getValues();
+                    saveAsDraft(formData);
+                  }}
+                  disabled={updating}
+                  size="sm"
+                >
+                  Salvar Rascunho
+                </Button>
+                
+                <Button
+                  type="button"
+                  onClick={form.handleSubmit(onSubmit)}
+                  disabled={updating || progress !== 100}
+                  size="sm"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {updating ? "Salvando..." : "Salvar Dados da Inspeção"}
+                </Button>
+              </>
             )}
             
             <Button
