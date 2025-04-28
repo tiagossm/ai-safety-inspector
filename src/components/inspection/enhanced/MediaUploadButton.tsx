@@ -1,7 +1,6 @@
-
-import React, { useState } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
-import { PaperClip, Camera, Video, Loader2 } from "lucide-react";
+import { Paperclip, Camera, Video, Loader2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -82,14 +81,14 @@ export function MediaUploadButton({
             {isUploading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <PaperClip className="h-4 w-4" />
+              <Paperclip className="h-4 w-4" />
             )}
             <span>Anexar</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={triggerFileUpload}>
-            <PaperClip className="h-4 w-4 mr-2" />
+            <Paperclip className="h-4 w-4 mr-2" />
             <span>Upload de arquivo</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleCameraCapture}>
