@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -70,6 +69,7 @@ export function InspectionHeaderForm({
 }: InspectionHeaderFormProps) {
   const [expanded, setExpanded] = useState(true);
   const [showHistoryLog, setShowHistoryLog] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const { updateInspectionData, validateRequiredFields, saveAsDraft, updating } = useInspectionHeaderForm(inspectionId);
   const [progress, setProgress] = useState(0);
 
@@ -180,12 +180,12 @@ export function InspectionHeaderForm({
     <Card className="mb-6">
       <CardHeader 
         className={cn(
-          "flex flex-row items-center justify-between space-y-0 cursor-pointer",
+          "flex flex-row items-center justify-between space-y-0",
           !expanded && "pb-3"
         )} 
         onClick={() => setExpanded(!expanded)}
       >
-        <div>
+        <div className="flex-1">
           <CardTitle>Dados da Inspeção</CardTitle>
           <CardDescription>
             {progress === 100 
@@ -193,18 +193,28 @@ export function InspectionHeaderForm({
               : `${Math.round(progress)}% dos dados obrigatórios preenchidos`}
           </CardDescription>
         </div>
-        <div className="flex space-x-2 items-center">
-          {isEditable ? (
-            expanded ? (
+        
+        <div className="flex items-center gap-2">
+          {isEditable && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditing(!isEditing)}
+            >
+              {isEditing ? "Cancelar Edição" : "Editar"}
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setExpanded(!expanded)}
+          >
+            {expanded ? (
               <ChevronUp className="h-4 w-4 text-muted-foreground" />
             ) : (
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            )
-          ) : (
-            <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-              Somente leitura
-            </span>
-          )}
+            )}
+          </Button>
         </div>
       </CardHeader>
 
@@ -234,7 +244,7 @@ export function InspectionHeaderForm({
                   control={form.control}
                   name="companyId"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="z-50">
                       <FormLabel>Empresa <span className="text-destructive">*</span></FormLabel>
                       <FormControl>
                         <CompanySelector
@@ -246,7 +256,7 @@ export function InspectionHeaderForm({
                             }
                           }}
                           className={cn(
-                            !isEditable && "opacity-70 pointer-events-none"
+                            !isEditing && "opacity-70 pointer-events-none"
                           )}
                         />
                       </FormControl>
@@ -254,20 +264,20 @@ export function InspectionHeaderForm({
                     </FormItem>
                   )}
                 />
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={form.control}
                     name="responsibleIds"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="z-40">
                         <FormLabel>Responsável(is) <span className="text-destructive">*</span></FormLabel>
                         <FormControl>
                           <ResponsibleSelector
                             value={field.value}
                             onSelect={(ids, data) => field.onChange(ids)}
                             className={cn(
-                              !isEditable && "opacity-70 pointer-events-none"
+                              !isEditing && "opacity-70 pointer-events-none"
                             )}
                           />
                         </FormControl>
@@ -287,7 +297,7 @@ export function InspectionHeaderForm({
                             date={field.value}
                             setDate={field.onChange}
                             className={cn(
-                              !isEditable && "opacity-70 pointer-events-none"
+                              !isEditing && "opacity-70 pointer-events-none"
                             )}
                           />
                         </FormControl>
@@ -317,7 +327,7 @@ export function InspectionHeaderForm({
                             }
                           }}
                           coordinates={form.watch('coordinates')}
-                          disabled={!isEditable}
+                          disabled={!isEditing}
                         />
                       </FormControl>
                       <FormMessage />
@@ -335,7 +345,7 @@ export function InspectionHeaderForm({
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
-                          disabled={!isEditable}
+                          disabled={!isEditing}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -391,7 +401,7 @@ export function InspectionHeaderForm({
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
-                          disabled={!isEditable}
+                          disabled={!isEditing}
                         >
                           <FormControl>
                             <SelectTrigger
@@ -440,7 +450,7 @@ export function InspectionHeaderForm({
                         <Textarea
                           {...field}
                           placeholder="Observações adicionais sobre a inspeção"
-                          disabled={!isEditable}
+                          disabled={!isEditing}
                           className="min-h-[100px]"
                         />
                       </FormControl>
@@ -465,13 +475,13 @@ export function InspectionHeaderForm({
               type="button"
               variant="outline"
               onClick={handleSaveAsDraft}
-              disabled={updating || !isEditable}
+              disabled={updating || !isEditing}
               size="sm"
             >
               Salvar Rascunho
             </Button>
             
-            {isEditable && (
+            {isEditing && (
               <Button
                 type="button"
                 onClick={form.handleSubmit(onSubmit)}

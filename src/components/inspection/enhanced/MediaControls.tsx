@@ -1,10 +1,13 @@
-
 import React, { useRef, useState } from "react";
 import { MediaCaptureButtons } from "./MediaCaptureButtons";
 import { MediaList } from "./MediaList";
+import { MediaPreview } from "./MediaPreview";
 import { MediaPreviewDialog } from "./MediaPreviewDialog";
 import { useAudioRecording } from "@/hooks/useAudioRecording";
 import { toast } from "sonner";
+import { Brain } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AIAnalysisButton } from "./AIAnalysisButton";
 
 interface MediaControlsProps {
   allowsPhoto?: boolean;
@@ -46,6 +49,7 @@ export function MediaControls({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mediaChunks = useRef<BlobPart[]>([]);
+  const [showAIAnalysis, setShowAIAnalysis] = useState(false);
   
   const { isRecording, startRecording, stopRecording } = useAudioRecording(onMediaUpload);
 
@@ -413,32 +417,62 @@ export function MediaControls({
         </div>
       )}
 
-      <MediaCaptureButtons 
-        allowsPhoto={allowsPhoto}
-        allowsVideo={allowsVideo}
-        allowsAudio={allowsAudio}
-        allowsFiles={allowsFiles}
-        disabled={disabled}
-        isUploading={isUploading}
-        isRecording={isRecording}
-        onAddMedia={handleAddMedia}
-        onStartRecording={startRecording}
-        onStopRecording={stopRecording}
-        onPhotoCapture={handlePhotoCapture}
-        onVideoCapture={handleVideoCapture}
-      />
+      <div className="flex flex-wrap gap-2">
+        <MediaCaptureButtons 
+          allowsPhoto={allowsPhoto}
+          allowsVideo={allowsVideo}
+          allowsAudio={allowsAudio}
+          allowsFiles={allowsFiles}
+          disabled={disabled}
+          isUploading={isUploading}
+          isRecording={isRecording}
+          onAddMedia={handleAddMedia}
+          onStartRecording={startRecording}
+          onStopRecording={stopRecording}
+          onPhotoCapture={handlePhotoCapture}
+          onVideoCapture={handleVideoCapture}
+        />
 
-      <MediaList 
-        mediaUrls={mediaUrls}
-        questionId={questionId}
-        questionText={questionText}
-        onPreview={setPreviewUrl}
-        onRemove={handleRemoveMedia}
-        onAIAnalysis={onAIAnalysis}
-      />
+        {onAIAnalysis && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAIAnalysis(!showAIAnalysis)}
+          >
+            <Brain className="h-4 w-4 mr-2" />
+            {showAIAnalysis ? "Desativar IA" : "Ativar IA"}
+          </Button>
+        )}
+      </div>
+
+      {mediaUrls.length > 0 && (
+        <div className="flex flex-wrap gap-2 p-2 bg-gray-50 rounded-md">
+          {mediaUrls.map((url, index) => (
+            <MediaPreview
+              key={`${url}-${index}`}
+              url={url}
+              onPreview={() => setPreviewUrl(url)}
+              onRemove={() => handleRemoveMedia(url)}
+              size="md"
+            />
+          ))}
+        </div>
+      )}
+
+      {showAIAnalysis && onAIAnalysis && mediaUrls.length > 0 && (
+        <AIAnalysisButton
+          questionId={questionId}
+          mediaUrls={mediaUrls}
+          questionText={questionText}
+          onAnalysisComplete={onAIAnalysis}
+          disabled={mediaUrls.length === 0}
+          size="sm"
+          variant="outline"
+        />
+      )}
 
       <MediaPreviewDialog 
-        previewUrl={previewUrl}
+        previewUrl={previewUrl} 
         onOpenChange={(open) => !open && setPreviewUrl(null)}
       />
     </div>
