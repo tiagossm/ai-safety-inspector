@@ -17,7 +17,17 @@ export async function fetchCompanies() {
       throw error;
     }
 
-    return data || [];
+    // Map companies to ensure correct format
+    const formattedCompanies = data?.map(company => ({
+      id: company.id,
+      name: company.fantasy_name || 'Empresa sem nome',
+      fantasy_name: company.fantasy_name || 'Empresa sem nome',
+      cnpj: company.cnpj || '',
+      cnae: company.cnae || '',
+      address: company.address || ''
+    })) || [];
+
+    return formattedCompanies;
   } catch (error) {
     console.error("Error fetching companies:", error);
     throw new Error(getErrorMessage(error));
@@ -35,7 +45,7 @@ export async function fetchCompanyNameById(companyId: string) {
   try {
     const { data, error } = await supabase
       .from('companies')
-      .select('fantasy_name, cnpj, cnae, address')
+      .select('id, fantasy_name, cnpj, cnae, address')
       .eq('id', companyId)
       .maybeSingle();
 
@@ -43,7 +53,16 @@ export async function fetchCompanyNameById(companyId: string) {
       throw error;
     }
 
-    return data || null;
+    if (!data) return null;
+    
+    return {
+      id: data.id,
+      name: data.fantasy_name || 'Empresa sem nome',
+      fantasy_name: data.fantasy_name || 'Empresa sem nome',
+      cnpj: data.cnpj || '',
+      cnae: data.cnae || '',
+      address: data.address || ''
+    };
   } catch (error) {
     console.error("Error fetching company name:", error);
     return null;
@@ -69,7 +88,12 @@ export async function fetchCompanyById(companyId: string) {
       throw error;
     }
 
-    return data || null;
+    if (!data) return null;
+    
+    return {
+      ...data,
+      name: data.fantasy_name || 'Empresa sem nome'
+    };
   } catch (error) {
     console.error("Error fetching company details:", error);
     return null;
@@ -96,7 +120,17 @@ export async function searchCompaniesByName(query: string) {
       throw error;
     }
     
-    return data || [];
+    // Map companies to ensure correct format
+    const formattedCompanies = data?.map(company => ({
+      id: company.id,
+      name: company.fantasy_name || 'Empresa sem nome',
+      fantasy_name: company.fantasy_name || 'Empresa sem nome',
+      cnpj: company.cnpj || '',
+      cnae: company.cnae || '',
+      address: company.address || ''
+    })) || [];
+    
+    return formattedCompanies;
   } catch (error) {
     console.error("Error searching companies:", error);
     throw new Error(getErrorMessage(error));

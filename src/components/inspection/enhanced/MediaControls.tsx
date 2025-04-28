@@ -1,474 +1,418 @@
-import React, { useRef, useState } from "react";
-import { MediaCaptureButtons } from "./MediaCaptureButtons";
-import { MediaList } from "./MediaList";
-import { MediaPreview } from "./MediaPreview";
-import { MediaPreviewDialog } from "./MediaPreviewDialog";
-import { useAudioRecording } from "@/hooks/useAudioRecording";
-import { toast } from "sonner";
-import { Brain } from "lucide-react";
+import React, { useState, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
-import { AIAnalysisButton } from "./AIAnalysisButton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Loader2, MapPin, AlertCircle, ImagePlus, X, Eye, Copy, CheckCircle, Wand2 } from "lucide-react";
+import { useCEP } from "@/hooks/useCEP";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { CompanySelector } from "@/components/inspection/CompanySelector";
+import { ResponsibleSelector } from "@/components/inspection/ResponsibleSelector";
+import { useFormSelectionData } from "@/hooks/inspection/useFormSelectionData";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog"
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MediaControlsProps {
-  allowsPhoto?: boolean;
-  allowsVideo?: boolean;
-  allowsAudio?: boolean;
-  allowsFiles?: boolean;
-  mediaUrls: string[];
   questionId: string;
   questionText: string;
+  mediaUrls: string[];
+  onMediaChange: (mediaUrls: string[]) => void;
   disabled?: boolean;
-  onMediaUpload: (file: File) => Promise<string | null>;
-  onMediaChange: (urls: string[]) => void;
-  onAIAnalysis?: (comment: string, actionPlan?: string) => void;
+  onAnalysisComplete?: (analysisResults: any) => void;
+}
+
+interface MediaPreviewProps {
+  url: string;
+  onPreview: () => void;
+  onRemove: () => void;
+  size?: "sm" | "md" | "lg";
+}
+
+interface AIAnalysisButtonProps {
+  questionId: string;
+  questionText: string;
+  mediaUrls: string[];
+  onAnalysisComplete?: (analysisResults: any) => void;
+  disabled?: boolean;
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  size?: "sm" | "md" | "lg";
+}
+
+const MAX_MEDIA_COUNT = 5;
+
+// Helper component to display a media preview
+function MediaPreview({ url, onPreview, onRemove, size = "md" }: MediaPreviewProps) {
+  const previewSizeClasses = {
+    sm: "w-16 h-16",
+    md: "w-24 h-24",
+    lg: "w-32 h-32",
+  };
+
+  return (
+    <div className="relative">
+      <img
+        src={url}
+        alt="Media Preview"
+        className={`rounded-md object-cover ${previewSizeClasses[size]}`}
+        onClick={onPreview}
+        style={{ cursor: 'pointer' }}
+      />
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute top-0 right-0 h-6 w-6 p-0"
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove();
+        }}
+      >
+        <X className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+}
+
+// Helper component to trigger AI analysis
+function AIAnalysisButton({
+  questionId,
+  mediaUrls,
+  questionText,
+  onAnalysisComplete,
+  disabled = false,
+  variant = "default",
+  size = "md",
+}: AIAnalysisButtonProps) {
+  const [loading, setLoading] = useState(false);
+  const [analysis, setAnalysis] = useState<any>(null);
+
+  const handleAnalysis = useCallback(async () => {
+    if (disabled || loading) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch('/api/ai/analyze-media', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          questionId: questionId,
+          questionText: questionText,
+          mediaUrls: mediaUrls,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to analyze media: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      setAnalysis(result);
+
+      if (onAnalysisComplete) {
+        onAnalysisComplete(result);
+      }
+
+      toast.success("Análise concluída com sucesso!");
+    } catch (error: any) {
+      console.error("Error during AI analysis:", error);
+      toast.error(`Erro na análise: ${error.message || 'Erro desconhecido'}`);
+    } finally {
+      setLoading(false);
+    }
+  }, [questionId, questionText, mediaUrls, onAnalysisComplete, disabled, loading]);
+
+  return (
+    <>
+      <Button
+        variant={variant}
+        size={size}
+        disabled={disabled || loading || mediaUrls.length === 0}
+        onClick={handleAnalysis}
+      >
+        {loading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Analisando...
+          </>
+        ) : (
+          <>
+            <Wand2 className="mr-2 h-4 w-4" />
+            Analisar com IA
+          </>
+        )}
+      </Button>
+
+      {analysis && (
+        <Dialog open={!!analysis} onOpenChange={() => setAnalysis(null)}>
+          <DialogContent className="sm:max-w-[525px]">
+            <DialogHeader>
+              <DialogTitle>Análise da IA</DialogTitle>
+              <DialogDescription>
+                Resultados da análise das mídias da questão.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">
+                  Resultado
+                </Label>
+                <Textarea
+                  id="result"
+                  className="col-span-3"
+                  value={analysis.result}
+                  readOnly
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button">Fechar</Button>
+              </DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
+  );
 }
 
 export function MediaControls({
-  allowsPhoto = false,
-  allowsVideo = false,
-  allowsAudio = false,
-  allowsFiles = false,
-  mediaUrls = [],
   questionId,
   questionText,
-  disabled = false,
-  onMediaUpload,
+  mediaUrls: initialMediaUrls,
   onMediaChange,
-  onAIAnalysis
+  disabled = false,
+  onAnalysisComplete,
 }: MediaControlsProps) {
-  const [isUploading, setIsUploading] = useState(false);
+  const [mediaUrls, setMediaUrls] = useState<string[]>(initialMediaUrls || []);
+  const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [showCamera, setShowCamera] = useState(false);
-  const [showVideoRecorder, setShowVideoRecorder] = useState(false);
-  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
-  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-  const [recording, setRecording] = useState(false);
-  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const mediaChunks = useRef<BlobPart[]>([]);
-  const [showAIAnalysis, setShowAIAnalysis] = useState(false);
-  
-  const { isRecording, startRecording, stopRecording } = useAudioRecording(onMediaUpload);
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Update local state when initialMediaUrls prop changes
+  useEffect(() => {
+    setMediaUrls(initialMediaUrls || []);
+  }, [initialMediaUrls]);
 
-    const fileType = file.type.split('/')[0];
-    const isValidFile = 
-      (allowsPhoto && fileType === 'image') || 
-      (allowsVideo && fileType === 'video') || 
-      (allowsAudio && fileType === 'audio') || 
-      (allowsFiles && !['image', 'video', 'audio'].includes(fileType));
-
-    if (!isValidFile) {
-      toast.error("Tipo de arquivo não permitido");
+  const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) {
       return;
     }
 
+    if (mediaUrls.length + files.length > MAX_MEDIA_COUNT) {
+      toast.error(`Você pode enviar no máximo ${MAX_MEDIA_COUNT} arquivos.`);
+      return;
+    }
+
+    setUploading(true);
     try {
-      setIsUploading(true);
-      const url = await onMediaUpload(file);
-      if (url) {
-        toast.success("Mídia adicionada com sucesso");
-        onMediaChange([...mediaUrls, url]);
-        
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
+      const uploadPromises = Array.from(files).map(async (file) => {
+        const fileName = `${questionId}/${file.name}`;
+        const { data, error } = await supabase.storage
+          .from('inspection-medias')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (error) {
+          throw error;
         }
-        
-        if (onAIAnalysis && ['image', 'video'].includes(fileType)) {
-          analyzeMediaWithAI(url);
-        }
-      }
+
+        const publicURL = supabase.storage
+          .from('inspection-medias')
+          .getPublicUrl(data.path);
+
+        return publicURL.data.publicUrl;
+      });
+
+      const newUrls = await Promise.all(uploadPromises);
+      const updatedMediaUrls = [...mediaUrls, ...newUrls];
+      setMediaUrls(updatedMediaUrls);
+      onMediaChange(updatedMediaUrls);
+      toast.success("Mídia enviada com sucesso!");
     } catch (error: any) {
-      toast.error(`Erro ao adicionar mídia: ${error.message}`);
+      console.error("Error uploading media:", error);
+      toast.error(`Erro ao enviar mídia: ${error.message || 'Erro desconhecido'}`);
     } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const analyzeMediaWithAI = async (mediaUrl: string) => {
-    try {
-      toast.info("Analisando mídia com IA...");
-      
-      setTimeout(() => {
-        if (onAIAnalysis) {
-          const comment = `Análise automática: Esta mídia mostra evidências relacionadas à questão "${questionText.substring(0, 50)}...".`;
-          const actionPlan = "Recomendamos verificar os procedimentos de segurança descritos no manual de operações.";
-          onAIAnalysis(comment, actionPlan);
-          toast.success("Análise de mídia concluída");
-        }
-      }, 2000);
-    } catch (error) {
-      console.error("Erro na análise de IA:", error);
-    }
-  };
-
-  const handleAddMedia = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
+      setUploading(false);
     }
   };
 
   const handleRemoveMedia = (urlToRemove: string) => {
-    const updatedUrls = mediaUrls.filter(url => url !== urlToRemove);
-    onMediaChange(updatedUrls);
-    toast.success("Mídia removida com sucesso");
+    const updatedMediaUrls = mediaUrls.filter(url => url !== urlToRemove);
+    setMediaUrls(updatedMediaUrls);
+    onMediaChange(updatedMediaUrls);
+    setPreviewUrl(null);
   };
 
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-      setCameraStream(stream);
-      setShowCamera(true);
-    } catch (error) {
-      console.error("Error accessing camera:", error);
-      toast.error("Não foi possível acessar a câmera. Verifique as permissões.");
-      handleAddMedia();
-    }
+  const handlePreviewMedia = (url: string) => {
+    setPreviewUrl(url);
   };
 
-  const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const context = canvasRef.current.getContext('2d');
-      if (context) {
-        canvasRef.current.width = videoRef.current.videoWidth;
-        canvasRef.current.height = videoRef.current.videoHeight;
-        context.drawImage(videoRef.current, 0, 0, videoRef.current.videoWidth, videoRef.current.videoHeight);
-        canvasRef.current.toBlob(async (blob) => {
-          if (blob) {
-            try {
-              setIsUploading(true);
-              const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
-              const url = await onMediaUpload(file);
-              if (url) {
-                onMediaChange([...mediaUrls, url]);
-                toast.success("Foto capturada com sucesso");
-                if (onAIAnalysis) {
-                  analyzeMediaWithAI(url);
-                }
-              }
-            } catch (error: any) {
-              toast.error(`Erro ao salvar foto: ${error.message}`);
-            } finally {
-              setIsUploading(false);
-              stopCamera();
-            }
-          }
-        }, 'image/jpeg', 0.95);
-      }
-    }
+  const handleCopyMediaLink = (url: string) => {
+    navigator.clipboard.writeText(url)
+      .then(() => {
+        toast.success("Link copiado para a área de transferência!");
+      })
+      .catch(err => {
+        console.error("Erro ao copiar link:", err);
+        toast.error("Falha ao copiar link.");
+      });
   };
 
-  const stopCamera = () => {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
-      setCameraStream(null);
-    }
-    setShowCamera(false);
+  const handleClearAllMedia = () => {
+    setMediaUrls([]);
+    onMediaChange([]);
+    setPreviewUrl(null);
   };
-
-  const startVideoRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-      setCameraStream(stream);
-      setShowVideoRecorder(true);
-      
-      const recorder = new MediaRecorder(stream);
-      mediaChunks.current = [];
-      
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          mediaChunks.current.push(e.data);
-        }
-      };
-      
-      recorder.onstop = () => {
-        const videoBlob = new Blob(mediaChunks.current, { type: 'video/mp4' });
-        const url = URL.createObjectURL(videoBlob);
-        setVideoPreviewUrl(url);
-        setRecordedBlob(videoBlob);
-        setRecording(false);
-      };
-      
-      setMediaRecorder(recorder);
-      
-      recorder.start();
-      setRecording(true);
-      
-      setTimeout(() => {
-        if (recorder.state === 'recording') {
-          recorder.stop();
-        }
-      }, 120000);
-    } catch (error) {
-      console.error("Error starting video recording:", error);
-      toast.error("Não foi possível iniciar a gravação de vídeo. Verifique as permissões.");
-      handleAddMedia();
-    }
-  };
-
-  const stopVideoRecording = () => {
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
-      mediaRecorder.stop();
-      setRecording(false);
-    }
-  };
-
-  const discardVideoRecording = () => {
-    setVideoPreviewUrl(null);
-    setRecordedBlob(null);
-    stopVideoStream();
-  };
-
-  const saveVideoRecording = async () => {
-    if (recordedBlob) {
-      try {
-        setIsUploading(true);
-        const file = new File([recordedBlob], `video_${Date.now()}.mp4`, { type: 'video/mp4' });
-        const url = await onMediaUpload(file);
-        if (url) {
-          onMediaChange([...mediaUrls, url]);
-          toast.success("Vídeo salvo com sucesso");
-          if (onAIAnalysis) {
-            analyzeMediaWithAI(url);
-          }
-        }
-      } catch (error: any) {
-        toast.error(`Erro ao salvar vídeo: ${error.message}`);
-      } finally {
-        setIsUploading(false);
-        discardVideoRecording();
-        stopVideoStream();
-      }
-    }
-  };
-
-  const stopVideoStream = () => {
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
-      setCameraStream(null);
-    }
-    setShowVideoRecorder(false);
-  };
-
-  const handlePhotoCapture = () => {
-    startCamera();
-  };
-
-  const handleVideoCapture = () => {
-    startVideoRecording();
-  };
-
-  if (!allowsPhoto && !allowsVideo && !allowsAudio && !allowsFiles) {
-    return null;
-  }
 
   return (
-    <div className="space-y-4">
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileSelect}
-        className="hidden"
-        accept={[
-          allowsPhoto && 'image/*',
-          allowsVideo && 'video/*',
-          allowsAudio && 'audio/*',
-          allowsFiles && '*/*'
-        ].filter(Boolean).join(',')}
-      />
-
-      {showCamera && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex flex-col items-center justify-center p-4">
-          <div className="bg-background rounded-lg max-w-lg w-full p-4 space-y-4">
-            <h3 className="font-medium text-lg">Capturar Foto</h3>
-            <div className="relative aspect-video bg-muted rounded-md overflow-hidden">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover"
-              />
-              <canvas ref={canvasRef} className="hidden" />
-            </div>
-            <div className="flex justify-between">
-              <button
-                type="button"
-                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded"
-                onClick={stopCamera}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-                onClick={capturePhoto}
-              >
-                Tirar Foto
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showVideoRecorder && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex flex-col items-center justify-center p-4">
-          <div className="bg-background rounded-lg max-w-lg w-full p-4 space-y-4">
-            <h3 className="font-medium text-lg">
-              {videoPreviewUrl ? "Pré-visualização do Vídeo" : "Gravar Vídeo"}
-            </h3>
-            <div className="relative aspect-video bg-muted rounded-md overflow-hidden">
-              {videoPreviewUrl ? (
-                <video
-                  src={videoPreviewUrl}
-                  controls
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover"
-                />
-              )}
-              {recording && (
-                <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full animate-pulse">
-                  REC
-                </div>
-              )}
-            </div>
-            <div className="flex justify-between">
-              {videoPreviewUrl ? (
-                <>
-                  <button
-                    type="button"
-                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded"
-                    onClick={discardVideoRecording}
-                  >
-                    Descartar
-                  </button>
-                  <button
-                    type="button"
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
-                    onClick={saveVideoRecording}
-                  >
-                    Salvar Vídeo
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded"
-                    onClick={stopVideoStream}
-                  >
-                    Cancelar
-                  </button>
-                  {recording ? (
-                    <button
-                      type="button"
-                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
-                      onClick={stopVideoRecording}
-                    >
-                      Parar Gravação
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-                      onClick={() => mediaRecorder?.start()}
-                    >
-                      Iniciar Gravação
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="flex items-center justify-between">
-        <div className="flex flex-wrap gap-2">
-          <MediaCaptureButtons 
-            allowsPhoto={allowsPhoto}
-            allowsVideo={allowsVideo}
-            allowsAudio={allowsAudio}
-            allowsFiles={allowsFiles}
-            disabled={disabled}
-            isUploading={isUploading}
-            isRecording={isRecording}
-            onAddMedia={handleAddMedia}
-            onStartRecording={startRecording}
-            onStopRecording={stopRecording}
-            onPhotoCapture={handlePhotoCapture}
-            onVideoCapture={handleVideoCapture}
+    <div>
+      {/* Media Upload */}
+      <div className="mb-4">
+        <Label htmlFor={`media-upload-${questionId}`} className="mb-2 block text-sm font-medium">
+          Enviar Mídia ({mediaUrls.length}/{MAX_MEDIA_COUNT})
+        </Label>
+        <div className="flex items-center space-x-2">
+          <Input
+            type="file"
+            id={`media-upload-${questionId}`}
+            multiple
+            accept="image/*,video/*"
+            onChange={handleUpload}
+            disabled={uploading || mediaUrls.length >= MAX_MEDIA_COUNT || disabled}
+            className="hidden"
           />
-        </div>
-
-        {onAIAnalysis && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowAIAnalysis(!showAIAnalysis)}
-            className="ml-auto"
+          <Label
+            htmlFor={`media-upload-${questionId}`}
+            className={cn(
+              "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2",
+              uploading || mediaUrls.length >= MAX_MEDIA_COUNT || disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+            )}
           >
-            <Brain className="h-4 w-4 mr-2" />
-            {showAIAnalysis ? "Desativar IA" : "Ativar IA"}
-          </Button>
+            {uploading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Enviando...
+              </>
+            ) : (
+              <>
+                <ImagePlus className="mr-2 h-4 w-4" />
+                Enviar Mídia
+              </>
+            )}
+          </Label>
+          {mediaUrls.length > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleClearAllMedia}
+              disabled={uploading || disabled}
+            >
+              <X className="mr-2 h-4 w-4" />
+              Limpar Tudo
+            </Button>
+          )}
+        </div>
+        {mediaUrls.length >= MAX_MEDIA_COUNT && (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Máximo de {MAX_MEDIA_COUNT} arquivos atingido.
+          </p>
         )}
       </div>
 
+      {/* Media Previews */}
       {mediaUrls.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 p-3 bg-gray-50 rounded-md">
-          {mediaUrls.map((url, index) => (
-            <MediaPreview
-              key={`${url}-${index}`}
-              url={url}
-              onPreview={() => setPreviewUrl(url)}
-              onRemove={() => handleRemoveMedia(url)}
-              size="lg"
-            />
-          ))}
-        </div>
-      )}
-
-      {showAIAnalysis && onAIAnalysis && mediaUrls.length > 0 && (
-        <div className="p-3 border rounded-md bg-blue-50">
-          <div className="flex items-center mb-2">
-            <Brain className="h-4 w-4 text-blue-600 mr-2" />
-            <h3 className="text-sm font-medium text-blue-700">Análise de Inteligência Artificial</h3>
+        <div className="mb-4">
+          <Label className="mb-2 block text-sm font-medium">
+            Mídias Enviadas
+          </Label>
+          <div className="flex items-center space-x-2 overflow-x-auto">
+            {mediaUrls.map(url => (
+              <MediaPreview 
+                key={`preview-${url}`}
+                url={url} 
+                onPreview={() => handlePreviewMedia(url)}
+                onRemove={() => handleRemoveMedia(url)}
+                size="lg"
+              />
+            ))}
           </div>
-          <AIAnalysisButton
-            questionId={questionId}
-            mediaUrls={mediaUrls}
-            questionText={questionText}
-            onAnalysisComplete={onAIAnalysis}
-            disabled={mediaUrls.length === 0}
-            size="sm"
-            variant="default"
-          />
         </div>
       )}
 
-      <MediaPreviewDialog 
-        previewUrl={previewUrl} 
-        onOpenChange={(open) => !open && setPreviewUrl(null)}
-      />
+      {/* AI Analysis Button */}
+      <div className="mb-4">
+        <AIAnalysisButton
+          questionId={questionId}
+          mediaUrls={mediaUrls}
+          questionText={questionText}
+          onAnalysisComplete={onAnalysisComplete}
+          disabled={disabled}
+          size="sm"
+          variant="default"
+        />
+      </div>
+
+      {/* Media Preview Dialog */}
+      <Dialog open={!!previewUrl} onOpenChange={() => setPreviewUrl(null)}>
+        <DialogContent className="sm:max-w-[75%]">
+          <DialogHeader>
+            <DialogTitle>Visualização da Mídia</DialogTitle>
+            <DialogDescription>
+              Visualize a mídia em tela cheia e copie o link.
+            </DialogDescription>
+          </DialogHeader>
+          {previewUrl && (
+            <div className="flex justify-center items-center">
+              <img
+                src={previewUrl}
+                alt="Media Preview"
+                className="rounded-md object-contain max-h-[600px]"
+              />
+            </div>
+          )}
+          <DialogFooter>
+            {previewUrl && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => handleCopyMediaLink(previewUrl)}
+              >
+                <Copy className="mr-2 h-4 w-4" />
+                Copiar Link
+              </Button>
+            )}
+            <DialogClose asChild>
+              <Button type="button">Fechar</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

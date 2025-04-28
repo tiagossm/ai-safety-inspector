@@ -126,6 +126,7 @@ export function InspectionDataForm({
   };
 
   const handleCompanySelect = (companyId: string, selectedCompany: any) => {
+    console.log("Company selected:", companyId, selectedCompany);
     setFormData(prev => ({
       ...prev,
       companyId,

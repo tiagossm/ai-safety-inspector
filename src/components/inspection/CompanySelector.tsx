@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Check, ChevronDown, Building, Plus, Loader2 } from "lucide-react";
 import {
   Command,
@@ -79,7 +78,15 @@ export function CompanySelector({ value, onSelect, className, disabled = false }
 
       if (error) throw error;
       if (data) {
-        setSelectedCompany(data);
+        const company = {
+          id: data.id,
+          name: data.fantasy_name || 'Empresa sem nome',
+          fantasy_name: data.fantasy_name || 'Empresa sem nome',
+          cnpj: data.cnpj || '',
+          cnae: data.cnae || '',
+          address: data.address || ''
+        };
+        setSelectedCompany(company);
       }
     } catch (error) {
       console.error("Erro ao buscar empresa por ID:", error);
@@ -99,6 +106,7 @@ export function CompanySelector({ value, onSelect, className, disabled = false }
   };
 
   const handleSelectCompany = (company: any) => {
+    console.log("Selecting company:", company);
     setSelectedCompany(company);
     onSelect(company.id, company);
     setOpen(false);
@@ -129,7 +137,7 @@ export function CompanySelector({ value, onSelect, className, disabled = false }
               <div className="flex items-center">
                 <Building className="mr-2 h-4 w-4" />
                 {selectedCompany ? (
-                  <span className="truncate">{selectedCompany.fantasy_name}</span>
+                  <span className="truncate">{selectedCompany.name || selectedCompany.fantasy_name}</span>
                 ) : (
                   <span className="text-muted-foreground">Selecione uma empresa</span>
                 )}
@@ -163,7 +171,7 @@ export function CompanySelector({ value, onSelect, className, disabled = false }
                   {companies.map((company) => (
                     <CommandItem
                       key={company.id}
-                      value={company.fantasy_name}
+                      value={company.name || company.fantasy_name}
                       onSelect={() => handleSelectCompany(company)}
                     >
                       <Check
@@ -173,7 +181,7 @@ export function CompanySelector({ value, onSelect, className, disabled = false }
                         )}
                       />
                       <div className="flex-1 overflow-hidden">
-                        <div className="font-medium">{company.fantasy_name}</div>
+                        <div className="font-medium">{company.name || company.fantasy_name}</div>
                         <div className="text-xs text-muted-foreground truncate">
                           CNPJ: {company.cnpj} {company.cnae && `• CNAE: ${company.cnae}`}
                         </div>

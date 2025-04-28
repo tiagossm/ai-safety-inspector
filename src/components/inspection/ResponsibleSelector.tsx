@@ -46,7 +46,7 @@ export function ResponsibleSelector({ value = [], onSelect, className, disabled 
 
   // Update selected users when value changes
   useEffect(() => {
-    if (value.length > 0) {
+    if (value && value.length > 0) {
       fetchUsersByIds(value);
     } else {
       setSelectedUsers([]);
@@ -62,11 +62,19 @@ export function ResponsibleSelector({ value = [], onSelect, className, disabled 
         .order("name", { ascending: true });
 
       if (error) throw error;
-      setUsers(data || []);
+      
+      const formattedUsers = (data || []).map(user => ({
+        id: user.id,
+        name: user.name || user.email || 'Usuário sem nome',
+        email: user.email || '',
+        position: user.position || ''
+      }));
+      
+      setUsers(formattedUsers);
 
       // Map any selected user IDs to the full user objects
-      if (value.length > 0) {
-        const selected = data?.filter(user => value.includes(user.id)) || [];
+      if (value && value.length > 0) {
+        const selected = formattedUsers?.filter(user => value.includes(user.id)) || [];
         setSelectedUsers(selected);
       }
     } catch (error) {
@@ -78,7 +86,7 @@ export function ResponsibleSelector({ value = [], onSelect, className, disabled 
   };
 
   const fetchUsersByIds = async (ids: string[]) => {
-    if (ids.length === 0) return;
+    if (!ids || ids.length === 0) return;
     
     try {
       const { data, error } = await supabase
@@ -87,7 +95,15 @@ export function ResponsibleSelector({ value = [], onSelect, className, disabled 
         .in("id", ids);
 
       if (error) throw error;
-      setSelectedUsers(data || []);
+      
+      const formattedUsers = (data || []).map(user => ({
+        id: user.id,
+        name: user.name || user.email || 'Usuário sem nome',
+        email: user.email || '',
+        position: user.position || ''
+      }));
+      
+      setSelectedUsers(formattedUsers);
     } catch (error) {
       console.error("Erro ao buscar usuários por IDs:", error);
     }
@@ -108,7 +124,15 @@ export function ResponsibleSelector({ value = [], onSelect, className, disabled 
         .order('name', { ascending: true });
       
       if (error) throw error;
-      setUsers(data || []);
+      
+      const formattedUsers = (data || []).map(user => ({
+        id: user.id,
+        name: user.name || user.email || 'Usuário sem nome',
+        email: user.email || '',
+        position: user.position || ''
+      }));
+      
+      setUsers(formattedUsers);
     } catch (error) {
       console.error("Erro ao buscar usuários:", error);
     } finally {
@@ -156,26 +180,34 @@ export function ResponsibleSelector({ value = [], onSelect, className, disabled 
   };
 
   const handleSelectUser = (user: any) => {
+    console.log("Toggle selecting user:", user);
+    
     // Check if user is already selected
-    if (selectedUsers.some(u => u.id === user.id)) {
+    const isSelected = selectedUsers.some(u => u.id === user.id);
+    let newSelected;
+    
+    if (isSelected) {
       // Remove user from selection
-      const newSelected = selectedUsers.filter(u => u.id !== user.id);
-      setSelectedUsers(newSelected);
-      onSelect(newSelected.map(u => u.id), newSelected);
+      newSelected = selectedUsers.filter(u => u.id !== user.id);
     } else {
       // Add user to selection
-      const newSelected = [...selectedUsers, user];
-      setSelectedUsers(newSelected);
-      onSelect(newSelected.map(u => u.id), newSelected);
+      newSelected = [...selectedUsers, user];
       saveToRecentlyUsed(user);
     }
+    
+    setSelectedUsers(newSelected);
+    const ids = newSelected.map(u => u.id);
+    console.log("Selected IDs:", ids);
+    onSelect(ids, newSelected);
+    
     // Keep the popover open for multi-selection
   };
 
   const handleRemoveUser = (userId: string) => {
     const newSelected = selectedUsers.filter(u => u.id !== userId);
     setSelectedUsers(newSelected);
-    onSelect(newSelected.map(u => u.id), newSelected);
+    const ids = newSelected.map(u => u.id);
+    onSelect(ids, newSelected);
   };
 
   const handleQuickCreateSuccess = (user: any) => {
@@ -185,7 +217,8 @@ export function ResponsibleSelector({ value = [], onSelect, className, disabled 
     // Add to selected users
     const newSelected = [...selectedUsers, user];
     setSelectedUsers(newSelected);
-    onSelect(newSelected.map(u => u.id), newSelected);
+    const ids = newSelected.map(u => u.id);
+    onSelect(ids, newSelected);
     
     // Add to recently used
     saveToRecentlyUsed(user);

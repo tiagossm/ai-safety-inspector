@@ -30,7 +30,17 @@ export function useFormSelectionData() {
         .order("fantasy_name", { ascending: true });
 
       if (error) throw error;
-      setCompanies(data || []);
+      
+      const formattedCompanies = (data || []).map(company => ({
+        id: company.id,
+        name: company.fantasy_name || 'Empresa sem nome',
+        fantasy_name: company.fantasy_name || 'Empresa sem nome',
+        cnpj: company.cnpj || '',
+        cnae: company.cnae || '',
+        address: company.address || ''
+      }));
+      
+      setCompanies(formattedCompanies);
     } catch (error: any) {
       console.error("Error fetching companies:", error);
       setErrorCompanies(error.message || "Erro ao carregar empresas");
@@ -50,7 +60,15 @@ export function useFormSelectionData() {
         .order("name", { ascending: true });
 
       if (error) throw error;
-      setResponsibles(data || []);
+      
+      const formattedUsers = (data || []).map(user => ({
+        id: user.id,
+        name: user.name || user.email || 'Usuário sem nome',
+        email: user.email || '',
+        position: user.position || ''
+      }));
+      
+      setResponsibles(formattedUsers);
     } catch (error: any) {
       console.error("Error fetching responsibles:", error);
       setErrorResponsibles(error.message || "Erro ao carregar responsáveis");
