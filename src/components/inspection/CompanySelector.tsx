@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Check, ChevronDown, Building, Plus } from "lucide-react";
+import { Check, ChevronDown, Building, Plus, Loader2 } from "lucide-react";
 import {
   Command,
   CommandEmpty,
@@ -18,23 +18,29 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CompanyQuickCreateModal } from "./CompanyQuickCreateModal";
+import { fetchCompanies, searchCompaniesByName } from "@/services/company/companyService";
+import { toast } from "sonner";
 
 interface CompanySelectorProps {
   value: string;
   onSelect: (id: string, data: any) => void;
   className?: string;
+  disabled?: boolean;
 }
 
-export function CompanySelector({ value, onSelect, className }: CompanySelectorProps) {
+export function CompanySelector({ value, onSelect, className, disabled = false }: CompanySelectorProps) {
   const [open, setOpen] = useState(false);
   const [companies, setCompanies] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
 
   useEffect(() => {
-    fetchCompanies();
-  }, []);
+    if (open) {
+      fetchCompanyList();
+    }
+  }, [open]);
 
   useEffect(() => {
     if (value && !selectedCompany) {
@@ -42,17 +48,11 @@ export function CompanySelector({ value, onSelect, className }: CompanySelectorP
     }
   }, [value]);
 
-  const fetchCompanies = async () => {
+  const fetchCompanyList = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("companies")
-        .select("id, fantasy_name, cnpj, cnae, address")
-        .eq("status", "active")  // Only active companies
-        .order("fantasy_name", { ascending: true });
-
-      if (error) throw error;
-      setCompanies(data || []);
+      const data = await fetchCompanies();
+      setCompanies(data);
 
       // If we have a value but no selectedCompany yet, find it in the fetched data
       if (value && !selectedCompany) {
@@ -63,6 +63,7 @@ export function CompanySelector({ value, onSelect, className }: CompanySelectorP
       }
     } catch (error) {
       console.error("Erro ao carregar empresas:", error);
+      toast("Erro ao carregar lista de empresas");
     } finally {
       setLoading(false);
     }
@@ -74,7 +75,7 @@ export function CompanySelector({ value, onSelect, className }: CompanySelectorP
         .from("companies")
         .select("id, fantasy_name, cnpj, cnae, address")
         .eq("id", id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       if (data) {
@@ -82,6 +83,18 @@ export function CompanySelector({ value, onSelect, className }: CompanySelectorP
       }
     } catch (error) {
       console.error("Erro ao buscar empresa por ID:", error);
+    }
+  };
+
+  const handleSearch = async (query: string) => {
+    try {
+      setSearching(true);
+      const data = await searchCompaniesByName(query);
+      setCompanies(data);
+    } catch (error) {
+      console.error("Erro ao buscar empresas:", error);
+    } finally {
+      setSearching(false);
     }
   };
 
@@ -106,6 +119,7 @@ export function CompanySelector({ value, onSelect, className }: CompanySelectorP
               variant="outline"
               role="combobox"
               aria-expanded={open}
+              disabled={disabled}
               className={cn(
                 "w-full justify-between font-normal",
                 !value && "text-muted-foreground",
@@ -115,7 +129,7 @@ export function CompanySelector({ value, onSelect, className }: CompanySelectorP
               <div className="flex items-center">
                 <Building className="mr-2 h-4 w-4" />
                 {selectedCompany ? (
-                  <span>{selectedCompany.fantasy_name}</span>
+                  <span className="truncate">{selectedCompany.fantasy_name}</span>
                 ) : (
                   <span className="text-muted-foreground">Selecione uma empresa</span>
                 )}
@@ -125,10 +139,25 @@ export function CompanySelector({ value, onSelect, className }: CompanySelectorP
           </PopoverTrigger>
           <PopoverContent className="w-[350px] p-0">
             <Command>
-              <CommandInput placeholder="Buscar empresas..." />
+              <CommandInput 
+                placeholder="Buscar empresas..." 
+                onValueChange={handleSearch} 
+              />
               <CommandList>
                 <CommandEmpty>
-                  {loading ? "Carregando..." : "Nenhuma empresa encontrada"}
+                  {loading ? (
+                    <div className="flex items-center justify-center p-4">
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Carregando...
+                    </div>
+                  ) : searching ? (
+                    <div className="flex items-center justify-center p-4">
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Buscando...
+                    </div>
+                  ) : (
+                    "Nenhuma empresa encontrada"
+                  )}
                 </CommandEmpty>
                 <CommandGroup>
                   {companies.map((company) => (
@@ -162,6 +191,7 @@ export function CompanySelector({ value, onSelect, className }: CompanySelectorP
           size="icon" 
           variant="outline"
           title="Adicionar nova empresa"
+          disabled={disabled}
           onClick={() => setIsQuickCreateOpen(true)}
         >
           <Plus className="h-4 w-4" />

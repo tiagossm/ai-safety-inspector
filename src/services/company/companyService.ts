@@ -75,3 +75,30 @@ export async function fetchCompanyById(companyId: string) {
     return null;
   }
 }
+
+/**
+ * Searches companies by name
+ */
+export async function searchCompaniesByName(query: string) {
+  if (!query || query.trim() === '') {
+    return await fetchCompanies();
+  }
+  
+  try {
+    const { data, error } = await supabase
+      .from('companies')
+      .select('id, fantasy_name, cnpj, cnae, address')
+      .eq('status', 'active')
+      .ilike('fantasy_name', `%${query}%`)
+      .order('fantasy_name', { ascending: true });
+    
+    if (error) {
+      throw error;
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error("Error searching companies:", error);
+    throw new Error(getErrorMessage(error));
+  }
+}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Check, ChevronDown, User, Plus, X } from "lucide-react";
+import { Check, ChevronDown, User, Plus, X, Loader2 } from "lucide-react";
 import {
   Command,
   CommandEmpty,
@@ -18,36 +18,40 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { ResponsibleQuickCreateModal } from "./ResponsibleQuickCreateModal";
+import { toast } from "sonner";
 
 interface ResponsibleSelectorProps {
   value: string[];  // Changed to array for multiple selections
   onSelect: (ids: string[], data: any[]) => void;
   className?: string;
+  disabled?: boolean;
 }
 
-export function ResponsibleSelector({ value = [], onSelect, className }: ResponsibleSelectorProps) {
+export function ResponsibleSelector({ value = [], onSelect, className, disabled = false }: ResponsibleSelectorProps) {
   const [open, setOpen] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
   const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
   const [recentlyUsed, setRecentlyUsed] = useState<any[]>([]);
 
-  // Load users on component mount
+  // Load users when component mounts or popup opens
   useEffect(() => {
-    fetchUsers();
-    loadRecentlyUsed();
-  }, []);
+    if (open) {
+      fetchUsers();
+      loadRecentlyUsed();
+    }
+  }, [open]);
 
   // Update selected users when value changes
   useEffect(() => {
-    if (value.length > 0 && users.length > 0) {
-      const selected = users.filter(user => value.includes(user.id));
-      setSelectedUsers(selected);
+    if (value.length > 0) {
+      fetchUsersByIds(value);
     } else {
       setSelectedUsers([]);
     }
-  }, [value, users]);
+  }, [value]);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -67,8 +71,48 @@ export function ResponsibleSelector({ value = [], onSelect, className }: Respons
       }
     } catch (error) {
       console.error("Erro ao carregar usuários:", error);
+      toast("Erro ao carregar lista de usuários");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUsersByIds = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from("users")
+        .select("id, name, email, position")
+        .in("id", ids);
+
+      if (error) throw error;
+      setSelectedUsers(data || []);
+    } catch (error) {
+      console.error("Erro ao buscar usuários por IDs:", error);
+    }
+  };
+
+  const handleSearch = async (query: string) => {
+    if (!query || query.trim() === '') {
+      fetchUsers();
+      return;
+    }
+    
+    try {
+      setSearching(true);
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, name, email, position')
+        .ilike('name', `%${query}%`)
+        .order('name', { ascending: true });
+      
+      if (error) throw error;
+      setUsers(data || []);
+    } catch (error) {
+      console.error("Erro ao buscar usuários:", error);
+    } finally {
+      setSearching(false);
     }
   };
 
@@ -134,26 +178,9 @@ export function ResponsibleSelector({ value = [], onSelect, className }: Respons
     onSelect(newSelected.map(u => u.id), newSelected);
   };
 
-  // Permite adicionar um responsável manualmente
-  const handleCreateResponsible = (inputValue: string) => {
-    if (!inputValue.trim()) return;
-    
-    // Create a temporary user object with a generated ID
-    const newUser = {
-      id: `temp-${Date.now()}`,
-      name: inputValue,
-      email: "",
-      isTemporary: true
-    };
-    
-    const newSelected = [...selectedUsers, newUser];
-    setSelectedUsers(newSelected);
-    onSelect(newSelected.map(u => u.id), newSelected);
-  };
-
   const handleQuickCreateSuccess = (user: any) => {
     // Add the new user to the list
-    setUsers([...users, user]);
+    setUsers(prevUsers => [...prevUsers, user]);
     
     // Add to selected users
     const newSelected = [...selectedUsers, user];
@@ -174,6 +201,7 @@ export function ResponsibleSelector({ value = [], onSelect, className }: Respons
                 variant="outline"
                 role="combobox"
                 aria-expanded={open}
+                disabled={disabled}
                 className={cn(
                   "w-full justify-between font-normal",
                   (!value || value.length === 0) && "text-muted-foreground",
@@ -193,28 +221,24 @@ export function ResponsibleSelector({ value = [], onSelect, className }: Respons
             </PopoverTrigger>
             <PopoverContent className="w-[350px] p-0">
               <Command>
-                <CommandInput placeholder="Buscar responsável..." />
+                <CommandInput 
+                  placeholder="Buscar responsável..." 
+                  onValueChange={handleSearch}
+                />
                 <CommandList>
                   <CommandEmpty>
                     {loading ? (
-                      "Carregando..."
-                    ) : (
-                      <div className="py-2 px-3 text-sm">
-                        <p>Nenhum responsável encontrado</p>
-                        <Button 
-                          variant="link" 
-                          className="px-0 py-1 h-auto" 
-                          onClick={() => {
-                            const input = document.querySelector('.cmdk-input') as HTMLInputElement;
-                            if (input?.value) {
-                              handleCreateResponsible(input.value);
-                              setOpen(false);
-                            }
-                          }}
-                        >
-                          Criar novo responsável
-                        </Button>
+                      <div className="flex items-center justify-center p-4">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Carregando...
                       </div>
+                    ) : searching ? (
+                      <div className="flex items-center justify-center p-4">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Buscando...
+                      </div>
+                    ) : (
+                      "Nenhum responsável encontrado"
                     )}
                   </CommandEmpty>
 
@@ -276,6 +300,7 @@ export function ResponsibleSelector({ value = [], onSelect, className }: Respons
           size="icon" 
           variant="outline" 
           title="Adicionar novo responsável"
+          disabled={disabled}
           onClick={() => setIsQuickCreateOpen(true)}
         >
           <Plus className="h-4 w-4" />
@@ -294,6 +319,7 @@ export function ResponsibleSelector({ value = [], onSelect, className }: Respons
                 size="icon"
                 className="h-4 w-4 ml-1 p-0"
                 onClick={() => handleRemoveUser(user.id)}
+                disabled={disabled}
               >
                 <X className="h-3 w-3" />
               </Button>
