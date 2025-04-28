@@ -80,7 +80,6 @@ export function MediaControls({
           fileInputRef.current.value = '';
         }
         
-        // If we have AI analysis capability, analyze the new media
         if (onAIAnalysis && ['image', 'video'].includes(fileType)) {
           analyzeMediaWithAI(url);
         }
@@ -93,11 +92,9 @@ export function MediaControls({
   };
 
   const analyzeMediaWithAI = async (mediaUrl: string) => {
-    // This would be expanded with actual AI integration
     try {
       toast.info("Analisando mídia com IA...");
       
-      // Simulate AI analysis with a timeout
       setTimeout(() => {
         if (onAIAnalysis) {
           const comment = `Análise automática: Esta mídia mostra evidências relacionadas à questão "${questionText.substring(0, 50)}...".`;
@@ -123,7 +120,6 @@ export function MediaControls({
     toast.success("Mídia removida com sucesso");
   };
 
-  // Photo capture functions
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -135,7 +131,6 @@ export function MediaControls({
     } catch (error) {
       console.error("Error accessing camera:", error);
       toast.error("Não foi possível acessar a câmera. Verifique as permissões.");
-      // Fallback to file upload
       handleAddMedia();
     }
   };
@@ -156,7 +151,6 @@ export function MediaControls({
               if (url) {
                 onMediaChange([...mediaUrls, url]);
                 toast.success("Foto capturada com sucesso");
-                // If AI analysis is available
                 if (onAIAnalysis) {
                   analyzeMediaWithAI(url);
                 }
@@ -181,7 +175,6 @@ export function MediaControls({
     setShowCamera(false);
   };
 
-  // Video recording functions
   const startVideoRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -210,38 +203,34 @@ export function MediaControls({
       
       setMediaRecorder(recorder);
       
-      // Start recording with a 2-minute maximum
       recorder.start();
       setRecording(true);
       
-      // Auto-stop after 2 minutes
       setTimeout(() => {
         if (recorder.state === 'recording') {
           recorder.stop();
         }
-      }, 120000); // 2 minutes
-      
+      }, 120000);
     } catch (error) {
       console.error("Error starting video recording:", error);
       toast.error("Não foi possível iniciar a gravação de vídeo. Verifique as permissões.");
-      // Fallback to file upload
       handleAddMedia();
     }
   };
-  
+
   const stopVideoRecording = () => {
     if (mediaRecorder && mediaRecorder.state === 'recording') {
       mediaRecorder.stop();
       setRecording(false);
     }
   };
-  
+
   const discardVideoRecording = () => {
     setVideoPreviewUrl(null);
     setRecordedBlob(null);
     stopVideoStream();
   };
-  
+
   const saveVideoRecording = async () => {
     if (recordedBlob) {
       try {
@@ -251,8 +240,6 @@ export function MediaControls({
         if (url) {
           onMediaChange([...mediaUrls, url]);
           toast.success("Vídeo salvo com sucesso");
-          
-          // If AI analysis is available
           if (onAIAnalysis) {
             analyzeMediaWithAI(url);
           }
@@ -266,7 +253,7 @@ export function MediaControls({
       }
     }
   };
-  
+
   const stopVideoStream = () => {
     if (cameraStream) {
       cameraStream.getTracks().forEach(track => track.stop());
@@ -278,7 +265,7 @@ export function MediaControls({
   const handlePhotoCapture = () => {
     startCamera();
   };
-  
+
   const handleVideoCapture = () => {
     startVideoRecording();
   };
@@ -302,7 +289,6 @@ export function MediaControls({
         ].filter(Boolean).join(',')}
       />
 
-      {/* Camera UI */}
       {showCamera && (
         <div className="fixed inset-0 bg-black/80 z-50 flex flex-col items-center justify-center p-4">
           <div className="bg-background rounded-lg max-w-lg w-full p-4 space-y-4">
@@ -337,7 +323,6 @@ export function MediaControls({
         </div>
       )}
 
-      {/* Video Recorder UI */}
       {showVideoRecorder && (
         <div className="fixed inset-0 bg-black/80 z-50 flex flex-col items-center justify-center p-4">
           <div className="bg-background rounded-lg max-w-lg w-full p-4 space-y-4">
@@ -457,7 +442,6 @@ export function MediaControls({
               onPreview={() => setPreviewUrl(url)}
               onRemove={() => handleRemoveMedia(url)}
               size="lg"
-              className="aspect-square w-full h-auto"
             />
           ))}
         </div>
@@ -477,7 +461,6 @@ export function MediaControls({
             disabled={mediaUrls.length === 0}
             size="sm"
             variant="default"
-            className="w-full"
           />
         </div>
       )}
