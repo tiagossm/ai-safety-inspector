@@ -101,7 +101,7 @@ function AIAnalysisButton({
   onAnalysisComplete,
   disabled = false,
   variant = "default",
-  size = "md",
+  size = "default", // Changed from "md" to "default" to match allowed types
 }: AIAnalysisButtonProps) {
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState<any>(null);
