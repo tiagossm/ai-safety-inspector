@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { CompanyQuickCreateModal } from "./CompanyQuickCreateModal";
 import { fetchCompanies, searchCompaniesByName } from "@/services/company/companyService";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client"; // Added missing import
 
 interface CompanySelectorProps {
   value: string;

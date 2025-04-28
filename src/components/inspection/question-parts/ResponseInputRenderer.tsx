@@ -85,26 +85,11 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           question.allowsAudio || question.permite_audio ||
           question.allowsFiles || question.permite_files) && (
           <MediaControls 
-            allowsPhoto={question.allowsPhoto || question.permite_foto}
-            allowsVideo={question.allowsVideo || question.permite_video}
-            allowsAudio={question.allowsAudio || question.permite_audio}
-            allowsFiles={question.allowsFiles || question.permite_files}
-            mediaUrls={response?.mediaUrls || []}
             questionId={question.id}
             questionText={question.text || question.pergunta || ""}
+            mediaUrls={response?.mediaUrls || []}
             onMediaChange={handleMediaChange}
-            onMediaUpload={(file) => {
-              // Just mock implementation to demonstrate functionality
-              return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                  const url = e.target?.result as string;
-                  setTimeout(() => resolve(url), 1000);
-                };
-                reader.readAsDataURL(file);
-              });
-            }}
-            onAIAnalysis={handleAIAnalysis}
+            onAnalysisComplete={handleAIAnalysis}
           />
         )}
 
@@ -133,26 +118,11 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         question.allowsAudio || question.permite_audio ||
         question.allowsFiles || question.permite_files) && (
         <MediaControls 
-          allowsPhoto={question.allowsPhoto || question.permite_foto}
-          allowsVideo={question.allowsVideo || question.permite_video}
-          allowsAudio={question.allowsAudio || question.permite_audio}
-          allowsFiles={question.allowsFiles || question.permite_files}
-          mediaUrls={response?.mediaUrls || []}
           questionId={question.id}
           questionText={question.text || question.pergunta || ""}
+          mediaUrls={response?.mediaUrls || []}
           onMediaChange={handleMediaChange}
-          onMediaUpload={(file) => {
-            // Just mock implementation to demonstrate functionality
-            return new Promise((resolve) => {
-              const reader = new FileReader();
-              reader.onload = (e) => {
-                const url = e.target?.result as string;
-                setTimeout(() => resolve(url), 1000);
-              };
-              reader.readAsDataURL(file);
-            });
-          }}
-          onAIAnalysis={handleAIAnalysis}
+          onAnalysisComplete={handleAIAnalysis}
         />
       )}
 

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,7 +56,7 @@ interface AIAnalysisButtonProps {
   onAnalysisComplete?: (analysisResults: any) => void;
   disabled?: boolean;
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
-  size?: "sm" | "md" | "lg";
+  size?: "default" | "sm" | "lg" | "icon";
 }
 
 const MAX_MEDIA_COUNT = 5;
@@ -210,7 +210,6 @@ export function MediaControls({
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // Update local state when initialMediaUrls prop changes
   useEffect(() => {
     setMediaUrls(initialMediaUrls || []);
   }, [initialMediaUrls]);
