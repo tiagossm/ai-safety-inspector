@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Check, ChevronDown, Building, Plus, Loader2, AlertCircle } from "lucide-react";
 import {
@@ -17,7 +16,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CompanyQuickCreateModal } from "./CompanyQuickCreateModal";
-import { fetchCompanies, searchCompaniesByName } from "@/services/company/companyService";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -86,11 +84,18 @@ export function CompanySelector({
   const fetchCompanyList = async () => {
     setLoading(true);
     try {
-      const data = await fetchCompanies();
-      setCompanies(data);
+      const { data, error } = await supabase
+        .from("companies")
+        .select("id, fantasy_name, cnpj, cnae, address, is_deleted, active")
+        .eq("is_deleted", false)
+        .eq("active", true)
+        .order("fantasy_name", { ascending: true });
 
-      // If we have a value but no selectedCompany yet, find it in the fetched data
-      if (value && !selectedCompany && isValidUUID(value)) {
+      if (error) throw error;
+
+      setCompanies(data || []);
+
+      if (value && !selectedCompany) {
         const found = data?.find(c => c.id === value);
         if (found) {
           setSelectedCompany(found);
@@ -114,20 +119,20 @@ export function CompanySelector({
     try {
       const { data, error } = await supabase
         .from("companies")
-        .select("id, fantasy_name, cnpj, cnae, address")
+        .select("id, fantasy_name, cnpj, cnae, address, is_deleted, active")
         .eq("id", id)
-        .eq("status", "active") // Only active companies
         .maybeSingle();
 
       if (error) throw error;
-      if (data) {
+
+      if (data && !data.is_deleted && data.active) {
         const company = {
           id: data.id,
-          name: data.fantasy_name || 'Empresa sem nome',
-          fantasy_name: data.fantasy_name || 'Empresa sem nome',
-          cnpj: data.cnpj || '',
-          cnae: data.cnae || '',
-          address: data.address || ''
+          name: data.fantasy_name || "Empresa sem nome",
+          fantasy_name: data.fantasy_name || "Empresa sem nome",
+          cnpj: data.cnpj || "",
+          cnae: data.cnae || "",
+          address: data.address || "",
         };
         setSelectedCompany(company);
         setInternalError(undefined);
@@ -144,8 +149,17 @@ export function CompanySelector({
   const handleSearch = async (query: string) => {
     try {
       setSearching(true);
-      const data = await searchCompaniesByName(query);
-      setCompanies(data);
+      const { data, error } = await supabase
+        .from("companies")
+        .select("id, fantasy_name, cnpj, cnae, address, is_deleted, active")
+        .ilike("fantasy_name", `%${query}%`)
+        .eq("is_deleted", false)
+        .eq("active", true)
+        .order("fantasy_name", { ascending: true });
+
+      if (error) throw error;
+
+      setCompanies(data || []);
     } catch (error) {
       console.error("Erro ao buscar empresas:", error);
     } finally {
@@ -158,7 +172,7 @@ export function CompanySelector({
       console.error("Invalid company data selected:", company);
       return;
     }
-    
+
     setSelectedCompany(company);
     setInternalError(undefined);
     onSelect(company.id, company);
@@ -166,7 +180,6 @@ export function CompanySelector({
   };
 
   const handleQuickCreateSuccess = (company: any) => {
-    // Add the new company to the list and select it
     if (company?.id && isValidUUID(company.id)) {
       setCompanies([...companies, company]);
       handleSelectCompany(company);
@@ -319,7 +332,7 @@ export function CompanySelector({
             </PopoverContent>
           </Popover>
         )}
-        
+
         <Button 
           type="button" 
           size="icon" 
