@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Check, ChevronDown, Building, Plus, Loader2 } from "lucide-react";
+import { Check, ChevronDown, Building, Plus, Loader2, AlertCircle } from "lucide-react";
 import {
   Command,
   CommandEmpty,
@@ -19,22 +19,40 @@ import { cn } from "@/lib/utils";
 import { CompanyQuickCreateModal } from "./CompanyQuickCreateModal";
 import { fetchCompanies, searchCompaniesByName } from "@/services/company/companyService";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client"; // Added missing import
+import { supabase } from "@/integrations/supabase/client";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface CompanySelectorProps {
   value: string;
-  onSelect: (id: string, data: any) => void;
+  onSelect: (id: string, data?: any) => void;
   className?: string;
   disabled?: boolean;
+  error?: string;
+  showTooltip?: boolean;
 }
 
-export function CompanySelector({ value, onSelect, className, disabled = false }: CompanySelectorProps) {
+const isValidUUID = (uuid: string): boolean => {
+  if (!uuid) return false;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(uuid);
+};
+
+export function CompanySelector({ 
+  value, 
+  onSelect, 
+  className, 
+  disabled = false,
+  error,
+  showTooltip = false
+}: CompanySelectorProps) {
   const [open, setOpen] = useState(false);
   const [companies, setCompanies] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
+  const [internalError, setInternalError] = useState<string | undefined>(error);
+  const [companiesTooltip, setCompaniesTooltip] = useState<string>("Selecione uma empresa");
 
   useEffect(() => {
     if (open) {
@@ -44,9 +62,26 @@ export function CompanySelector({ value, onSelect, className, disabled = false }
 
   useEffect(() => {
     if (value && !selectedCompany) {
-      fetchCompanyById(value);
+      if (!isValidUUID(value)) {
+        console.error("Invalid UUID provided to CompanySelector:", value);
+        setInternalError("ID de empresa inválido");
+      } else {
+        fetchCompanyById(value);
+      }
     }
   }, [value]);
+
+  useEffect(() => {
+    if (companies.length === 0) {
+      setCompaniesTooltip("Nenhuma empresa disponível");
+    } else {
+      setCompaniesTooltip("Selecione uma empresa");
+    }
+  }, [companies]);
+
+  useEffect(() => {
+    setInternalError(error);
+  }, [error]);
 
   const fetchCompanyList = async () => {
     setLoading(true);
@@ -55,26 +90,33 @@ export function CompanySelector({ value, onSelect, className, disabled = false }
       setCompanies(data);
 
       // If we have a value but no selectedCompany yet, find it in the fetched data
-      if (value && !selectedCompany) {
+      if (value && !selectedCompany && isValidUUID(value)) {
         const found = data?.find(c => c.id === value);
         if (found) {
           setSelectedCompany(found);
+          setInternalError(undefined);
         }
       }
     } catch (error) {
       console.error("Erro ao carregar empresas:", error);
-      toast("Erro ao carregar lista de empresas");
+      toast.error("Erro ao carregar lista de empresas");
     } finally {
       setLoading(false);
     }
   };
 
   const fetchCompanyById = async (id: string) => {
+    if (!isValidUUID(id)) {
+      console.error("Invalid UUID when fetching company by ID:", id);
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from("companies")
         .select("id, fantasy_name, cnpj, cnae, address")
         .eq("id", id)
+        .eq("status", "active") // Only active companies
         .maybeSingle();
 
       if (error) throw error;
@@ -88,9 +130,14 @@ export function CompanySelector({ value, onSelect, className, disabled = false }
           address: data.address || ''
         };
         setSelectedCompany(company);
+        setInternalError(undefined);
+      } else {
+        console.warn("Company not found or inactive:", id);
+        setInternalError("Empresa não encontrada ou inativa");
       }
     } catch (error) {
       console.error("Erro ao buscar empresa por ID:", error);
+      setInternalError("Erro ao buscar detalhes da empresa");
     }
   };
 
@@ -107,93 +154,171 @@ export function CompanySelector({ value, onSelect, className, disabled = false }
   };
 
   const handleSelectCompany = (company: any) => {
-    console.log("Selecting company:", company);
+    if (!company?.id || !isValidUUID(company.id)) {
+      console.error("Invalid company data selected:", company);
+      return;
+    }
+    
     setSelectedCompany(company);
+    setInternalError(undefined);
     onSelect(company.id, company);
     setOpen(false);
   };
 
   const handleQuickCreateSuccess = (company: any) => {
     // Add the new company to the list and select it
-    setCompanies([...companies, company]);
-    handleSelectCompany(company);
+    if (company?.id && isValidUUID(company.id)) {
+      setCompanies([...companies, company]);
+      handleSelectCompany(company);
+    } else {
+      console.error("Invalid company data after creation:", company);
+    }
   };
+
+  const triggerElement = (
+    <Button
+      variant="outline"
+      role="combobox"
+      aria-expanded={open}
+      disabled={disabled}
+      className={cn(
+        "w-full justify-between font-normal",
+        !value && "text-muted-foreground",
+        internalError && "border-red-500",
+        className
+      )}
+    >
+      <div className="flex items-center">
+        <Building className="mr-2 h-4 w-4" />
+        {selectedCompany ? (
+          <span className="truncate">{selectedCompany.name || selectedCompany.fantasy_name}</span>
+        ) : (
+          <span className="text-muted-foreground">Selecione uma empresa</span>
+        )}
+      </div>
+      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+    </Button>
+  );
 
   return (
     <>
       <div className="flex gap-2 items-center w-full">
-        <Popover open={open} onOpenChange={setOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={open}
-              disabled={disabled}
-              className={cn(
-                "w-full justify-between font-normal",
-                !value && "text-muted-foreground",
-                className
-              )}
-            >
-              <div className="flex items-center">
-                <Building className="mr-2 h-4 w-4" />
-                {selectedCompany ? (
-                  <span className="truncate">{selectedCompany.name || selectedCompany.fantasy_name}</span>
-                ) : (
-                  <span className="text-muted-foreground">Selecione uma empresa</span>
-                )}
-              </div>
-              <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[350px] p-0">
-            <Command>
-              <CommandInput 
-                placeholder="Buscar empresas..." 
-                onValueChange={handleSearch} 
-              />
-              <CommandList>
-                <CommandEmpty>
-                  {loading ? (
-                    <div className="flex items-center justify-center p-4">
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      Carregando...
-                    </div>
-                  ) : searching ? (
-                    <div className="flex items-center justify-center p-4">
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      Buscando...
-                    </div>
-                  ) : (
-                    "Nenhuma empresa encontrada"
-                  )}
-                </CommandEmpty>
-                <CommandGroup>
-                  {companies.map((company) => (
-                    <CommandItem
-                      key={company.id}
-                      value={company.name || company.fantasy_name}
-                      onSelect={() => handleSelectCompany(company)}
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          company.id === value ? "opacity-100" : "opacity-0"
-                        )}
+        {showTooltip ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="w-full">
+                <Popover open={open} onOpenChange={setOpen}>
+                  <PopoverTrigger asChild>
+                    {triggerElement}
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[350px] p-0">
+                    <Command>
+                      <CommandInput 
+                        placeholder="Buscar empresas..." 
+                        onValueChange={handleSearch} 
                       />
-                      <div className="flex-1 overflow-hidden">
-                        <div className="font-medium">{company.name || company.fantasy_name}</div>
-                        <div className="text-xs text-muted-foreground truncate">
-                          CNPJ: {company.cnpj} {company.cnae && `• CNAE: ${company.cnae}`}
-                        </div>
+                      <CommandList>
+                        <CommandEmpty>
+                          {loading ? (
+                            <div className="flex items-center justify-center p-4">
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              Carregando...
+                            </div>
+                          ) : searching ? (
+                            <div className="flex items-center justify-center p-4">
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              Buscando...
+                            </div>
+                          ) : (
+                            "Nenhuma empresa encontrada"
+                          )}
+                        </CommandEmpty>
+                        <CommandGroup>
+                          {companies.map((company) => (
+                            <CommandItem
+                              key={company.id}
+                              value={company.name || company.fantasy_name}
+                              onSelect={() => handleSelectCompany(company)}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  company.id === value ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div className="flex-1 overflow-hidden">
+                                <div className="font-medium">{company.name || company.fantasy_name}</div>
+                                <div className="text-xs text-muted-foreground truncate">
+                                  CNPJ: {company.cnpj} {company.cnae && `• CNAE: ${company.cnae}`}
+                                </div>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              {disabled ? "Seleção de empresa desabilitada" : companiesTooltip}
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              {triggerElement}
+            </PopoverTrigger>
+            <PopoverContent className="w-[350px] p-0">
+              <Command>
+                <CommandInput 
+                  placeholder="Buscar empresas..." 
+                  onValueChange={handleSearch} 
+                />
+                <CommandList>
+                  <CommandEmpty>
+                    {loading ? (
+                      <div className="flex items-center justify-center p-4">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Carregando...
                       </div>
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+                    ) : searching ? (
+                      <div className="flex items-center justify-center p-4">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Buscando...
+                      </div>
+                    ) : (
+                      "Nenhuma empresa encontrada"
+                    )}
+                  </CommandEmpty>
+                  <CommandGroup>
+                    {companies.map((company) => (
+                      <CommandItem
+                        key={company.id}
+                        value={company.name || company.fantasy_name}
+                        onSelect={() => handleSelectCompany(company)}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            company.id === value ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        <div className="flex-1 overflow-hidden">
+                          <div className="font-medium">{company.name || company.fantasy_name}</div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            CNPJ: {company.cnpj} {company.cnae && `• CNAE: ${company.cnae}`}
+                          </div>
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        )}
         
         <Button 
           type="button" 
@@ -206,6 +331,13 @@ export function CompanySelector({ value, onSelect, className, disabled = false }
           <Plus className="h-4 w-4" />
         </Button>
       </div>
+      
+      {internalError && (
+        <div className="text-red-500 text-sm mt-1 flex items-center">
+          <AlertCircle className="h-3 w-3 mr-1" />
+          {internalError}
+        </div>
+      )}
 
       <CompanyQuickCreateModal
         open={isQuickCreateOpen}

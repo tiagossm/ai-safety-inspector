@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -61,6 +61,40 @@ export function InspectionDetailsForm({
   isFormValid,
   onCancel
 }: InspectionDetailsFormProps) {
+  const [companyError, setCompanyError] = useState<string>(errors.company || "");
+  
+  // Validate company ID when it changes
+  useEffect(() => {
+    validateCompanyId(companyId);
+  }, [companyId]);
+  
+  // Update error state when errors prop changes
+  useEffect(() => {
+    setCompanyError(errors.company || "");
+  }, [errors.company]);
+  
+  // Validate company ID
+  const validateCompanyId = (id: string) => {
+    if (!id) {
+      setCompanyError("");
+      return;
+    }
+    
+    // Check UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      setCompanyError("ID de empresa inválido");
+    } else {
+      setCompanyError("");
+    }
+  };
+  
+  // Wrapper for handleCompanySelect to also validate UUID
+  const onCompanySelect = (id: string, data: any) => {
+    validateCompanyId(id);
+    handleCompanySelect(id, data);
+  };
+
   if (loading) {
     return (
       <Card>
@@ -117,11 +151,10 @@ export function InspectionDetailsForm({
           <div className="mt-1.5">
             <CompanySelector
               value={companyId}
-              onSelect={handleCompanySelect}
+              onSelect={onCompanySelect}
+              error={companyError || errors.company}
+              showTooltip={true}
             />
-            {errors.company && (
-              <span className="text-sm text-destructive">{errors.company}</span>
-            )}
           </div>
         </div>
         
@@ -267,7 +300,8 @@ export function InspectionDetailsForm({
         </Button>
         <Button
           type="submit"
-          disabled={submitting || !isFormValid()}
+          onClick={handleSubmit}
+          disabled={submitting || !isFormValid() || !!companyError}
         >
           {submitting ? "Processando..." : "Iniciar Inspeção"}
         </Button>

@@ -26,8 +26,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
   DialogClose,
+  DialogFooter,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -102,7 +102,7 @@ function AIAnalysisButton({
   onAnalysisComplete,
   disabled = false,
   variant = "default",
-  size = "default", // Changed from "md" to "default" to match allowed types
+  size = "default", // Using "default" instead of "md" to match Button component type
 }: AIAnalysisButtonProps) {
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState<any>(null);
@@ -416,4 +416,3 @@ export function MediaControls({
     </div>
   );
 }
-

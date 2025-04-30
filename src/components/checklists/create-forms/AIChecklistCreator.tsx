@@ -32,6 +32,7 @@ export function AIChecklistCreator({
 }: AIChecklistCreatorProps) {
   const [prompt, setPrompt] = useState<string>("");
   const [selectedCompanyName, setSelectedCompanyName] = useState<string>("");
+  const [companyError, setCompanyError] = useState<string>("");
   const {
     isGenerating,
     selectedAssistant,
@@ -53,18 +54,25 @@ export function AIChecklistCreator({
         .from('companies')
         .select('fantasy_name')
         .eq('id', companyId)
-        .single();
+        .eq('status', 'active')
+        .maybeSingle();
       
       if (error) {
         console.error("Error fetching company name:", error);
+        setCompanyError("Erro ao buscar empresa");
         return;
       }
       
       if (data) {
         setSelectedCompanyName(data.fantasy_name);
+        setCompanyError("");
+      } else {
+        setSelectedCompanyName("");
+        setCompanyError("Empresa não encontrada ou inativa");
       }
     } catch (error) {
       console.error("Error in fetchCompanyName:", error);
+      setCompanyError("Erro ao buscar empresa");
     }
   };
 
@@ -142,6 +150,8 @@ export function AIChecklistCreator({
                       company_id: companyId 
                     });
                   }}
+                  error={companyError}
+                  showTooltip={true}
                 />
               </div>
             </div>

@@ -48,6 +48,7 @@ export function AICreateFormContent(props: AICreateFormProps) {
   const [contextType, setContextType] = useState<string>("Setor");
   const [contextValue, setContextValue] = useState<string>("");
   const [description, setDescription] = useState<string>("");
+  const [companyError, setCompanyError] = useState<string>("");
   const maxDescriptionLength = 500;
   const minDescriptionLength = 5;
 
@@ -66,8 +67,20 @@ export function AICreateFormContent(props: AICreateFormProps) {
         .from('companies')
         .select('*')
         .eq('id', companyId)
-        .single();
-      if (error) throw error;
+        .eq('status', 'active')
+        .maybeSingle();
+        
+      if (error) {
+        throw error;
+      }
+      
+      if (!data) {
+        setCompanyError("Empresa não encontrada ou inativa");
+        setCompanyData(null);
+        return;
+      }
+      
+      setCompanyError("");
       const company: Company = {
         id: data.id,
         fantasy_name: data.fantasy_name,
@@ -87,6 +100,7 @@ export function AICreateFormContent(props: AICreateFormProps) {
       updateFormattedPrompt(company, props.form.category || "", description);
     } catch (error) {
       console.error("Error fetching company data:", error);
+      setCompanyError("Erro ao carregar dados da empresa");
       toast.error("Erro ao carregar dados da empresa");
     }
   };
@@ -192,6 +206,8 @@ Contexto: ${context}`;
                       company_id: companyId 
                     });
                   }}
+                  error={companyError}
+                  showTooltip={true}
                 />
               </div>
 

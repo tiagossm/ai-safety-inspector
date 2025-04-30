@@ -71,7 +71,8 @@ export function InspectionHeaderForm({
   const [isEditing, setIsEditing] = useState(false);
   const { updateInspectionData, validateRequiredFields, saveAsDraft, updating } = useInspectionHeaderForm(inspectionId);
   const [progress, setProgress] = useState(0);
-
+  const [companyError, setCompanyError] = useState<string>("");
+  
   const processCoordinates = (coords: any) => {
     if (!coords) return null;
     
@@ -172,6 +173,26 @@ export function InspectionHeaderForm({
     }
   };
 
+  const handleCompanySelect = (id: string, data: any) => {
+    if (!id) {
+      setCompanyError("Empresa é obrigatória");
+      return;
+    }
+    
+    // Check UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      setCompanyError("ID de empresa inválido");
+      return;
+    }
+    
+    form.setValue('companyId', id);
+    if (data?.address && !form.getValues().location) {
+      form.setValue('location', data.address);
+    }
+    setCompanyError("");
+  };
+
   return (
     <Card className="mb-6">
       <CardHeader 
@@ -267,18 +288,17 @@ export function InspectionHeaderForm({
                       <FormControl>
                         <CompanySelector
                           value={field.value}
-                          onSelect={(id, data) => {
-                            field.onChange(id);
-                            if (data?.address && !form.getValues().location) {
-                              form.setValue('location', data.address);
-                            }
-                          }}
+                          onSelect={handleCompanySelect}
                           className={cn(
                             !isEditing && "opacity-70 pointer-events-none"
                           )}
+                          disabled={!isEditing}
+                          error={companyError}
+                          showTooltip={true}
                         />
                       </FormControl>
                       <FormMessage />
+                      {companyError && <p className="text-sm text-destructive">{companyError}</p>}
                     </FormItem>
                   )}
                 />

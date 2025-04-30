@@ -58,6 +58,8 @@ export function InspectionDataForm({
     priority: inspection.priority || "medium",
     notes: inspection.notes || ""
   });
+  
+  const [companyError, setCompanyError] = useState<string>("");
 
   const [useGeolocation, setUseGeolocation] = useState(false);
   const [locationCoords, setLocationCoords] = useState<{lat: number; lng: number} | null>(null);
@@ -73,6 +75,35 @@ export function InspectionDataForm({
       }));
     }
   }, [address]);
+
+  // Validate company ID on load
+  useEffect(() => {
+    if (formData.companyId) {
+      validateCompanyId(formData.companyId);
+    }
+  }, [formData.companyId, companies]);
+
+  const validateCompanyId = (companyId: string) => {
+    if (!companyId) {
+      setCompanyError("");
+      return;
+    }
+    
+    // Check UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(companyId)) {
+      setCompanyError("ID de empresa inválido");
+      return;
+    }
+    
+    // Check if company exists in loaded companies
+    if (companies.length > 0 && !companies.some(c => c.id === companyId)) {
+      setCompanyError("Empresa não encontrada ou inativa");
+      return;
+    }
+    
+    setCompanyError("");
+  };
 
   const handleCEPSearch = () => {
     if (formData.cep.length >= 8) {
@@ -126,16 +157,21 @@ export function InspectionDataForm({
   };
 
   const handleCompanySelect = (companyId: string, selectedCompany: any) => {
-    console.log("Company selected:", companyId, selectedCompany);
     setFormData(prev => ({
       ...prev,
       companyId,
       location: selectedCompany?.address || prev.location
     }));
+    setCompanyError("");
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (companyError) {
+      return;
+    }
+    
     onSave({
       ...formData,
       locationCoords
@@ -160,6 +196,8 @@ export function InspectionDataForm({
                 value={formData.companyId}
                 onSelect={handleCompanySelect}
                 className={loadingCompanies ? "opacity-50 pointer-events-none" : ""}
+                error={companyError}
+                showTooltip={true}
               />
               {loadingCompanies && (
                 <div className="absolute right-10 top-3">
@@ -306,7 +344,10 @@ export function InspectionDataForm({
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancelar
         </Button>
-        <Button type="submit" disabled={isSaving}>
+        <Button 
+          type="submit" 
+          disabled={isSaving || !!companyError}
+        >
           {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
           Salvar
         </Button>
