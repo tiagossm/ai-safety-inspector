@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { NewChecklist } from "@/types/checklist";
@@ -12,6 +11,7 @@ import { toast } from "sonner";
 import { IntelligentChecklistForm } from "./IntelligentChecklistForm";
 import { supabase } from "@/integrations/supabase/client";
 import { NewChecklistPayload } from "@/types/newChecklist";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 interface AIChecklistCreatorProps {
   form: NewChecklist;
@@ -120,76 +120,78 @@ export function AIChecklistCreator({
   };
 
   return (
-    <div className="space-y-6">
-      <form onSubmit={handleGenerate}>
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="category">
-                  Categoria do Checklist <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="category"
-                  value={form.category || ""}
-                  onChange={(e) => setForm({ ...form, category: e.target.value })}
-                  placeholder="Ex: NR-35, Inspeção de Equipamentos, Lista de Suprimentos"
-                  required
-                />
-              </div>
+    <TooltipProvider>
+      <div className="space-y-6">
+        <form onSubmit={handleGenerate}>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="category">
+                    Categoria do Checklist <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="category"
+                    value={form.category || ""}
+                    onChange={(e) => setForm({ ...form, category: e.target.value })}
+                    placeholder="Ex: NR-35, Inspeção de Equipamentos, Lista de Suprimentos"
+                    required
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="company_id">
-                  Empresa <span className="text-red-500">*</span>
-                </Label>
-                <CompanySelector
-                  value={form.company_id?.toString() || ""}
-                  onSelect={(companyId) => {
-                    setForm({ 
-                      ...form, 
-                      company_id: companyId 
-                    });
-                  }}
-                  error={companyError}
-                  showTooltip={true}
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="company_id">
+                    Empresa <span className="text-red-500">*</span>
+                  </Label>
+                  <CompanySelector
+                    value={form.company_id?.toString() || ""}
+                    onSelect={(companyId) => {
+                      setForm({ 
+                        ...form, 
+                        company_id: companyId 
+                      });
+                    }}
+                    error={companyError}
+                    showTooltip={true}
+                  />
+                </div>
               </div>
             </div>
-          </div>
 
-          <IntelligentChecklistForm
-            selectedAssistant={selectedAssistant}
-            onAssistantTypeChange={setSelectedAssistant}
-            openAIAssistant={openAIAssistant}
-            onOpenAIAssistantChange={setOpenAIAssistant}
-            onPromptChange={setPrompt}
-            checklist={{
-              ...form,
-              company_name: selectedCompanyName
-            }}
-            setChecklist={setForm}
-          />
-          
-          <Button
-            type="submit"
-            disabled={isGenerating || isSubmitting || !form.category?.trim() || !form.company_id || !openAIAssistant}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 mt-4"
-            size="lg"
-          >
-            {isGenerating || isSubmitting ? (
-              <>
-                <Sparkles className="mr-2 h-5 w-5 animate-spin" />
-                Gerando...
-              </>
-            ) : (
-              <>
-                <Bot className="mr-2 h-5 w-5" />
-                Gerar Checklist com IA
-              </>
-            )}
-          </Button>
-        </div>
-      </form>
-    </div>
+            <IntelligentChecklistForm
+              selectedAssistant={selectedAssistant}
+              onAssistantTypeChange={setSelectedAssistant}
+              openAIAssistant={openAIAssistant}
+              onOpenAIAssistantChange={setOpenAIAssistant}
+              onPromptChange={setPrompt}
+              checklist={{
+                ...form,
+                company_name: selectedCompanyName
+              }}
+              setChecklist={setForm}
+            />
+            
+            <Button
+              type="submit"
+              disabled={isGenerating || isSubmitting || !form.category?.trim() || !form.company_id || !openAIAssistant}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 mt-4"
+              size="lg"
+            >
+              {isGenerating || isSubmitting ? (
+                <>
+                  <Sparkles className="mr-2 h-5 w-5 animate-spin" />
+                  Gerando...
+                </>
+              ) : (
+                <>
+                  <Bot className="mr-2 h-5 w-5" />
+                  Gerar Checklist com IA
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </TooltipProvider>
   );
 }

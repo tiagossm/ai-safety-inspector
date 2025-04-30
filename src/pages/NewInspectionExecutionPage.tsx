@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export default function NewInspectionExecutionPage() {
   const { id } = useParams<{ id: string }>();
@@ -157,83 +158,85 @@ export default function NewInspectionExecutionPage() {
   const isSharedView = window.location.pathname.includes('/share/');
 
   return (
-    <div className="container max-w-7xl mx-auto py-4 pb-24 relative">
-      {isOffline && (
-        <div className="bg-amber-100 text-amber-800 px-4 py-2 mb-4 rounded-md flex items-center justify-between">
-          <div className="flex items-center">
-            <span className="font-medium">Modo Offline</span>
-            <span className="ml-2 text-sm">Suas alterações serão salvas localmente e sincronizadas quando estiver online.</span>
+    <TooltipProvider>
+      <div className="container max-w-7xl mx-auto py-4 pb-24 relative">
+        {isOffline && (
+          <div className="bg-amber-100 text-amber-800 px-4 py-2 mb-4 rounded-md flex items-center justify-between">
+            <div className="flex items-center">
+              <span className="font-medium">Modo Offline</span>
+              <span className="ml-2 text-sm">Suas alterações serão salvas localmente e sincronizadas quando estiver online.</span>
+            </div>
           </div>
-        </div>
-      )}
-      
-      {/* Header with progress */}
-      <InspectionHeader 
-        title={inspection.title || "Inspeção sem título"}
-        description={inspection.description || ""}
-        status={inspection.status}
-        stats={stats}
-        viewMode={viewMode}
-        onToggleViewMode={isInspectionEditable && !isSharedView ? toggleViewMode : undefined}
-      />
+        )}
+        
+        {/* Header with progress */}
+        <InspectionHeader 
+          title={inspection.title || "Inspeção sem título"}
+          description={inspection.description || ""}
+          status={inspection.status}
+          stats={stats}
+          viewMode={viewMode}
+          onToggleViewMode={isInspectionEditable && !isSharedView ? toggleViewMode : undefined}
+        />
 
-      {/* Expandable Panel for Inspection Data */}
-      {!isSharedView && (
-        <InspectionExpandablePanel
-          inspection={inspection}
-          company={company}
-          responsible={responsible}
-          responsibles={responsibles || []}
-          isExpanded={isPanelExpanded}
-          onToggleExpand={() => setIsPanelExpanded(!isPanelExpanded)}
-          editMode={editMode}
-          setEditMode={setEditMode}
-          onSave={refreshData}
+        {/* Expandable Panel for Inspection Data */}
+        {!isSharedView && (
+          <InspectionExpandablePanel
+            inspection={inspection}
+            company={company}
+            responsible={responsible}
+            responsibles={responsibles || []}
+            isExpanded={isPanelExpanded}
+            onToggleExpand={() => setIsPanelExpanded(!isPanelExpanded)}
+            editMode={editMode}
+            setEditMode={setEditMode}
+            onSave={refreshData}
+            isEditable={isInspectionEditable && viewMode === "edit"}
+          />
+        )}
+
+        {/* Questions Panel */}
+        <QuestionsPanel
+          questions={questions}
+          groups={groups}
+          responses={responses}
+          onResponseChange={handleResponseChange}
+          onMediaChange={handleMediaChange}
+          onMediaUpload={handleMediaUpload}
           isEditable={isInspectionEditable && viewMode === "edit"}
         />
-      )}
-
-      {/* Questions Panel */}
-      <QuestionsPanel
-        questions={questions}
-        groups={groups}
-        responses={responses}
-        onResponseChange={handleResponseChange}
-        onMediaChange={handleMediaChange}
-        onMediaUpload={handleMediaUpload}
-        isEditable={isInspectionEditable && viewMode === "edit"}
-      />
-      
-      {/* Floating Action Menu - only show in non-shared view */}
-      {!isSharedView && (
-        <FloatingActionMenu
-          onSaveProgress={handleSaveProgress}
-          onCompleteInspection={handleCompleteInspection}
-          onEditData={handleEditData}
-          onShare={handleShare}
-          onDelete={handleDelete}
-          isEditable={isInspectionEditable}
-          isSaving={savingResponses}
-          isCompleted={inspection.status === "Concluída"}
-          onReopenInspection={() => reopenInspection(inspection)}
+        
+        {/* Floating Action Menu - only show in non-shared view */}
+        {!isSharedView && (
+          <FloatingActionMenu
+            onSaveProgress={handleSaveProgress}
+            onCompleteInspection={handleCompleteInspection}
+            onEditData={handleEditData}
+            onShare={handleShare}
+            onDelete={handleDelete}
+            isEditable={isInspectionEditable}
+            isSaving={savingResponses}
+            isCompleted={inspection.status === "Concluída"}
+            onReopenInspection={() => reopenInspection(inspection)}
+          />
+        )}
+        
+        {/* Share Dialog */}
+        <ShareInspectionDialog
+          open={isShareDialogOpen}
+          onOpenChange={setIsShareDialogOpen}
+          inspectionId={id || ""}
         />
-      )}
-      
-      {/* Share Dialog */}
-      <ShareInspectionDialog
-        open={isShareDialogOpen}
-        onOpenChange={setIsShareDialogOpen}
-        inspectionId={id || ""}
-      />
-      
-      {/* Delete Dialog */}
-      <DeleteInspectionDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        inspectionId={id || ""}
-        inspectionTitle={inspection.title || ""}
-        onDeleted={() => navigate("/inspections")}
-      />
-    </div>
+        
+        {/* Delete Dialog */}
+        <DeleteInspectionDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          inspectionId={id || ""}
+          inspectionTitle={inspection.title || ""}
+          onDeleted={() => navigate("/inspections")}
+        />
+      </div>
+    </TooltipProvider>
   );
 }
