@@ -10,6 +10,8 @@ import { useCEP } from "@/hooks/useCEP";
 import { format } from "date-fns";
 import { useFormSelectionData } from "@/hooks/inspection/useFormSelectionData";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { CompanySelector } from "@/components/inspection/CompanySelector";
+import { ResponsibleSelector } from "@/components/inspection/ResponsibleSelector";
 
 interface InspectionDataFormProps {
   inspection: any;
@@ -80,26 +82,25 @@ export function InspectionDataForm({
     }));
   };
 
-  const handleCompanyChange = (companyId: string) => {
+  const handleCompanySelect = (companyId: string, companyData: any) => {
     setFormData(prev => ({
       ...prev,
       companyId
     }));
     
     // Update location with company address if available
-    const selectedCompany = companies.find(c => c.id === companyId);
-    if (selectedCompany?.address) {
+    if (companyData?.address) {
       setFormData(prev => ({
         ...prev,
-        location: selectedCompany.address
+        location: companyData.address
       }));
     }
   };
 
-  const handleResponsibleChange = (responsibleId: string) => {
+  const handleResponsibleSelect = (responsibleIds: string[]) => {
     setFormData(prev => ({
       ...prev,
-      responsibleIds: [responsibleId]
+      responsibleIds
     }));
   };
 
@@ -147,56 +148,20 @@ export function InspectionDataForm({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="companyId">Empresa</Label>
-            <Select 
-              value={formData.companyId} 
-              onValueChange={handleCompanyChange}
-              disabled={loadingCompanies}
-            >
-              <SelectTrigger className="bg-white border border-input">
-                <SelectValue placeholder="Selecione uma empresa" />
-              </SelectTrigger>
-              <SelectContent className="bg-white z-50 max-h-60 overflow-y-auto">
-                {loadingCompanies ? (
-                  <div className="flex items-center justify-center p-2">
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    <span>Carregando...</span>
-                  </div>
-                ) : (
-                  companies.map((company) => (
-                    <SelectItem key={company.id} value={company.id} className="cursor-pointer">
-                      {company.fantasy_name || company.name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+            <CompanySelector 
+              value={formData.companyId}
+              onSelect={handleCompanySelect}
+              disabled={isSaving}
+            />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="responsibleId">Responsável</Label>
-            <Select 
-              value={formData.responsibleIds[0] || ""} 
-              onValueChange={handleResponsibleChange}
-              disabled={loadingResponsibles}
-            >
-              <SelectTrigger className="bg-white border border-input">
-                <SelectValue placeholder="Selecione um responsável" />
-              </SelectTrigger>
-              <SelectContent className="bg-white z-50 max-h-60 overflow-y-auto">
-                {loadingResponsibles ? (
-                  <div className="flex items-center justify-center p-2">
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    <span>Carregando...</span>
-                  </div>
-                ) : (
-                  responsibles.map((user) => (
-                    <SelectItem key={user.id} value={user.id} className="cursor-pointer">
-                      {user.name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
+            <ResponsibleSelector 
+              value={formData.responsibleIds}
+              onSelect={(ids) => handleResponsibleSelect(ids)}
+              disabled={isSaving}
+            />
           </div>
         </div>
 
