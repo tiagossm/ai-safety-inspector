@@ -14,6 +14,12 @@ import { EnhancedCompanySelector } from "@/components/selection/EnhancedCompanyS
 import { EnhancedResponsibleSelector } from "@/components/selection/EnhancedResponsibleSelector";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
+// Define interface for company and responsible selector options
+interface SelectOption {
+  label: string;
+  value: string;
+}
+
 interface InspectionDataFormProps {
   inspection: any;
   company: any;
@@ -134,7 +140,7 @@ export function InspectionDataForm({
                 if (option) {
                   setFormData(prev => ({
                     ...prev,
-                    companyId: option,
+                    companyId: option.value,
                     location: selectedCompany?.address || prev.location
                   }));
                   setCompanyError("");
@@ -153,7 +159,8 @@ export function InspectionDataForm({
                 return { label: resp.name || "Responsável", value: id };
               })}
               onSelect={(selectedOptions) => {
-                const ids = selectedOptions.map(option => option);
+                // Extract the values from the SelectOptions
+                const ids = selectedOptions.map(option => option.value);
                 setFormData(prev => ({
                   ...prev,
                   responsibleIds: ids

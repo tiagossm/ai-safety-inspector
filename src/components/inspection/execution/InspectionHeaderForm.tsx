@@ -50,6 +50,7 @@ interface SelectOption {
   value: string;
 }
 
+// Updated schema to handle the new format for companyId and responsibleIds
 const coordinatesSchema = z.object({
   latitude: z.number().optional(),
   longitude: z.number().optional()
@@ -285,7 +286,8 @@ export function InspectionHeaderForm({
                             value={field.value ? { label: selectedCompany?.fantasy_name || "Empresa", value: field.value } : null}
                             onSelect={(option) => {
                               if (option) {
-                                field.onChange(option);
+                                // Extract the value from the SelectOption and set it to the form field
+                                field.onChange(option.value);
                                 setCompanyError("");
                               }
                             }}
@@ -317,7 +319,8 @@ export function InspectionHeaderForm({
                                 return { label: resp.name || "Responsável", value: id };
                               })}
                               onSelect={(selectedOptions) => {
-                                field.onChange(selectedOptions);
+                                // Extract the values from the SelectOptions and set them to the form field
+                                field.onChange(selectedOptions.map(option => option.value));
                               }}
                               className={cn(
                                 !isEditing && "opacity-70 pointer-events-none"
