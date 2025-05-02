@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Check, ChevronDown, User, Plus, X, Loader2 } from "lucide-react";
 import {
@@ -20,7 +21,11 @@ import { ResponsibleQuickCreateModal } from "../inspection/ResponsibleQuickCreat
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useResponsibleSelectionStore } from "@/hooks/selection/useResponsibleSelectionStore";
 import { ResponsibleSearchResult } from "@/services/responsible/responsibleSelectionService";
-import { SelectOption } from "./EnhancedCompanySelector";
+
+export interface SelectOption {
+  label: string;
+  value: string;
+}
 
 interface EnhancedResponsibleSelectorProps {
   value: SelectOption[];
@@ -59,8 +64,10 @@ export function EnhancedResponsibleSelector({
 
   // Keep internal store and props in sync
   useState(() => {
-    if (value && JSON.stringify(value) !== JSON.stringify(selectedResponsibles.map(r => r.id))) {
-      setSelectedResponsibleIds(value);
+    if (value && value.length > 0) {
+      // Extract just the IDs from the SelectOption array
+      const ids = value.map(option => option.value);
+      setSelectedResponsibleIds(ids);
     }
   });
 
