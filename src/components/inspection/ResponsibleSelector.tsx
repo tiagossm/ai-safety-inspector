@@ -176,15 +176,22 @@ export function ResponsibleSelector({
   const handleQuickCreateSuccess = async (userData: any) => {
     try {
       // Create the new user
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentUserId = sessionData.session?.user?.id;
+      
+      if (!currentUserId) {
+        console.error("User is not authenticated");
+        return;
+      }
+      
       const { data, error } = await supabase
         .from("users")
-        .insert([
-          { 
-            name: userData.name,
-            email: userData.email,
-            position: userData.position,
-          }
-        ])
+        .insert({
+          name: userData.name,
+          email: userData.email,
+          position: userData.position,
+          user_id: currentUserId // Assuming a user_id field is required
+        })
         .select()
         .single();
 
@@ -248,7 +255,7 @@ export function ResponsibleSelector({
                     <PopoverTrigger asChild>
                       {triggerElement}
                     </PopoverTrigger>
-                    <PopoverContent className="w-[350px] p-0 z-50">
+                    <PopoverContent className="w-[350px] p-0 z-[100]">
                       <Command>
                         <CommandInput 
                           placeholder="Buscar responsável..." 
@@ -277,8 +284,7 @@ export function ResponsibleSelector({
                                 <CommandItem
                                   key={`recent-${user.id}`}
                                   className="cursor-pointer text-foreground"
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
+                                  onSelect={() => {
                                     handleSelectUser(user);
                                   }}
                                 >
@@ -304,8 +310,7 @@ export function ResponsibleSelector({
                               <CommandItem
                                 key={user.id}
                                 className="cursor-pointer text-foreground"
-                                onMouseDown={(e) => {
-                                  e.preventDefault();
+                                onSelect={() => {
                                   handleSelectUser(user);
                                 }}
                               >
@@ -339,7 +344,7 @@ export function ResponsibleSelector({
               <PopoverTrigger asChild>
                 {triggerElement}
               </PopoverTrigger>
-              <PopoverContent className="w-[350px] p-0 z-50">
+              <PopoverContent className="w-[350px] p-0 z-[100]">
                 <Command>
                   <CommandInput 
                     placeholder="Buscar responsável..." 
@@ -368,8 +373,7 @@ export function ResponsibleSelector({
                           <CommandItem
                             key={`recent-${user.id}`}
                             className="cursor-pointer text-foreground"
-                            onMouseDown={(e) => {
-                              e.preventDefault();
+                            onSelect={() => {
                               handleSelectUser(user);
                             }}
                           >
@@ -395,8 +399,7 @@ export function ResponsibleSelector({
                         <CommandItem
                           key={user.id}
                           className="cursor-pointer text-foreground"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
+                          onSelect={() => {
                             handleSelectUser(user);
                           }}
                         >

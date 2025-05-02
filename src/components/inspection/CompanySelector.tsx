@@ -256,7 +256,7 @@ export function CompanySelector({
                   <PopoverTrigger asChild>
                     {triggerElement}
                   </PopoverTrigger>
-                  <PopoverContent className="w-[350px] p-0 z-50">
+                  <PopoverContent className="w-[350px] p-0 z-[100]">
                     <Command>
                       <CommandInput 
                         placeholder="Buscar empresas..." 
@@ -283,8 +283,7 @@ export function CompanySelector({
                             <CommandItem
                               key={company.id}
                               className="cursor-pointer text-foreground"
-                              onMouseDown={(e) => {
-                                e.preventDefault();
+                              onSelect={() => {
                                 handleSelectCompany(company);
                               }}
                             >
@@ -318,7 +317,7 @@ export function CompanySelector({
             <PopoverTrigger asChild>
               {triggerElement}
             </PopoverTrigger>
-            <PopoverContent className="w-[350px] p-0 z-50">
+            <PopoverContent className="w-[350px] p-0 z-[100]">
               <Command>
                 <CommandInput 
                   placeholder="Buscar empresas..." 
@@ -345,8 +344,7 @@ export function CompanySelector({
                       <CommandItem
                         key={company.id}
                         className="cursor-pointer text-foreground"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
+                        onSelect={() => {
                           handleSelectCompany(company);
                         }}
                       >
