@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Check, ChevronDown, Building, Plus, Loader2, AlertCircle } from "lucide-react";
 import {
@@ -56,19 +55,12 @@ export function CompanySelector({
   useEffect(() => {
     if (open) {
       fetchCompanyList();
-    }
-  }, [open]);
 
-  useEffect(() => {
-    if (value && !selectedCompany) {
-      if (!isValidUUID(value)) {
-        console.error("Invalid UUID provided to CompanySelector:", value);
-        setInternalError("ID de empresa inválido");
-      } else {
+      if (value && isValidUUID(value)) {
         fetchCompanyById(value);
       }
     }
-  }, [value]);
+  }, [open]);
 
   useEffect(() => {
     if (companies.length === 0) {
