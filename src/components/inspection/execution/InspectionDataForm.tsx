@@ -8,8 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Loader2, MapPin, AlertCircle } from "lucide-react";
 import { useCEP } from "@/hooks/useCEP";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useFormSelectionData } from "@/hooks/inspection/useFormSelectionData";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 interface InspectionDataFormProps {
@@ -31,6 +30,9 @@ export function InspectionDataForm({
   onCancel,
   isSaving
 }: InspectionDataFormProps) {
+  // Use the direct form data hook instead of complex selectors
+  const { companies, responsibles } = useFormSelectionData();
+  
   const [formData, setFormData] = useState({
     companyId: company?.id || "",
     responsibleIds: responsible ? [responsible.id] : [],
@@ -78,6 +80,29 @@ export function InspectionDataForm({
     }));
   };
 
+  const handleCompanyChange = (companyId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      companyId
+    }));
+    
+    // Update location with company address if available
+    const selectedCompany = companies.find(c => c.id === companyId);
+    if (selectedCompany?.address) {
+      setFormData(prev => ({
+        ...prev,
+        location: selectedCompany.address
+      }));
+    }
+  };
+
+  const handleResponsibleChange = (responsibleId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      responsibleIds: [responsibleId]
+    }));
+  };
+
   const handleGetLocation = () => {
     if (navigator.geolocation) {
       setUseGeolocation(true);
@@ -115,23 +140,59 @@ export function InspectionDataForm({
       <form onSubmit={handleSubmit} className="space-y-4 pt-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="companyName">Empresa</Label>
-            <Input
-              id="companyName"
-              value={company?.fantasy_name || ""}
-              readOnly
-              className="bg-gray-50"
-            />
+            <Label htmlFor="companyId">Empresa</Label>
+            {company ? (
+              <Input
+                id="companyName"
+                value={company?.fantasy_name || ""}
+                readOnly
+                className="bg-gray-50"
+              />
+            ) : (
+              <Select 
+                value={formData.companyId} 
+                onValueChange={handleCompanyChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma empresa" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60 overflow-y-auto">
+                  {companies.map((company) => (
+                    <SelectItem key={company.id} value={company.id}>
+                      {company.fantasy_name || company.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="responsibleName">Responsável</Label>
-            <Input
-              id="responsibleName"
-              value={responsible?.name || ""}
-              readOnly
-              className="bg-gray-50"
-            />
+            <Label htmlFor="responsibleId">Responsável</Label>
+            {responsible ? (
+              <Input
+                id="responsibleName"
+                value={responsible?.name || ""}
+                readOnly
+                className="bg-gray-50"
+              />
+            ) : (
+              <Select 
+                value={formData.responsibleIds[0] || ""} 
+                onValueChange={handleResponsibleChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um responsável" />
+                </SelectTrigger>
+                <SelectContent className="max-h-60 overflow-y-auto">
+                  {responsibles.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </div>
 
