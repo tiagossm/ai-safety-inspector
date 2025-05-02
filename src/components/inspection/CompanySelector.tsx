@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Check, ChevronDown, Building, Plus, Loader2, AlertCircle } from "lucide-react";
 import {
@@ -19,6 +20,7 @@ import { CompanyQuickCreateModal } from "./CompanyQuickCreateModal";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 interface CompanySelectorProps {
   value: string;
@@ -240,14 +242,12 @@ export function CompanySelector({
                             "Nenhuma empresa encontrada"
                           )}
                         </CommandEmpty>
-                        <CommandGroup>
+                        <CommandGroup className="overflow-visible">
                           {companies.map((company) => (
                             <CommandItem
                               key={company.id}
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                handleSelectCompany(company);
-                              }}
+                              value={company.name || company.fantasy_name}
+                              onSelect={() => handleSelectCompany(company)}
                               className="cursor-pointer"
                             >
                               <Check

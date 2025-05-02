@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Check, ChevronDown, User, Plus, X, Loader2 } from "lucide-react";
@@ -252,13 +253,13 @@ export function ResponsibleSelector({ value = [], onSelect, className, disabled 
                 <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[350px] p-0">
+            <PopoverContent className="w-[350px] p-0 z-50">
               <Command>
                 <CommandInput 
                   placeholder="Buscar responsável..." 
                   onValueChange={handleSearch}
                 />
-                <CommandList>
+                <CommandList className="max-h-[300px]">
                   <CommandEmpty>
                     {loading ? (
                       <div className="flex items-center justify-center p-4">
@@ -276,12 +277,13 @@ export function ResponsibleSelector({ value = [], onSelect, className, disabled 
                   </CommandEmpty>
 
                   {recentlyUsed.length > 0 && (
-                    <CommandGroup heading="Recentes">
+                    <CommandGroup heading="Recentes" className="overflow-visible">
                       {recentlyUsed.map((user) => (
                         <CommandItem
                           key={`recent-${user.id}`}
                           value={`recent-${user.name}`}
                           onSelect={() => handleSelectUser(user)}
+                          className="cursor-pointer"
                         >
                           <Check
                             className={cn(
@@ -300,12 +302,13 @@ export function ResponsibleSelector({ value = [], onSelect, className, disabled 
                     </CommandGroup>
                   )}
                   
-                  <CommandGroup heading="Todos os usuários">
+                  <CommandGroup heading="Todos os usuários" className="overflow-visible">
                     {users.map((user) => (
                       <CommandItem
                         key={user.id}
                         value={user.name}
                         onSelect={() => handleSelectUser(user)}
+                        className="cursor-pointer"
                       >
                         <Check
                           className={cn(
