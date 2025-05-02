@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Check, ChevronDown, User, Plus, X, Loader2 } from "lucide-react";
@@ -180,8 +181,6 @@ export function ResponsibleSelector({ value = [], onSelect, className, disabled 
   };
 
   const handleSelectUser = (user: any) => {
-    console.log("Toggle selecting user:", user);
-    
     // Check if user is already selected
     const isSelected = selectedUsers.some(u => u.id === user.id);
     let newSelected;
@@ -197,10 +196,7 @@ export function ResponsibleSelector({ value = [], onSelect, className, disabled 
     
     setSelectedUsers(newSelected);
     const ids = newSelected.map(u => u.id);
-    console.log("Selected IDs:", ids);
     onSelect(ids, newSelected);
-    
-    // Keep the popover open for multi-selection
   };
 
   const handleRemoveUser = (userId: string) => {
@@ -252,7 +248,7 @@ export function ResponsibleSelector({ value = [], onSelect, className, disabled 
                 <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[350px] p-0 z-[100]">
+            <PopoverContent className="w-[350px] p-0 z-50">
               <Command>
                 <CommandInput 
                   placeholder="Buscar responsável..." 
@@ -280,9 +276,11 @@ export function ResponsibleSelector({ value = [], onSelect, className, disabled 
                       {recentlyUsed.map((user) => (
                         <CommandItem
                           key={`recent-${user.id}`}
-                          value={`recent-${user.name}`}
                           className="cursor-pointer text-foreground"
-                          onSelect={() => handleSelectUser(user)}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleSelectUser(user);
+                          }}
                         >
                           <Check
                             className={cn(
@@ -305,9 +303,11 @@ export function ResponsibleSelector({ value = [], onSelect, className, disabled 
                     {users.map((user) => (
                       <CommandItem
                         key={user.id}
-                        value={user.name}
                         className="cursor-pointer text-foreground"
-                        onSelect={() => handleSelectUser(user)}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleSelectUser(user);
+                        }}
                       >
                         <Check
                           className={cn(
