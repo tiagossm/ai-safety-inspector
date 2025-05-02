@@ -55,12 +55,14 @@ export function CompanySelector({
   useEffect(() => {
     if (open) {
       fetchCompanyList();
-
-      if (value && isValidUUID(value)) {
-        fetchCompanyById(value);
-      }
     }
   }, [open]);
+
+  useEffect(() => {
+    if (value && isValidUUID(value)) {
+      fetchCompanyById(value);
+    }
+  }, [value]);
 
   useEffect(() => {
     if (companies.length === 0) {
