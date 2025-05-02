@@ -210,7 +210,7 @@ export function CompanySelector({
   return (
     <>
       <div className="flex gap-2 items-center w-full">
-        <TooltipProvider>
+        {showTooltip ? (
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="w-full">
@@ -218,7 +218,7 @@ export function CompanySelector({
                   <PopoverTrigger asChild>
                     {triggerElement}
                   </PopoverTrigger>
-                  <PopoverContent className="w-[350px] p-0 z-50">
+                  <PopoverContent className="w-[350px] p-0">
                     <Command>
                       <CommandInput 
                         placeholder="Buscar empresas..." 
@@ -245,10 +245,7 @@ export function CompanySelector({
                             <CommandItem
                               key={company.id}
                               value={company.name || company.fantasy_name}
-                              onSelect={(value) => {
-                                handleSelectCompany(company);
-                              }}
-                              className="cursor-pointer"
+                              onSelect={() => handleSelectCompany(company)}
                             >
                               <Check
                                 className={cn(
@@ -275,7 +272,61 @@ export function CompanySelector({
               {disabled ? "Seleção de empresa desabilitada" : companiesTooltip}
             </TooltipContent>
           </Tooltip>
-        </TooltipProvider>
+        ) : (
+          <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+              {triggerElement}
+            </PopoverTrigger>
+            <PopoverContent className="w-[350px] p-0">
+              <Command>
+                <CommandInput 
+                  placeholder="Buscar empresas..." 
+                  onValueChange={handleSearch} 
+                />
+                <CommandList>
+                  <CommandEmpty>
+                    {loading ? (
+                      <div className="flex items-center justify-center p-4">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Carregando...
+                      </div>
+                    ) : searching ? (
+                      <div className="flex items-center justify-center p-4">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Buscando...
+                      </div>
+                    ) : (
+                      "Nenhuma empresa encontrada"
+                    )}
+                  </CommandEmpty>
+                  <CommandGroup>
+                    {companies.map((company) => (
+                      <CommandItem
+                        key={company.id}
+                        value={company.name || company.fantasy_name}
+                        onSelect={() => handleSelectCompany(company)}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            company.id === value ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        <div className="flex-1 overflow-hidden">
+                          <div className="font-medium">{company.name || company.fantasy_name}</div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            CNPJ: {company.cnpj} {company.cnae && `• CNAE: ${company.cnae}`}
+                          </div>
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+        )}
+
         <Button 
           type="button" 
           size="icon" 
@@ -287,12 +338,14 @@ export function CompanySelector({
           <Plus className="h-4 w-4" />
         </Button>
       </div>
+      
       {internalError && (
         <div className="text-red-500 text-sm mt-1 flex items-center">
           <AlertCircle className="h-3 w-3 mr-1" />
           {internalError}
         </div>
       )}
+
       <CompanyQuickCreateModal
         open={isQuickCreateOpen}
         onOpenChange={setIsQuickCreateOpen}
