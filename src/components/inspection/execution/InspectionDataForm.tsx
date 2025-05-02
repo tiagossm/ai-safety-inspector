@@ -9,10 +9,10 @@ import { Loader2, MapPin, AlertCircle } from "lucide-react";
 import { useCEP } from "@/hooks/useCEP";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { CompanySelector } from "@/components/inspection/CompanySelector";
-import { ResponsibleSelector } from "@/components/inspection/ResponsibleSelector";
-import { useFormSelectionData } from "@/hooks/inspection/useFormSelectionData";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { EnhancedCompanySelector } from "@/components/selection/EnhancedCompanySelector";
+import { EnhancedResponsibleSelector } from "@/components/selection/EnhancedResponsibleSelector";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 interface InspectionDataFormProps {
   inspection: any;
@@ -33,21 +33,6 @@ export function InspectionDataForm({
   onCancel,
   isSaving
 }: InspectionDataFormProps) {
-  // Load companies and responsibles data
-  const {
-    companies,
-    responsibles: fetchedResponsibles,
-    loadingCompanies,
-    loadingResponsibles,
-    errorCompanies,
-    errorResponsibles
-  } = useFormSelectionData();
-  
-  // Combined responsibles from props and fetched
-  const allResponsibles = [...(providedResponsibles || []), ...fetchedResponsibles].filter(
-    (v, i, a) => a.findIndex(t => t.id === v.id) === i
-  );
-  
   const [formData, setFormData] = useState({
     companyId: company?.id || "",
     responsibleIds: responsible ? [responsible.id] : [],
@@ -75,35 +60,6 @@ export function InspectionDataForm({
       }));
     }
   }, [address]);
-
-  // Validate company ID on load
-  useEffect(() => {
-    if (formData.companyId) {
-      validateCompanyId(formData.companyId);
-    }
-  }, [formData.companyId, companies]);
-
-  const validateCompanyId = (companyId: string) => {
-    if (!companyId) {
-      setCompanyError("");
-      return;
-    }
-    
-    // Check UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(companyId)) {
-      setCompanyError("ID de empresa inválido");
-      return;
-    }
-    
-    // Check if company exists in loaded companies
-    if (companies.length > 0 && !companies.some(c => c.id === companyId)) {
-      setCompanyError("Empresa não encontrada ou inativa");
-      return;
-    }
-    
-    setCompanyError("");
-  };
 
   const handleCEPSearch = () => {
     if (formData.cep.length >= 8) {
@@ -179,179 +135,147 @@ export function InspectionDataForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="companyId">Empresa</Label>
-          {errorCompanies ? (
-            <Alert variant="destructive" className="py-2">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-xs ml-2">
-                {errorCompanies}
-              </AlertDescription>
-            </Alert>
-          ) : (
-            <div className="flex flex-col relative z-30">
-              <CompanySelector
-                value={formData.companyId}
-                onSelect={handleCompanySelect}
-                className={loadingCompanies ? "opacity-50 pointer-events-none" : ""}
-                error={companyError}
-                showTooltip={true}
+    <TooltipProvider>
+      <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="companyId">Empresa</Label>
+            <EnhancedCompanySelector
+              value={formData.companyId}
+              onSelect={handleCompanySelect}
+              error={companyError}
+              showTooltip={true}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="responsibleIds">Responsável(is)</Label>
+            <EnhancedResponsibleSelector
+              value={formData.responsibleIds}
+              onSelect={(values, data) => handleMultiSelectChange("responsibleIds", values)}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="scheduledDate">Data Agendada</Label>
+            <Input
+              type="date"
+              id="scheduledDate"
+              name="scheduledDate"
+              value={formData.scheduledDate ? format(new Date(formData.scheduledDate), "yyyy-MM-dd") : ""}
+              onChange={handleInputChange}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="cep">CEP</Label>
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                id="cep"
+                name="cep"
+                value={formData.cep}
+                onChange={handleInputChange}
+                maxLength={9}
+                placeholder="00000-000"
               />
-              {loadingCompanies && (
-                <div className="absolute right-10 top-3">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                </div>
-              )}
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={handleCEPSearch}
+                disabled={loadingCEP || formData.cep.length < 8}
+              >
+                {loadingCEP ? <Loader2 className="h-4 w-4 animate-spin" /> : "Buscar"}
+              </Button>
             </div>
-          )}
+          </div>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="responsibleIds">Responsável(is)</Label>
-          {errorResponsibles ? (
-            <Alert variant="destructive" className="py-2">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-xs ml-2">
-                {errorResponsibles}
-              </AlertDescription>
-            </Alert>
-          ) : (
-            <div className="flex flex-col relative z-20">
-              <ResponsibleSelector
-                value={formData.responsibleIds}
-                onSelect={(values, data) => handleMultiSelectChange("responsibleIds", values)}
-                className={loadingResponsibles ? "opacity-50 pointer-events-none" : ""}
-              />
-              {loadingResponsibles && (
-                <div className="absolute right-10 top-3">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="scheduledDate">Data Agendada</Label>
-          <Input
-            type="date"
-            id="scheduledDate"
-            name="scheduledDate"
-            value={formData.scheduledDate ? format(new Date(formData.scheduledDate), "yyyy-MM-dd") : ""}
-            onChange={handleInputChange}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="cep">CEP</Label>
+          <Label htmlFor="location">Localização</Label>
           <div className="flex gap-2">
             <Input
               type="text"
-              id="cep"
-              name="cep"
-              value={formData.cep}
+              id="location"
+              name="location"
+              value={formData.location}
               onChange={handleInputChange}
-              maxLength={9}
-              placeholder="00000-000"
+              placeholder="Endereço da inspeção"
+              className="flex-1"
             />
             <Button 
               type="button" 
               variant="outline" 
-              onClick={handleCEPSearch}
-              disabled={loadingCEP || formData.cep.length < 8}
+              onClick={handleGetLocation}
+              disabled={useGeolocation}
             >
-              {loadingCEP ? <Loader2 className="h-4 w-4 animate-spin" /> : "Buscar"}
+              {useGeolocation ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <><MapPin className="h-4 w-4 mr-1" /> GPS</>
+              )}
             </Button>
           </div>
         </div>
-      </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="location">Localização</Label>
-        <div className="flex gap-2">
-          <Input
-            type="text"
-            id="location"
-            name="location"
-            value={formData.location}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="type">Tipo de Inspeção</Label>
+            <Input
+              type="text"
+              id="type"
+              name="type"
+              value={formData.type}
+              onChange={handleInputChange}
+              placeholder="Tipo de inspeção"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="priority">Prioridade</Label>
+            <Select 
+              value={formData.priority} 
+              onValueChange={(value) => handleSelectChange("priority", value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a prioridade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">Baixa</SelectItem>
+                <SelectItem value="medium">Média</SelectItem>
+                <SelectItem value="high">Alta</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="notes">Anotações</Label>
+          <Textarea
+            id="notes"
+            name="notes"
+            value={formData.notes}
             onChange={handleInputChange}
-            placeholder="Endereço da inspeção"
-            className="flex-1"
+            placeholder="Anotações adicionais sobre a inspeção"
+            rows={3}
           />
+        </div>
+
+        <div className="flex justify-end space-x-2 pt-2">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Cancelar
+          </Button>
           <Button 
-            type="button" 
-            variant="outline" 
-            onClick={handleGetLocation}
-            disabled={useGeolocation}
+            type="submit" 
+            disabled={isSaving || !!companyError}
           >
-            {useGeolocation ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <><MapPin className="h-4 w-4 mr-1" /> GPS</>
-            )}
+            {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+            Salvar
           </Button>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="type">Tipo de Inspeção</Label>
-          <Input
-            type="text"
-            id="type"
-            name="type"
-            value={formData.type}
-            onChange={handleInputChange}
-            placeholder="Tipo de inspeção"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="priority">Prioridade</Label>
-          <Select 
-            value={formData.priority} 
-            onValueChange={(value) => handleSelectChange("priority", value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione a prioridade" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="low">Baixa</SelectItem>
-              <SelectItem value="medium">Média</SelectItem>
-              <SelectItem value="high">Alta</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="notes">Anotações</Label>
-        <Textarea
-          id="notes"
-          name="notes"
-          value={formData.notes}
-          onChange={handleInputChange}
-          placeholder="Anotações adicionais sobre a inspeção"
-          rows={3}
-        />
-      </div>
-
-      <div className="flex justify-end space-x-2 pt-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancelar
-        </Button>
-        <Button 
-          type="submit" 
-          disabled={isSaving || !!companyError}
-        >
-          {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-          Salvar
-        </Button>
-      </div>
-    </form>
+      </form>
+    </TooltipProvider>
   );
 }
