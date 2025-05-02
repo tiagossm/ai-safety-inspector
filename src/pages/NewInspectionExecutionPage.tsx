@@ -20,8 +20,8 @@ export default function NewInspectionExecutionPage() {
   const navigate = useNavigate();
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isPanelExpanded, setIsPanelExpanded] = useState(false);
-  const [editMode, setEditMode] = useState(false);
+  const [isPanelExpanded, setIsPanelExpanded] = useState(true); // Default to expanded for new inspections
+  const [editMode, setEditMode] = useState(true); // Default to edit mode for new inspections
   const [viewMode, setViewMode] = useState<"read" | "edit">("edit");
 
   // Use the inspection data hook to fetch all necessary data
@@ -65,6 +65,14 @@ export default function NewInspectionExecutionPage() {
 
   // Check if this is a new or incomplete inspection
   const isNewOrIncompleteInspection = !inspection?.id || (!company?.id || !responsible?.id);
+
+  // When mounting, if this is a new inspection, expand the panel and set edit mode
+  useEffect(() => {
+    if (isNewOrIncompleteInspection) {
+      setIsPanelExpanded(true);
+      setEditMode(true);
+    }
+  }, [isNewOrIncompleteInspection]);
 
   // Check if the current user is offline
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -183,7 +191,7 @@ export default function NewInspectionExecutionPage() {
           onToggleViewMode={isInspectionEditable && !isSharedView ? toggleViewMode : undefined}
         />
 
-        {/* Expandable Panel for Inspection Data - without the company/responsible selector */}
+        {/* Expandable Panel for Inspection Data */}
         {!isSharedView && (
           <InspectionExpandablePanel
             inspection={inspection}
@@ -199,16 +207,37 @@ export default function NewInspectionExecutionPage() {
           />
         )}
 
-        {/* Questions Panel */}
-        <QuestionsPanel
-          questions={questions}
-          groups={groups}
-          responses={responses}
-          onResponseChange={handleResponseChange}
-          onMediaChange={handleMediaChange}
-          onMediaUpload={handleMediaUpload}
-          isEditable={isInspectionEditable && viewMode === "edit"}
-        />
+        {/* Questions Panel - Only show if company and responsible are set */}
+        {(company?.id && responsible?.id) ? (
+          <QuestionsPanel
+            questions={questions}
+            groups={groups}
+            responses={responses}
+            onResponseChange={handleResponseChange}
+            onMediaChange={handleMediaChange}
+            onMediaUpload={handleMediaUpload}
+            isEditable={isInspectionEditable && viewMode === "edit"}
+          />
+        ) : (
+          <Card className="p-6 text-center">
+            <div className="mb-4 text-amber-700">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 className="text-lg font-medium">Dados obrigatórios pendentes</h3>
+            </div>
+            <p className="text-muted-foreground mb-4">
+              Por favor, preencha os dados da empresa e responsável para continuar com a inspeção.
+            </p>
+            <ul className="list-disc text-left mx-auto w-fit mb-4">
+              <li className="text-red-600">Empresa</li>
+              <li className="text-red-600">Responsável</li>
+            </ul>
+            <Button onClick={handleEditData}>
+              Preencher Dados
+            </Button>
+          </Card>
+        )}
         
         {/* Floating Action Menu - only show in non-shared view */}
         {!isSharedView && (

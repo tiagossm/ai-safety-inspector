@@ -123,7 +123,7 @@ export function InspectionExpandablePanel({
               </Badge>
             )}
             
-            {/* Only show edit button for saved inspections that are editable */}
+            {/* Only show edit button for saved inspections with company and responsible already set */}
             {isEditable && !isNewInspection && (
               <Button
                 variant="ghost"
@@ -212,7 +212,7 @@ export function InspectionExpandablePanel({
                 </div>
               )}
               
-              {/* Only show edit button for saved inspections that are editable */}
+              {/* Only show edit button for saved inspections that have company and responsible data */}
               {isEditable && !isNewInspection && (
                 <div className="flex justify-end">
                   <Button

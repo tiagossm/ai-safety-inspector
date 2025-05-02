@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, MapPin, AlertCircle } from "lucide-react";
+import { Loader2, MapPin } from "lucide-react";
 import { useCEP } from "@/hooks/useCEP";
 import { format } from "date-fns";
 import { useFormSelectionData } from "@/hooks/inspection/useFormSelectionData";
@@ -39,7 +39,7 @@ export function InspectionDataForm({
     scheduledDate: inspection.scheduled_date || "",
     location: inspection.location || "",
     cep: "",
-    type: inspection.type || "Padrão",
+    type: inspection.type || inspection.inspection_type || "Padrão",
     priority: inspection.priority || "medium",
     notes: inspection.notes || ""
   });
@@ -129,8 +129,14 @@ export function InspectionDataForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Get the company and responsible data for the selected IDs
+    const selectedCompany = companies.find(c => c.id === formData.companyId) || company;
+    const selectedResponsible = responsibles.find(r => r.id === formData.responsibleIds[0]) || responsible;
+    
     onSave({
       ...formData,
+      company: selectedCompany,
+      responsible: selectedResponsible,
       locationCoords
     });
   };
@@ -141,74 +147,56 @@ export function InspectionDataForm({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="companyId">Empresa</Label>
-            {company ? (
-              <Input
-                id="companyName"
-                value={company?.fantasy_name || ""}
-                readOnly
-                className="bg-gray-50"
-              />
-            ) : (
-              <Select 
-                value={formData.companyId} 
-                onValueChange={handleCompanyChange}
-                disabled={loadingCompanies}
-              >
-                <SelectTrigger className="bg-white border border-input">
-                  <SelectValue placeholder="Selecione uma empresa" />
-                </SelectTrigger>
-                <SelectContent className="bg-white z-50 max-h-60 overflow-y-auto">
-                  {loadingCompanies ? (
-                    <div className="flex items-center justify-center p-2">
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      <span>Carregando...</span>
-                    </div>
-                  ) : (
-                    companies.map((company) => (
-                      <SelectItem key={company.id} value={company.id} className="cursor-pointer">
-                        {company.fantasy_name || company.name}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            )}
+            <Select 
+              value={formData.companyId} 
+              onValueChange={handleCompanyChange}
+              disabled={loadingCompanies}
+            >
+              <SelectTrigger className="bg-white border border-input">
+                <SelectValue placeholder="Selecione uma empresa" />
+              </SelectTrigger>
+              <SelectContent className="bg-white z-50 max-h-60 overflow-y-auto">
+                {loadingCompanies ? (
+                  <div className="flex items-center justify-center p-2">
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    <span>Carregando...</span>
+                  </div>
+                ) : (
+                  companies.map((company) => (
+                    <SelectItem key={company.id} value={company.id} className="cursor-pointer">
+                      {company.fantasy_name || company.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="responsibleId">Responsável</Label>
-            {responsible ? (
-              <Input
-                id="responsibleName"
-                value={responsible?.name || ""}
-                readOnly
-                className="bg-gray-50"
-              />
-            ) : (
-              <Select 
-                value={formData.responsibleIds[0] || ""} 
-                onValueChange={handleResponsibleChange}
-                disabled={loadingResponsibles}
-              >
-                <SelectTrigger className="bg-white border border-input">
-                  <SelectValue placeholder="Selecione um responsável" />
-                </SelectTrigger>
-                <SelectContent className="bg-white z-50 max-h-60 overflow-y-auto">
-                  {loadingResponsibles ? (
-                    <div className="flex items-center justify-center p-2">
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      <span>Carregando...</span>
-                    </div>
-                  ) : (
-                    responsibles.map((user) => (
-                      <SelectItem key={user.id} value={user.id} className="cursor-pointer">
-                        {user.name}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            )}
+            <Select 
+              value={formData.responsibleIds[0] || ""} 
+              onValueChange={handleResponsibleChange}
+              disabled={loadingResponsibles}
+            >
+              <SelectTrigger className="bg-white border border-input">
+                <SelectValue placeholder="Selecione um responsável" />
+              </SelectTrigger>
+              <SelectContent className="bg-white z-50 max-h-60 overflow-y-auto">
+                {loadingResponsibles ? (
+                  <div className="flex items-center justify-center p-2">
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    <span>Carregando...</span>
+                  </div>
+                ) : (
+                  responsibles.map((user) => (
+                    <SelectItem key={user.id} value={user.id} className="cursor-pointer">
+                      {user.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
