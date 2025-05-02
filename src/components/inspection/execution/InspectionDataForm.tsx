@@ -10,15 +10,7 @@ import { useCEP } from "@/hooks/useCEP";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { EnhancedCompanySelector } from "@/components/selection/EnhancedCompanySelector";
-import { EnhancedResponsibleSelector } from "@/components/selection/EnhancedResponsibleSelector";
 import { TooltipProvider } from "@/components/ui/tooltip";
-
-// Define interface for company and responsible selector options
-interface SelectOption {
-  label: string;
-  value: string;
-}
 
 interface InspectionDataFormProps {
   inspection: any;
@@ -50,12 +42,6 @@ export function InspectionDataForm({
     notes: inspection.notes || ""
   });
   
-  const [companyError, setCompanyError] = useState<string>("");
-  const [selectedCompany, setSelectedCompany] = useState<any>(company);
-  const [selectedResponsibles, setSelectedResponsibles] = useState<any[]>(
-    providedResponsibles || (responsible ? [responsible] : [])
-  );
-
   const [useGeolocation, setUseGeolocation] = useState(false);
   const [locationCoords, setLocationCoords] = useState<{lat: number; lng: number} | null>(null);
   
@@ -118,10 +104,6 @@ export function InspectionDataForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (companyError) {
-      return;
-    }
-    
     onSave({
       ...formData,
       locationCoords
@@ -133,39 +115,22 @@ export function InspectionDataForm({
       <form onSubmit={handleSubmit} className="space-y-4 pt-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="companyId">Empresa</Label>
-            <EnhancedCompanySelector
-              value={formData.companyId ? { label: selectedCompany?.fantasy_name || "Empresa", value: formData.companyId } : null}
-              onSelect={(option: SelectOption | null) => {
-                if (option) {
-                  setFormData(prev => ({
-                    ...prev,
-                    companyId: option.value,
-                    location: selectedCompany?.address || prev.location
-                  }));
-                  setCompanyError("");
-                }
-              }}
-              error={companyError}
-              showTooltip={true}
+            <Label htmlFor="companyName">Empresa</Label>
+            <Input
+              id="companyName"
+              value={company?.fantasy_name || ""}
+              readOnly
+              className="bg-gray-50"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="responsibleIds">Responsável(is)</Label>
-            <EnhancedResponsibleSelector
-              value={formData.responsibleIds.map(id => {
-                const resp = selectedResponsibles.find(r => r.id === id) || {};
-                return { label: resp.name || "Responsável", value: id };
-              })}
-              onSelect={(selectedOptions: SelectOption[]) => {
-                // Extract the values from the SelectOptions
-                const ids = selectedOptions.map(option => option.value);
-                setFormData(prev => ({
-                  ...prev,
-                  responsibleIds: ids
-                }));
-              }}
+            <Label htmlFor="responsibleName">Responsável</Label>
+            <Input
+              id="responsibleName"
+              value={responsible?.name || ""}
+              readOnly
+              className="bg-gray-50"
             />
           </div>
         </div>
@@ -282,7 +247,7 @@ export function InspectionDataForm({
           </Button>
           <Button 
             type="submit" 
-            disabled={isSaving || !!companyError}
+            disabled={isSaving}
           >
             {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
             Salvar

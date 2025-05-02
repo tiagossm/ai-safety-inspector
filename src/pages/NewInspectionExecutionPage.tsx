@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -179,7 +178,7 @@ export default function NewInspectionExecutionPage() {
           onToggleViewMode={isInspectionEditable && !isSharedView ? toggleViewMode : undefined}
         />
 
-        {/* Expandable Panel for Inspection Data */}
+        {/* Expandable Panel for Inspection Data - without the company/responsible selector */}
         {!isSharedView && (
           <InspectionExpandablePanel
             inspection={inspection}
