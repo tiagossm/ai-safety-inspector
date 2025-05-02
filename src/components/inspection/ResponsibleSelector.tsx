@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Check, ChevronDown, User, Plus, X, Loader2 } from "lucide-react";
@@ -253,7 +252,7 @@ export function ResponsibleSelector({ value = [], onSelect, className, disabled 
                 <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[350px] p-0 z-50">
+            <PopoverContent className="w-[350px] p-0 z-[100]">
               <Command>
                 <CommandInput 
                   placeholder="Buscar responsável..." 
@@ -283,10 +282,7 @@ export function ResponsibleSelector({ value = [], onSelect, className, disabled 
                           key={`recent-${user.id}`}
                           value={`recent-${user.name}`}
                           className="cursor-pointer text-foreground"
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            handleSelectUser(user);
-                          }}
+                          onSelect={() => handleSelectUser(user)}
                         >
                           <Check
                             className={cn(
@@ -311,10 +307,7 @@ export function ResponsibleSelector({ value = [], onSelect, className, disabled 
                         key={user.id}
                         value={user.name}
                         className="cursor-pointer text-foreground"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          handleSelectUser(user);
-                        }}
+                        onSelect={() => handleSelectUser(user)}
                       >
                         <Check
                           className={cn(

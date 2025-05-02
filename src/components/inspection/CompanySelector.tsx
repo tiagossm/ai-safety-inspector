@@ -220,7 +220,7 @@ export function CompanySelector({
                   <PopoverTrigger asChild>
                     {triggerElement}
                   </PopoverTrigger>
-                  <PopoverContent className="w-[350px] p-0 z-50">
+                  <PopoverContent className="w-[350px] p-0 z-[100]">
                     <Command>
                       <CommandInput 
                         placeholder="Buscar empresas..." 
@@ -246,12 +246,9 @@ export function CompanySelector({
                           {companies.map((company) => (
                             <CommandItem
                               key={company.id}
-                              value={company.name || company.fantasy_name}
+                              value={company.fantasy_name || company.name || ""}
                               className="cursor-pointer text-foreground"
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                handleSelectCompany(company);
-                              }}
+                              onSelect={() => handleSelectCompany(company)}
                             >
                               <Check
                                 className={cn(
@@ -260,7 +257,7 @@ export function CompanySelector({
                                 )}
                               />
                               <div className="flex-1 overflow-hidden">
-                                <div className="font-medium">{company.name || company.fantasy_name}</div>
+                                <div className="font-medium">{company.fantasy_name || company.name}</div>
                                 <div className="text-xs text-muted-foreground truncate">
                                   CNPJ: {company.cnpj} {company.cnae && `• CNAE: ${company.cnae}`}
                                 </div>

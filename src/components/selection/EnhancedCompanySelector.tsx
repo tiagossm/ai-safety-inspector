@@ -156,7 +156,7 @@ export function EnhancedCompanySelector({
                   <PopoverTrigger asChild>
                     {triggerElement}
                   </PopoverTrigger>
-                  <PopoverContent className="w-[350px] p-0 z-50">
+                  <PopoverContent className="w-[350px] p-0 z-[100]">
                     <Command>
                       <CommandInput 
                         placeholder="Buscar empresas..." 
@@ -184,10 +184,7 @@ export function EnhancedCompanySelector({
                               key={company.id}
                               value={company.name}
                               className="cursor-pointer text-foreground"
-                              onMouseDown={(e) => {
-                                e.preventDefault();
-                                handleSelectCompany(company);
-                              }}
+                              onSelect={() => handleSelectCompany(company)}
                             >
                               <Check
                                 className={cn(
@@ -219,7 +216,7 @@ export function EnhancedCompanySelector({
             <PopoverTrigger asChild>
               {triggerElement}
             </PopoverTrigger>
-            <PopoverContent className="w-[350px] p-0 z-50">
+            <PopoverContent className="w-[350px] p-0 z-[100]">
               <Command>
                 <CommandInput 
                   placeholder="Buscar empresas..." 
@@ -247,10 +244,7 @@ export function EnhancedCompanySelector({
                         key={company.id}
                         value={company.name}
                         className="cursor-pointer text-foreground"
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          handleSelectCompany(company);
-                        }}
+                        onSelect={() => handleSelectCompany(company)}
                       >
                         <Check
                           className={cn(
