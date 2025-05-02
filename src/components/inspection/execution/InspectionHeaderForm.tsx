@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -284,7 +283,7 @@ export function InspectionHeaderForm({
                         <FormControl>
                           <EnhancedCompanySelector
                             value={field.value ? { label: selectedCompany?.fantasy_name || "Empresa", value: field.value } : null}
-                            onSelect={(option) => {
+                            onSelect={(option: SelectOption | null) => {
                               if (option) {
                                 // Extract the value from the SelectOption and set it to the form field
                                 field.onChange(option.value);
@@ -318,7 +317,7 @@ export function InspectionHeaderForm({
                                 const resp = selectedResponsibles.find(r => r.id === id) || {};
                                 return { label: resp.name || "Responsável", value: id };
                               })}
-                              onSelect={(selectedOptions) => {
+                              onSelect={(selectedOptions: SelectOption[]) => {
                                 // Extract the values from the SelectOptions and set them to the form field
                                 field.onChange(selectedOptions.map(option => option.value));
                               }}

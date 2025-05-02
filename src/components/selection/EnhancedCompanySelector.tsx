@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Check, ChevronDown, Building, Plus, Loader2, AlertCircle } from "lucide-react";
 import {
@@ -20,9 +19,15 @@ import { CompanyQuickCreateModal } from "../inspection/CompanyQuickCreateModal";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useCompanySelectionStore } from "@/hooks/selection/useCompanySelectionStore";
 
-interface EnhancedCompanySelectorProps {
+// Define the SelectOption interface for consistency
+export interface SelectOption {
+  label: string;
   value: string;
-  onSelect: (id: string, data?: any) => void;
+}
+
+interface EnhancedCompanySelectorProps {
+  value: SelectOption | null;
+  onSelect: (option: SelectOption | null, data?: any) => void;
   className?: string;
   disabled?: boolean;
   error?: string;
@@ -51,7 +56,7 @@ export function EnhancedCompanySelector({
     searchCompanies,
     validateCompany,
     createCompany
-  } = useCompanySelectionStore(value);
+  } = useCompanySelectionStore(value?.value || "");
 
   useEffect(() => {
     if (companies.length === 0) {
@@ -74,7 +79,7 @@ export function EnhancedCompanySelector({
   const validateCompanyId = async () => {
     if (!value) return;
 
-    const validation = await validateCompany(value);
+    const validation = await validateCompany(value.value);
     if (!validation.valid) {
       setInternalError(validation.error);
     } else {
@@ -97,8 +102,13 @@ export function EnhancedCompanySelector({
       return;
     }
 
+    const selectOption: SelectOption = {
+      label: company.name || company.fantasy_name || "Empresa",
+      value: company.id
+    };
+
     setInternalError(undefined);
-    onSelect(company.id, company);
+    onSelect(selectOption, company);
     setOpen(false);
   };
 
@@ -177,7 +187,7 @@ export function EnhancedCompanySelector({
                               <Check
                                 className={cn(
                                   "mr-2 h-4 w-4",
-                                  company.id === value ? "opacity-100" : "opacity-0"
+                                  company.id === value?.value ? "opacity-100" : "opacity-0"
                                 )}
                               />
                               <div className="flex-1 overflow-hidden">
@@ -236,7 +246,7 @@ export function EnhancedCompanySelector({
                         <Check
                           className={cn(
                             "mr-2 h-4 w-4",
-                            company.id === value ? "opacity-100" : "opacity-0"
+                            company.id === value?.value ? "opacity-100" : "opacity-0"
                           )}
                         />
                         <div className="flex-1 overflow-hidden">

@@ -136,7 +136,7 @@ export function InspectionDataForm({
             <Label htmlFor="companyId">Empresa</Label>
             <EnhancedCompanySelector
               value={formData.companyId ? { label: selectedCompany?.fantasy_name || "Empresa", value: formData.companyId } : null}
-              onSelect={(option) => {
+              onSelect={(option: SelectOption | null) => {
                 if (option) {
                   setFormData(prev => ({
                     ...prev,
@@ -158,7 +158,7 @@ export function InspectionDataForm({
                 const resp = selectedResponsibles.find(r => r.id === id) || {};
                 return { label: resp.name || "Responsável", value: id };
               })}
-              onSelect={(selectedOptions) => {
+              onSelect={(selectedOptions: SelectOption[]) => {
                 // Extract the values from the SelectOptions
                 const ids = selectedOptions.map(option => option.value);
                 setFormData(prev => ({

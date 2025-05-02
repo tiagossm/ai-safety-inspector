@@ -20,10 +20,11 @@ import { ResponsibleQuickCreateModal } from "../inspection/ResponsibleQuickCreat
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useResponsibleSelectionStore } from "@/hooks/selection/useResponsibleSelectionStore";
 import { ResponsibleSearchResult } from "@/services/responsible/responsibleSelectionService";
+import { SelectOption } from "./EnhancedCompanySelector";
 
 interface EnhancedResponsibleSelectorProps {
-  value: string[];
-  onSelect: (ids: string[], data: any[]) => void;
+  value: SelectOption[];
+  onSelect: (options: SelectOption[]) => void;
   className?: string;
   disabled?: boolean;
   showTooltip?: boolean;
@@ -54,7 +55,7 @@ export function EnhancedResponsibleSelector({
     removeResponsible,
     setSelectedResponsibleIds,
     createResponsible
-  } = useResponsibleSelectionStore(value);
+  } = useResponsibleSelectionStore(value.map(v => v.value));
 
   // Keep internal store and props in sync
   useState(() => {
@@ -75,30 +76,31 @@ export function EnhancedResponsibleSelector({
   const handleSelectUser = (user: ResponsibleSearchResult) => {
     toggleResponsibleSelection(user);
     
-    // Sync back to parent component
-    const updatedIds = selectedResponsibles.map(u => u.id).includes(user.id)
-      ? selectedResponsibles.map(u => u.id).filter(id => id !== user.id)
-      : [...selectedResponsibles.map(u => u.id), user.id];
-      
-    const updatedUsers = updatedIds.map(id => 
-      [...selectedResponsibles, user].find(u => u.id === id)
-    ).filter(Boolean) as ResponsibleSearchResult[];
+    // Prepare the updated selection options
+    let updatedOptions: SelectOption[];
     
-    onSelect(updatedIds, updatedUsers);
+    // If user is already selected, remove it from the selection
+    if (value.some(v => v.value === user.id)) {
+      updatedOptions = value.filter(v => v.value !== user.id);
+    } else {
+      // Add the new option
+      const newOption: SelectOption = {
+        label: user.name || user.email || "Responsável",
+        value: user.id
+      };
+      updatedOptions = [...value, newOption];
+    }
+    
+    // Send the updated options back to the parent
+    onSelect(updatedOptions);
   };
 
   const handleRemoveUser = (userId: string) => {
     removeResponsible(userId);
     
-    // Sync back to parent component
-    const updatedIds = selectedResponsibles
-      .map(u => u.id)
-      .filter(id => id !== userId);
-      
-    const updatedUsers = selectedResponsibles
-      .filter(u => u.id !== userId);
-      
-    onSelect(updatedIds, updatedUsers);
+    // Remove the option from the value array
+    const updatedOptions = value.filter(v => v.value !== userId);
+    onSelect(updatedOptions);
   };
 
   const handleQuickCreateSuccess = async (userData: any) => {
@@ -109,11 +111,14 @@ export function EnhancedResponsibleSelector({
     });
     
     if (newResponsible) {
-      // The store will automatically add the new responsible to the selected list
-      // We just need to sync back to parent
-      const updatedIds = [...selectedResponsibles.map(u => u.id), newResponsible.id];
-      const updatedUsers = [...selectedResponsibles, newResponsible];
-      onSelect(updatedIds, updatedUsers);
+      // Create a new selection option
+      const newOption: SelectOption = {
+        label: newResponsible.name || newResponsible.email || "Responsável",
+        value: newResponsible.id
+      };
+      
+      // Add to the current selections
+      onSelect([...value, newOption]);
     }
   };
 
