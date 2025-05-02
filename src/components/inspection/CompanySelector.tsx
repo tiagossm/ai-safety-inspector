@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Check, ChevronDown, Building, Plus, Loader2, AlertCircle } from "lucide-react";
 import {
@@ -86,9 +87,8 @@ export function CompanySelector({
     try {
       const { data, error } = await supabase
         .from("companies")
-        .select("id, fantasy_name, cnpj, cnae, address, is_deleted, active")
-        .eq("is_deleted", false)
-        .eq("active", true)
+        .select("id, fantasy_name, cnpj, cnae, address, status")
+        .eq("status", "active")
         .order("fantasy_name", { ascending: true });
 
       if (error) throw error;
@@ -119,13 +119,14 @@ export function CompanySelector({
     try {
       const { data, error } = await supabase
         .from("companies")
-        .select("id, fantasy_name, cnpj, cnae, address, is_deleted, active")
+        .select("id, fantasy_name, cnpj, cnae, address, status")
         .eq("id", id)
+        .eq("status", "active")
         .maybeSingle();
 
       if (error) throw error;
 
-      if (data && !data.is_deleted && data.active) {
+      if (data) {
         const company = {
           id: data.id,
           name: data.fantasy_name || "Empresa sem nome",
@@ -151,10 +152,9 @@ export function CompanySelector({
       setSearching(true);
       const { data, error } = await supabase
         .from("companies")
-        .select("id, fantasy_name, cnpj, cnae, address, is_deleted, active")
+        .select("id, fantasy_name, cnpj, cnae, address, status")
         .ilike("fantasy_name", `%${query}%`)
-        .eq("is_deleted", false)
-        .eq("active", true)
+        .eq("status", "active")
         .order("fantasy_name", { ascending: true });
 
       if (error) throw error;

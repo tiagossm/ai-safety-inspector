@@ -113,6 +113,13 @@ export async function createCompany(companyData: {
   cnae?: string;
 }): Promise<CompanySearchResult | null> {
   try {
+    // Get the current user ID for the user_id field
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error("User not authenticated");
+    }
+
     const { data, error } = await supabase
       .from("companies")
       .insert([
@@ -121,7 +128,8 @@ export async function createCompany(companyData: {
           cnpj: companyData.cnpj,
           address: companyData.address || null,
           cnae: companyData.cnae || null,
-          status: "active"
+          status: "active",
+          user_id: user.id  // Add the user_id field required by the database schema
         }
       ])
       .select("id, fantasy_name, cnpj, cnae, address")

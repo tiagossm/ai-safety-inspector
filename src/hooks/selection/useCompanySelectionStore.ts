@@ -45,7 +45,7 @@ export function useCompanySelectionStore(initialSelectedId?: string) {
   // Create company mutation
   const { 
     mutateAsync: createCompanyMutation,
-    isLoading: isCreatingCompany
+    isPending: isCreatingCompany
   } = useMutation({
     mutationFn: createCompany,
     onSuccess: (newCompany) => {

@@ -85,7 +85,7 @@ export function useResponsibleSelectionStore(initialSelectedIds: string[] = []) 
   // Create responsible mutation
   const { 
     mutateAsync: createResponsibleMutation,
-    isLoading: isCreatingResponsible
+    isPending: isCreatingResponsible
   } = useMutation({
     mutationFn: createResponsible,
     onSuccess: (newResponsible) => {
