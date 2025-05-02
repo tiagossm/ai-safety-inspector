@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Check, ChevronDown, Building, Plus, Loader2, AlertCircle } from "lucide-react";
 import {
@@ -155,13 +156,13 @@ export function EnhancedCompanySelector({
                   <PopoverTrigger asChild>
                     {triggerElement}
                   </PopoverTrigger>
-                  <PopoverContent className="w-[350px] p-0">
+                  <PopoverContent className="w-[350px] p-0 z-50">
                     <Command>
                       <CommandInput 
                         placeholder="Buscar empresas..." 
                         onValueChange={handleSearch} 
                       />
-                      <CommandList>
+                      <CommandList className="max-h-[300px]">
                         <CommandEmpty>
                           {loadingCompanies ? (
                             <div className="flex items-center justify-center p-4">
@@ -177,12 +178,16 @@ export function EnhancedCompanySelector({
                             "Nenhuma empresa encontrada"
                           )}
                         </CommandEmpty>
-                        <CommandGroup>
+                        <CommandGroup className="overflow-visible">
                           {companies.map((company) => (
                             <CommandItem
                               key={company.id}
                               value={company.name}
-                              onSelect={() => handleSelectCompany(company)}
+                              className="cursor-pointer text-foreground"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                handleSelectCompany(company);
+                              }}
                             >
                               <Check
                                 className={cn(
@@ -214,13 +219,13 @@ export function EnhancedCompanySelector({
             <PopoverTrigger asChild>
               {triggerElement}
             </PopoverTrigger>
-            <PopoverContent className="w-[350px] p-0">
+            <PopoverContent className="w-[350px] p-0 z-50">
               <Command>
                 <CommandInput 
                   placeholder="Buscar empresas..." 
                   onValueChange={handleSearch} 
                 />
-                <CommandList>
+                <CommandList className="max-h-[300px]">
                   <CommandEmpty>
                     {loadingCompanies ? (
                       <div className="flex items-center justify-center p-4">
@@ -236,12 +241,16 @@ export function EnhancedCompanySelector({
                       "Nenhuma empresa encontrada"
                     )}
                   </CommandEmpty>
-                  <CommandGroup>
+                  <CommandGroup className="overflow-visible">
                     {companies.map((company) => (
                       <CommandItem
                         key={company.id}
                         value={company.name}
-                        onSelect={() => handleSelectCompany(company)}
+                        className="cursor-pointer text-foreground"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleSelectCompany(company);
+                        }}
                       >
                         <Check
                           className={cn(

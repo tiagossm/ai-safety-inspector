@@ -282,8 +282,11 @@ export function ResponsibleSelector({ value = [], onSelect, className, disabled 
                         <CommandItem
                           key={`recent-${user.id}`}
                           value={`recent-${user.name}`}
-                          onSelect={() => handleSelectUser(user)}
-                          className="cursor-pointer"
+                          className="cursor-pointer text-foreground"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleSelectUser(user);
+                          }}
                         >
                           <Check
                             className={cn(
@@ -307,8 +310,11 @@ export function ResponsibleSelector({ value = [], onSelect, className, disabled 
                       <CommandItem
                         key={user.id}
                         value={user.name}
-                        onSelect={() => handleSelectUser(user)}
-                        className="cursor-pointer"
+                        className="cursor-pointer text-foreground"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleSelectUser(user);
+                        }}
                       >
                         <Check
                           className={cn(

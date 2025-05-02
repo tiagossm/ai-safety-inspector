@@ -226,7 +226,7 @@ export function CompanySelector({
                         placeholder="Buscar empresas..." 
                         onValueChange={handleSearch} 
                       />
-                      <CommandList>
+                      <CommandList className="max-h-[300px]">
                         <CommandEmpty>
                           {loading ? (
                             <div className="flex items-center justify-center p-4">
@@ -247,8 +247,11 @@ export function CompanySelector({
                             <CommandItem
                               key={company.id}
                               value={company.name || company.fantasy_name}
-                              onSelect={() => handleSelectCompany(company)}
-                              className="cursor-pointer"
+                              className="cursor-pointer text-foreground"
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                handleSelectCompany(company);
+                              }}
                             >
                               <Check
                                 className={cn(

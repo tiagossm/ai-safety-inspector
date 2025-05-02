@@ -168,13 +168,13 @@ export function EnhancedResponsibleSelector({
                         <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[350px] p-0">
+                    <PopoverContent className="w-[350px] p-0 z-50">
                       <Command>
                         <CommandInput 
                           placeholder="Buscar responsável..." 
                           onValueChange={handleSearch}
                         />
-                        <CommandList>
+                        <CommandList className="max-h-[300px]">
                           <CommandEmpty>
                             {loadingResponsibles ? (
                               <div className="flex items-center justify-center p-4">
@@ -192,12 +192,16 @@ export function EnhancedResponsibleSelector({
                           </CommandEmpty>
 
                           {recentlyUsed.length > 0 && (
-                            <CommandGroup heading="Recentes">
+                            <CommandGroup heading="Recentes" className="overflow-visible">
                               {recentlyUsed.map((user) => (
                                 <CommandItem
                                   key={`recent-${user.id}`}
                                   value={`recent-${user.name}`}
-                                  onSelect={() => handleSelectUser(user)}
+                                  className="cursor-pointer text-foreground"
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    handleSelectUser(user);
+                                  }}
                                 >
                                   <Check
                                     className={cn(
@@ -216,12 +220,16 @@ export function EnhancedResponsibleSelector({
                             </CommandGroup>
                           )}
                           
-                          <CommandGroup heading="Todos os usuários">
+                          <CommandGroup heading="Todos os usuários" className="overflow-visible">
                             {responsibles.map((user) => (
                               <CommandItem
                                 key={user.id}
                                 value={user.name}
-                                onSelect={() => handleSelectUser(user)}
+                                className="cursor-pointer text-foreground"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  handleSelectUser(user);
+                                }}
                               >
                                 <Check
                                   className={cn(
@@ -274,13 +282,13 @@ export function EnhancedResponsibleSelector({
                   <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[350px] p-0">
+              <PopoverContent className="w-[350px] p-0 z-50">
                 <Command>
                   <CommandInput 
                     placeholder="Buscar responsável..." 
                     onValueChange={handleSearch}
                   />
-                  <CommandList>
+                  <CommandList className="max-h-[300px]">
                     <CommandEmpty>
                       {loadingResponsibles ? (
                         <div className="flex items-center justify-center p-4">
@@ -298,12 +306,16 @@ export function EnhancedResponsibleSelector({
                     </CommandEmpty>
 
                     {recentlyUsed.length > 0 && (
-                      <CommandGroup heading="Recentes">
+                      <CommandGroup heading="Recentes" className="overflow-visible">
                         {recentlyUsed.map((user) => (
                           <CommandItem
                             key={`recent-${user.id}`}
                             value={`recent-${user.name}`}
-                            onSelect={() => handleSelectUser(user)}
+                            className="cursor-pointer text-foreground"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              handleSelectUser(user);
+                            }}
                           >
                             <Check
                               className={cn(
@@ -322,12 +334,16 @@ export function EnhancedResponsibleSelector({
                       </CommandGroup>
                     )}
                     
-                    <CommandGroup heading="Todos os usuários">
+                    <CommandGroup heading="Todos os usuários" className="overflow-visible">
                       {responsibles.map((user) => (
                         <CommandItem
                           key={user.id}
                           value={user.name}
-                          onSelect={() => handleSelectUser(user)}
+                          className="cursor-pointer text-foreground"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleSelectUser(user);
+                          }}
                         >
                           <Check
                             className={cn(
