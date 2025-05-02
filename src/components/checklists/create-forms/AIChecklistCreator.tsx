@@ -145,12 +145,12 @@ export function AIChecklistCreator({
                     Empresa <span className="text-red-500">*</span>
                   </Label>
                   <CompanySelector
-                    value={form.company_id ? { label: selectedCompanyName || "Empresa", value: form.company_id.toString() } : null}
-                    onSelect={(option) => {
-                      if (option?.value) {
+                    value={form.company_id ? form.company_id.toString() : ""}
+                    onSelect={(id, data) => {
+                      if (id) {
                         setForm({ 
                           ...form, 
-                          company_id: option.value 
+                          company_id: id 
                         });
                       }
                     }}

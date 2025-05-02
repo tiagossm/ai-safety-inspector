@@ -278,11 +278,8 @@ export function InspectionHeaderForm({
                           <EnhancedCompanySelector
                             value={field.value ? { label: selectedCompany?.fantasy_name || "Empresa", value: field.value } : null}
                             onSelect={(option) => {
-                              if (option?.value) {
-                                field.onChange(option.value);
-                                setSelectedCompany(option.data);
-                                setCompanyError("");
-                              }
+                              field.onChange(option);
+                              setCompanyError("");
                             }}
                             className={cn(
                               !isEditing && "opacity-70 pointer-events-none"
@@ -311,10 +308,8 @@ export function InspectionHeaderForm({
                                 const resp = selectedResponsibles.find(r => r.id === id) || {};
                                 return { label: resp.name || "Responsável", value: id };
                               })}
-                              onSelect={(selectedOptions, selectedData) => {
-                                const ids = selectedOptions.map(option => option.value);
-                                field.onChange(ids);
-                                setSelectedResponsibles(selectedData || []);
+                              onSelect={(selectedOptions) => {
+                                field.onChange(selectedOptions.map(option => option));
                               }}
                               className={cn(
                                 !isEditing && "opacity-70 pointer-events-none"

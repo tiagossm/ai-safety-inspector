@@ -91,11 +91,11 @@ export function InspectionDetailsForm({
   };
   
   // Wrapper for handleCompanySelect to also validate UUID
-  const onCompanySelect = (option: any) => {
-    if (!option?.value) return;
+  const onCompanySelect = (id: string, data: any) => {
+    if (!id) return;
     
-    validateCompanyId(option.value);
-    handleCompanySelect(option.value, option.data);
+    validateCompanyId(id);
+    handleCompanySelect(id, data);
   };
 
   if (loading) {
@@ -129,9 +129,9 @@ export function InspectionDetailsForm({
   const responsibleIds = responsibleId ? [responsibleId] : [];
   
   // Adapter function to maintain backward compatibility
-  const handleResponsibleMultiSelect = (selectedOptions: any[], selectedData: any[]) => {
+  const handleResponsibleMultiSelect = (selectedIds: string[], selectedData: any[]) => {
     // If at least one responsible is selected, use the first one for backward compatibility
-    const firstId = selectedOptions.length > 0 ? selectedOptions[0].value : "";
+    const firstId = selectedIds.length > 0 ? selectedIds[0] : "";
     const firstData = selectedData.length > 0 ? selectedData[0] : null;
     handleResponsibleSelect(firstId, firstData);
   };
@@ -154,7 +154,7 @@ export function InspectionDetailsForm({
             </Label>
             <div className="mt-1.5">
               <CompanySelector
-                value={companyId ? { label: companyData?.fantasy_name || "Empresa", value: companyId } : null}
+                value={companyId || ""}
                 onSelect={onCompanySelect}
                 error={companyError || errors.company}
                 showTooltip={true}
@@ -199,7 +199,7 @@ export function InspectionDetailsForm({
             </Label>
             <div className="mt-1.5">
               <ResponsibleSelector
-                value={responsibleIds.map(id => ({ label: "Responsável", value: id }))}
+                value={responsibleIds}
                 onSelect={handleResponsibleMultiSelect}
               />
               {errors.responsible && (

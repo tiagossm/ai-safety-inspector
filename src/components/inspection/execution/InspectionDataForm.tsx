@@ -131,13 +131,12 @@ export function InspectionDataForm({
             <EnhancedCompanySelector
               value={formData.companyId ? { label: selectedCompany?.fantasy_name || "Empresa", value: formData.companyId } : null}
               onSelect={(option) => {
-                if (option?.value) {
+                if (option) {
                   setFormData(prev => ({
                     ...prev,
-                    companyId: option.value,
-                    location: option.data?.address || prev.location
+                    companyId: option,
+                    location: selectedCompany?.address || prev.location
                   }));
-                  setSelectedCompany(option.data);
                   setCompanyError("");
                 }
               }}
@@ -153,13 +152,12 @@ export function InspectionDataForm({
                 const resp = selectedResponsibles.find(r => r.id === id) || {};
                 return { label: resp.name || "Responsável", value: id };
               })}
-              onSelect={(selectedOptions, selectedData) => {
-                const ids = selectedOptions.map(option => option.value);
+              onSelect={(selectedOptions) => {
+                const ids = selectedOptions.map(option => option);
                 setFormData(prev => ({
                   ...prev,
                   responsibleIds: ids
                 }));
-                setSelectedResponsibles(selectedData || []);
               }}
             />
           </div>

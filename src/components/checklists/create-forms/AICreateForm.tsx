@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { NewChecklist } from "@/types/checklist";
 import { Label } from "@/components/ui/label";
@@ -199,12 +198,12 @@ Contexto: ${context}`;
                   Empresa <span className="text-red-500">*</span>
                 </Label>
                 <CompanySelector
-                  value={props.form.company_id ? { label: companyData?.fantasy_name || "Empresa", value: props.form.company_id.toString() } : null}
-                  onSelect={(option) => {
-                    if (option?.value) {
+                  value={props.form.company_id ? props.form.company_id.toString() : ""}
+                  onSelect={(id) => {
+                    if (id) {
                       props.setForm({ 
                         ...props.form, 
-                        company_id: option.value 
+                        company_id: id 
                       });
                     }
                   }}
