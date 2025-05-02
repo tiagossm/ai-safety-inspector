@@ -44,6 +44,12 @@ import { EnhancedCompanySelector } from "@/components/selection/EnhancedCompanyS
 import { EnhancedResponsibleSelector } from "@/components/selection/EnhancedResponsibleSelector";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
+// Define interface for company and responsible selector options
+interface SelectOption {
+  label: string;
+  value: string;
+}
+
 const coordinatesSchema = z.object({
   latitude: z.number().optional(),
   longitude: z.number().optional()
@@ -278,8 +284,10 @@ export function InspectionHeaderForm({
                           <EnhancedCompanySelector
                             value={field.value ? { label: selectedCompany?.fantasy_name || "Empresa", value: field.value } : null}
                             onSelect={(option) => {
-                              field.onChange(option);
-                              setCompanyError("");
+                              if (option) {
+                                field.onChange(option);
+                                setCompanyError("");
+                              }
                             }}
                             className={cn(
                               !isEditing && "opacity-70 pointer-events-none"
@@ -309,7 +317,7 @@ export function InspectionHeaderForm({
                                 return { label: resp.name || "Responsável", value: id };
                               })}
                               onSelect={(selectedOptions) => {
-                                field.onChange(selectedOptions.map(option => option));
+                                field.onChange(selectedOptions);
                               }}
                               className={cn(
                                 !isEditing && "opacity-70 pointer-events-none"
