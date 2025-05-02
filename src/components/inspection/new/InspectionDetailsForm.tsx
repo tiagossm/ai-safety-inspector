@@ -136,7 +136,7 @@ export function InspectionDetailsForm({
             </Label>
             <div className="mt-1.5">
               <CompanySelector
-                value={companyData?.id || companyId}
+                value={companyId}
                 onSelect={(id: string, data: any) => handleCompanySelect(id, data)}
                 error={companyError || errors.company}
                 showTooltip={true}
