@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,7 +18,7 @@ interface InspectionDetailsFormProps {
   companyId: string;
   companyData: any;
   setCompanyData: (data: any) => void;
-  responsibleId: string; // Will be used as the first item in responsibleIds array
+  responsibleId: string;
   location: string;
   setLocation: (value: string) => void;
   notes: string;
@@ -63,25 +62,20 @@ export function InspectionDetailsForm({
   onCancel
 }: InspectionDetailsFormProps) {
   const [companyError, setCompanyError] = useState<string>(errors.company || "");
-  
-  // Validate company ID when it changes
+
   useEffect(() => {
     validateCompanyId(companyId);
   }, [companyId]);
-  
-  // Update error state when errors prop changes
+
   useEffect(() => {
     setCompanyError(errors.company || "");
   }, [errors.company]);
-  
-  // Validate company ID
+
   const validateCompanyId = (id: string) => {
     if (!id) {
       setCompanyError("");
       return;
     }
-    
-    // Check UUID format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(id)) {
       setCompanyError("ID de empresa inválido");
@@ -89,13 +83,13 @@ export function InspectionDetailsForm({
       setCompanyError("");
     }
   };
-  
-  // Wrapper for handleCompanySelect to also validate UUID
-  const onCompanySelect = (id: string, data: any) => {
-    if (!id) return;
-    
-    validateCompanyId(id);
-    handleCompanySelect(id, data);
+
+  const responsibleIds = responsibleId ? [responsibleId] : [];
+
+  const handleResponsibleMultiSelect = (ids: string[], data: any[]) => {
+    const firstId = ids.length > 0 ? ids[0] : "";
+    const firstData = data.length > 0 ? data[0] : null;
+    handleResponsibleSelect(firstId, firstData);
   };
 
   if (loading) {
@@ -124,18 +118,7 @@ export function InspectionDetailsForm({
       </Card>
     );
   }
-  
-  // Convert single responsibleId to array for multi-select compatibility
-  const responsibleIds = responsibleId ? [responsibleId] : [];
-  
-  // Adapter function to maintain backward compatibility
-  const handleResponsibleMultiSelect = (selectedIds: string[], selectedData: any[]) => {
-    // If at least one responsible is selected, use the first one for backward compatibility
-    const firstId = selectedIds.length > 0 ? selectedIds[0] : "";
-    const firstData = selectedData.length > 0 ? selectedData[0] : null;
-    handleResponsibleSelect(firstId, firstData);
-  };
-  
+
   return (
     <TooltipProvider>
       <Card>
@@ -146,7 +129,6 @@ export function InspectionDetailsForm({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Company selection */}
           <div>
             <Label htmlFor="company" className="flex items-center">
               <Building className="h-4 w-4 mr-1" />
@@ -154,15 +136,21 @@ export function InspectionDetailsForm({
             </Label>
             <div className="mt-1.5">
               <CompanySelector
-                value={companyId || ""}
-                onSelect={onCompanySelect}
+                value={companyId ? { label: companyData?.fantasy_name || "Empresa sem nome", value: companyId } : null}
+                onChange={(option) => {
+                  if (option?.value) {
+                    handleCompanySelect(option.value, {
+                      fantasy_name: option.label,
+                      id: option.value,
+                    });
+                  }
+                }}
                 error={companyError || errors.company}
                 showTooltip={true}
               />
             </div>
           </div>
-          
-          {/* CNAE display */}
+
           {companyData && (
             <div>
               <Label htmlFor="cnae">
@@ -190,8 +178,7 @@ export function InspectionDetailsForm({
               )}
             </div>
           )}
-          
-          {/* Responsible - Updated to use the multi-select version */}
+
           <div>
             <Label htmlFor="responsible" className="flex items-center">
               <User className="h-4 w-4 mr-1" />
@@ -207,8 +194,7 @@ export function InspectionDetailsForm({
               )}
             </div>
           </div>
-          
-          {/* Scheduled date */}
+
           <div>
             <Label htmlFor="scheduled_date" className="flex items-center">
               <CalendarIcon className="h-4 w-4 mr-1" />
@@ -221,8 +207,7 @@ export function InspectionDetailsForm({
               />
             </div>
           </div>
-          
-          {/* Location */}
+
           <div>
             <Label htmlFor="location" className="flex items-center">
               <MapPin className="h-4 w-4 mr-1" />
@@ -238,8 +223,7 @@ export function InspectionDetailsForm({
               />
             </div>
           </div>
-          
-          {/* Notes */}
+
           <div>
             <Label htmlFor="notes" className="flex items-center">
               <ClipboardList className="h-4 w-4 mr-1" />
@@ -255,8 +239,7 @@ export function InspectionDetailsForm({
               />
             </div>
           </div>
-          
-          {/* Inspection type and priority */}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="type">Tipo de Inspeção</Label>
@@ -270,12 +253,9 @@ export function InspectionDetailsForm({
                 <SelectContent>
                   <SelectItem value="internal">Interna</SelectItem>
                   <SelectItem value="external">Externa</SelectItem>
-                  <SelectItem value="audit">Auditoria</SelectItem>
-                  <SelectItem value="routine">Rotina</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            
             <div>
               <Label htmlFor="priority">Prioridade</Label>
               <Select
@@ -295,19 +275,11 @@ export function InspectionDetailsForm({
           </div>
         </CardContent>
         <CardFooter className="flex justify-between border-t p-6">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-          >
+          <Button type="button" variant="outline" onClick={onCancel} disabled={submitting}>
             Cancelar
           </Button>
-          <Button
-            type="submit"
-            onClick={handleSubmit}
-            disabled={submitting || !isFormValid() || !!companyError}
-          >
-            {submitting ? "Processando..." : "Iniciar Inspeção"}
+          <Button type="submit" onClick={handleSubmit} disabled={submitting || !isFormValid()}>
+            {submitting ? "Salvando..." : "Salvar"}
           </Button>
         </CardFooter>
       </Card>
