@@ -63,6 +63,9 @@ export default function NewInspectionExecutionPage() {
 
   const stats = calculateCompletionStats();
 
+  // Check if this is a new or incomplete inspection
+  const isNewOrIncompleteInspection = !inspection?.id || (!company?.id || !responsible?.id);
+
   // Check if the current user is offline
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   
@@ -108,6 +111,7 @@ export default function NewInspectionExecutionPage() {
     try {
       await handleSaveInspection();
       toast.success("Progresso salvo com sucesso!");
+      refreshData(); // Refresh data after saving
     } catch (error) {
       console.error("Error saving progress:", error);
       toast.error("Erro ao salvar progresso. Tente novamente.");
@@ -211,7 +215,7 @@ export default function NewInspectionExecutionPage() {
           <FloatingActionMenu
             onSaveProgress={handleSaveProgress}
             onCompleteInspection={handleCompleteInspection}
-            onEditData={handleEditData}
+            onEditData={isNewOrIncompleteInspection ? handleEditData : undefined}
             onShare={handleShare}
             onDelete={handleDelete}
             isEditable={isInspectionEditable}

@@ -30,8 +30,8 @@ export function InspectionDataForm({
   onCancel,
   isSaving
 }: InspectionDataFormProps) {
-  // Use the direct form data hook instead of complex selectors
-  const { companies, responsibles } = useFormSelectionData();
+  // Use the form selection data hook for companies and responsibles
+  const { companies, responsibles, loadingCompanies, loadingResponsibles } = useFormSelectionData();
   
   const [formData, setFormData] = useState({
     companyId: company?.id || "",
@@ -152,16 +152,24 @@ export function InspectionDataForm({
               <Select 
                 value={formData.companyId} 
                 onValueChange={handleCompanyChange}
+                disabled={loadingCompanies}
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-white border border-input">
                   <SelectValue placeholder="Selecione uma empresa" />
                 </SelectTrigger>
-                <SelectContent className="max-h-60 overflow-y-auto">
-                  {companies.map((company) => (
-                    <SelectItem key={company.id} value={company.id}>
-                      {company.fantasy_name || company.name}
-                    </SelectItem>
-                  ))}
+                <SelectContent className="bg-white z-50 max-h-60 overflow-y-auto">
+                  {loadingCompanies ? (
+                    <div className="flex items-center justify-center p-2">
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      <span>Carregando...</span>
+                    </div>
+                  ) : (
+                    companies.map((company) => (
+                      <SelectItem key={company.id} value={company.id} className="cursor-pointer">
+                        {company.fantasy_name || company.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             )}
@@ -180,16 +188,24 @@ export function InspectionDataForm({
               <Select 
                 value={formData.responsibleIds[0] || ""} 
                 onValueChange={handleResponsibleChange}
+                disabled={loadingResponsibles}
               >
-                <SelectTrigger>
+                <SelectTrigger className="bg-white border border-input">
                   <SelectValue placeholder="Selecione um responsável" />
                 </SelectTrigger>
-                <SelectContent className="max-h-60 overflow-y-auto">
-                  {responsibles.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name}
-                    </SelectItem>
-                  ))}
+                <SelectContent className="bg-white z-50 max-h-60 overflow-y-auto">
+                  {loadingResponsibles ? (
+                    <div className="flex items-center justify-center p-2">
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      <span>Carregando...</span>
+                    </div>
+                  ) : (
+                    responsibles.map((user) => (
+                      <SelectItem key={user.id} value={user.id} className="cursor-pointer">
+                        {user.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             )}
@@ -278,13 +294,13 @@ export function InspectionDataForm({
               value={formData.priority} 
               onValueChange={(value) => handleSelectChange("priority", value)}
             >
-              <SelectTrigger>
+              <SelectTrigger className="bg-white border border-input">
                 <SelectValue placeholder="Selecione a prioridade" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="low">Baixa</SelectItem>
-                <SelectItem value="medium">Média</SelectItem>
-                <SelectItem value="high">Alta</SelectItem>
+              <SelectContent className="bg-white z-50">
+                <SelectItem value="low" className="cursor-pointer">Baixa</SelectItem>
+                <SelectItem value="medium" className="cursor-pointer">Média</SelectItem>
+                <SelectItem value="high" className="cursor-pointer">Alta</SelectItem>
               </SelectContent>
             </Select>
           </div>

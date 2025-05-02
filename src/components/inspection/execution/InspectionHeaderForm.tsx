@@ -85,6 +85,9 @@ export function InspectionHeaderForm({
     responsible ? [responsible] : []
   );
   
+  // Check if this is a new or incomplete inspection (no company or responsible)
+  const isNewInspection = !inspection.id || (!company?.id || !responsible?.id);
+
   const processCoordinates = (coords: any) => {
     if (!coords) return null;
     
@@ -229,13 +232,16 @@ export function InspectionHeaderForm({
                   </Button>
                 </div>
               ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditing(true)}
-                >
-                  <Edit className="h-4 w-4 mr-1" /> Editar
-                </Button>
+                // Only show edit button for saved inspections with company and responsible
+                !isNewInspection && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditing(true)}
+                  >
+                    <Edit className="h-4 w-4 mr-1" /> Editar
+                  </Button>
+                )
               )
             )}
             <Button
@@ -252,319 +258,317 @@ export function InspectionHeaderForm({
           </div>
         </CardHeader>
 
-        {expanded && (
-          <>
-            <CardContent>
-              <Progress value={progress} className="mb-4" />
-              
-              {progress < 100 && (
-                <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4 flex items-start">
-                  <span className="text-amber-600 mr-2">⚠</span>
-                  <div className="text-sm text-amber-700">
-                    <p className="font-medium">Dados obrigatórios pendentes</p>
-                    <ul className="list-disc pl-5 mt-1">
-                      {!form.getValues().companyId && <li>Empresa</li>}
-                      {(!form.getValues().responsibleIds || form.getValues().responsibleIds.length === 0) && <li>Responsável</li>}
-                      {!form.getValues().location && <li>Localização</li>}
-                      {!form.getValues().inspectionType && <li>Tipo de Inspeção</li>}
-                    </ul>
-                  </div>
+        <>
+          <CardContent>
+            <Progress value={progress} className="mb-4" />
+            
+            {progress < 100 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4 flex items-start">
+                <span className="text-amber-600 mr-2">⚠</span>
+                <div className="text-sm text-amber-700">
+                  <p className="font-medium">Dados obrigatórios pendentes</p>
+                  <ul className="list-disc pl-5 mt-1">
+                    {!form.getValues().companyId && <li>Empresa</li>}
+                    {(!form.getValues().responsibleIds || form.getValues().responsibleIds.length === 0) && <li>Responsável</li>}
+                    {!form.getValues().location && <li>Localização</li>}
+                    {!form.getValues().inspectionType && <li>Tipo de Inspeção</li>}
+                  </ul>
                 </div>
-              )}
-              
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              </div>
+            )}
+            
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="companyId"
+                  render={({ field }) => (
+                    <FormItem className="z-50">
+                      <FormLabel>Empresa <span className="text-destructive">*</span></FormLabel>
+                      <FormControl>
+                        <EnhancedCompanySelector
+                          value={field.value ? { label: selectedCompany?.fantasy_name || "Empresa", value: field.value } : null}
+                          onSelect={(option: SelectOption | null) => {
+                            if (option) {
+                              // Extract the value from the SelectOption and set it to the form field
+                              field.onChange(option.value);
+                              setCompanyError("");
+                            }
+                          }}
+                          className={cn(
+                            !isEditing && "opacity-70 pointer-events-none"
+                          )}
+                          disabled={!isEditing}
+                          error={companyError}
+                          showTooltip={true}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      {companyError && <p className="text-sm text-destructive">{companyError}</p>}
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={form.control}
-                    name="companyId"
+                    name="responsibleIds"
                     render={({ field }) => (
-                      <FormItem className="z-50">
-                        <FormLabel>Empresa <span className="text-destructive">*</span></FormLabel>
+                      <FormItem className="z-40">
+                        <FormLabel>Responsável(is) <span className="text-destructive">*</span></FormLabel>
                         <FormControl>
-                          <EnhancedCompanySelector
-                            value={field.value ? { label: selectedCompany?.fantasy_name || "Empresa", value: field.value } : null}
-                            onSelect={(option: SelectOption | null) => {
-                              if (option) {
-                                // Extract the value from the SelectOption and set it to the form field
-                                field.onChange(option.value);
-                                setCompanyError("");
-                              }
+                          <EnhancedResponsibleSelector
+                            value={field.value.map(id => {
+                              const resp = selectedResponsibles.find(r => r.id === id) || {};
+                              return { label: resp.name || "Responsável", value: id };
+                            })}
+                            onSelect={(selectedOptions: SelectOption[]) => {
+                              // Extract the values from the SelectOptions and set them to the form field
+                              field.onChange(selectedOptions.map(option => option.value));
                             }}
                             className={cn(
                               !isEditing && "opacity-70 pointer-events-none"
                             )}
                             disabled={!isEditing}
-                            error={companyError}
-                            showTooltip={true}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                        {companyError && <p className="text-sm text-destructive">{companyError}</p>}
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="responsibleIds"
-                      render={({ field }) => (
-                        <FormItem className="z-40">
-                          <FormLabel>Responsável(is) <span className="text-destructive">*</span></FormLabel>
-                          <FormControl>
-                            <EnhancedResponsibleSelector
-                              value={field.value.map(id => {
-                                const resp = selectedResponsibles.find(r => r.id === id) || {};
-                                return { label: resp.name || "Responsável", value: id };
-                              })}
-                              onSelect={(selectedOptions: SelectOption[]) => {
-                                // Extract the values from the SelectOptions and set them to the form field
-                                field.onChange(selectedOptions.map(option => option.value));
-                              }}
-                              className={cn(
-                                !isEditing && "opacity-70 pointer-events-none"
-                              )}
-                              disabled={!isEditing}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="scheduledDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Data Agendada</FormLabel>
-                          <FormControl>
-                            <DateTimePicker
-                              date={field.value}
-                              setDate={field.onChange}
-                              className={cn(
-                                !isEditing && "opacity-70 pointer-events-none"
-                              )}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="location"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Localização <span className="text-destructive">*</span></FormLabel>
-                        <FormControl>
-                          <LocationPicker
-                            value={field.value}
-                            onChange={(value) => field.onChange(value)}
-                            onCoordinatesChange={(coords) => {
-                              if (coords && typeof coords.latitude === 'number' && typeof coords.longitude === 'number') {
-                                form.setValue('coordinates', {
-                                  latitude: coords.latitude,
-                                  longitude: coords.longitude
-                                });
-                              } else {
-                                form.setValue('coordinates', null);
-                              }
-                            }}
-                            coordinates={form.watch('coordinates')}
-                            disabled={!isEditing}
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={form.control}
-                      name="inspectionType"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Tipo de Inspeção <span className="text-destructive">*</span></FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            disabled={!isEditing}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione o tipo">
-                                  {field.value && (
-                                    <div className="flex items-center">
-                                      <span className="mr-2">{getInspectionTypeIcon(field.value)}</span>
-                                      <span>
-                                        {field.value === "internal" ? "Interna" :
-                                         field.value === "external" ? "Externa" :
-                                         field.value === "audit" ? "Auditoria" :
-                                         field.value === "routine" ? "Rotina" : field.value}
-                                      </span>
-                                    </div>
-                                  )}
-                                </SelectValue>
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="internal">
-                                <div className="flex items-center">
-                                  <span className="mr-2">🏢</span> Interna
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="external">
-                                <div className="flex items-center">
-                                  <span className="mr-2">🌐</span> Externa
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="audit">
-                                <div className="flex items-center">
-                                  <span className="mr-2">📋</span> Auditoria
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="routine">
-                                <div className="flex items-center">
-                                  <span className="mr-2">🔄</span> Rotina
-                                </div>
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="priority"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Prioridade</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            disabled={!isEditing}
-                          >
-                            <FormControl>
-                              <SelectTrigger
-                                className={cn({
-                                  "border-l-4 border-green-500": field.value === "low",
-                                  "border-l-4 border-yellow-500": field.value === "medium",
-                                  "border-l-4 border-red-500": field.value === "high",
-                                })}
-                              >
-                                <SelectValue placeholder="Selecione a prioridade" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem
-                                value="low"
-                                className="border-l-4 border-green-500 pl-3"
-                              >
-                                Baixa
-                              </SelectItem>
-                              <SelectItem
-                                value="medium"
-                                className="border-l-4 border-yellow-500 pl-3"
-                              >
-                                Média
-                              </SelectItem>
-                              <SelectItem
-                                value="high"
-                                className="border-l-4 border-red-500 pl-3"
-                              >
-                                Alta
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="notes"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Anotações</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            {...field}
-                            placeholder="Observações adicionais sobre a inspeção"
-                            disabled={!isEditing}
-                            className="min-h-[100px]"
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-
-                  {showHistoryLog && (
-                    <div className="border rounded-md p-3 bg-gray-50">
-                      <h4 className="text-sm font-medium mb-2">Histórico de Alterações</h4>
-                      <div className="text-xs space-y-1 max-h-32 overflow-y-auto">
-                        <p className="text-gray-500">Carregando histórico...</p>
-                      </div>
-                    </div>
-                  )}
-                </form>
-              </Form>
-            </CardContent>
-
-            <CardFooter className="flex flex-wrap gap-2 border-t pt-6">
-              {isEditing && (
-                <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      const formData = form.getValues();
-                      saveAsDraft(formData);
-                    }}
-                    disabled={updating}
-                    size="sm"
-                  >
-                    Salvar Rascunho
-                  </Button>
                   
-                  <Button
-                    type="button"
-                    onClick={form.handleSubmit(onSubmit)}
-                    disabled={updating || progress !== 100}
-                    size="sm"
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    {updating ? "Salvando..." : "Salvar Dados da Inspeção"}
-                  </Button>
-                </>
-              )}
-              
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleShowLogs}
-                size="sm"
-                className="ml-auto"
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                Logs
-              </Button>
-              
-              <ShareLinkGenerator 
-                inspectionId={inspectionId} 
-              />
-              
-              <QRCodeGenerator 
-                inspectionId={inspectionId} 
-              />
-            </CardFooter>
-          </>
-        )}
+                  <FormField
+                    control={form.control}
+                    name="scheduledDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Data Agendada</FormLabel>
+                        <FormControl>
+                          <DateTimePicker
+                            date={field.value}
+                            setDate={field.onChange}
+                            className={cn(
+                              !isEditing && "opacity-70 pointer-events-none"
+                            )}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Localização <span className="text-destructive">*</span></FormLabel>
+                      <FormControl>
+                        <LocationPicker
+                          value={field.value}
+                          onChange={(value) => field.onChange(value)}
+                          onCoordinatesChange={(coords) => {
+                            if (coords && typeof coords.latitude === 'number' && typeof coords.longitude === 'number') {
+                              form.setValue('coordinates', {
+                                latitude: coords.latitude,
+                                longitude: coords.longitude
+                              });
+                            } else {
+                              form.setValue('coordinates', null);
+                            }
+                          }}
+                          coordinates={form.watch('coordinates')}
+                          disabled={!isEditing}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="inspectionType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo de Inspeção <span className="text-destructive">*</span></FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          disabled={!isEditing}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o tipo">
+                                {field.value && (
+                                  <div className="flex items-center">
+                                    <span className="mr-2">{getInspectionTypeIcon(field.value)}</span>
+                                    <span>
+                                      {field.value === "internal" ? "Interna" :
+                                       field.value === "external" ? "Externa" :
+                                       field.value === "audit" ? "Auditoria" :
+                                       field.value === "routine" ? "Rotina" : field.value}
+                                    </span>
+                                  </div>
+                                )}
+                              </SelectValue>
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="internal">
+                              <div className="flex items-center">
+                                <span className="mr-2">🏢</span> Interna
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="external">
+                              <div className="flex items-center">
+                                <span className="mr-2">🌐</span> Externa
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="audit">
+                              <div className="flex items-center">
+                                <span className="mr-2">📋</span> Auditoria
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="routine">
+                              <div className="flex items-center">
+                                <span className="mr-2">🔄</span> Rotina
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="priority"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Prioridade</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          disabled={!isEditing}
+                        >
+                          <FormControl>
+                            <SelectTrigger
+                              className={cn({
+                                "border-l-4 border-green-500": field.value === "low",
+                                "border-l-4 border-yellow-500": field.value === "medium",
+                                "border-l-4 border-red-500": field.value === "high",
+                              })}
+                            >
+                              <SelectValue placeholder="Selecione a prioridade" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem
+                              value="low"
+                              className="border-l-4 border-green-500 pl-3"
+                            >
+                              Baixa
+                            </SelectItem>
+                            <SelectItem
+                              value="medium"
+                              className="border-l-4 border-yellow-500 pl-3"
+                            >
+                              Média
+                            </SelectItem>
+                            <SelectItem
+                              value="high"
+                              className="border-l-4 border-red-500 pl-3"
+                            >
+                              Alta
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Anotações</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          placeholder="Observações adicionais sobre a inspeção"
+                          disabled={!isEditing}
+                          className="min-h-[100px]"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                {showHistoryLog && (
+                  <div className="border rounded-md p-3 bg-gray-50">
+                    <h4 className="text-sm font-medium mb-2">Histórico de Alterações</h4>
+                    <div className="text-xs space-y-1 max-h-32 overflow-y-auto">
+                      <p className="text-gray-500">Carregando histórico...</p>
+                    </div>
+                  </div>
+                )}
+              </form>
+            </Form>
+          </CardContent>
+
+          <CardFooter className="flex flex-wrap gap-2 border-t pt-6">
+            {isEditing && (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    const formData = form.getValues();
+                    saveAsDraft(formData);
+                  }}
+                  disabled={updating}
+                  size="sm"
+                >
+                  Salvar Rascunho
+                </Button>
+                
+                <Button
+                  type="button"
+                  onClick={form.handleSubmit(onSubmit)}
+                  disabled={updating || progress !== 100}
+                  size="sm"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {updating ? "Salvando..." : "Salvar Dados da Inspeção"}
+                </Button>
+              </>
+            )}
+            
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleShowLogs}
+              size="sm"
+              className="ml-auto"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Logs
+            </Button>
+            
+            <ShareLinkGenerator 
+              inspectionId={inspectionId} 
+            />
+            
+            <QRCodeGenerator 
+              inspectionId={inspectionId} 
+            />
+          </CardFooter>
+        </>
       </Card>
     </TooltipProvider>
   );

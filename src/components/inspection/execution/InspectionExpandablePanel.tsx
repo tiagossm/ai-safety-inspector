@@ -36,6 +36,9 @@ export function InspectionExpandablePanel({
 }: InspectionExpandablePanelProps) {
   const [isSaving, setIsSaving] = useState(false);
 
+  // Check if this is a new inspection (no ID or has ID but is not fully saved - missing required data)
+  const isNewInspection = !inspection.id || (!company?.id || !responsible?.id);
+
   // Handle form submission
   const handleSaveData = async (data: any) => {
     if (!isEditable) return;
@@ -97,9 +100,11 @@ export function InspectionExpandablePanel({
         
         {!isExpanded && (
           <div className="flex items-center gap-2">
-            <Badge variant="outline">
-              {company?.fantasy_name || company?.name || "Empresa não definida"}
-            </Badge>
+            {company && (
+              <Badge variant="outline">
+                {company?.fantasy_name || company?.name || "Empresa não definida"}
+              </Badge>
+            )}
             
             {inspection.priority && (
               <Badge 
@@ -118,7 +123,8 @@ export function InspectionExpandablePanel({
               </Badge>
             )}
             
-            {isEditable && (
+            {/* Only show edit button for saved inspections that are editable */}
+            {isEditable && !isNewInspection && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -206,7 +212,8 @@ export function InspectionExpandablePanel({
                 </div>
               )}
               
-              {isEditable && (
+              {/* Only show edit button for saved inspections that are editable */}
+              {isEditable && !isNewInspection && (
                 <div className="flex justify-end">
                   <Button
                     variant="default"
