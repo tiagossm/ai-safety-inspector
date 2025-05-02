@@ -136,15 +136,8 @@ export function InspectionDetailsForm({
             </Label>
             <div className="mt-1.5">
               <CompanySelector
-                value={companyId ? { label: companyData?.fantasy_name || "Empresa sem nome", value: companyId } : null}
-                onChange={(option) => {
-                  if (option?.value) {
-                    handleCompanySelect(option.value, {
-                      fantasy_name: option.label,
-                      id: option.value,
-                    });
-                  }
-                }}
+                value={companyId}
+                onSelect={(id: string, data: any) => handleCompanySelect(id, data)}
                 error={companyError || errors.company}
                 showTooltip={true}
               />
