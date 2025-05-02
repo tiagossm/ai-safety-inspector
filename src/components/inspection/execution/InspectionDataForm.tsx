@@ -45,6 +45,10 @@ export function InspectionDataForm({
   });
   
   const [companyError, setCompanyError] = useState<string>("");
+  const [selectedCompany, setSelectedCompany] = useState<any>(company);
+  const [selectedResponsibles, setSelectedResponsibles] = useState<any[]>(
+    providedResponsibles || (responsible ? [responsible] : [])
+  );
 
   const [useGeolocation, setUseGeolocation] = useState(false);
   const [locationCoords, setLocationCoords] = useState<{lat: number; lng: number} | null>(null);
@@ -82,13 +86,6 @@ export function InspectionDataForm({
     }));
   };
 
-  const handleMultiSelectChange = (name: string, values: string[]) => {
-    setFormData(prev => ({
-      ...prev,
-      [name]: values
-    }));
-  };
-
   const handleGetLocation = () => {
     if (navigator.geolocation) {
       setUseGeolocation(true);
@@ -112,15 +109,6 @@ export function InspectionDataForm({
     }
   };
 
-  const handleCompanySelect = (companyId: string, selectedCompany: any) => {
-    setFormData(prev => ({
-      ...prev,
-      companyId,
-      location: selectedCompany?.address || prev.location
-    }));
-    setCompanyError("");
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -141,8 +129,18 @@ export function InspectionDataForm({
           <div className="space-y-2">
             <Label htmlFor="companyId">Empresa</Label>
             <EnhancedCompanySelector
-              value={formData.companyId}
-              onSelect={handleCompanySelect}
+              value={formData.companyId ? { label: selectedCompany?.fantasy_name || "Empresa", value: formData.companyId } : null}
+              onSelect={(option) => {
+                if (option?.value) {
+                  setFormData(prev => ({
+                    ...prev,
+                    companyId: option.value,
+                    location: option.data?.address || prev.location
+                  }));
+                  setSelectedCompany(option.data);
+                  setCompanyError("");
+                }
+              }}
               error={companyError}
               showTooltip={true}
             />
@@ -151,8 +149,18 @@ export function InspectionDataForm({
           <div className="space-y-2">
             <Label htmlFor="responsibleIds">Responsável(is)</Label>
             <EnhancedResponsibleSelector
-              value={formData.responsibleIds}
-              onSelect={(values, data) => handleMultiSelectChange("responsibleIds", values)}
+              value={formData.responsibleIds.map(id => {
+                const resp = selectedResponsibles.find(r => r.id === id) || {};
+                return { label: resp.name || "Responsável", value: id };
+              })}
+              onSelect={(selectedOptions, selectedData) => {
+                const ids = selectedOptions.map(option => option.value);
+                setFormData(prev => ({
+                  ...prev,
+                  responsibleIds: ids
+                }));
+                setSelectedResponsibles(selectedData || []);
+              }}
             />
           </div>
         </div>

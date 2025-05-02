@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -90,9 +91,11 @@ export function InspectionDetailsForm({
   };
   
   // Wrapper for handleCompanySelect to also validate UUID
-  const onCompanySelect = (id: string, data: any) => {
-    validateCompanyId(id);
-    handleCompanySelect(id, data);
+  const onCompanySelect = (option: any) => {
+    if (!option?.value) return;
+    
+    validateCompanyId(option.value);
+    handleCompanySelect(option.value, option.data);
   };
 
   if (loading) {
@@ -126,10 +129,10 @@ export function InspectionDetailsForm({
   const responsibleIds = responsibleId ? [responsibleId] : [];
   
   // Adapter function to maintain backward compatibility
-  const handleResponsibleMultiSelect = (ids: string[], data: any[]) => {
+  const handleResponsibleMultiSelect = (selectedOptions: any[], selectedData: any[]) => {
     // If at least one responsible is selected, use the first one for backward compatibility
-    const firstId = ids.length > 0 ? ids[0] : "";
-    const firstData = data.length > 0 ? data[0] : null;
+    const firstId = selectedOptions.length > 0 ? selectedOptions[0].value : "";
+    const firstData = selectedData.length > 0 ? selectedData[0] : null;
     handleResponsibleSelect(firstId, firstData);
   };
   
@@ -151,7 +154,7 @@ export function InspectionDetailsForm({
             </Label>
             <div className="mt-1.5">
               <CompanySelector
-                value={companyId}
+                value={companyId ? { label: companyData?.fantasy_name || "Empresa", value: companyId } : null}
                 onSelect={onCompanySelect}
                 error={companyError || errors.company}
                 showTooltip={true}
@@ -196,7 +199,7 @@ export function InspectionDetailsForm({
             </Label>
             <div className="mt-1.5">
               <ResponsibleSelector
-                value={responsibleIds}
+                value={responsibleIds.map(id => ({ label: "Responsável", value: id }))}
                 onSelect={handleResponsibleMultiSelect}
               />
               {errors.responsible && (

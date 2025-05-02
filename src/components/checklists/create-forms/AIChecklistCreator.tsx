@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { NewChecklist } from "@/types/checklist";
@@ -144,12 +145,14 @@ export function AIChecklistCreator({
                     Empresa <span className="text-red-500">*</span>
                   </Label>
                   <CompanySelector
-                    value={form.company_id?.toString() || ""}
-                    onSelect={(companyId) => {
-                      setForm({ 
-                        ...form, 
-                        company_id: companyId 
-                      });
+                    value={form.company_id ? { label: selectedCompanyName || "Empresa", value: form.company_id.toString() } : null}
+                    onSelect={(option) => {
+                      if (option?.value) {
+                        setForm({ 
+                          ...form, 
+                          company_id: option.value 
+                        });
+                      }
                     }}
                     error={companyError}
                     showTooltip={true}

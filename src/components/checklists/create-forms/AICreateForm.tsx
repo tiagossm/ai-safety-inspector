@@ -199,12 +199,14 @@ Contexto: ${context}`;
                   Empresa <span className="text-red-500">*</span>
                 </Label>
                 <CompanySelector
-                  value={props.form.company_id?.toString() || ""}
-                  onSelect={(companyId) => {
-                    props.setForm({ 
-                      ...props.form, 
-                      company_id: companyId 
-                    });
+                  value={props.form.company_id ? { label: companyData?.fantasy_name || "Empresa", value: props.form.company_id.toString() } : null}
+                  onSelect={(option) => {
+                    if (option?.value) {
+                      props.setForm({ 
+                        ...props.form, 
+                        company_id: option.value 
+                      });
+                    }
                   }}
                   error={companyError}
                   showTooltip={true}

@@ -74,6 +74,10 @@ export function InspectionHeaderForm({
   const { updateInspectionData, validateRequiredFields, saveAsDraft, updating } = useInspectionHeaderForm(inspectionId);
   const [progress, setProgress] = useState(0);
   const [companyError, setCompanyError] = useState<string>("");
+  const [selectedCompany, setSelectedCompany] = useState(company);
+  const [selectedResponsibles, setSelectedResponsibles] = useState(
+    responsible ? [responsible] : []
+  );
   
   const processCoordinates = (coords: any) => {
     if (!coords) return null;
@@ -177,26 +181,6 @@ export function InspectionHeaderForm({
     }
   };
 
-  const handleCompanySelect = (id: string, data: any) => {
-    if (!id) {
-      setCompanyError("Empresa é obrigatória");
-      return;
-    }
-    
-    // Check UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(id)) {
-      setCompanyError("ID de empresa inválido");
-      return;
-    }
-    
-    form.setValue('companyId', id);
-    if (data?.address && !form.getValues().location) {
-      form.setValue('location', data.address);
-    }
-    setCompanyError("");
-  };
-
   return (
     <TooltipProvider>
       <Card className="mb-6">
@@ -292,8 +276,14 @@ export function InspectionHeaderForm({
                         <FormLabel>Empresa <span className="text-destructive">*</span></FormLabel>
                         <FormControl>
                           <EnhancedCompanySelector
-                            value={field.value}
-                            onSelect={handleCompanySelect}
+                            value={field.value ? { label: selectedCompany?.fantasy_name || "Empresa", value: field.value } : null}
+                            onSelect={(option) => {
+                              if (option?.value) {
+                                field.onChange(option.value);
+                                setSelectedCompany(option.data);
+                                setCompanyError("");
+                              }
+                            }}
                             className={cn(
                               !isEditing && "opacity-70 pointer-events-none"
                             )}
@@ -317,8 +307,15 @@ export function InspectionHeaderForm({
                           <FormLabel>Responsável(is) <span className="text-destructive">*</span></FormLabel>
                           <FormControl>
                             <EnhancedResponsibleSelector
-                              value={field.value}
-                              onSelect={(ids, data) => field.onChange(ids)}
+                              value={field.value.map(id => {
+                                const resp = selectedResponsibles.find(r => r.id === id) || {};
+                                return { label: resp.name || "Responsável", value: id };
+                              })}
+                              onSelect={(selectedOptions, selectedData) => {
+                                const ids = selectedOptions.map(option => option.value);
+                                field.onChange(ids);
+                                setSelectedResponsibles(selectedData || []);
+                              }}
                               className={cn(
                                 !isEditing && "opacity-70 pointer-events-none"
                               )}
