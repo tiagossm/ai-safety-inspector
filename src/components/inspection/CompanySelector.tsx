@@ -177,19 +177,26 @@ export function CompanySelector({
 
   const handleQuickCreateSuccess = async (companyData: any) => {
     try {
-      // Create the new company
+      // Get current user session to retrieve the user_id
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user?.id;
+      
+      if (!userId) {
+        console.error("User is not authenticated");
+        return;
+      }
+      
+      // Create the new company with required fields
       const { data, error } = await supabase
         .from("companies")
-        .insert([
-          { 
-            name: companyData.name,
-            fantasy_name: companyData.fantasy_name || companyData.name,
-            cnpj: companyData.cnpj,
-            cnae: companyData.cnae,
-            address: companyData.address,
-            status: "active"
-          }
-        ])
+        .insert({
+          fantasy_name: companyData.fantasy_name || companyData.name,
+          cnpj: companyData.cnpj,
+          cnae: companyData.cnae || null,
+          address: companyData.address || null,
+          status: "active",
+          user_id: userId // Required field based on the error message
+        })
         .select()
         .single();
 
