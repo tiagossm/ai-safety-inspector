@@ -1,39 +1,44 @@
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { Camera, Video, File, Mic } from "lucide-react";
+
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Camera, Video, Mic, File, Upload } from 'lucide-react';
 
 interface MediaControlsProps {
+  onPhotoClick?: () => void;
+  onVideoClick?: () => void;
+  onAudioClick?: () => void;
+  onFileClick?: () => void;
   allowsPhoto?: boolean;
   allowsVideo?: boolean;
   allowsAudio?: boolean;
   allowsFiles?: boolean;
-  handleAddMedia: () => void;
+  disabled?: boolean;
 }
 
-export const MediaControls: React.FC<MediaControlsProps> = ({
+export function MediaControls({
+  onPhotoClick,
+  onVideoClick,
+  onAudioClick,
+  onFileClick,
   allowsPhoto = false,
   allowsVideo = false,
   allowsAudio = false,
-  allowsFiles = false,
-  handleAddMedia
-}) => {
-  // If no media is allowed, don't render anything
-  if (!allowsPhoto && !allowsVideo && !allowsAudio && !allowsFiles) {
-    return null;
-  }
-
+  allowsFiles = true,
+  disabled = false
+}: MediaControlsProps) {
   return (
-    <div className="flex flex-wrap gap-2 mt-2">
+    <div className="flex flex-wrap gap-2">
       {allowsPhoto && (
         <Button
           type="button"
           variant="outline"
           size="sm"
-          onClick={handleAddMedia}
+          onClick={onPhotoClick}
+          disabled={disabled}
           className="flex items-center"
         >
           <Camera className="h-4 w-4 mr-2" />
-          <span>Foto</span>
+          <span>Photo</span>
         </Button>
       )}
       
@@ -42,11 +47,12 @@ export const MediaControls: React.FC<MediaControlsProps> = ({
           type="button"
           variant="outline"
           size="sm"
-          onClick={handleAddMedia}
+          onClick={onVideoClick}
+          disabled={disabled}
           className="flex items-center"
         >
           <Video className="h-4 w-4 mr-2" />
-          <span>Vídeo</span>
+          <span>Video</span>
         </Button>
       )}
       
@@ -55,11 +61,12 @@ export const MediaControls: React.FC<MediaControlsProps> = ({
           type="button"
           variant="outline"
           size="sm"
-          onClick={handleAddMedia}
+          onClick={onAudioClick}
+          disabled={disabled}
           className="flex items-center"
         >
           <Mic className="h-4 w-4 mr-2" />
-          <span>Áudio</span>
+          <span>Audio</span>
         </Button>
       )}
       
@@ -68,13 +75,14 @@ export const MediaControls: React.FC<MediaControlsProps> = ({
           type="button"
           variant="outline"
           size="sm"
-          onClick={handleAddMedia}
+          onClick={onFileClick}
+          disabled={disabled}
           className="flex items-center"
         >
           <File className="h-4 w-4 mr-2" />
-          <span>Arquivo</span>
+          <span>File</span>
         </Button>
       )}
     </div>
   );
-};
+}

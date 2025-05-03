@@ -6,7 +6,9 @@ import { QuestionHeader } from "./question-components/QuestionHeader";
 import { CommentSection } from "./question-components/CommentSection";
 import { ActionPlanButton } from "./question-components/ActionPlanButton";
 import { MediaControls } from "./question-components/MediaControls";
-import { normalizeResponseType } from "@/utils/inspection/normalizationUtils";
+import { isNegativeResponse, normalizeResponseType } from "@/utils/inspection/normalizationUtils";
+import { ActionPlanForm } from "./ActionPlanForm";
+import { Badge } from "@/components/ui/badge";
 
 interface InspectionQuestionProps {
   question: any;
@@ -17,6 +19,9 @@ interface InspectionQuestionProps {
   numberLabel?: string;
   isSubQuestion?: boolean;
   onOpenSubChecklist?: () => void;
+  inspectionId?: string;
+  actionPlan?: any;
+  onSaveActionPlan?: (data: any) => Promise<any>;
 }
 
 export const InspectionQuestion = React.memo(function InspectionQuestion({
@@ -27,12 +32,16 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
   allQuestions,
   numberLabel,
   isSubQuestion = false,
-  onOpenSubChecklist
+  onOpenSubChecklist,
+  inspectionId,
+  actionPlan,
+  onSaveActionPlan
 }: InspectionQuestionProps) {
   const [comment, setComment] = useState(response?.comment || "");
   const [isActionPlanOpen, setIsActionPlanOpen] = useState(false);
   const [isValid, setIsValid] = useState(!question.isRequired);
-  const [isCommentOpen, setIsCommentOpen] = useState(false);
+  const [isCommentOpen, setIsCommentOpen] = useState(!!response?.comment);
+  const [showActionPlanDialog, setShowActionPlanDialog] = useState(false);
   
   // Use our centralized normalization utility for consistency
   const normalizedType = useMemo(() => {
@@ -110,29 +119,54 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
     return true;
   }, [question.parentQuestionId, question.parent_item_id, allQuestions]);
   
+  const hasNegativeResponse = useMemo(() => {
+    return isNegativeResponse(response?.value);
+  }, [response?.value]);
+
+  const handleOpenActionPlanDialog = useCallback(() => {
+    setShowActionPlanDialog(true);
+  }, []);
+
+  const handleSaveActionPlan = useCallback(async (data: any) => {
+    if (onSaveActionPlan) {
+      await onSaveActionPlan(data);
+    }
+    setShowActionPlanDialog(false);
+  }, [onSaveActionPlan]);
+  
   if (!shouldBeVisible()) {
     return null;
   }
   
-  const hasNegativeResponse = 
-    response?.value === false || 
-    response?.value === "false" || 
-    response?.value === "não" || 
-    response?.value === "nao" || 
-    response?.value === "no";
-  
   return (
-    <div className={`relative ${!isValid && response?.value !== undefined ? 'border-l-4 border-l-red-500 pl-2' : ''}`}>
+    <div className={`relative border rounded-lg p-4 mb-4 ${!isValid && response?.value !== undefined ? 'border-l-4 border-l-red-500' : ''}`}>
       <div className="flex items-start gap-2">
         <div className="font-medium min-w-[24px] mt-0.5">{numberLabel || (index + 1)}</div>
         <div className="flex-1">
-          <QuestionHeader 
-            questionText={questionText} 
-            numberLabel={numberLabel || (index + 1)}
-            index={index}
-            hasSubChecklist={hasSubChecklist}
-            onOpenSubChecklist={onOpenSubChecklist}
-          />
+          <div className="flex justify-between mb-2">
+            <QuestionHeader 
+              questionText={questionText} 
+              numberLabel={numberLabel || (index + 1)}
+              index={index}
+              hasSubChecklist={hasSubChecklist}
+              onOpenSubChecklist={onOpenSubChecklist}
+            />
+            
+            <div className="flex flex-wrap gap-1">
+              {isRequired && (
+                <Badge variant="destructive" className="text-xs">Required</Badge>
+              )}
+              {allowsPhoto && (
+                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-600 border-blue-200">Photo</Badge>
+              )}
+              {allowsVideo && (
+                <Badge variant="outline" className="text-xs bg-green-50 text-green-600 border-green-200">Video</Badge>
+              )}
+              {allowsAudio && (
+                <Badge variant="outline" className="text-xs bg-purple-50 text-purple-600 border-purple-200">Audio</Badge>
+              )}
+            </div>
+          </div>
           
           <div className="mt-2">
             <ResponseInputRenderer
@@ -140,6 +174,9 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
               response={response}
               onResponseChange={handleValueChange}
               onMediaChange={handleMediaChange}
+              inspectionId={inspectionId}
+              actionPlan={actionPlan}
+              onSaveActionPlan={handleSaveActionPlan}
             />
           </div>
           
@@ -151,20 +188,41 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
               handleCommentChange={handleCommentChange}
             />
             
-            <ActionPlanButton 
-              isActionPlanOpen={isActionPlanOpen}
-              setIsActionPlanOpen={setIsActionPlanOpen}
-            />
+            {hasNegativeResponse && (
+              <ActionPlanButton 
+                isActionPlanOpen={isActionPlanOpen}
+                setIsActionPlanOpen={setIsActionPlanOpen}
+              />
+            )}
           </div>
           
-          <ActionPlanSection
-            isOpen={isActionPlanOpen}
-            onOpenChange={setIsActionPlanOpen}
-            actionPlan={response?.actionPlan}
-            onActionPlanChange={handleActionPlanChange}
-            onOpenDialog={() => {}} // Implement if needed
-            hasNegativeResponse={hasNegativeResponse}
-          />
+          {hasNegativeResponse && inspectionId && question.id && (
+            <ActionPlanSection
+              isOpen={isActionPlanOpen}
+              onOpenChange={setIsActionPlanOpen}
+              actionPlan={actionPlan || response?.actionPlan}
+              onActionPlanChange={handleActionPlanChange}
+              onOpenDialog={handleOpenActionPlanDialog}
+              hasNegativeResponse={hasNegativeResponse}
+            />
+          )}
+
+          {hasNegativeResponse && inspectionId && question.id && onSaveActionPlan && (
+            <ActionPlanForm
+              inspectionId={inspectionId}
+              questionId={question.id}
+              existingPlan={actionPlan ? {
+                id: actionPlan.id,
+                description: actionPlan.description,
+                assignee: actionPlan.assignee || '',
+                dueDate: actionPlan.due_date ? new Date(actionPlan.due_date) : undefined,
+                priority: actionPlan.priority,
+                status: actionPlan.status
+              } : undefined}
+              onSave={handleSaveActionPlan}
+              trigger={<></>} // Empty trigger since we control opening manually
+            />
+          )}
         </div>
       </div>
     </div>

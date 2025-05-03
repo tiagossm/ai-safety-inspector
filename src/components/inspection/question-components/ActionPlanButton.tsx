@@ -1,29 +1,26 @@
 
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { ClipboardList } from 'lucide-react';
 
 interface ActionPlanButtonProps {
   isActionPlanOpen: boolean;
-  setIsActionPlanOpen: (open: boolean) => void;
+  setIsActionPlanOpen: (isOpen: boolean) => void;
 }
 
-export function ActionPlanButton({ 
-  isActionPlanOpen, 
-  setIsActionPlanOpen 
+export function ActionPlanButton({
+  isActionPlanOpen,
+  setIsActionPlanOpen
 }: ActionPlanButtonProps) {
   return (
     <Button
-      variant="ghost"
+      variant={isActionPlanOpen ? "secondary" : "ghost"}
       size="sm"
       onClick={() => setIsActionPlanOpen(!isActionPlanOpen)}
-      className="flex items-center text-xs"
+      className="flex items-center"
     >
-      {isActionPlanOpen ? 
-        <ChevronDown className="h-3 w-3 mr-1" /> : 
-        <ChevronRight className="h-3 w-3 mr-1" />
-      }
-      Plano de ação
+      <ClipboardList className="h-4 w-4 mr-1" />
+      {isActionPlanOpen ? "Hide Action Plan" : "Action Plan"}
     </Button>
   );
 }

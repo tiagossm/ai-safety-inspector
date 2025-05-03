@@ -11,6 +11,15 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -19,23 +28,40 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { DatePicker } from "@/components/ui/date-picker";
-import { toast } from "sonner";
+import { saveActionPlan } from "@/services/inspection/actionPlanService";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { CalendarIcon, Loader2 } from "lucide-react";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+
+// Define schema for action plan form
+const actionPlanSchema = z.object({
+  description: z.string().min(1, "Description is required"),
+  assignee: z.string().optional(),
+  priority: z.string().min(1, "Priority is required"),
+  status: z.string().min(1, "Status is required"),
+  dueDate: z.date().optional(),
+});
+
+type ActionPlanFormValues = z.infer<typeof actionPlanSchema>;
 
 interface ActionPlanFormProps {
   inspectionId: string;
   questionId: string;
   existingPlan?: {
+    id?: string;
     description: string;
-    assignee: string;
+    assignee?: string;
     dueDate?: Date;
     priority: string;
     status: string;
   };
   onSave: (data: any) => Promise<void>;
-  trigger?: React.ReactNode;
-  onOpenChange?: (open: boolean) => void;
+  trigger: React.ReactNode;
 }
 
 export function ActionPlanForm({
@@ -43,150 +69,205 @@ export function ActionPlanForm({
   questionId,
   existingPlan,
   onSave,
-  trigger,
-  onOpenChange
+  trigger
 }: ActionPlanFormProps) {
   const [open, setOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-  
-  const [description, setDescription] = useState(existingPlan?.description || '');
-  const [assignee, setAssignee] = useState(existingPlan?.assignee || '');
-  const [dueDate, setDueDate] = useState<Date | undefined>(existingPlan?.dueDate);
-  const [priority, setPriority] = useState(existingPlan?.priority || 'medium');
-  const [status, setStatus] = useState(existingPlan?.status || 'pending');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSave = async () => {
-    if (!description.trim()) {
-      toast.error("A descrição do plano de ação é obrigatória");
-      return;
-    }
-    
+  const form = useForm<ActionPlanFormValues>({
+    resolver: zodResolver(actionPlanSchema),
+    defaultValues: {
+      description: existingPlan?.description || "",
+      assignee: existingPlan?.assignee || "",
+      priority: existingPlan?.priority || "medium",
+      status: existingPlan?.status || "pending",
+      dueDate: existingPlan?.dueDate,
+    },
+  });
+
+  const handleSubmit = async (values: ActionPlanFormValues) => {
+    setIsSubmitting(true);
     try {
-      setSaving(true);
-      
       await onSave({
         inspectionId,
         questionId,
-        description,
-        assignee,
-        dueDate,
-        priority,
-        status,
+        id: existingPlan?.id,
+        description: values.description,
+        assignee: values.assignee,
+        dueDate: values.dueDate,
+        priority: values.priority,
+        status: values.status,
       });
-      
-      toast.success("Plano de ação salvo com sucesso");
       setOpen(false);
-      if (onOpenChange) onOpenChange(false);
     } catch (error) {
       console.error("Error saving action plan:", error);
-      toast.error("Erro ao salvar plano de ação");
     } finally {
-      setSaving(false);
+      setIsSubmitting(false);
     }
   };
 
-  const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
-    if (onOpenChange) onOpenChange(newOpen);
-  };
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {trigger || (
-          <Button variant="outline" size="sm">
-            {existingPlan ? "Editar Plano de Ação" : "Adicionar Plano de Ação"}
-          </Button>
-        )}
+        {trigger}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>
-            {existingPlan ? "Editar Plano de Ação" : "Novo Plano de Ação"}
-          </DialogTitle>
+          <DialogTitle>{existingPlan?.id ? "Edit" : "Create"} Action Plan</DialogTitle>
           <DialogDescription>
-            Defina as ações necessárias para corrigir esta não conformidade
+            Create an action plan to address non-conformities in your inspection.
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="description">Descrição da Ação</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Descreva a ação corretiva necessária"
-              className="min-h-[100px]"
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Describe the action to be taken"
+                      className="min-h-[80px]"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="assignee">Responsável</Label>
-              <Input
-                id="assignee"
-                value={assignee}
-                onChange={(e) => setAssignee(e.target.value)}
-                placeholder="Nome do responsável"
+            
+            <FormField
+              control={form.control}
+              name="assignee"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Assignee</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Person responsible for this action"
+                      {...field}
+                      value={field.value || ""}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Enter the name of the person responsible for this action
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="priority"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Priority</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select priority" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                        <SelectItem value="critical">Critical</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="in_progress">In Progress</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
             
-            <div className="grid gap-2">
-              <Label>Data Limite</Label>
-              <DatePicker
-                date={dueDate}
-                setDate={setDueDate}
-                showTimePicker={true}
-              />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="priority">Prioridade</Label>
-              <Select value={priority} onValueChange={setPriority}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a prioridade" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Baixa</SelectItem>
-                  <SelectItem value="medium">Média</SelectItem>
-                  <SelectItem value="high">Alta</SelectItem>
-                  <SelectItem value="critical">Crítica</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="grid gap-2">
-              <Label htmlFor="status">Status</Label>
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pendente</SelectItem>
-                  <SelectItem value="in_progress">Em Andamento</SelectItem>
-                  <SelectItem value="completed">Concluído</SelectItem>
-                  <SelectItem value="cancelled">Cancelado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-        
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => handleOpenChange(false)}
-            disabled={saving}
-          >
-            Cancelar
-          </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Salvando..." : "Salvar Plano de Ação"}
-          </Button>
-        </DialogFooter>
+            <FormField
+              control={form.control}
+              name="dueDate"
+              render={({ field }) => (
+                <FormItem className="flex flex-col">
+                  <FormLabel>Due Date</FormLabel>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <FormControl>
+                        <Button
+                          variant={"outline"}
+                          className={cn(
+                            "pl-3 text-left font-normal",
+                            !field.value && "text-muted-foreground"
+                          )}
+                        >
+                          {field.value ? (
+                            format(field.value, "PPP")
+                          ) : (
+                            <span>Pick a date</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </FormControl>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <FormDescription>
+                    When this action needs to be completed
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Action Plan"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

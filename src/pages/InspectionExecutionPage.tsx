@@ -6,13 +6,14 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, RefreshCw, ArrowLeft } from "lucide-react";
+import { AlertCircle, RefreshCw, ArrowLeft, ClipboardList } from "lucide-react";
 import { InspectionLayout } from "@/components/inspection/execution/InspectionLayout";
 import { InspectionError } from "@/components/inspection/execution/InspectionError";
 import { InspectionHeaderForm } from "@/components/inspection/execution/InspectionHeaderForm";
 import { useInspectionFetch } from "@/hooks/inspection/useInspectionFetch";
 import { useInspectionStatus } from "@/hooks/inspection/useInspectionStatus";
 import { useResponseHandling } from "@/hooks/inspection/useResponseHandling";
+import { useActionPlans } from "@/hooks/inspection/useActionPlans";
 import { INSPECTION_STATUSES } from "@/types/inspection";
 
 export default function InspectionExecutionPage() {
@@ -46,8 +47,19 @@ export default function InspectionExecutionPage() {
   const {
     handleResponseChange,
     handleSaveInspection,
-    handleSaveSubChecklistResponses
+    handleSaveSubChecklistResponses,
+    handleMediaUpload,
+    handleMediaChange
   } = useResponseHandling(id, setResponses);
+
+  // Get action plans functions
+  const {
+    plansByQuestion,
+    stats: actionPlanStats,
+    loading: loadingActionPlans,
+    saveActionPlan,
+    refreshPlans
+  } = useActionPlans(id);
 
   // Set initial group when data is loaded
   React.useEffect(() => {
@@ -139,6 +151,8 @@ export default function InspectionExecutionPage() {
       await completeInspection(inspection);
       toast.success("Inspeção finalizada com sucesso");
       refreshData();
+      // Also refresh action plans
+      refreshPlans();
     } catch (error: any) {
       console.error("Error completing inspection:", error);
       toast.error(`Erro ao finalizar inspeção: ${error.message || 'Erro desconhecido'}`);
@@ -169,7 +183,7 @@ export default function InspectionExecutionPage() {
     refreshData();
   };
 
-  // Function for action plan view
+  // Navigate to action plans page
   const handleViewActionPlan = async () => {
     navigate(`/inspections/${id}/action-plans`);
     return Promise.resolve();
@@ -227,18 +241,65 @@ export default function InspectionExecutionPage() {
   // Check if the minimum required data is available to show the checklist
   const hasRequiredData = inspection && company?.id && responsible?.id;
 
+  // Calculate action plan stats - significant non-conformities
+  const hasActionPlans = Object.keys(plansByQuestion).length > 0;
+  const pendingActionPlans = actionPlanStats?.pending || 0;
+
   return (
     <div className="container max-w-7xl mx-auto py-6">
       {/* Inspection Header Form */}
       {inspection && (
-        <InspectionHeaderForm
-          inspectionId={id}
-          inspection={inspection}
-          company={company}
-          responsible={responsible}
-          isEditable={isInspectionEditable()}
-          onSave={handleInspectionDataSave}
-        />
+        <div className="mb-6">
+          <InspectionHeaderForm
+            inspectionId={id}
+            inspection={inspection}
+            company={company}
+            responsible={responsible}
+            isEditable={isInspectionEditable()}
+            onSave={handleInspectionDataSave}
+          />
+        
+          {/* Show action plans summary if there are any */}
+          {hasActionPlans && (
+            <div className="mt-4 flex items-start">
+              <div className="flex-1">
+                <div className="rounded-md border p-4 bg-white shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <ClipboardList className="h-5 w-5 text-primary mr-2" />
+                      <h3 className="font-medium">Action Plans</h3>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/inspections/${id}/action-plans`)}
+                    >
+                      View All Action Plans
+                    </Button>
+                  </div>
+                  <div className="mt-2 grid grid-cols-4 gap-4">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold">{actionPlanStats.total}</div>
+                      <div className="text-sm text-muted-foreground">Total</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-yellow-500">{actionPlanStats.pending}</div>
+                      <div className="text-sm text-muted-foreground">Pending</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-500">{actionPlanStats.inProgress}</div>
+                      <div className="text-sm text-muted-foreground">In Progress</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-500">{actionPlanStats.completed}</div>
+                      <div className="text-sm text-muted-foreground">Completed</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Show checklist only if minimum required data is available */}
@@ -267,7 +328,11 @@ export default function InspectionExecutionPage() {
           onGenerateReport={handleGenerateReport}
           refreshData={refreshData}
           onResponseChange={handleResponseChange}
+          onMediaChange={handleMediaChange}
+          onMediaUpload={handleMediaUpload}
           onSaveSubChecklistResponses={handleSaveSubChecklistResponses}
+          plansByQuestion={plansByQuestion}
+          onSaveActionPlan={saveActionPlan}
         />
       ) : (
         !loading && (

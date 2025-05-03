@@ -1,106 +1,147 @@
 
-import { useState, useEffect, useCallback } from "react";
-import { 
-  saveActionPlan, 
-  getActionPlans, 
+import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
+import {
+  ActionPlan,
+  getActionPlans,
   getActionPlanByQuestionId,
-  deleteActionPlan,
-  ActionPlan 
-} from "@/services/inspection/actionPlanService";
+  saveActionPlan as saveActionPlanService,
+  deleteActionPlan as deleteActionPlanService,
+  getActionPlanStats
+} from '@/services/inspection/actionPlanService';
 
-export function useActionPlans(inspectionId: string) {
-  const [actionPlans, setActionPlans] = useState<ActionPlan[]>([]);
+interface ActionPlansHookProps {
+  plans: ActionPlan[];
+  plansByQuestion: Record<string, ActionPlan>;
+  loading: boolean;
+  error: string | null;
+  stats: {
+    total: number;
+    pending: number;
+    inProgress: number;
+    completed: number;
+    cancelled: number;
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+  };
+  saveActionPlan: (data: {
+    inspectionId: string;
+    questionId: string;
+    description: string;
+    assignee?: string;
+    dueDate?: Date;
+    priority: string;
+    status: string;
+    id?: string;
+  }) => Promise<ActionPlan>;
+  deleteActionPlan: (id: string) => Promise<boolean>;
+  refreshPlans: () => Promise<void>;
+}
+
+export function useActionPlans(inspectionId: string | undefined): ActionPlansHookProps {
+  const [plans, setPlans] = useState<ActionPlan[]>([]);
+  const [plansByQuestion, setPlansByQuestion] = useState<Record<string, ActionPlan>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [plansByQuestion, setPlansByQuestion] = useState<Record<string, ActionPlan>>({});
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    inProgress: 0,
+    completed: 0,
+    cancelled: 0,
+    critical: 0,
+    high: 0,
+    medium: 0,
+    low: 0
+  });
 
-  // Fetch action plans for the inspection
-  const fetchActionPlans = useCallback(async () => {
+  const fetchPlans = useCallback(async () => {
     if (!inspectionId) return;
     
     try {
       setLoading(true);
-      const plans = await getActionPlans(inspectionId);
-      setActionPlans(plans);
       
-      // Create a map of plans by question ID for easier lookup
-      const planMap: Record<string, ActionPlan> = {};
-      plans.forEach(plan => {
-        planMap[plan.question_id] = plan;
+      const fetchedPlans = await getActionPlans(inspectionId);
+      setPlans(fetchedPlans);
+      
+      // Organize plans by question ID for easy lookup
+      const plansByQuestionId: Record<string, ActionPlan> = {};
+      fetchedPlans.forEach(plan => {
+        plansByQuestionId[plan.question_id] = plan;
       });
+      setPlansByQuestion(plansByQuestionId);
       
-      setPlansByQuestion(planMap);
+      // Get statistics
+      const statsData = await getActionPlanStats(inspectionId);
+      setStats(statsData);
+      
       setError(null);
     } catch (err: any) {
-      console.error("Error fetching action plans:", err);
-      setError(err.message || "Erro ao carregar planos de ação");
+      console.error('Error loading action plans:', err);
+      setError(err.message || 'Failed to load action plans');
     } finally {
       setLoading(false);
     }
   }, [inspectionId]);
 
-  // Handle saving a new plan or updating an existing one
-  const handleSaveActionPlan = useCallback(async (planData: any): Promise<void> => {
+  const saveActionPlan = useCallback(async (data: {
+    inspectionId: string;
+    questionId: string;
+    description: string;
+    assignee?: string;
+    dueDate?: Date;
+    priority: string;
+    status: string;
+    id?: string;
+  }) => {
     try {
-      const savedPlan = await saveActionPlan(planData);
+      const savedPlan = await saveActionPlanService(data);
       
-      setActionPlans(prev => {
-        // Replace if exists or add new
-        const exists = prev.some(p => p.id === savedPlan.id);
-        if (exists) {
-          return prev.map(p => p.id === savedPlan.id ? savedPlan : p);
-        } else {
-          return [...prev, savedPlan];
-        }
-      });
+      // Update local state
+      await fetchPlans();
       
-      setPlansByQuestion(prev => ({
-        ...prev,
-        [savedPlan.question_id]: savedPlan
-      }));
-      
-    } catch (error: any) {
-      console.error("Error saving action plan:", error);
-      throw new Error(error.message || "Erro ao salvar plano de ação");
+      toast.success(data.id ? 'Action plan updated successfully' : 'Action plan created successfully');
+      return savedPlan;
+    } catch (err: any) {
+      console.error('Error saving action plan:', err);
+      toast.error(err.message || 'Failed to save action plan');
+      throw err;
     }
-  }, []);
+  }, [fetchPlans]);
 
-  // Handle deleting an action plan
-  const handleDeleteActionPlan = useCallback(async (id: string, questionId: string): Promise<void> => {
+  const deleteActionPlan = useCallback(async (id: string) => {
     try {
-      await deleteActionPlan(id);
+      await deleteActionPlanService(id);
       
-      setActionPlans(prev => prev.filter(p => p.id !== id));
-      setPlansByQuestion(prev => {
-        const newPlans = { ...prev };
-        delete newPlans[questionId];
-        return newPlans;
-      });
+      // Update local state
+      await fetchPlans();
       
-    } catch (error: any) {
-      console.error("Error deleting action plan:", error);
-      throw new Error(error.message || "Erro ao excluir plano de ação");
+      toast.success('Action plan deleted successfully');
+      return true;
+    } catch (err: any) {
+      console.error('Error deleting action plan:', err);
+      toast.error(err.message || 'Failed to delete action plan');
+      throw err;
     }
-  }, []);
+  }, [fetchPlans]);
 
-  // Get action plan for a specific question
-  const getActionPlanForQuestion = useCallback((questionId: string): ActionPlan | null => {
-    return plansByQuestion[questionId] || null;
-  }, [plansByQuestion]);
-
-  // Load action plans on mount
+  // Initial load
   useEffect(() => {
-    fetchActionPlans();
-  }, [fetchActionPlans]);
+    if (inspectionId) {
+      fetchPlans();
+    }
+  }, [inspectionId, fetchPlans]);
 
   return {
-    actionPlans,
+    plans,
+    plansByQuestion,
     loading,
     error,
-    plansByQuestion,
-    fetchActionPlans,
-    saveActionPlan: handleSaveActionPlan,
-    deleteActionPlan: handleDeleteActionPlan,
-    getActionPlanForQuestion
+    stats,
+    saveActionPlan,
+    deleteActionPlan,
+    refreshPlans: fetchPlans
   };
 }

@@ -1,65 +1,89 @@
 
 /**
- * Normalizes various response type formats into a standard format
- * @param responseType The original response type string
- * @returns A normalized response type string
+ * Normalizes various input response types to a consistent set of values
+ * This helps handle different response type formats across the application
  */
-export const normalizeResponseType = (responseType: string): string => {
+export const normalizeResponseType = (responseType: string): "text" | "yes_no" | "multiple_choice" | "numeric" | "photo" | "signature" => {
   if (!responseType) return "text";
   
   const type = responseType.toLowerCase();
   
-  if (type.includes("sim") || type.includes("não") || type.includes("nao") || type.includes("yes") || type.includes("no")) {
+  if (
+    type.includes("sim") || 
+    type.includes("não") || 
+    type.includes("nao") || 
+    type.includes("yes") || 
+    type.includes("no") ||
+    type === "boolean"
+  ) {
     return "yes_no";
   }
   
-  if (type.includes("múltipla") || type.includes("multipla") || type.includes("multiple") || type.includes("choice")) {
+  if (
+    type.includes("múltipla") || 
+    type.includes("multipla") || 
+    type.includes("multiple") || 
+    type.includes("choice") ||
+    type.includes("select") ||
+    type.includes("opcoes") ||
+    type.includes("opcões") ||
+    type.includes("options")
+  ) {
     return "multiple_choice";
   }
   
-  if (type.includes("número") || type.includes("numero") || type.includes("numeric")) {
+  if (
+    type.includes("número") || 
+    type.includes("numero") || 
+    type.includes("numeric") ||
+    type.includes("number") ||
+    type === "int" ||
+    type === "integer" ||
+    type === "float" ||
+    type === "decimal"
+  ) {
     return "numeric";
   }
   
-  if (type.includes("texto") || type.includes("text")) {
-    return "text";
-  }
-  
-  if (type.includes("foto") || type.includes("photo") || type.includes("imagem") || type.includes("image")) {
+  if (
+    type.includes("foto") || 
+    type.includes("photo") || 
+    type.includes("imagem") || 
+    type.includes("image")
+  ) {
     return "photo";
   }
   
-  if (type.includes("assinatura") || type.includes("signature")) {
+  if (
+    type.includes("assinatura") || 
+    type.includes("signature") ||
+    type.includes("sign")
+  ) {
     return "signature";
   }
   
-  return type;
+  return "text"; // Default to text if no match is found
 };
 
 /**
- * Determines whether a response is considered negative (e.g., "não", false, etc.)
- * @param value The response value to check
- * @returns True if the response is negative, false otherwise
+ * Determines if a response value is a "negative" response
+ * This is used for showing action plans on negative responses
  */
 export const isNegativeResponse = (value: any): boolean => {
-  if (value === false) return true;
+  if (value === undefined || value === null) return false;
+  
+  if (typeof value === "boolean") return value === false;
+  
   if (typeof value === "string") {
-    const lowerValue = value.toLowerCase();
-    return lowerValue === "não" || lowerValue === "nao" || lowerValue === "no" || lowerValue === "false";
+    const normalizedValue = value.toLowerCase().trim();
+    return normalizedValue === "false" ||
+           normalizedValue === "não" ||
+           normalizedValue === "nao" ||
+           normalizedValue === "no" ||
+           normalizedValue === "0";
   }
-  return false;
-};
-
-/**
- * Determines whether a response is considered positive (e.g., "sim", true, etc.)
- * @param value The response value to check
- * @returns True if the response is positive, false otherwise
- */
-export const isPositiveResponse = (value: any): boolean => {
-  if (value === true) return true;
-  if (typeof value === "string") {
-    const lowerValue = value.toLowerCase();
-    return lowerValue === "sim" || lowerValue === "yes" || lowerValue === "true";
-  }
+  
+  if (typeof value === "number") return value === 0;
+  
   return false;
 };

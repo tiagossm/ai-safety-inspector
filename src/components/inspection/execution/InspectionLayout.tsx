@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { InspectionHeader } from "@/components/inspection/InspectionHeader";
 import { QuestionGroups } from "@/components/inspection/QuestionGroups";
@@ -8,8 +9,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { FloatingActionButtons } from "./FloatingActionButtons";
-import { ResponseInputRenderer } from "../question-parts/ResponseInputRenderer";
-import { useActionPlans } from "@/hooks/inspection/useActionPlans";
+import { InspectionQuestion } from "../InspectionQuestion";
+import { ActionPlan } from "@/services/inspection/actionPlanService";
 
 interface InspectionLayoutProps {
   loading: boolean;
@@ -38,6 +39,8 @@ interface InspectionLayoutProps {
   onMediaChange?: (questionId: string, mediaUrls: string[]) => void;
   onMediaUpload?: (questionId: string, file: File) => Promise<string | null>;
   onSaveSubChecklistResponses: (subChecklistId: string, responses: Record<string, any>) => Promise<void>;
+  plansByQuestion?: Record<string, ActionPlan>;
+  onSaveActionPlan?: (data: any) => Promise<any>;
 }
 
 export function InspectionLayout({
@@ -66,17 +69,12 @@ export function InspectionLayout({
   onResponseChange,
   onMediaChange,
   onMediaUpload,
-  onSaveSubChecklistResponses
+  onSaveSubChecklistResponses,
+  plansByQuestion = {},
+  onSaveActionPlan
 }: InspectionLayoutProps) {
   // Auto-save timer
   const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(null);
-  
-  // Use the action plans hook
-  const {
-    plansByQuestion,
-    loading: loadingActionPlans,
-    saveActionPlan
-  } = useActionPlans(inspection?.id);
   
   // Set up auto-save
   useEffect(() => {
@@ -111,11 +109,6 @@ export function InspectionLayout({
   
   // Definir currentGroupId se não estiver definido
   const effectiveCurrentGroupId = currentGroupId || (displayGroups.length > 0 ? displayGroups[0].id : null);
-  
-  // Handle saving action plan for a question
-  const handleSaveActionPlan = async (data: any) => {
-    return await saveActionPlan(data);
-  };
   
   if (loading) {
     return (
@@ -171,6 +164,15 @@ export function InspectionLayout({
 
   const isInspectionCompleted = inspection.status === "Concluída" || inspection.status === "Completed";
   
+  // Handle response change for a question
+  const handleQuestionResponseChange = (questionId: string, data: any) => {
+    onResponseChange(questionId, data.value, {
+      comment: data.comment,
+      actionPlan: data.actionPlan,
+      mediaUrls: data.mediaUrls
+    });
+  };
+
   return (
     <div className="container max-w-7xl mx-auto py-8">
       <InspectionHeader loading={loading} inspection={inspection} />
@@ -217,85 +219,18 @@ export function InspectionLayout({
               {filteredQuestions.length > 0 ? (
                 <div className="space-y-6">
                   {filteredQuestions.map((question, index) => (
-                    <div key={question.id} className="border rounded-lg p-4">
-                      <h4 className="font-medium mb-2 flex justify-between">
-                        <span>{index + 1}. {question.pergunta || question.text}</span>
-                        <div className="flex items-center gap-1">
-                          {question.permite_foto && (
-                            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                              Foto
-                            </span>
-                          )}
-                          {question.permite_video && (
-                            <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                              Vídeo
-                            </span>
-                          )}
-                          {question.permite_audio && (
-                            <span className="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                              Áudio
-                            </span>
-                          )}
-                          {question.obrigatorio && (
-                            <span className="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded">
-                              Obrigatório
-                            </span>
-                          )}
-                        </div>
-                      </h4>
-                      
-                      <div className="mt-3">
-                        <ResponseInputRenderer 
-                          question={question}
-                          response={responses[question.id]}
-                          inspectionId={inspection.id}
-                          onResponseChange={(value) => onResponseChange(question.id, value)}
-                          onMediaChange={onMediaChange ? (urls) => onMediaChange(question.id, urls) : undefined}
-                          actionPlan={plansByQuestion[question.id]}
-                          onSaveActionPlan={handleSaveActionPlan}
-                          readOnly={isInspectionCompleted}
-                        />
-                      </div>
-                      
-                      {/* Comment section */}
-                      <div className="mt-3">
-                        <p className="text-sm font-medium text-gray-600 mb-1">Comentário:</p>
-                        <textarea
-                          className="w-full border rounded p-2 text-sm"
-                          rows={2}
-                          placeholder="Adicione um comentário (opcional)"
-                          value={responses[question.id]?.comment || ''}
-                          onChange={(e) => onResponseChange(
-                            question.id, 
-                            responses[question.id]?.value,
-                            { comment: e.target.value }
-                          )}
-                          disabled={isInspectionCompleted}
-                        />
-                      </div>
-                      
-                      {/* Action plan section (for negative answers) */}
-                      {(responses[question.id]?.value === 'não' || responses[question.id]?.value === 'no') && (
-                        <div className="mt-3 pt-2 border-t border-dashed">
-                          <p className="text-sm font-medium text-red-600 mb-1">Plano de Ação:</p>
-                          <textarea
-                            className="w-full border border-red-200 bg-red-50 rounded p-2 text-sm"
-                            rows={2}
-                            placeholder="Descreva a ação corretiva necessária"
-                            value={responses[question.id]?.actionPlan || ''}
-                            onChange={(e) => onResponseChange(
-                              question.id, 
-                              responses[question.id]?.value,
-                              { actionPlan: e.target.value }
-                            )}
-                            disabled={isInspectionCompleted}
-                          />
-                        </div>
-                      )}
-                    </div>
+                    <InspectionQuestion
+                      key={question.id}
+                      question={question}
+                      index={index}
+                      response={responses[question.id] || {}}
+                      onResponseChange={(data) => handleQuestionResponseChange(question.id, data)}
+                      allQuestions={questions}
+                      numberLabel={`${index + 1}`}
+                      inspectionId={inspection.id}
+                      actionPlan={plansByQuestion?.[question.id]}
+                      onSaveActionPlan={onSaveActionPlan}
+                    />
                   ))}
                 </div>
               ) : (

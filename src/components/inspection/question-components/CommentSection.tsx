@@ -1,42 +1,61 @@
 
-import React from "react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Pencil } from "lucide-react";
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { MessageSquare } from 'lucide-react';
 
 interface CommentSectionProps {
   isCommentOpen: boolean;
-  setIsCommentOpen: (open: boolean) => void;
+  setIsCommentOpen: (isOpen: boolean) => void;
   comment: string;
   handleCommentChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
 }
 
-export function CommentSection({ 
-  isCommentOpen, 
-  setIsCommentOpen, 
-  comment, 
-  handleCommentChange 
+export function CommentSection({
+  isCommentOpen,
+  setIsCommentOpen,
+  comment,
+  handleCommentChange
 }: CommentSectionProps) {
   return (
-    <Collapsible open={isCommentOpen} onOpenChange={setIsCommentOpen}>
-      <CollapsibleTrigger asChild>
-        <Button variant="ghost" size="sm" className="flex items-center text-xs gap-1">
-          <Pencil className="h-3 w-3" />
-          Adicionar comentário
-        </Button>
-      </CollapsibleTrigger>
-      
-      <CollapsibleContent>
-        <div className="mt-2">
-          <Textarea
-            placeholder="Adicione seus comentários aqui..."
+    <div className="w-full">
+      {isCommentOpen ? (
+        <div className="space-y-2">
+          <label 
+            htmlFor="comment" 
+            className="flex items-center text-sm font-medium text-gray-700"
+          >
+            <MessageSquare className="h-4 w-4 mr-1 text-gray-400" />
+            Comment
+          </label>
+          <textarea
+            id="comment"
+            className="w-full border rounded p-2 text-sm"
+            placeholder="Add a comment..."
             value={comment}
             onChange={handleCommentChange}
-            className="text-sm"
+            rows={2}
           />
+          <div className="flex justify-end">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setIsCommentOpen(false)}
+            >
+              Hide
+            </Button>
+          </div>
         </div>
-      </CollapsibleContent>
-    </Collapsible>
+      ) : (
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => setIsCommentOpen(true)} 
+          className="flex items-center text-gray-500"
+        >
+          <MessageSquare className="h-4 w-4 mr-1" />
+          {comment ? "Edit comment" : "Add comment"}
+        </Button>
+      )}
+    </div>
   );
 }
