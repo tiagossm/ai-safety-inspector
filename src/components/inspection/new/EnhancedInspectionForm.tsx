@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -317,7 +316,7 @@ export function EnhancedInspectionForm({
                     const firstData = data.length > 0 ? data[0] : null;
                     handleResponsibleSelect(firstId, firstData);
                   }}
-                  companyId={companyId} // Changed from companyFilter to companyId which is accepted by ResponsibleSelector
+                  companyId={companyId} // This is the correct prop name
                   className="mt-1"
                 />
                 
