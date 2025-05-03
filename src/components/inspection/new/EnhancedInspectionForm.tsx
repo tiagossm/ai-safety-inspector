@@ -317,7 +317,7 @@ export function EnhancedInspectionForm({
                     const firstData = data.length > 0 ? data[0] : null;
                     handleResponsibleSelect(firstId, firstData);
                   }}
-                  companyFilter={companyId} // Filter by company if available
+                  companyId={companyId} // Changed from companyFilter to companyId which is accepted by ResponsibleSelector
                   className="mt-1"
                 />
                 
