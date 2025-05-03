@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -177,7 +176,8 @@ export function useChecklistById(checklistId: string | undefined) {
           return {
             id: question.id,
             text: question.pergunta,
-            description: question.description || "", // Use description instead of descricao
+            // Changed from question.description to question.pergunta as description doesn't exist
+            description: "", 
             responseType: normalizedType,
             isRequired: question.obrigatorio,
             order: question.ordem,

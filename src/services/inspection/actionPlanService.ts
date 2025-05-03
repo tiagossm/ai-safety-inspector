@@ -8,7 +8,7 @@ export interface ActionPlan {
   inspection_id: string;
   question_id: string;
   description: string;
-  assignee?: string;
+  assignee?: string | null;
   due_date?: string | null;
   priority: 'low' | 'medium' | 'high' | 'critical';
   status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
@@ -30,10 +30,11 @@ export async function saveActionPlan(data: {
   id?: string;
 }): Promise<ActionPlan> {
   try {
-    const actionPlan: Partial<ActionPlan> = {
+    // Create a properly typed actionPlan object
+    const actionPlan = {
       inspection_id: data.inspectionId,
       question_id: data.questionId,
-      description: data.description,
+      description: data.description, // This is required
       assignee: data.assignee || null,
       due_date: data.dueDate ? data.dueDate.toISOString() : null,
       priority: data.priority as 'low' | 'medium' | 'high' | 'critical',
@@ -44,11 +45,14 @@ export async function saveActionPlan(data: {
 
     if (data.id) {
       // Update existing action plan
-      actionPlan.updated_at = new Date().toISOString();
+      const updateData = {
+        ...actionPlan,
+        updated_at: new Date().toISOString()
+      };
       
       const { data: updatedData, error } = await supabase
         .from('inspection_action_plans')
-        .update(actionPlan)
+        .update(updateData)
         .eq('id', data.id)
         .select()
         .single();
@@ -57,11 +61,14 @@ export async function saveActionPlan(data: {
       result = updatedData;
     } else {
       // Create new action plan
-      actionPlan.created_at = new Date().toISOString();
+      const insertData = {
+        ...actionPlan,
+        created_at: new Date().toISOString()
+      };
       
       const { data: newData, error } = await supabase
         .from('inspection_action_plans')
-        .insert(actionPlan)
+        .insert(insertData)
         .select()
         .single();
 
