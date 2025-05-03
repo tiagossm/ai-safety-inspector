@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Check, ChevronDown, Building, Plus, Loader2, AlertCircle } from "lucide-react";
@@ -18,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CompanyQuickCreateModal } from "./CompanyQuickCreateModal";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 
 interface CompanySelectorProps {
   value: string;
