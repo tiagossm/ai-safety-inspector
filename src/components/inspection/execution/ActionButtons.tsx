@@ -10,7 +10,7 @@ import {
   FileText, 
   RefreshCw 
 } from "lucide-react";
-import { toast } from "sonner";
+import { ReportGenerationDialog } from "../ReportGenerationDialog";
 
 interface ActionButtonsProps {
   loading: boolean;
@@ -20,6 +20,7 @@ interface ActionButtonsProps {
   lastSaved: Date | null;
   inspectionStatus?: string;
   completionPercentage: number;
+  inspection?: any;
   onSaveProgress: () => Promise<void>;
   onCompleteInspection: () => Promise<void>;
   onReopenInspection: () => Promise<void>;
@@ -36,6 +37,7 @@ export function ActionButtons({
   lastSaved, 
   inspectionStatus,
   completionPercentage,
+  inspection,
   onSaveProgress, 
   onCompleteInspection, 
   onReopenInspection, 
@@ -81,7 +83,7 @@ export function ActionButtons({
         <Save className="h-3.5 w-3.5 ml-1.5" />
       </Button>
       
-      {inspectionStatus !== 'completed' ? (
+      {inspectionStatus !== 'Concluída' && inspectionStatus !== 'Completed' ? (
         <Button
           variant="default"
           className="w-full text-sm"
@@ -112,15 +114,22 @@ export function ActionButtons({
         Plano de Ação
       </Button>
       
-      <Button
-        variant="outline"
-        className="w-full text-sm"
-        disabled={loading}
-        onClick={onGenerateReport}
-      >
-        <FileText className="h-3.5 w-3.5 mr-1.5" />
-        Gerar Relatório
-      </Button>
+      {inspection && (
+        <ReportGenerationDialog
+          inspectionId={inspection.id}
+          inspectionData={inspection}
+          trigger={
+            <Button
+              variant="outline"
+              className="w-full text-sm"
+              disabled={loading}
+            >
+              <FileText className="h-3.5 w-3.5 mr-1.5" />
+              Gerar Relatório
+            </Button>
+          }
+        />
+      )}
       
       <Button
         variant="outline"

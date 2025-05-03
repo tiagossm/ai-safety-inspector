@@ -169,14 +169,15 @@ export default function InspectionExecutionPage() {
     refreshData();
   };
 
-  // Mock functions for action plan and report generation
+  // Function for action plan view
   const handleViewActionPlan = async () => {
-    toast.info("Funcionalidade de Plano de Ação em desenvolvimento");
+    navigate(`/inspections/${id}/action-plans`);
     return Promise.resolve();
   };
 
+  // Function for report generation
   const handleGenerateReport = async () => {
-    toast.info("Funcionalidade de geração de relatório em desenvolvimento");
+    // This will be handled by the ReportGenerationDialog directly
     return Promise.resolve();
   };
 

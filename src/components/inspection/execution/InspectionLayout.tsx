@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { InspectionHeader } from "@/components/inspection/InspectionHeader";
 import { QuestionGroups } from "@/components/inspection/QuestionGroups";
@@ -10,6 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { FloatingActionButtons } from "./FloatingActionButtons";
 import { ResponseInputRenderer } from "../question-parts/ResponseInputRenderer";
+import { useActionPlans } from "@/hooks/inspection/useActionPlans";
 
 interface InspectionLayoutProps {
   loading: boolean;
@@ -71,6 +71,13 @@ export function InspectionLayout({
   // Auto-save timer
   const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(null);
   
+  // Use the action plans hook
+  const {
+    plansByQuestion,
+    loading: loadingActionPlans,
+    saveActionPlan
+  } = useActionPlans(inspection?.id);
+  
   // Set up auto-save
   useEffect(() => {
     if (autoSave && !autoSaveTimer) {
@@ -104,6 +111,11 @@ export function InspectionLayout({
   
   // Definir currentGroupId se não estiver definido
   const effectiveCurrentGroupId = currentGroupId || (displayGroups.length > 0 ? displayGroups[0].id : null);
+  
+  // Handle saving action plan for a question
+  const handleSaveActionPlan = async (data: any) => {
+    return await saveActionPlan(data);
+  };
   
   if (loading) {
     return (
@@ -203,7 +215,7 @@ export function InspectionLayout({
               </h3>
               
               {filteredQuestions.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {filteredQuestions.map((question, index) => (
                     <div key={question.id} className="border rounded-lg p-4">
                       <h4 className="font-medium mb-2 flex justify-between">
@@ -239,8 +251,12 @@ export function InspectionLayout({
                         <ResponseInputRenderer 
                           question={question}
                           response={responses[question.id]}
+                          inspectionId={inspection.id}
                           onResponseChange={(value) => onResponseChange(question.id, value)}
                           onMediaChange={onMediaChange ? (urls) => onMediaChange(question.id, urls) : undefined}
+                          actionPlan={plansByQuestion[question.id]}
+                          onSaveActionPlan={handleSaveActionPlan}
+                          readOnly={isInspectionCompleted}
                         />
                       </div>
                       
