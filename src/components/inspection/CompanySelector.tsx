@@ -203,11 +203,7 @@ export function CompanySelector({
 
       if (error) {
         console.error("Error creating company:", error);
-        toast({
-          title: "Erro ao criar empresa",
-          description: error.message,
-          variant: "destructive"
-        });
+        toast.error("Erro ao criar empresa: " + error.message);
         return;
       }
 
@@ -221,18 +217,11 @@ export function CompanySelector({
         // Close the quick create modal
         setIsQuickCreateOpen(false);
         
-        toast({
-          title: "Empresa criada com sucesso!",
-          variant: "default"
-        });
+        toast.success("Empresa criada com sucesso!");
       }
     } catch (error: any) {
       console.error("Error creating company:", error);
-      toast({
-        title: "Erro ao criar empresa",
-        description: error.message,
-        variant: "destructive"
-      });
+      toast.error("Erro ao criar empresa: " + error.message);
     }
   };
 
