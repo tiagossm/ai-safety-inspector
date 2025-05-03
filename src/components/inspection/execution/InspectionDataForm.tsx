@@ -5,13 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, MapPin } from "lucide-react";
-import { useCEP } from "@/hooks/useCEP";
 import { format } from "date-fns";
 import { useFormSelectionData } from "@/hooks/inspection/useFormSelectionData";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CompanySelector } from "@/components/inspection/CompanySelector";
 import { ResponsibleSelector } from "@/components/inspection/ResponsibleSelector";
+import { LocationPicker } from "@/components/inspection/enhanced/LocationPicker";
+import { Loader2 } from "lucide-react";
 
 interface InspectionDataFormProps {
   inspection: any;
@@ -23,6 +23,20 @@ interface InspectionDataFormProps {
   isSaving: boolean;
 }
 
+const INSPECTION_TYPES = [
+  { label: "Interna", value: "internal" },
+  { label: "Externa", value: "external" },
+  { label: "Periódica", value: "periodic" },
+  { label: "Emergencial", value: "emergency" }
+];
+
+const PRIORITY_LEVELS = [
+  { label: "Baixa", value: "low" },
+  { label: "Média", value: "medium" },
+  { label: "Alta", value: "high" },
+  { label: "Crítica", value: "critical" }
+];
+
 export function InspectionDataForm({
   inspection,
   company,
@@ -33,38 +47,39 @@ export function InspectionDataForm({
   isSaving
 }: InspectionDataFormProps) {
   // Use the form selection data hook for companies and responsibles
-  const { companies, responsibles, loadingCompanies, loadingResponsibles } = useFormSelectionData();
+  const { companies, loadingCompanies, loadingResponsibles } = useFormSelectionData();
   
   const [formData, setFormData] = useState({
     companyId: company?.id || "",
     responsibleIds: responsible ? [responsible.id] : [],
     scheduledDate: inspection.scheduled_date || "",
     location: inspection.location || "",
-    cep: "",
-    type: inspection.type || inspection.inspection_type || "Padrão",
+    coordinates: inspection.metadata?.coordinates || null,
+    type: inspection.type || inspection.inspection_type || "internal",
     priority: inspection.priority || "medium",
-    notes: inspection.notes || ""
+    notes: inspection.metadata?.notes || ""
   });
   
-  const [useGeolocation, setUseGeolocation] = useState(false);
-  const [locationCoords, setLocationCoords] = useState<{lat: number; lng: number} | null>(null);
-  
-  const { address, loading: loadingCEP, error: cepError, fetchAddress } = useCEP();
-
-  useEffect(() => {
-    if (address) {
-      const fullAddress = `${address.logradouro}, ${address.bairro}, ${address.localidade} - ${address.uf}, ${address.cep}`;
+  const handleCompanySelect = (companyId: string, companyData: any) => {
+    setFormData(prev => ({
+      ...prev,
+      companyId
+    }));
+    
+    // Update location with company address if available
+    if (companyData?.address) {
       setFormData(prev => ({
         ...prev,
-        location: fullAddress
+        location: companyData.address
       }));
     }
-  }, [address]);
+  };
 
-  const handleCEPSearch = () => {
-    if (formData.cep.length >= 8) {
-      fetchAddress(formData.cep);
-    }
+  const handleResponsibleSelect = (responsibleIds: string[], responsibleData: any[]) => {
+    setFormData(prev => ({
+      ...prev,
+      responsibleIds
+    }));
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -82,86 +97,65 @@ export function InspectionDataForm({
     }));
   };
 
-  const handleCompanySelect = (companyId: string, companyData: any) => {
+  const handleLocationChange = (location: string) => {
     setFormData(prev => ({
       ...prev,
-      companyId
-    }));
-    
-    // Update location with company address if available
-    if (companyData?.address) {
-      setFormData(prev => ({
-        ...prev,
-        location: companyData.address
-      }));
-    }
-  };
-
-  const handleResponsibleSelect = (responsibleIds: string[]) => {
-    setFormData(prev => ({
-      ...prev,
-      responsibleIds
+      location
     }));
   };
 
-  const handleGetLocation = () => {
-    if (navigator.geolocation) {
-      setUseGeolocation(true);
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setLocationCoords({ lat: latitude, lng: longitude });
-          setFormData(prev => ({
-            ...prev,
-            location: `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`
-          }));
-          setUseGeolocation(false);
-        },
-        (error) => {
-          console.error("Erro ao obter localização:", error);
-          setUseGeolocation(false);
-        }
-      );
-    } else {
-      alert("Geolocalização não é suportada pelo seu navegador");
-    }
+  const handleCoordinatesChange = (coords: { latitude: number; longitude: number } | null) => {
+    setFormData(prev => ({
+      ...prev,
+      coordinates: coords
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Get the company and responsible data for the selected IDs
-    const selectedCompany = companies.find(c => c.id === formData.companyId) || company;
-    const selectedResponsible = responsibles.find(r => r.id === formData.responsibleIds[0]) || responsible;
-    
     onSave({
       ...formData,
-      company: selectedCompany,
-      responsible: selectedResponsible,
-      locationCoords
+      scheduledDate: formData.scheduledDate ? new Date(formData.scheduledDate).toISOString() : null,
     });
   };
+
+  // Field validation
+  const isCompanyValid = !!formData.companyId;
+  const isResponsibleValid = formData.responsibleIds.length > 0;
+  const isFormValid = isCompanyValid && isResponsibleValid;
 
   return (
     <TooltipProvider>
       <form onSubmit={handleSubmit} className="space-y-4 pt-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="companyId">Empresa</Label>
+            <Label htmlFor="companyId" className="flex items-center">
+              Empresa <span className="text-destructive ml-1">*</span>
+            </Label>
             <CompanySelector 
               value={formData.companyId}
               onSelect={handleCompanySelect}
               disabled={isSaving}
+              error={!isCompanyValid && formData.companyId !== "" ? "Empresa é obrigatória" : undefined}
+              showTooltip={true}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="responsibleId">Responsável</Label>
+            <Label htmlFor="responsibleId" className="flex items-center">
+              Responsável <span className="text-destructive ml-1">*</span>
+            </Label>
             <ResponsibleSelector 
               value={formData.responsibleIds}
-              onSelect={(ids) => handleResponsibleSelect(ids)}
+              onSelect={handleResponsibleSelect}
               disabled={isSaving}
+              showTooltip={true}
+              companyId={formData.companyId}
             />
+            {!isResponsibleValid && formData.responsibleIds.length === 0 && (
+              <p className="text-sm text-destructive">Responsável é obrigatório</p>
+            )}
           </div>
         </div>
 
@@ -174,89 +168,59 @@ export function InspectionDataForm({
               name="scheduledDate"
               value={formData.scheduledDate ? format(new Date(formData.scheduledDate), "yyyy-MM-dd") : ""}
               onChange={handleInputChange}
+              className="bg-white"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="cep">CEP</Label>
-            <div className="flex gap-2">
-              <Input
-                type="text"
-                id="cep"
-                name="cep"
-                value={formData.cep}
-                onChange={handleInputChange}
-                maxLength={9}
-                placeholder="00000-000"
-              />
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={handleCEPSearch}
-                disabled={loadingCEP || formData.cep.length < 8}
-              >
-                {loadingCEP ? <Loader2 className="h-4 w-4 animate-spin" /> : "Buscar"}
-              </Button>
-            </div>
+            <Label htmlFor="type" className="flex items-center">
+              Tipo de Inspeção <span className="text-destructive ml-1">*</span>
+            </Label>
+            <Select 
+              value={formData.type} 
+              onValueChange={(value) => handleSelectChange("type", value)}
+            >
+              <SelectTrigger className="bg-white">
+                <SelectValue placeholder="Selecione o tipo" />
+              </SelectTrigger>
+              <SelectContent className="z-[100] bg-white">
+                {INSPECTION_TYPES.map(type => (
+                  <SelectItem key={type.value} value={type.value} className="cursor-pointer">
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="location">Localização</Label>
-          <div className="flex gap-2">
-            <Input
-              type="text"
-              id="location"
-              name="location"
-              value={formData.location}
-              onChange={handleInputChange}
-              placeholder="Endereço da inspeção"
-              className="flex-1"
-            />
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={handleGetLocation}
-              disabled={useGeolocation}
-            >
-              {useGeolocation ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <><MapPin className="h-4 w-4 mr-1" /> GPS</>
-              )}
-            </Button>
-          </div>
+          <LocationPicker 
+            value={formData.location}
+            onChange={handleLocationChange}
+            onCoordinatesChange={handleCoordinatesChange}
+            coordinates={formData.coordinates}
+            disabled={isSaving}
+          />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="type">Tipo de Inspeção</Label>
-            <Input
-              type="text"
-              id="type"
-              name="type"
-              value={formData.type}
-              onChange={handleInputChange}
-              placeholder="Tipo de inspeção"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="priority">Prioridade</Label>
-            <Select 
-              value={formData.priority} 
-              onValueChange={(value) => handleSelectChange("priority", value)}
-            >
-              <SelectTrigger className="bg-white border border-input">
-                <SelectValue placeholder="Selecione a prioridade" />
-              </SelectTrigger>
-              <SelectContent className="bg-white z-50">
-                <SelectItem value="low" className="cursor-pointer">Baixa</SelectItem>
-                <SelectItem value="medium" className="cursor-pointer">Média</SelectItem>
-                <SelectItem value="high" className="cursor-pointer">Alta</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="priority">Prioridade</Label>
+          <Select 
+            value={formData.priority} 
+            onValueChange={(value) => handleSelectChange("priority", value)}
+          >
+            <SelectTrigger className="bg-white">
+              <SelectValue placeholder="Selecione a prioridade" />
+            </SelectTrigger>
+            <SelectContent className="z-[100] bg-white">
+              {PRIORITY_LEVELS.map(priority => (
+                <SelectItem key={priority.value} value={priority.value} className="cursor-pointer">
+                  {priority.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="space-y-2">
@@ -268,19 +232,27 @@ export function InspectionDataForm({
             onChange={handleInputChange}
             placeholder="Anotações adicionais sobre a inspeção"
             rows={3}
+            className="resize-none bg-white"
           />
         </div>
 
         <div className="flex justify-end space-x-2 pt-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving}>
             Cancelar
           </Button>
           <Button 
             type="submit" 
-            disabled={isSaving}
+            disabled={isSaving || !isFormValid}
+            className="min-w-[100px]"
           >
-            {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-            Salvar
+            {isSaving ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              "Salvar"
+            )}
           </Button>
         </div>
       </form>

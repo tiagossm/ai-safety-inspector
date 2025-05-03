@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
-import { MapPin, Navigation, Search, Loader2 } from "lucide-react";
+import { MapPin, Navigation, Search, Loader2, Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface LocationPickerProps {
   value: string;
@@ -41,6 +48,14 @@ export function LocationPicker({
   const [isLoadingGps, setIsLoadingGps] = useState(false);
   const [cep, setCep] = useState("");
   const [addressDetails, setAddressDetails] = useState<ViaCepResponse | null>(null);
+  const [showMapDialog, setShowMapDialog] = useState(false);
+  const [mapCoordinates, setMapCoordinates] = useState<{ latitude: number; longitude: number } | null>(
+    coordinates ? { latitude: coordinates.latitude || 0, longitude: coordinates.longitude || 0 } : null
+  );
+  const [tempCoordinates, setTempCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const mapRef = useRef<any>(null);
+  const markerRef = useRef<any>(null);
   
   // Format CEP input (99999-999)
   const formatCep = (value: string): string => {
@@ -88,10 +103,12 @@ export function LocationPicker({
         
         if (geocodeData && geocodeData.length > 0) {
           const { lat, lon } = geocodeData[0];
-          onCoordinatesChange?.({
+          const coords = {
             latitude: parseFloat(lat),
             longitude: parseFloat(lon),
-          });
+          };
+          setMapCoordinates(coords);
+          onCoordinatesChange?.(coords);
         }
       } catch (geoError) {
         console.error("Error getting coordinates from address:", geoError);
@@ -115,9 +132,11 @@ export function LocationPicker({
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
+        const coords = { latitude, longitude };
         
         // Update coordinates
-        onCoordinatesChange?.({ latitude, longitude });
+        setMapCoordinates(coords);
+        onCoordinatesChange?.(coords);
         
         // Try to get address from coordinates using Nominatim OpenStreetMap API
         try {
@@ -145,6 +164,159 @@ export function LocationPicker({
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
+  };
+
+  // Initialize map in the dialog
+  useEffect(() => {
+    if (!showMapDialog) return;
+
+    // Wait for the next frame to ensure the dialog is rendered
+    const timer = setTimeout(() => {
+      try {
+        // Check if the Leaflet script is already loaded
+        if (!window.L) {
+          const script = document.createElement('script');
+          script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+          script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+          script.crossOrigin = '';
+          script.onload = initializeMap;
+          
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+          link.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
+          link.crossOrigin = '';
+          
+          document.head.appendChild(link);
+          document.body.appendChild(script);
+        } else {
+          initializeMap();
+        }
+      } catch (error) {
+        console.error("Error loading Leaflet:", error);
+        toast.error("Erro ao carregar o mapa");
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [showMapDialog]);
+
+  const initializeMap = () => {
+    const L = window.L;
+    if (!L || mapLoaded) return;
+
+    try {
+      const mapContainer = document.getElementById('map-container');
+      if (!mapContainer) return;
+
+      // Get center coordinates
+      const center = mapCoordinates || { latitude: -23.5505, longitude: -46.6333 }; // São Paulo as default
+      setTempCoordinates(mapCoordinates);
+
+      // Initialize the map
+      mapRef.current = L.map('map-container').setView([center.latitude, center.longitude], 13);
+      
+      // Add the tile layer (OpenStreetMap)
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(mapRef.current);
+
+      // Add a marker if we have coordinates
+      if (center) {
+        markerRef.current = L.marker([center.latitude, center.longitude], {
+          draggable: true
+        }).addTo(mapRef.current);
+
+        // Update temporary coordinates when marker is dragged
+        markerRef.current.on('dragend', function(e: any) {
+          const marker = e.target;
+          const position = marker.getLatLng();
+          setTempCoordinates({
+            latitude: position.lat,
+            longitude: position.lng
+          });
+        });
+      }
+
+      // Add click handler to the map to update marker position
+      mapRef.current.on('click', function(e: any) {
+        const { lat, lng } = e.latlng;
+        
+        // Update or create marker
+        if (markerRef.current) {
+          markerRef.current.setLatLng([lat, lng]);
+        } else {
+          markerRef.current = L.marker([lat, lng], {
+            draggable: true
+          }).addTo(mapRef.current);
+          
+          // Add dragend event listener
+          markerRef.current.on('dragend', function(e: any) {
+            const marker = e.target;
+            const position = marker.getLatLng();
+            setTempCoordinates({
+              latitude: position.lat,
+              longitude: position.lng
+            });
+          });
+        }
+        
+        // Update temporary coordinates
+        setTempCoordinates({
+          latitude: lat,
+          longitude: lng
+        });
+      });
+
+      setMapLoaded(true);
+    } catch (error) {
+      console.error("Error initializing map:", error);
+      toast.error("Erro ao inicializar o mapa");
+    }
+  };
+
+  // Clean up map when dialog closes
+  const handleCloseMap = () => {
+    if (mapRef.current) {
+      mapRef.current.remove();
+      mapRef.current = null;
+      markerRef.current = null;
+      setMapLoaded(false);
+    }
+    setShowMapDialog(false);
+  };
+
+  // Save coordinates and get address when confirming map selection
+  const handleConfirmLocation = async () => {
+    if (!tempCoordinates) {
+      toast.error("Selecione uma localização no mapa");
+      return;
+    }
+
+    setMapCoordinates(tempCoordinates);
+    onCoordinatesChange?.(tempCoordinates);
+
+    // Try to get address from coordinates
+    try {
+      const { latitude, longitude } = tempCoordinates;
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+      );
+      const data = await response.json();
+      
+      if (data && data.display_name) {
+        onChange(data.display_name);
+      } else {
+        onChange(`Latitude: ${latitude.toFixed(6)}, Longitude: ${longitude.toFixed(6)}`);
+      }
+    } catch (error) {
+      console.error("Error getting address from coordinates:", error);
+      const { latitude, longitude } = tempCoordinates;
+      onChange(`Latitude: ${latitude.toFixed(6)}, Longitude: ${longitude.toFixed(6)}`);
+    }
+
+    handleCloseMap();
   };
 
   return (
@@ -193,7 +365,7 @@ export function LocationPicker({
               </div>
             </div>
             
-            <div className="flex items-end">
+            <div className="flex items-end gap-2">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -209,11 +381,30 @@ export function LocationPicker({
                       ) : (
                         <Navigation className="h-4 w-4" />
                       )}
-                      <span className="ml-2">Usar GPS</span>
+                      <span className="sr-only md:not-sr-only md:ml-2">GPS</span>
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Obter localização atual</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowMapDialog(true)}
+                      className="h-10"
+                    >
+                      <Map className="h-4 w-4" />
+                      <span className="sr-only md:not-sr-only md:ml-2">Mapa</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Selecionar no mapa</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -235,6 +426,25 @@ export function LocationPicker({
           Coordenadas: {coordinates.latitude?.toFixed(6)}, {coordinates.longitude?.toFixed(6)}
         </div>
       )}
+
+      <Dialog open={showMapDialog} onOpenChange={setShowMapDialog}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>Selecionar Localização no Mapa</DialogTitle>
+          </DialogHeader>
+          <div id="map-container" className="h-[400px] w-full rounded-md border"></div>
+          <DialogFooter>
+            <div className="flex justify-between w-full">
+              <Button variant="outline" onClick={handleCloseMap}>
+                Cancelar
+              </Button>
+              <Button onClick={handleConfirmLocation}>
+                Confirmar Localização
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

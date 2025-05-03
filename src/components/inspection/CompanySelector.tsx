@@ -107,7 +107,7 @@ export function CompanySelector({
     try {
       let queryBuilder = supabase
         .from("companies")
-        .select("id, name, fantasy_name, cnpj, cnae, address")
+        .select("id, fantasy_name, name, cnpj, cnae, address")
         .eq("status", "active")
         .order("fantasy_name", { ascending: true });
 
@@ -191,17 +191,19 @@ export function CompanySelector({
         .from("companies")
         .insert({
           fantasy_name: companyData.fantasy_name || companyData.name,
+          name: companyData.name || companyData.fantasy_name,
           cnpj: companyData.cnpj,
           cnae: companyData.cnae || null,
           address: companyData.address || null,
           status: "active",
-          user_id: userId // Required field based on the error message
+          user_id: userId // Required field
         })
         .select()
         .single();
 
       if (error) {
         console.error("Error creating company:", error);
+        toast.error(`Erro ao criar empresa: ${error.message}`);
         return;
       }
 
@@ -214,10 +216,17 @@ export function CompanySelector({
         
         // Close the quick create modal
         setIsQuickCreateOpen(false);
+        
+        toast.success("Empresa criada com sucesso!");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating company:", error);
+      toast.error(`Erro ao criar empresa: ${error.message}`);
     }
+  };
+
+  const getCompanyDisplayName = (company: any) => {
+    return company?.fantasy_name || company?.name || "Empresa sem nome";
   };
 
   const triggerElement = (
@@ -236,13 +245,77 @@ export function CompanySelector({
       <div className="flex items-center">
         <Building className="mr-2 h-4 w-4" />
         {selectedCompany ? (
-          <span className="truncate">{selectedCompany.fantasy_name || selectedCompany.name}</span>
+          <span className="truncate">{getCompanyDisplayName(selectedCompany)}</span>
         ) : (
           <span className="text-muted-foreground">Selecione uma empresa</span>
         )}
       </div>
       <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
     </Button>
+  );
+
+  const renderContent = () => (
+    <div>
+      <Command>
+        <CommandInput 
+          placeholder="Buscar empresas..." 
+          onValueChange={handleSearch} 
+        />
+        <CommandList className="max-h-[300px]">
+          <CommandEmpty>
+            {loading ? (
+              <div className="flex items-center justify-center p-4">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Carregando...
+              </div>
+            ) : searching ? (
+              <div className="flex items-center justify-center p-4">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Buscando...
+              </div>
+            ) : (
+              <div className="py-6 text-center">
+                <Building className="h-10 w-10 text-muted-foreground/60 mx-auto mb-2" />
+                <div className="text-sm text-muted-foreground mb-2">Nenhuma empresa encontrada</div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mx-auto"
+                  onClick={() => setIsQuickCreateOpen(true)}
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Cadastrar nova
+                </Button>
+              </div>
+            )}
+          </CommandEmpty>
+          <CommandGroup className="overflow-visible">
+            {companies.map((company) => (
+              <CommandItem
+                key={company.id}
+                className="flex items-center cursor-pointer"
+                onSelect={() => handleSelectCompany(company)}
+              >
+                <div className="flex items-center w-full">
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      company.id === value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  <div className="flex-1 overflow-hidden">
+                    <div className="font-medium">{getCompanyDisplayName(company)}</div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      CNPJ: {company.cnpj} {company.cnae && `• CNAE: ${company.cnae}`}
+                    </div>
+                  </div>
+                </div>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </CommandList>
+      </Command>
+    </div>
   );
 
   return (
@@ -257,53 +330,7 @@ export function CompanySelector({
                     {triggerElement}
                   </PopoverTrigger>
                   <PopoverContent className="w-[350px] p-0 z-[100]">
-                    <Command>
-                      <CommandInput 
-                        placeholder="Buscar empresas..." 
-                        onValueChange={handleSearch} 
-                      />
-                      <CommandList className="max-h-[300px]">
-                        <CommandEmpty>
-                          {loading ? (
-                            <div className="flex items-center justify-center p-4">
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                              Carregando...
-                            </div>
-                          ) : searching ? (
-                            <div className="flex items-center justify-center p-4">
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                              Buscando...
-                            </div>
-                          ) : (
-                            "Nenhuma empresa encontrada"
-                          )}
-                        </CommandEmpty>
-                        <CommandGroup className="overflow-visible">
-                          {companies.map((company) => (
-                            <CommandItem
-                              key={company.id}
-                              className="cursor-pointer text-foreground"
-                              onSelect={() => {
-                                handleSelectCompany(company);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  company.id === value ? "opacity-100" : "opacity-0"
-                                )}
-                              />
-                              <div className="flex-1 overflow-hidden">
-                                <div className="font-medium">{company.fantasy_name || company.name}</div>
-                                <div className="text-xs text-muted-foreground truncate">
-                                  CNPJ: {company.cnpj} {company.cnae && `• CNAE: ${company.cnae}`}
-                                </div>
-                              </div>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
+                    {renderContent()}
                   </PopoverContent>
                 </Popover>
               </div>
@@ -318,53 +345,7 @@ export function CompanySelector({
               {triggerElement}
             </PopoverTrigger>
             <PopoverContent className="w-[350px] p-0 z-[100]">
-              <Command>
-                <CommandInput 
-                  placeholder="Buscar empresas..." 
-                  onValueChange={handleSearch} 
-                />
-                <CommandList className="max-h-[300px]">
-                  <CommandEmpty>
-                    {loading ? (
-                      <div className="flex items-center justify-center p-4">
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Carregando...
-                      </div>
-                    ) : searching ? (
-                      <div className="flex items-center justify-center p-4">
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Buscando...
-                      </div>
-                    ) : (
-                      "Nenhuma empresa encontrada"
-                    )}
-                  </CommandEmpty>
-                  <CommandGroup className="overflow-visible">
-                    {companies.map((company) => (
-                      <CommandItem
-                        key={company.id}
-                        className="cursor-pointer text-foreground"
-                        onSelect={() => {
-                          handleSelectCompany(company);
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            company.id === value ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                        <div className="flex-1 overflow-hidden">
-                          <div className="font-medium">{company.fantasy_name || company.name}</div>
-                          <div className="text-xs text-muted-foreground truncate">
-                            CNPJ: {company.cnpj} {company.cnae && `• CNAE: ${company.cnae}`}
-                          </div>
-                        </div>
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
+              {renderContent()}
             </PopoverContent>
           </Popover>
         )}
