@@ -14,6 +14,7 @@ import { Loader2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { EnhancedInspectionForm } from "@/components/inspection/new/EnhancedInspectionForm";
 
 export default function NewInspectionExecutionPage() {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +24,17 @@ export default function NewInspectionExecutionPage() {
   const [isPanelExpanded, setIsPanelExpanded] = useState(true); // Default to expanded for new inspections
   const [editMode, setEditMode] = useState(true); // Default to edit mode for new inspections
   const [viewMode, setViewMode] = useState<"read" | "edit">("edit");
+  
+  // Sample recent companies and locations for demonstration
+  const recentCompanies = [
+    { id: "recent-1", fantasy_name: "Empresa ABC", cnae: "41.20-4" },
+    { id: "recent-2", fantasy_name: "Empresa XYZ", cnae: "42.13-8" }
+  ];
+  
+  const recentLocations = [
+    { address: "Av. Paulista, 1000 - São Paulo, SP" },
+    { address: "Rua Augusta, 500 - São Paulo, SP" }
+  ];
 
   // Use the inspection data hook to fetch all necessary data
   const {
@@ -168,6 +180,66 @@ export default function NewInspectionExecutionPage() {
 
   // Check if this is a shared view (simplified interface)
   const isSharedView = window.location.pathname.includes('/share/');
+
+  // If we need to show the form for a new or incomplete inspection
+  if (isNewOrIncompleteInspection) {
+    // Use a hook for form data
+    const { 
+      companyId = "",
+      companyData = null,
+      responsibleId = "",
+      scheduledDate = undefined,
+      location = "",
+      notes = "",
+      inspectionType = "internal",
+      priority = "medium"
+    } = inspection || {};
+
+    const handleCompanySelect = (id: string, data: any) => {
+      // Handle company selection logic here
+      console.log("Selected company:", id, data);
+      refreshData(); // Refresh data after selection
+    };
+
+    const handleResponsibleSelect = (id: string, data: any) => {
+      // Handle responsible selection logic here
+      console.log("Selected responsible:", id, data);
+      refreshData(); // Refresh data after selection
+    };
+
+    return (
+      <TooltipProvider>
+        <div className="container max-w-7xl mx-auto py-6">
+          <EnhancedInspectionForm
+            loading={loading}
+            submitting={savingResponses}
+            companyId={company?.id || ""}
+            companyData={company}
+            setCompanyData={(data) => console.log("Updated company data:", data)}
+            responsibleId={responsible?.id || ""}
+            location={location}
+            setLocation={(value) => console.log("Updated location:", value)}
+            notes={notes}
+            setNotes={(value) => console.log("Updated notes:", value)}
+            inspectionType={inspectionType}
+            setInspectionType={(value) => console.log("Updated inspection type:", value)}
+            priority={priority}
+            setPriority={(value) => console.log("Updated priority:", value)}
+            scheduledDate={scheduledDate ? new Date(scheduledDate) : undefined}
+            setScheduledDate={(date) => console.log("Updated scheduled date:", date)}
+            errors={{}}
+            handleCompanySelect={handleCompanySelect}
+            handleResponsibleSelect={handleResponsibleSelect}
+            handleSubmit={handleSaveProgress}
+            isFormValid={() => true}
+            onCancel={() => navigate("/inspections")}
+            recentCompanies={recentCompanies}
+            recentLocations={recentLocations}
+          />
+        </div>
+      </TooltipProvider>
+    );
+  }
 
   return (
     <TooltipProvider>
