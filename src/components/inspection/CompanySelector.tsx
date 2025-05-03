@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Check, ChevronDown, Building, Plus, Loader2, AlertCircle } from "lucide-react";
@@ -19,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CompanyQuickCreateModal } from "./CompanyQuickCreateModal";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from "@/components/ui/use-toast";
 
 interface CompanySelectorProps {
   value: string;
@@ -203,7 +203,11 @@ export function CompanySelector({
 
       if (error) {
         console.error("Error creating company:", error);
-        toast.error(`Erro ao criar empresa: ${error.message}`);
+        toast({
+          title: "Erro ao criar empresa",
+          description: error.message,
+          variant: "destructive"
+        });
         return;
       }
 
@@ -217,11 +221,18 @@ export function CompanySelector({
         // Close the quick create modal
         setIsQuickCreateOpen(false);
         
-        toast.success("Empresa criada com sucesso!");
+        toast({
+          title: "Empresa criada com sucesso!",
+          variant: "default"
+        });
       }
     } catch (error: any) {
       console.error("Error creating company:", error);
-      toast.error(`Erro ao criar empresa: ${error.message}`);
+      toast({
+        title: "Erro ao criar empresa",
+        description: error.message,
+        variant: "destructive"
+      });
     }
   };
 
