@@ -1,19 +1,16 @@
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { EnhancedInspectionForm } from "@/components/inspection/new/EnhancedInspectionForm";
-import { useEnhancedInspectionForm } from "@/hooks/inspection/useEnhancedInspectionForm";
+import { useNewInspectionForm } from "@/hooks/inspection/useNewInspectionForm";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 
 export default function NewInspectionPage() {
   const { checklistId } = useParams<{ checklistId: string }>();
   const navigate = useNavigate();
-  const [hasDraft, setHasDraft] = useState(false);
 
   const {
-    // State
     checklist,
     loading,
     submitting,
@@ -26,44 +23,18 @@ export default function NewInspectionPage() {
     inspectionType,
     priority,
     errors,
-    activeTab,
-    draftSaved,
-    recentCompanies,
-    recentLocations,
-    
-    // Setters
     setCompanyData,
     setLocation,
     setNotes,
     setInspectionType,
     setPriority,
     setScheduledDate,
-    
-    // Handlers
     handleCompanySelect,
     handleResponsibleSelect,
     handleSubmit,
-    loadDraft,
     isFormValid
-  } = useEnhancedInspectionForm(checklistId);
+  } = useNewInspectionForm(checklistId);
 
-  // Check for draft on initial load
-  useEffect(() => {
-    const draftKey = `inspection_draft_${checklistId || "new"}`;
-    const savedDraft = localStorage.getItem(draftKey);
-    
-    if (savedDraft) {
-      setHasDraft(true);
-    }
-  }, [checklistId]);
-
-  // Handler for draft loading
-  const handleLoadDraft = () => {
-    if (loadDraft()) {
-      setHasDraft(false);
-    }
-  };
-  
   // Handle cancel
   const handleCancel = () => {
     navigate("/inspections");
@@ -97,16 +68,6 @@ export default function NewInspectionPage() {
               {checklist?.title ? `Baseado em: ${checklist.title}` : "Preencha os dados para iniciar"}
             </p>
           </div>
-          
-          {hasDraft && (
-            <Button 
-              variant="outline" 
-              onClick={handleLoadDraft}
-              className="mt-4 md:mt-0"
-            >
-              Carregar Rascunho Salvo
-            </Button>
-          )}
         </div>
       </div>
       
@@ -134,8 +95,6 @@ export default function NewInspectionPage() {
         handleSubmit={handleSubmit}
         isFormValid={isFormValid}
         onCancel={handleCancel}
-        recentCompanies={recentCompanies}
-        recentLocations={recentLocations}
       />
     </div>
   );
