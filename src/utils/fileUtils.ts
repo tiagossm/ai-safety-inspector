@@ -5,10 +5,10 @@ import {
   FileAudio, 
   FileVideo, 
   File as FileIcon,
-  FilePdf,
+  File,
   FileSpreadsheet,
-  FileCode,
-  FileZip
+  Code,
+  Archive
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -75,15 +75,15 @@ export function getFileIcon(type: ReturnType<typeof getFileType>): LucideIcon {
     case 'video':
       return FileVideo;
     case 'pdf':
-      return FilePdf;
+      return File; // Using regular File icon instead of FilePdf
     case 'excel':
       return FileSpreadsheet;
     case 'word':
       return FileText;
     case 'code':
-      return FileCode;
+      return Code; // Using Code icon instead of FileCode
     case 'zip':
-      return FileZip;
+      return Archive; // Using Archive icon instead of FileZip
     default:
       return FileIcon;
   }
