@@ -14,7 +14,6 @@ import { useInspectionFetch } from "@/hooks/inspection/useInspectionFetch";
 import { useInspectionStatus } from "@/hooks/inspection/useInspectionStatus";
 import { useResponseHandling } from "@/hooks/inspection/useResponseHandling";
 import { INSPECTION_STATUSES } from "@/types/inspection";
-import { TooltipProvider } from "@/components/ui/tooltip";
 
 export default function InspectionExecutionPage() {
   const { id } = useParams<{ id: string }>();
@@ -228,60 +227,58 @@ export default function InspectionExecutionPage() {
   const hasRequiredData = inspection && company?.id && responsible?.id;
 
   return (
-    <TooltipProvider>
-      <div className="container max-w-7xl mx-auto py-6">
-        {/* Inspection Header Form */}
-        {inspection && (
-          <InspectionHeaderForm
-            inspectionId={id}
-            inspection={inspection}
-            company={company}
-            responsible={responsible}
-            isEditable={isInspectionEditable()}
-            onSave={handleInspectionDataSave}
-          />
-        )}
+    <div className="container max-w-7xl mx-auto py-6">
+      {/* Inspection Header Form */}
+      {inspection && (
+        <InspectionHeaderForm
+          inspectionId={id}
+          inspection={inspection}
+          company={company}
+          responsible={responsible}
+          isEditable={isInspectionEditable()}
+          onSave={handleInspectionDataSave}
+        />
+      )}
 
-        {/* Show checklist only if minimum required data is available */}
-        {hasRequiredData ? (
-          <InspectionLayout
-            loading={loading}
-            inspection={inspection}
-            company={company}
-            responsible={responsible}
-            questions={questions || []}
-            responses={responses}
-            groups={groups || []}
-            subChecklists={subChecklists}
-            currentGroupId={currentGroupId}
-            filteredQuestions={filteredQuestions}
-            stats={stats}
-            saving={saving}
-            autoSave={autoSave}
-            lastSaved={lastSaved}
-            setAutoSave={setAutoSave}
-            setCurrentGroupId={setCurrentGroupId}
-            onSaveProgress={handleSaveProgress}
-            onCompleteInspection={handleCompleteInspection}
-            onReopenInspection={handleReopenInspection}
-            onViewActionPlan={handleViewActionPlan}
-            onGenerateReport={handleGenerateReport}
-            refreshData={refreshData}
-            onResponseChange={handleResponseChange}
-            onSaveSubChecklistResponses={handleSaveSubChecklistResponses}
-          />
-        ) : (
-          !loading && (
-            <Card className="p-6 text-center">
-              <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold mb-2">Dados Obrigatórios Pendentes</h2>
-              <p className="text-muted-foreground mb-4">
-                Por favor, preencha os dados obrigatórios da inspeção acima para visualizar o checklist.
-              </p>
-            </Card>
-          )
-        )}
-      </div>
-    </TooltipProvider>
+      {/* Show checklist only if minimum required data is available */}
+      {hasRequiredData ? (
+        <InspectionLayout
+          loading={loading}
+          inspection={inspection}
+          company={company}
+          responsible={responsible}
+          questions={questions || []}
+          responses={responses}
+          groups={groups || []}
+          subChecklists={subChecklists}
+          currentGroupId={currentGroupId}
+          filteredQuestions={filteredQuestions}
+          stats={stats}
+          saving={saving}
+          autoSave={autoSave}
+          lastSaved={lastSaved}
+          setAutoSave={setAutoSave}
+          setCurrentGroupId={setCurrentGroupId}
+          onSaveProgress={handleSaveProgress}
+          onCompleteInspection={handleCompleteInspection}
+          onReopenInspection={handleReopenInspection}
+          onViewActionPlan={handleViewActionPlan}
+          onGenerateReport={handleGenerateReport}
+          refreshData={refreshData}
+          onResponseChange={handleResponseChange}
+          onSaveSubChecklistResponses={handleSaveSubChecklistResponses}
+        />
+      ) : (
+        !loading && (
+          <Card className="p-6 text-center">
+            <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold mb-2">Dados Obrigatórios Pendentes</h2>
+            <p className="text-muted-foreground mb-4">
+              Por favor, preencha os dados obrigatórios da inspeção acima para visualizar o checklist.
+            </p>
+          </Card>
+        )
+      )}
+    </div>
   );
 }

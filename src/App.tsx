@@ -1,4 +1,3 @@
-
 import { Routes, Route, Navigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { AuthProvider } from "@/components/AuthProvider";
@@ -17,7 +16,6 @@ import NewChecklistCreate from "@/pages/NewChecklistCreate";
 import NewChecklistEdit from "@/pages/NewChecklistEdit";
 import NewChecklistDetails from "@/pages/NewChecklistDetails";
 import NewInspectionPage from "@/pages/NewInspectionPage";
-import InspectionViewPage from "@/pages/InspectionViewPage";
 import SimpleInspectionPage from "@/pages/SimpleInspectionPage";
 import Inspections from "@/pages/Inspections";
 import { Users } from "@/pages/Users";
@@ -49,9 +47,9 @@ function App() {
             {/* Inspection routes - Order matters for correct matching! */}
             <Route path="inspections" element={<Inspections />} />
             <Route path="inspections/redirect/:id" element={<ChecklistRedirectPage />} />
-            <Route path="inspections/new/:checklistId" element={<NewInspectionPage />} />
+            <Route path="inspections/new/:id" element={<NewInspectionPage />} />
             <Route path="inspections/new" element={<NewInspectionPage />} />
-            <Route path="inspections/:inspectionId/view" element={<InspectionViewPage />} />
+            <Route path="inspections/:id/view" element={<InspectionExecutionPage />} />
             <Route path="inspections/:id" element={<SimpleInspectionPage />} />
             <Route path="inspections/:id/shared" element={<SharedInspectionPage />} />
             

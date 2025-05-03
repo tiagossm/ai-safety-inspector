@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Check, ChevronDown, User, Plus, X, Loader2 } from "lucide-react";
+import { Check, ChevronDown, User, Plus, X } from "lucide-react";
 import {
   Command,
   CommandEmpty,
@@ -19,422 +18,269 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { ResponsibleQuickCreateModal } from "./ResponsibleQuickCreateModal";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { toast } from "sonner";
 
 interface ResponsibleSelectorProps {
-  value: string[];
+  value: string[];  // Changed to array for multiple selections
   onSelect: (ids: string[], data: any[]) => void;
   className?: string;
-  disabled?: boolean;
-  showTooltip?: boolean;
-  maxItems?: number;
-  companyId?: string;
 }
 
-export function ResponsibleSelector({ 
-  value = [], 
-  onSelect, 
-  className, 
-  disabled = false,
-  showTooltip = false,
-  maxItems = -1,  // -1 = unlimited
-  companyId
-}: ResponsibleSelectorProps) {
+export function ResponsibleSelector({ value = [], onSelect, className }: ResponsibleSelectorProps) {
   const [open, setOpen] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<any[]>([]);
-  const [recentlyUsed, setRecentlyUsed] = useState<any[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [searching, setSearching] = useState(false);
   const [isQuickCreateOpen, setIsQuickCreateOpen] = useState(false);
-  const [userTooltip, setUserTooltip] = useState<string>("Selecione um responsável");
+  const [recentlyUsed, setRecentlyUsed] = useState<any[]>([]);
 
-  // Fetch users and set tooltip
+  // Load users on component mount
   useEffect(() => {
     fetchUsers();
-
-    if (users.length === 0) {
-      setUserTooltip("Nenhum responsável disponível");
-    } else {
-      setUserTooltip("Selecione um responsável");
-    }
-  }, [companyId]); // Re-fetch when company changes
+    loadRecentlyUsed();
+  }, []);
 
   // Update selected users when value changes
   useEffect(() => {
-    if (value && value.length > 0) {
-      fetchUsersByIds(value);
+    if (value.length > 0 && users.length > 0) {
+      const selected = users.filter(user => value.includes(user.id));
+      setSelectedUsers(selected);
     } else {
       setSelectedUsers([]);
     }
-  }, [value]);
+  }, [value, users]);
 
-  // Fetch users for initial load
-  const fetchUsers = async (query: string = "") => {
+  const fetchUsers = async () => {
     setLoading(true);
     try {
-      let queryBuilder = supabase
+      const { data, error } = await supabase
         .from("users")
         .select("id, name, email, position")
-        .eq("status", "active")
         .order("name", { ascending: true });
 
-      // If companyId is provided, filter users by company
-      if (companyId) {
-        // First try to get users directly linked to this company
-        const { data: companyUsers } = await supabase
-          .from("user_companies")
-          .select("user_id")
-          .eq("company_id", companyId);
-          
-        if (companyUsers && companyUsers.length > 0) {
-          const userIds = companyUsers.map(u => u.user_id);
-          queryBuilder = queryBuilder.in("id", userIds);
-        }
+      if (error) throw error;
+      setUsers(data || []);
+
+      // Map any selected user IDs to the full user objects
+      if (value.length > 0) {
+        const selected = data?.filter(user => value.includes(user.id)) || [];
+        setSelectedUsers(selected);
       }
-
-      if (query) {
-        queryBuilder = queryBuilder.or(`name.ilike.%${query}%,email.ilike.%${query}%,position.ilike.%${query}%`);
-      }
-
-      const { data, error } = await queryBuilder.limit(30);
-
-      if (error) {
-        console.error("Error fetching users:", error);
-        return;
-      }
-
-      // Only show users not already selected if maxItems is set
-      const filteredData = maxItems > 0 && value.length >= maxItems
-        ? [] // Don't show any more users if we've reached the limit
-        : data?.filter(user => !value.includes(user.id)) || [];
-
-      setUsers(filteredData);
     } catch (error) {
-      console.error("Error fetching users:", error);
+      console.error("Erro ao carregar usuários:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchUsersByIds = async (ids: string[]) => {
-    if (!ids.length) return;
-
+  const loadRecentlyUsed = () => {
     try {
-      const { data, error } = await supabase
-        .from("users")
-        .select("id, name, email, position")
-        .in("id", ids);
-
-      if (error) {
-        console.error("Error fetching users by IDs:", error);
-        return;
-      }
-
-      if (data) {
-        setSelectedUsers(data);
-        
-        // Save to recently used (local storage)
-        const recentUsers = JSON.parse(localStorage.getItem("recentUsers") || "[]");
-        const uniqueUsers = [...data, ...recentUsers]
-          .filter((user, index, self) => 
-            index === self.findIndex(u => u.id === user.id))
-          .slice(0, 5);
-        
-        localStorage.setItem("recentUsers", JSON.stringify(uniqueUsers));
-        setRecentlyUsed(uniqueUsers.filter(u => !ids.includes(u.id)));
+      const recentUsersString = localStorage.getItem('recentlyUsedResponsibles');
+      if (recentUsersString) {
+        const recentUsers = JSON.parse(recentUsersString);
+        setRecentlyUsed(recentUsers);
       }
     } catch (error) {
-      console.error("Error fetching users by IDs:", error);
+      console.error("Error loading recently used responsibles:", error);
     }
   };
 
-  const handleSearch = async (query: string) => {
-    setSearchQuery(query);
+  const saveToRecentlyUsed = (user: any) => {
     try {
-      setSearching(true);
-      await fetchUsers(query);
-    } finally {
-      setSearching(false);
+      // Get current recent users
+      const recentUsersString = localStorage.getItem('recentlyUsedResponsibles') || '[]';
+      let recentUsers = JSON.parse(recentUsersString);
+      
+      // Remove the user if it already exists in the list
+      recentUsers = recentUsers.filter((u: any) => u.id !== user.id);
+      
+      // Add user to the beginning of the array
+      recentUsers.unshift(user);
+      
+      // Limit to 5 recent users
+      if (recentUsers.length > 5) {
+        recentUsers = recentUsers.slice(0, 5);
+      }
+      
+      // Save back to localStorage
+      localStorage.setItem('recentlyUsedResponsibles', JSON.stringify(recentUsers));
+      
+      // Update state
+      setRecentlyUsed(recentUsers);
+    } catch (error) {
+      console.error("Error saving to recently used:", error);
     }
   };
 
   const handleSelectUser = (user: any) => {
-    const isAlreadySelected = selectedUsers.some(u => u.id === user.id);
-    
-    // If multi-select (maxItems not 1)
-    if (maxItems !== 1) {
-      let newSelectedUsers;
-      let newIds;
-      
-      if (isAlreadySelected) {
-        // Remove user if already selected
-        newSelectedUsers = selectedUsers.filter(u => u.id !== user.id);
-        newIds = newSelectedUsers.map(u => u.id);
-      } else {
-        // Check max limit
-        if (maxItems > 0 && selectedUsers.length >= maxItems) {
-          toast.error(`Máximo de ${maxItems} responsáveis permitidos`);
-          return;
-        }
-        
-        // Add user
-        newSelectedUsers = [...selectedUsers, user];
-        newIds = [...value, user.id];
-      }
-
-      setSelectedUsers(newSelectedUsers);
-      onSelect(newIds, newSelectedUsers);
-      
-      // Only close the popover if we're in single-select mode
-      if (maxItems === 1) {
-        setOpen(false);
-      }
+    // Check if user is already selected
+    if (selectedUsers.some(u => u.id === user.id)) {
+      // Remove user from selection
+      const newSelected = selectedUsers.filter(u => u.id !== user.id);
+      setSelectedUsers(newSelected);
+      onSelect(newSelected.map(u => u.id), newSelected);
     } else {
-      // Single select mode
-      setSelectedUsers([user]);
-      onSelect([user.id], [user]);
-      setOpen(false);
+      // Add user to selection
+      const newSelected = [...selectedUsers, user];
+      setSelectedUsers(newSelected);
+      onSelect(newSelected.map(u => u.id), newSelected);
+      saveToRecentlyUsed(user);
     }
+    // Keep the popover open for multi-selection
   };
 
   const handleRemoveUser = (userId: string) => {
-    const newSelectedUsers = selectedUsers.filter(user => user.id !== userId);
-    const newValue = value.filter(id => id !== userId);
-    setSelectedUsers(newSelectedUsers);
-    onSelect(newValue, newSelectedUsers);
+    const newSelected = selectedUsers.filter(u => u.id !== userId);
+    setSelectedUsers(newSelected);
+    onSelect(newSelected.map(u => u.id), newSelected);
   };
 
-  const handleQuickCreateSuccess = async (userData: any) => {
-    try {
-      // Get current user session
-      const { data: sessionData } = await supabase.auth.getSession();
-      const currentUserId = sessionData.session?.user?.id;
-      
-      if (!currentUserId) {
-        console.error("User is not authenticated");
-        return;
-      }
-      
-      // Create the new user
-      const { data, error } = await supabase
-        .from("users")
-        .insert({
-          name: userData.name,
-          email: userData.email,
-          position: userData.position || null,
-          status: "active"
-        })
-        .select()
-        .single();
-        
-      if (error) {
-        console.error("Error creating user:", error);
-        toast.error(`Erro ao criar responsável: ${error.message}`);
-        return;
-      }
-
-      if (data) {
-        // If company is specified, link the user to the company
-        if (companyId) {
-          await supabase
-            .from("user_companies")
-            .insert({
-              user_id: data.id,
-              company_id: companyId
-            });
-        }
-        
-        // Add the new user to the list
-        setUsers(prev => [data, ...prev]);
-        
-        // Select the newly created user
-        handleSelectUser(data);
-        
-        // Close the quick create modal
-        setIsQuickCreateOpen(false);
-        
-        toast.success("Responsável criado com sucesso!");
-      }
-    } catch (error: any) {
-      console.error("Error creating user:", error);
-      toast.error(`Erro ao criar responsável: ${error.message}`);
-    }
+  // Permite adicionar um responsável manualmente
+  const handleCreateResponsible = (inputValue: string) => {
+    if (!inputValue.trim()) return;
+    
+    // Create a temporary user object with a generated ID
+    const newUser = {
+      id: `temp-${Date.now()}`,
+      name: inputValue,
+      email: "",
+      isTemporary: true
+    };
+    
+    const newSelected = [...selectedUsers, newUser];
+    setSelectedUsers(newSelected);
+    onSelect(newSelected.map(u => u.id), newSelected);
   };
 
-  // Load recently used users from local storage
-  useEffect(() => {
-    try {
-      const recentUsers = JSON.parse(localStorage.getItem("recentUsers") || "[]");
-      // Filter out users that are already selected
-      setRecentlyUsed(recentUsers.filter((user: any) => !value.includes(user.id)));
-    } catch (error) {
-      console.error("Error loading recent users:", error);
-    }
-  }, [value]);
-
-  const triggerElement = (
-    <Button
-      variant="outline"
-      role="combobox"
-      aria-expanded={open}
-      disabled={disabled}
-      className={cn(
-        "w-full justify-between font-normal",
-        (!value || value.length === 0) && "text-muted-foreground",
-        className
-      )}
-    >
-      <div className="flex items-center">
-        <User className="mr-2 h-4 w-4" />
-        {selectedUsers.length > 0 ? (
-          <span>{selectedUsers.length === 1 ? selectedUsers[0].name : `${selectedUsers.length} responsável(is)`}</span>
-        ) : (
-          <span className="text-muted-foreground">Selecione responsáveis</span>
-        )}
-      </div>
-      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-    </Button>
-  );
-
-  const renderContent = () => (
-    <div>
-      <Command>
-        <CommandInput 
-          placeholder="Buscar responsável..." 
-          onValueChange={handleSearch}
-        />
-        <CommandList className="max-h-[300px]">
-          <CommandEmpty>
-            {loading ? (
-              <div className="flex items-center justify-center p-4">
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Carregando...
-              </div>
-            ) : searching ? (
-              <div className="flex items-center justify-center p-4">
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                Buscando...
-              </div>
-            ) : (
-              <div className="py-6 text-center">
-                <User className="h-10 w-10 text-muted-foreground/60 mx-auto mb-2" />
-                <div className="text-sm text-muted-foreground mb-2">Nenhum responsável encontrado</div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mx-auto"
-                  onClick={() => setIsQuickCreateOpen(true)}
-                >
-                  <Plus className="h-3.5 w-3.5 mr-1" />
-                  Cadastrar novo
-                </Button>
-              </div>
-            )}
-          </CommandEmpty>
-
-          {recentlyUsed.length > 0 && (
-            <CommandGroup heading="Recentes" className="overflow-visible">
-              {recentlyUsed.map((user) => (
-                <CommandItem
-                  key={`recent-${user.id}`}
-                  className="flex items-center cursor-pointer"
-                  onSelect={() => handleSelectUser(user)}
-                >
-                  <div className="flex items-center w-full">
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        selectedUsers.some(u => u.id === user.id) ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    <div className="flex-1 overflow-hidden">
-                      <div className="font-medium">{user.name}</div>
-                      <div className="text-xs text-muted-foreground truncate">
-                        {user.email} {user.position && `• ${user.position}`}
-                      </div>
-                    </div>
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          )}
-          
-          <CommandGroup heading="Todos os usuários" className="overflow-visible">
-            {users.map((user) => (
-              <CommandItem
-                key={user.id}
-                className="flex items-center cursor-pointer"
-                onSelect={() => handleSelectUser(user)}
-              >
-                <div className="flex items-center w-full">
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      selectedUsers.some(u => u.id === user.id) ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  <div className="flex-1 overflow-hidden">
-                    <div className="font-medium">{user.name}</div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      {user.email} {user.position && `• ${user.position}`}
-                    </div>
-                  </div>
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        </CommandList>
-      </Command>
-    </div>
-  );
+  const handleQuickCreateSuccess = (user: any) => {
+    // Add the new user to the list
+    setUsers([...users, user]);
+    
+    // Add to selected users
+    const newSelected = [...selectedUsers, user];
+    setSelectedUsers(newSelected);
+    onSelect(newSelected.map(u => u.id), newSelected);
+    
+    // Add to recently used
+    saveToRecentlyUsed(user);
+  };
 
   return (
     <>
-      <div className="flex-1">
-        {showTooltip ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="w-full">
-                <Popover open={open} onOpenChange={setOpen}>
-                  <PopoverTrigger asChild>
-                    {triggerElement}
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[350px] p-0 z-[100]">
-                    {renderContent()}
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              {disabled ? "Seleção de responsável desabilitada" : userTooltip}
-            </TooltipContent>
-          </Tooltip>
-        ) : (
+      <div className="flex gap-2 items-start">
+        <div className="flex-1">
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
-              {triggerElement}
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={open}
+                className={cn(
+                  "w-full justify-between font-normal",
+                  (!value || value.length === 0) && "text-muted-foreground",
+                  className
+                )}
+              >
+                <div className="flex items-center">
+                  <User className="mr-2 h-4 w-4" />
+                  {selectedUsers.length > 0 ? (
+                    <span>{selectedUsers.length} responsável(is) selecionado(s)</span>
+                  ) : (
+                    <span className="text-muted-foreground">Selecione responsáveis</span>
+                  )}
+                </div>
+                <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[350px] p-0 z-[100]">
-              {renderContent()}
+            <PopoverContent className="w-[350px] p-0">
+              <Command>
+                <CommandInput placeholder="Buscar responsável..." />
+                <CommandList>
+                  <CommandEmpty>
+                    {loading ? (
+                      "Carregando..."
+                    ) : (
+                      <div className="py-2 px-3 text-sm">
+                        <p>Nenhum responsável encontrado</p>
+                        <Button 
+                          variant="link" 
+                          className="px-0 py-1 h-auto" 
+                          onClick={() => {
+                            const input = document.querySelector('.cmdk-input') as HTMLInputElement;
+                            if (input?.value) {
+                              handleCreateResponsible(input.value);
+                              setOpen(false);
+                            }
+                          }}
+                        >
+                          Criar novo responsável
+                        </Button>
+                      </div>
+                    )}
+                  </CommandEmpty>
+
+                  {recentlyUsed.length > 0 && (
+                    <CommandGroup heading="Recentes">
+                      {recentlyUsed.map((user) => (
+                        <CommandItem
+                          key={`recent-${user.id}`}
+                          value={`recent-${user.name}`}
+                          onSelect={() => handleSelectUser(user)}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              selectedUsers.some(u => u.id === user.id) ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          <div className="flex-1 overflow-hidden">
+                            <div className="font-medium">{user.name}</div>
+                            <div className="text-xs text-muted-foreground truncate">
+                              {user.email} {user.position && `• ${user.position}`}
+                            </div>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  )}
+                  
+                  <CommandGroup heading="Todos os usuários">
+                    {users.map((user) => (
+                      <CommandItem
+                        key={user.id}
+                        value={user.name}
+                        onSelect={() => handleSelectUser(user)}
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            selectedUsers.some(u => u.id === user.id) ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        <div className="flex-1 overflow-hidden">
+                          <div className="font-medium">{user.name}</div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {user.email} {user.position && `• ${user.position}`}
+                          </div>
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
             </PopoverContent>
           </Popover>
-        )}
-      </div>
+        </div>
 
-      {/* Add button for new responsible */}
-      <Button 
-        type="button" 
-        size="icon" 
-        variant="outline" 
-        title="Adicionar novo responsável"
-        disabled={disabled}
-        onClick={() => setIsQuickCreateOpen(true)}
-      >
-        <Plus className="h-4 w-4" />
-      </Button>
+        <Button 
+          type="button" 
+          size="icon" 
+          variant="outline" 
+          title="Adicionar novo responsável"
+          onClick={() => setIsQuickCreateOpen(true)}
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
 
       {/* Display selected users */}
       {selectedUsers.length > 0 && (
@@ -448,7 +294,6 @@ export function ResponsibleSelector({
                 size="icon"
                 className="h-4 w-4 ml-1 p-0"
                 onClick={() => handleRemoveUser(user.id)}
-                disabled={disabled}
               >
                 <X className="h-3 w-3" />
               </Button>

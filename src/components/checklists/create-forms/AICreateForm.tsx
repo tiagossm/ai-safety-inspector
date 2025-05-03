@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { NewChecklist } from "@/types/checklist";
 import { Label } from "@/components/ui/label";
@@ -47,7 +48,6 @@ export function AICreateFormContent(props: AICreateFormProps) {
   const [contextType, setContextType] = useState<string>("Setor");
   const [contextValue, setContextValue] = useState<string>("");
   const [description, setDescription] = useState<string>("");
-  const [companyError, setCompanyError] = useState<string>("");
   const maxDescriptionLength = 500;
   const minDescriptionLength = 5;
 
@@ -66,20 +66,8 @@ export function AICreateFormContent(props: AICreateFormProps) {
         .from('companies')
         .select('*')
         .eq('id', companyId)
-        .eq('status', 'active')
-        .maybeSingle();
-        
-      if (error) {
-        throw error;
-      }
-      
-      if (!data) {
-        setCompanyError("Empresa não encontrada ou inativa");
-        setCompanyData(null);
-        return;
-      }
-      
-      setCompanyError("");
+        .single();
+      if (error) throw error;
       const company: Company = {
         id: data.id,
         fantasy_name: data.fantasy_name,
@@ -99,7 +87,6 @@ export function AICreateFormContent(props: AICreateFormProps) {
       updateFormattedPrompt(company, props.form.category || "", description);
     } catch (error) {
       console.error("Error fetching company data:", error);
-      setCompanyError("Erro ao carregar dados da empresa");
       toast.error("Erro ao carregar dados da empresa");
     }
   };
@@ -198,17 +185,13 @@ Contexto: ${context}`;
                   Empresa <span className="text-red-500">*</span>
                 </Label>
                 <CompanySelector
-                  value={props.form.company_id ? props.form.company_id.toString() : ""}
-                  onSelect={(id) => {
-                    if (id) {
-                      props.setForm({ 
-                        ...props.form, 
-                        company_id: id 
-                      });
-                    }
+                  value={props.form.company_id?.toString() || ""}
+                  onSelect={(companyId) => {
+                    props.setForm({ 
+                      ...props.form, 
+                      company_id: companyId 
+                    });
                   }}
-                  error={companyError}
-                  showTooltip={true}
                 />
               </div>
 

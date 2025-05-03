@@ -48,15 +48,13 @@ export function useNewInspectionForm(checklistId: string | undefined) {
   }, [checklistId, navigate]);
 
   useEffect(() => {
-    // Apenas validar checklistId e redirecionar se estamos efetivamente em uma página de criação 
-    // A verificação do pathname garante que essa validação só ocorre na rota de criação
-    if (!checklistId && window.location.pathname.includes('/inspections/new')) {
+    if (!checklistId) {
       toast.error("ID do checklist não fornecido");
       navigate("/inspections");
       return;
     }
 
-    if (!checklistId || hasFetched.current) return;
+    if (hasFetched.current) return;
     hasFetched.current = true;
 
     const fetchChecklist = async () => {

@@ -17,16 +17,30 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
   const [savingResponses, setSavingResponses] = useState(false);
 
   // Handle changes to response values
-  const handleResponseChange = useCallback((questionId: string, data: any) => {
+  const handleResponseChange = useCallback((questionId: string, value: any, additionalData?: any) => {
     setResponses((prev) => {
       const currentResponse = prev[questionId] || {};
       
+      let updatedResponse;
+      
+      if (typeof additionalData === 'object') {
+        // Handle the case where we're updating comment, media, etc.
+        updatedResponse = {
+          ...currentResponse,
+          value: value, // Keep the existing value
+          ...additionalData // Add the additional data (comment, etc.)
+        };
+      } else {
+        // Simple value update
+        updatedResponse = {
+          ...currentResponse,
+          value: value
+        };
+      }
+      
       return {
         ...prev,
-        [questionId]: {
-          ...currentResponse,
-          ...data
-        }
+        [questionId]: updatedResponse
       };
     });
   }, [setResponses]);
@@ -209,73 +223,41 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
         .eq("id", subChecklistId)
         .single();
         
-      if (subChecklistError) {
-        console.error("Error fetching sub-checklist:", subChecklistError);
-        toast.error("Erro ao buscar informações do sub-checklist");
+      if (subChecklistError || !subChecklist?.parent_question_id) {
+        toast.error("Sub-checklist não encontrado ou não associado a um item pai");
         return;
       }
       
-      const parentQuestionId = subChecklist?.parent_question_id;
+      const parentQuestionId = subChecklist.parent_question_id;
       
-      if (!parentQuestionId) {
-        toast.error("Pergunta pai não encontrada para este sub-checklist");
-        return;
-      }
-      
-      // Update the parent question's response with the sub-checklist responses
-      setResponses((prev) => {
-        const currentResponse = prev[parentQuestionId] || {};
-        // Ensure currentResponse.subChecklistResponses is an object
-        const currentSubResponses = typeof currentResponse.subChecklistResponses === 'object' && currentResponse.subChecklistResponses !== null 
-          ? currentResponse.subChecklistResponses 
-          : {};
-        
-        return {
-          ...prev,
-          [parentQuestionId]: {
-            ...currentResponse,
-            subChecklistResponses: {
-              ...currentSubResponses,
-              [subChecklistId]: subResponses
-            }
-          }
-        };
-      });
-      
-      // Save the updated responses
-      const { data: parentResponse } = await supabase
+      // Get current response for the parent question
+      const { data: existingResponse } = await supabase
         .from("inspection_responses")
         .select("*")
         .eq("inspection_id", inspectionId)
         .eq("question_id", parentQuestionId)
         .single();
-      
-      // Ensure sub_checklist_responses is an object and handle the case where it might be null/undefined
-      const currentSubResponses = typeof parentResponse?.sub_checklist_responses === 'object' && parentResponse?.sub_checklist_responses !== null
-        ? parentResponse.sub_checklist_responses 
-        : {};
-      
-      if (parentResponse) {
-        // Update existing response
+        
+      if (existingResponse) {
+        // Update the existing response with new sub-checklist data
         await supabase
           .from("inspection_responses")
           .update({
             sub_checklist_responses: {
-              ...currentSubResponses,
+              ...(existingResponse.sub_checklist_responses as Record<string, any> || {}),
               [subChecklistId]: subResponses
             },
             updated_at: new Date().toISOString()
           })
-          .eq("inspection_id", inspectionId)
-          .eq("question_id", parentQuestionId);
+          .eq("id", existingResponse.id);
       } else {
-        // Create new response - must include the required 'answer' field
+        // Create a new response for the parent with sub-checklist data
         await supabase
           .from("inspection_responses")
           .insert({
             inspection_id: inspectionId,
             question_id: parentQuestionId,
-            answer: "", // Adding required answer field with empty string
+            answer: null, // Add a null answer as it's required
             sub_checklist_responses: {
               [subChecklistId]: subResponses
             },
@@ -286,11 +268,12 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
       toast.success("Respostas do sub-checklist salvas com sucesso");
     } catch (error: any) {
       console.error("Error saving sub-checklist responses:", error);
-      toast.error(`Erro ao salvar respostas do sub-checklist: ${error.message}`);
+      toast.error(`Erro ao salvar respostas do sub-checklist: ${error.message || "Erro desconhecido"}`);
+      throw error;
     } finally {
       setSavingResponses(false);
     }
-  }, [inspectionId, setResponses]);
+  }, [inspectionId]);
 
   return {
     handleResponseChange,

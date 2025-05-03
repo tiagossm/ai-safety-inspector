@@ -1,22 +1,21 @@
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-export interface Coordinates {
-  latitude?: number;
-  longitude?: number;
-}
-
 export interface InspectionFormValues {
   companyId: string;
-  responsibleIds: string[];
-  scheduledDate: Date | null;
+  responsibleIds: string[]; // Array for multiple responsible users
+  scheduledDate?: Date | null;
   location: string;
   inspectionType: string;
   priority: string;
   notes?: string;
-  coordinates?: Coordinates | null;
+  // Updated coordinates type to handle all possible cases
+  coordinates?: { 
+    latitude?: number; 
+    longitude?: number; 
+  } | null;
 }
 
 export interface InspectionHeaderFormProps {
@@ -28,128 +27,149 @@ export interface InspectionHeaderFormProps {
   onSave: () => void;
 }
 
-export function useInspectionHeaderForm(inspectionId: string) {
+export function useInspectionHeaderForm(inspectionId: string | undefined) {
   const [updating, setUpdating] = useState(false);
-  
-  const updateInspectionData = async (formData: InspectionFormValues) => {
+  const [error, setError] = useState<string | null>(null);
+
+  const updateInspectionData = useCallback(async (data: InspectionFormValues) => {
     if (!inspectionId) {
-      toast.error("ID da inspeção não fornecido");
-      return;
+      throw new Error("ID da inspeção não fornecido");
     }
 
     try {
       setUpdating(true);
+      setError(null);
       
-      const { companyId, responsibleIds, scheduledDate, location, inspectionType, priority, notes, coordinates } = formData;
-      
-      // Validate required fields
-      if (!companyId || responsibleIds.length === 0 || !location || !inspectionType) {
-        toast.error("Por favor, preencha todos os campos obrigatórios");
-        return;
-      }
-
-      // Format the data for the update
-      const updateData: Record<string, any> = {
-        company_id: companyId,
-        responsible_id: responsibleIds[0], // For backwards compatibility
-        responsible_ids: responsibleIds,
-        location: location,
-        scheduled_date: scheduledDate,
-        inspection_type: inspectionType,
-        priority: priority,
+      // Format the update data
+      const updateData = {
+        company_id: data.companyId,
+        responsible_ids: data.responsibleIds, // Using the array of responsible IDs
+        scheduled_date: data.scheduledDate ? data.scheduledDate.toISOString() : null,
+        location: data.location || null,
+        inspection_type: data.inspectionType,
+        priority: data.priority || "medium",
         metadata: {
-          notes: notes || "",
-          coordinates: coordinates || null,
-          responsible_data: null,
+          notes: data.notes || "",
+          // Ensure coordinates are valid or set to null
+          coordinates: data.coordinates && 
+                      typeof data.coordinates.latitude === 'number' && 
+                      typeof data.coordinates.longitude === 'number' ? 
+                      data.coordinates : null,
         },
+        updated_at: new Date().toISOString()
       };
 
-      // Update inspection data
-      const { error } = await supabase
+      // Update the inspection in Supabase
+      const { error: updateError } = await supabase
         .from("inspections")
         .update(updateData)
         .eq("id", inspectionId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
       toast.success("Dados da inspeção atualizados com sucesso");
-    } catch (error: any) {
-      console.error("Error updating inspection:", error);
-      toast.error(`Erro ao atualizar dados da inspeção: ${error.message}`);
-      throw error;
+      
+      // If we have responsibleIds, send notifications
+      if (data.responsibleIds && data.responsibleIds.length > 0) {
+        try {
+          // Fetch user emails based on responsibleIds
+          const { data: responsibles, error: userError } = await supabase
+            .from("users")
+            .select("id, email, name")
+            .in("id", data.responsibleIds);
+            
+          if (!userError && responsibles) {
+            // Call the edge function to send notifications
+            await supabase.functions.invoke('send-inspection-notifications', {
+              body: {
+                inspectionId,
+                responsibles,
+                inspectionData: {
+                  company: data.companyId,
+                  scheduledDate: data.scheduledDate,
+                  location: data.location,
+                  inspectionType: data.inspectionType
+                }
+              }
+            });
+          }
+        } catch (notifError) {
+          console.error("Error sending notifications:", notifError);
+          // Don't throw here, as we want the main function to succeed even if notifications fail
+        }
+      }
+      
+      return true;
+    } catch (err: any) {
+      console.error("Error updating inspection data:", err);
+      const errorMessage = err.message || "Erro desconhecido ao atualizar dados da inspeção";
+      setError(errorMessage);
+      toast.error(errorMessage);
+      throw err;
     } finally {
       setUpdating(false);
     }
-  };
+  }, [inspectionId]);
 
-  const validateRequiredFields = (formData: InspectionFormValues) => {
-    const required = ['companyId', 'responsibleIds', 'location', 'inspectionType'];
-    const missing = [];
+  const validateRequiredFields = useCallback((data: InspectionFormValues): boolean => {
+    return !!(
+      data.companyId &&
+      data.responsibleIds && data.responsibleIds.length > 0 &&
+      data.location &&
+      data.inspectionType
+    );
+  }, []);
 
-    if (!formData.companyId) missing.push('Empresa');
-    if (!formData.responsibleIds || formData.responsibleIds.length === 0) missing.push('Responsável');
-    if (!formData.location) missing.push('Localização');
-    if (!formData.inspectionType) missing.push('Tipo de Inspeção');
-
-    return {
-      valid: missing.length === 0,
-      missing
-    };
-  };
-
-  const saveAsDraft = async (formData: InspectionFormValues) => {
+  const saveAsDraft = useCallback(async (data: Partial<InspectionFormValues>) => {
     if (!inspectionId) {
-      toast.error("ID da inspeção não fornecido");
-      return;
+      throw new Error("ID da inspeção não fornecido");
     }
 
     try {
       setUpdating(true);
-      
-      // Allow save as draft without all required fields
-      const { companyId, responsibleIds, scheduledDate, location, inspectionType, priority, notes, coordinates } = formData;
+      setError(null);
 
-      // Format the data for update
-      const updateData: Record<string, any> = {};
+      // Process coordinates to ensure they're valid
+      let processedData = { ...data };
       
-      if (companyId) updateData.company_id = companyId;
-      if (responsibleIds && responsibleIds.length > 0) {
-        updateData.responsible_id = responsibleIds[0];
-        updateData.responsible_ids = responsibleIds;
+      // If coordinates exist but are incomplete or invalid, set to null
+      if (processedData.coordinates &&
+          (typeof processedData.coordinates.latitude !== 'number' || 
+           typeof processedData.coordinates.longitude !== 'number')) {
+        processedData.coordinates = null;
       }
-      if (location) updateData.location = location;
-      if (scheduledDate) updateData.scheduled_date = scheduledDate;
-      if (inspectionType) updateData.inspection_type = inspectionType;
-      if (priority) updateData.priority = priority;
-      
-      // Update metadata
-      updateData.metadata = {
-        notes: notes || "",
-        coordinates: coordinates || null
+
+      const updateData = {
+        ...processedData,
+        status: 'Pendente',
+        updated_at: new Date().toISOString()
       };
 
-      // Update inspection data
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from("inspections")
         .update(updateData)
         .eq("id", inspectionId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
       toast.success("Rascunho salvo com sucesso");
-    } catch (error: any) {
-      console.error("Error saving draft:", error);
-      toast.error(`Erro ao salvar rascunho: ${error.message}`);
-      throw error;
+      return true;
+    } catch (err: any) {
+      console.error("Error saving draft:", err);
+      const errorMessage = err.message || "Erro ao salvar rascunho";
+      setError(errorMessage);
+      toast.error(errorMessage);
+      throw err;
     } finally {
       setUpdating(false);
     }
-  };
+  }, [inspectionId]);
 
   return {
     updateInspectionData,
     validateRequiredFields,
     saveAsDraft,
-    updating
+    updating,
+    error
   };
 }

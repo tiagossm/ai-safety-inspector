@@ -1,8 +1,7 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
-import { MediaControls } from "../enhanced/MediaControls";
-import { MediaPreviewDialog } from "../enhanced/MediaPreviewDialog";
+import { MediaUploadInput } from "../question-inputs/MediaUploadInput";
 
 interface ResponseInputRendererProps {
   question: any;
@@ -17,8 +16,6 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   onResponseChange,
   onMediaChange
 }) => {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  
   // Determine response type
   const responseType = question.responseType || question.tipo_resposta || "text";
   
@@ -26,14 +23,6 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     if (onMediaChange) {
       onMediaChange(urls);
     }
-  };
-
-  const handleAIAnalysis = (comment: string, actionPlan?: string) => {
-    onResponseChange({
-      ...response,
-      comment: comment,
-      actionPlan: actionPlan || response?.actionPlan
-    });
   };
   
   // Handle yes/no responses
@@ -47,7 +36,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
                 ? 'bg-green-500 text-white hover:bg-green-600' 
                 : 'bg-gray-100 hover:bg-gray-200'
             }`}
-            onClick={() => onResponseChange({ ...response, value: 'sim' })}
+            onClick={() => onResponseChange('sim')}
             size="sm"
             variant={response?.value === 'sim' ? 'default' : 'outline'}
           >
@@ -59,7 +48,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
                 ? 'bg-red-500 text-white hover:bg-red-600' 
                 : 'bg-gray-100 hover:bg-gray-200'
             }`}
-            onClick={() => onResponseChange({ ...response, value: 'não' })}
+            onClick={() => onResponseChange('não')}
             size="sm"
             variant={response?.value === 'não' ? 'default' : 'outline'}
           >
@@ -71,7 +60,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
                 ? 'bg-gray-500 text-white hover:bg-gray-600' 
                 : 'bg-gray-100 hover:bg-gray-200'
             }`}
-            onClick={() => onResponseChange({ ...response, value: 'n/a' })}
+            onClick={() => onResponseChange('n/a')}
             size="sm"
             variant={response?.value === 'n/a' ? 'default' : 'outline'}
           >
@@ -84,19 +73,15 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           question.allowsVideo || question.permite_video ||
           question.allowsAudio || question.permite_audio ||
           question.allowsFiles || question.permite_files) && (
-          <MediaControls 
-            questionId={question.id}
-            questionText={question.text || question.pergunta || ""}
+          <MediaUploadInput 
             mediaUrls={response?.mediaUrls || []}
             onMediaChange={handleMediaChange}
-            onAnalysisComplete={handleAIAnalysis}
+            allowsPhoto={question.allowsPhoto || question.permite_foto}
+            allowsVideo={question.allowsVideo || question.permite_video}
+            allowsAudio={question.allowsAudio || question.permite_audio}
+            allowsFiles={question.allowsFiles || question.permite_files}
           />
         )}
-
-        <MediaPreviewDialog 
-          previewUrl={previewUrl} 
-          onOpenChange={(open) => !open && setPreviewUrl(null)}
-        />
       </div>
     );
   }
@@ -109,7 +94,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         rows={3}
         placeholder="Digite sua resposta..."
         value={response?.value || ''}
-        onChange={(e) => onResponseChange({ ...response, value: e.target.value })}
+        onChange={(e) => onResponseChange(e.target.value)}
       />
       
       {/* Media upload section if allowed */}
@@ -117,19 +102,15 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         question.allowsVideo || question.permite_video ||
         question.allowsAudio || question.permite_audio ||
         question.allowsFiles || question.permite_files) && (
-        <MediaControls 
-          questionId={question.id}
-          questionText={question.text || question.pergunta || ""}
+        <MediaUploadInput 
           mediaUrls={response?.mediaUrls || []}
           onMediaChange={handleMediaChange}
-          onAnalysisComplete={handleAIAnalysis}
+          allowsPhoto={question.allowsPhoto || question.permite_foto}
+          allowsVideo={question.allowsVideo || question.permite_video}
+          allowsAudio={question.allowsAudio || question.permite_audio}
+          allowsFiles={question.allowsFiles || question.permite_files}
         />
       )}
-
-      <MediaPreviewDialog 
-        previewUrl={previewUrl} 
-        onOpenChange={(open) => !open && setPreviewUrl(null)}
-      />
     </div>
   );
 };
