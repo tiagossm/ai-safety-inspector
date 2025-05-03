@@ -2,52 +2,78 @@
 import React from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getFileIcon, getFileType } from "@/utils/fileUtils";
 
-export interface MediaAttachmentsProps {
+interface MediaAttachmentsProps {
   mediaUrls: string[];
-  onDelete?: (urlToDelete: string) => void;
+  onDelete?: (url: string) => void;
+  readOnly?: boolean;
 }
 
-export function MediaAttachments({ mediaUrls, onDelete }: MediaAttachmentsProps) {
-  if (!mediaUrls || mediaUrls.length === 0) {
-    return null;
-  }
-
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mt-2">
-      {mediaUrls.map((url, index) => {
-        const isImage = url.match(/\.(jpeg|jpg|gif|png|webp)$/i);
-        
-        return (
-          <div key={index} className="relative group">
-            {isImage ? (
-              <img 
-                src={url} 
-                alt={`Media ${index + 1}`}
-                className="h-24 w-full object-cover rounded-md border border-gray-200"
-              />
-            ) : (
-              <div className="h-24 w-full bg-gray-100 flex items-center justify-center rounded-md border border-gray-200">
-                <span className="text-xs text-gray-500 truncate px-2">
-                  {url.split('/').pop()}
-                </span>
-              </div>
-            )}
-            
-            {onDelete && (
-              <Button
-                type="button"
-                variant="destructive"
-                size="icon"
-                className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => onDelete(url)}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            )}
+export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: MediaAttachmentsProps) {
+  const renderAttachment = (url: string, index: number) => {
+    const fileType = getFileType(url);
+    const FileIcon = getFileIcon(fileType);
+    
+    // Get just the filename from the URL
+    const fileName = url.split('/').pop() || 'arquivo';
+    
+    // Handle images
+    if (fileType === 'image') {
+      return (
+        <div key={index} className="relative group">
+          <div className="border rounded-md overflow-hidden">
+            <img 
+              src={url} 
+              alt={`Anexo ${index + 1}`} 
+              className="h-40 w-full object-cover"
+            />
           </div>
-        );
-      })}
+          {!readOnly && onDelete && (
+            <Button
+              variant="destructive"
+              size="icon"
+              className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={() => onDelete(url)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      );
+    }
+    
+    // Handle other file types
+    return (
+      <div key={index} className="relative group">
+        <div className="border rounded-md p-3 flex items-center gap-3">
+          <FileIcon className="h-6 w-6 text-primary" />
+          <a 
+            href={url} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-sm font-medium truncate flex-1 hover:underline"
+          >
+            {fileName}
+          </a>
+        </div>
+        {!readOnly && onDelete && (
+          <Button
+            variant="destructive"
+            size="icon"
+            className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={() => onDelete(url)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+    );
+  };
+  
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      {mediaUrls.map((url, index) => renderAttachment(url, index))}
     </div>
   );
 }

@@ -40,7 +40,7 @@ export function useActionPlans(inspectionId: string) {
   }, [inspectionId]);
 
   // Handle saving a new plan or updating an existing one
-  const handleSaveActionPlan = useCallback(async (planData: any) => {
+  const handleSaveActionPlan = useCallback(async (planData: any): Promise<void> => {
     try {
       const savedPlan = await saveActionPlan(planData);
       
@@ -59,7 +59,6 @@ export function useActionPlans(inspectionId: string) {
         [savedPlan.question_id]: savedPlan
       }));
       
-      return savedPlan;
     } catch (error: any) {
       console.error("Error saving action plan:", error);
       throw new Error(error.message || "Erro ao salvar plano de ação");
@@ -67,7 +66,7 @@ export function useActionPlans(inspectionId: string) {
   }, []);
 
   // Handle deleting an action plan
-  const handleDeleteActionPlan = useCallback(async (id: string, questionId: string) => {
+  const handleDeleteActionPlan = useCallback(async (id: string, questionId: string): Promise<void> => {
     try {
       await deleteActionPlan(id);
       
@@ -78,7 +77,6 @@ export function useActionPlans(inspectionId: string) {
         return newPlans;
       });
       
-      return true;
     } catch (error: any) {
       console.error("Error deleting action plan:", error);
       throw new Error(error.message || "Erro ao excluir plano de ação");

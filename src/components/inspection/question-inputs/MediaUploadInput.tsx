@@ -16,6 +16,7 @@ interface MediaUploadInputProps {
   allowsVideo?: boolean;
   allowsAudio?: boolean;
   allowsFiles?: boolean;
+  readOnly?: boolean;
 }
 
 export function MediaUploadInput({
@@ -25,7 +26,8 @@ export function MediaUploadInput({
   allowsPhoto = false,
   allowsVideo = false,
   allowsAudio = false,
-  allowsFiles = false
+  allowsFiles = false,
+  readOnly = false
 }: MediaUploadInputProps) {
   const { uploadFile, uploadMedia, isUploading, progress } = useMediaUpload();
   const [showCameraDialog, setShowCameraDialog] = useState(false);
@@ -34,6 +36,7 @@ export function MediaUploadInput({
   const [dragOver, setDragOver] = useState(false);
   
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (readOnly) return;
     const files = event.target.files;
     if (!files || files.length === 0) return;
     
@@ -65,6 +68,7 @@ export function MediaUploadInput({
   };
   
   const handleMediaCapture = async (type: 'photo' | 'video' | 'audio') => {
+    if (readOnly) return;
     if (type === 'photo') {
       setShowCameraDialog(true);
     } else if (type === 'video') {
@@ -75,6 +79,7 @@ export function MediaUploadInput({
   };
   
   const handleDeleteMedia = (urlToDelete: string) => {
+    if (readOnly) return;
     const updatedUrls = mediaUrls.filter(url => url !== urlToDelete);
     onMediaChange(updatedUrls);
     toast.success("Anexo removido.");
@@ -82,6 +87,7 @@ export function MediaUploadInput({
   
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
+    if (readOnly) return;
     setDragOver(false);
     
     if (!e.dataTransfer.files || e.dataTransfer.files.length === 0) return;
@@ -107,12 +113,21 @@ export function MediaUploadInput({
   
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
-    setDragOver(true);
+    if (!readOnly) {
+      setDragOver(true);
+    }
   };
   
   const handleDragLeave = () => {
     setDragOver(false);
   };
+  
+  // If in readOnly mode, just show the attachments without upload functionality
+  if (readOnly && mediaUrls.length > 0) {
+    return <MediaAttachments mediaUrls={mediaUrls} readOnly={true} />;
+  } else if (readOnly) {
+    return null; // Don't show anything if readOnly and no attachments
+  }
   
   return (
     <div className="space-y-4">
@@ -120,7 +135,7 @@ export function MediaUploadInput({
       <div
         className={`border-2 border-dashed rounded-md p-4 transition-colors ${
           dragOver ? 'border-primary bg-primary/5' : 'border-gray-300'
-        }`}
+        } ${readOnly ? 'opacity-50 pointer-events-none' : ''}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -139,7 +154,7 @@ export function MediaUploadInput({
                 variant="outline"
                 size="sm"
                 onClick={() => handleMediaCapture('photo')}
-                disabled={isUploading}
+                disabled={isUploading || readOnly}
                 className="flex items-center"
               >
                 <Camera className="h-4 w-4 mr-2" />
@@ -153,7 +168,7 @@ export function MediaUploadInput({
                 variant="outline"
                 size="sm"
                 onClick={() => handleMediaCapture('video')}
-                disabled={isUploading}
+                disabled={isUploading || readOnly}
                 className="flex items-center"
               >
                 <Video className="h-4 w-4 mr-2" />
@@ -167,7 +182,7 @@ export function MediaUploadInput({
                 variant="outline"
                 size="sm"
                 onClick={() => handleMediaCapture('audio')}
-                disabled={isUploading}
+                disabled={isUploading || readOnly}
                 className="flex items-center"
               >
                 <Mic className="h-4 w-4 mr-2" />
@@ -182,14 +197,14 @@ export function MediaUploadInput({
                   id="file-upload"
                   onChange={handleFileUpload}
                   className="hidden"
-                  disabled={isUploading}
+                  disabled={isUploading || readOnly}
                 />
                 <label htmlFor="file-upload">
                   <Button 
                     type="button"
                     variant="outline"
                     size="sm"
-                    disabled={isUploading}
+                    disabled={isUploading || readOnly}
                     className="flex items-center cursor-pointer"
                     asChild
                   >
@@ -217,7 +232,8 @@ export function MediaUploadInput({
       {mediaUrls.length > 0 && (
         <MediaAttachments 
           mediaUrls={mediaUrls} 
-          onDelete={handleDeleteMedia}
+          onDelete={readOnly ? undefined : handleDeleteMedia}
+          readOnly={readOnly}
         />
       )}
       

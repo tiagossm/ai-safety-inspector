@@ -760,6 +760,53 @@ export type Database = {
         }
         Relationships: []
       }
+      inspection_action_plans: {
+        Row: {
+          assignee: string | null
+          created_at: string
+          description: string
+          due_date: string | null
+          id: string
+          inspection_id: string
+          priority: string
+          question_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assignee?: string | null
+          created_at?: string
+          description: string
+          due_date?: string | null
+          id?: string
+          inspection_id: string
+          priority: string
+          question_id: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          assignee?: string | null
+          created_at?: string
+          description?: string
+          due_date?: string | null
+          id?: string
+          inspection_id?: string
+          priority?: string
+          question_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_action_plans_inspection_id_fkey"
+            columns: ["inspection_id"]
+            isOneToOne: false
+            referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inspection_ai_analysis: {
         Row: {
           inspection_id: string

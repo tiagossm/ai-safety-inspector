@@ -1,7 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { getErrorMessage } from "@/utils/errors";
-import { toast } from "sonner";
 
 // Interface for action plan data
 export interface ActionPlan {
@@ -70,7 +69,7 @@ export async function saveActionPlan(data: {
       result = newData;
     }
 
-    return result;
+    return result as ActionPlan;
   } catch (error) {
     console.error("Error saving action plan:", error);
     throw new Error(getErrorMessage(error));
@@ -90,7 +89,7 @@ export async function getActionPlans(inspectionId: string): Promise<ActionPlan[]
 
     if (error) throw error;
     
-    return data || [];
+    return data as ActionPlan[] || [];
   } catch (error) {
     console.error("Error fetching action plans:", error);
     throw new Error(getErrorMessage(error));
@@ -114,7 +113,7 @@ export async function getActionPlanByQuestionId(
 
     if (error) throw error;
     
-    return data;
+    return data as ActionPlan | null;
   } catch (error) {
     console.error("Error fetching action plan:", error);
     return null;
