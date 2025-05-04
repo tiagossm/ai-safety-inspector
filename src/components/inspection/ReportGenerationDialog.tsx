@@ -20,8 +20,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { FileText, Loader2 } from "lucide-react";
-import { generateMockPDF } from "@/services/inspection/reportService";
+import { FileText, Loader2, UploadCloud } from "lucide-react";
+import { generateInspectionPDF, generateMockPDF } from "@/services/inspection/reportService";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ReportGenerationDialogProps {
   inspectionId: string;
@@ -38,6 +39,8 @@ export function ReportGenerationDialog({
 }: ReportGenerationDialogProps) {
   const [open, setOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [companyLogo, setCompanyLogo] = useState<string | null>(null);
   
   const [format, setFormat] = useState<string>("pdf");
   const [includeImages, setIncludeImages] = useState(true);
@@ -45,14 +48,67 @@ export function ReportGenerationDialog({
   const [includeActionPlans, setIncludeActionPlans] = useState(true);
   const [includeCompanyLogo, setIncludeCompanyLogo] = useState(true);
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      setUploading(true);
+      
+      // Convert to data URL
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        setCompanyLogo(reader.result as string);
+        setUploading(false);
+      };
+      reader.onerror = () => {
+        toast.error("Failed to read the image file");
+        setUploading(false);
+      };
+    } catch (error) {
+      console.error("Error uploading logo:", error);
+      toast.error("Failed to upload logo");
+      setUploading(false);
+    }
+  };
+
   const handleGenerateReport = async () => {
     try {
       setGenerating(true);
       
-      // For now, we use the mock PDF generator
-      generateMockPDF(inspectionId, inspectionData);
-      
-      toast.success("Relatório gerado com sucesso");
+      if (format === "pdf") {
+        const logoToUse = includeCompanyLogo ? companyLogo : null;
+        
+        await generateInspectionPDF({
+          inspectionId,
+          includeImages,
+          includeComments,
+          includeActionPlans,
+          companyLogo: logoToUse || undefined
+        });
+        
+        // Save the report URL to the database
+        try {
+          const { user } = await supabase.auth.getUser();
+          if (user) {
+            await supabase.from("reports").insert({
+              inspection_id: inspectionId,
+              user_id: user.id,
+              status: "completed",
+              action_plan: includeActionPlans ? { included: true } : { included: false }
+            });
+          }
+        } catch (dbError) {
+          console.error("Error saving report record:", dbError);
+        }
+        
+        toast.success("Report generated successfully");
+      } else {
+        // For Excel or CSV formats, use the mock generator for now
+        generateMockPDF(inspectionId, inspectionData);
+        toast.info("Excel and CSV formats are currently in development. A PDF has been generated instead.");
+      }
       
       // Close dialog after a short delay
       setTimeout(() => {
@@ -61,7 +117,7 @@ export function ReportGenerationDialog({
       }, 1500);
     } catch (error: any) {
       console.error("Error generating report:", error);
-      toast.error(`Erro ao gerar relatório: ${error.message || "Erro desconhecido"}`);
+      toast.error(`Error generating report: ${error.message || "Unknown error"}`);
     } finally {
       setGenerating(false);
     }
@@ -78,27 +134,27 @@ export function ReportGenerationDialog({
         {trigger || (
           <Button variant="outline" size="sm">
             <FileText className="mr-2 h-4 w-4" />
-            Gerar Relatório
+            Generate Report
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Gerar Relatório de Inspeção</DialogTitle>
+          <DialogTitle>Generate Inspection Report</DialogTitle>
           <DialogDescription>
-            Selecione as opções para gerar o relatório da inspeção
+            Select options to generate the inspection report
           </DialogDescription>
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="format">Formato</Label>
+            <Label htmlFor="format">Format</Label>
             <Select
               value={format}
               onValueChange={setFormat}
             >
               <SelectTrigger id="format">
-                <SelectValue placeholder="Selecione o formato" />
+                <SelectValue placeholder="Select format" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="pdf">PDF</SelectItem>
@@ -109,7 +165,7 @@ export function ReportGenerationDialog({
           </div>
           
           <div className="space-y-3">
-            <Label>Conteúdo</Label>
+            <Label>Content</Label>
             
             <div className="flex items-center space-x-2">
               <Checkbox 
@@ -117,7 +173,7 @@ export function ReportGenerationDialog({
                 checked={includeImages}
                 onCheckedChange={(checked) => setIncludeImages(!!checked)}
               />
-              <Label htmlFor="include-images" className="text-sm">Incluir imagens</Label>
+              <Label htmlFor="include-images" className="text-sm">Include images</Label>
             </div>
             
             <div className="flex items-center space-x-2">
@@ -126,7 +182,7 @@ export function ReportGenerationDialog({
                 checked={includeComments}
                 onCheckedChange={(checked) => setIncludeComments(!!checked)}
               />
-              <Label htmlFor="include-comments" className="text-sm">Incluir comentários</Label>
+              <Label htmlFor="include-comments" className="text-sm">Include comments</Label>
             </div>
             
             <div className="flex items-center space-x-2">
@@ -135,7 +191,7 @@ export function ReportGenerationDialog({
                 checked={includeActionPlans}
                 onCheckedChange={(checked) => setIncludeActionPlans(!!checked)}
               />
-              <Label htmlFor="include-action-plans" className="text-sm">Incluir planos de ação</Label>
+              <Label htmlFor="include-action-plans" className="text-sm">Include action plans</Label>
             </div>
             
             <div className="flex items-center space-x-2">
@@ -144,8 +200,48 @@ export function ReportGenerationDialog({
                 checked={includeCompanyLogo}
                 onCheckedChange={(checked) => setIncludeCompanyLogo(!!checked)}
               />
-              <Label htmlFor="include-company-logo" className="text-sm">Incluir logo da empresa</Label>
+              <Label htmlFor="include-company-logo" className="text-sm">Include company logo</Label>
             </div>
+            
+            {includeCompanyLogo && (
+              <div className="pt-2">
+                <Label htmlFor="company-logo" className="text-sm">Upload logo (optional)</Label>
+                <div className="mt-1 flex items-center gap-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full" 
+                    disabled={uploading} 
+                    asChild
+                  >
+                    <label htmlFor="logo-upload" className="cursor-pointer flex items-center justify-center">
+                      <UploadCloud className="mr-2 h-4 w-4" />
+                      {companyLogo ? "Change logo" : "Upload logo"}
+                      <input
+                        id="logo-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleLogoUpload}
+                      />
+                    </label>
+                  </Button>
+                  
+                  {companyLogo && (
+                    <div className="h-10 w-10 border rounded overflow-hidden">
+                      <img 
+                        src={companyLogo} 
+                        alt="Company logo" 
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                  )}
+                  
+                  {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
+                </div>
+              </div>
+            )}
           </div>
         </div>
         
@@ -155,18 +251,18 @@ export function ReportGenerationDialog({
             onClick={() => handleOpenChange(false)}
             disabled={generating}
           >
-            Cancelar
+            Cancel
           </Button>
           <Button onClick={handleGenerateReport} disabled={generating}>
             {generating ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Gerando...
+                Generating...
               </>
             ) : (
               <>
                 <FileText className="mr-2 h-4 w-4" />
-                Gerar Relatório
+                Generate Report
               </>
             )}
           </Button>
