@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { saveActionPlan } from "@/services/inspection/actionPlanService";
+import { ActionPlan } from "@/services/inspection/actionPlanService";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -49,6 +49,17 @@ const actionPlanSchema = z.object({
 
 type ActionPlanFormValues = z.infer<typeof actionPlanSchema>;
 
+export type ActionPlanFormData = {
+  inspectionId: string;
+  questionId: string;
+  id?: string;
+  description: string;
+  assignee?: string;
+  dueDate?: Date;
+  priority: string;
+  status: string;
+};
+
 interface ActionPlanFormProps {
   inspectionId: string;
   questionId: string;
@@ -60,7 +71,7 @@ interface ActionPlanFormProps {
     priority: string;
     status: string;
   };
-  onSave: (data: any) => Promise<void>;
+  onSave: (data: ActionPlanFormData) => Promise<ActionPlan | void>;
   trigger: React.ReactNode;
 }
 

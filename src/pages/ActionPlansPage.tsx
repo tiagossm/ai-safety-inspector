@@ -43,7 +43,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ActionPlan } from '@/services/inspection/actionPlanService';
 import { format } from 'date-fns';
-import { ActionPlanForm } from '@/components/inspection/ActionPlanForm';
+import { ActionPlanForm, ActionPlanFormData } from '@/components/inspection/ActionPlanForm';
 
 export default function ActionPlansPage() {
   const { id } = useParams<{ id: string }>();
@@ -114,6 +114,12 @@ export default function ActionPlansPage() {
   };
 
   const loading = inspectionLoading || plansLoading;
+
+  // Handle action plan save
+  const handleSaveActionPlan = async (data: ActionPlanFormData): Promise<void> => {
+    if (!id) return;
+    await saveActionPlan(data);
+  };
 
   return (
     <div className="container mx-auto py-8">
@@ -281,7 +287,7 @@ export default function ActionPlansPage() {
                 <ActionPlanForm
                   inspectionId={id}
                   questionId="general" // For general action plans not tied to specific questions
-                  onSave={saveActionPlan}
+                  onSave={handleSaveActionPlan}
                   trigger={<Button>Create New Action Plan</Button>}
                 />
               )}
@@ -347,7 +353,7 @@ export default function ActionPlansPage() {
                               priority: plan.priority,
                               status: plan.status
                             }}
-                            onSave={saveActionPlan}
+                            onSave={handleSaveActionPlan}
                             trigger={
                               <Button variant="ghost" size="sm">
                                 Edit

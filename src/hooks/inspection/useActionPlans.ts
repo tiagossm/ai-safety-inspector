@@ -9,6 +9,7 @@ import {
   deleteActionPlan as deleteActionPlanService,
   getActionPlanStats
 } from '@/services/inspection/actionPlanService';
+import { ActionPlanFormData } from '@/components/inspection/ActionPlanForm';
 
 interface ActionPlansHookProps {
   plans: ActionPlan[];
@@ -26,16 +27,7 @@ interface ActionPlansHookProps {
     medium: number;
     low: number;
   };
-  saveActionPlan: (data: {
-    inspectionId: string;
-    questionId: string;
-    description: string;
-    assignee?: string;
-    dueDate?: Date;
-    priority: string;
-    status: string;
-    id?: string;
-  }) => Promise<ActionPlan>;
+  saveActionPlan: (data: ActionPlanFormData) => Promise<ActionPlan>;
   deleteActionPlan: (id: string) => Promise<boolean>;
   refreshPlans: () => Promise<void>;
 }
@@ -86,16 +78,7 @@ export function useActionPlans(inspectionId: string | undefined): ActionPlansHoo
     }
   }, [inspectionId]);
 
-  const saveActionPlan = useCallback(async (data: {
-    inspectionId: string;
-    questionId: string;
-    description: string;
-    assignee?: string;
-    dueDate?: Date;
-    priority: string;
-    status: string;
-    id?: string;
-  }) => {
+  const saveActionPlan = useCallback(async (data: ActionPlanFormData): Promise<ActionPlan> => {
     try {
       const savedPlan = await saveActionPlanService(data);
       
@@ -111,7 +94,7 @@ export function useActionPlans(inspectionId: string | undefined): ActionPlansHoo
     }
   }, [fetchPlans]);
 
-  const deleteActionPlan = useCallback(async (id: string) => {
+  const deleteActionPlan = useCallback(async (id: string): Promise<boolean> => {
     try {
       await deleteActionPlanService(id);
       

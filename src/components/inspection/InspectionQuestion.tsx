@@ -7,8 +7,9 @@ import { CommentSection } from "./question-components/CommentSection";
 import { ActionPlanButton } from "./question-components/ActionPlanButton";
 import { MediaControls } from "./question-components/MediaControls";
 import { isNegativeResponse, normalizeResponseType } from "@/utils/inspection/normalizationUtils";
-import { ActionPlanForm } from "./ActionPlanForm";
+import { ActionPlanForm, ActionPlanFormData } from "./ActionPlanForm";
 import { Badge } from "@/components/ui/badge";
+import { ActionPlan } from "@/services/inspection/actionPlanService";
 
 interface InspectionQuestionProps {
   question: any;
@@ -20,8 +21,8 @@ interface InspectionQuestionProps {
   isSubQuestion?: boolean;
   onOpenSubChecklist?: () => void;
   inspectionId?: string;
-  actionPlan?: any;
-  onSaveActionPlan?: (data: any) => Promise<any>;
+  actionPlan?: ActionPlan;
+  onSaveActionPlan?: (data: ActionPlanFormData) => Promise<ActionPlan | void>;
 }
 
 export const InspectionQuestion = React.memo(function InspectionQuestion({
@@ -127,7 +128,7 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
     setShowActionPlanDialog(true);
   }, []);
 
-  const handleSaveActionPlan = useCallback(async (data: any) => {
+  const handleSaveActionPlan = useCallback(async (data: ActionPlanFormData) => {
     if (onSaveActionPlan) {
       await onSaveActionPlan(data);
     }

@@ -19,11 +19,12 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
+import { ActionPlan } from "@/services/inspection/actionPlanService";
 
 interface ActionPlanSectionProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  actionPlan?: string | { id: string; description: string; status: string; priority: string; assignee?: string; due_date?: string; };
+  actionPlan?: string | ActionPlan;
   onActionPlanChange: (value: string) => void;
   onOpenDialog: () => void;
   hasNegativeResponse: boolean;
