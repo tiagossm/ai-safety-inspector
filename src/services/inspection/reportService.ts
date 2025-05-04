@@ -99,8 +99,12 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
       }
     }
     
-    if (inspection.responsible) {
-      doc.text(`Responsible: ${inspection.responsible.name || "N/A"}`, 14, 63);
+    // Safely check for responsible data
+    if (inspection.responsible && typeof inspection.responsible === 'object') {
+      const responsibleName = inspection.responsible.name || "N/A";
+      doc.text(`Responsible: ${responsibleName}`, 14, 63);
+    } else {
+      doc.text(`Responsible: N/A`, 14, 63);
     }
     
     if (inspection.checklist) {
@@ -192,20 +196,25 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
         }
         
         try {
-          // Add signature image
-          doc.addImage(signature.signature_data, 'PNG', 14, yPos, 70, 30);
-          
-          // Add signature details
-          doc.setFontSize(10);
-          const signerName = signature.signer_name || signature.users?.name || "Unknown";
-          doc.text(`Signed by: ${signerName}`, 14, yPos + 35);
-          
-          if (signature.signed_at) {
-            const signedDate = new Date(signature.signed_at).toLocaleDateString();
-            doc.text(`Date: ${signedDate}`, 14, yPos + 42);
+          // Add signature image - only process if signature is a proper object with expected properties
+          if (signature && typeof signature === 'object' && 'signature_data' in signature) {
+            // Add signature image
+            doc.addImage(signature.signature_data, 'PNG', 14, yPos, 70, 30);
+            
+            // Add signature details
+            doc.setFontSize(10);
+            const signerName = signature.signer_name || 
+                              (signature.users && typeof signature.users === 'object' ? 
+                                signature.users.name : "Unknown");
+            doc.text(`Signed by: ${signerName}`, 14, yPos + 35);
+            
+            if (signature.signed_at) {
+              const signedDate = new Date(signature.signed_at).toLocaleDateString();
+              doc.text(`Date: ${signedDate}`, 14, yPos + 42);
+            }
+            
+            yPos += 50;
           }
-          
-          yPos += 50;
         } catch (signatureError) {
           console.error("Error adding signature:", signatureError);
         }

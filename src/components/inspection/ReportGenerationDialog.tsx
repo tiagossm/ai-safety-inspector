@@ -90,11 +90,11 @@ export function ReportGenerationDialog({
         
         // Save the report URL to the database
         try {
-          const { user } = await supabase.auth.getUser();
-          if (user) {
+          const { data } = await supabase.auth.getUser();
+          if (data && data.user) {
             await supabase.from("reports").insert({
               inspection_id: inspectionId,
-              user_id: user.id,
+              user_id: data.user.id,
               status: "completed",
               action_plan: includeActionPlans ? { included: true } : { included: false }
             });

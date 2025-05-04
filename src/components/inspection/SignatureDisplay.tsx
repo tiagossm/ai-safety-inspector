@@ -11,6 +11,11 @@ interface SignatureDisplayProps {
 }
 
 export function SignatureDisplay({ signature }: SignatureDisplayProps) {
+  // Ensure signature has all expected properties
+  if (!signature || !signature.signature_data) {
+    return null;
+  }
+  
   return (
     <Card className="w-full">
       <CardHeader>
