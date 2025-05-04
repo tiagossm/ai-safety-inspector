@@ -55,7 +55,7 @@ export function ActionPlanSection({
         <textarea
           className="w-full border rounded p-2 text-sm"
           placeholder={hasNegativeResponse ? "Describe the actions needed to address this issue..." : "Add notes for follow-up if needed"}
-          value={actionPlan || ""}
+          value={typeof actionPlan === 'string' ? actionPlan : ""}
           onChange={(e) => onActionPlanChange(e.target.value)}
           rows={3}
         />
