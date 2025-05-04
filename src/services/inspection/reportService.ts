@@ -92,33 +92,33 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
     doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, 35);
     doc.text(`Inspection ID: ${inspectionId.substring(0, 8)}`, 14, 42);
     
-    if (inspection.company) {
+    if (inspection?.company) {
       doc.text(`Company: ${inspection.company.fantasy_name || "N/A"}`, 14, 49);
       if (inspection.company.cnpj) {
         doc.text(`CNPJ: ${inspection.company.cnpj}`, 14, 56);
       }
     }
     
-    // Safely check for responsible data
-    if (inspection.responsible && typeof inspection.responsible === 'object') {
+    // Safely check for responsible data - fix the null check issue
+    if (inspection?.responsible && typeof inspection.responsible === 'object') {
       const responsibleName = inspection.responsible.name || "N/A";
       doc.text(`Responsible: ${responsibleName}`, 14, 63);
     } else {
       doc.text(`Responsible: N/A`, 14, 63);
     }
     
-    if (inspection.checklist) {
+    if (inspection?.checklist) {
       doc.text(`Checklist: ${inspection.checklist.title || "N/A"}`, 14, 70);
     }
     
-    doc.text(`Status: ${inspection.status || "N/A"}`, 14, 77);
+    doc.text(`Status: ${inspection?.status || "N/A"}`, 14, 77);
     
     // Add response table
     doc.setFontSize(14);
     doc.text("Inspection Items", 14, 90);
     
     // Create table data
-    const tableData = responses.map((response: any) => {
+    const tableData = responses?.map((response: any) => {
       let answer: string;
       
       switch (response.question?.tipo_resposta) {
@@ -150,7 +150,7 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
       }
       
       return row;
-    });
+    }) || [];
     
     // Create header for the table
     const tableHeaders = ["Question", "Response"];
@@ -188,6 +188,7 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
       
       for (let i = 0; i < signatures.length; i++) {
         const signature = signatures[i];
+        if (!signature) continue; // Skip if signature is null or undefined
         
         // Check if we need to add a new page
         if (yPos > 270) {
@@ -203,11 +204,18 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
             
             // Add signature details
             doc.setFontSize(10);
-            const signerName = signature.signer_name || 
-                              (signature.users && typeof signature.users === 'object' ? 
-                                signature.users.name : "Unknown");
+            
+            // Safely access signer name properties with null checks
+            let signerName = "Unknown";
+            if (signature.signer_name) {
+              signerName = signature.signer_name;
+            } else if (signature.users && typeof signature.users === 'object' && signature.users.name) {
+              signerName = signature.users.name;
+            }
+            
             doc.text(`Signed by: ${signerName}`, 14, yPos + 35);
             
+            // Safely check signed_at with null check
             if (signature.signed_at) {
               const signedDate = new Date(signature.signed_at).toLocaleDateString();
               doc.text(`Date: ${signedDate}`, 14, yPos + 42);
