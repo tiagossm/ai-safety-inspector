@@ -77,10 +77,12 @@ export default function ActionPlans() {
           ...item,
           question: item.question === null ? null : 
             (typeof item.question === 'object' ? 
-              { pergunta: item.question && 
-                typeof item.question === 'object' && 
-                'pergunta' in item.question ? 
-                  String(item.question.pergunta || "") : "" 
+              { 
+                pergunta: (item.question && 
+                  typeof item.question === 'object' && 
+                  'pergunta' in item.question && 
+                  item.question.pergunta) ? 
+                    String(item.question.pergunta) : "" 
               } : 
               { pergunta: "" })
         };
@@ -104,7 +106,7 @@ export default function ActionPlans() {
       (plan.question && 
        typeof plan.question === 'object' && 
        'pergunta' in plan.question && 
-       plan.question.pergunta ? 
+       typeof plan.question.pergunta === 'string' ? 
          plan.question.pergunta.toLowerCase().includes(search.toLowerCase()) : false);
     
     // Apply status filter
