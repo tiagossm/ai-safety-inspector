@@ -1,24 +1,21 @@
 
-import * as z from "zod";
-
-// Define schema for action plan form
-export const actionPlanSchema = z.object({
-  description: z.string().min(1, "Description is required"),
-  assignee: z.string().optional(),
-  priority: z.string().min(1, "Priority is required"),
-  status: z.string().min(1, "Status is required"),
-  dueDate: z.date().optional(),
-});
-
-export type ActionPlanFormValues = z.infer<typeof actionPlanSchema>;
-
-export type ActionPlanFormData = {
-  inspectionId: string;
-  questionId: string;
-  id?: string;
+export interface ActionPlanFormData {
   description: string;
   assignee?: string;
   dueDate?: Date;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+}
+
+export interface ActionPlan {
+  id: string;
+  description: string;
+  assignee?: string;
+  due_date?: string;
   priority: string;
   status: string;
-};
+  inspection_id?: string;
+  question_id?: string;
+  created_at?: string;
+  updated_at?: string;
+}

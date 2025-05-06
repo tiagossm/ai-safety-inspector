@@ -1,7 +1,7 @@
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, Video, Mic, File, Upload, X } from "lucide-react";
+import { Camera, Video, Mic, File, Upload, X, ImageIcon } from "lucide-react";
 import { MediaAttachments } from "./MediaAttachments";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
 import { toast } from "sonner";
@@ -36,6 +36,8 @@ export function MediaUploadInput({
   const [showAudioDialog, setShowAudioDialog] = useState(false);
   const [showFileDialog, setShowFileDialog] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const { uploadFile, isUploading } = useMediaUpload();
   
   const handleMediaUploaded = (mediaData: any) => {
     if (mediaData && mediaData.url) {
@@ -51,16 +53,30 @@ export function MediaUploadInput({
     toast.success("Anexo removido.");
   };
   
-  const handleDrop = async (e: React.DragEvent) => {
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
-    if (readOnly) return;
+    if (readOnly || isUploading) return;
     setDragOver(false);
     
     if (!e.dataTransfer.files || e.dataTransfer.files.length === 0) return;
     
     const file = e.dataTransfer.files[0];
     
+    // Validate file type based on allowed media types
+    const isPhotoValid = allowsPhoto && file.type.startsWith('image/');
+    const isVideoValid = allowsVideo && file.type.startsWith('video/');
+    const isAudioValid = allowsAudio && file.type.startsWith('audio/');
+    const isFileValid = allowsFiles;
+    
+    if (!isPhotoValid && !isVideoValid && !isAudioValid && !isFileValid) {
+      toast.error("Tipo de arquivo não permitido.");
+      return;
+    }
+    
     try {
+      setUploadProgress(0);
+      let result;
+      
       if (onMediaUpload) {
         const url = await onMediaUpload(file);
         if (url) {
@@ -68,30 +84,41 @@ export function MediaUploadInput({
           toast.success("Arquivo enviado com sucesso!");
         }
       } else {
-        const { uploadFile } = useMediaUpload();
-        const result = await uploadFile(file);
+        // Use a simulated progress interval
+        const progressInterval = setInterval(() => {
+          setUploadProgress(prev => Math.min(prev + 5, 95));
+        }, 100);
+        
+        result = await uploadFile(file);
+        
+        clearInterval(progressInterval);
+        setUploadProgress(100);
         
         if (result?.url) {
           onMediaChange([...mediaUrls, result.url]);
           toast.success("Arquivo enviado com sucesso!");
+          
+          // Reset progress after a delay
+          setTimeout(() => setUploadProgress(0), 1000);
         }
       }
     } catch (error) {
       console.error("Error uploading file:", error);
       toast.error("Erro ao enviar arquivo.");
+      setUploadProgress(0);
     }
-  };
+  }, [mediaUrls, onMediaChange, onMediaUpload, uploadFile, allowsPhoto, allowsVideo, allowsAudio, allowsFiles, readOnly, isUploading]);
   
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    if (!readOnly) {
+    if (!readOnly && !isUploading) {
       setDragOver(true);
     }
-  };
+  }, [readOnly, isUploading]);
   
-  const handleDragLeave = () => {
+  const handleDragLeave = useCallback(() => {
     setDragOver(false);
-  };
+  }, []);
   
   // If in readOnly mode, just show the attachments without upload functionality
   if (readOnly && mediaUrls.length > 0) {
@@ -106,7 +133,7 @@ export function MediaUploadInput({
       <div
         className={`border-2 border-dashed rounded-md p-4 transition-colors ${
           dragOver ? 'border-primary bg-primary/5' : 'border-gray-300'
-        } ${readOnly ? 'opacity-50 pointer-events-none' : ''}`}
+        } ${readOnly || isUploading ? 'opacity-50 pointer-events-none' : ''}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -114,7 +141,7 @@ export function MediaUploadInput({
         <div className="flex flex-col items-center justify-center">
           <Upload className="h-8 w-8 text-gray-400 mb-2" />
           <p className="text-sm text-center text-muted-foreground">
-            Arraste arquivos aqui ou clique para fazer upload
+            Arraste arquivos aqui ou selecione uma opção abaixo
           </p>
           
           {/* Media Buttons */}
@@ -125,7 +152,7 @@ export function MediaUploadInput({
                 variant="outline"
                 size="sm"
                 onClick={() => setShowCameraDialog(true)}
-                disabled={readOnly}
+                disabled={readOnly || isUploading}
                 className="flex items-center"
               >
                 <Camera className="h-4 w-4 mr-2" />
@@ -139,7 +166,7 @@ export function MediaUploadInput({
                 variant="outline"
                 size="sm"
                 onClick={() => setShowVideoDialog(true)}
-                disabled={readOnly}
+                disabled={readOnly || isUploading}
                 className="flex items-center"
               >
                 <Video className="h-4 w-4 mr-2" />
@@ -153,7 +180,7 @@ export function MediaUploadInput({
                 variant="outline"
                 size="sm"
                 onClick={() => setShowAudioDialog(true)}
-                disabled={readOnly}
+                disabled={readOnly || isUploading}
                 className="flex items-center"
               >
                 <Mic className="h-4 w-4 mr-2" />
@@ -167,7 +194,7 @@ export function MediaUploadInput({
                 variant="outline"
                 size="sm"
                 onClick={() => setShowFileDialog(true)}
-                disabled={readOnly}
+                disabled={readOnly || isUploading}
                 className="flex items-center"
               >
                 <File className="h-4 w-4 mr-2" />
@@ -176,6 +203,15 @@ export function MediaUploadInput({
             )}
           </div>
         </div>
+        
+        {uploadProgress > 0 && (
+          <div className="mt-3">
+            <Progress value={uploadProgress} className="h-1" />
+            <p className="text-xs text-center text-muted-foreground mt-1">
+              Enviando... {uploadProgress}%
+            </p>
+          </div>
+        )}
       </div>
       
       {/* Display uploaded media */}
@@ -269,6 +305,7 @@ export function MediaUploadInput({
                 buttonText="Selecionar arquivo"
                 className="w-full"
                 variant="default"
+                accept="*/*"
               />
             </div>
           </DialogContent>

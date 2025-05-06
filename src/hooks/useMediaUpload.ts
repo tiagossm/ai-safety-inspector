@@ -5,15 +5,25 @@ import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import { createBucketIfNeeded } from "@/utils/createBucketIfNeeded";
 
+export interface UploadResult {
+  path: string;
+  url: string;
+  name: string;
+  type: string;
+  size: number;
+}
+
 export function useMediaUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [error, setError] = useState<Error | null>(null);
 
-  const uploadFile = async (file: File) => {
+  const uploadFile = async (file: File): Promise<UploadResult | null> => {
     try {
       console.log("📤 Starting file upload:", file.name, file.type);
       setIsUploading(true);
       setProgress(0);
+      setError(null);
       
       // Ensure the bucket exists
       const bucketName = "inspection-media";
@@ -23,8 +33,10 @@ export function useMediaUpload() {
         throw new Error("Não foi possível criar ou acessar o bucket de armazenamento");
       }
       
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${uuidv4()}.${fileExt}`;
+      // Create a unique filename
+      const fileExt = file.name.split(".").pop() || '';
+      const safeFileName = file.name.replace(/[^a-zA-Z0-9-_\.]/g, '_');
+      const fileName = `${uuidv4()}-${safeFileName}`;
       const filePath = `uploads/${fileName}`;
       
       // Simulate progress
@@ -50,6 +62,7 @@ export function useMediaUpload() {
       
       if (error) {
         console.error("Upload error:", error);
+        setError(error);
         throw error;
       }
       
@@ -70,8 +83,9 @@ export function useMediaUpload() {
         type: file.type,
         size: file.size
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error uploading file:", error);
+      setError(error);
       toast.error("Erro ao enviar arquivo: " + (error instanceof Error ? error.message : "Erro desconhecido"));
       throw error;
     } finally {
@@ -79,10 +93,11 @@ export function useMediaUpload() {
     }
   };
 
-  const uploadMedia = async (mediaBlob: Blob, fileType: string, fileName?: string) => {
+  const uploadMedia = async (mediaBlob: Blob, fileType: string, fileName?: string): Promise<UploadResult | null> => {
     try {
       setIsUploading(true);
       setProgress(0);
+      setError(null);
       
       const mediaType = fileType.split('/')[0]; // 'audio', 'video', or 'image'
       const extension = fileType.split('/')[1]; // 'mp3', 'mp4', 'jpeg', etc.
@@ -97,12 +112,49 @@ export function useMediaUpload() {
       console.log(`📤 Uploading ${mediaType} file:`, file.name);
       
       return await uploadFile(file);
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error uploading ${fileType.split('/')[0]}:`, error);
+      setError(error);
       toast.error(`Erro ao enviar mídia: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
       throw error;
     }
   };
+  
+  const deleteFile = async (url: string): Promise<boolean> => {
+    try {
+      // Extract the path from the URL
+      const urlObj = new URL(url);
+      const pathParts = urlObj.pathname.split('/');
+      const bucketName = pathParts[1]; // Usually "inspection-media"
+      const filePath = pathParts.slice(2).join('/'); // The rest of the path
+      
+      if (!bucketName || !filePath) {
+        throw new Error("URL inválida para exclusão");
+      }
+      
+      const { error } = await supabase.storage
+        .from(bucketName)
+        .remove([filePath]);
+        
+      if (error) {
+        console.error("Delete error:", error);
+        throw error;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      toast.error("Erro ao excluir arquivo");
+      return false;
+    }
+  };
 
-  return { uploadFile, uploadMedia, isUploading, progress };
+  return { 
+    uploadFile, 
+    uploadMedia, 
+    deleteFile,
+    isUploading, 
+    progress, 
+    error 
+  };
 }

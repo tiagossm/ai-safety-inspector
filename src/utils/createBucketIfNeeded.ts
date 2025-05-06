@@ -1,12 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-/**
- * Create a storage bucket if it doesn't exist already
- * @param bucketId The ID of the bucket to create
- * @returns Promise<boolean> True if the bucket exists or was created successfully
- */
-export async function createBucketIfNeeded(bucketId: string): Promise<boolean> {
+export async function createBucketIfNeeded(bucketName: string): Promise<boolean> {
   try {
     // First check if the bucket already exists
     const { data: existingBuckets, error: listError } = await supabase.storage.listBuckets();
@@ -16,28 +11,29 @@ export async function createBucketIfNeeded(bucketId: string): Promise<boolean> {
       return false;
     }
     
-    const bucketExists = existingBuckets?.some(bucket => bucket.name === bucketId);
+    const bucketExists = existingBuckets.some(bucket => bucket.name === bucketName);
     
-    // If the bucket already exists, return true
-    if (bucketExists) {
-      return true;
+    if (!bucketExists) {
+      console.log(`Bucket ${bucketName} does not exist, creating...`);
+      const { data, error } = await supabase.storage.createBucket(bucketName, {
+        public: true,
+        fileSizeLimit: 50000000, // 50 MB limit
+        allowedMimeTypes: ['image/*', 'video/*', 'audio/*', 'application/*']
+      });
+      
+      if (error) {
+        console.error(`Error creating bucket ${bucketName}:`, error);
+        return false;
+      }
+      
+      console.log(`Bucket ${bucketName} created successfully`);
+    } else {
+      console.log(`Bucket ${bucketName} already exists`);
     }
     
-    // Create the bucket if it doesn't exist
-    const { data, error } = await supabase.storage.createBucket(bucketId, {
-      public: true,
-      fileSizeLimit: 50 * 1024 * 1024, // 50MB limit
-    });
-    
-    if (error) {
-      console.error(`Error creating bucket ${bucketId}:`, error);
-      return false;
-    }
-    
-    console.log(`Bucket ${bucketId} created successfully`);
     return true;
   } catch (error) {
-    console.error(`Unexpected error creating bucket ${bucketId}:`, error);
+    console.error("Error in createBucketIfNeeded:", error);
     return false;
   }
 }
