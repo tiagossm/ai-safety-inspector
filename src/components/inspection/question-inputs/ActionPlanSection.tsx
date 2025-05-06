@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ActionPlan } from "@/services/inspection/actionPlanService";
+import { ActionPlanForm } from '@/components/action-plans/form/ActionPlanForm';
 
 interface ActionPlanSectionProps {
   isOpen: boolean;

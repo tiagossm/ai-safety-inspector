@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useActionPlans } from '@/hooks/inspection/useActionPlans';
@@ -31,7 +30,6 @@ import {
   Loader2,
   User,
   Filter,
-  ArrowUpDown,
 } from 'lucide-react';
 import {
   Select,
@@ -43,7 +41,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ActionPlan } from '@/services/inspection/actionPlanService';
 import { format } from 'date-fns';
-import { ActionPlanForm, ActionPlanFormData } from '@/components/inspection/ActionPlanForm';
+import { ActionPlanForm } from '@/components/action-plans/form/ActionPlanForm';
+import { ActionPlanFormData } from '@/components/action-plans/form/types';
 
 export default function ActionPlansPage() {
   const { id } = useParams<{ id: string }>();
