@@ -7,7 +7,8 @@ import { CommentSection } from "./question-components/CommentSection";
 import { ActionPlanButton } from "./question-components/ActionPlanButton";
 import { MediaControls } from "./question-components/MediaControls";
 import { isNegativeResponse, normalizeResponseType } from "@/utils/inspection/normalizationUtils";
-import { ActionPlanForm, ActionPlanFormData } from "@/components/action-plans/form/ActionPlanForm";
+import { ActionPlanForm } from "@/components/action-plans/form/ActionPlanForm";
+import { ActionPlanFormData } from "@/components/action-plans/form/types";
 import { Badge } from "@/components/ui/badge";
 import { ActionPlan } from "@/services/inspection/actionPlanService";
 
