@@ -1,3 +1,4 @@
+
 import { Suspense, lazy } from "react";
 import { Route, Routes } from "react-router-dom";
 import { RequireAuth } from "@/components/RequireAuth";
@@ -7,6 +8,7 @@ const ChecklistEditorPage = lazy(() => import("@/pages/ChecklistEditorPage"));
 const Checklists = lazy(() => import("@/pages/Checklists"));
 const ChecklistDetails = lazy(() => import("@/pages/ChecklistDetails"));
 const CreateChecklist = lazy(() => import("@/pages/CreateChecklist"));
+const ActionPlansPage = lazy(() => import("@/pages/ActionPlansPage"));
 
 // Direct imports for inspection pages
 import NewChecklists from "./NewChecklists";
@@ -36,6 +38,7 @@ export const checklistRoutes = [
   <Route key="inspections-new-with-id" path="/inspections/new/:id" element={<RequireAuth><NewInspectionPage /></RequireAuth>} />,
   <Route key="inspections-new" path="/inspections/new" element={<RequireAuth><NewInspectionPage /></RequireAuth>} />,
   <Route key="inspections-id-view" path="/inspections/:id/view" element={<RequireAuth><InspectionExecutionPage /></RequireAuth>} />,
+  <Route key="inspections-id-action-plans" path="/inspections/:id/action-plans" element={<RequireAuth><ActionPlansPage /></RequireAuth>} />,
   <Route key="inspections-id" path="/inspections/:id" element={<RequireAuth><SimpleInspectionPage /></RequireAuth>} />,
 ];
 
