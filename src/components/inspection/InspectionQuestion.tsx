@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { ResponseInputRenderer } from "./question-parts/ResponseInputRenderer";
-import { ActionPlanSection } from "./question-inputs/ActionPlanSection";
+import { ActionPlanSection } from "./question-parts/ActionPlanSection";
 import { QuestionHeader } from "./question-components/QuestionHeader";
 import { CommentSection } from "./question-components/CommentSection";
 import { ActionPlanButton } from "./question-components/ActionPlanButton";
