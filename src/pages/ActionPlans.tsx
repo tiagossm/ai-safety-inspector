@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -25,7 +24,9 @@ import { formatDate } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ActionPlan } from "@/types/inspection";
 
-interface ActionPlanWithRelations extends ActionPlan {
+interface ActionPlanWithRelations extends Omit<ActionPlan, 'status' | 'priority'> {
+  status: string;
+  priority: string;
   inspection?: {
     id: string;
     company?: {
@@ -34,7 +35,7 @@ interface ActionPlanWithRelations extends ActionPlan {
   };
   question?: {
     pergunta?: string;
-  };
+  } | null;
 }
 
 export default function ActionPlans() {
@@ -73,9 +74,10 @@ export default function ActionPlans() {
         // Ensure the question property has the correct shape
         const processedItem: ActionPlanWithRelations = {
           ...item,
-          question: typeof item.question === 'object' && item.question !== null 
-            ? { pergunta: item.question.pergunta || "" } 
-            : { pergunta: "" }
+          question: item.question === null ? null : 
+            (typeof item.question === 'object' ? 
+              { pergunta: item.question?.pergunta || "" } : 
+              { pergunta: "" })
         };
         return processedItem;
       });
@@ -94,7 +96,7 @@ export default function ActionPlans() {
       plan.description.toLowerCase().includes(search.toLowerCase()) ||
       plan.assignee?.toLowerCase().includes(search.toLowerCase()) ||
       plan.inspection?.company?.fantasy_name.toLowerCase().includes(search.toLowerCase()) ||
-      plan.question?.pergunta.toLowerCase().includes(search.toLowerCase());
+      plan.question?.pergunta?.toLowerCase().includes(search.toLowerCase());
     
     // Apply status filter
     const statusMatch = statusFilter === "all" || plan.status === statusFilter;
