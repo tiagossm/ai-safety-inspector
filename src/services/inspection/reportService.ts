@@ -99,10 +99,10 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
       }
     }
     
-    // Safely check for responsible data - fix the null check issue
-    if (inspection?.responsible && typeof inspection.responsible === 'object') {
+    // Safely check for responsible data with type and null checking
+    if (inspection?.responsible && typeof inspection.responsible === 'object' && inspection.responsible !== null) {
       // The ? operator ensures we don't try to access name on null
-      const responsibleName = inspection.responsible?.name || "N/A";
+      const responsibleName = inspection.responsible.name || "N/A";
       doc.text(`Responsible: ${responsibleName}`, 14, 63);
     } else {
       doc.text(`Responsible: N/A`, 14, 63);
@@ -199,7 +199,7 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
         
         try {
           // Add signature image - only process if signature is a proper object with expected properties
-          if (typeof signature === 'object' && signature.signature_data) {
+          if (signature && typeof signature === 'object' && 'signature_data' in signature && signature.signature_data) {
             // Add signature image
             doc.addImage(signature.signature_data, 'PNG', 14, yPos, 70, 30);
             
@@ -208,10 +208,11 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
             
             // Safely access signer name properties with proper type checking
             let signerName = "Unknown";
-            if (typeof signature === 'object') {
-              if (signature.signer_name) {
+            if (signature && typeof signature === 'object') {
+              if ('signer_name' in signature && signature.signer_name) {
                 signerName = signature.signer_name;
               } else if (
+                'users' in signature && 
                 signature.users && 
                 typeof signature.users === 'object' && 
                 signature.users !== null &&
@@ -225,7 +226,7 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
             doc.text(`Signed by: ${signerName}`, 14, yPos + 35);
             
             // Safely check signed_at with null check
-            if (typeof signature === 'object' && signature.signed_at) {
+            if (signature && typeof signature === 'object' && 'signed_at' in signature && signature.signed_at) {
               const signedDate = new Date(signature.signed_at).toLocaleDateString();
               doc.text(`Date: ${signedDate}`, 14, yPos + 42);
             }
