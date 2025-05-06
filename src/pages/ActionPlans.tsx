@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -32,7 +33,7 @@ interface ActionPlanWithRelations extends ActionPlan {
     };
   };
   question?: {
-    pergunta: string;
+    pergunta?: string;
   };
 }
 
@@ -67,8 +68,19 @@ export default function ActionPlans() {
         throw error;
       }
       
-      // Type casting to ensure the data matches our extended interface
-      setActionPlans(data as ActionPlanWithRelations[] || []);
+      // Safely cast the data with proper type handling
+      const safeData = (data || []).map(item => {
+        // Ensure the question property has the correct shape
+        const processedItem: ActionPlanWithRelations = {
+          ...item,
+          question: typeof item.question === 'object' && item.question !== null 
+            ? { pergunta: item.question.pergunta || "" } 
+            : { pergunta: "" }
+        };
+        return processedItem;
+      });
+      
+      setActionPlans(safeData);
     } catch (error) {
       console.error("Error fetching action plans:", error);
     } finally {

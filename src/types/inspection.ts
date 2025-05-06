@@ -25,6 +25,16 @@ export interface Report {
   action_plan: any;
   url?: string;
   format?: string;
+  inspection?: {
+    id: string;
+    status: string;
+    company?: {
+      fantasy_name: string;
+    };
+    checklist?: {
+      title: string;
+    };
+  };
 }
 
 export interface ActionPlan {

@@ -115,10 +115,9 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
         'responsible' in inspection && 
         inspection.responsible !== null && 
         typeof inspection.responsible === 'object') {
-      // Use optional chaining and type guard to safely access the name property
-      const responsibleObj = inspection.responsible;
+      // Use a more robust type guard to avoid 'never' type issues
+      const responsibleObj = inspection.responsible as Record<string, any>;
       if (responsibleObj && 
-          typeof responsibleObj === 'object' && 
           'name' in responsibleObj && 
           typeof responsibleObj.name === 'string') {
         doc.text(`Responsible: ${responsibleObj.name}`, 14, 63);
@@ -486,10 +485,9 @@ function getResponsibleName(inspection: any): string {
       'responsible' in inspection && 
       inspection.responsible !== null && 
       typeof inspection.responsible === 'object') {
-    // Use optional chaining and type guards to safely access the name property
-    const responsibleObj = inspection.responsible;
+    // Use a more robust type guard to avoid 'never' type issues
+    const responsibleObj = inspection.responsible as Record<string, any>;
     if (responsibleObj && 
-        typeof responsibleObj === 'object' && 
         'name' in responsibleObj && 
         typeof responsibleObj.name === 'string') {
       return responsibleObj.name;
