@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -76,7 +77,7 @@ export default function ActionPlans() {
           ...item,
           question: item.question === null ? null : 
             (typeof item.question === 'object' ? 
-              { pergunta: item.question?.pergunta || "" } : 
+              { pergunta: item.question.pergunta || "" } : 
               { pergunta: "" })
         };
         return processedItem;
