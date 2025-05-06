@@ -1,3 +1,4 @@
+
 import { Routes, Route, Navigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { AuthProvider } from "@/components/AuthProvider";
@@ -22,6 +23,8 @@ import { Users } from "@/pages/Users";
 import ChecklistRedirectPage from "@/pages/ChecklistRedirectPage";
 import InspectionExecutionPage from "@/pages/InspectionExecutionPage";
 import SharedInspectionPage from "./pages/SharedInspectionPage";
+import Reports from "./pages/Reports";
+import ActionPlans from "./pages/ActionPlans";
 
 function App() {
   return (
@@ -57,6 +60,10 @@ function App() {
             <Route path="checklists" element={<Navigate to="/new-checklists" replace />} />
             <Route path="checklists/create" element={<Navigate to="/new-checklists/create" replace />} />
             <Route path="checklists/:id" element={<Navigate to="/new-checklists/:id" replace />} />
+            
+            {/* Reports and Action Plans routes */}
+            <Route path="reports" element={<Reports />} />
+            <Route path="action-plans" element={<ActionPlans />} />
             
             <Route path="settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />

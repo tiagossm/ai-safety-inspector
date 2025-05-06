@@ -3,8 +3,9 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { BarChart, PieChart } from "@/components/ui/chart";
-import { FileText, BarChart2, PieChart as PieChartIcon, Download } from "lucide-react";
+import { FileText, BarChart2, PieChart as PieChartIcon, Download, ClipboardList } from "lucide-react";
 import CompanyAccessGate from "@/components/billing/CompanyAccessGate";
+import { ReportsHistory } from "@/components/reports/ReportsHistory";
 
 export default function Reports() {
   // Dados de exemplo para os gráficos
@@ -43,6 +44,27 @@ export default function Reports() {
     ],
   };
 
+  const actionPlanStatusData = {
+    labels: ["Pendente", "Em Andamento", "Concluído", "Cancelado"],
+    datasets: [
+      {
+        data: [35, 25, 30, 10],
+        backgroundColor: [
+          "rgba(245, 158, 11, 0.7)",
+          "rgba(59, 130, 246, 0.7)",
+          "rgba(16, 185, 129, 0.7)",
+          "rgba(239, 68, 68, 0.7)",
+        ],
+        borderColor: [
+          "rgb(245, 158, 11)",
+          "rgb(59, 130, 246)",
+          "rgb(16, 185, 129)",
+          "rgb(239, 68, 68)",
+        ],
+      },
+    ],
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -62,9 +84,13 @@ export default function Reports() {
             <PieChartIcon className="h-4 w-4" />
             <span>Não Conformidades</span>
           </TabsTrigger>
-          <TabsTrigger value="export" className="flex items-center gap-2">
+          <TabsTrigger value="action-plans" className="flex items-center gap-2">
+            <ClipboardList className="h-4 w-4" />
+            <span>Planos de Ação</span>
+          </TabsTrigger>
+          <TabsTrigger value="history" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            <span>Exportar</span>
+            <span>Histórico</span>
           </TabsTrigger>
         </TabsList>
 
@@ -100,68 +126,24 @@ export default function Reports() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="export" className="space-y-6">
+        <TabsContent value="action-plans" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Exportar Relatórios</CardTitle>
+              <CardTitle>Status dos Planos de Ação</CardTitle>
               <CardDescription>
-                Exporte relatórios detalhados em diferentes formatos
+                Distribuição dos planos de ação por status
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <FileText className="h-5 w-5 text-blue-500" />
-                    <div>
-                      <p className="font-medium">Relatório de Conformidade</p>
-                      <p className="text-sm text-muted-foreground">
-                        Análise detalhada da conformidade por categoria
-                      </p>
-                    </div>
-                  </div>
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <Download className="h-4 w-4" />
-                    <span>PDF</span>
-                  </Button>
-                </div>
-                
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <FileText className="h-5 w-5 text-green-500" />
-                    <div>
-                      <p className="font-medium">Relatório de Inspeções</p>
-                      <p className="text-sm text-muted-foreground">
-                        Resumo de todas as inspeções realizadas
-                      </p>
-                    </div>
-                  </div>
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <Download className="h-4 w-4" />
-                    <span>Excel</span>
-                  </Button>
-                </div>
-                
-                <CompanyAccessGate feature="analytics" requiredPlan="pro">
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <FileText className="h-5 w-5 text-purple-500" />
-                      <div>
-                        <p className="font-medium">Relatório Executivo</p>
-                        <p className="text-sm text-muted-foreground">
-                          Indicadores consolidados para gestão executiva
-                        </p>
-                      </div>
-                    </div>
-                    <Button variant="outline" className="flex items-center gap-2">
-                      <Download className="h-4 w-4" />
-                      <span>PowerPoint</span>
-                    </Button>
-                  </div>
-                </CompanyAccessGate>
-              </div>
+              <CompanyAccessGate feature="analytics" requiredPlan="pro">
+                <PieChart data={actionPlanStatusData} height={350} />
+              </CompanyAccessGate>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="history" className="space-y-6">
+          <ReportsHistory />
         </TabsContent>
       </Tabs>
     </div>

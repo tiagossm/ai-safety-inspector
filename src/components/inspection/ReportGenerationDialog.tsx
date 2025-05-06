@@ -21,7 +21,11 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { FileText, Loader2, UploadCloud } from "lucide-react";
-import { generateInspectionPDF, generateMockPDF } from "@/services/inspection/reportService";
+import { 
+  generateInspectionReport, 
+  generateInspectionPDF, 
+  generateMockPDF 
+} from "@/services/inspection/reportService";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ReportGenerationDialogProps {
@@ -77,38 +81,34 @@ export function ReportGenerationDialog({
     try {
       setGenerating(true);
       
-      if (format === "pdf") {
-        const logoToUse = includeCompanyLogo ? companyLogo : null;
-        
-        await generateInspectionPDF({
-          inspectionId,
-          includeImages,
-          includeComments,
-          includeActionPlans,
-          companyLogo: logoToUse || undefined
-        });
-        
-        // Save the report URL to the database
-        try {
-          const { data } = await supabase.auth.getUser();
-          if (data && data.user) {
-            await supabase.from("reports").insert({
-              inspection_id: inspectionId,
-              user_id: data.user.id,
-              status: "completed",
-              action_plan: includeActionPlans ? { included: true } : { included: false }
-            });
-          }
-        } catch (dbError) {
-          console.error("Error saving report record:", dbError);
+      const logoToUse = includeCompanyLogo ? companyLogo : null;
+      
+      await generateInspectionReport({
+        inspectionId,
+        includeImages,
+        includeComments,
+        includeActionPlans,
+        format: format as 'pdf' | 'excel' | 'csv',
+        companyLogo: logoToUse || undefined
+      });
+      
+      // Save the report URL to the database
+      try {
+        const { data } = await supabase.auth.getUser();
+        if (data && data.user) {
+          await supabase.from("reports").insert({
+            inspection_id: inspectionId,
+            user_id: data.user.id,
+            status: "completed",
+            action_plan: includeActionPlans ? { included: true } : { included: false },
+            format: format
+          });
         }
-        
-        toast.success("Report generated successfully");
-      } else {
-        // For Excel or CSV formats, use the mock generator for now
-        generateMockPDF(inspectionId, inspectionData);
-        toast.info("Excel and CSV formats are currently in development. A PDF has been generated instead.");
+      } catch (dbError) {
+        console.error("Error saving report record:", dbError);
       }
+      
+      toast.success(`Report generated successfully in ${format.toUpperCase()} format`);
       
       // Close dialog after a short delay
       setTimeout(() => {
@@ -172,8 +172,14 @@ export function ReportGenerationDialog({
                 id="include-images" 
                 checked={includeImages}
                 onCheckedChange={(checked) => setIncludeImages(!!checked)}
+                disabled={format !== 'pdf'}
               />
-              <Label htmlFor="include-images" className="text-sm">Include images</Label>
+              <Label 
+                htmlFor="include-images" 
+                className={`text-sm ${format !== 'pdf' ? 'text-muted-foreground' : ''}`}
+              >
+                Include images {format !== 'pdf' && "(PDF only)"}
+              </Label>
             </div>
             
             <div className="flex items-center space-x-2">
@@ -199,11 +205,17 @@ export function ReportGenerationDialog({
                 id="include-company-logo" 
                 checked={includeCompanyLogo}
                 onCheckedChange={(checked) => setIncludeCompanyLogo(!!checked)}
+                disabled={format !== 'pdf'}
               />
-              <Label htmlFor="include-company-logo" className="text-sm">Include company logo</Label>
+              <Label 
+                htmlFor="include-company-logo" 
+                className={`text-sm ${format !== 'pdf' ? 'text-muted-foreground' : ''}`}
+              >
+                Include company logo {format !== 'pdf' && "(PDF only)"}
+              </Label>
             </div>
             
-            {includeCompanyLogo && (
+            {includeCompanyLogo && format === 'pdf' && (
               <div className="pt-2">
                 <Label htmlFor="company-logo" className="text-sm">Upload logo (optional)</Label>
                 <div className="mt-1 flex items-center gap-2">
