@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -77,8 +78,11 @@ export default function ActionPlans() {
           question: item.question === null ? null : 
             (typeof item.question === 'object' && item.question ? 
               { 
-                pergunta: typeof (item.question as any).pergunta === 'string' ? 
-                  String((item.question as any).pergunta) : "" 
+                pergunta: typeof item.question === 'object' && 
+                          item.question !== null && 
+                          'pergunta' in item.question && 
+                          typeof item.question.pergunta === 'string' ? 
+                          item.question.pergunta : "" 
               } : 
               { pergunta: "" })
         };
@@ -99,9 +103,9 @@ export default function ActionPlans() {
       plan.description.toLowerCase().includes(search.toLowerCase()) ||
       plan.assignee?.toLowerCase().includes(search.toLowerCase()) ||
       plan.inspection?.company?.fantasy_name.toLowerCase().includes(search.toLowerCase()) ||
-      (plan.question && 
+      (plan.question !== null && 
        typeof plan.question === 'object' && 
-       plan.question !== null && 
+       'pergunta' in plan.question && 
        typeof plan.question.pergunta === 'string' && 
        plan.question.pergunta.toLowerCase().includes(search.toLowerCase()));
     
@@ -290,7 +294,7 @@ export default function ActionPlans() {
                           <div>
                             <span className="font-medium line-clamp-1">{plan.description}</span>
                             <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
-                              {plan.question?.pergunta}
+                              {plan.question?.pergunta || ""}
                             </p>
                           </div>
                         </div>
