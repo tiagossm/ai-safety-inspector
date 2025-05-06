@@ -77,7 +77,8 @@ export default function ActionPlans() {
           ...item,
           question: item.question === null ? null : 
             (typeof item.question === 'object' ? 
-              { pergunta: item.question && 'pergunta' in item.question ? item.question.pergunta || "" : "" } : 
+              { pergunta: item.question && typeof item.question === 'object' && 'pergunta' in item.question ? 
+                String(item.question.pergunta || "") : "" } : 
               { pergunta: "" })
         };
         return processedItem;
@@ -97,7 +98,8 @@ export default function ActionPlans() {
       plan.description.toLowerCase().includes(search.toLowerCase()) ||
       plan.assignee?.toLowerCase().includes(search.toLowerCase()) ||
       plan.inspection?.company?.fantasy_name.toLowerCase().includes(search.toLowerCase()) ||
-      (plan.question && plan.question.pergunta ? plan.question.pergunta.toLowerCase().includes(search.toLowerCase()) : false);
+      (plan.question && typeof plan.question === 'object' && 'pergunta' in plan.question && 
+       plan.question.pergunta ? plan.question.pergunta.toLowerCase().includes(search.toLowerCase()) : false);
     
     // Apply status filter
     const statusMatch = statusFilter === "all" || plan.status === statusFilter;
