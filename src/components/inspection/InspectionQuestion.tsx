@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { ResponseInputRenderer } from "./question-parts/ResponseInputRenderer";
 import { ActionPlanSection } from "./question-parts/ActionPlanSection";
@@ -7,7 +8,8 @@ import { ActionPlanButton } from "./question-components/ActionPlanButton";
 import { MediaControls } from "./question-components/MediaControls";
 import { isNegativeResponse, normalizeResponseType } from "@/utils/inspection/normalizationUtils";
 import { ActionPlanForm } from "@/components/action-plans/form/ActionPlanForm";
-import { ActionPlanFormData, ActionPlan } from "@/components/action-plans/form/types";
+import { ActionPlanFormData } from "@/components/action-plans/form/types";
+import { ActionPlan } from "@/services/inspection/actionPlanService";
 import { Badge } from "@/components/ui/badge";
 
 interface InspectionQuestionProps {

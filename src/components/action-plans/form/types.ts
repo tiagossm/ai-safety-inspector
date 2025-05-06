@@ -14,7 +14,7 @@ export interface ActionPlanFormData {
 
 // Define a complete ActionPlan type that's compatible with the service's version
 export interface ActionPlan {
-  id: string;
+  id?: string; // Make id optional to match the service type
   description: string;
   assignee?: string;
   due_date?: string;

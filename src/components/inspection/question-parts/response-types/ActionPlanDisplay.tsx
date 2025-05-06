@@ -3,12 +3,14 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { ActionPlanForm } from "@/components/action-plans/form/ActionPlanForm";
 import { AlertCircle, CheckCircle, FileText } from "lucide-react";
+import { ActionPlan } from "@/services/inspection/actionPlanService";
+import { ActionPlanFormData } from "@/components/action-plans/form/types";
 
 interface ActionPlanDisplayProps {
-  actionPlan: any;
+  actionPlan: ActionPlan;
   inspectionId: string;
   questionId: string;
-  onSaveActionPlan?: (data: any) => Promise<void>;
+  onSaveActionPlan?: (data: ActionPlanFormData) => Promise<ActionPlan | void>;
   readOnly?: boolean;
 }
 
