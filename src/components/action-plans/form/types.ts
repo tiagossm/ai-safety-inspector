@@ -12,13 +12,14 @@ export interface ActionPlanFormData {
   questionId?: string;
 }
 
+// Define a complete ActionPlan type that's compatible with the service's version
 export interface ActionPlan {
   id: string;
   description: string;
   assignee?: string;
   due_date?: string;
-  priority: string;
-  status: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
   inspection_id?: string;
   question_id?: string;
   created_at?: string;

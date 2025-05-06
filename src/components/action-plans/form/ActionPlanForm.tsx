@@ -24,8 +24,8 @@ interface ActionPlanFormProps {
     description: string;
     assignee?: string;
     dueDate?: Date;
-    priority: string;
-    status: string;
+    priority: 'low' | 'medium' | 'high' | 'critical';
+    status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
   };
   onSave: (data: ActionPlanFormData) => Promise<ActionPlan | void>;
   trigger: React.ReactNode;
