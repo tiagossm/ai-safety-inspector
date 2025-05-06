@@ -5,20 +5,24 @@ import { MediaCaptureButton } from './MediaCaptureButton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Image, FileText, Music, Video, Camera } from 'lucide-react';
+import { Progress } from "@/components/ui/progress";
 
 interface MediaUploadProps {
   onMediaUploaded: (mediaData: any) => void;
   className?: string;
   allowedTypes?: ("photo" | "video" | "audio" | "file")[];
+  disabled?: boolean;
 }
 
 export function MediaUpload({ 
   onMediaUploaded, 
   className = '',
-  allowedTypes = ["photo", "video", "audio", "file"]
+  allowedTypes = ["photo", "video", "audio", "file"],
+  disabled = false
 }: MediaUploadProps) {
   const [activeTab, setActiveTab] = useState(allowedTypes.includes("file") ? 'upload' : 'capture');
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
   
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -29,6 +33,24 @@ export function MediaUpload({
     if (mediaData && mediaData.url) {
       onMediaUploaded(mediaData);
     }
+  };
+
+  const simulateProgress = () => {
+    setUploading(true);
+    setProgress(0);
+    const interval = setInterval(() => {
+      setProgress((oldProgress) => {
+        if (oldProgress >= 100) {
+          clearInterval(interval);
+          return 100;
+        }
+        return Math.min(oldProgress + 5, 95);
+      });
+    }, 100);
+
+    return () => {
+      clearInterval(interval);
+    };
   };
   
   return (
@@ -63,8 +85,11 @@ export function MediaUpload({
               <FileUploadButton 
                 onFileUploaded={handleMediaUploaded}
                 buttonText="Selecionar arquivo"
-                onUploadStart={() => setUploading(true)}
-                disabled={uploading}
+                onUploadStart={() => {
+                  setUploading(true);
+                  simulateProgress();
+                }}
+                disabled={disabled || uploading}
               />
             </TabsContent>
           )}
@@ -76,16 +101,22 @@ export function MediaUpload({
                   <MediaCaptureButton 
                     type="photo" 
                     onMediaCaptured={handleMediaUploaded} 
-                    onCaptureStart={() => setUploading(true)}
-                    disabled={uploading}
+                    onCaptureStart={() => {
+                      setUploading(true);
+                      simulateProgress();
+                    }}
+                    disabled={disabled || uploading}
                   />
                 )}
                 {allowedTypes.includes("video") && (
                   <MediaCaptureButton 
                     type="video" 
                     onMediaCaptured={handleMediaUploaded} 
-                    onCaptureStart={() => setUploading(true)}
-                    disabled={uploading}
+                    onCaptureStart={() => {
+                      setUploading(true);
+                      simulateProgress();
+                    }}
+                    disabled={disabled || uploading}
                   />
                 )}
               </div>
@@ -97,8 +128,11 @@ export function MediaUpload({
               <MediaCaptureButton 
                 type="audio" 
                 onMediaCaptured={handleMediaUploaded}
-                onCaptureStart={() => setUploading(true)}
-                disabled={uploading}
+                onCaptureStart={() => {
+                  setUploading(true);
+                  simulateProgress();
+                }}
+                disabled={disabled || uploading}
               />
             </TabsContent>
           )}
@@ -106,10 +140,8 @@ export function MediaUpload({
         
         {uploading && (
           <div className="mt-3 text-center">
-            <div className="h-1 w-full bg-gray-200 rounded overflow-hidden">
-              <div className="h-full bg-primary animate-pulse" style={{ width: '100%' }}></div>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">Enviando arquivo...</p>
+            <Progress value={progress} className="h-1" />
+            <p className="text-xs text-muted-foreground mt-1">Enviando arquivo... {progress}%</p>
           </div>
         )}
       </CardContent>

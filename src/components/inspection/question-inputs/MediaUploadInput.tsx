@@ -7,6 +7,8 @@ import { useMediaUpload } from "@/hooks/useMediaUpload";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { MediaCaptureButton } from "@/components/media/MediaCaptureButton";
+import { FileUploadButton } from "@/components/media/FileUploadButton";
 
 interface MediaUploadInputProps {
   mediaUrls: string[];
@@ -29,52 +31,16 @@ export function MediaUploadInput({
   allowsFiles = false,
   readOnly = false
 }: MediaUploadInputProps) {
-  const { uploadFile, uploadMedia, isUploading, progress } = useMediaUpload();
   const [showCameraDialog, setShowCameraDialog] = useState(false);
   const [showVideoDialog, setShowVideoDialog] = useState(false);
   const [showAudioDialog, setShowAudioDialog] = useState(false);
+  const [showFileDialog, setShowFileDialog] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (readOnly) return;
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-    
-    try {
-      const file = files[0];
-      
-      if (onMediaUpload) {
-        const url = await onMediaUpload(file);
-        if (url) {
-          toast.success("Arquivo enviado com sucesso!");
-        }
-      } else {
-        const result = await uploadFile(file);
-        
-        if (result?.url) {
-          onMediaChange([...mediaUrls, result.url]);
-          toast.success("Arquivo enviado com sucesso!");
-        }
-      }
-    } catch (error) {
-      console.error("Error uploading file:", error);
-      toast.error("Erro ao enviar arquivo.");
-    }
-    
-    // Clear input value to allow uploading the same file again
-    if (event.target) {
-      event.target.value = '';
-    }
-  };
-  
-  const handleMediaCapture = async (type: 'photo' | 'video' | 'audio') => {
-    if (readOnly) return;
-    if (type === 'photo') {
-      setShowCameraDialog(true);
-    } else if (type === 'video') {
-      setShowVideoDialog(true);
-    } else if (type === 'audio') {
-      setShowAudioDialog(true);
+  const handleMediaUploaded = (mediaData: any) => {
+    if (mediaData && mediaData.url) {
+      onMediaChange([...mediaUrls, mediaData.url]);
+      toast.success("Mídia adicionada com sucesso!");
     }
   };
   
@@ -96,8 +62,13 @@ export function MediaUploadInput({
     
     try {
       if (onMediaUpload) {
-        await onMediaUpload(file);
+        const url = await onMediaUpload(file);
+        if (url) {
+          onMediaChange([...mediaUrls, url]);
+          toast.success("Arquivo enviado com sucesso!");
+        }
       } else {
+        const { uploadFile } = useMediaUpload();
         const result = await uploadFile(file);
         
         if (result?.url) {
@@ -153,8 +124,8 @@ export function MediaUploadInput({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => handleMediaCapture('photo')}
-                disabled={isUploading || readOnly}
+                onClick={() => setShowCameraDialog(true)}
+                disabled={readOnly}
                 className="flex items-center"
               >
                 <Camera className="h-4 w-4 mr-2" />
@@ -167,8 +138,8 @@ export function MediaUploadInput({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => handleMediaCapture('video')}
-                disabled={isUploading || readOnly}
+                onClick={() => setShowVideoDialog(true)}
+                disabled={readOnly}
                 className="flex items-center"
               >
                 <Video className="h-4 w-4 mr-2" />
@@ -181,8 +152,8 @@ export function MediaUploadInput({
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => handleMediaCapture('audio')}
-                disabled={isUploading || readOnly}
+                onClick={() => setShowAudioDialog(true)}
+                disabled={readOnly}
                 className="flex items-center"
               >
                 <Mic className="h-4 w-4 mr-2" />
@@ -191,42 +162,21 @@ export function MediaUploadInput({
             )}
             
             {allowsFiles && (
-              <div>
-                <input
-                  type="file"
-                  id="file-upload"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  disabled={isUploading || readOnly}
-                />
-                <label htmlFor="file-upload">
-                  <Button 
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={isUploading || readOnly}
-                    className="flex items-center cursor-pointer"
-                    asChild
-                  >
-                    <span>
-                      <File className="h-4 w-4 mr-2" />
-                      <span>Arquivo</span>
-                    </span>
-                  </Button>
-                </label>
-              </div>
+              <Button 
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFileDialog(true)}
+                disabled={readOnly}
+                className="flex items-center"
+              >
+                <File className="h-4 w-4 mr-2" />
+                <span>Arquivo</span>
+              </Button>
             )}
           </div>
         </div>
       </div>
-      
-      {/* Progress bar when uploading */}
-      {isUploading && (
-        <div className="w-full">
-          <Progress value={progress} className="h-2" />
-          <p className="text-xs text-center mt-1">Enviando... {progress}%</p>
-        </div>
-      )}
       
       {/* Display uploaded media */}
       {mediaUrls.length > 0 && (
@@ -238,58 +188,92 @@ export function MediaUploadInput({
       )}
       
       {/* Camera Dialog for taking photos */}
-      <Dialog open={showCameraDialog} onOpenChange={setShowCameraDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Tirar Foto</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col items-center justify-center">
-            <p className="text-sm text-muted-foreground">Funcionalidade a ser implementada</p>
-            <Button
-              className="mt-4"
-              onClick={() => setShowCameraDialog(false)}
-            >
-              Fechar
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {allowsPhoto && (
+        <Dialog open={showCameraDialog} onOpenChange={setShowCameraDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Tirar Foto</DialogTitle>
+            </DialogHeader>
+            <div className="flex flex-col items-center justify-center">
+              <MediaCaptureButton 
+                type="photo"
+                onMediaCaptured={(data) => {
+                  handleMediaUploaded(data);
+                  setShowCameraDialog(false);
+                }}
+                className="w-full"
+                variant="default"
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
       
       {/* Video Dialog for recording videos */}
-      <Dialog open={showVideoDialog} onOpenChange={setShowVideoDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Gravar Vídeo</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col items-center justify-center">
-            <p className="text-sm text-muted-foreground">Funcionalidade a ser implementada</p>
-            <Button
-              className="mt-4"
-              onClick={() => setShowVideoDialog(false)}
-            >
-              Fechar
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {allowsVideo && (
+        <Dialog open={showVideoDialog} onOpenChange={setShowVideoDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Gravar Vídeo</DialogTitle>
+            </DialogHeader>
+            <div className="flex flex-col items-center justify-center">
+              <MediaCaptureButton 
+                type="video"
+                onMediaCaptured={(data) => {
+                  handleMediaUploaded(data);
+                  setShowVideoDialog(false);
+                }}
+                className="w-full"
+                variant="default"
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
       
       {/* Audio Dialog for recording audio */}
-      <Dialog open={showAudioDialog} onOpenChange={setShowAudioDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Gravar Áudio</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col items-center justify-center">
-            <p className="text-sm text-muted-foreground">Funcionalidade a ser implementada</p>
-            <Button
-              className="mt-4"
-              onClick={() => setShowAudioDialog(false)}
-            >
-              Fechar
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {allowsAudio && (
+        <Dialog open={showAudioDialog} onOpenChange={setShowAudioDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Gravar Áudio</DialogTitle>
+            </DialogHeader>
+            <div className="flex flex-col items-center justify-center">
+              <MediaCaptureButton 
+                type="audio"
+                onMediaCaptured={(data) => {
+                  handleMediaUploaded(data);
+                  setShowAudioDialog(false);
+                }}
+                className="w-full"
+                variant="default"
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+      
+      {/* File Upload Dialog */}
+      {allowsFiles && (
+        <Dialog open={showFileDialog} onOpenChange={setShowFileDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Enviar Arquivo</DialogTitle>
+            </DialogHeader>
+            <div className="flex flex-col items-center justify-center">
+              <FileUploadButton 
+                onFileUploaded={(data) => {
+                  handleMediaUploaded(data);
+                  setShowFileDialog(false);
+                }}
+                buttonText="Selecionar arquivo"
+                className="w-full"
+                variant="default"
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

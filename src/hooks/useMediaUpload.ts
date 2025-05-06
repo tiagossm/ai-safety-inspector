@@ -16,7 +16,7 @@ export function useMediaUpload() {
       setProgress(0);
       
       // Ensure the bucket exists
-      const bucketName = "checklist-media";
+      const bucketName = "inspection-media";
       const bucketReady = await createBucketIfNeeded(bucketName);
       
       if (!bucketReady) {

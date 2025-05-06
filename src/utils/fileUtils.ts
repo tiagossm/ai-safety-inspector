@@ -1,90 +1,77 @@
 
 import { 
-  FileText, 
-  Image, 
-  FileAudio, 
-  FileVideo, 
-  File as FileIcon,
-  File,
-  FileSpreadsheet,
-  Code,
-  Archive
+  FileText, Image, FileVideo, FileAudio, 
+  FileCode, FileArchive, FilePdf, 
+  FileSpreadsheet, FileType as FileTypeIcon
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 
-/**
- * Determines the file type based on URL or filename
- */
-export function getFileType(url: string): 'image' | 'audio' | 'video' | 'pdf' | 'excel' | 'word' | 'code' | 'zip' | 'other' {
-  // Get file extension
-  const extension = url.toLowerCase().split('.').pop() || '';
+// Get file type from URL or file extension
+export function getFileType(url: string): 'image' | 'video' | 'audio' | 'pdf' | 'excel' | 'word' | 'code' | 'zip' | 'other' {
+  const lowercaseUrl = url.toLowerCase();
   
-  // Image types
-  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(extension) || url.includes('image/')) {
+  // Check for image formats
+  if (lowercaseUrl.match(/\.(jpeg|jpg|gif|png|webp|bmp|svg)$/i) || 
+      lowercaseUrl.includes('image/') || 
+      lowercaseUrl.includes('/images/')) {
     return 'image';
   }
   
-  // Audio types
-  if (['mp3', 'wav', 'ogg', 'aac', 'm4a'].includes(extension) || url.includes('audio/')) {
-    return 'audio';
-  }
-  
-  // Video types
-  if (['mp4', 'webm', 'mov', 'avi', 'wmv'].includes(extension) || url.includes('video/')) {
+  // Check for video formats
+  if (lowercaseUrl.match(/\.(mp4|webm|mov|avi|wmv|flv|mkv)$/i) || 
+      lowercaseUrl.includes('video/')) {
     return 'video';
   }
   
-  // Document types
-  if (extension === 'pdf' || url.includes('application/pdf')) {
+  // Check for audio formats
+  if (lowercaseUrl.match(/\.(mp3|wav|ogg|m4a|flac|aac)$/i) || 
+      lowercaseUrl.includes('audio/')) {
+    return 'audio';
+  }
+  
+  // Check for document types
+  if (lowercaseUrl.match(/\.pdf$/i)) {
     return 'pdf';
   }
   
-  // Spreadsheet types
-  if (['xlsx', 'xls', 'csv'].includes(extension) || url.includes('spreadsheet')) {
+  if (lowercaseUrl.match(/\.(xlsx|xls|csv)$/i)) {
     return 'excel';
   }
   
-  // Word document types
-  if (['doc', 'docx', 'rtf'].includes(extension) || url.includes('msword')) {
+  if (lowercaseUrl.match(/\.(docx|doc)$/i)) {
     return 'word';
   }
   
-  // Code file types
-  if (['js', 'jsx', 'ts', 'tsx', 'html', 'css', 'json', 'xml', 'py', 'java', 'php', 'rb'].includes(extension)) {
+  if (lowercaseUrl.match(/\.(js|ts|jsx|tsx|html|css|json|xml|py|java|php)$/i)) {
     return 'code';
   }
   
-  // Archive types
-  if (['zip', 'rar', '7z', 'tar', 'gz'].includes(extension)) {
+  if (lowercaseUrl.match(/\.(zip|rar|7z|tar|gz)$/i)) {
     return 'zip';
   }
   
-  // Default
   return 'other';
 }
 
-/**
- * Returns the appropriate icon for a file type
- */
-export function getFileIcon(type: ReturnType<typeof getFileType>): LucideIcon {
-  switch (type) {
+// Get appropriate icon component for a file type
+export function getFileIcon(fileType: string): typeof FileTypeIcon {
+  switch (fileType) {
     case 'image':
       return Image;
-    case 'audio':
-      return FileAudio;
     case 'video':
       return FileVideo;
+    case 'audio':
+      return FileAudio;
     case 'pdf':
-      return File; // Using regular File icon instead of FilePdf
+      return FilePdf;
     case 'excel':
       return FileSpreadsheet;
     case 'word':
       return FileText;
     case 'code':
-      return Code; // Using Code icon instead of FileCode
+      return FileCode;
     case 'zip':
-      return Archive; // Using Archive icon instead of FileZip
+      return FileArchive;
     default:
-      return FileIcon;
+      return FileText;
   }
 }

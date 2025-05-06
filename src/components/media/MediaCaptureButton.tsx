@@ -1,310 +1,366 @@
 
-import React, { useRef, useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Camera, Video as VideoIcon, Mic } from 'lucide-react';
+import { Camera, Video, Mic, X, Loader2 } from 'lucide-react';
 import { useMediaUpload } from '@/hooks/useMediaUpload';
 import { toast } from 'sonner';
 
 interface MediaCaptureButtonProps {
   type: 'photo' | 'video' | 'audio';
   onMediaCaptured: (mediaData: any) => void;
+  onCaptureStart?: () => void;
   disabled?: boolean;
   className?: string;
-  onCaptureStart?: () => void;
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
 }
 
 export function MediaCaptureButton({
   type,
   onMediaCaptured,
+  onCaptureStart,
   disabled = false,
   className = '',
-  onCaptureStart
+  variant = 'outline'
 }: MediaCaptureButtonProps) {
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [recordedChunks, setRecordedChunks] = useState<Blob[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const [recording, setRecording] = useState(false);
-  const [stream, setStream] = useState<MediaStream | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
-  const { uploadMedia, isUploading, progress } = useMediaUpload();
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const { uploadMedia, isUploading } = useMediaUpload();
   
-  const stopMediaStream = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-    setShowPreview(false);
-  };
-  
-  const capturePhoto = async () => {
-    if (!canvasRef.current || !videoRef.current) return;
-    
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    
-    const context = canvas.getContext('2d');
-    if (!context) return;
-    
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
-    try {
-      if (onCaptureStart) onCaptureStart();
-      
-      const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((blob) => {
-          if (blob) resolve(blob);
-          else throw new Error('Failed to create image blob');
-        }, 'image/jpeg', 0.9);
-      });
-      
-      const uploadedMedia = await uploadMedia(blob, 'image/jpeg');
-      if (uploadedMedia) {
-        onMediaCaptured(uploadedMedia);
-        toast.success('Foto capturada com sucesso!');
-      }
-    } catch (error) {
-      console.error('Error capturing photo:', error);
-      toast.error('Erro ao capturar foto');
-    } finally {
-      stopMediaStream();
+  const getMediaTypeLabel = () => {
+    switch(type) {
+      case 'photo': return 'Tirar Foto';
+      case 'video': return 'Gravar Vídeo';
+      case 'audio': return 'Gravar Áudio';
     }
   };
   
-  const startMediaCapture = async () => {
+  const getMediaTypeIcon = () => {
+    switch(type) {
+      case 'photo': return <Camera className="mr-2 h-4 w-4" />;
+      case 'video': return <Video className="mr-2 h-4 w-4" />;
+      case 'audio': return <Mic className="mr-2 h-4 w-4" />;
+    }
+  };
+  
+  const startTimer = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    
+    setRecordingTime(0);
+    timerRef.current = setInterval(() => {
+      setRecordingTime(prev => prev + 1);
+      
+      // Auto-stop long recordings
+      if (type === 'video' && prev >= 30) { // 30 seconds max for video
+        stopRecording();
+      } else if (type === 'audio' && prev >= 90) { // 90 seconds max for audio
+        stopRecording();
+      }
+    }, 1000);
+  };
+  
+  const stopTimer = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  };
+  
+  const startCapture = async () => {
+    if (disabled) return;
+    
     try {
-      if (onCaptureStart) onCaptureStart();
-      
-      let constraints: MediaStreamConstraints = {};
-      
-      if (type === 'photo' || type === 'video') {
-        constraints = {
-          video: {
-            facingMode: 'environment',
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
-          },
-          audio: type === 'video'
-        };
-      } else if (type === 'audio') {
-        constraints = { audio: true };
+      if (onCaptureStart) {
+        onCaptureStart();
       }
       
-      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-      setStream(mediaStream);
+      setIsCapturing(true);
+      let mediaStream: MediaStream | null = null;
       
-      if (type === 'photo' || type === 'video') {
+      if (type === 'photo') {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: "environment" } 
+        });
+        
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
-          setShowPreview(true);
-          
-          if (type === 'photo') {
-            // Play video for photos to show preview
-            videoRef.current.play();
-          }
+          await videoRef.current.play();
         }
-      }
-      
-      if (type === 'video' || type === 'audio') {
-        const mediaRecorder = new MediaRecorder(mediaStream);
-        mediaRecorderRef.current = mediaRecorder;
+      } else if (type === 'video') {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ 
+          video: true, 
+          audio: true 
+        });
         
-        const chunks: BlobPart[] = [];
+        if (videoRef.current) {
+          videoRef.current.srcObject = mediaStream;
+          await videoRef.current.play();
+        }
         
-        mediaRecorder.ondataavailable = (e) => {
+        const recorder = new MediaRecorder(mediaStream);
+        mediaRecorderRef.current = recorder;
+        
+        const chunks: Blob[] = [];
+        recorder.ondataavailable = (e) => {
           if (e.data.size > 0) {
             chunks.push(e.data);
           }
         };
         
-        mediaRecorder.onstop = async () => {
-          try {
-            const mimeType = type === 'video' ? 'video/webm' : 'audio/webm';
-            const blob = new Blob(chunks, { type: mimeType });
-            
-            const uploadedMedia = await uploadMedia(blob, mimeType);
-            if (uploadedMedia) {
-              onMediaCaptured(uploadedMedia);
-              toast.success(`${type === 'video' ? 'Vídeo' : 'Áudio'} capturado com sucesso!`);
-            }
-          } catch (error) {
-            console.error(`Error capturing ${type}:`, error);
-            toast.error(`Erro ao capturar ${type === 'video' ? 'vídeo' : 'áudio'}`);
-          } finally {
-            stopMediaStream();
-            setRecording(false);
+        recorder.onstop = () => {
+          setRecordedChunks(chunks);
+        };
+        
+        recorder.start();
+        setIsRecording(true);
+        startTimer();
+      } else if (type === 'audio') {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        const recorder = new MediaRecorder(mediaStream);
+        mediaRecorderRef.current = recorder;
+        
+        const chunks: Blob[] = [];
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            chunks.push(e.data);
           }
         };
         
-        mediaRecorder.start();
-        setRecording(true);
+        recorder.onstop = () => {
+          setRecordedChunks(chunks);
+        };
+        
+        recorder.start();
+        setIsRecording(true);
+        startTimer();
       }
-    } catch (error) {
-      console.error(`Error accessing ${type} stream:`, error);
-      toast.error(`Erro ao acessar ${type === 'photo' ? 'câmera' : type === 'video' ? 'câmera e microfone' : 'microfone'}`);
-    }
-  };
-  
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && recording) {
-      mediaRecorderRef.current.stop();
-    }
-  };
-  
-  const handleClick = () => {
-    if (type === 'photo') {
-      if (showPreview) {
-        capturePhoto();
-      } else {
-        startMediaCapture();
-      }
-    } else if ((type === 'video' || type === 'audio') && !recording) {
-      startMediaCapture();
-    } else if (recording) {
-      stopRecording();
-    }
-  };
-  
-  const handleFileSelection = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    try {
-      if (onCaptureStart) onCaptureStart();
       
-      const mediaType = type === 'photo' ? 'image' : type;
-      if (!file.type.startsWith(`${mediaType}/`)) {
-        toast.error(`Arquivo não é um ${type === 'photo' ? 'imagem' : type} válido`);
+      setStream(mediaStream);
+    } catch (error) {
+      console.error('Error accessing media devices:', error);
+      toast.error('Não foi possível acessar a câmera ou microfone');
+      setIsCapturing(false);
+    }
+  };
+  
+  const capturePhoto = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Convert canvas to blob
+    canvas.toBlob(async (blob) => {
+      if (!blob) {
+        toast.error('Erro ao capturar imagem');
         return;
       }
       
-      const uploadedMedia = await uploadMedia(file, file.type, file.name);
-      if (uploadedMedia) {
-        onMediaCaptured(uploadedMedia);
-        toast.success(`${type === 'photo' ? 'Imagem' : type === 'video' ? 'Vídeo' : 'Áudio'} enviado com sucesso!`);
+      try {
+        const result = await uploadMedia(blob, 'image/jpeg');
+        
+        if (result) {
+          onMediaCaptured(result);
+          toast.success('Foto capturada com sucesso!');
+        }
+      } catch (error) {
+        console.error('Error uploading photo:', error);
+        toast.error('Erro ao enviar foto');
+      } finally {
+        stopCapture();
+      }
+    }, 'image/jpeg');
+  };
+  
+  const stopRecording = async () => {
+    if (!mediaRecorderRef.current || !isRecording) return;
+    
+    mediaRecorderRef.current.stop();
+    setIsRecording(false);
+    stopTimer();
+  };
+  
+  const uploadRecording = async () => {
+    if (recordedChunks.length === 0) return;
+    
+    try {
+      const mimeType = type === 'audio' ? 'audio/webm' : 'video/webm';
+      const blob = new Blob(recordedChunks, { type: mimeType });
+      
+      const result = await uploadMedia(blob, mimeType);
+      
+      if (result) {
+        onMediaCaptured(result);
+        toast.success(`${type === 'audio' ? 'Áudio' : 'Vídeo'} gravado com sucesso!`);
       }
     } catch (error) {
       console.error(`Error uploading ${type}:`, error);
-      toast.error(`Erro ao enviar ${type === 'photo' ? 'imagem' : type === 'video' ? 'vídeo' : 'áudio'}`);
+      toast.error(`Erro ao enviar ${type === 'audio' ? 'áudio' : 'vídeo'}`);
     } finally {
-      if (inputRef.current) {
-        inputRef.current.value = '';
+      setRecordedChunks([]);
+      stopCapture();
+    }
+  };
+  
+  const stopCapture = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+    }
+    
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    
+    setStream(null);
+    setIsCapturing(false);
+    stopTimer();
+  };
+
+  useEffect(() => {
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
       }
-    }
-  };
+      stopTimer();
+    };
+  }, [stream]);
   
-  const getAcceptTypes = () => {
-    switch (type) {
-      case 'photo': return 'image/*';
-      case 'video': return 'video/*';
-      case 'audio': return 'audio/*';
-      default: return '';
-    }
-  };
-  
-  const getIcon = () => {
-    switch (type) {
-      case 'photo': return <Camera className="mr-2 h-4 w-4" />;
-      case 'video': return <VideoIcon className="mr-2 h-4 w-4" />;
-      case 'audio': return <Mic className="mr-2 h-4 w-4" />;
-      default: return null;
-    }
-  };
-  
-  const getButtonText = () => {
-    if (isUploading) return `Enviando...`;
-    
-    if (recording) {
-      return `Parar${type === 'video' ? ' Gravação' : ''}`;
-    }
-    
-    switch (type) {
-      case 'photo':
-        return showPreview ? 'Tirar Foto' : 'Ativar Câmera';
-      case 'video':
-        return 'Gravar Vídeo';
-      case 'audio':
-        return 'Gravar Áudio';
-      default:
-        return '';
-    }
-  };
-  
-  const getButtonClass = () => {
-    if (recording) {
-      return 'bg-red-500 hover:bg-red-600 text-white';
-    }
-    return '';
-  };
+  if (isCapturing) {
+    return (
+      <div className="space-y-4">
+        {(type === 'photo' || type === 'video') && (
+          <div className="relative overflow-hidden rounded-lg bg-black">
+            <video 
+              ref={videoRef} 
+              autoPlay 
+              playsInline 
+              muted 
+              className="w-full h-auto"
+            />
+            <Button
+              variant="destructive"
+              size="icon"
+              className="absolute top-2 right-2 h-8 w-8 rounded-full"
+              onClick={stopCapture}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+        
+        {type === 'audio' && (
+          <div className="flex items-center space-x-4 p-4 bg-muted rounded-lg">
+            <div className="flex-1">
+              <Mic className={`h-8 w-8 ${isRecording ? 'text-red-500 animate-pulse' : ''}`} />
+              <p className="mt-1 text-sm font-medium">
+                {isRecording ? 'Gravando áudio...' : 'Pronto para gravar'}
+              </p>
+              {isRecording && <p className="text-xs">{recordingTime}s</p>}
+            </div>
+            <Button
+              variant="destructive"
+              size="icon"
+              onClick={stopCapture}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+        
+        <canvas ref={canvasRef} className="hidden" />
+        
+        <div className="flex space-x-2">
+          {type === 'photo' ? (
+            <Button 
+              onClick={capturePhoto} 
+              disabled={!stream || isUploading}
+              className="flex-1"
+            >
+              {isUploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Camera className="h-4 w-4 mr-2" />}
+              Tirar Foto
+            </Button>
+          ) : isRecording ? (
+            <Button 
+              onClick={stopRecording} 
+              variant="destructive"
+              className="flex-1"
+            >
+              <span className="h-2 w-2 bg-current rounded-sm mr-2" /> 
+              Parar {recordingTime}s
+            </Button>
+          ) : recordedChunks.length > 0 ? (
+            <Button 
+              onClick={uploadRecording} 
+              disabled={isUploading}
+              className="flex-1"
+            >
+              {isUploading ? 
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : 
+                <Upload className="h-4 w-4 mr-2" />
+              }
+              Salvar {type === 'audio' ? 'Áudio' : 'Vídeo'}
+            </Button>
+          ) : (
+            <Button 
+              onClick={() => {
+                if (mediaRecorderRef.current) {
+                  mediaRecorderRef.current.start();
+                  setIsRecording(true);
+                  startTimer();
+                }
+              }} 
+              variant="default"
+              className="flex-1"
+              disabled={!stream}
+            >
+              <div className="h-2 w-2 bg-red-500 rounded-full mr-2" />
+              Iniciar Gravação
+            </Button>
+          )}
+          
+          <Button 
+            variant="outline" 
+            onClick={stopCapture}
+          >
+            Cancelar
+          </Button>
+        </div>
+      </div>
+    );
+  }
   
   return (
-    <div className={`w-full ${className}`}>
-      <div className="flex flex-col space-y-2">
-        <Button
-          variant={recording ? "destructive" : "outline"}
-          className={`w-full ${getButtonClass()}`}
-          onClick={handleClick}
-          disabled={disabled || isUploading}
-        >
-          {getIcon()}
-          {getButtonText()}
-        </Button>
-        
-        {!showPreview && !recording && (
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => inputRef.current?.click()}
-            disabled={disabled || isUploading}
-          >
-            {getIcon()}
-            {type === 'photo' ? 'Escolher Imagem' : type === 'video' ? 'Escolher Vídeo' : 'Escolher Áudio'}
-          </Button>
-        )}
-        
-        <input
-          type="file"
-          ref={inputRef}
-          className="hidden"
-          accept={getAcceptTypes()}
-          onChange={handleFileSelection}
-          disabled={disabled || isUploading}
-        />
-        
-        {showPreview && (type === 'photo' || type === 'video') && (
-          <div className="relative w-full aspect-video rounded overflow-hidden bg-black">
-            <video
-              ref={videoRef}
-              autoPlay={type === 'video'}
-              muted
-              playsInline
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )}
-        
-        <canvas ref={canvasRef} style={{ display: 'none' }} />
-        
-        {isUploading && (
-          <div className="w-full">
-            <div className="h-1 w-full bg-gray-200 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-primary" 
-                style={{ width: `${progress}%`, transition: 'width 0.3s ease-in-out' }}
-              />
-            </div>
-            <p className="text-xs text-center text-muted-foreground mt-1">
-              {progress < 100 ? `Enviando ${progress}%` : 'Processando...'}
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
+    <Button
+      variant={variant}
+      onClick={startCapture}
+      disabled={disabled}
+      className={className}
+    >
+      {isUploading ? (
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      ) : (
+        getMediaTypeIcon()
+      )}
+      {getMediaTypeLabel()}
+    </Button>
   );
 }
