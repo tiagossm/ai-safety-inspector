@@ -81,8 +81,8 @@ export default function ActionPlans() {
                 pergunta: typeof item.question === 'object' && 
                           item.question !== null && 
                           'pergunta' in item.question && 
-                          typeof item.question.pergunta === 'string' ? 
-                          item.question.pergunta : "" 
+                          typeof (item.question as any).pergunta === 'string' ? 
+                          (item.question as any).pergunta : "" 
               } : 
               { pergunta: "" })
         };
@@ -106,8 +106,8 @@ export default function ActionPlans() {
       (plan.question !== null && 
        typeof plan.question === 'object' && 
        'pergunta' in plan.question && 
-       typeof plan.question.pergunta === 'string' && 
-       plan.question.pergunta.toLowerCase().includes(search.toLowerCase()));
+       typeof (plan.question as any).pergunta === 'string' && 
+       (plan.question as any).pergunta.toLowerCase().includes(search.toLowerCase()));
     
     // Apply status filter
     const statusMatch = statusFilter === "all" || plan.status === statusFilter;
@@ -294,7 +294,7 @@ export default function ActionPlans() {
                           <div>
                             <span className="font-medium line-clamp-1">{plan.description}</span>
                             <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
-                              {plan.question?.pergunta || ""}
+                              {plan.question && 'pergunta' in plan.question ? plan.question.pergunta : ""}
                             </p>
                           </div>
                         </div>
