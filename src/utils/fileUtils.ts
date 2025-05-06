@@ -1,7 +1,7 @@
 
 import { 
   FileText, Image, FileVideo, FileAudio, 
-  FileCode, FileArchive, FilePdf, 
+  FileCode, FileArchive, File as FilePdf, 
   FileSpreadsheet, FileType as FileTypeIcon
 } from "lucide-react";
 

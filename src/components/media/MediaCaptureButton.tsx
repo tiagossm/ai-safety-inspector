@@ -1,7 +1,6 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Camera, Video, Mic, X, Loader2 } from 'lucide-react';
+import { Camera, Video, Mic, X, Loader2, Upload } from 'lucide-react';
 import { useMediaUpload } from '@/hooks/useMediaUpload';
 import { toast } from 'sonner';
 
@@ -58,12 +57,12 @@ export function MediaCaptureButton({
     
     setRecordingTime(0);
     timerRef.current = setInterval(() => {
-      setRecordingTime(prev => prev + 1);
+      setRecordingTime(prevTime => prevTime + 1);
       
       // Auto-stop long recordings
-      if (type === 'video' && prev >= 30) { // 30 seconds max for video
+      if (type === 'video' && recordingTime >= 30) { // 30 seconds max for video
         stopRecording();
-      } else if (type === 'audio' && prev >= 90) { // 90 seconds max for audio
+      } else if (type === 'audio' && recordingTime >= 90) { // 90 seconds max for audio
         stopRecording();
       }
     }, 1000);

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChecklistItem } from "@/types/checklist";
@@ -331,7 +330,7 @@ export function ChecklistResponseItem({ item, onResponseChange, index }: Checkli
                   <h3 className="text-sm font-medium mb-2">Enviar Arquivo</h3>
                   <FileUploadButton 
                     onFileUploaded={handleMediaCaptured}
-                    acceptTypes="image/*,video/*,audio/*"
+                    accept="image/*,video/*,audio/*"
                     buttonText="Enviar Arquivo"
                   />
                 </div>
