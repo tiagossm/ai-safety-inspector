@@ -99,11 +99,13 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
       }
     }
     
-    // Safely check for responsible data with type and null checking
-    if (inspection?.responsible && typeof inspection.responsible === 'object' && inspection.responsible !== null) {
-      // The ? operator ensures we don't try to access name on null
-      const responsibleName = inspection.responsible.name || "N/A";
-      doc.text(`Responsible: ${responsibleName}`, 14, 63);
+    // Safely check for responsible data with comprehensive type narrowing
+    if (inspection && 
+        'responsible' in inspection && 
+        inspection.responsible !== null && 
+        typeof inspection.responsible === 'object' && 
+        'name' in inspection.responsible) {
+      doc.text(`Responsible: ${inspection.responsible.name || "N/A"}`, 14, 63);
     } else {
       doc.text(`Responsible: N/A`, 14, 63);
     }
@@ -188,7 +190,18 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
       let yPos = finalY + 20;
       
       for (let i = 0; i < signatures.length; i++) {
-        const signature = signatures[i];
+        // Define the type of signature we expect for stronger typing
+        interface SignatureType {
+          signature_data?: string;
+          signer_name?: string;
+          signed_at?: string;
+          users?: {
+            name?: string;
+          } | null;
+        }
+        
+        const signature = signatures[i] as SignatureType | null;
+        
         if (!signature) continue; // Skip if signature is null or undefined
         
         // Check if we need to add a new page
@@ -198,35 +211,31 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
         }
         
         try {
-          // Add signature image - only process if signature is a proper object with expected properties
-          if (signature && typeof signature === 'object' && 'signature_data' in signature && signature.signature_data) {
+          // Add signature image - only if signature_data is available
+          if (signature && 'signature_data' in signature && signature.signature_data) {
             // Add signature image
             doc.addImage(signature.signature_data, 'PNG', 14, yPos, 70, 30);
             
             // Add signature details
             doc.setFontSize(10);
             
-            // Safely access signer name properties with proper type checking
+            // Get signer name with proper null checks
             let signerName = "Unknown";
-            if (signature && typeof signature === 'object') {
-              if ('signer_name' in signature && signature.signer_name) {
-                signerName = signature.signer_name;
-              } else if (
-                'users' in signature && 
-                signature.users && 
-                typeof signature.users === 'object' && 
-                signature.users !== null &&
-                'name' in signature.users && 
-                typeof signature.users.name === 'string'
-              ) {
-                signerName = signature.users.name;
-              }
+            
+            if (signature.signer_name) {
+              signerName = signature.signer_name;
+            } else if (
+              signature.users && 
+              typeof signature.users === 'object' &&
+              signature.users.name
+            ) {
+              signerName = signature.users.name;
             }
             
             doc.text(`Signed by: ${signerName}`, 14, yPos + 35);
             
-            // Safely check signed_at with null check
-            if (signature && typeof signature === 'object' && 'signed_at' in signature && signature.signed_at) {
+            // Handle signed_at date with proper null check
+            if (signature.signed_at) {
               const signedDate = new Date(signature.signed_at).toLocaleDateString();
               doc.text(`Date: ${signedDate}`, 14, yPos + 42);
             }
