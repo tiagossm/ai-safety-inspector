@@ -103,9 +103,11 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
     if (inspection && 
         'responsible' in inspection && 
         inspection.responsible !== null && 
-        typeof inspection.responsible === 'object' && 
-        'name' in inspection.responsible) {
-      doc.text(`Responsible: ${inspection.responsible.name || "N/A"}`, 14, 63);
+        typeof inspection.responsible === 'object') {
+      // Use optional chaining to safely access the name property
+      const name = inspection.responsible && 'name' in inspection.responsible ? 
+                  inspection.responsible.name : "N/A";
+      doc.text(`Responsible: ${name}`, 14, 63);
     } else {
       doc.text(`Responsible: N/A`, 14, 63);
     }
@@ -227,9 +229,10 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
             } else if (
               signature.users && 
               typeof signature.users === 'object' &&
-              signature.users.name
+              signature.users !== null &&
+              'name' in signature.users
             ) {
-              signerName = signature.users.name;
+              signerName = signature.users.name || "Unknown";
             }
             
             doc.text(`Signed by: ${signerName}`, 14, yPos + 35);
