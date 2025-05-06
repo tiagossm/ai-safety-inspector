@@ -24,6 +24,7 @@ export interface Report {
   updated_at: string;
   action_plan: any;
   url?: string;
+  format?: string;
 }
 
 export interface ActionPlan {
@@ -35,4 +36,6 @@ export interface ActionPlan {
   assignee?: string;
   question_id?: string;
   inspection_id?: string;
+  created_at?: string;
+  updated_at?: string;
 }

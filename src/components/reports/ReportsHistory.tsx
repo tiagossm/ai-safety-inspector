@@ -14,6 +14,17 @@ interface Report {
   status: string;
   format?: string;
   action_plan: any;
+  // Add nested objects that come from the select query
+  inspection?: {
+    id: string;
+    status: string;
+    company?: {
+      fantasy_name: string;
+    };
+    checklist?: {
+      title: string;
+    };
+  };
 }
 
 export function ReportsHistory() {

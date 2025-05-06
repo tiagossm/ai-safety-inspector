@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -23,28 +22,22 @@ import { ClipboardList, Search, Filter, AlertTriangle, CheckCircle, Clock, Ban }
 import { supabase } from "@/integrations/supabase/client";
 import { formatDate } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ActionPlan } from "@/types/inspection";
 
-interface ActionPlan {
-  id: string;
-  description: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  due_date?: string;
-  assignee?: string;
-  created_at: string;
-  inspection: {
+interface ActionPlanWithRelations extends ActionPlan {
+  inspection?: {
     id: string;
-    company: {
+    company?: {
       fantasy_name: string;
     };
   };
-  question: {
+  question?: {
     pergunta: string;
   };
 }
 
 export default function ActionPlans() {
-  const [actionPlans, setActionPlans] = useState<ActionPlan[]>([]);
+  const [actionPlans, setActionPlans] = useState<ActionPlanWithRelations[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -74,7 +67,8 @@ export default function ActionPlans() {
         throw error;
       }
       
-      setActionPlans(data as ActionPlan[] || []);
+      // Type casting to ensure the data matches our extended interface
+      setActionPlans(data as ActionPlanWithRelations[] || []);
     } catch (error) {
       console.error("Error fetching action plans:", error);
     } finally {

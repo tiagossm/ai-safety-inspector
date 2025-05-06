@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { getErrorMessage } from "@/utils/errors";
 import jsPDF from "jspdf";
@@ -117,11 +116,15 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
         inspection.responsible !== null && 
         typeof inspection.responsible === 'object') {
       // Use optional chaining and type guard to safely access the name property
-      const name = (inspection.responsible && 
-                   typeof inspection.responsible === 'object' && 
-                   'name' in inspection.responsible) ? 
-                   inspection.responsible.name : "N/A";
-      doc.text(`Responsible: ${name}`, 14, 63);
+      const responsibleObj = inspection.responsible;
+      if (responsibleObj && 
+          typeof responsibleObj === 'object' && 
+          'name' in responsibleObj && 
+          typeof responsibleObj.name === 'string') {
+        doc.text(`Responsible: ${responsibleObj.name}`, 14, 63);
+      } else {
+        doc.text(`Responsible: N/A`, 14, 63);
+      }
     } else {
       doc.text(`Responsible: N/A`, 14, 63);
     }
@@ -483,11 +486,14 @@ function getResponsibleName(inspection: any): string {
       'responsible' in inspection && 
       inspection.responsible !== null && 
       typeof inspection.responsible === 'object') {
-    // Use optional chaining and type guard to safely access the name property
-    return (inspection.responsible && 
-             typeof inspection.responsible === 'object' && 
-             'name' in inspection.responsible) ? 
-             inspection.responsible.name : "N/A";
+    // Use optional chaining and type guards to safely access the name property
+    const responsibleObj = inspection.responsible;
+    if (responsibleObj && 
+        typeof responsibleObj === 'object' && 
+        'name' in responsibleObj && 
+        typeof responsibleObj.name === 'string') {
+      return responsibleObj.name;
+    }
   }
   return "N/A";
 }
@@ -611,4 +617,3 @@ export function generateMockPDF(inspectionId: string, inspectionData: any): void
     console.error("Error generating mock PDF:", error);
   }
 }
-
