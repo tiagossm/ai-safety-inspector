@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
@@ -76,13 +75,10 @@ export default function ActionPlans() {
         const processedItem: ActionPlanWithRelations = {
           ...item,
           question: item.question === null ? null : 
-            (typeof item.question === 'object' ? 
+            (typeof item.question === 'object' && item.question ? 
               { 
-                pergunta: (item.question && 
-                  typeof item.question === 'object' && 
-                  'pergunta' in item.question && 
-                  item.question.pergunta) ? 
-                    String(item.question.pergunta) : "" 
+                pergunta: typeof (item.question as any).pergunta === 'string' ? 
+                  String((item.question as any).pergunta) : "" 
               } : 
               { pergunta: "" })
         };
@@ -105,9 +101,9 @@ export default function ActionPlans() {
       plan.inspection?.company?.fantasy_name.toLowerCase().includes(search.toLowerCase()) ||
       (plan.question && 
        typeof plan.question === 'object' && 
-       'pergunta' in plan.question && 
-       typeof plan.question.pergunta === 'string' ? 
-         plan.question.pergunta.toLowerCase().includes(search.toLowerCase()) : false);
+       plan.question !== null && 
+       typeof plan.question.pergunta === 'string' && 
+       plan.question.pergunta.toLowerCase().includes(search.toLowerCase()));
     
     // Apply status filter
     const statusMatch = statusFilter === "all" || plan.status === statusFilter;
