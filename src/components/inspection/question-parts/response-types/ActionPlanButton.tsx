@@ -2,11 +2,13 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { ActionPlanForm } from "@/components/action-plans/form/ActionPlanForm";
+import { ActionPlanFormData } from "@/components/action-plans/form/types";
+import { ActionPlan } from "@/services/inspection/actionPlanService";
 
 interface ActionPlanButtonProps {
   inspectionId: string;
   questionId: string;
-  onSaveActionPlan: (data: any) => Promise<void>;
+  onSaveActionPlan: (data: ActionPlanFormData) => Promise<ActionPlan | void>;
 }
 
 export const ActionPlanButton: React.FC<ActionPlanButtonProps> = ({

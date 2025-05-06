@@ -9,7 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { FloatingActionButtons } from "./FloatingActionButtons";
 import { InspectionQuestion } from "../InspectionQuestion";
-import { ActionPlan as ServiceActionPlan } from "@/services/inspection/actionPlanService";
+import { ActionPlan } from "@/services/inspection/actionPlanService";
 import { ActionPlanFormData } from "@/components/action-plans/form/types";
 
 interface InspectionLayoutProps {
@@ -39,8 +39,8 @@ interface InspectionLayoutProps {
   onMediaChange?: (questionId: string, mediaUrls: string[]) => void;
   onMediaUpload?: (questionId: string, file: File) => Promise<string | null>;
   onSaveSubChecklistResponses: (subChecklistId: string, responses: Record<string, any>) => Promise<void>;
-  plansByQuestion?: Record<string, ServiceActionPlan>;
-  onSaveActionPlan?: (data: ActionPlanFormData) => Promise<ServiceActionPlan | void>;
+  plansByQuestion?: Record<string, ActionPlan>;
+  onSaveActionPlan?: (data: ActionPlanFormData) => Promise<ActionPlan | void>;
 }
 
 export function InspectionLayout({

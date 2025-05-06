@@ -2,8 +2,10 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { ActionPlanForm } from "@/components/action-plans/form/ActionPlanForm";
+import { ActionPlanFormData } from "@/components/action-plans/form/types";
 import { MediaUploadInput } from "../../question-inputs/MediaUploadInput";
 import { AlertCircle, CheckCircle, FileText } from "lucide-react";
+import { ActionPlan } from "@/services/inspection/actionPlanService";
 
 interface YesNoResponseInputProps {
   question: any;
@@ -11,8 +13,8 @@ interface YesNoResponseInputProps {
   inspectionId?: string;
   onResponseChange: (value: any) => void;
   onMediaChange: (mediaUrls: string[]) => void;
-  actionPlan?: any;
-  onSaveActionPlan?: (data: any) => Promise<void>;
+  actionPlan?: ActionPlan;
+  onSaveActionPlan?: (data: ActionPlanFormData) => Promise<ActionPlan | void>;
   readOnly?: boolean;
 }
 
