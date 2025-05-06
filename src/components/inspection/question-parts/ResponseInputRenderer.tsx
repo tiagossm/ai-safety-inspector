@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { MediaUploadInput } from "../question-inputs/MediaUploadInput";
-import { ActionPlanForm } from "../ActionPlanForm";
+import { ActionPlanForm } from "@/components/action-plans/form/ActionPlanForm";
 import { AlertCircle, CheckCircle, FileText } from "lucide-react";
 
 interface ResponseInputRendererProps {

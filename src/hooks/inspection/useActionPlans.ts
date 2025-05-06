@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import {
@@ -9,7 +8,7 @@ import {
   deleteActionPlan as deleteActionPlanService,
   getActionPlanStats
 } from '@/services/inspection/actionPlanService';
-import { ActionPlanFormData } from '@/components/inspection/ActionPlanForm';
+import { ActionPlanFormData } from '@/components/action-plans/form/types';
 
 interface ActionPlansHookProps {
   plans: ActionPlan[];
