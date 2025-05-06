@@ -82,9 +82,9 @@ export default function ActionPlans() {
                           item.question !== null && 
                           'pergunta' in item.question && 
                           typeof (item.question as any).pergunta === 'string' ? 
-                          (item.question as any).pergunta : "" 
+                          (item.question as any).pergunta : undefined
               } : 
-              { pergunta: "" })
+              { pergunta: undefined })
         };
         return processedItem;
       });
@@ -101,13 +101,14 @@ export default function ActionPlans() {
     // Apply search filter
     const searchMatch = search === "" || 
       plan.description.toLowerCase().includes(search.toLowerCase()) ||
-      plan.assignee?.toLowerCase().includes(search.toLowerCase()) ||
-      plan.inspection?.company?.fantasy_name.toLowerCase().includes(search.toLowerCase()) ||
+      (plan.assignee?.toLowerCase().includes(search.toLowerCase()) || false) ||
+      (plan.inspection?.company?.fantasy_name.toLowerCase().includes(search.toLowerCase()) || false) ||
       (plan.question !== null && 
        typeof plan.question === 'object' && 
+       plan.question && 
        'pergunta' in plan.question && 
-       typeof (plan.question as any).pergunta === 'string' && 
-       (plan.question as any).pergunta.toLowerCase().includes(search.toLowerCase()));
+       typeof plan.question.pergunta === 'string' && 
+       plan.question.pergunta.toLowerCase().includes(search.toLowerCase()));
     
     // Apply status filter
     const statusMatch = statusFilter === "all" || plan.status === statusFilter;
@@ -294,7 +295,11 @@ export default function ActionPlans() {
                           <div>
                             <span className="font-medium line-clamp-1">{plan.description}</span>
                             <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
-                              {plan.question && 'pergunta' in plan.question ? plan.question.pergunta : ""}
+                              {plan.question && 
+                               typeof plan.question === 'object' && 
+                               'pergunta' in plan.question && 
+                               plan.question.pergunta ? 
+                               plan.question.pergunta : ""}
                             </p>
                           </div>
                         </div>
