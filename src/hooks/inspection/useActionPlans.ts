@@ -79,7 +79,19 @@ export function useActionPlans(inspectionId: string | undefined): ActionPlansHoo
 
   const saveActionPlan = useCallback(async (data: ActionPlanFormData): Promise<ActionPlan> => {
     try {
-      const savedPlan = await saveActionPlanService(data);
+      // Make sure we have inspection and question IDs
+      const actionPlanData = {
+        id: data.id,
+        inspectionId: data.inspectionId || inspectionId,
+        questionId: data.questionId,
+        description: data.description,
+        assignee: data.assignee,
+        dueDate: data.dueDate,
+        priority: data.priority,
+        status: data.status
+      };
+      
+      const savedPlan = await saveActionPlanService(actionPlanData);
       
       // Update local state
       await fetchPlans();
@@ -91,7 +103,7 @@ export function useActionPlans(inspectionId: string | undefined): ActionPlansHoo
       toast.error(err.message || 'Failed to save action plan');
       throw err;
     }
-  }, [fetchPlans]);
+  }, [fetchPlans, inspectionId]);
 
   const deleteActionPlan = useCallback(async (id: string): Promise<boolean> => {
     try {

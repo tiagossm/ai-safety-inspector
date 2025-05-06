@@ -3,7 +3,7 @@ import {
   FileText, Image, FileVideo, FileAudio, 
   FileCode, FileArchive, File as FilePdf, 
   FileSpreadsheet, FileType as FileTypeIcon,
-  FileImage, FileJson, FilePpt
+  FileImage, FileBox,
 } from "lucide-react";
 
 export type FileType = 'image' | 'video' | 'audio' | 'pdf' | 'excel' | 'word' | 'code' | 'zip' | 'presentation' | 'json' | 'other';
@@ -64,7 +64,7 @@ export function getFileType(url: string): FileType {
 }
 
 // Get appropriate icon component for a file type
-export function getFileIcon(fileType: string): typeof FileTypeIcon {
+export function getFileIcon(fileType: string) {
   switch (fileType) {
     case 'image':
       return FileImage;
@@ -83,9 +83,9 @@ export function getFileIcon(fileType: string): typeof FileTypeIcon {
     case 'zip':
       return FileArchive;
     case 'presentation':
-      return FilePpt;
+      return FileText; // Using FileText instead of FilePpt which doesn't exist in Lucide
     case 'json':
-      return FileJson;
+      return FileBox; // Using FileBox instead of FileJson
     default:
       return FileText;
   }

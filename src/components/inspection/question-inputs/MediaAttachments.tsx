@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { X, ExternalLink, PlayCircle, PauseCircle, ZoomIn, Download, RotateCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -64,7 +63,7 @@ export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: Medi
 
   const renderAttachment = (url: string, index: number) => {
     const fileType = getFileType(url);
-    const FileIcon = getFileIcon(fileType);
+    const IconComponent = getFileIcon(fileType);
     const fileName = getFilenameFromUrl(url);
     
     // Handle images
@@ -116,7 +115,7 @@ export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: Medi
       return (
         <div key={index} className="relative group">
           <div className="border rounded-md p-3 flex items-center gap-3 bg-slate-50">
-            <FileIcon className="h-6 w-6 text-primary" />
+            <IconComponent className="h-6 w-6 text-primary" />
             <div className="flex-1 mr-2 overflow-hidden">
               <p className="text-sm font-medium truncate">{fileName}</p>
               <div className="flex items-center mt-1">
@@ -195,7 +194,7 @@ export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: Medi
       return (
         <div key={index} className="relative group">
           <div className="border rounded-md p-3 flex items-center gap-3">
-            <FileIcon className="h-6 w-6 text-red-500" />
+            <IconComponent className="h-6 w-6 text-red-500" />
             <div className="flex-1">
               <a 
                 href={url} 
@@ -237,7 +236,7 @@ export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: Medi
     return (
       <div key={index} className="relative group">
         <div className="border rounded-md p-3 flex items-center gap-3">
-          <FileIcon className="h-6 w-6 text-primary" />
+          <IconComponent className="h-6 w-6 text-primary" />
           <div className="flex-1">
             <a 
               href={url} 
@@ -285,6 +284,7 @@ export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: Medi
     
     const fileType = getFileType(activeDialogUrl);
     const fileName = getFilenameFromUrl(activeDialogUrl);
+    const IconComponent = getFileIcon(fileType);
     
     let content;
     
@@ -368,7 +368,7 @@ export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: Medi
         <div className="flex flex-col items-center p-4">
           <div className="w-full max-w-md bg-gray-50 rounded-lg p-4">
             <div className="flex items-center justify-center mb-4">
-              <FileIcon className="h-16 w-16 text-primary" />
+              <IconComponent className="h-16 w-16 text-primary" />
             </div>
             <p className="text-center mb-4">{fileName}</p>
             <audio 
@@ -427,7 +427,7 @@ export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: Medi
     } else {
       content = (
         <div className="flex flex-col items-center justify-center p-4">
-          <FileIcon className="h-16 w-16 text-primary mb-4" />
+          <IconComponent className="h-16 w-16 text-primary mb-4" />
           <p className="text-lg font-medium mb-2">Visualização não disponível</p>
           <p className="text-gray-500 mb-4">Por favor, baixe o arquivo para visualizá-lo.</p>
           <div className="flex space-x-2">

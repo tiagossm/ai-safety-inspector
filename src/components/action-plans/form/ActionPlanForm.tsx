@@ -56,14 +56,14 @@ export function ActionPlanForm({
     setIsSubmitting(true);
     try {
       await onSave({
-        inspectionId,
-        questionId,
         id: existingPlan?.id,
         description: values.description,
         assignee: values.assignee,
         dueDate: values.dueDate,
         priority: values.priority,
         status: values.status,
+        inspectionId,
+        questionId,
       });
       setOpen(false);
     } catch (error) {
