@@ -119,7 +119,7 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
     doc.text("Inspection Items", 14, 90);
     
     // Create table data
-    const tableData = responses?.map((response: any) => {
+    const tableData = (responses || []).map((response: any) => {
       let answer: string;
       
       switch (response.question?.tipo_resposta) {
@@ -151,7 +151,7 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
       }
       
       return row;
-    }) || [];
+    });
     
     // Create header for the table
     const tableHeaders = ["Question", "Response"];
@@ -199,25 +199,33 @@ export async function generateInspectionPDF(options: ReportOptions): Promise<str
         
         try {
           // Add signature image - only process if signature is a proper object with expected properties
-          if (signature && typeof signature === 'object' && signature.signature_data) {
+          if (typeof signature === 'object' && signature.signature_data) {
             // Add signature image
             doc.addImage(signature.signature_data, 'PNG', 14, yPos, 70, 30);
             
             // Add signature details
             doc.setFontSize(10);
             
-            // Safely access signer name properties with null checks
+            // Safely access signer name properties with proper type checking
             let signerName = "Unknown";
-            if (signature && signature.signer_name) {
-              signerName = signature.signer_name;
-            } else if (signature && signature.users && typeof signature.users === 'object' && signature.users.name) {
-              signerName = signature.users.name;
+            if (typeof signature === 'object') {
+              if (signature.signer_name) {
+                signerName = signature.signer_name;
+              } else if (
+                signature.users && 
+                typeof signature.users === 'object' && 
+                signature.users !== null &&
+                'name' in signature.users && 
+                typeof signature.users.name === 'string'
+              ) {
+                signerName = signature.users.name;
+              }
             }
             
             doc.text(`Signed by: ${signerName}`, 14, yPos + 35);
             
             // Safely check signed_at with null check
-            if (signature && signature.signed_at) {
+            if (typeof signature === 'object' && signature.signed_at) {
               const signedDate = new Date(signature.signed_at).toLocaleDateString();
               doc.text(`Date: ${signedDate}`, 14, yPos + 42);
             }
