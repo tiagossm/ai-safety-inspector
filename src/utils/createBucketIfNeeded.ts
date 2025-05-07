@@ -17,11 +17,25 @@ export async function createBucketIfNeeded(bucketName: string): Promise<boolean>
       console.log(`Bucket ${bucketName} already exists`);
       return true;
     } else {
-      // Bucket does not exist - in this case, we shouldn't try to create it
-      // via the client SDK as it may not have enough permissions.
-      // Instead, just log the situation - buckets should be created via migrations
-      console.log(`Bucket ${bucketName} does not exist. Please contact the administrator to create it.`);
-      return false;
+      // Create the bucket if it doesn't exist
+      console.log(`Bucket ${bucketName} does not exist, creating...`);
+      const { data, error } = await supabase.storage.createBucket(bucketName, {
+        public: true
+      });
+      
+      if (error) {
+        console.error(`Error creating bucket ${bucketName}:`, error);
+        
+        // Check if this is a permission error, which is common for client-side operations
+        if (error.message.includes("permission") || error.message.includes("403")) {
+          console.warn("Permission denied when creating bucket. This is normal for client-side operations. Contact your administrator to create the bucket.");
+        }
+        
+        return false;
+      }
+      
+      console.log(`Successfully created bucket ${bucketName}`);
+      return true;
     }
   } catch (error) {
     console.error("Error in createBucketIfNeeded:", error);
