@@ -1,97 +1,93 @@
 
-import { 
-  FileText, Image, FileVideo, FileAudio, 
-  FileCode, FileArchive, File as FilePdf, 
-  FileSpreadsheet, FileType as FileTypeIcon,
-  FileImage, FileBox,
-} from "lucide-react";
+import {
+  File,
+  FileText,
+  Image,
+  Music,
+  Video,
+  FileArchive,
+  FileCode,
+  FilePieChart,
+} from 'lucide-react';
 
-export type FileType = 'image' | 'video' | 'audio' | 'pdf' | 'excel' | 'word' | 'code' | 'zip' | 'presentation' | 'json' | 'other';
+/**
+ * Extrai o nome do arquivo a partir de uma URL
+ * @param url URL do arquivo
+ * @returns Nome do arquivo
+ */
+export function getFilenameFromUrl(url: string): string {
+  try {
+    // Remover parâmetros de query
+    const urlWithoutQuery = url.split('?')[0];
+    // Obter a última parte do caminho
+    const parts = urlWithoutQuery.split('/');
+    const filename = parts[parts.length - 1];
+    // Decodificar o nome do arquivo
+    return decodeURIComponent(filename);
+  } catch (e) {
+    return 'arquivo';
+  }
+}
 
-// Get file type from URL or file extension
-export function getFileType(url: string): FileType {
-  const lowercaseUrl = url.toLowerCase();
-  
-  // Check for image formats
-  if (lowercaseUrl.match(/\.(jpeg|jpg|gif|png|webp|bmp|svg|avif|heif|heic)$/i) || 
-      lowercaseUrl.includes('image/') || 
-      lowercaseUrl.includes('/images/')) {
+/**
+ * Detecta o tipo de arquivo com base na URL ou extensão
+ * @param url URL ou caminho do arquivo
+ * @returns Tipo de arquivo: 'image', 'audio', 'video', 'pdf', etc.
+ */
+export function getFileType(url: string): string {
+  const filename = url.toLowerCase();
+
+  // Imagens
+  if (/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(filename)) {
     return 'image';
   }
   
-  // Check for video formats
-  if (lowercaseUrl.match(/\.(mp4|webm|mov|avi|wmv|flv|mkv|m4v|3gp)$/i) || 
-      lowercaseUrl.includes('video/')) {
-    return 'video';
-  }
-  
-  // Check for audio formats
-  if (lowercaseUrl.match(/\.(mp3|wav|ogg|m4a|flac|aac|opus)$/i) || 
-      lowercaseUrl.includes('audio/')) {
+  // Áudio
+  if (/\.(mp3|wav|ogg|flac|m4a|aac)$/i.test(filename)) {
     return 'audio';
   }
   
-  // Check for document types
-  if (lowercaseUrl.match(/\.pdf$/i)) {
+  // Vídeo
+  if (/\.(mp4|webm|mkv|avi|mov|flv)$/i.test(filename)) {
+    return 'video';
+  }
+  
+  // Documentos comuns
+  if (/\.pdf$/i.test(filename)) {
     return 'pdf';
   }
   
-  if (lowercaseUrl.match(/\.(xlsx|xls|csv|numbers)$/i)) {
-    return 'excel';
-  }
-  
-  if (lowercaseUrl.match(/\.(docx|doc|odt|rtf|txt|pages)$/i)) {
+  if (/\.(doc|docx)$/i.test(filename)) {
     return 'word';
   }
   
-  if (lowercaseUrl.match(/\.(js|ts|jsx|tsx|html|css|json|xml|py|java|php|c|cpp|go|rb)$/i)) {
-    return 'code';
+  if (/\.(xls|xlsx|csv)$/i.test(filename)) {
+    return 'excel';
   }
   
-  if (lowercaseUrl.match(/\.(zip|rar|7z|tar|gz|bz2|tgz)$/i)) {
-    return 'zip';
-  }
-  
-  if (lowercaseUrl.match(/\.(ppt|pptx|key|odp)$/i)) {
+  if (/\.(ppt|pptx)$/i.test(filename)) {
     return 'presentation';
   }
   
-  if (lowercaseUrl.match(/\.(json)$/i)) {
-    return 'json';
+  // Arquivos compactados
+  if (/\.(zip|rar|7z|tar|gz)$/i.test(filename)) {
+    return 'zip';
   }
   
-  return 'other';
-}
-
-// Get appropriate icon component for a file type
-export function getFileIcon(fileType: string) {
-  switch (fileType) {
-    case 'image':
-      return FileImage;
-    case 'video':
-      return FileVideo;
-    case 'audio':
-      return FileAudio;
-    case 'pdf':
-      return FilePdf;
-    case 'excel':
-      return FileSpreadsheet;
-    case 'word':
-      return FileText;
-    case 'code':
-      return FileCode;
-    case 'zip':
-      return FileArchive;
-    case 'presentation':
-      return FileText; // Using FileText instead of FilePpt which doesn't exist in Lucide
-    case 'json':
-      return FileBox; // Using FileBox instead of FileJson
-    default:
-      return FileText;
+  // Arquivos de código
+  if (/\.(js|ts|html|css|py|java|c|cpp|php|json|xml)$/i.test(filename)) {
+    return 'code';
   }
+  
+  // Outros tipos
+  return 'file';
 }
 
-// Get human-readable file size
+/**
+ * Retorna o tamanho de arquivo formatado (KB, MB, etc.)
+ * @param bytes Tamanho em bytes
+ * @returns Tamanho formatado
+ */
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes';
   
@@ -102,17 +98,32 @@ export function formatFileSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-// Extract filename from URL
-export function getFilenameFromUrl(url: string): string {
-  try {
-    // Try to get the filename from the URL path
-    const pathname = new URL(url).pathname;
-    const filename = pathname.split('/').pop() || 'file';
-    
-    // If the filename has a query string, remove it
-    return filename.split('?')[0];
-  } catch (e) {
-    // If URL parsing fails, just try to get the last part of the path
-    return url.split('/').pop()?.split('?')[0] || 'file';
+/**
+ * Retorna o componente de ícone para um tipo de arquivo
+ * @param fileType Tipo de arquivo
+ * @returns Componente React de ícone
+ */
+export function getFileIcon(fileType: string): any {
+  switch (fileType) {
+    case 'image':
+      return Image;
+    case 'audio':
+      return Music;
+    case 'video':
+      return Video;
+    case 'pdf':
+      return FileText;
+    case 'word':
+      return FileText;
+    case 'excel':
+      return FilePieChart;
+    case 'presentation':
+      return FilePieChart;
+    case 'zip':
+      return FileArchive;
+    case 'code':
+      return FileCode;
+    default:
+      return File;
   }
 }

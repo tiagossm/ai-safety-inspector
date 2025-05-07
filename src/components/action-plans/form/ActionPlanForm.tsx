@@ -67,7 +67,7 @@ export function ActionPlanForm({
       });
       setOpen(false);
     } catch (error) {
-      console.error("Error saving action plan:", error);
+      console.error("Erro ao salvar plano de ação:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -82,9 +82,9 @@ export function ActionPlanForm({
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>{existingPlan?.id ? "Edit" : "Create"} Action Plan</DialogTitle>
+          <DialogTitle>{existingPlan?.id ? "Editar" : "Criar"} Plano de Ação</DialogTitle>
           <DialogDescription>
-            Create an action plan to address non-conformities in your inspection.
+            Crie um plano de ação para resolver não conformidades encontradas na inspeção.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

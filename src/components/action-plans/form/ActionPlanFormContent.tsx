@@ -36,16 +36,16 @@ export function ActionPlanFormContent({
 
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
+          Cancelar
         </Button>
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Saving...
+              Salvando...
             </>
           ) : (
-            "Save Action Plan"
+            "Salvar Plano de Ação"
           )}
         </Button>
       </DialogFooter>

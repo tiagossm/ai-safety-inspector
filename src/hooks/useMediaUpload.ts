@@ -20,12 +20,12 @@ export function useMediaUpload() {
 
   const uploadFile = async (file: File): Promise<UploadResult | null> => {
     try {
-      console.log("📤 Starting file upload:", file.name, file.type);
+      console.log("📤 Iniciando upload de arquivo:", file.name, file.type);
       setIsUploading(true);
       setProgress(0);
       setError(null);
       
-      // Ensure the bucket exists
+      // Garantir que o bucket existe
       const bucketName = "inspection-media";
       const bucketReady = await createBucketIfNeeded(bucketName);
       
@@ -33,13 +33,13 @@ export function useMediaUpload() {
         throw new Error("Não foi possível criar ou acessar o bucket de armazenamento");
       }
       
-      // Create a unique filename
+      // Criar um nome de arquivo único
       const fileExt = file.name.split(".").pop() || '';
       const safeFileName = file.name.replace(/[^a-zA-Z0-9-_\.]/g, '_');
       const fileName = `${uuidv4()}-${safeFileName}`;
       const filePath = `uploads/${fileName}`;
       
-      // Simulate progress
+      // Simular progresso
       const progressInterval = setInterval(() => {
         setProgress(prev => {
           if (prev >= 95) {
@@ -50,7 +50,7 @@ export function useMediaUpload() {
         });
       }, 100);
       
-      // Upload the file
+      // Upload do arquivo
       const { data, error } = await supabase.storage
         .from(bucketName)
         .upload(filePath, file, {
@@ -61,20 +61,20 @@ export function useMediaUpload() {
       clearInterval(progressInterval);
       
       if (error) {
-        console.error("Upload error:", error);
+        console.error("Erro no upload:", error);
         setError(error);
         throw error;
       }
       
-      console.log("✅ File uploaded successfully:", filePath);
+      console.log("✅ Arquivo enviado com sucesso:", filePath);
       setProgress(100);
 
-      // Get the public URL
+      // Obter a URL pública
       const { data: urlData } = supabase.storage
         .from(bucketName)
         .getPublicUrl(filePath);
 
-      console.log("📊 File URL generated:", urlData.publicUrl);
+      console.log("📊 URL do arquivo gerada:", urlData.publicUrl);
 
       return {
         path: filePath,
@@ -84,7 +84,7 @@ export function useMediaUpload() {
         size: file.size
       };
     } catch (error: any) {
-      console.error("Error uploading file:", error);
+      console.error("Erro ao enviar arquivo:", error);
       setError(error);
       toast.error("Erro ao enviar arquivo: " + (error instanceof Error ? error.message : "Erro desconhecido"));
       throw error;
@@ -99,21 +99,21 @@ export function useMediaUpload() {
       setProgress(0);
       setError(null);
       
-      const mediaType = fileType.split('/')[0]; // 'audio', 'video', or 'image'
+      const mediaType = fileType.split('/')[0]; // 'audio', 'video', ou 'image'
       const extension = fileType.split('/')[1]; // 'mp3', 'mp4', 'jpeg', etc.
       
-      // Create a file from the blob
+      // Criar um arquivo a partir do blob
       const file = new File(
         [mediaBlob], 
         fileName || `${mediaType}_${Date.now()}.${extension}`, 
         { type: fileType }
       );
       
-      console.log(`📤 Uploading ${mediaType} file:`, file.name);
+      console.log(`📤 Enviando arquivo ${mediaType}:`, file.name);
       
       return await uploadFile(file);
     } catch (error: any) {
-      console.error(`Error uploading ${fileType.split('/')[0]}:`, error);
+      console.error(`Erro ao enviar ${fileType.split('/')[0]}:`, error);
       setError(error);
       toast.error(`Erro ao enviar mídia: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
       throw error;
@@ -122,11 +122,11 @@ export function useMediaUpload() {
   
   const deleteFile = async (url: string): Promise<boolean> => {
     try {
-      // Extract the path from the URL
+      // Extrair o caminho da URL
       const urlObj = new URL(url);
       const pathParts = urlObj.pathname.split('/');
-      const bucketName = pathParts[1]; // Usually "inspection-media"
-      const filePath = pathParts.slice(2).join('/'); // The rest of the path
+      const bucketName = pathParts[1]; // Geralmente "inspection-media"
+      const filePath = pathParts.slice(2).join('/'); // O resto do caminho
       
       if (!bucketName || !filePath) {
         throw new Error("URL inválida para exclusão");
@@ -137,13 +137,13 @@ export function useMediaUpload() {
         .remove([filePath]);
         
       if (error) {
-        console.error("Delete error:", error);
+        console.error("Erro na exclusão:", error);
         throw error;
       }
       
       return true;
     } catch (error) {
-      console.error("Error deleting file:", error);
+      console.error("Erro ao excluir arquivo:", error);
       toast.error("Erro ao excluir arquivo");
       return false;
     }

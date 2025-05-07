@@ -28,7 +28,7 @@ export const YesNoResponseInput: React.FC<YesNoResponseInputProps> = ({
   onSaveActionPlan,
   readOnly = false
 }) => {
-  // Get priority color
+  // Obter cor de prioridade
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'low': return 'bg-green-100 text-green-800';
@@ -39,7 +39,7 @@ export const YesNoResponseInput: React.FC<YesNoResponseInputProps> = ({
     }
   };
 
-  // Get status icon
+  // Obter ícone de status
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed': return <CheckCircle className="h-4 w-4 text-green-600" />;
@@ -49,7 +49,7 @@ export const YesNoResponseInput: React.FC<YesNoResponseInputProps> = ({
     }
   };
   
-  // Format the action plan status
+  // Formatar o status do plano de ação
   const formatActionPlanStatus = (status: string) => {
     switch (status) {
       case 'pending': return 'Pendente';
@@ -57,6 +57,17 @@ export const YesNoResponseInput: React.FC<YesNoResponseInputProps> = ({
       case 'completed': return 'Concluído';
       case 'cancelled': return 'Cancelado';
       default: return status;
+    }
+  };
+
+  // Formatar a prioridade do plano de ação
+  const formatActionPlanPriority = (priority: string) => {
+    switch (priority) {
+      case 'low': return 'Baixa';
+      case 'medium': return 'Média';
+      case 'high': return 'Alta';
+      case 'critical': return 'Crítica';
+      default: return priority;
     }
   };
 
@@ -104,7 +115,7 @@ export const YesNoResponseInput: React.FC<YesNoResponseInputProps> = ({
         </Button>
       </div>
       
-      {/* Action Plan section for negative answers */}
+      {/* Seção de Plano de Ação para respostas negativas */}
       {response?.value === 'não' && inspectionId && question.id && (
         <div className="mt-2">
           {actionPlan ? (
@@ -117,9 +128,7 @@ export const YesNoResponseInput: React.FC<YesNoResponseInputProps> = ({
                 
                 <div className="flex items-center gap-1">
                   <span className={`px-2 py-0.5 rounded-full text-xs ${getPriorityColor(actionPlan.priority)}`}>
-                    {actionPlan.priority === 'low' ? 'Baixa' : 
-                     actionPlan.priority === 'medium' ? 'Média' : 
-                     actionPlan.priority === 'high' ? 'Alta' : 'Crítica'}
+                    {formatActionPlanPriority(actionPlan.priority)}
                   </span>
                   <span className="bg-gray-100 text-gray-800 text-xs px-2 py-0.5 rounded-full">
                     {formatActionPlanStatus(actionPlan.status)}
@@ -174,7 +183,7 @@ export const YesNoResponseInput: React.FC<YesNoResponseInputProps> = ({
         </div>
       )}
       
-      {/* Media upload section if allowed */}
+      {/* Seção de upload de mídia se permitido */}
       {(question.allowsPhoto || question.permite_foto || 
         question.allowsVideo || question.permite_video ||
         question.allowsAudio || question.permite_audio ||
