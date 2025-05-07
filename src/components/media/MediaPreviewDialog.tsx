@@ -22,18 +22,23 @@ export function MediaPreviewDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [rotation, setRotation] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   
   useEffect(() => {
     if (open && url) {
       setIsLoading(true);
+      setError(null);
       setZoomLevel(1);
       setRotation(0);
+      console.log(`MediaPreviewDialog opened with URL: ${url}`);
     }
   }, [open, url]);
   
   if (!url) return null;
   
   const fileType = getFileType(url);
+  console.log(`MediaPreviewDialog detected file type: ${fileType} for URL: ${url}`);
+  
   const fileName = title || getFilenameFromUrl(url);
   
   const handleDownload = () => {
@@ -46,6 +51,7 @@ export function MediaPreviewDialog({
       document.body.removeChild(a);
     } catch (error) {
       toast.error('Não foi possível fazer o download do arquivo');
+      console.error('Error downloading file:', error);
     }
   };
   
@@ -72,27 +78,38 @@ export function MediaPreviewDialog({
               transform: `scale(${zoomLevel}) rotate(${rotation}deg)`,
               transformOrigin: 'center'
             }}
-            onLoad={() => setIsLoading(false)}
-            onError={() => {
+            onLoad={() => {
+              console.log('Image loaded successfully');
               setIsLoading(false);
+            }}
+            onError={(e) => {
+              console.error(`Error loading image: ${url}`);
+              setIsLoading(false);
+              setError('Não foi possível carregar a imagem');
               toast.error('Não foi possível carregar a imagem');
+              // Set a placeholder image
+              (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgZmlsbD0ibm9uZSI+PHBhdGggZD0iTTEyIDIyYzUuNTIzIDAgMTAtNC40NzcgMTAtMTBTMTcuNTIzIDIgMTIgMiAyIDYuNDc3IDIgMTJzNC40NzcgMTAgMTAgMTB6IiBzdHJva2U9IiNBM0IzQkMiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBhdGggZD0iTTEyIDhhMSAxIDAgMTEwLTIgMSAxIDAgMDEwIDJ6bTAgOHYtNmguMDFIOFYxMGg0LjAxSDEzIiBzdHJva2U9IiNBM0IzQkMiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+';
             }}
           />
         </div>
-        <div className="flex flex-wrap justify-center gap-2 mt-4">
-          <Button variant="outline" size="sm" onClick={handleZoomIn}>
-            <ZoomIn className="h-4 w-4 mr-1" /> Aproximar
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleZoomOut}>
-            <ZoomIn className="h-4 w-4 mr-1 rotate-180" /> Afastar
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleRotate}>
-            <RotateCw className="h-4 w-4 mr-1" /> Girar
-          </Button>
-          <Button variant="outline" size="sm" onClick={handleDownload}>
-            <Download className="h-4 w-4 mr-1" /> Baixar
-          </Button>
-        </div>
+        {error ? (
+          <p className="text-sm text-red-500 mt-2">{error}</p>
+        ) : (
+          <div className="flex flex-wrap justify-center gap-2 mt-4">
+            <Button variant="outline" size="sm" onClick={handleZoomIn}>
+              <ZoomIn className="h-4 w-4 mr-1" /> Aproximar
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleZoomOut}>
+              <ZoomIn className="h-4 w-4 mr-1 rotate-180" /> Afastar
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleRotate}>
+              <RotateCw className="h-4 w-4 mr-1" /> Girar
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleDownload}>
+              <Download className="h-4 w-4 mr-1" /> Baixar
+            </Button>
+          </div>
+        )}
       </div>
     );
   } else if (fileType === 'video') {
@@ -109,21 +126,30 @@ export function MediaPreviewDialog({
             controls 
             className="w-full max-h-[70vh]" 
             autoPlay
-            onLoadedData={() => setIsLoading(false)}
-            onError={() => {
+            onLoadedData={() => {
+              console.log('Video loaded successfully');
               setIsLoading(false);
+            }}
+            onError={() => {
+              console.error(`Error loading video: ${url}`);
+              setIsLoading(false);
+              setError('Não foi possível carregar o vídeo');
               toast.error('Não foi possível carregar o vídeo');
             }}
           />
         </div>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleDownload}
-          className="mt-4"
-        >
-          <Download className="h-4 w-4 mr-1" /> Baixar
-        </Button>
+        {error ? (
+          <p className="text-sm text-red-500 mt-2">{error}</p>
+        ) : (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleDownload}
+            className="mt-4"
+          >
+            <Download className="h-4 w-4 mr-1" /> Baixar
+          </Button>
+        )}
       </div>
     );
   } else if (fileType === 'audio') {
@@ -137,7 +163,7 @@ export function MediaPreviewDialog({
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-2a6 6 0 100-12 6 6 0 000 12z" clipRule="evenodd" />
               </svg>
             </div>
-            <p className="font-medium">{fileName}</p>
+            <p className="font-medium" title={fileName}>{fileName}</p>
           </div>
           <div className={`rounded-lg p-3 ${isLoading ? 'opacity-50' : ''}`}>
             <audio 
@@ -145,28 +171,38 @@ export function MediaPreviewDialog({
               controls 
               autoPlay={false}
               className="w-full" 
-              onLoadedData={() => setIsLoading(false)}
-              onError={() => {
+              onLoadedData={() => {
+                console.log('Audio loaded successfully');
                 setIsLoading(false);
+              }}
+              onError={() => {
+                console.error(`Error loading audio: ${url}`);
+                setIsLoading(false);
+                setError('Não foi possível carregar o áudio');
                 toast.error('Não foi possível carregar o áudio');
               }}
             />
           </div>
-          <div className="mt-4 flex justify-center">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleDownload}
-            >
-              <Download className="h-4 w-4 mr-1" /> Baixar Áudio
-            </Button>
-          </div>
+          {error ? (
+            <p className="text-sm text-red-500 mt-2 text-center">{error}</p>
+          ) : (
+            <div className="mt-4 flex justify-center">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleDownload}
+              >
+                <Download className="h-4 w-4 mr-1" /> Baixar Áudio
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     );
   } else {
     // Verificar se é um PDF específicamente pela extensão
     const extension = url.split('.').pop()?.toLowerCase() || '';
+    console.log(`Checking file extension: ${extension}`);
     const isPdf = extension === 'pdf';
     
     if (isPdf) {
@@ -176,28 +212,37 @@ export function MediaPreviewDialog({
             src={`${url}#toolbar=0&navpanes=0`}
             title={fileName}
             className="w-full h-full border-0"
-            onLoad={() => setIsLoading(false)}
-            onError={() => {
+            onLoad={() => {
+              console.log('PDF loaded successfully');
               setIsLoading(false);
+            }}
+            onError={() => {
+              console.error(`Error loading PDF: ${url}`);
+              setIsLoading(false);
+              setError('Não foi possível carregar o PDF');
               toast.error('Não foi possível carregar o PDF');
             }}
           />
-          <div className="flex justify-center space-x-2 mt-4">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleDownload}
-            >
-              <Download className="h-4 w-4 mr-1" /> Baixar
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => window.open(url, '_blank')}
-            >
-              <ExternalLink className="h-4 w-4 mr-1" /> Abrir em Nova Aba
-            </Button>
-          </div>
+          {error ? (
+            <p className="text-sm text-red-500 mt-2 text-center">{error}</p>
+          ) : (
+            <div className="flex justify-center space-x-2 mt-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleDownload}
+              >
+                <Download className="h-4 w-4 mr-1" /> Baixar
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => window.open(url, '_blank')}
+              >
+                <ExternalLink className="h-4 w-4 mr-1" /> Abrir em Nova Aba
+              </Button>
+            </div>
+          )}
         </div>
       );
     } else {

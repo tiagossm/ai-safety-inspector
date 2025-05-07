@@ -38,7 +38,16 @@ export function formatFileSize(bytes: number): string {
 // Função para obter o ícone baseado no tipo de arquivo
 export function getFileIcon(fileType: string) {
   // Importamos os ícones dinamicamente na função que os usa
-  const { FileText, Image, FileVideo, Mic, FileSpreadsheet, FileCode, Archive, FilePresentation } = require('lucide-react');
+  const { 
+    FileText, 
+    Image, 
+    FileVideo, 
+    Mic, 
+    FileSpreadsheet, 
+    FileCode, 
+    Archive, 
+    FilePresentation 
+  } = require('lucide-react');
   
   switch (fileType) {
     case 'image':

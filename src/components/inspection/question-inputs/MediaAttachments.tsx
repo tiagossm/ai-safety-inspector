@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { X, ExternalLink, PlayCircle, PauseCircle, ZoomIn, Download, RotateCw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -45,8 +46,9 @@ export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: Medi
   };
 
   const renderAttachment = (url: string, index: number) => {
+    console.log(`Rendering attachment: ${url}`);
     const fileType = getFileType(url);
-    const IconComponent = getFileIcon(fileType);
+    console.log(`Detected file type: ${fileType}`);
     const fileName = getFilenameFromUrl(url);
     
     // Lidar com imagens
@@ -61,6 +63,10 @@ export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: Medi
               src={url} 
               alt={`Anexo ${index + 1}`} 
               className="h-40 w-full object-cover"
+              onError={(e) => {
+                console.error(`Error loading image: ${url}`);
+                (e.target as HTMLImageElement).src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgZmlsbD0ibm9uZSI+PHBhdGggZD0iTTEyIDIyYzUuNTIzIDAgMTAtNC40NzcgMTAtMTBTMTcuNTIzIDIgMTIgMiAyIDYuNDc3IDIgMTJzNC40NzcgMTAgMTAgMTB6IiBzdHJva2U9IiNBM0IzQkMiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PHBhdGggZD0iTTEyIDhhMSAxIDAgMTEwLTIgMSAxIDAgMDEwIDJ6bTAgOHYtNmguMDFIOFYxMGg0LjAxSDEzIiBzdHJva2U9IiNBM0IzQkMiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+PC9zdmc+';
+              }}
             />
           </div>
           <div className="absolute bottom-1 left-1 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -112,9 +118,9 @@ export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: Medi
       return (
         <div key={index} className="relative group">
           <div className="border rounded-md p-3 flex items-center gap-3 bg-slate-50">
-            <IconComponent className="h-6 w-6 text-primary" />
+            <Mic className="h-6 w-6 text-primary" />
             <div className="flex-1 mr-2 overflow-hidden">
-              <p className="text-sm font-medium truncate">{fileName}</p>
+              <p className="text-sm font-medium truncate" title={fileName}>{fileName}</p>
               <div className="flex items-center mt-1">
                 <Button 
                   variant="ghost" 
@@ -176,7 +182,7 @@ export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: Medi
           >
             <PlayCircle className="h-12 w-12 text-primary opacity-80" />
           </div>
-          <p className="text-xs font-medium mt-1 truncate">{fileName}</p>
+          <p className="text-xs font-medium mt-1 truncate" title={fileName}>{fileName}</p>
           <div className="absolute bottom-6 left-1 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <Button
               variant="secondary"
@@ -209,21 +215,33 @@ export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: Medi
     
     // Para os demais tipos de arquivo, precisamos identificar tipos específicos por extensão
     const extension = url.split('.').pop()?.toLowerCase() || '';
-    const specificFileType = 
-      /pdf$/.test(extension) ? 'pdf' :
-      /(xlsx|xls|csv|numbers)$/.test(extension) ? 'excel' :
-      /(docx|doc|odt)$/.test(extension) ? 'word' :
-      /(js|ts|py|java|html|css|php|rb|go)$/.test(extension) ? 'code' :
-      /(zip|rar|tar|gz|7z)$/.test(extension) ? 'zip' :
-      /(ppt|pptx|key|odp)$/.test(extension) ? 'presentation' :
-      'generic';
+    console.log(`Extension detected: ${extension}`);
+    
+    // Determine specific file type based on extension
+    let specificFileType = 'generic';
+    
+    if (/pdf/.test(extension)) {
+      specificFileType = 'pdf';
+    } else if (/(xlsx|xls|csv|numbers)/.test(extension)) {
+      specificFileType = 'excel';
+    } else if (/(docx|doc|odt)/.test(extension)) {
+      specificFileType = 'word';
+    } else if (/(js|ts|py|java|html|css|php|rb|go)/.test(extension)) {
+      specificFileType = 'code';
+    } else if (/(zip|rar|tar|gz|7z)/.test(extension)) {
+      specificFileType = 'zip';
+    } else if (/(ppt|pptx|key|odp)/.test(extension)) {
+      specificFileType = 'presentation';
+    }
+    
+    console.log(`Specific file type: ${specificFileType}`);
     
     // Lidar com PDF usando a variável specificFileType
     if (specificFileType === 'pdf') {
       return (
         <div key={index} className="relative group">
           <div className="border rounded-md p-3 flex items-center gap-3">
-            <IconComponent className="h-6 w-6 text-red-500" />
+            <FileText className="h-6 w-6 text-red-500" />
             <div className="flex-1">
               <a 
                 href={url} 
@@ -231,6 +249,7 @@ export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: Medi
                 rel="noopener noreferrer"
                 className="text-sm font-medium truncate flex-1 hover:underline"
                 onClick={(e) => e.stopPropagation()}
+                title={fileName}
               >
                 {fileName}
               </a>
@@ -265,14 +284,27 @@ export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: Medi
     return (
       <div key={index} className="relative group">
         <div className="border rounded-md p-3 flex items-center gap-3">
-          <IconComponent className="h-6 w-6 text-primary" />
-          <div className="flex-1">
+          {specificFileType === 'excel' ? (
+            <FileSpreadsheet className="h-6 w-6 text-green-600" />
+          ) : specificFileType === 'word' ? (
+            <FileText className="h-6 w-6 text-blue-600" />
+          ) : specificFileType === 'code' ? (
+            <FileCode className="h-6 w-6 text-purple-600" />
+          ) : specificFileType === 'zip' ? (
+            <Archive className="h-6 w-6 text-yellow-600" />
+          ) : specificFileType === 'presentation' ? (
+            <FilePresentation className="h-6 w-6 text-orange-600" />
+          ) : (
+            <FileText className="h-6 w-6 text-gray-600" />
+          )}
+          <div className="flex-1 overflow-hidden">
             <a 
               href={url} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-sm font-medium truncate flex-1 hover:underline"
+              className="text-sm font-medium truncate block hover:underline"
               onClick={(e) => e.stopPropagation()}
+              title={fileName}
             >
               {fileName}
             </a>
@@ -310,7 +342,7 @@ export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: Medi
   
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {mediaUrls.map((url, index) => renderAttachment(url, index))}
       </div>
       

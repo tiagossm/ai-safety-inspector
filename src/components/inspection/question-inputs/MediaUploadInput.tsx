@@ -2,11 +2,11 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, Pencil, Trash2, Search, Play, FileText, Mic, FileVideo, Image, Sparkles } from "lucide-react";
-import { PhotoInput } from "./PhotoInput";
 import { MediaDialog } from "../dialogs/MediaDialog";
 import { MediaPreviewDialog } from "@/components/media/MediaPreviewDialog";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
-import { getFileType } from "@/utils/fileUtils";
+import { getFileType, getFilenameFromUrl } from "@/utils/fileUtils";
+import { MediaAttachments } from "./MediaAttachments";
 
 interface MediaUploadInputProps {
   mediaUrls: string[];
@@ -33,6 +33,9 @@ export function MediaUploadInput({
   const [selectedMedia, setSelectedMedia] = useState<string | null>(null);
   const [selectedMediaType, setSelectedMediaType] = useState<string | null>(null);
   
+  console.log("MediaUploadInput rendering with URLs:", mediaUrls);
+  console.log("Allow settings:", { allowsPhoto, allowsVideo, allowsAudio, allowsFiles });
+  
   const handleAddMedia = () => {
     if (!readOnly) {
       setMediaDialogOpen(true);
@@ -40,12 +43,14 @@ export function MediaUploadInput({
   };
   
   const handleMediaUploaded = (urls: string[]) => {
+    console.log("Media uploaded:", urls);
     const newUrls = [...mediaUrls, ...urls];
     onMediaChange(newUrls);
   };
   
   const handleDeleteMedia = (urlToDelete: string) => {
     if (!readOnly) {
+      console.log("Deleting media:", urlToDelete);
       const filteredUrls = mediaUrls.filter(url => url !== urlToDelete);
       onMediaChange(filteredUrls);
     }
@@ -63,24 +68,30 @@ export function MediaUploadInput({
   };
 
   const getMediaType = (url: string): string => {
-    if (url.match(/\.(jpe?g|png|gif|bmp|webp)$/i)) return 'image/jpeg';
-    if (url.match(/\.(mp4|webm|mov)$/i)) return 'video/mp4';
-    if (url.match(/\.(mp3|wav|ogg)$/i)) return 'audio/mp3';
-    return 'application/octet-stream';
+    const fileType = getFileType(url);
+    switch(fileType) {
+      case 'image': return 'image/jpeg';
+      case 'video': return 'video/mp4';
+      case 'audio': return 'audio/mp3';
+      default: return 'application/octet-stream';
+    }
   };
   
   const getMediaIcon = (url: string) => {
-    if (url.match(/\.(jpe?g|png|gif|bmp|webp)$/i)) return <Image className="h-4 w-4" />;
-    if (url.match(/\.(mp4|webm|mov)$/i)) return <FileVideo className="h-4 w-4" />;
-    if (url.match(/\.(mp3|wav|ogg)$/i)) return <Mic className="h-4 w-4" />;
-    return <FileText className="h-4 w-4" />;
+    const fileType = getFileType(url);
+    switch(fileType) {
+      case 'image': return <Image className="h-4 w-4" />;
+      case 'video': return <FileVideo className="h-4 w-4" />;
+      case 'audio': return <Mic className="h-4 w-4" />;
+      default: return <FileText className="h-4 w-4" />;
+    }
   };
 
   const allowedTypes = [];
   if (allowsPhoto) allowedTypes.push('image/*');
   if (allowsVideo) allowedTypes.push('video/*');
   if (allowsAudio) allowedTypes.push('audio/*');
-  if (allowsFiles) allowedTypes.push('*/*');
+  if (allowsFiles) allowedTypes.push('application/pdf', '.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar');
   
   return (
     <div className="space-y-2">
@@ -106,75 +117,11 @@ export function MediaUploadInput({
       </div>
       
       {mediaUrls.length > 0 && (
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-          {mediaUrls.map((url, index) => (
-            <div 
-              key={index}
-              className="group relative border rounded-md overflow-hidden bg-muted/20"
-            >
-              {url.match(/\.(jpe?g|png|gif|bmp|webp)$/i) ? (
-                <div className="aspect-square">
-                  <img 
-                    src={url} 
-                    alt={`Mídia ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ) : url.match(/\.(mp4|webm|mov)$/i) ? (
-                <div className="aspect-square bg-black flex items-center justify-center">
-                  <Play className="h-8 w-8 text-white opacity-80" />
-                </div>
-              ) : url.match(/\.(mp3|wav|ogg)$/i) ? (
-                <div className="aspect-square bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
-                  <Mic className="h-8 w-8 text-blue-400" />
-                </div>
-              ) : (
-                <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-                  <FileText className="h-8 w-8 text-gray-400" />
-                </div>
-              )}
-              
-              {/* Overlay com botões */}
-              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-opacity flex items-center justify-center">
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                  <Button
-                    size="icon"
-                    variant="secondary"
-                    className="h-7 w-7"
-                    onClick={() => handlePreviewMedia(url)}
-                  >
-                    <Search className="h-3.5 w-3.5" />
-                  </Button>
-                  
-                  <Button
-                    size="icon"
-                    variant="secondary"
-                    className="h-7 w-7"
-                    onClick={() => handleAnalyzeMedia(url, getMediaType(url))}
-                  >
-                    <Sparkles className="h-3.5 w-3.5" />
-                  </Button>
-                  
-                  {!readOnly && (
-                    <Button
-                      size="icon"
-                      variant="destructive"
-                      className="h-7 w-7"
-                      onClick={() => handleDeleteMedia(url)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-              
-              {/* Ícone indicativo do tipo de arquivo */}
-              <div className="absolute bottom-1 left-1 bg-white bg-opacity-80 rounded-full p-1">
-                {getMediaIcon(url)}
-              </div>
-            </div>
-          ))}
-        </div>
+        <MediaAttachments 
+          mediaUrls={mediaUrls} 
+          onDelete={!readOnly ? handleDeleteMedia : undefined} 
+          readOnly={readOnly} 
+        />
       )}
       
       <MediaDialog
