@@ -13,6 +13,7 @@ import { useMediaAnalysis } from "@/hooks/useMediaAnalysis";
 import { getFileType } from "@/utils/fileUtils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 interface MediaAnalysisDialogProps {
   open: boolean;
@@ -39,21 +40,37 @@ export function MediaAnalysisDialog({
   }, [open, mediaUrl]);
 
   const handleAnalyze = async () => {
-    if (!mediaUrl) return;
+    if (!mediaUrl) {
+      toast.error("URL da mídia não fornecida");
+      return;
+    }
     
     const type = mediaType || getFileTypeFromUrl(mediaUrl);
+    
     try {
+      toast.info("Iniciando análise de mídia...");
+      console.log("Analisando mídia:", mediaUrl, type);
+      
       const analysisResult = await analyzeMedia(mediaUrl, type);
       setHasAnalyzed(true);
+      
+      if (!analysisResult) {
+        toast.error("Falha na análise de mídia");
+        return;
+      }
       
       // Verificar se a resposta contém indicação de que a API key não está configurada
       if (analysisResult && 
           ((analysisResult.analysis && analysisResult.analysis.includes("Configure a API do OpenAI")) || 
            (analysisResult.transcription && analysisResult.transcription.includes("Configure a API do OpenAI")))) {
         setApiKeyConfigured(false);
+        toast.warning("A chave da API OpenAI não está configurada no servidor");
+      } else {
+        toast.success("Análise concluída com sucesso");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao analisar mídia:", error);
+      toast.error(`Erro: ${error.message || "Falha ao analisar mídia"}`);
       setHasAnalyzed(true);
     }
   };

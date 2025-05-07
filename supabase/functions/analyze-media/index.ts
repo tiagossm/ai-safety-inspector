@@ -81,6 +81,8 @@ serve(async (req) => {
 // Função para análise de imagem usando OpenAI Vision
 async function analyzeImage(imageUrl: string, apiKey: string) {
   try {
+    console.log("Analisando imagem:", imageUrl);
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -88,7 +90,7 @@ async function analyzeImage(imageUrl: string, apiKey: string) {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4-vision-preview',
+        model: 'gpt-4o', // Atualizado: usando gpt-4o em vez de gpt-4-vision-preview
         messages: [
           {
             role: 'user',
@@ -111,6 +113,16 @@ async function analyzeImage(imageUrl: string, apiKey: string) {
     })
 
     const data = await response.json()
+    
+    // Adicionar log para debug
+    console.log("OpenAI response:", JSON.stringify(data));
+    
+    // Verificar se a resposta tem o formato esperado
+    if (!data.choices || !data.choices.length) {
+      console.error("Resposta inesperada da OpenAI:", data);
+      throw new Error("Formato de resposta da OpenAI inesperado");
+    }
+    
     return {
       type: 'image',
       analysis: data.choices[0]?.message?.content || 'Não foi possível analisar a imagem'
@@ -127,8 +139,12 @@ async function analyzeImage(imageUrl: string, apiKey: string) {
 // Função para transcrição de áudio usando OpenAI Whisper API
 async function transcribeAudio(audioUrl: string, apiKey: string) {
   try {
+    console.log("Tentando transcrever áudio:", audioUrl);
+    
     // Em um cenário real, precisaríamos baixar o áudio e enviá-lo para a API do Whisper
-    // Por simplicidade, simularemos uma resposta
+    // Como isso requer manipulação de arquivo avançada, por ora vamos simular
+    
+    // Simulação básica - em produção, substituir por integração real com a API Whisper
     return {
       type: 'audio',
       transcription: 'Esta é uma transcrição simulada de áudio. Em um ambiente de produção, utilizaríamos a API Whisper do OpenAI para transcrição real.'
@@ -145,8 +161,12 @@ async function transcribeAudio(audioUrl: string, apiKey: string) {
 // Função para análise de vídeo (um frame) usando OpenAI Vision
 async function analyzeVideoFrame(videoUrl: string, apiKey: string) {
   try {
+    console.log("Tentando analisar vídeo:", videoUrl);
+    
     // Em um cenário real, extrairíamos um frame do vídeo e o analisaríamos
-    // Por simplicidade, simularemos uma resposta
+    // Como isso requer manipulação de vídeo avançada, por ora vamos simular
+    
+    // Simulação básica - em produção, substituir por integração real
     return {
       type: 'video',
       analysis: 'Esta é uma análise simulada de vídeo. Em um ambiente de produção, extrairíamos frames do vídeo e os analisaríamos usando a API Vision do OpenAI.'
