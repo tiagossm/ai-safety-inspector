@@ -1,6 +1,5 @@
-
 import React, { useState } from "react";
-import { X, ExternalLink, PlayCircle, PauseCircle, ZoomIn, Download, RotateCw, Sparkles } from "lucide-react";
+import { X, ExternalLink, PlayCircle, PauseCircle, ZoomIn, Download, RotateCw, Sparkles, Mic, FileText, FileSpreadsheet, FileCode, Archive, FilePresentation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getFileType, formatFileSize, getFilenameFromUrl, getFileIcon } from "@/utils/fileUtils";
 import { MediaPreviewDialog } from "@/components/media/MediaPreviewDialog";
@@ -163,7 +162,10 @@ export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: Medi
               variant="destructive"
               size="icon"
               className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => onDelete(url)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(url);
+              }}
             >
               <X className="h-4 w-4" />
             </Button>

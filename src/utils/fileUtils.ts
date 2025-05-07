@@ -1,3 +1,4 @@
+import { Mic, FileText, Image, FileVideo, FileSpreadsheet, FileCode, Archive, FilePresentation } from 'lucide-react';
 
 export function getFileType(url: string): 'image' | 'video' | 'audio' | 'file' {
   const extension = url.split('?')[0].split('.').pop()?.toLowerCase() || '';
@@ -37,18 +38,7 @@ export function formatFileSize(bytes: number): string {
 
 // Função para obter o ícone baseado no tipo de arquivo
 export function getFileIcon(fileType: string) {
-  // Importamos os ícones dinamicamente na função que os usa
-  const { 
-    FileText, 
-    Image, 
-    FileVideo, 
-    Mic, 
-    FileSpreadsheet, 
-    FileCode, 
-    Archive, 
-    FilePresentation 
-  } = require('lucide-react');
-  
+  // Icons are now imported at the top of the file
   switch (fileType) {
     case 'image':
       return Image;
