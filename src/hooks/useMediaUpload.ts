@@ -30,7 +30,7 @@ export function useMediaUpload() {
       const bucketReady = await createBucketIfNeeded(bucketName);
       
       if (!bucketReady) {
-        throw new Error("Não foi possível criar ou acessar o bucket de armazenamento");
+        throw new Error("O bucket de armazenamento não está disponível. Contate o administrador.");
       }
       
       // Criar um nome de arquivo único
