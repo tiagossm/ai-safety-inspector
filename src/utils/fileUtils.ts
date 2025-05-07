@@ -1,4 +1,5 @@
-import { Mic, FileText, Image, FileVideo, FileSpreadsheet, FileCode, Archive, FilePresentation } from 'lucide-react';
+
+import { Mic, FileText, Image, FileVideo, FileSpreadsheet, FileCode, Archive, Presentation } from 'lucide-react';
 
 export function getFileType(url: string): 'image' | 'video' | 'audio' | 'file' {
   const extension = url.split('?')[0].split('.').pop()?.toLowerCase() || '';
@@ -57,7 +58,7 @@ export function getFileIcon(fileType: string) {
     case 'zip':
       return Archive;
     case 'presentation':
-      return FilePresentation;
+      return Presentation;
     default:
       return FileText;
   }

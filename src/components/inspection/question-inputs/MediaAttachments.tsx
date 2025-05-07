@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, ExternalLink, PlayCircle, PauseCircle, ZoomIn, Download, RotateCw, Sparkles, Mic, FileText, FileSpreadsheet, FileCode, Archive, FilePresentation } from "lucide-react";
+import { X, ExternalLink, PlayCircle, PauseCircle, ZoomIn, Download, RotateCw, Sparkles, Mic, FileText, FileSpreadsheet, FileCode, Archive, Presentation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getFileType, formatFileSize, getFilenameFromUrl, getFileIcon } from "@/utils/fileUtils";
 import { MediaPreviewDialog } from "@/components/media/MediaPreviewDialog";
@@ -295,7 +295,7 @@ export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: Medi
           ) : specificFileType === 'zip' ? (
             <Archive className="h-6 w-6 text-yellow-600" />
           ) : specificFileType === 'presentation' ? (
-            <FilePresentation className="h-6 w-6 text-orange-600" />
+            <Presentation className="h-6 w-6 text-orange-600" />
           ) : (
             <FileText className="h-6 w-6 text-gray-600" />
           )}
