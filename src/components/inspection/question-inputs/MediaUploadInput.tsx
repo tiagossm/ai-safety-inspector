@@ -2,11 +2,11 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, Pencil, Trash2, Search, Play, FileText, Mic, FileVideo, Image, Sparkles } from "lucide-react";
-import { Dropdown } from "@/components/ui/dropdown";
 import { PhotoInput } from "./PhotoInput";
 import { MediaDialog } from "../dialogs/MediaDialog";
 import { MediaPreviewDialog } from "@/components/media/MediaPreviewDialog";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
+import { getFileType } from "@/utils/fileUtils";
 
 interface MediaUploadInputProps {
   mediaUrls: string[];

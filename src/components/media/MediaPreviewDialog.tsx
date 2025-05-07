@@ -164,57 +164,63 @@ export function MediaPreviewDialog({
         </div>
       </div>
     );
-  } else if (fileType === 'pdf') {
-    content = (
-      <div className="flex flex-col h-[70vh]">
-        <iframe 
-          src={`${url}#toolbar=0&navpanes=0`}
-          title={fileName}
-          className="w-full h-full border-0"
-          onLoad={() => setIsLoading(false)}
-          onError={() => {
-            setIsLoading(false);
-            toast.error('Não foi possível carregar o PDF');
-          }}
-        />
-        <div className="flex justify-center space-x-2 mt-4">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleDownload}
-          >
-            <Download className="h-4 w-4 mr-1" /> Baixar
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => window.open(url, '_blank')}
-          >
-            <ExternalLink className="h-4 w-4 mr-1" /> Abrir em Nova Aba
-          </Button>
-        </div>
-      </div>
-    );
   } else {
-    content = (
-      <div className="flex flex-col items-center justify-center p-6">
-        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-          <svg className="w-8 h-8 text-primary" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-          </svg>
+    // Verificar se é um PDF específicamente pela extensão
+    const extension = url.split('.').pop()?.toLowerCase() || '';
+    const isPdf = extension === 'pdf';
+    
+    if (isPdf) {
+      content = (
+        <div className="flex flex-col h-[70vh]">
+          <iframe 
+            src={`${url}#toolbar=0&navpanes=0`}
+            title={fileName}
+            className="w-full h-full border-0"
+            onLoad={() => setIsLoading(false)}
+            onError={() => {
+              setIsLoading(false);
+              toast.error('Não foi possível carregar o PDF');
+            }}
+          />
+          <div className="flex justify-center space-x-2 mt-4">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleDownload}
+            >
+              <Download className="h-4 w-4 mr-1" /> Baixar
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => window.open(url, '_blank')}
+            >
+              <ExternalLink className="h-4 w-4 mr-1" /> Abrir em Nova Aba
+            </Button>
+          </div>
         </div>
-        <h3 className="text-lg font-medium mb-2">Visualização não disponível</h3>
-        <p className="text-gray-500 mb-6 text-center">Este tipo de arquivo não pode ser visualizado diretamente no navegador.</p>
-        <div className="flex flex-wrap justify-center gap-2">
-          <Button onClick={handleDownload}>
-            <Download className="h-4 w-4 mr-1" /> Baixar Arquivo
-          </Button>
-          <Button variant="outline" onClick={() => window.open(url, '_blank')}>
-            <ExternalLink className="h-4 w-4 mr-1" /> Abrir em Nova Aba
-          </Button>
+      );
+    } else {
+      content = (
+        <div className="flex flex-col items-center justify-center p-6">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+            <svg className="w-8 h-8 text-primary" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium mb-2">Visualização não disponível</h3>
+          <p className="text-gray-500 mb-6 text-center">Este tipo de arquivo não pode ser visualizado diretamente no navegador.</p>
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button onClick={handleDownload}>
+              <Download className="h-4 w-4 mr-1" /> Baixar Arquivo
+            </Button>
+            <Button variant="outline" onClick={() => window.open(url, '_blank')}>
+              <ExternalLink className="h-4 w-4 mr-1" /> Abrir em Nova Aba
+            </Button>
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
   }
   
   return (

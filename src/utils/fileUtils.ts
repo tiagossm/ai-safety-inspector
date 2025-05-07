@@ -34,3 +34,51 @@ export function formatFileSize(bytes: number): string {
   
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
+
+// Função para obter o ícone baseado no tipo de arquivo
+export function getFileIcon(fileType: string) {
+  // Importamos os ícones dinamicamente na função que os usa
+  const { FileText, Image, FileVideo, Mic, FileSpreadsheet, FileCode, Archive, FilePresentation } = require('lucide-react');
+  
+  switch (fileType) {
+    case 'image':
+      return Image;
+    case 'video':
+      return FileVideo;
+    case 'audio':
+      return Mic;
+    case 'pdf':
+      return FileText;
+    case 'excel':
+      return FileSpreadsheet;
+    case 'word':
+      return FileText;
+    case 'code':
+      return FileCode;
+    case 'zip':
+      return Archive;
+    case 'presentation':
+      return FilePresentation;
+    default:
+      return FileText;
+  }
+}
+
+// Função para extrair o nome do arquivo da URL
+export function getFilenameFromUrl(url: string): string {
+  // Remove parâmetros de query
+  const cleanUrl = url.split('?')[0];
+  
+  // Extrai a última parte da URL após a última barra
+  const parts = cleanUrl.split('/');
+  let fileName = parts[parts.length - 1];
+  
+  // Decodifica caracteres especiais
+  try {
+    fileName = decodeURIComponent(fileName);
+  } catch (e) {
+    console.error("Erro ao decodificar nome do arquivo:", e);
+  }
+  
+  return fileName;
+}

@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { X, ExternalLink, PlayCircle, PauseCircle, ZoomIn, Download, RotateCw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getFileIcon, getFileType, formatFileSize, getFilenameFromUrl } from "@/utils/fileUtils";
+import { getFileType, formatFileSize, getFilenameFromUrl, getFileIcon } from "@/utils/fileUtils";
 import { MediaPreviewDialog } from "@/components/media/MediaPreviewDialog";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { toast } from "sonner";
@@ -205,8 +205,19 @@ export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: Medi
       );
     }
     
-    // Lidar com PDF
-    if (fileType === 'pdf') {
+    // Para os demais tipos de arquivo, precisamos identificar tipos específicos por extensão
+    const extension = url.split('.').pop()?.toLowerCase() || '';
+    const specificFileType = 
+      /pdf$/.test(extension) ? 'pdf' :
+      /(xlsx|xls|csv|numbers)$/.test(extension) ? 'excel' :
+      /(docx|doc|odt)$/.test(extension) ? 'word' :
+      /(js|ts|py|java|html|css|php|rb|go)$/.test(extension) ? 'code' :
+      /(zip|rar|tar|gz|7z)$/.test(extension) ? 'zip' :
+      /(ppt|pptx|key|odp)$/.test(extension) ? 'presentation' :
+      'generic';
+    
+    // Lidar com PDF usando a variável specificFileType
+    if (specificFileType === 'pdf') {
       return (
         <div key={index} className="relative group">
           <div className="border rounded-md p-3 flex items-center gap-3">
@@ -264,12 +275,12 @@ export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: Medi
               {fileName}
             </a>
             <p className="text-xs text-gray-500">
-              {fileType === 'excel' ? 'Planilha Excel' :
-                fileType === 'word' ? 'Documento Word' :
-                fileType === 'code' ? 'Arquivo de Código' :
-                fileType === 'zip' ? 'Arquivo Compactado' :
-                fileType === 'presentation' ? 'Apresentação' :
-                'Documento'}
+              {specificFileType === 'excel' ? 'Planilha Excel' :
+               specificFileType === 'word' ? 'Documento Word' :
+               specificFileType === 'code' ? 'Arquivo de Código' :
+               specificFileType === 'zip' ? 'Arquivo Compactado' :
+               specificFileType === 'presentation' ? 'Apresentação' :
+               'Documento'}
             </p>
           </div>
           <Button
