@@ -4,22 +4,22 @@ import { Mic, FileText, Image, FileVideo, FileSpreadsheet, FileCode, Archive, Pr
 export function getFileType(url: string): 'image' | 'video' | 'audio' | 'file' {
   const extension = url.split('?')[0].split('.').pop()?.toLowerCase() || '';
   
-  // Imagens
+  // Images
   if (/^(jpe?g|png|gif|bmp|webp|svg|heic)$/.test(extension)) {
     return 'image';
   }
   
-  // Vídeos
+  // Videos
   if (/^(mp4|webm|mov|avi|wmv|flv|mkv)$/.test(extension)) {
     return 'video';
   }
   
-  // Áudios
+  // Audio files
   if (/^(mp3|wav|ogg|m4a|flac|aac)$/.test(extension)) {
     return 'audio';
   }
   
-  // Documentos e outros
+  // Documents and others
   return 'file';
 }
 
@@ -37,9 +37,8 @@ export function formatFileSize(bytes: number): string {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-// Função para obter o ícone baseado no tipo de arquivo
+// Function to get the icon based on file type
 export function getFileIcon(fileType: string) {
-  // Icons are now imported at the top of the file
   switch (fileType) {
     case 'image':
       return Image;
@@ -64,23 +63,23 @@ export function getFileIcon(fileType: string) {
   }
 }
 
-// Função para extrair o nome do arquivo da URL
+// Function to extract the filename from a URL
 export function getFilenameFromUrl(url: string): string {
-  // Remove parâmetros de query
+  // Remove query parameters
   const cleanUrl = url.split('?')[0];
   
-  // Extrai a última parte da URL após a última barra
+  // Extract the last part of the URL after the last slash
   const parts = cleanUrl.split('/');
   let fileName = parts[parts.length - 1];
   
-  // Decodifica caracteres especiais
+  // Decode special characters
   try {
     fileName = decodeURIComponent(fileName);
   } catch (e) {
-    console.error("Erro ao decodificar nome do arquivo:", e);
+    console.error("Error decoding filename:", e);
   }
   
-  // Se o nome for muito longo, trunca e adiciona "..." no meio
+  // If the name is too long, truncate and add "..." in the middle
   if (fileName.length > 40) {
     const extension = fileName.split('.').pop() || '';
     const nameWithoutExt = fileName.substring(0, fileName.length - extension.length - 1);
