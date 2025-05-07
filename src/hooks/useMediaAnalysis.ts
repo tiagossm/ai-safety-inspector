@@ -3,10 +3,12 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-interface MediaAnalysisResult {
+export interface MediaAnalysisResult {
   type: 'image' | 'audio' | 'video';
   analysis?: string;
   transcription?: string;
+  error?: boolean;
+  simulated?: boolean;
 }
 
 export function useMediaAnalysis() {
@@ -18,6 +20,7 @@ export function useMediaAnalysis() {
     try {
       setIsAnalyzing(true);
       setError(null);
+      setResult(null);
       
       console.log("🔍 Iniciando análise de mídia:", mediaUrl, mediaType);
       
@@ -30,35 +33,63 @@ export function useMediaAnalysis() {
       }
       
       // Chamar o edge function para analisar a mídia
-      const { data, error } = await supabase.functions.invoke('analyze-media', {
+      const { data, error: functionError } = await supabase.functions.invoke('analyze-media', {
         body: { mediaUrl, mediaType }
       });
       
-      if (error) {
-        console.error("Erro na função analyze-media:", error);
-        throw new Error(`Erro na análise de mídia: ${error.message || "Erro desconhecido"}`);
+      if (functionError) {
+        console.error("Erro na função analyze-media:", functionError);
+        throw new Error(`Erro na análise de mídia: ${functionError.message || "Erro desconhecido"}`);
       }
-      
-      console.log("✅ Análise de mídia concluída:", data);
       
       if (!data) {
         throw new Error("Nenhum dado retornado da análise");
       }
+
+      // Verificar se a resposta indica erro interno na análise
+      if (data.error === true) {
+        const errorMessage = data.analysis || data.transcription || "Erro na análise de mídia";
+        console.error("Erro interno na análise:", errorMessage);
+        throw new Error(errorMessage);
+      }
       
-      setResult(data);
+      console.log("✅ Análise de mídia concluída:", data);
       
-      return data;
+      // Verificar se é uma simulação devido à falta de API key
+      if (data.simulated) {
+        toast.warning("Usando análise simulada. Configure a API do OpenAI para resultados reais.", {
+          duration: 6000
+        });
+      }
+      
+      setResult(data as MediaAnalysisResult);
+      
+      return data as MediaAnalysisResult;
     } catch (error: any) {
       console.error("Erro ao analisar mídia:", error);
       setError(error);
+      
+      // Mostrar toast com a mensagem de erro mais amigável
+      const friendlyMessage = error.message?.includes("API do OpenAI") 
+        ? "A análise falhou. Verifique se a chave da API OpenAI está configurada corretamente."
+        : `Falha na análise: ${error.message || "Erro desconhecido"}`;
+      
+      toast.error(friendlyMessage);
+      
       return null;
     } finally {
       setIsAnalyzing(false);
     }
   };
 
+  const resetAnalysis = () => {
+    setResult(null);
+    setError(null);
+  };
+
   return {
     analyzeMedia,
+    resetAnalysis,
     isAnalyzing,
     result,
     error

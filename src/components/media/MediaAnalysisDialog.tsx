@@ -8,7 +8,7 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Camera, Mic, FileText, AlertCircle, Sparkles } from "lucide-react";
+import { Loader2, Camera, Mic, FileText, AlertCircle, Sparkles, Settings, CheckCircle2 } from "lucide-react";
 import { useMediaAnalysis } from "@/hooks/useMediaAnalysis";
 import { getFileType } from "@/utils/fileUtils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -28,7 +28,7 @@ export function MediaAnalysisDialog({
   mediaUrl,
   mediaType
 }: MediaAnalysisDialogProps) {
-  const { analyzeMedia, isAnalyzing, result, error } = useMediaAnalysis();
+  const { analyzeMedia, resetAnalysis, isAnalyzing, result, error } = useMediaAnalysis();
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
   const [apiKeyConfigured, setApiKeyConfigured] = useState(true);
 
@@ -36,8 +36,9 @@ export function MediaAnalysisDialog({
     // Resetar estado quando a modal é aberta com nova mídia
     if (open) {
       setHasAnalyzed(false);
+      resetAnalysis();
     }
-  }, [open, mediaUrl]);
+  }, [open, mediaUrl, resetAnalysis]);
 
   const handleAnalyze = async () => {
     if (!mediaUrl) {
@@ -59,13 +60,12 @@ export function MediaAnalysisDialog({
         return;
       }
       
-      // Verificar se a resposta contém indicação de que a API key não está configurada
-      if (analysisResult && 
-          ((analysisResult.analysis && analysisResult.analysis.includes("Configure a API do OpenAI")) || 
-           (analysisResult.transcription && analysisResult.transcription.includes("Configure a API do OpenAI")))) {
+      // Verificar se a resposta contém indicação de simulação (API key não configurada)
+      if (analysisResult.simulated) {
         setApiKeyConfigured(false);
         toast.warning("A chave da API OpenAI não está configurada no servidor");
       } else {
+        setApiKeyConfigured(true);
         toast.success("Análise concluída com sucesso");
       }
     } catch (error: any) {
@@ -136,6 +136,18 @@ export function MediaAnalysisDialog({
           <AlertDescription>
             <p className="font-medium mb-1">Erro ao analisar mídia</p>
             <p className="text-sm">{error.message}</p>
+            {!apiKeyConfigured && (
+              <div className="mt-2 pt-2 border-t border-red-200">
+                <p className="text-sm font-medium">Possível causa:</p>
+                <p className="text-sm">A chave da API OpenAI não está configurada ou é inválida.</p>
+                <div className="mt-2">
+                  <Button variant="outline" size="sm" className="mt-1 h-8 text-xs" onClick={() => window.open('https://supabase.com/dashboard/project/jkgmgjjtslkozhehwmng/settings/functions', '_blank')}>
+                    <Settings className="mr-1 h-3 w-3" /> 
+                    Configurar na Supabase
+                  </Button>
+                </div>
+              </div>
+            )}
           </AlertDescription>
         </Alert>
       );
@@ -155,7 +167,7 @@ export function MediaAnalysisDialog({
     }
 
     if (result) {
-      if (!apiKeyConfigured) {
+      if (result.simulated) {
         return (
           <Alert className="mb-4">
             <AlertCircle className="h-4 w-4" />
@@ -164,6 +176,15 @@ export function MediaAnalysisDialog({
               <p className="text-sm mt-1">
                 Para obter análises reais, configure a chave da API OpenAI nas configurações de funções do Supabase.
               </p>
+              <div className="mt-2">
+                <Button variant="outline" size="sm" className="mt-1 h-8 text-xs" onClick={() => window.open('https://supabase.com/dashboard/project/jkgmgjjtslkozhehwmng/settings/functions', '_blank')}>
+                  <Settings className="mr-1 h-3 w-3" /> 
+                  Configurar na Supabase
+                </Button>
+              </div>
+              <div className="mt-3 pt-3 border-t">
+                <p className="text-sm font-medium">Resultado simulado:</p>
+              </div>
             </AlertDescription>
           </Alert>
         );
@@ -173,10 +194,11 @@ export function MediaAnalysisDialog({
         <div className="space-y-4">
           {result.type === 'image' && result.analysis && (
             <div className="space-y-2">
-              <h3 className="text-sm font-medium flex items-center">
+              <div className="flex items-center">
                 <Camera className="h-4 w-4 mr-1 text-blue-500" />
-                Análise da Imagem
-              </h3>
+                <h3 className="text-sm font-medium">Análise da Imagem</h3>
+                {!result.simulated && <CheckCircle2 className="h-3 w-3 ml-2 text-green-500" />}
+              </div>
               <div className="p-4 bg-blue-50 border border-blue-100 rounded-md">
                 <p className="text-sm whitespace-pre-wrap">{result.analysis}</p>
               </div>
@@ -185,22 +207,26 @@ export function MediaAnalysisDialog({
           
           {(result.type === 'audio' || result.type === 'video') && result.transcription && (
             <div className="space-y-2">
-              <h3 className="text-sm font-medium flex items-center">
+              <div className="flex items-center">
                 <Mic className="h-4 w-4 mr-1 text-green-500" />
-                Transcrição
-              </h3>
+                <h3 className="text-sm font-medium">Transcrição</h3>
+                {!result.simulated && <CheckCircle2 className="h-3 w-3 ml-2 text-green-500" />}
+              </div>
               <div className="p-4 bg-green-50 border border-green-100 rounded-md">
                 <p className="text-sm whitespace-pre-wrap">{result.transcription}</p>
               </div>
             </div>
           )}
           
-          {(result.type === 'video') && result.analysis && (
+          {(result.type === 'video' || result.type === 'audio') && result.analysis && (
             <div className="space-y-2">
-              <h3 className="text-sm font-medium flex items-center">
+              <div className="flex items-center">
                 <Camera className="h-4 w-4 mr-1 text-purple-500" />
-                Análise do Vídeo
-              </h3>
+                <h3 className="text-sm font-medium">
+                  Análise {result.type === 'video' ? 'do Vídeo' : 'do Áudio'}
+                </h3>
+                {!result.simulated && <CheckCircle2 className="h-3 w-3 ml-2 text-green-500" />}
+              </div>
               <div className="p-4 bg-purple-50 border border-purple-100 rounded-md">
                 <p className="text-sm whitespace-pre-wrap">{result.analysis}</p>
               </div>
@@ -243,6 +269,25 @@ export function MediaAnalysisDialog({
         <div className="py-2">
           {mediaUrl && renderMediaPreview()}
           {renderContent()}
+
+          {/* Instrução para configuração da API key */}
+          {!apiKeyConfigured && !isAnalyzing && !result && (
+            <div className="mt-4 pt-4 border-t">
+              <Alert>
+                <Settings className="h-4 w-4" />
+                <AlertDescription>
+                  <p className="font-medium text-xs">Configuração da API OpenAI</p>
+                  <p className="text-xs mt-1">
+                    Para habilitar análises reais, configure a chave da API OpenAI nas configurações de funções do Supabase.
+                  </p>
+                  <Button variant="outline" size="sm" className="mt-1 h-7 text-xs" onClick={() => window.open('https://supabase.com/dashboard/project/jkgmgjjtslkozhehwmng/settings/functions', '_blank')}>
+                    <Settings className="mr-1 h-3 w-3" /> 
+                    Configurar na Supabase
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
         </div>
         
         <DialogFooter>
