@@ -228,7 +228,7 @@ export function MediaPreviewDialog({
       <DialogContent className="max-w-4xl w-[95vw]">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            <span className="truncate max-w-[85%]">{fileName}</span>
+            <span className="truncate max-w-[85%] text-sm" title={fileName}>{fileName}</span>
             <Button 
               variant="ghost" 
               size="icon" 

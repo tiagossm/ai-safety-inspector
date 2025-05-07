@@ -80,5 +80,15 @@ export function getFilenameFromUrl(url: string): string {
     console.error("Erro ao decodificar nome do arquivo:", e);
   }
   
+  // Se o nome for muito longo, trunca e adiciona "..." no meio
+  if (fileName.length > 40) {
+    const extension = fileName.split('.').pop() || '';
+    const nameWithoutExt = fileName.substring(0, fileName.length - extension.length - 1);
+    const firstPart = nameWithoutExt.substring(0, 15);
+    const lastPart = nameWithoutExt.substring(nameWithoutExt.length - 15);
+    
+    fileName = `${firstPart}...${lastPart}.${extension}`;
+  }
+  
   return fileName;
 }

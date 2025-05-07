@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { X, ExternalLink, PlayCircle, PauseCircle, ZoomIn, Download, RotateCw, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -101,6 +100,9 @@ export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: Medi
               <X className="h-4 w-4" />
             </Button>
           )}
+          <div className="absolute bottom-1 right-1 bg-white/80 rounded-md px-2 py-1 text-xs">
+            <span title={fileName} className="truncate max-w-[120px] inline-block">{fileName}</span>
+          </div>
         </div>
       );
     }
