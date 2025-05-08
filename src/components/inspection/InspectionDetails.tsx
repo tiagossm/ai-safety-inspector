@@ -136,12 +136,12 @@ export function InspectionDetailsCard({
             </div>
           )}
           
-          {inspection?.locationName && (
+          {inspection?.location && (
             <div className="flex items-start gap-2">
               <MapPin className="h-4 w-4 text-gray-400 mt-0.5" />
               <div>
                 <p className="text-xs font-medium text-gray-600">Local</p>
-                <p className="text-sm">{inspection.locationName}</p>
+                <p className="text-sm">{inspection.location}</p>
               </div>
             </div>
           )}

@@ -124,7 +124,7 @@ export interface ChecklistQuestion {
   conditionValue?: string | null;
 }
 
-// Extended InspectionDetails interface with the missing properties
+// Extended InspectionDetails interface with all required properties
 export interface InspectionDetails {
   id: string;
   status: string;
@@ -137,7 +137,7 @@ export interface InspectionDetails {
   responsibleId?: string;
   responsibleName?: string;
   scheduledDate?: string;
-  location?: string;
+  location?: string; // Field for location
   syncStatus?: string;
   metadata?: any;
   title?: string;
@@ -154,7 +154,7 @@ export interface InspectionDetails {
   description?: string;
 }
 
-// Extended InspectionFilters interface with the missing properties
+// Extended InspectionFilters interface with necessary properties
 export interface InspectionFilters {
   status?: string;
   companyId?: string;
