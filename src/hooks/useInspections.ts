@@ -1,10 +1,20 @@
 
-import { useInspectionFetcher } from "./inspection/useInspectionFetcher";
+import { useOptimizedInspections } from "./inspection/useOptimizedInspections";
 import { useInspectionFilters } from "./inspection/useInspectionFilters";
 
 export function useInspections() {
-  const { inspections, loading, error, fetchInspections } = useInspectionFetcher();
-  const { filters, setFilters, filteredInspections } = useInspectionFilters(inspections);
+  // Utilizamos o hook otimizado para buscar as inspeções
+  const { 
+    inspections: allInspections, 
+    loading, 
+    error, 
+    fetchInspections, 
+    filters, 
+    setFilters 
+  } = useOptimizedInspections();
+  
+  // Aplicamos os filtros
+  const { filteredInspections } = useInspectionFilters(allInspections);
 
   return {
     inspections: filteredInspections,

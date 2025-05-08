@@ -1,116 +1,136 @@
 
-import { CalendarClock, Building2, User, Flag, CheckCircle2 } from "lucide-react";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import React from "react";
+import { DataCard } from "@/components/ui/data-card";
 import { Button } from "@/components/ui/button";
-import { formatInspectionStatus } from "@/utils/formatInspectionStatus";
+import { BadgePriority } from "@/components/ui/badge-priority";
+import { BadgeStatus } from "@/components/ui/badge-status";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { CalendarIcon, ClipboardList, MapPin, Eye } from "lucide-react";
 import { InspectionDetails } from "@/types/newChecklist";
-import { format } from "date-fns";
+import { formatDistance } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface InspectionCardProps {
   inspection: InspectionDetails;
-  onView?: (id: string) => void;
+  onView: () => void;
 }
 
 export function InspectionCard({ inspection, onView }: InspectionCardProps) {
-  const statusInfo = formatInspectionStatus(inspection.status);
-  
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "Não agendada";
-    try {
-      return format(new Date(dateString), "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
-    } catch (e) {
-      return "Data inválida";
+  const formattedDate = inspection.scheduledDate 
+    ? formatDistance(new Date(inspection.scheduledDate), new Date(), { 
+        addSuffix: true,
+        locale: ptBR
+      })
+    : "Sem data";
+    
+  // Determine card variant based on priority
+  const getCardVariant = () => {
+    switch (inspection.priority) {
+      case "high": return "highlight";
+      default: return "default";
     }
   };
   
-  const getPriorityColor = (priority?: string) => {
-    switch (priority?.toLowerCase()) {
-      case "high": return "bg-red-500";
-      case "medium": return "bg-amber-500";
-      case "low": return "bg-green-500";
-      default: return "bg-gray-500";
+  // Map status to badge variant
+  const getStatusVariant = () => {
+    switch (inspection.status) {
+      case "completed": return "completed";
+      case "in_progress": return "inProgress";
+      default: return "pending";
     }
   };
   
-  const handleOpenInspection = () => {
-    if (onView) {
-      onView(inspection.id);
+  // Map status to readable text
+  const getStatusText = () => {
+    switch (inspection.status) {
+      case "completed": return "Concluído";
+      case "in_progress": return "Em progresso";
+      default: return "Pendente";
     }
   };
   
+  // Map priority to badge variant
+  const getPriorityVariant = () => {
+    switch (inspection.priority) {
+      case "high": return "high";
+      case "medium": return "medium";
+      case "low": return "low";
+      default: return "default";
+    }
+  };
+  
+  // Map priority to readable text
+  const getPriorityText = () => {
+    switch (inspection.priority) {
+      case "high": return "Alta";
+      case "medium": return "Média";
+      case "low": return "Baixa";
+      default: return "Normal";
+    }
+  };
+  
+  // Generate initials from name
+  const getInitials = (name?: string) => {
+    if (!name) return "?";
+    return name
+      .split(' ')
+      .map(part => part.charAt(0).toUpperCase())
+      .slice(0, 2)
+      .join('');
+  };
+
   return (
-    <Card className="h-full flex flex-col">
-      <CardContent className="pt-6 flex-1">
-        <div className="flex items-start justify-between mb-3">
-          <h3 className="font-semibold text-lg">{inspection.title || inspection.checklistTitle || "Inspeção"}</h3>
-          <Badge 
-            variant={statusInfo.label === "Concluído" ? "default" : "outline"}
-            className={`${statusInfo.label === "Concluído" ? "" : `text-${statusInfo.color}-500 border-${statusInfo.color}-200`}`}
-          >
-            {statusInfo.label}
-          </Badge>
+    <DataCard variant={getCardVariant()}>
+      <div className="p-4">
+        <div className="flex justify-between items-start mb-2">
+          <div>
+            <h3 className="font-medium text-base line-clamp-1">{inspection.title}</h3>
+            <p className="text-sm text-muted-foreground line-clamp-1">
+              {inspection.company?.fantasy_name || "Empresa não especificada"}
+            </p>
+          </div>
+          <BadgeStatus variant={getStatusVariant()}>{getStatusText()}</BadgeStatus>
         </div>
         
-        <div className="space-y-2 text-sm">
-          {inspection.companyId && (
-            <div className="flex items-center text-muted-foreground">
-              <Building2 className="h-3.5 w-3.5 mr-2" />
-              <span>{inspection.company?.fantasy_name || inspection.companyName || "Empresa não especificada"}</span>
-            </div>
-          )}
-          
-          {inspection.responsibleId && (
-            <div className="flex items-center text-muted-foreground">
-              <User className="h-3.5 w-3.5 mr-2" />
-              <span>{inspection.responsible?.name || inspection.responsibleName || "Responsável não especificado"}</span>
-            </div>
-          )}
-          
-          <div className="flex items-center text-muted-foreground">
-            <CalendarClock className="h-3.5 w-3.5 mr-2" />
-            <span>{formatDate(inspection.scheduledDate)}</span>
+        <div className="space-y-3 mt-4">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <ClipboardList className="h-4 w-4" />
+            <span>{typeof inspection.progress === 'number' ? `${inspection.progress}% completo` : "Progresso não disponível"}</span>
           </div>
           
-          {inspection.priority && (
-            <div className="flex items-center text-muted-foreground">
-              <Flag className="h-3.5 w-3.5 mr-2" />
-              <div className="flex items-center gap-2">
-                <span>Prioridade:</span>
-                <span className={`w-2 h-2 rounded-full ${getPriorityColor(inspection.priority)}`}></span>
-                <span className="capitalize">{inspection.priority}</span>
-              </div>
+          {inspection.locationName && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <MapPin className="h-4 w-4" />
+              <span className="line-clamp-1">{inspection.locationName}</span>
             </div>
           )}
+          
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <CalendarIcon className="h-4 w-4" />
+            <span>{formattedDate}</span>
+          </div>
         </div>
         
-        {typeof inspection.progress === 'number' && (
-          <div className="mt-4">
-            <div className="flex justify-between text-xs mb-1">
-              <span>Progresso</span>
-              <span>{inspection.progress}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-1.5">
-              <div 
-                className="bg-primary h-1.5 rounded-full" 
-                style={{ width: `${inspection.progress}%` }}
-              ></div>
-            </div>
+        <div className="flex items-center justify-between mt-4 pt-3 border-t">
+          <div className="flex items-center gap-2">
+            <Avatar className="h-6 w-6">
+              <AvatarFallback className="text-xs">
+                {getInitials(inspection.responsible?.name)}
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-xs truncate max-w-[100px]">
+              {inspection.responsible?.name || "Não atribuído"}
+            </span>
           </div>
-        )}
-      </CardContent>
-      
-      <CardFooter className="pt-2 pb-4">
-        <Button 
-          variant="default" 
-          className="w-full"
-          onClick={handleOpenInspection}
-        >
-          <CheckCircle2 className="h-4 w-4 mr-2" />
-          {inspection.status === "completed" ? "Ver Resultados" : "Continuar Inspeção"}
-        </Button>
-      </CardFooter>
-    </Card>
+          
+          <div className="flex items-center gap-2">
+            <BadgePriority variant={getPriorityVariant()}>{getPriorityText()}</BadgePriority>
+            <Button variant="ghost" size="sm" onClick={onView} className="p-1 h-8 w-8">
+              <Eye className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    </DataCard>
   );
 }

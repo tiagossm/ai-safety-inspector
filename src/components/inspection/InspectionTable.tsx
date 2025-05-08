@@ -1,9 +1,9 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { BadgePriority } from "@/components/ui/badge-priority";
+import { BadgeStatus } from "@/components/ui/badge-status";
 import { Eye, MoreHorizontal } from "lucide-react";
-import { formatInspectionStatus } from "@/utils/formatInspectionStatus";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { InspectionDetails } from "@/types/newChecklist";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface InspectionTableProps {
@@ -32,11 +32,51 @@ export function InspectionTable({
   }
   
   const formatDate = (dateString?: string) => {
-    if (!dateString) return "N/A";
+    if (!dateString) return "Não agendada";
     try {
-      return format(new Date(dateString), "dd/MM/yyyy", { locale: ptBR });
+      const date = new Date(dateString);
+      if (!isValid(date)) return "Data inválida";
+      return format(date, "dd/MM/yyyy", { locale: ptBR });
     } catch (e) {
       return "Data inválida";
+    }
+  };
+  
+  // Map status to badge variant
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case "completed": return "completed";
+      case "in_progress": return "inProgress";
+      default: return "pending";
+    }
+  };
+  
+  // Map status to readable text
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "completed": return "Concluído";
+      case "in_progress": return "Em progresso";
+      default: return "Pendente";
+    }
+  };
+  
+  // Map priority to badge variant
+  const getPriorityVariant = (priority: string) => {
+    switch (priority) {
+      case "high": return "high";
+      case "medium": return "medium";
+      case "low": return "low";
+      default: return "default";
+    }
+  };
+  
+  // Map priority to readable text
+  const getPriorityText = (priority: string) => {
+    switch (priority) {
+      case "high": return "Alta";
+      case "medium": return "Média";
+      case "low": return "Baixa";
+      default: return "Normal";
     }
   };
   
@@ -49,36 +89,37 @@ export function InspectionTable({
             <TableHead>Empresa</TableHead>
             <TableHead>Responsável</TableHead>
             <TableHead>Data Agendada</TableHead>
+            <TableHead>Prioridade</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Progresso</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {inspections.map((inspection) => {
-            const statusInfo = formatInspectionStatus(inspection.status);
-            
+          {inspections.map((inspection) => {            
             return (
               <TableRow key={inspection.id}>
                 <TableCell className="font-medium">
-                  {inspection.title || inspection.checklistTitle || "Inspeção"}
+                  {inspection.title || "Inspeção"}
                 </TableCell>
                 <TableCell>
-                  {inspection.company?.fantasy_name || inspection.companyName || "N/A"}
+                  {inspection.company?.fantasy_name || "N/A"}
                 </TableCell>
                 <TableCell>
-                  {inspection.responsible?.name || inspection.responsibleName || "N/A"}
+                  {inspection.responsible?.name || "Não atribuído"}
                 </TableCell>
                 <TableCell>
                   {formatDate(inspection.scheduledDate)}
                 </TableCell>
                 <TableCell>
-                  <Badge 
-                    variant={statusInfo.label === "Concluído" ? "default" : "outline"}
-                    className={`${statusInfo.label === "Concluído" ? "" : `text-${statusInfo.color}-500 border-${statusInfo.color}-200`}`}
-                  >
-                    {statusInfo.label}
-                  </Badge>
+                  <BadgePriority variant={getPriorityVariant(inspection.priority)}>
+                    {getPriorityText(inspection.priority)}
+                  </BadgePriority>
+                </TableCell>
+                <TableCell>
+                  <BadgeStatus variant={getStatusVariant(inspection.status)}>
+                    {getStatusText(inspection.status)}
+                  </BadgeStatus>
                 </TableCell>
                 <TableCell>
                   {typeof inspection.progress === 'number' ? (
@@ -98,7 +139,7 @@ export function InspectionTable({
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="icon"
                       onClick={() => onView(inspection.id)}
                     >

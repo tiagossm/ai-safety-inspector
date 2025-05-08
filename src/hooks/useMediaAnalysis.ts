@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { determineSpecificFileType } from "@/utils/fileTypeUtils";
 
 export interface MediaAnalysisResult {
   type: 'image' | 'audio' | 'video';
@@ -9,6 +10,7 @@ export interface MediaAnalysisResult {
   transcription?: string;
   error?: boolean;
   simulated?: boolean;
+  fileType?: string;
 }
 
 export function useMediaAnalysis() {
@@ -31,6 +33,10 @@ export function useMediaAnalysis() {
       if (!mediaType) {
         throw new Error("Tipo de mídia não fornecido");
       }
+      
+      // Obter o tipo específico do arquivo com base na extensão
+      const fileExtension = mediaUrl.split('.').pop()?.toLowerCase() || '';
+      const specificFileType = determineSpecificFileType(fileExtension);
       
       // Chamar o edge function para analisar a mídia
       const { data, error: functionError } = await supabase.functions.invoke('analyze-media', {
@@ -62,9 +68,15 @@ export function useMediaAnalysis() {
         });
       }
       
-      setResult(data as MediaAnalysisResult);
+      // Adicionar o tipo específico de arquivo ao resultado
+      const result = {
+        ...(data as MediaAnalysisResult),
+        fileType: specificFileType
+      };
       
-      return data as MediaAnalysisResult;
+      setResult(result);
+      
+      return result;
     } catch (error: any) {
       console.error("Erro ao analisar mídia:", error);
       setError(error);
