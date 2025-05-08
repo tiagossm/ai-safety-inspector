@@ -98,10 +98,10 @@ export function InspectionCard({ inspection, onView }: InspectionCardProps) {
             <span>{typeof inspection.progress === 'number' ? `${inspection.progress}% completo` : "Progresso não disponível"}</span>
           </div>
           
-          {inspection.locationName && (
+          {inspection.location && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <MapPin className="h-4 w-4" />
-              <span className="line-clamp-1">{inspection.locationName}</span>
+              <span className="line-clamp-1">{inspection.location}</span>
             </div>
           )}
           

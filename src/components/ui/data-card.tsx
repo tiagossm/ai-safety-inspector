@@ -2,7 +2,7 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 
 const dataCardVariants = cva(
   "overflow-hidden transition-all hover:shadow-md",
@@ -28,9 +28,14 @@ export interface DataCardProps
 
 const DataCard = React.forwardRef<HTMLDivElement, DataCardProps>(
   ({ className, variant, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? React.Fragment : Card;
+    if (asChild) {
+      // Just return the children directly, without any wrapper
+      return <div className={cn(dataCardVariants({ variant, className }))} ref={ref} {...props} />;
+    }
+    
+    // Use Card component normally
     return (
-      <Comp className={cn(dataCardVariants({ variant, className }))} ref={ref} {...props} />
+      <Card className={cn(dataCardVariants({ variant, className }))} ref={ref} {...props} />
     );
   }
 );
