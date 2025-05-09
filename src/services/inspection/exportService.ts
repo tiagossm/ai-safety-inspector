@@ -9,7 +9,7 @@ export async function exportInspectionsToExcel(inspections: InspectionDetails[])
   try {
     // This is a placeholder - in real implementation we would use xlsx library
     console.log("Exporting to Excel:", inspections);
-    toast.success(`${inspections.length} inspeções exportadas para Excel`);
+    toast.success(`${inspections.length} ${inspections.length === 1 ? 'inspeção exportada' : 'inspeções exportadas'} para Excel`);
     return true;
   } catch (error: any) {
     console.error("Erro ao exportar para Excel:", error);
@@ -27,7 +27,7 @@ export async function exportInspectionsToCSV(inspections: InspectionDetails[]): 
   try {
     // This is a placeholder - in real implementation we would use papaparse library
     console.log("Exporting to CSV:", inspections);
-    toast.success(`${inspections.length} inspeções exportadas para CSV`);
+    toast.success(`${inspections.length} ${inspections.length === 1 ? 'inspeção exportada' : 'inspeções exportadas'} para CSV`);
     return true;
   } catch (error: any) {
     console.error("Erro ao exportar para CSV:", error);
@@ -45,7 +45,7 @@ export async function exportInspectionsToPDF(inspections: InspectionDetails[]): 
   try {
     // This is a placeholder - in real implementation we would use jspdf library
     console.log("Exporting to PDF:", inspections);
-    toast.success(`${inspections.length} inspeções exportadas para PDF`);
+    toast.success(`${inspections.length} ${inspections.length === 1 ? 'inspeção exportada' : 'inspeções exportadas'} para PDF`);
     return true;
   } catch (error: any) {
     console.error("Erro ao exportar para PDF:", error);

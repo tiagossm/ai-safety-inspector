@@ -27,6 +27,17 @@ export function useInspectionSelection() {
     }
   }, []);
   
+  // Select or deselect all inspections (globally)
+  const toggleSelectAll = useCallback((allIds: string[], selected: boolean) => {
+    if (selected) {
+      // Select all inspections
+      setSelectedInspections(allIds);
+    } else {
+      // Deselect all inspections
+      setSelectedInspections([]);
+    }
+  }, []);
+  
   // Clear all selections
   const clearSelection = useCallback(() => {
     setSelectedInspections([]);
@@ -36,6 +47,7 @@ export function useInspectionSelection() {
     selectedInspections,
     toggleInspectionSelection,
     selectAllInspections,
+    toggleSelectAll,
     clearSelection,
     hasSelection: selectedInspections.length > 0
   };

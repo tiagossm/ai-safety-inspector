@@ -48,7 +48,8 @@ export default function Inspections() {
   const { 
     selectedInspections, 
     toggleInspectionSelection, 
-    selectAllInspections, 
+    selectAllInspections,
+    toggleSelectAll,
     clearSelection,
     hasSelection 
   } = useInspectionSelection();
@@ -58,6 +59,7 @@ export default function Inspections() {
   const [inspectionToDelete, setInspectionToDelete] = useState<{ id: string; title?: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isBatchDeleting, setIsBatchDeleting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   
   // Estado para diálogo de relatório
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -86,13 +88,6 @@ export default function Inspections() {
     return () => clearTimeout(timer);
   }, [searchTerm, setFilters]);
 
-  // Limpa a seleção quando mudar de página ou ao recarregar os dados
-  useEffect(() => {
-    if (currentPage !== 1) {
-      // Não limpamos ao mudar de página para permitir selecionar inspeções de múltiplas páginas
-    }
-  }, [currentPage]);
-
   const handleCreateInspection = () => {
     navigate("/new-checklists");
   };
@@ -112,7 +107,7 @@ export default function Inspections() {
   };
   
   const handleOpenBatchDeleteDialog = () => {
-    // Para exclusão em lote, não precisamos especificar um inspectionToDelete
+    // Para exclusão em lote, definimos explicitamente inspectionToDelete como null
     setInspectionToDelete(null);
     setDeleteDialogOpen(true);
   };
@@ -185,15 +180,20 @@ export default function Inspections() {
 
   // Função para exportar inspeções
   const handleExportData = async (format: "excel" | "csv" | "pdf") => {
-    // Se houver seleções, exporta apenas as selecionadas
-    if (selectedInspections.length > 0) {
-      const selectedItems = inspections.filter(insp => 
-        selectedInspections.includes(insp.id)
-      );
-      await exportInspections(selectedItems, format);
-    } else {
-      // Caso contrário, exporta todas as inspeções filtradas
-      await exportInspections(inspections, format);
+    setIsExporting(true);
+    try {
+      // Se houver seleções, exporta apenas as selecionadas
+      if (selectedInspections.length > 0) {
+        const selectedItems = inspections.filter(insp => 
+          selectedInspections.includes(insp.id)
+        );
+        await exportInspections(selectedItems, format);
+      } else {
+        // Caso contrário, exporta todas as inspeções filtradas
+        await exportInspections(inspections, format);
+      }
+    } finally {
+      setIsExporting(false);
     }
   };
   
@@ -207,11 +207,22 @@ export default function Inspections() {
     selectAllInspections(currentPageIds, selected);
   }, [paginatedInspections, selectAllInspections]);
 
+  const handleGlobalSelectAll = useCallback((selected: boolean) => {
+    const allIds = inspections.map(insp => insp.id);
+    toggleSelectAll(allIds, selected);
+  }, [inspections, toggleSelectAll]);
+
   // Verifica se todos os itens da página atual estão selecionados
   const isAllSelected = useMemo(() => {
     return paginatedInspections.length > 0 && 
       paginatedInspections.every(insp => selectedInspections.includes(insp.id));
   }, [paginatedInspections, selectedInspections]);
+
+  // Verifica se todos os itens de todas as páginas estão selecionados
+  const isEverythingSelected = useMemo(() => {
+    return inspections.length > 0 && 
+      inspections.every(insp => selectedInspections.includes(insp.id));
+  }, [inspections, selectedInspections]);
 
   return (
     <div className="container py-6 max-w-7xl mx-auto space-y-6">
@@ -281,25 +292,40 @@ export default function Inspections() {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="h-9 w-9">
-                <FileDown className="h-4 w-4" />
+              <Button 
+                variant="outline" 
+                size="icon" 
+                className="h-9 w-9"
+                disabled={isExporting}
+              >
+                {isExporting ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <FileDown className="h-4 w-4" />
+                )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleExportData("excel")}>
+              <DropdownMenuItem onClick={() => handleExportData("excel")} disabled={isExporting}>
                 Exportar como Excel
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExportData("csv")}>
+              <DropdownMenuItem onClick={() => handleExportData("csv")} disabled={isExporting}>
                 Exportar como CSV
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExportData("pdf")}>
+              <DropdownMenuItem onClick={() => handleExportData("pdf")} disabled={isExporting}>
                 Exportar como PDF
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           
-          <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleRetry}>
-            <RefreshCw className="h-4 w-4" />
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="h-9 w-9" 
+            onClick={handleRetry}
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           </Button>
         </div>
       </div>
@@ -308,11 +334,12 @@ export default function Inspections() {
       {hasSelection && (
         <SelectionActionsToolbar
           selectedCount={selectedInspections.length}
-          isAllSelected={isAllSelected}
-          onToggleSelectAll={handleSelectAll}
+          isAllSelected={isEverythingSelected}
+          onToggleSelectAll={handleGlobalSelectAll}
           onDelete={handleOpenBatchDeleteDialog}
           onExport={handleExportData}
           isDeleting={isBatchDeleting}
+          isExporting={isExporting}
         />
       )}
       
@@ -422,6 +449,7 @@ export default function Inspections() {
           inspectionId={inspectionForReport.id}
           inspectionData={inspectionForReport.data}
           onOpenChange={setReportDialogOpen}
+          open={reportDialogOpen}
         />
       )}
     </div>

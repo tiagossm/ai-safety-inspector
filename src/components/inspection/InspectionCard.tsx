@@ -103,19 +103,18 @@ export function InspectionCard({
   return (
     <DataCard 
       variant={getCardVariant()} 
-      className={`relative transition-all ${isSelected ? 'ring-2 ring-primary/70' : ''}`}
+      className={`group relative transition-all ${isSelected ? 'ring-2 ring-primary shadow-md' : ''}`}
     >
-      {onSelect && (
-        <div className="absolute top-3 left-3 z-10">
-          <Checkbox 
-            checked={isSelected}
-            onCheckedChange={(checked) => onSelect(!!checked)}
-          />
-        </div>
-      )}
+      <div className="absolute top-3 left-3 z-10">
+        <Checkbox 
+          checked={isSelected}
+          onCheckedChange={(checked) => onSelect?.(!!checked)}
+          className={`transition-opacity ${onSelect ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+        />
+      </div>
       <div className="p-4">
         <div className="flex justify-between items-start mb-2">
-          <div className={onSelect ? "ml-6" : ""}>
+          <div className="ml-6">
             <h3 className="font-medium text-base line-clamp-1">{inspection.title}</h3>
             <p className="text-sm text-muted-foreground line-clamp-1">
               {inspection.company?.fantasy_name || "Empresa não especificada"}

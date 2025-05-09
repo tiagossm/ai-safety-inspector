@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
+import { Loading } from "@/components/ui/Loading";
 
 interface SelectionActionsToolbarProps {
   selectedCount: number;
@@ -17,6 +18,7 @@ interface SelectionActionsToolbarProps {
   onDelete: () => void;
   onExport: (format: string) => void;
   isDeleting: boolean;
+  isExporting?: boolean;
 }
 
 export function SelectionActionsToolbar({
@@ -25,17 +27,19 @@ export function SelectionActionsToolbar({
   onToggleSelectAll,
   onDelete,
   onExport,
-  isDeleting
+  isDeleting,
+  isExporting = false
 }: SelectionActionsToolbarProps) {
   return (
-    <div className="bg-accent rounded-md p-3 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-10 shadow-sm">
-      <div className="flex items-center">
+    <div className="bg-accent/30 rounded-md p-3 flex flex-wrap items-center justify-between gap-2 sticky top-0 z-10 shadow-sm border border-border">
+      <div className="flex items-center gap-2">
         <Checkbox 
           checked={isAllSelected}
           onCheckedChange={onToggleSelectAll}
           className="mr-2 h-4 w-4"
+          aria-label="Selecionar todos os itens"
         />
-        <span className="text-sm">
+        <span className="text-sm font-medium">
           {selectedCount} {selectedCount === 1 ? 'item selecionado' : 'itens selecionados'}
         </span>
       </div>
@@ -47,19 +51,24 @@ export function SelectionActionsToolbar({
               variant="outline"
               size="sm"
               className="h-8"
+              disabled={isExporting}
             >
-              <FileDown className="mr-2 h-4 w-4" />
+              {isExporting ? (
+                <Loading size="sm" className="mr-2" />
+              ) : (
+                <FileDown className="mr-2 h-4 w-4" />
+              )}
               Exportar
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onExport("excel")}>
+            <DropdownMenuItem onClick={() => onExport("excel")} disabled={isExporting}>
               Exportar como Excel
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onExport("csv")}>
+            <DropdownMenuItem onClick={() => onExport("csv")} disabled={isExporting}>
               Exportar como CSV
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onExport("pdf")}>
+            <DropdownMenuItem onClick={() => onExport("pdf")} disabled={isExporting}>
               Exportar como PDF
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -72,7 +81,11 @@ export function SelectionActionsToolbar({
           onClick={onDelete}
           disabled={isDeleting}
         >
-          <Trash className="mr-2 h-4 w-4" />
+          {isDeleting ? (
+            <Loading size="sm" className="mr-2" />
+          ) : (
+            <Trash className="mr-2 h-4 w-4" />
+          )}
           {isDeleting ? "Excluindo..." : "Excluir Selecionados"}
         </Button>
       </div>

@@ -12,7 +12,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Trash } from "lucide-react";
+import { Trash, Loader2 } from "lucide-react";
 
 interface DeleteInspectionDialogProps {
   isOpen: boolean;
@@ -39,9 +39,9 @@ export function DeleteInspectionDialog({
     await onConfirm();
   };
 
-  // Determina o título e descrição com base em multipla seleção ou não
+  // Determine title and description based on selection mode
   const dialogTitle = isMultiple 
-    ? "Excluir inspeções selecionadas" 
+    ? `Excluir ${selectedCount} ${selectedCount === 1 ? 'inspeção' : 'inspeções'}`
     : "Confirmar exclusão";
 
   const dialogDescription = isMultiple
@@ -57,7 +57,11 @@ export function DeleteInspectionDialog({
     : "Excluindo...";
 
   return (
-    <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
+    <AlertDialog open={isOpen} onOpenChange={(open) => {
+      // Prevent dialog from closing during deletion
+      if (loading && !open) return;
+      onOpenChange(open);
+    }}>
       {trigger && <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>}
       <AlertDialogContent>
         <AlertDialogHeader>
@@ -76,7 +80,14 @@ export function DeleteInspectionDialog({
             disabled={loading}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {loading ? loadingText : confirmButtonText}
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {loadingText}
+              </>
+            ) : (
+              confirmButtonText
+            )}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

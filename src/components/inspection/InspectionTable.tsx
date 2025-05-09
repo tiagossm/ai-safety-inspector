@@ -124,7 +124,10 @@ export function InspectionTable({
             const isSelected = selectedInspections?.includes(inspection.id) || false;
             
             return (
-              <TableRow key={inspection.id} className={isSelected ? "bg-muted/30" : undefined}>
+              <TableRow 
+                key={inspection.id} 
+                className={isSelected ? "bg-muted/50 hover:bg-muted/70" : undefined}
+              >
                 <TableCell className="w-[50px]">
                   {onSelectInspection && (
                     <Checkbox 
@@ -203,7 +206,7 @@ export function InspectionTable({
                         {onDeleteInspection && (
                           <DropdownMenuItem 
                             onClick={() => onDeleteInspection(inspection.id)}
-                            className="text-red-500 focus:text-red-500"
+                            className="text-destructive hover:text-destructive"
                           >
                             <Trash className="mr-2 h-4 w-4" /> Excluir
                           </DropdownMenuItem>
