@@ -1909,6 +1909,10 @@ export type Database = {
         Args: { "": string } | { "": unknown }
         Returns: unknown
       }
+      delete_inspection: {
+        Args: { inspection_id: string }
+        Returns: boolean
+      }
       get_cipa_dimensioning: {
         Args: { p_employee_count: number; p_cnae: string; p_risk_level: number }
         Returns: Json
