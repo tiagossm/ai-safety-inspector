@@ -24,7 +24,6 @@ interface InspectionCardProps {
   onGenerateReport?: () => void;
   isSelected?: boolean;
   onSelect?: (selected: boolean) => void;
-  selectionMode?: boolean;
 }
 
 export function InspectionCard({ 
@@ -33,8 +32,7 @@ export function InspectionCard({
   onDelete, 
   onGenerateReport,
   isSelected = false,
-  onSelect,
-  selectionMode = false
+  onSelect
 }: InspectionCardProps) {
   const formattedDate = inspection.scheduledDate 
     ? formatDistance(new Date(inspection.scheduledDate), new Date(), { 
@@ -103,8 +101,11 @@ export function InspectionCard({
   const isCompleted = inspection.status === "completed";
 
   return (
-    <DataCard variant={getCardVariant()} className="relative">
-      {selectionMode && onSelect && (
+    <DataCard 
+      variant={getCardVariant()} 
+      className={`relative transition-all ${isSelected ? 'ring-2 ring-primary/70' : ''}`}
+    >
+      {onSelect && (
         <div className="absolute top-3 left-3 z-10">
           <Checkbox 
             checked={isSelected}
@@ -114,7 +115,7 @@ export function InspectionCard({
       )}
       <div className="p-4">
         <div className="flex justify-between items-start mb-2">
-          <div className={selectionMode ? "ml-6" : ""}>
+          <div className={onSelect ? "ml-6" : ""}>
             <h3 className="font-medium text-base line-clamp-1">{inspection.title}</h3>
             <p className="text-sm text-muted-foreground line-clamp-1">
               {inspection.company?.fantasy_name || "Empresa não especificada"}

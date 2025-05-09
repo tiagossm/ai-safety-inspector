@@ -24,7 +24,6 @@ interface InspectionTableProps {
   selectedInspections?: string[];
   onSelectInspection?: (id: string, selected: boolean) => void;
   onSelectAll?: (selected: boolean) => void;
-  selectionMode?: boolean;
 }
 
 export function InspectionTable({ 
@@ -35,8 +34,7 @@ export function InspectionTable({
   onGenerateReport,
   selectedInspections = [],
   onSelectInspection,
-  onSelectAll,
-  selectionMode = false
+  onSelectAll
 }: InspectionTableProps) {
   if (!inspections.length) {
     return <div className="text-center py-6 text-muted-foreground">Nenhuma inspeção encontrada</div>;
@@ -92,21 +90,23 @@ export function InspectionTable({
   };
 
   // Verifica se todas as inspeções estão selecionadas
-  const allSelected = inspections.length > 0 && selectedInspections.length === inspections.length;
+  const allSelected = inspections.length > 0 && 
+    inspections.every(inspection => selectedInspections?.includes(inspection.id));
   
   return (
     <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
-            {selectionMode && onSelectAll && (
-              <TableHead className="w-[50px]">
+            <TableHead className="w-[50px]">
+              {onSelectAll && (
                 <Checkbox 
                   checked={allSelected}
                   onCheckedChange={(checked) => onSelectAll(!!checked)}
+                  aria-label="Selecionar todas as inspeções"
                 />
-              </TableHead>
-            )}
+              )}
+            </TableHead>
             <TableHead>Título</TableHead>
             <TableHead>Empresa</TableHead>
             <TableHead>Responsável</TableHead>
@@ -124,15 +124,16 @@ export function InspectionTable({
             const isSelected = selectedInspections?.includes(inspection.id) || false;
             
             return (
-              <TableRow key={inspection.id}>
-                {selectionMode && onSelectInspection && (
-                  <TableCell className="w-[50px]">
+              <TableRow key={inspection.id} className={isSelected ? "bg-muted/30" : undefined}>
+                <TableCell className="w-[50px]">
+                  {onSelectInspection && (
                     <Checkbox 
                       checked={isSelected}
                       onCheckedChange={(checked) => onSelectInspection(inspection.id, !!checked)}
+                      aria-label={`Selecionar inspeção ${inspection.title || 'sem título'}`}
                     />
-                  </TableCell>
-                )}
+                  )}
+                </TableCell>
                 <TableCell className="font-medium">
                   {inspection.title || "Inspeção"}
                 </TableCell>

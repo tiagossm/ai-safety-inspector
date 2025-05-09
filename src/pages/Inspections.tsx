@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { 
   PlusCircle, 
@@ -9,7 +10,6 @@ import {
   LayoutGrid,
   List,
   FileDown,
-  CalendarDays,
   Trash
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useInspections } from "@/hooks/useInspections";
 import { useInspectionPagination } from "@/hooks/inspection/useInspectionPagination";
+import { useInspectionSelection } from "@/hooks/inspection/useInspectionSelection";
 import { EmptyState } from "@/components/inspection/EmptyState";
 import { InspectionFilters } from "@/components/inspection/InspectionFilters";
 import { InspectionCard } from "@/components/inspection/InspectionCard";
@@ -25,7 +26,9 @@ import { InspectionPagination } from "@/components/inspection/InspectionPaginati
 import { InspectionDashboard } from "@/components/inspection/InspectionDashboard";
 import { DeleteInspectionDialog } from "@/components/inspection/DeleteInspectionDialog";
 import { ReportGenerationDialog } from "@/components/inspection/ReportGenerationDialog";
+import { SelectionActionsToolbar } from "@/components/inspection/SelectionActionsToolbar";
 import { deleteInspection, deleteMultipleInspections } from "@/services/inspection/inspectionService";
+import { exportInspections } from "@/services/inspection/exportService";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -35,15 +38,20 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Checkbox } from "@/components/ui/checkbox";
 
 export default function Inspections() {
   const navigate = useNavigate();
   const { inspections, loading, error, fetchInspections, filters, setFilters } = useInspections();
   const [viewMode, setViewMode] = useState<"card" | "table">("card");
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [selectedInspections, setSelectedInspections] = useState<string[]>([]);
+  
+  const { 
+    selectedInspections, 
+    toggleInspectionSelection, 
+    selectAllInspections, 
+    clearSelection,
+    hasSelection 
+  } = useInspectionSelection();
   
   // Estados para excluir inspeção
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -80,8 +88,10 @@ export default function Inspections() {
 
   // Limpa a seleção quando mudar de página ou ao recarregar os dados
   useEffect(() => {
-    setSelectedInspections([]);
-  }, [inspections, currentPage]);
+    if (currentPage !== 1) {
+      // Não limpamos ao mudar de página para permitir selecionar inspeções de múltiplas páginas
+    }
+  }, [currentPage]);
 
   const handleCreateInspection = () => {
     navigate("/new-checklists");
@@ -101,8 +111,17 @@ export default function Inspections() {
     setDeleteDialogOpen(true);
   };
   
+  const handleOpenBatchDeleteDialog = () => {
+    // Para exclusão em lote, não precisamos especificar um inspectionToDelete
+    setInspectionToDelete(null);
+    setDeleteDialogOpen(true);
+  };
+  
   const handleConfirmDelete = async () => {
-    if (!inspectionToDelete) return;
+    if (!inspectionToDelete) {
+      // Se inspectionToDelete é null, estamos fazendo uma exclusão em lote
+      return handleBatchDelete();
+    }
     
     setIsDeleting(true);
     try {
@@ -124,7 +143,7 @@ export default function Inspections() {
   
   // Função para lidar com a exclusão em lote
   const handleBatchDelete = async () => {
-    if (selectedInspections.length === 0) return;
+    if (selectedInspections.length === 0) return Promise.resolve();
     
     setIsBatchDeleting(true);
     try {
@@ -140,9 +159,8 @@ export default function Inspections() {
       }
       
       // Recarrega a lista e limpa a seleção
-      fetchInspections();
-      setSelectedInspections([]);
-      setSelectionMode(false);
+      await fetchInspections();
+      clearSelection();
     } catch (error: any) {
       toast.error("Erro ao excluir inspeções", {
         description: error.message
@@ -151,6 +169,8 @@ export default function Inspections() {
       setIsBatchDeleting(false);
       setDeleteDialogOpen(false);
     }
+    
+    return Promise.resolve();
   };
   
   const handleOpenReportDialog = (id: string) => {
@@ -163,41 +183,35 @@ export default function Inspections() {
     }
   };
 
-  const handleExportData = () => {
-    toast.info("Selecione uma inspeção concluída para gerar um relatório");
+  // Função para exportar inspeções
+  const handleExportData = async (format: "excel" | "csv" | "pdf") => {
+    // Se houver seleções, exporta apenas as selecionadas
+    if (selectedInspections.length > 0) {
+      const selectedItems = inspections.filter(insp => 
+        selectedInspections.includes(insp.id)
+      );
+      await exportInspections(selectedItems, format);
+    } else {
+      // Caso contrário, exporta todas as inspeções filtradas
+      await exportInspections(inspections, format);
+    }
   };
   
   // Funções para lidar com seleção
-  const toggleSelectionMode = () => {
-    setSelectionMode(!selectionMode);
-    if (selectionMode) {
-      setSelectedInspections([]);
-    }
-  };
-  
   const handleSelectInspection = (id: string, selected: boolean) => {
-    if (selected) {
-      setSelectedInspections(prev => [...prev, id]);
-    } else {
-      setSelectedInspections(prev => prev.filter(inspId => inspId !== id));
-    }
+    toggleInspectionSelection(id, selected);
   };
   
-  const handleSelectAll = (selected: boolean) => {
-    if (selected) {
-      const allIds = paginatedInspections.map(insp => insp.id);
-      setSelectedInspections(allIds);
-    } else {
-      setSelectedInspections([]);
-    }
-  };
+  const handleSelectAll = useCallback((selected: boolean) => {
+    const currentPageIds = paginatedInspections.map(insp => insp.id);
+    selectAllInspections(currentPageIds, selected);
+  }, [paginatedInspections, selectAllInspections]);
 
-  // Verifica se há itens selecionados
-  const hasSelected = selectedInspections.length > 0;
-  
   // Verifica se todos os itens da página atual estão selecionados
-  const isAllSelected = paginatedInspections.length > 0 && 
-    selectedInspections.length === paginatedInspections.length;
+  const isAllSelected = useMemo(() => {
+    return paginatedInspections.length > 0 && 
+      paginatedInspections.every(insp => selectedInspections.includes(insp.id));
+  }, [paginatedInspections, selectedInspections]);
 
   return (
     <div className="container py-6 max-w-7xl mx-auto space-y-6">
@@ -232,17 +246,6 @@ export default function Inspections() {
         </div>
         
         <div className="flex flex-wrap items-center gap-2">
-          {/* Botão de modo seleção */}
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9"
-            onClick={toggleSelectionMode}
-          >
-            <Checkbox className="mr-2 h-4 w-4" checked={selectionMode} />
-            {selectionMode ? "Cancelar Seleção" : "Modo Seleção"}
-          </Button>
-          
           <Button
             variant="outline"
             size="sm"
@@ -283,13 +286,13 @@ export default function Inspections() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleExportData}>
+              <DropdownMenuItem onClick={() => handleExportData("excel")}>
                 Exportar como Excel
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportData}>
+              <DropdownMenuItem onClick={() => handleExportData("csv")}>
                 Exportar como CSV
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportData}>
+              <DropdownMenuItem onClick={() => handleExportData("pdf")}>
                 Exportar como PDF
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -302,28 +305,15 @@ export default function Inspections() {
       </div>
       
       {/* Barra de ações para itens selecionados */}
-      {hasSelected && (
-        <div className="bg-accent rounded-md p-3 flex items-center justify-between">
-          <div className="flex items-center">
-            <Checkbox 
-              checked={isAllSelected}
-              onCheckedChange={handleSelectAll}
-              className="mr-2 h-4 w-4"
-            />
-            <span>{selectedInspections.length} {selectedInspections.length === 1 ? 'item selecionado' : 'itens selecionados'}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setDeleteDialogOpen(true)}
-              disabled={isBatchDeleting}
-            >
-              <Trash className="mr-2 h-4 w-4" />
-              Excluir Selecionados
-            </Button>
-          </div>
-        </div>
+      {hasSelection && (
+        <SelectionActionsToolbar
+          selectedCount={selectedInspections.length}
+          isAllSelected={isAllSelected}
+          onToggleSelectAll={handleSelectAll}
+          onDelete={handleOpenBatchDeleteDialog}
+          onExport={handleExportData}
+          isDeleting={isBatchDeleting}
+        />
       )}
       
       {error ? (
@@ -374,7 +364,6 @@ export default function Inspections() {
                       () => handleOpenReportDialog(inspection.id) : undefined}
                     isSelected={selectedInspections.includes(inspection.id)}
                     onSelect={(selected) => handleSelectInspection(inspection.id, selected)}
-                    selectionMode={selectionMode}
                   />
                 ))}
               </div>
@@ -401,7 +390,6 @@ export default function Inspections() {
                 selectedInspections={selectedInspections}
                 onSelectInspection={handleSelectInspection}
                 onSelectAll={handleSelectAll}
-                selectionMode={selectionMode}
               />
             </ScrollArea>
           </TabsContent>
@@ -421,10 +409,10 @@ export default function Inspections() {
       <DeleteInspectionDialog
         isOpen={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        onConfirm={hasSelected ? handleBatchDelete : handleConfirmDelete}
+        onConfirm={handleConfirmDelete}
         inspectionTitle={inspectionToDelete?.title}
         loading={isDeleting || isBatchDeleting}
-        isMultiple={hasSelected}
+        isMultiple={!inspectionToDelete}
         selectedCount={selectedInspections.length}
       />
       

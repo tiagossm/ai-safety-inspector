@@ -37,7 +37,6 @@ export function DeleteInspectionDialog({
 }: DeleteInspectionDialogProps) {
   const handleConfirm = async () => {
     await onConfirm();
-    onOpenChange(false);
   };
 
   // Determina o título e descrição com base em multipla seleção ou não
@@ -48,6 +47,14 @@ export function DeleteInspectionDialog({
   const dialogDescription = isMultiple
     ? `Você tem certeza que deseja excluir ${selectedCount} ${selectedCount === 1 ? 'inspeção selecionada' : 'inspeções selecionadas'}? Esta ação não pode ser desfeita.`
     : `Você tem certeza que deseja excluir a inspeção ${inspectionTitle ? `"${inspectionTitle}"` : "selecionada"}? Esta ação não pode ser desfeita.`;
+
+  const confirmButtonText = isMultiple
+    ? `Excluir ${selectedCount} ${selectedCount === 1 ? 'inspeção' : 'inspeções'}`
+    : "Excluir";
+
+  const loadingText = isMultiple
+    ? "Excluindo inspeções..."
+    : "Excluindo...";
 
   return (
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
@@ -69,7 +76,7 @@ export function DeleteInspectionDialog({
             disabled={loading}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
-            {loading ? "Excluindo..." : "Excluir"}
+            {loading ? loadingText : confirmButtonText}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
