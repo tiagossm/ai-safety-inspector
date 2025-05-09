@@ -33,15 +33,19 @@ interface ReportGenerationDialogProps {
   inspectionData: any;
   trigger?: React.ReactNode;
   onOpenChange?: (open: boolean) => void;
+  open?: boolean;  // Added this prop to handle external control
 }
 
 export function ReportGenerationDialog({
   inspectionId,
   inspectionData,
   trigger,
-  onOpenChange
+  onOpenChange,
+  open: controlledOpen,  // Renamed to avoid conflicts with local state
 }: ReportGenerationDialogProps) {
-  const [open, setOpen] = useState(false);
+  // Use controlled open state if provided, otherwise use internal state
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen !== undefined ? controlledOpen : internalOpen;
   const [generating, setGenerating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [companyLogo, setCompanyLogo] = useState<string | null>(null);
@@ -112,8 +116,7 @@ export function ReportGenerationDialog({
       
       // Close dialog after a short delay
       setTimeout(() => {
-        setOpen(false);
-        if (onOpenChange) onOpenChange(false);
+        handleOpenChange(false);
       }, 1500);
     } catch (error: any) {
       console.error("Error generating report:", error);
@@ -124,7 +127,7 @@ export function ReportGenerationDialog({
   };
 
   const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
+    setInternalOpen(newOpen);
     if (onOpenChange) onOpenChange(newOpen);
   };
 
@@ -283,3 +286,4 @@ export function ReportGenerationDialog({
     </Dialog>
   );
 }
+
