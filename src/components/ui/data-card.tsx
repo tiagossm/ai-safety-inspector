@@ -29,8 +29,8 @@ export interface DataCardProps
 const DataCard = React.forwardRef<HTMLDivElement, DataCardProps>(
   ({ className, variant, asChild = false, ...props }, ref) => {
     if (asChild) {
-      // Just return the children directly, without any wrapper
-      return <div className={cn(dataCardVariants({ variant, className }))} ref={ref} {...props} />;
+      // When asChild is true, we're just passing the className
+      return <div ref={ref} className={cn(dataCardVariants({ variant, className }))} {...props} />;
     }
     
     // Use Card component normally

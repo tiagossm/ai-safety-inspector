@@ -205,8 +205,8 @@ export default function Inspections() {
           }
         />
       ) : (
-        <>
-          <TabsContent value="card" className="mt-0">
+        <Tabs defaultValue={viewMode} onValueChange={(value) => setViewMode(value as "card" | "table")}>
+          <TabsContent value="card">
             <ScrollArea className="h-[calc(100vh-420px)]">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {paginatedInspections.map((inspection) => (
@@ -220,7 +220,7 @@ export default function Inspections() {
             </ScrollArea>
           </TabsContent>
           
-          <TabsContent value="table" className="mt-0">
+          <TabsContent value="table">
             <ScrollArea className="h-[calc(100vh-420px)]">
               <InspectionTable 
                 inspections={paginatedInspections}
@@ -237,7 +237,7 @@ export default function Inspections() {
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
           />
-        </>
+        </Tabs>
       )}
     </div>
   );
