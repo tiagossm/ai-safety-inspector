@@ -5,17 +5,30 @@ import { Button } from "@/components/ui/button";
 import { BadgePriority } from "@/components/ui/badge-priority";
 import { BadgeStatus } from "@/components/ui/badge-status";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { CalendarIcon, ClipboardList, MapPin, Eye } from "lucide-react";
+import { CalendarIcon, ClipboardList, MapPin, Eye, MoreHorizontal, Trash, FileText } from "lucide-react";
 import { InspectionDetails } from "@/types/newChecklist";
 import { formatDistance } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface InspectionCardProps {
   inspection: InspectionDetails;
   onView: () => void;
+  onDelete?: () => void;
+  onGenerateReport?: () => void;
 }
 
-export function InspectionCard({ inspection, onView }: InspectionCardProps) {
+export function InspectionCard({ 
+  inspection, 
+  onView, 
+  onDelete, 
+  onGenerateReport 
+}: InspectionCardProps) {
   const formattedDate = inspection.scheduledDate 
     ? formatDistance(new Date(inspection.scheduledDate), new Date(), { 
         addSuffix: true,
@@ -79,6 +92,9 @@ export function InspectionCard({ inspection, onView }: InspectionCardProps) {
       .join('');
   };
 
+  // Verificar se a inspeção está concluída
+  const isCompleted = inspection.status === "completed";
+
   return (
     <DataCard variant={getCardVariant()}>
       <div className="p-4">
@@ -125,7 +141,36 @@ export function InspectionCard({ inspection, onView }: InspectionCardProps) {
           
           <div className="flex items-center gap-2">
             <BadgePriority variant={getPriorityVariant()}>{getPriorityText()}</BadgePriority>
-            <Button variant="ghost" size="sm" onClick={onView} className="p-1 h-8 w-8">
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={onView}>
+                  <Eye className="mr-2 h-4 w-4" /> Ver detalhes
+                </DropdownMenuItem>
+                
+                {isCompleted && onGenerateReport && (
+                  <DropdownMenuItem onClick={onGenerateReport}>
+                    <FileText className="mr-2 h-4 w-4" /> Gerar relatório
+                  </DropdownMenuItem>
+                )}
+                
+                {onDelete && (
+                  <DropdownMenuItem 
+                    className="text-destructive focus:text-destructive"
+                    onClick={onDelete}
+                  >
+                    <Trash className="mr-2 h-4 w-4" /> Excluir
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            
+            <Button variant="ghost" size="sm" onClick={onView} className="p-1 h-7 w-7">
               <Eye className="h-4 w-4" />
             </Button>
           </div>

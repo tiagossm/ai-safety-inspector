@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { BadgePriority } from "@/components/ui/badge-priority";
 import { BadgeStatus } from "@/components/ui/badge-status";
-import { Eye, MoreHorizontal } from "lucide-react";
+import { Eye, MoreHorizontal, Trash, FileText } from "lucide-react";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -19,13 +19,15 @@ interface InspectionTableProps {
   onView: (id: string) => void;
   onEditInspection?: (id: string) => void;
   onDeleteInspection?: (id: string) => void;
+  onGenerateReport?: (id: string) => void;
 }
 
 export function InspectionTable({ 
   inspections, 
   onView,
   onEditInspection,
-  onDeleteInspection
+  onDeleteInspection,
+  onGenerateReport
 }: InspectionTableProps) {
   if (!inspections.length) {
     return <div className="text-center py-6 text-muted-foreground">Nenhuma inspeção encontrada</div>;
@@ -96,7 +98,10 @@ export function InspectionTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {inspections.map((inspection) => {            
+          {inspections.map((inspection) => {
+            // Verificar se a inspeção está concluída para habilitar relatórios            
+            const isCompleted = inspection.status === "completed";
+            
             return (
               <TableRow key={inspection.id}>
                 <TableCell className="font-medium">
@@ -146,30 +151,35 @@ export function InspectionTable({
                       <Eye className="h-4 w-4" />
                     </Button>
                     
-                    {(onEditInspection || onDeleteInspection) && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {onEditInspection && (
-                            <DropdownMenuItem onClick={() => onEditInspection(inspection.id)}>
-                              Editar
-                            </DropdownMenuItem>
-                          )}
-                          {onDeleteInspection && (
-                            <DropdownMenuItem 
-                              onClick={() => onDeleteInspection(inspection.id)}
-                              className="text-red-500 focus:text-red-500"
-                            >
-                              Excluir
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {onEditInspection && (
+                          <DropdownMenuItem onClick={() => onEditInspection(inspection.id)}>
+                            Editar
+                          </DropdownMenuItem>
+                        )}
+                        
+                        {isCompleted && onGenerateReport && (
+                          <DropdownMenuItem onClick={() => onGenerateReport(inspection.id)}>
+                            <FileText className="mr-2 h-4 w-4" /> Gerar relatório
+                          </DropdownMenuItem>
+                        )}
+                        
+                        {onDeleteInspection && (
+                          <DropdownMenuItem 
+                            onClick={() => onDeleteInspection(inspection.id)}
+                            className="text-red-500 focus:text-red-500"
+                          >
+                            <Trash className="mr-2 h-4 w-4" /> Excluir
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </TableCell>
               </TableRow>

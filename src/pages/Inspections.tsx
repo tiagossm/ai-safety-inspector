@@ -23,6 +23,9 @@ import { InspectionCard } from "@/components/inspection/InspectionCard";
 import { InspectionTable } from "@/components/inspection/InspectionTable";
 import { InspectionPagination } from "@/components/inspection/InspectionPagination";
 import { InspectionDashboard } from "@/components/inspection/InspectionDashboard";
+import { DeleteInspectionDialog } from "@/components/inspection/DeleteInspectionDialog";
+import { ReportGenerationDialog } from "@/components/inspection/ReportGenerationDialog";
+import { deleteInspection } from "@/services/inspection/inspectionService";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -38,6 +41,15 @@ export default function Inspections() {
   const { inspections, loading, error, fetchInspections, filters, setFilters } = useInspections();
   const [viewMode, setViewMode] = useState<"card" | "table">("card");
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Estados para excluir inspeção
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [inspectionToDelete, setInspectionToDelete] = useState<{ id: string; title?: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Estado para diálogo de relatório
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [inspectionForReport, setInspectionForReport] = useState<{ id: string; data: any } | null>(null);
   
   const { 
     currentPage, 
@@ -75,9 +87,44 @@ export default function Inspections() {
     toast.success("Atualizando lista de inspeções...");
   };
 
+  const handleOpenDeleteDialog = (id: string, title?: string) => {
+    setInspectionToDelete({ id, title });
+    setDeleteDialogOpen(true);
+  };
+  
+  const handleConfirmDelete = async () => {
+    if (!inspectionToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      const success = await deleteInspection(inspectionToDelete.id);
+      if (success) {
+        toast.success("Inspeção excluída com sucesso");
+        fetchInspections(); // Recarrega a lista após exclusão
+      }
+    } catch (error: any) {
+      toast.error("Erro ao excluir inspeção", {
+        description: error.message
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setInspectionToDelete(null);
+    }
+  };
+  
+  const handleOpenReportDialog = (id: string) => {
+    const inspection = inspections.find(insp => insp.id === id);
+    if (inspection) {
+      setInspectionForReport({ id, data: inspection });
+      setReportDialogOpen(true);
+    } else {
+      toast.error("Inspeção não encontrada");
+    }
+  };
+
   const handleExportData = () => {
-    // Este seria implementado com uma função real de exportação
-    toast.info("Funcionalidade de exportação será implementada em breve");
+    toast.info("Selecione uma inspeção concluída para gerar um relatório");
   };
 
   return (
@@ -214,6 +261,9 @@ export default function Inspections() {
                     key={inspection.id}
                     inspection={inspection}
                     onView={() => handleViewInspection(inspection.id)}
+                    onDelete={() => handleOpenDeleteDialog(inspection.id, inspection.title)}
+                    onGenerateReport={inspection.status === "completed" ? 
+                      () => handleOpenReportDialog(inspection.id) : undefined}
                   />
                 ))}
               </div>
@@ -225,6 +275,18 @@ export default function Inspections() {
               <InspectionTable 
                 inspections={paginatedInspections}
                 onView={handleViewInspection}
+                onDeleteInspection={(id) => {
+                  const inspection = paginatedInspections.find(i => i.id === id);
+                  handleOpenDeleteDialog(id, inspection?.title);
+                }}
+                onGenerateReport={(id) => {
+                  const inspection = paginatedInspections.find(i => i.id === id);
+                  if (inspection?.status === "completed") {
+                    handleOpenReportDialog(id);
+                  } else {
+                    toast.info("Apenas inspeções concluídas podem gerar relatórios");
+                  }
+                }}
               />
             </ScrollArea>
           </TabsContent>
@@ -238,6 +300,24 @@ export default function Inspections() {
             onPageSizeChange={handlePageSizeChange}
           />
         </Tabs>
+      )}
+
+      {/* Diálogo de confirmação de exclusão */}
+      <DeleteInspectionDialog
+        isOpen={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirm={handleConfirmDelete}
+        inspectionTitle={inspectionToDelete?.title}
+        loading={isDeleting}
+      />
+      
+      {/* Diálogo de geração de relatórios */}
+      {inspectionForReport && (
+        <ReportGenerationDialog
+          inspectionId={inspectionForReport.id}
+          inspectionData={inspectionForReport.data}
+          onOpenChange={setReportDialogOpen}
+        />
       )}
     </div>
   );
