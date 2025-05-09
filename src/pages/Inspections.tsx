@@ -10,7 +10,8 @@ import {
   LayoutGrid,
   List,
   FileDown,
-  CalendarDays
+  CalendarDays,
+  Trash
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -25,7 +26,7 @@ import { InspectionPagination } from "@/components/inspection/InspectionPaginati
 import { InspectionDashboard } from "@/components/inspection/InspectionDashboard";
 import { DeleteInspectionDialog } from "@/components/inspection/DeleteInspectionDialog";
 import { ReportGenerationDialog } from "@/components/inspection/ReportGenerationDialog";
-import { deleteInspection } from "@/services/inspection/inspectionService";
+import { deleteInspection, deleteMultipleInspections } from "@/services/inspection/inspectionService";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
@@ -35,17 +36,21 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function Inspections() {
   const navigate = useNavigate();
   const { inspections, loading, error, fetchInspections, filters, setFilters } = useInspections();
   const [viewMode, setViewMode] = useState<"card" | "table">("card");
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedInspections, setSelectedInspections] = useState<string[]>([]);
   
   // Estados para excluir inspeção
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [inspectionToDelete, setInspectionToDelete] = useState<{ id: string; title?: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isBatchDeleting, setIsBatchDeleting] = useState(false);
   
   // Estado para diálogo de relatório
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
@@ -73,6 +78,11 @@ export default function Inspections() {
     
     return () => clearTimeout(timer);
   }, [searchTerm, setFilters]);
+
+  // Limpa a seleção quando mudar de página ou ao recarregar os dados
+  useEffect(() => {
+    setSelectedInspections([]);
+  }, [inspections, currentPage]);
 
   const handleCreateInspection = () => {
     navigate("/new-checklists");
@@ -113,6 +123,36 @@ export default function Inspections() {
     }
   };
   
+  // Função para lidar com a exclusão em lote
+  const handleBatchDelete = async () => {
+    if (selectedInspections.length === 0) return;
+    
+    setIsBatchDeleting(true);
+    try {
+      const result = await deleteMultipleInspections(selectedInspections);
+      
+      if (result.success) {
+        toast.success(`${result.successCount} inspeções excluídas com sucesso`);
+      } else if (result.successCount > 0) {
+        toast.success(`${result.successCount} inspeções excluídas com sucesso`);
+        toast.error(`Falha ao excluir ${result.errorCount} inspeções`);
+      } else {
+        toast.error(`Falha ao excluir inspeções`);
+      }
+      
+      // Recarrega a lista e limpa a seleção
+      fetchInspections();
+      setSelectedInspections([]);
+    } catch (error: any) {
+      toast.error("Erro ao excluir inspeções", {
+        description: error.message
+      });
+    } finally {
+      setIsBatchDeleting(false);
+      setDeleteDialogOpen(false);
+    }
+  };
+  
   const handleOpenReportDialog = (id: string) => {
     const inspection = inspections.find(insp => insp.id === id);
     if (inspection) {
@@ -126,6 +166,34 @@ export default function Inspections() {
   const handleExportData = () => {
     toast.info("Selecione uma inspeção concluída para gerar um relatório");
   };
+  
+  // Funções para lidar com seleção
+  const toggleSelectionMode = () => {
+    setSelectionMode(!selectionMode);
+    if (selectionMode) {
+      setSelectedInspections([]);
+    }
+  };
+  
+  const handleSelectInspection = (id: string, selected: boolean) => {
+    if (selected) {
+      setSelectedInspections(prev => [...prev, id]);
+    } else {
+      setSelectedInspections(prev => prev.filter(inspId => inspId !== id));
+    }
+  };
+  
+  const handleSelectAll = (selected: boolean) => {
+    if (selected) {
+      const allIds = paginatedInspections.map(insp => insp.id);
+      setSelectedInspections(allIds);
+    } else {
+      setSelectedInspections([]);
+    }
+  };
+
+  // Verifica se há itens selecionados
+  const hasSelected = selectedInspections.length > 0;
 
   return (
     <div className="container py-6 max-w-7xl mx-auto space-y-6">
@@ -160,6 +228,17 @@ export default function Inspections() {
         </div>
         
         <div className="flex flex-wrap items-center gap-2">
+          {/* Botão de modo seleção */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9"
+            onClick={toggleSelectionMode}
+          >
+            <Checkbox className="mr-2 h-4 w-4" checked={selectionMode} />
+            {selectionMode ? "Cancelar Seleção" : "Modo Seleção"}
+          </Button>
+          
           <Button
             variant="outline"
             size="sm"
@@ -218,6 +297,31 @@ export default function Inspections() {
         </div>
       </div>
       
+      {/* Barra de ações para itens selecionados */}
+      {hasSelected && (
+        <div className="bg-accent rounded-md p-3 flex items-center justify-between">
+          <div className="flex items-center">
+            <Checkbox 
+              checked={selectedInspections.length === paginatedInspections.length}
+              onCheckedChange={handleSelectAll}
+              className="mr-2 h-4 w-4"
+            />
+            <span>{selectedInspections.length} {selectedInspections.length === 1 ? 'item selecionado' : 'itens selecionados'}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setDeleteDialogOpen(true)}
+              disabled={isBatchDeleting}
+            >
+              <Trash className="mr-2 h-4 w-4" />
+              Excluir Selecionados
+            </Button>
+          </div>
+        </div>
+      )}
+      
       {error ? (
         <div className="bg-destructive/10 p-4 rounded-md text-destructive space-y-2">
           <div className="flex items-center gap-2">
@@ -264,6 +368,9 @@ export default function Inspections() {
                     onDelete={() => handleOpenDeleteDialog(inspection.id, inspection.title)}
                     onGenerateReport={inspection.status === "completed" ? 
                       () => handleOpenReportDialog(inspection.id) : undefined}
+                    isSelected={selectedInspections.includes(inspection.id)}
+                    onSelect={(selected) => handleSelectInspection(inspection.id, selected)}
+                    selectionMode={selectionMode}
                   />
                 ))}
               </div>
@@ -287,6 +394,10 @@ export default function Inspections() {
                     toast.info("Apenas inspeções concluídas podem gerar relatórios");
                   }
                 }}
+                selectedInspections={selectedInspections}
+                onSelectInspection={handleSelectInspection}
+                onSelectAll={handleSelectAll}
+                selectionMode={selectionMode}
               />
             </ScrollArea>
           </TabsContent>
@@ -306,9 +417,11 @@ export default function Inspections() {
       <DeleteInspectionDialog
         isOpen={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        onConfirm={handleConfirmDelete}
+        onConfirm={hasSelected ? handleBatchDelete : handleConfirmDelete}
         inspectionTitle={inspectionToDelete?.title}
-        loading={isDeleting}
+        loading={isDeleting || isBatchDeleting}
+        isMultiple={hasSelected}
+        selectedCount={selectedInspections.length}
       />
       
       {/* Diálogo de geração de relatórios */}

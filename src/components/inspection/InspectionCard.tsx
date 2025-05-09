@@ -15,19 +15,26 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface InspectionCardProps {
   inspection: InspectionDetails;
   onView: () => void;
   onDelete?: () => void;
   onGenerateReport?: () => void;
+  isSelected?: boolean;
+  onSelect?: (selected: boolean) => void;
+  selectionMode?: boolean;
 }
 
 export function InspectionCard({ 
   inspection, 
   onView, 
   onDelete, 
-  onGenerateReport 
+  onGenerateReport,
+  isSelected = false,
+  onSelect,
+  selectionMode = false
 }: InspectionCardProps) {
   const formattedDate = inspection.scheduledDate 
     ? formatDistance(new Date(inspection.scheduledDate), new Date(), { 
@@ -96,10 +103,18 @@ export function InspectionCard({
   const isCompleted = inspection.status === "completed";
 
   return (
-    <DataCard variant={getCardVariant()}>
+    <DataCard variant={getCardVariant()} className="relative">
+      {selectionMode && onSelect && (
+        <div className="absolute top-3 left-3 z-10">
+          <Checkbox 
+            checked={isSelected}
+            onCheckedChange={(checked) => onSelect(!!checked)}
+          />
+        </div>
+      )}
       <div className="p-4">
         <div className="flex justify-between items-start mb-2">
-          <div>
+          <div className={selectionMode ? "ml-6" : ""}>
             <h3 className="font-medium text-base line-clamp-1">{inspection.title}</h3>
             <p className="text-sm text-muted-foreground line-clamp-1">
               {inspection.company?.fantasy_name || "Empresa não especificada"}

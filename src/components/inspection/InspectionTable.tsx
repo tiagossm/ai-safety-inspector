@@ -13,6 +13,7 @@ import {
 import { InspectionDetails } from "@/types/newChecklist";
 import { format, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface InspectionTableProps {
   inspections: InspectionDetails[];
@@ -20,6 +21,10 @@ interface InspectionTableProps {
   onEditInspection?: (id: string) => void;
   onDeleteInspection?: (id: string) => void;
   onGenerateReport?: (id: string) => void;
+  selectedInspections?: string[];
+  onSelectInspection?: (id: string, selected: boolean) => void;
+  onSelectAll?: (selected: boolean) => void;
+  selectionMode?: boolean;
 }
 
 export function InspectionTable({ 
@@ -27,7 +32,11 @@ export function InspectionTable({
   onView,
   onEditInspection,
   onDeleteInspection,
-  onGenerateReport
+  onGenerateReport,
+  selectedInspections = [],
+  onSelectInspection,
+  onSelectAll,
+  selectionMode = false
 }: InspectionTableProps) {
   if (!inspections.length) {
     return <div className="text-center py-6 text-muted-foreground">Nenhuma inspeção encontrada</div>;
@@ -81,12 +90,23 @@ export function InspectionTable({
       default: return "Normal";
     }
   };
+
+  // Verifica se todas as inspeções estão selecionadas
+  const allSelected = inspections.length > 0 && selectedInspections.length === inspections.length;
   
   return (
     <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
+            {selectionMode && onSelectAll && (
+              <TableHead className="w-[50px]">
+                <Checkbox 
+                  checked={allSelected}
+                  onCheckedChange={(checked) => onSelectAll(!!checked)}
+                />
+              </TableHead>
+            )}
             <TableHead>Título</TableHead>
             <TableHead>Empresa</TableHead>
             <TableHead>Responsável</TableHead>
@@ -101,9 +121,18 @@ export function InspectionTable({
           {inspections.map((inspection) => {
             // Verificar se a inspeção está concluída para habilitar relatórios            
             const isCompleted = inspection.status === "completed";
+            const isSelected = selectedInspections.includes(inspection.id);
             
             return (
               <TableRow key={inspection.id}>
+                {selectionMode && onSelectInspection && (
+                  <TableCell className="w-[50px]">
+                    <Checkbox 
+                      checked={isSelected}
+                      onCheckedChange={(checked) => onSelectInspection(inspection.id, !!checked)}
+                    />
+                  </TableCell>
+                )}
                 <TableCell className="font-medium">
                   {inspection.title || "Inspeção"}
                 </TableCell>

@@ -21,6 +21,8 @@ interface DeleteInspectionDialogProps {
   inspectionTitle?: string;
   loading?: boolean;
   trigger?: React.ReactNode;
+  isMultiple?: boolean;
+  selectedCount?: number;
 }
 
 export function DeleteInspectionDialog({
@@ -29,22 +31,32 @@ export function DeleteInspectionDialog({
   onConfirm,
   inspectionTitle,
   loading = false,
-  trigger
+  trigger,
+  isMultiple = false,
+  selectedCount = 0
 }: DeleteInspectionDialogProps) {
   const handleConfirm = async () => {
     await onConfirm();
     onOpenChange(false);
   };
 
+  // Determina o título e descrição com base em multipla seleção ou não
+  const dialogTitle = isMultiple 
+    ? "Excluir inspeções selecionadas" 
+    : "Confirmar exclusão";
+
+  const dialogDescription = isMultiple
+    ? `Você tem certeza que deseja excluir ${selectedCount} ${selectedCount === 1 ? 'inspeção selecionada' : 'inspeções selecionadas'}? Esta ação não pode ser desfeita.`
+    : `Você tem certeza que deseja excluir a inspeção ${inspectionTitle ? `"${inspectionTitle}"` : "selecionada"}? Esta ação não pode ser desfeita.`;
+
   return (
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
       {trigger && <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>}
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+          <AlertDialogTitle>{dialogTitle}</AlertDialogTitle>
           <AlertDialogDescription>
-            Você tem certeza que deseja excluir a inspeção {inspectionTitle ? `"${inspectionTitle}"` : "selecionada"}? 
-            Esta ação não pode ser desfeita.
+            {dialogDescription}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

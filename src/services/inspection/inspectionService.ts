@@ -7,44 +7,10 @@ import { toast } from "sonner";
  */
 export async function deleteInspection(inspectionId: string): Promise<boolean> {
   try {
-    // Primeiro, exclua todas as respostas associadas à inspeção
-    const { error: responsesError } = await supabase
-      .from("inspection_responses")
-      .delete()
-      .eq("inspection_id", inspectionId);
-    
-    if (responsesError) {
-      console.error("Erro ao excluir respostas da inspeção:", responsesError);
-      throw responsesError;
-    }
-    
-    // Em seguida, exclua as assinaturas associadas (se houver)
-    const { error: signaturesError } = await supabase
-      .from("inspection_signatures")
-      .delete()
-      .eq("inspection_id", inspectionId);
-    
-    if (signaturesError) {
-      console.error("Erro ao excluir assinaturas da inspeção:", signaturesError);
-      // Não vamos lançar erro aqui, pois talvez não haja assinaturas
-    }
-    
-    // Em seguida, exclua os relatórios associados (se houver)
-    const { error: reportsError } = await supabase
-      .from("reports")
-      .delete()
-      .eq("inspection_id", inspectionId);
-    
-    if (reportsError) {
-      console.error("Erro ao excluir relatórios da inspeção:", reportsError);
-      // Não vamos lançar erro aqui, pois talvez não haja relatórios
-    }
-    
-    // Finalmente, exclua a inspeção
-    const { error } = await supabase
-      .from("inspections")
-      .delete()
-      .eq("id", inspectionId);
+    // Inicia uma transação para excluir todos os dados relacionados
+    const { data, error } = await supabase.rpc('delete_inspection', {
+      inspection_id: inspectionId
+    });
     
     if (error) {
       console.error("Erro ao excluir inspeção:", error);
@@ -59,4 +25,41 @@ export async function deleteInspection(inspectionId: string): Promise<boolean> {
     });
     return false;
   }
+}
+
+/**
+ * Exclui múltiplas inspeções pelos IDs
+ */
+export async function deleteMultipleInspections(inspectionIds: string[]): Promise<{
+  success: boolean;
+  successCount: number;
+  errorCount: number;
+}> {
+  let successCount = 0;
+  let errorCount = 0;
+  
+  if (inspectionIds.length === 0) {
+    return { success: false, successCount, errorCount };
+  }
+  
+  // Para cada inspeção, tenta excluir
+  for (const id of inspectionIds) {
+    try {
+      const success = await deleteInspection(id);
+      if (success) {
+        successCount++;
+      } else {
+        errorCount++;
+      }
+    } catch (error) {
+      console.error(`Erro ao excluir inspeção ${id}:`, error);
+      errorCount++;
+    }
+  }
+  
+  return {
+    success: errorCount === 0,
+    successCount,
+    errorCount
+  };
 }
