@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -143,6 +142,7 @@ export default function Inspections() {
       // Recarrega a lista e limpa a seleção
       fetchInspections();
       setSelectedInspections([]);
+      setSelectionMode(false);
     } catch (error: any) {
       toast.error("Erro ao excluir inspeções", {
         description: error.message
@@ -194,6 +194,10 @@ export default function Inspections() {
 
   // Verifica se há itens selecionados
   const hasSelected = selectedInspections.length > 0;
+  
+  // Verifica se todos os itens da página atual estão selecionados
+  const isAllSelected = paginatedInspections.length > 0 && 
+    selectedInspections.length === paginatedInspections.length;
 
   return (
     <div className="container py-6 max-w-7xl mx-auto space-y-6">
@@ -302,7 +306,7 @@ export default function Inspections() {
         <div className="bg-accent rounded-md p-3 flex items-center justify-between">
           <div className="flex items-center">
             <Checkbox 
-              checked={selectedInspections.length === paginatedInspections.length}
+              checked={isAllSelected}
               onCheckedChange={handleSelectAll}
               className="mr-2 h-4 w-4"
             />

@@ -121,7 +121,7 @@ export function InspectionTable({
           {inspections.map((inspection) => {
             // Verificar se a inspeção está concluída para habilitar relatórios            
             const isCompleted = inspection.status === "completed";
-            const isSelected = selectedInspections.includes(inspection.id);
+            const isSelected = selectedInspections?.includes(inspection.id) || false;
             
             return (
               <TableRow key={inspection.id}>
