@@ -7,10 +7,12 @@ import { toast } from "sonner";
  */
 export async function deleteInspection(inspectionId: string): Promise<boolean> {
   try {
+    console.log("Calling delete_inspection with ID:", inspectionId);
+    
     // Inicia uma transação para excluir todos os dados relacionados
     const { data, error } = await supabase.rpc('delete_inspection', {
       inspection_id: inspectionId
-    } as any); // Use type assertion to bypass TypeScript error
+    });
     
     if (error) {
       console.error("Erro ao excluir inspeção:", error);
