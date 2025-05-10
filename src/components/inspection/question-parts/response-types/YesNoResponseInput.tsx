@@ -122,6 +122,10 @@ export function YesNoResponseInput({
             onSaveAnalysis={handleMediaAnalysisResult}
             onApplyAISuggestion={handleApplyAISuggestion}
             analysisResults={mediaAnalysisResults}
+            allowsPhoto={question.allowsPhoto || question.permite_foto}
+            allowsVideo={question.allowsVideo || question.permite_video}
+            allowsAudio={question.allowsAudio || question.permite_audio}
+            allowsFiles={question.allowsFiles || question.permite_files}
           />
         </div>
       )}
