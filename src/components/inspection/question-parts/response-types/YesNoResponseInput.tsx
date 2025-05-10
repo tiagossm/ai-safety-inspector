@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ThumbsUp, ThumbsDown, Upload, PenLine, AlertCircle, Sparkles } from "lucide-react";
+import { ThumbsUp, ThumbsDown, Upload, PenLine, AlertCircle, Sparkles, Search } from "lucide-react";
 import { ActionPlanFormData } from "@/components/action-plans/form/types";
 import { MediaUploadInput } from "../../question-inputs/MediaUploadInput";
 import { ActionPlanDialog } from "@/components/action-plans/ActionPlanDialog";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 
 interface YesNoResponseInputProps {
   question: any;
@@ -37,6 +38,7 @@ export function YesNoResponseInput({
   const [mediaAnalysisResults, setMediaAnalysisResults] = useState<Record<string, MediaAnalysisResult>>(
     response?.mediaAnalysisResults || {}
   );
+  const [showAnalysisDialog, setShowAnalysisDialog] = useState(false);
   
   // Update internal state when response changes
   useEffect(() => {
@@ -118,6 +120,26 @@ export function YesNoResponseInput({
     }
   };
   
+  // Handle opening the multimodal analysis dialog
+  const handleOpenAnalysisDialog = () => {
+    setShowAnalysisDialog(true);
+  };
+  
+  // Handle analysis dialog result
+  const handleFullAnalysisComplete = (result: MediaAnalysisResult) => {
+    console.log("YesNoResponseInput: Full analysis complete:", result);
+    
+    if (result.actionPlanSuggestion) {
+      setAiSuggestion(result.actionPlanSuggestion);
+      
+      // Show toast notification
+      toast.info("Análise multimodal concluída", {
+        description: "Uma sugestão de plano de ação está disponível.",
+        duration: 5000
+      });
+    }
+  };
+  
   const questionText = question.text || question.pergunta || "";
   
   return (
@@ -127,7 +149,7 @@ export function YesNoResponseInput({
           variant={response?.value === true ? "default" : "outline"}
           onClick={() => handleRadioChange(true)}
           disabled={readOnly}
-          className="min-w-[80px]"
+          className={`min-w-[80px] ${response?.value === true ? "bg-green-500 hover:bg-green-600" : ""}`}
           type="button"
         >
           <ThumbsUp className="h-4 w-4 mr-2" />
@@ -138,21 +160,40 @@ export function YesNoResponseInput({
           variant={response?.value === false ? "default" : "outline"}
           onClick={() => handleRadioChange(false)}
           disabled={readOnly}
-          className="min-w-[80px]"
+          className={`min-w-[80px] ${response?.value === false ? "bg-red-500 hover:bg-red-600" : ""}`}
           type="button"
         >
           <ThumbsDown className="h-4 w-4 mr-2" />
           <span>Não</span>
         </Button>
         
-        {/* Show AI analysis indicator if we have non-conformity in media analysis */}
-        {hasNonConformityInAnalysis && (
+        {/* Status badges */}
+        {response?.value === true && (
+          <Badge className="bg-green-100 text-green-800 border-green-300 flex items-center gap-1" variant="outline">
+            <ThumbsUp className="h-3 w-3" />
+            <span>OK</span>
+          </Badge>
+        )}
+        
+        {response?.value === false && (
           <Badge className="bg-amber-100 text-amber-800 border-amber-300 flex items-center gap-1" variant="outline">
             <AlertCircle className="h-3 w-3" />
-            <span>IA detectou não conformidade</span>
+            <span>Necessita de Plano de Ação</span>
           </Badge>
         )}
       </div>
+      
+      {/* Analyze with AI button - always visible */}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleOpenAnalysisDialog}
+        className="mb-4 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+        type="button"
+      >
+        <Search className="h-3.5 w-3.5 mr-1" />
+        Analisar com IA
+      </Button>
       
       {/* Media upload section */}
       {(question.allowsPhoto || question.permite_foto || 
@@ -219,6 +260,18 @@ export function YesNoResponseInput({
         />
       )}
       
+      {/* Full analysis dialog for multimodal analysis */}
+      <MediaAnalysisDialog
+        open={showAnalysisDialog}
+        onOpenChange={setShowAnalysisDialog}
+        mediaUrl={null} // We'll pass null since we're doing a full context analysis
+        questionText={questionText}
+        responseValue={response?.value}
+        mediaUrls={response?.mediaUrls || []}
+        onAnalysisComplete={handleFullAnalysisComplete}
+        multimodalAnalysis={true}
+      />
+      
       {/* Show action plan button for negative responses */}
       {response?.value === false && inspectionId && question.id && onSaveActionPlan && !readOnly && (
         <div className="mt-3">
@@ -237,8 +290,7 @@ export function YesNoResponseInput({
             ) : (
               <>
                 <AlertCircle className="h-3.5 w-3.5 mr-1" />
-                Adicionar plano de ação
-                {aiSuggestion && " (IA sugeriu ações)"}
+                {aiSuggestion ? "Criar plano de ação (IA)" : "Adicionar plano de ação"}
               </>
             )}
           </Button>

@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { determineSpecificFileType } from "@/utils/fileTypeUtils";
 
 export interface MediaAnalysisResult {
-  type: 'image' | 'audio' | 'video';
+  type: 'image' | 'audio' | 'video' | 'multimodal';
   analysis?: string;
   transcription?: string;
   error?: boolean;
@@ -14,6 +14,10 @@ export interface MediaAnalysisResult {
   questionText?: string;
   actionPlanSuggestion?: string;
   hasNonConformity?: boolean;
+  imageAnalysis?: string;
+  videoAnalysis?: string;
+  audioTranscription?: string;
+  contextAnalysis?: string;
 }
 
 export function useMediaAnalysis() {
@@ -21,7 +25,12 @@ export function useMediaAnalysis() {
   const [result, setResult] = useState<MediaAnalysisResult | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
-  const analyzeMedia = async (mediaUrl: string, mediaType: string, questionText?: string): Promise<MediaAnalysisResult | null> => {
+  const analyzeMedia = async (
+    mediaUrl: string, 
+    mediaType: string, 
+    questionText?: string,
+    contextData?: any
+  ): Promise<MediaAnalysisResult | null> => {
     try {
       setIsAnalyzing(true);
       setError(null);
@@ -39,18 +48,25 @@ export function useMediaAnalysis() {
         throw new Error("Tipo de mídia não fornecido");
       }
       
-      // Adjust media type for better compatibility
-      // If it's a webm audio file, ensure it's treated as audio
-      if (mediaUrl.includes('audio') && mediaUrl.endsWith('.webm')) {
-        mediaType = 'audio/webm';
+      // Special handling for multimodal analysis
+      const isMultimodal = mediaType === "multimodal/context";
+      
+      if (!isMultimodal) {
+        // Adjust media type for better compatibility
+        // If it's a webm audio file, ensure it's treated as audio
+        if (mediaUrl.includes('audio') && mediaUrl.endsWith('.webm')) {
+          mediaType = 'audio/webm';
+        }
+        
+        // Get specific file type based on extension
+        const fileExtension = mediaUrl.split('.').pop()?.toLowerCase() || '';
+        const specificFileType = determineSpecificFileType(fileExtension);
+        
+        console.log("useMediaAnalysis: Tipo de mídia detectado:", mediaType);
+        console.log("useMediaAnalysis: Tipo específico:", specificFileType);
+      } else {
+        console.log("useMediaAnalysis: Realizando análise multimodal com contexto:", contextData);
       }
-      
-      // Get specific file type based on extension
-      const fileExtension = mediaUrl.split('.').pop()?.toLowerCase() || '';
-      const specificFileType = determineSpecificFileType(fileExtension);
-      
-      console.log("useMediaAnalysis: Tipo de mídia detectado:", mediaType);
-      console.log("useMediaAnalysis: Tipo específico:", specificFileType);
       
       // Simulate analysis for development (remove in production)
       // This is a temporary solution for testing during development
@@ -63,48 +79,58 @@ export function useMediaAnalysis() {
         // Wait a bit to simulate processing
         await new Promise(resolve => setTimeout(resolve, 2000));
         
-        // Create a simulated result based on media type and question context
-        const simulatedResult: MediaAnalysisResult = {
-          type: mediaType.includes('image') ? 'image' : 
-                mediaType.includes('audio') ? 'audio' : 'video',
-          simulated: true,
-          hasNonConformity: Math.random() > 0.5, // 50% chance of non-conformity
-          fileType: specificFileType,
-          questionText: questionText
-        };
-        
-        // Generate analysis based on question context if available
-        const questionBasedAnalysis = generateContextBasedAnalysis(questionText, simulatedResult.type);
-        
-        // Add type-specific analysis
-        if (simulatedResult.type === 'image') {
-          simulatedResult.analysis = questionBasedAnalysis || `Na imagem analisada, observa-se ${Math.random() > 0.5 ? 
-            'conformidade com os requisitos de segurança, com uso adequado de EPIs e procedimentos corretos' : 
-            'possível não conformidade: falta de uso adequado de EPIs por parte de alguns funcionários'}`;
-        } else if (simulatedResult.type === 'audio') {
-          simulatedResult.transcription = questionBasedAnalysis || `Transcrição do áudio: "Este é um registro de ${Math.random() > 0.5 ? 
-            'inspeção realizada conforme procedimentos padrão' : 
-            'uma situação que pode indicar não conformidade com os procedimentos de segurança'}."`;
+        if (isMultimodal) {
+          // Process multimodal analysis simulation
+          return simulateMultimodalAnalysis(questionText, contextData);
         } else {
-          simulatedResult.analysis = questionBasedAnalysis || `Análise do vídeo: ${Math.random() > 0.5 ? 
-            'O vídeo mostra procedimentos sendo executados corretamente, sem evidências de riscos à segurança' : 
-            'O vídeo revela possíveis falhas nos procedimentos de segurança que precisam ser corrigidas'}`;
+          // Create a simulated result based on media type and question context
+          const simulatedResult: MediaAnalysisResult = {
+            type: mediaType.includes('image') ? 'image' : 
+                  mediaType.includes('audio') ? 'audio' : 'video',
+            simulated: true,
+            hasNonConformity: Math.random() > 0.5, // 50% chance of non-conformity
+            fileType: mediaType,
+            questionText: questionText
+          };
+          
+          // Generate analysis based on question context if available
+          const questionBasedAnalysis = generateContextBasedAnalysis(questionText, simulatedResult.type);
+          
+          // Add type-specific analysis
+          if (simulatedResult.type === 'image') {
+            simulatedResult.analysis = questionBasedAnalysis || `Na imagem analisada, observa-se ${Math.random() > 0.5 ? 
+              'conformidade com os requisitos de segurança, com uso adequado de EPIs e procedimentos corretos' : 
+              'possível não conformidade: falta de uso adequado de EPIs por parte de alguns funcionários'}`;
+          } else if (simulatedResult.type === 'audio') {
+            simulatedResult.transcription = questionBasedAnalysis || `Transcrição do áudio: "Este é um registro de ${Math.random() > 0.5 ? 
+              'inspeção realizada conforme procedimentos padrão' : 
+              'uma situação que pode indicar não conformidade com os procedimentos de segurança'}."`;
+          } else {
+            simulatedResult.analysis = questionBasedAnalysis || `Análise do vídeo: ${Math.random() > 0.5 ? 
+              'O vídeo mostra procedimentos sendo executados corretamente, sem evidências de riscos à segurança' : 
+              'O vídeo revela possíveis falhas nos procedimentos de segurança que precisam ser corrigidas'}`;
+          }
+          
+          // Add action plan suggestion if there's non-conformity, based on question context
+          if (simulatedResult.hasNonConformity) {
+            simulatedResult.actionPlanSuggestion = generateContextBasedActionPlan(questionText) || 
+              `Com base na análise, recomenda-se: 1) Realizar treinamento adicional sobre procedimentos de segurança; 2) Verificar disponibilidade e condições dos EPIs; 3) Programar nova inspeção em 15 dias para confirmar a correção das não conformidades.`;
+          }
+          
+          console.log("useMediaAnalysis: Análise simulada concluída:", simulatedResult);
+          setResult(simulatedResult);
+          return simulatedResult;
         }
-        
-        // Add action plan suggestion if there's non-conformity, based on question context
-        if (simulatedResult.hasNonConformity) {
-          simulatedResult.actionPlanSuggestion = generateContextBasedActionPlan(questionText) || 
-            `Com base na análise, recomenda-se: 1) Realizar treinamento adicional sobre procedimentos de segurança; 2) Verificar disponibilidade e condições dos EPIs; 3) Programar nova inspeção em 15 dias para confirmar a correção das não conformidades.`;
-        }
-        
-        console.log("useMediaAnalysis: Análise simulada concluída:", simulatedResult);
-        setResult(simulatedResult);
-        return simulatedResult;
       }
       
       // Call edge function to analyze media
       const { data, error: functionError } = await supabase.functions.invoke('analyze-media', {
-        body: { mediaUrl, mediaType, questionText }
+        body: { 
+          mediaUrl, 
+          mediaType, 
+          questionText,
+          contextData: isMultimodal ? contextData : undefined
+        }
       });
       
       if (functionError) {
@@ -140,8 +166,12 @@ export function useMediaAnalysis() {
         hasNonConformity: !!data.hasNonConformity,
         actionPlanSuggestion: data.actionPlanSuggestion || undefined,
         simulated: !!data.simulated,
-        fileType: specificFileType,
+        fileType: isMultimodal ? 'multimodal/context' : mediaType,
         questionText: questionText || undefined,
+        imageAnalysis: data.imageAnalysis,
+        videoAnalysis: data.videoAnalysis,
+        audioTranscription: data.audioTranscription,
+        contextAnalysis: data.contextAnalysis
       };
       
       setResult(formattedResult);
@@ -167,6 +197,96 @@ export function useMediaAnalysis() {
   const resetAnalysis = () => {
     setResult(null);
     setError(null);
+  };
+  
+  const simulateMultimodalAnalysis = (questionText?: string, contextData?: any): MediaAnalysisResult => {
+    console.log("useMediaAnalysis: Simulando análise multimodal");
+    
+    const responseValue = contextData?.responseValue;
+    const mediaUrls = contextData?.mediaUrls || [];
+    const hasMedia = mediaUrls.length > 0;
+    const hasNegativeResponse = responseValue === false || responseValue === "não";
+    
+    // Determine simulated non-conformity based on response value and random factor
+    const hasNonConformity = hasNegativeResponse || (Math.random() > 0.7); // Higher chance of non-conformity if negative response
+    
+    let analysisText = "";
+    if (questionText) {
+      if (hasNegativeResponse) {
+        analysisText = `A análise da resposta negativa "${questionText}" indica uma não conformidade que requer atenção. `;
+      } else {
+        analysisText = `A pergunta "${questionText}" foi analisada no contexto da inspeção. `;
+      }
+      
+      analysisText += hasNonConformity 
+        ? "Foram identificados potenciais problemas que precisam ser corrigidos." 
+        : "Não foram identificados problemas significativos.";
+    }
+    
+    // Simulate image analysis if there are media URLs
+    let imageAnalysis = "";
+    let videoAnalysis = "";
+    let audioTranscription = "";
+    
+    if (hasMedia) {
+      const mediaTypes = mediaUrls.map((url: string) => {
+        const fileType = url.split('.').pop()?.toLowerCase();
+        if (fileType === 'jpg' || fileType === 'png' || fileType === 'jpeg') return 'image';
+        if (fileType === 'mp4' || fileType === 'webm' || fileType === 'mov') return 'video';
+        if (fileType === 'mp3' || fileType === 'wav' || fileType === 'ogg') return 'audio';
+        return 'unknown';
+      });
+      
+      const hasImages = mediaTypes.includes('image');
+      const hasVideos = mediaTypes.includes('video');
+      const hasAudio = mediaTypes.includes('audio');
+      
+      if (hasImages) {
+        imageAnalysis = hasNonConformity 
+          ? "Nas imagens analisadas, foram detectadas possíveis não conformidades: equipamentos de proteção individual não sendo utilizados corretamente; áreas de risco sem a devantada sinalização; procedimentos de segurança não seguindo o protocolo estabelecido."
+          : "As imagens foram analisadas e não apresentam evidências de não conformidades. Os equipamentos de proteção estão sendo utilizados conforme as normas e os procedimentos aparentam estar sendo seguidos corretamente.";
+      }
+      
+      if (hasVideos) {
+        videoAnalysis = hasNonConformity
+          ? "A análise do conteúdo de vídeo revela momentos em que os protocolos de segurança não são seguidos adequadamente. É possível observar funcionários executando tarefas sem a devida proteção e em desacordo com as normas estabelecidas."
+          : "Os vídeos analisados mostram procedimentos sendo executados de acordo com os protocolos estabelecidos. Não foram identificadas violações significativas de normas de segurança.";
+      }
+      
+      if (hasAudio) {
+        audioTranscription = hasNonConformity
+          ? "Transcrição do áudio: '... estamos com problema no equipamento de proteção contra quedas. Alguns funcionários estão trabalhando sem o equipamento completo porque não temos peças de reposição suficientes...'"
+          : "Transcrição do áudio: '... a inspeção hoje foi concluída com sucesso. Todos os itens foram verificados e estão em conformidade com as normas de segurança. A equipe está seguindo corretamente os procedimentos...'"
+      }
+    }
+    
+    // Generate action plan suggestion
+    let actionPlanSuggestion = "";
+    if (hasNonConformity) {
+      actionPlanSuggestion = generateStructuredActionPlan(questionText, {
+        hasImages: !!imageAnalysis,
+        hasVideos: !!videoAnalysis,
+        hasAudio: !!audioTranscription,
+        hasNegativeResponse
+      });
+    }
+    
+    const result: MediaAnalysisResult = {
+      type: 'multimodal',
+      analysis: analysisText,
+      simulated: true,
+      hasNonConformity,
+      fileType: 'multimodal/context',
+      questionText,
+      actionPlanSuggestion,
+      imageAnalysis,
+      videoAnalysis,
+      audioTranscription
+    };
+    
+    console.log("useMediaAnalysis: Resultado da análise multimodal simulada:", result);
+    setResult(result);
+    return result;
   };
 
   // Generate analysis based on question context
@@ -231,6 +351,49 @@ export function useMediaAnalysis() {
     
     // Generic fallback that still references the question
     return `Em relação à questão "${questionText}", recomenda-se: 1) Realizar análise detalhada das não conformidades identificadas; 2) Implementar medidas corretivas imediatas; 3) Programar nova inspeção em 15 dias para confirmar a eficácia das ações.`;
+  };
+  
+  // Generate structured action plan based on context and available media
+  const generateStructuredActionPlan = (questionText?: string, options?: any): string => {
+    const { hasImages, hasVideos, hasAudio, hasNegativeResponse } = options || {};
+    let actionPlan = "Plano de Ação Sugerido:\n\n";
+    
+    // Add 2-4 structured action items based on context
+    if (questionText?.toLowerCase().includes('epi') || questionText?.toLowerCase().includes('proteção')) {
+      actionPlan += "1. Realizar auditoria completa dos EPIs disponíveis e verificar conformidade com normas vigentes\n";
+      actionPlan += "2. Implementar treinamento de reciclagem sobre uso correto de equipamentos de proteção\n";
+      
+      if (hasImages || hasNegativeResponse) {
+        actionPlan += "3. Estabelecer sistema de verificação diária do uso adequado de EPIs pelos funcionários\n";
+      }
+      
+      if (hasVideos || hasAudio) {
+        actionPlan += "4. Documentar procedimentos corretos com material visual/audiovisual para treinamento\n";
+      }
+    } else if (questionText?.toLowerCase().includes('procedimento') || questionText?.toLowerCase().includes('norma')) {
+      actionPlan += "1. Revisar procedimentos operacionais e atualizá-los conforme normas vigentes\n";
+      actionPlan += "2. Realizar treinamento da equipe nos procedimentos corretos\n";
+      
+      if (hasNegativeResponse) {
+        actionPlan += "3. Implementar sistema de supervisão para garantir cumprimento dos procedimentos\n";
+      }
+      
+      if (hasImages || hasVideos) {
+        actionPlan += "4. Criar material visual demonstrando procedimentos corretos e incorretos\n";
+      }
+    } else {
+      // Generic action plan
+      actionPlan += "1. Realizar análise detalhada das não conformidades identificadas\n";
+      actionPlan += "2. Implementar medidas corretivas imediatas para os pontos críticos\n";
+      
+      if (hasImages || hasVideos || hasAudio) {
+        actionPlan += "3. Documentar evidências após correção para comparação\n";
+      }
+      
+      actionPlan += "4. Programar nova inspeção em 15 dias para verificar eficácia das ações implementadas\n";
+    }
+    
+    return actionPlan;
   };
 
   return {
