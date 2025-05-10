@@ -1,6 +1,7 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { MediaUploadInput } from "../../question-inputs/MediaUploadInput";
+import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 
 interface TextResponseInputProps {
   question: any;
@@ -17,6 +18,27 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
   onMediaChange,
   readOnly = false
 }) => {
+  const [analysisResults, setAnalysisResults] = useState<Record<string, MediaAnalysisResult>>(
+    response?.mediaAnalysis || {}
+  );
+  
+  const handleSaveAnalysis = (url: string, result: MediaAnalysisResult) => {
+    const newResults = {
+      ...analysisResults,
+      [url]: result
+    };
+    
+    setAnalysisResults(newResults);
+    
+    // Update the response with the new analysis results
+    const updatedResponse = {
+      ...response,
+      mediaAnalysis: newResults
+    };
+    
+    onResponseChange(updatedResponse);
+  };
+
   return (
     <div className="space-y-4">
       <textarea
@@ -24,7 +46,7 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
         rows={3}
         placeholder="Digite sua resposta..."
         value={response?.value || ''}
-        onChange={(e) => !readOnly && onResponseChange(e.target.value)}
+        onChange={(e) => !readOnly && onResponseChange({ ...response, value: e.target.value })}
         disabled={readOnly}
       />
       
@@ -41,7 +63,46 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
           allowsAudio={question.allowsAudio || question.permite_audio}
           allowsFiles={question.allowsFiles || question.permite_files}
           readOnly={readOnly}
+          questionText={question.text || question.pergunta || ""}
+          onSaveAnalysis={handleSaveAnalysis}
+          analysisResults={analysisResults}
         />
+      )}
+      
+      {/* Display analysis results that are relevant to the question */}
+      {Object.keys(analysisResults).length > 0 && (
+        <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-100">
+          <h4 className="text-sm font-medium mb-2 flex items-center">
+            <span>Análises de IA</span>
+          </h4>
+          <div className="space-y-3">
+            {Object.entries(analysisResults).map(([url, result], index) => {
+              // Only show a summary of the analysis here
+              let summary = '';
+              
+              if (result.type === 'image' || result.type === 'video') {
+                summary = result.analysis && result.analysis.length > 100 
+                  ? result.analysis.substring(0, 100) + '...' 
+                  : result.analysis || '';
+              } else if (result.type === 'audio') {
+                summary = result.transcription && result.transcription.length > 100 
+                  ? result.transcription.substring(0, 100) + '...' 
+                  : result.transcription || '';
+              }
+              
+              return (
+                <div key={index} className="text-xs border-l-2 border-blue-300 pl-3 py-1">
+                  <div className="font-medium mb-1">
+                    {result.type === 'image' && 'Análise de Imagem'}
+                    {result.type === 'video' && 'Análise de Vídeo'}
+                    {result.type === 'audio' && 'Transcrição de Áudio'}
+                  </div>
+                  <p className="text-gray-600">{summary}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
     </div>
   );

@@ -10,9 +10,11 @@ interface MediaAttachmentRendererProps {
   url: string;
   index: number;
   onOpenPreview: (url: string) => void;
-  onOpenAnalysis: (url: string) => void;
+  onOpenAnalysis: (url: string, questionText?: string) => void;
   onDelete?: (url: string) => void;
   readOnly: boolean;
+  questionText?: string;
+  analysisResults?: Record<string, any>;
 }
 
 export const MediaAttachmentRenderer = ({ 
@@ -21,7 +23,9 @@ export const MediaAttachmentRenderer = ({
   onOpenPreview, 
   onOpenAnalysis, 
   onDelete,
-  readOnly
+  readOnly,
+  questionText,
+  analysisResults
 }: MediaAttachmentRendererProps) => {
   const fileType = getFileType(url);
   console.log(`Detected file type for ${url}: ${fileType}`);
@@ -41,6 +45,8 @@ export const MediaAttachmentRenderer = ({
     }
   };
   
+  const hasAnalysis = analysisResults && analysisResults[url];
+  
   // Tratamento especial para arquivos webm (podem ser áudio ou vídeo)
   if (url.endsWith('.webm')) {
     // Se o URL contiver "audio", consideramos como áudio
@@ -51,10 +57,12 @@ export const MediaAttachmentRenderer = ({
           index={index}
           fileName={fileName}
           onOpenPreview={onOpenPreview}
-          onOpenAnalysis={onOpenAnalysis}
+          onOpenAnalysis={(url) => onOpenAnalysis(url, questionText)}
           readOnly={readOnly}
           onDelete={onDelete}
           onDownload={handleDownload}
+          hasAnalysis={hasAnalysis}
+          questionText={questionText}
         />
       );
     } else {
@@ -64,9 +72,11 @@ export const MediaAttachmentRenderer = ({
           index={index}
           fileName={fileName}
           onOpenPreview={onOpenPreview}
-          onOpenAnalysis={onOpenAnalysis}
+          onOpenAnalysis={(url) => onOpenAnalysis(url, questionText)}
           readOnly={readOnly}
           onDelete={onDelete}
+          hasAnalysis={hasAnalysis}
+          questionText={questionText}
         />
       );
     }
@@ -80,9 +90,11 @@ export const MediaAttachmentRenderer = ({
         index={index}
         fileName={fileName}
         onOpenPreview={onOpenPreview}
-        onOpenAnalysis={onOpenAnalysis}
+        onOpenAnalysis={(url) => onOpenAnalysis(url, questionText)}
         readOnly={readOnly}
         onDelete={onDelete}
+        hasAnalysis={hasAnalysis}
+        questionText={questionText}
       />
     );
   }
@@ -95,10 +107,12 @@ export const MediaAttachmentRenderer = ({
         index={index}
         fileName={fileName}
         onOpenPreview={onOpenPreview}
-        onOpenAnalysis={onOpenAnalysis}
+        onOpenAnalysis={(url) => onOpenAnalysis(url, questionText)}
         readOnly={readOnly}
         onDelete={onDelete}
         onDownload={handleDownload}
+        hasAnalysis={hasAnalysis}
+        questionText={questionText}
       />
     );
   }
@@ -111,9 +125,11 @@ export const MediaAttachmentRenderer = ({
         index={index}
         fileName={fileName}
         onOpenPreview={onOpenPreview}
-        onOpenAnalysis={onOpenAnalysis}
+        onOpenAnalysis={(url) => onOpenAnalysis(url, questionText)}
         readOnly={readOnly}
         onDelete={onDelete}
+        hasAnalysis={hasAnalysis}
+        questionText={questionText}
       />
     );
   }

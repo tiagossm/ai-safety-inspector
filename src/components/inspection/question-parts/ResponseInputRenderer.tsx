@@ -1,6 +1,7 @@
 
 import React from "react";
 import { YesNoResponseInput, TextResponseInput } from "./response-types";
+import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 
 interface ResponseInputRendererProps {
   question: any;
@@ -31,6 +32,15 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
       onMediaChange(urls);
     }
   };
+  
+  // Handle saving media analysis results
+  const handleResponseWithAnalysis = (updatedData: any) => {
+    const updatedResponse = {
+      ...response,
+      ...updatedData
+    };
+    onResponseChange(updatedResponse);
+  };
 
   // Handle yes/no responses
   if (responseType === 'yes_no') {
@@ -39,7 +49,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         question={question}
         response={response}
         inspectionId={inspectionId}
-        onResponseChange={onResponseChange}
+        onResponseChange={handleResponseWithAnalysis}
         onMediaChange={handleMediaChange}
         actionPlan={actionPlan}
         onSaveActionPlan={onSaveActionPlan}
@@ -53,7 +63,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     <TextResponseInput
       question={question}
       response={response}
-      onResponseChange={onResponseChange}
+      onResponseChange={handleResponseWithAnalysis}
       onMediaChange={handleMediaChange}
       readOnly={readOnly}
     />

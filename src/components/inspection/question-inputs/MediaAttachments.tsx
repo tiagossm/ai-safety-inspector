@@ -4,14 +4,25 @@ import { X, PlayCircle, PauseCircle, ZoomIn, Download, Sparkles } from "lucide-r
 import { MediaPreviewDialog } from "@/components/media/MediaPreviewDialog";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { MediaAttachmentRenderer } from "@/components/media/renderers/MediaAttachmentRenderer";
+import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 
 interface MediaAttachmentsProps {
   mediaUrls: string[];
   onDelete?: (url: string) => void;
   readOnly?: boolean;
+  questionText?: string;
+  onSaveAnalysis?: (url: string, result: MediaAnalysisResult) => void;
+  analysisResults?: Record<string, MediaAnalysisResult>;
 }
 
-export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: MediaAttachmentsProps) {
+export function MediaAttachments({ 
+  mediaUrls, 
+  onDelete, 
+  readOnly = false, 
+  questionText,
+  onSaveAnalysis,
+  analysisResults = {}
+}: MediaAttachmentsProps) {
   const [activePreviewUrl, setActivePreviewUrl] = useState<string | null>(null);
   const [activeAnalysisUrl, setActiveAnalysisUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -29,6 +40,12 @@ export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: Medi
     setIsPlaying(!isPlaying);
   };
   
+  const handleAnalysisComplete = (result: MediaAnalysisResult) => {
+    if (onSaveAnalysis && activeAnalysisUrl) {
+      onSaveAnalysis(activeAnalysisUrl, result);
+    }
+  };
+  
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -41,6 +58,8 @@ export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: Medi
             onOpenAnalysis={handleOpenAnalysis}
             onDelete={onDelete}
             readOnly={readOnly}
+            questionText={questionText}
+            analysisResults={analysisResults}
           />
         ))}
       </div>
@@ -55,6 +74,8 @@ export function MediaAttachments({ mediaUrls, onDelete, readOnly = false }: Medi
         open={!!activeAnalysisUrl}
         onOpenChange={() => setActiveAnalysisUrl(null)}
         mediaUrl={activeAnalysisUrl}
+        questionText={questionText}
+        onAnalysisComplete={handleAnalysisComplete}
       />
     </>
   );

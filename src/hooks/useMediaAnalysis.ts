@@ -11,6 +11,7 @@ export interface MediaAnalysisResult {
   error?: boolean;
   simulated?: boolean;
   fileType?: string;
+  questionText?: string;
 }
 
 export function useMediaAnalysis() {
@@ -18,13 +19,13 @@ export function useMediaAnalysis() {
   const [result, setResult] = useState<MediaAnalysisResult | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
-  const analyzeMedia = async (mediaUrl: string, mediaType: string): Promise<MediaAnalysisResult | null> => {
+  const analyzeMedia = async (mediaUrl: string, mediaType: string, questionText?: string): Promise<MediaAnalysisResult | null> => {
     try {
       setIsAnalyzing(true);
       setError(null);
       setResult(null);
       
-      console.log("🔍 Iniciando análise de mídia:", mediaUrl, mediaType);
+      console.log("🔍 Iniciando análise de mídia:", mediaUrl, mediaType, "Pergunta:", questionText);
       
       if (!mediaUrl) {
         throw new Error("URL da mídia não fornecida");
@@ -48,7 +49,7 @@ export function useMediaAnalysis() {
       
       // Chamar o edge function para analisar a mídia
       const { data, error: functionError } = await supabase.functions.invoke('analyze-media', {
-        body: { mediaUrl, mediaType }
+        body: { mediaUrl, mediaType, questionText }
       });
       
       if (functionError) {
@@ -76,10 +77,11 @@ export function useMediaAnalysis() {
         });
       }
       
-      // Adicionar o tipo específico de arquivo ao resultado
+      // Adicionar o tipo específico de arquivo e a pergunta ao resultado
       const result = {
         ...(data as MediaAnalysisResult),
-        fileType: specificFileType
+        fileType: specificFileType,
+        questionText
       };
       
       setResult(result);

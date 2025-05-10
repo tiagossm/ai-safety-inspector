@@ -7,6 +7,7 @@ import { MediaPreviewDialog } from "@/components/media/MediaPreviewDialog";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { getFileType, getFilenameFromUrl } from "@/utils/fileUtils";
 import { MediaAttachments } from "./MediaAttachments";
+import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 
 interface MediaUploadInputProps {
   mediaUrls: string[];
@@ -16,6 +17,9 @@ interface MediaUploadInputProps {
   allowsAudio?: boolean;
   allowsFiles?: boolean;
   readOnly?: boolean;
+  questionText?: string;
+  onSaveAnalysis?: (url: string, result: MediaAnalysisResult) => void;
+  analysisResults?: Record<string, MediaAnalysisResult>;
 }
 
 export function MediaUploadInput({
@@ -25,7 +29,10 @@ export function MediaUploadInput({
   allowsVideo = false,
   allowsAudio = false,
   allowsFiles = false,
-  readOnly = false
+  readOnly = false,
+  questionText,
+  onSaveAnalysis,
+  analysisResults = {}
 }: MediaUploadInputProps) {
   const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
@@ -65,6 +72,12 @@ export function MediaUploadInput({
     setSelectedMedia(url);
     setSelectedMediaType(type);
     setAnalysisDialogOpen(true);
+  };
+  
+  const handleAnalysisComplete = (result: MediaAnalysisResult) => {
+    if (onSaveAnalysis && selectedMedia) {
+      onSaveAnalysis(selectedMedia, result);
+    }
   };
 
   const getMediaType = (url: string): string => {
@@ -120,7 +133,10 @@ export function MediaUploadInput({
         <MediaAttachments 
           mediaUrls={mediaUrls} 
           onDelete={!readOnly ? handleDeleteMedia : undefined} 
-          readOnly={readOnly} 
+          readOnly={readOnly}
+          questionText={questionText}
+          onSaveAnalysis={onSaveAnalysis}
+          analysisResults={analysisResults}
         />
       )}
       
@@ -143,6 +159,8 @@ export function MediaUploadInput({
         onOpenChange={setAnalysisDialogOpen}
         mediaUrl={selectedMedia}
         mediaType={selectedMediaType}
+        questionText={questionText}
+        onAnalysisComplete={handleAnalysisComplete}
       />
     </div>
   );

@@ -21,13 +21,17 @@ interface MediaAnalysisDialogProps {
   onOpenChange: (open: boolean) => void;
   mediaUrl: string | null;
   mediaType?: string;
+  questionText?: string;
+  onAnalysisComplete?: (result: any) => void;
 }
 
 export function MediaAnalysisDialog({
   open,
   onOpenChange,
   mediaUrl,
-  mediaType
+  mediaType,
+  questionText,
+  onAnalysisComplete
 }: MediaAnalysisDialogProps) {
   const { analyzeMedia, resetAnalysis, isAnalyzing, result, error } = useMediaAnalysis();
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
@@ -53,9 +57,9 @@ export function MediaAnalysisDialog({
     
     try {
       toast.info("Iniciando análise de mídia...");
-      console.log("Analisando mídia:", mediaUrl, type);
+      console.log("Analisando mídia:", mediaUrl, type, "Pergunta:", questionText);
       
-      const analysisResult = await analyzeMedia(mediaUrl, type);
+      const analysisResult = await analyzeMedia(mediaUrl, type, questionText);
       setHasAnalyzed(true);
       
       if (!analysisResult) {
@@ -70,6 +74,11 @@ export function MediaAnalysisDialog({
       } else {
         setApiKeyConfigured(true);
         toast.success("Análise concluída com sucesso");
+      }
+
+      // Call onAnalysisComplete callback if provided
+      if (onAnalysisComplete) {
+        onAnalysisComplete(analysisResult);
       }
     } catch (error: any) {
       console.error("Erro ao analisar mídia:", error);
@@ -200,13 +209,20 @@ export function MediaAnalysisDialog({
     // Estado inicial, antes da análise
     return (
       <div className="text-center py-6">
+        {questionText && (
+          <div className="mb-4 p-3 bg-muted/30 rounded-md text-sm">
+            <p className="font-medium mb-1">Contexto da análise:</p>
+            <p className="italic">{questionText}</p>
+          </div>
+        )}
+        
         <div className="mb-6">
           <Sparkles className="h-10 w-10 text-primary/60 mx-auto mb-2" />
           <p className="mb-3 text-muted-foreground">
             Utilize a inteligência artificial para analisar esta mídia.
           </p>
           <p className="text-sm text-muted-foreground mb-4">
-            A IA pode identificar objetos, pessoas e situações em imagens, transcrever áudio e analisar quadros de vídeo.
+            A IA pode identificar {questionText ? 'se o conteúdo está em conformidade com a pergunta' : 'objetos, pessoas e situações em imagens, transcrever áudio e analisar quadros de vídeo'}.
           </p>
         </div>
         <Button onClick={handleAnalyze} disabled={isAnalyzing} className="flex items-center gap-2">
@@ -246,6 +262,13 @@ export function MediaAnalysisDialog({
                   <h3 className="text-sm font-medium">Análise {result.type === 'video' ? 'do Vídeo' : result.type === 'audio' ? 'do Áudio' : 'da Imagem'}</h3>
                   {!result.simulated && !result.error && <CheckCircle2 className="h-3 w-3 ml-2 text-green-500" />}
                 </div>
+                
+                {result.questionText && (
+                  <div className="p-2 bg-gray-50 border-l-2 border-primary/30 text-xs italic mb-1">
+                    Em relação à pergunta: "{result.questionText}"
+                  </div>
+                )}
+                
                 <div className="p-4 bg-blue-50 border border-blue-100 rounded-md">
                   <p className="text-sm whitespace-pre-wrap">{result.analysis}</p>
                 </div>
@@ -281,6 +304,13 @@ export function MediaAnalysisDialog({
               <h3 className="text-sm font-medium">Análise da Imagem</h3>
               {!result.simulated && !result.error && <CheckCircle2 className="h-3 w-3 ml-2 text-green-500" />}
             </div>
+            
+            {result.questionText && (
+              <div className="p-2 bg-gray-50 border-l-2 border-primary/30 text-xs italic mb-1">
+                Em relação à pergunta: "{result.questionText}"
+              </div>
+            )}
+            
             <div className="p-4 bg-blue-50 border border-blue-100 rounded-md">
               <p className="text-sm whitespace-pre-wrap">{result.analysis}</p>
             </div>
@@ -309,6 +339,13 @@ export function MediaAnalysisDialog({
               </h3>
               {!result.simulated && !result.error && <CheckCircle2 className="h-3 w-3 ml-2 text-green-500" />}
             </div>
+            
+            {result.questionText && (
+              <div className="p-2 bg-gray-50 border-l-2 border-primary/30 text-xs italic mb-1">
+                Em relação à pergunta: "{result.questionText}"
+              </div>
+            )}
+            
             <div className="p-4 bg-purple-50 border border-purple-100 rounded-md">
               <p className="text-sm whitespace-pre-wrap">{result.analysis}</p>
             </div>
@@ -320,55 +357,24 @@ export function MediaAnalysisDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
+          <DialogTitle className="flex items-center">
+            <Sparkles className="h-4 w-4 mr-2 text-primary" />
             Análise de Mídia com IA
           </DialogTitle>
         </DialogHeader>
-        
-        <div className="py-2">
-          {mediaUrl && renderMediaPreview()}
-          {renderContent()}
 
-          {/* Instrução para configuração da API key */}
-          {!apiKeyConfigured && !isAnalyzing && !result && (
-            <div className="mt-4 pt-4 border-t">
-              <Alert>
-                <Settings className="h-4 w-4" />
-                <AlertDescription>
-                  <p className="font-medium text-xs">Configuração da API OpenAI</p>
-                  <p className="text-xs mt-1">
-                    Para habilitar análises reais, configure a chave da API OpenAI nas configurações de funções do Supabase.
-                  </p>
-                  <Button variant="outline" size="sm" className="mt-1 h-7 text-xs" onClick={() => window.open('https://supabase.com/dashboard/project/jkgmgjjtslkozhehwmng/settings/functions', '_blank')}>
-                    <Settings className="mr-1 h-3 w-3" /> 
-                    Configurar na Supabase
-                  </Button>
-                </AlertDescription>
-              </Alert>
-            </div>
-          )}
-        </div>
+        {renderMediaPreview()}
         
+        <div className="space-y-4">
+          {renderContent()}
+        </div>
+
         <DialogFooter>
-          <Button 
-            variant="outline" 
-            onClick={() => onOpenChange(false)}
-            className="w-full sm:w-auto"
-          >
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Fechar
           </Button>
-          {hasAnalyzed && !isAnalyzing && (
-            <Button 
-              variant="default" 
-              onClick={handleAnalyze}
-              className="w-full sm:w-auto"
-            >
-              Analisar Novamente
-            </Button>
-          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
