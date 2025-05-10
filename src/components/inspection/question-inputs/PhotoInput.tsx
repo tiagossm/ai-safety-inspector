@@ -23,6 +23,20 @@ export function PhotoInput({
   allowsAudio = false,
   allowsFiles = false
 }: PhotoInputProps) {
+  // Add these handlers to fulfill the required props for MediaAttachments
+  const handleOpenPreview = (url: string) => {
+    console.log("PhotoInput: Opening preview for URL:", url);
+    // This is a stub implementation - the actual preview functionality 
+    // should be implemented at a higher level
+  };
+  
+  const handleOpenAnalysis = (url: string, questionContext?: string) => {
+    console.log("PhotoInput: Opening analysis for URL:", url);
+    console.log("PhotoInput: Question context:", questionContext);
+    // This is a stub implementation - the actual analysis functionality
+    // should be implemented at a higher level
+  };
+
   return (
     <div className="space-y-1">
       <div className="flex flex-wrap gap-2">
@@ -92,7 +106,13 @@ export function PhotoInput({
         )}
       </div>
       
-      <MediaAttachments mediaUrls={mediaUrls} onDelete={onDeleteMedia} />
+      <MediaAttachments 
+        mediaUrls={mediaUrls} 
+        onDelete={onDeleteMedia} 
+        onOpenPreview={handleOpenPreview}
+        onOpenAnalysis={handleOpenAnalysis}
+        readOnly={false}
+      />
     </div>
   );
 }
