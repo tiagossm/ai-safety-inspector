@@ -8,6 +8,7 @@ interface TextResponseInputProps {
   response: any;
   onResponseChange: (value: any) => void;
   onMediaChange: (mediaUrls: string[]) => void;
+  onApplyAISuggestion?: (suggestion: string) => void; // Add this prop
   readOnly?: boolean;
 }
 
@@ -16,6 +17,7 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
   response,
   onResponseChange,
   onMediaChange,
+  onApplyAISuggestion,
   readOnly = false
 }) => {
   const [analysisResults, setAnalysisResults] = useState<Record<string, MediaAnalysisResult>>(
@@ -66,6 +68,7 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
           questionText={question.text || question.pergunta || ""}
           onSaveAnalysis={handleSaveAnalysis}
           analysisResults={analysisResults}
+          onApplyAISuggestion={onApplyAISuggestion} // Pass the prop
         />
       )}
       

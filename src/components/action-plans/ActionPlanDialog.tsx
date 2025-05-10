@@ -44,8 +44,12 @@ export function ActionPlanDialog({
 }: ActionPlanDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [description, setDescription] = useState(existingPlan?.description || "");
-  const [priority, setPriority] = useState<string>(existingPlan?.priority || "medium");
-  const [status, setStatus] = useState<string>(existingPlan?.status || "pending");
+  const [priority, setPriority] = useState<"low" | "medium" | "high" | "critical">(
+    (existingPlan?.priority as "low" | "medium" | "high" | "critical") || "medium"
+  );
+  const [status, setStatus] = useState<"pending" | "in_progress" | "completed" | "cancelled">(
+    (existingPlan?.status as "pending" | "in_progress" | "completed" | "cancelled") || "pending"
+  );
   const [assignee, setAssignee] = useState(existingPlan?.assignee || "");
   const [dueDate, setDueDate] = useState<string>(
     existingPlan?.due_date 
@@ -133,7 +137,7 @@ export function ActionPlanDialog({
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="priority">Priority</Label>
-                <Select value={priority} onValueChange={setPriority}>
+                <Select value={priority} onValueChange={(value: "low" | "medium" | "high" | "critical") => setPriority(value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select priority" />
                   </SelectTrigger>
@@ -148,7 +152,7 @@ export function ActionPlanDialog({
               
               <div className="grid gap-2">
                 <Label htmlFor="status">Status</Label>
-                <Select value={status} onValueChange={setStatus}>
+                <Select value={status} onValueChange={(value: "pending" | "in_progress" | "completed" | "cancelled") => setStatus(value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>

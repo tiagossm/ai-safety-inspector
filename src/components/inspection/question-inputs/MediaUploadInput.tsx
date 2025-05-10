@@ -19,6 +19,7 @@ interface MediaUploadInputProps {
   readOnly?: boolean;
   questionText?: string;
   onSaveAnalysis?: (url: string, result: MediaAnalysisResult) => void;
+  onApplyAISuggestion?: (suggestion: string) => void; // Add this prop
   analysisResults?: Record<string, MediaAnalysisResult>;
 }
 
@@ -32,6 +33,7 @@ export function MediaUploadInput({
   readOnly = false,
   questionText,
   onSaveAnalysis,
+  onApplyAISuggestion,
   analysisResults = {}
 }: MediaUploadInputProps) {
   const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
@@ -136,6 +138,7 @@ export function MediaUploadInput({
           readOnly={readOnly}
           questionText={questionText}
           onSaveAnalysis={onSaveAnalysis}
+          onApplyAISuggestion={onApplyAISuggestion} // Pass the prop
           analysisResults={analysisResults}
         />
       )}

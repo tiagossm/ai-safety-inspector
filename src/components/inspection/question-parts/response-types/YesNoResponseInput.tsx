@@ -3,11 +3,10 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ThumbsUp, ThumbsDown, Upload, PenLine, AlertCircle } from "lucide-react";
 import { ActionPlanFormData } from "@/components/action-plans/form/types";
-import { ActionPlanButton } from "../ActionPlanButton";
 import { MediaUploadInput } from "../../question-inputs/MediaUploadInput";
-import { ActionPlanForm } from "@/components/action-plans/form/ActionPlanForm";
 import { ActionPlanDialog } from "@/components/action-plans/ActionPlanDialog";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
+import { Badge } from "@/components/ui/badge";
 
 interface YesNoResponseInputProps {
   question: any;
