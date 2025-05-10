@@ -68,17 +68,23 @@ export function MediaUploadInput({
     setPreviewDialogOpen(true);
   };
   
-  const handleAnalyzeMedia = (url: string, type: string) => {
-    console.log("MediaUploadInput: Analyzing media:", url, type);
+  const handleAnalyzeMedia = (url: string, questionContext?: string) => {
+    console.log("MediaUploadInput: Analyzing media:", url, "with question context:", questionContext || questionText);
     setSelectedMedia(url);
-    setSelectedMediaType(type);
+    const mediaType = getMediaType(url);
+    setSelectedMediaType(mediaType);
     setAnalysisDialogOpen(true);
   };
   
   const handleAnalysisComplete = (result: MediaAnalysisResult) => {
     console.log("MediaUploadInput: Analysis complete:", result);
     if (onSaveAnalysis && selectedMedia) {
-      onSaveAnalysis(selectedMedia, result);
+      // Ensure the question context is included in the result
+      const resultWithContext = {
+        ...result,
+        questionText: questionText || result.questionText
+      };
+      onSaveAnalysis(selectedMedia, resultWithContext);
     }
   };
 

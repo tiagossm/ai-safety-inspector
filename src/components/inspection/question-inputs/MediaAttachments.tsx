@@ -37,11 +37,11 @@ export function MediaAttachments({
     setActivePreviewUrl(url);
   };
 
-  const handleOpenAnalysis = (url: string, type?: string) => {
+  const handleOpenAnalysis = (url: string, questionText?: string) => {
     console.log("MediaAttachments: Opening analysis for URL:", url);
-    console.log("MediaAttachments: Media type:", type);
+    console.log("MediaAttachments: Question context:", questionText);
     setActiveAnalysisUrl(url);
-    setActiveMediaType(type || null);
+    setActiveMediaType(null);
   };
 
   const toggleAudioPlay = (e: React.MouseEvent) => {
@@ -52,8 +52,15 @@ export function MediaAttachments({
   const handleAnalysisComplete = (result: MediaAnalysisResult) => {
     console.log("MediaAttachments: Analysis complete:", result);
     console.log("MediaAttachments: Active analysis URL:", activeAnalysisUrl);
+    console.log("MediaAttachments: Question context:", questionText);
+    
     if (onSaveAnalysis && activeAnalysisUrl) {
-      onSaveAnalysis(activeAnalysisUrl, result);
+      // Make sure the question text is included in the result
+      const resultWithContext = {
+        ...result,
+        questionText: questionText || result.questionText
+      };
+      onSaveAnalysis(activeAnalysisUrl, resultWithContext);
     }
   };
 
@@ -61,6 +68,8 @@ export function MediaAttachments({
     const analysis = analysisResults[url];
     console.log("MediaAttachments: Applying suggestion for URL:", url);
     console.log("MediaAttachments: Analysis result:", analysis);
+    console.log("MediaAttachments: Question context:", analysis?.questionText || questionText);
+    
     if (onApplyAISuggestion && analysis?.actionPlanSuggestion) {
       console.log("MediaAttachments: Applying suggestion:", analysis.actionPlanSuggestion);
       onApplyAISuggestion(analysis.actionPlanSuggestion);
@@ -99,7 +108,7 @@ export function MediaAttachments({
                   url={url}
                   index={index}
                   onOpenPreview={handleOpenPreview}
-                  onOpenAnalysis={(url) => handleOpenAnalysis(url)}
+                  onOpenAnalysis={(url) => handleOpenAnalysis(url, questionText)}
                   onDelete={onDelete}
                   readOnly={readOnly}
                   questionText={questionText}

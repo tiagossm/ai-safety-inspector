@@ -28,6 +28,9 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   // Determine response type
   const responseType = question.responseType || question.tipo_resposta || "text";
   
+  // Extract question text to pass to the analysis
+  const questionText = question.text || question.pergunta || "";
+  
   const handleMediaChange = (urls: string[]) => {
     if (onMediaChange) {
       onMediaChange(urls);

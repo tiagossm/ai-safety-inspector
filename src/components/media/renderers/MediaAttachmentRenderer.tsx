@@ -47,6 +47,12 @@ export const MediaAttachmentRenderer = ({
   };
   
   const hasAnalysis = analysisResults && analysisResults[url];
+
+  // Function to handle analysis with context
+  const handleOpenAnalysisWithContext = (url: string) => {
+    console.log("MediaAttachmentRenderer: Opening analysis with question context:", questionText);
+    onOpenAnalysis(url, questionText);
+  };
   
   // Special handling for webm files (can be audio or video)
   if (url.endsWith('.webm')) {
@@ -58,7 +64,7 @@ export const MediaAttachmentRenderer = ({
           index={index}
           fileName={fileName}
           onOpenPreview={onOpenPreview}
-          onOpenAnalysis={(url) => onOpenAnalysis(url, questionText)}
+          onOpenAnalysis={handleOpenAnalysisWithContext}
           readOnly={readOnly}
           onDelete={onDelete}
           onDownload={handleDownload}
@@ -74,7 +80,7 @@ export const MediaAttachmentRenderer = ({
           index={index}
           fileName={fileName}
           onOpenPreview={onOpenPreview}
-          onOpenAnalysis={(url) => onOpenAnalysis(url, questionText)}
+          onOpenAnalysis={handleOpenAnalysisWithContext}
           readOnly={readOnly}
           onDelete={onDelete}
           hasAnalysis={hasAnalysis}
@@ -93,7 +99,7 @@ export const MediaAttachmentRenderer = ({
         index={index}
         fileName={fileName}
         onOpenPreview={onOpenPreview}
-        onOpenAnalysis={(url) => onOpenAnalysis(url, questionText)}
+        onOpenAnalysis={handleOpenAnalysisWithContext}
         readOnly={readOnly}
         onDelete={onDelete}
         hasAnalysis={hasAnalysis}
@@ -111,7 +117,7 @@ export const MediaAttachmentRenderer = ({
         index={index}
         fileName={fileName}
         onOpenPreview={onOpenPreview}
-        onOpenAnalysis={(url) => onOpenAnalysis(url, questionText)}
+        onOpenAnalysis={handleOpenAnalysisWithContext}
         readOnly={readOnly}
         onDelete={onDelete}
         onDownload={handleDownload}
@@ -130,7 +136,7 @@ export const MediaAttachmentRenderer = ({
         index={index}
         fileName={fileName}
         onOpenPreview={onOpenPreview}
-        onOpenAnalysis={(url) => onOpenAnalysis(url, questionText)}
+        onOpenAnalysis={handleOpenAnalysisWithContext}
         readOnly={readOnly}
         onDelete={onDelete}
         hasAnalysis={hasAnalysis}

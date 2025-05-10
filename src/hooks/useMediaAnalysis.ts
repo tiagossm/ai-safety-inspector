@@ -58,11 +58,12 @@ export function useMediaAnalysis() {
       
       if (simulateAnalysis) {
         console.log("useMediaAnalysis: Usando análise simulada para desenvolvimento");
+        console.log("useMediaAnalysis: Contexto da pergunta:", questionText);
         
         // Wait a bit to simulate processing
         await new Promise(resolve => setTimeout(resolve, 2000));
         
-        // Create a simulated result based on media type
+        // Create a simulated result based on media type and question context
         const simulatedResult: MediaAnalysisResult = {
           type: mediaType.includes('image') ? 'image' : 
                 mediaType.includes('audio') ? 'audio' : 'video',
@@ -72,24 +73,28 @@ export function useMediaAnalysis() {
           questionText: questionText
         };
         
+        // Generate analysis based on question context if available
+        const questionBasedAnalysis = generateContextBasedAnalysis(questionText, simulatedResult.type);
+        
         // Add type-specific analysis
         if (simulatedResult.type === 'image') {
-          simulatedResult.analysis = `Na imagem analisada, observa-se ${Math.random() > 0.5 ? 
+          simulatedResult.analysis = questionBasedAnalysis || `Na imagem analisada, observa-se ${Math.random() > 0.5 ? 
             'conformidade com os requisitos de segurança, com uso adequado de EPIs e procedimentos corretos' : 
             'possível não conformidade: falta de uso adequado de EPIs por parte de alguns funcionários'}`;
         } else if (simulatedResult.type === 'audio') {
-          simulatedResult.transcription = `Transcrição do áudio: "Este é um registro de ${Math.random() > 0.5 ? 
+          simulatedResult.transcription = questionBasedAnalysis || `Transcrição do áudio: "Este é um registro de ${Math.random() > 0.5 ? 
             'inspeção realizada conforme procedimentos padrão' : 
             'uma situação que pode indicar não conformidade com os procedimentos de segurança'}."`;
         } else {
-          simulatedResult.analysis = `Análise do vídeo: ${Math.random() > 0.5 ? 
+          simulatedResult.analysis = questionBasedAnalysis || `Análise do vídeo: ${Math.random() > 0.5 ? 
             'O vídeo mostra procedimentos sendo executados corretamente, sem evidências de riscos à segurança' : 
             'O vídeo revela possíveis falhas nos procedimentos de segurança que precisam ser corrigidas'}`;
         }
         
-        // Add action plan suggestion if there's non-conformity
+        // Add action plan suggestion if there's non-conformity, based on question context
         if (simulatedResult.hasNonConformity) {
-          simulatedResult.actionPlanSuggestion = `Com base na análise, recomenda-se: 1) Realizar treinamento adicional sobre procedimentos de segurança; 2) Verificar disponibilidade e condições dos EPIs; 3) Programar nova inspeção em 15 dias para confirmar a correção das não conformidades.`;
+          simulatedResult.actionPlanSuggestion = generateContextBasedActionPlan(questionText) || 
+            `Com base na análise, recomenda-se: 1) Realizar treinamento adicional sobre procedimentos de segurança; 2) Verificar disponibilidade e condições dos EPIs; 3) Programar nova inspeção em 15 dias para confirmar a correção das não conformidades.`;
         }
         
         console.log("useMediaAnalysis: Análise simulada concluída:", simulatedResult);
@@ -162,6 +167,70 @@ export function useMediaAnalysis() {
   const resetAnalysis = () => {
     setResult(null);
     setError(null);
+  };
+
+  // Generate analysis based on question context
+  const generateContextBasedAnalysis = (questionText?: string, mediaType?: string): string | null => {
+    if (!questionText) return null;
+    
+    // Simple question context analysis for simulation
+    const questionLower = questionText.toLowerCase();
+    
+    // Create context-based analysis
+    if (questionLower.includes('epi') || questionLower.includes('equipamento') || questionLower.includes('proteção')) {
+      return `Em relação à pergunta sobre EPIs: ${Math.random() > 0.5 ? 
+        'A imagem mostra funcionários utilizando corretamente os equipamentos de proteção individual conforme exigido para a atividade' : 
+        'Detectamos funcionários sem o uso adequado de EPIs obrigatórios para esta atividade, como capacete e luvas'}`;
+    }
+    
+    if (questionLower.includes('limpeza') || questionLower.includes('organização')) {
+      return `Referente à questão sobre limpeza e organização: ${Math.random() > 0.5 ? 
+        'O ambiente apresenta-se limpo e organizado, seguindo os padrões de higiene adequados' : 
+        'Foram identificados problemas de organização e limpeza no ambiente, com materiais fora do local apropriado e possíveis riscos de contaminação'}`;
+    }
+    
+    if (questionLower.includes('sinalização') || questionLower.includes('placa')) {
+      return `Sobre a sinalização mencionada na pergunta: ${Math.random() > 0.5 ? 
+        'As placas de sinalização estão corretamente posicionadas e visíveis conforme as normas de segurança' : 
+        'Nota-se ausência ou inadequação das placas de sinalização necessárias neste ambiente'}`;
+    }
+    
+    if (questionLower.includes('procedimento') || questionLower.includes('norma')) {
+      return `Em relação aos procedimentos mencionados: ${Math.random() > 0.5 ? 
+        'Os procedimentos de trabalho visualizados estão em conformidade com as normas de segurança estabelecidas' : 
+        'Identificamos desvios nos procedimentos de segurança exigidos para esta atividade'}`;
+    }
+    
+    // Generic fallback that still references the question
+    return `Em análise relacionada à pergunta "${questionText}": ${Math.random() > 0.5 ? 
+      'Não foram identificadas não conformidades relevantes' : 
+      'Foram detectados possíveis problemas que requerem atenção e correção'}`;
+  };
+  
+  // Generate action plan based on question context
+  const generateContextBasedActionPlan = (questionText?: string): string | null => {
+    if (!questionText) return null;
+    
+    const questionLower = questionText.toLowerCase();
+    
+    if (questionLower.includes('epi') || questionLower.includes('equipamento') || questionLower.includes('proteção')) {
+      return `Com base na análise relacionada aos EPIs, recomenda-se: 1) Realizar treinamento imediato sobre a importância e uso correto dos EPIs; 2) Verificar o estoque e condição dos equipamentos disponíveis; 3) Implementar checklist diário de verificação de uso de EPIs.`;
+    }
+    
+    if (questionLower.includes('limpeza') || questionLower.includes('organização')) {
+      return `Em relação aos problemas de organização e limpeza, sugere-se: 1) Implementar programa 5S na área; 2) Designar responsáveis por verificar a organização ao final de cada turno; 3) Instalar recipientes adequados para separação de resíduos.`;
+    }
+    
+    if (questionLower.includes('sinalização') || questionLower.includes('placa')) {
+      return `Para corrigir as questões de sinalização, recomenda-se: 1) Fazer levantamento completo das sinalizações necessárias conforme NR-26; 2) Substituir sinalizações danificadas; 3) Treinar a equipe sobre o significado e importância de cada sinalização.`;
+    }
+    
+    if (questionLower.includes('procedimento') || questionLower.includes('norma')) {
+      return `Para adequar os procedimentos de trabalho, sugere-se: 1) Revisar os procedimentos operacionais padrão; 2) Realizar reciclagem de treinamento para todos os colaboradores; 3) Implementar sistema de verificação periódica de conformidade.`;
+    }
+    
+    // Generic fallback that still references the question
+    return `Em relação à questão "${questionText}", recomenda-se: 1) Realizar análise detalhada das não conformidades identificadas; 2) Implementar medidas corretivas imediatas; 3) Programar nova inspeção em 15 dias para confirmar a eficácia das ações.`;
   };
 
   return {

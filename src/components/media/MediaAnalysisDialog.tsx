@@ -47,13 +47,14 @@ export function MediaAnalysisDialog({
     const autoStartAnalysis = async () => {
       if (open && mediaUrl && !hasStarted && !isAnalyzing && !result) {
         console.log("MediaAnalysisDialog: Auto-starting analysis");
+        console.log("MediaAnalysisDialog: Question context:", questionText);
         await startAnalysis();
         setHasStarted(true);
       }
     };
     
     autoStartAnalysis();
-  }, [open, mediaUrl, hasStarted, isAnalyzing, result]);
+  }, [open, mediaUrl, hasStarted, isAnalyzing, result, questionText]);
 
   const startAnalysis = async () => {
     if (!mediaUrl) return;
@@ -69,11 +70,17 @@ export function MediaAnalysisDialog({
       const analysisResult = await analyzeMedia(mediaUrl, mediaType, questionText);
       
       if (analysisResult && onAnalysisComplete) {
-        console.log("MediaAnalysisDialog: Analysis completed:", analysisResult);
-        onAnalysisComplete(analysisResult);
+        // Ensure question context is included in result
+        const resultWithContext = {
+          ...analysisResult,
+          questionText: questionText || analysisResult.questionText
+        };
+        
+        console.log("MediaAnalysisDialog: Analysis completed with context:", resultWithContext);
+        onAnalysisComplete(resultWithContext);
         
         // Show a toast if non-conformity was detected
-        if (analysisResult.hasNonConformity) {
+        if (resultWithContext.hasNonConformity) {
           toast.info("IA detectou possível não conformidade", {
             description: "Foi sugerido um plano de ação baseado na análise.",
             duration: 5000,
@@ -128,6 +135,11 @@ export function MediaAnalysisDialog({
               <p className="text-xs text-muted-foreground mt-2">
                 Isso pode levar alguns segundos
               </p>
+              {questionText && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Analisando no contexto da pergunta: "{questionText}"
+                </p>
+              )}
             </div>
           ) : error ? (
             <div className="text-center">
@@ -156,6 +168,13 @@ export function MediaAnalysisDialog({
                 <Check className="h-5 w-5 mr-2 text-green-500" />
                 <p className="font-medium">Análise completa</p>
               </div>
+              
+              {questionText && (
+                <div className="mb-4 bg-slate-50 border border-slate-200 rounded-md p-3">
+                  <p className="text-sm font-medium text-slate-700">Contexto da pergunta:</p>
+                  <p className="text-sm text-slate-600">"{questionText}"</p>
+                </div>
+              )}
               
               {result.hasNonConformity && (
                 <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4">
@@ -207,6 +226,11 @@ export function MediaAnalysisDialog({
               <p className="text-sm text-muted-foreground">
                 Análise automática iniciando...
               </p>
+              {questionText && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Analisará no contexto da pergunta: "{questionText}"
+                </p>
+              )}
             </div>
           )}
         </div>
