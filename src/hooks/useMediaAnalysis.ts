@@ -34,9 +34,17 @@ export function useMediaAnalysis() {
         throw new Error("Tipo de mídia não fornecido");
       }
       
+      // Ajustamos o tipo de mídia para melhor compatibilidade
+      // Se for um arquivo webm de áudio, garantimos que seja tratado como áudio
+      if (mediaUrl.includes('audio') && mediaUrl.endsWith('.webm')) {
+        mediaType = 'audio/webm';
+      }
+      
       // Obter o tipo específico do arquivo com base na extensão
       const fileExtension = mediaUrl.split('.').pop()?.toLowerCase() || '';
       const specificFileType = determineSpecificFileType(fileExtension);
+      
+      console.log("Tipo de mídia detectado:", mediaType, "Tipo específico:", specificFileType);
       
       // Chamar o edge function para analisar a mídia
       const { data, error: functionError } = await supabase.functions.invoke('analyze-media', {
@@ -54,7 +62,7 @@ export function useMediaAnalysis() {
 
       // Verificar se a resposta indica erro interno na análise
       if (data.error === true) {
-        const errorMessage = data.analysis || data.transcription || "Erro na análise de mídia";
+        const errorMessage = data.message || data.analysis || data.transcription || "Erro na análise de mídia";
         console.error("Erro interno na análise:", errorMessage);
         throw new Error(errorMessage);
       }

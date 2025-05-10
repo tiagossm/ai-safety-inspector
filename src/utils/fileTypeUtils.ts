@@ -1,52 +1,57 @@
 
-// Função para determinar o tipo específico de arquivo baseado na extensão
+/**
+ * Determina o tipo específico de arquivo com base na extensão
+ */
 export function determineSpecificFileType(extension: string): string {
-  // Normalizar a extensão para minúsculas e remover possível ponto inicial
-  const normalizedExt = extension.toLowerCase().replace(/^\./, '');
-  
-  // Arquivos de documento
-  if (/pdf/.test(normalizedExt)) {
-    return 'pdf';
-  } else if (/(xlsx|xls|csv|numbers)/.test(normalizedExt)) {
-    return 'excel';
-  } else if (/(docx|doc|odt|rtf|txt)/.test(normalizedExt)) {
-    return 'word';
-  } else if (/(ppt|pptx|key|odp)/.test(normalizedExt)) {
-    return 'presentation';
-  } 
-  
   // Arquivos de imagem
-  else if (/(jpg|jpeg|png|gif|bmp|webp|tiff|tif)/.test(normalizedExt)) {
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'heic'].includes(extension)) {
     return 'image';
-  } 
-  
-  // Arquivos de áudio
-  else if (/(mp3|wav|ogg|aac|flac|m4a)/.test(normalizedExt)) {
-    return 'audio';
-  } 
+  }
   
   // Arquivos de vídeo
-  else if (/(mp4|avi|mov|wmv|flv|mkv|webm)/.test(normalizedExt)) {
+  if (['mp4', 'webm', 'mov', 'avi', 'mkv', 'flv', 'wmv'].includes(extension)) {
+    // Se for um arquivo webm de áudio, tratamos como áudio
+    if (extension === 'webm') {
+      // Em alguns casos, webm pode ser áudio ou vídeo
+      // Idealmente, verificaríamos o conteúdo do arquivo, mas para fins simples,
+      // assumimos como vídeo (será tratado apropriadamente pela função de análise)
+      return 'video';
+    }
     return 'video';
-  } 
+  }
+  
+  // Arquivos de áudio
+  if (['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'].includes(extension)) {
+    return 'audio';
+  }
+  
+  // Documentos
+  if (extension === 'pdf') {
+    return 'pdf';
+  }
+  
+  if (['doc', 'docx'].includes(extension)) {
+    return 'word';
+  }
+  
+  if (['xls', 'xlsx', 'csv'].includes(extension)) {
+    return 'excel';
+  }
+  
+  if (['ppt', 'pptx'].includes(extension)) {
+    return 'presentation';
+  }
   
   // Arquivos de código
-  else if (/(js|ts|py|java|html|css|php|rb|go|c|cpp|cs|swift|kotlin)/.test(normalizedExt)) {
+  if (['js', 'ts', 'html', 'css', 'php', 'py', 'java', 'rb', 'c', 'cpp'].includes(extension)) {
     return 'code';
-  } 
+  }
   
   // Arquivos compactados
-  else if (/(zip|rar|tar|gz|7z|bz2)/.test(normalizedExt)) {
+  if (['zip', 'rar', '7z', 'tar', 'gz'].includes(extension)) {
     return 'zip';
   }
   
-  // Outros tipos específicos
-  else if (/(json|xml|yaml|yml)/.test(normalizedExt)) {
-    return 'data';
-  } else if (/(svg|ai|eps|psd|sketch)/.test(normalizedExt)) {
-    return 'design';
-  }
-  
-  // Tipo genérico se não for identificado
-  return 'generic';
+  // Tipo genérico para outros formatos
+  return 'file';
 }

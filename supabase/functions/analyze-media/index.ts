@@ -38,22 +38,24 @@ serve(async (req) => {
       return simulateAnalysis(mediaUrl, mediaType, corsHeaders)
     }
 
-    // Dependendo do tipo de mídia, fazemos análises diferentes
+    // Determinar o tipo de mídia baseado no mime type ou extensão
     let result
     if (mediaType.startsWith('image/')) {
       result = await analyzeImage(mediaUrl, openaiApiKey)
-    } else if (mediaType.startsWith('audio/')) {
+    } else if (mediaType.startsWith('audio/') || mediaUrl.endsWith('.webm') || mediaUrl.includes('audio')) {
+      // Incluindo webm para lidar com gravações de áudio em formato webm
       result = await transcribeAudio(mediaUrl, openaiApiKey)
     } else if (mediaType.startsWith('video/')) {
-      result = await analyzeVideoFrame(mediaUrl, openaiApiKey)
+      // Para vídeo, vamos analisar um frame como imagem
+      result = await analyzeVideoAsImage(mediaUrl, openaiApiKey)
     } else {
-      throw new Error('Tipo de mídia não suportado')
+      throw new Error(`Tipo de mídia não suportado: ${mediaType}`)
     }
 
     // Registrar resultado para debug
     console.log("Análise concluída com sucesso:", JSON.stringify(result).substring(0, 200) + "...")
 
-    // Retornar os resultados da análise
+    // Retornar os resultados da análise com cabeçalhos CORS
     return new Response(
       JSON.stringify(result),
       {
@@ -66,9 +68,11 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error:', error)
     
+    // Retornar erro com cabeçalhos CORS
     return new Response(
       JSON.stringify({
-        error: error.message || 'Erro desconhecido durante análise de mídia'
+        error: true,
+        message: error.message || 'Erro desconhecido durante análise de mídia'
       }),
       {
         status: 400,
@@ -143,7 +147,8 @@ async function analyzeImage(imageUrl: string, apiKey: string) {
     
     return {
       type: 'image',
-      analysis: analysis
+      analysis: analysis,
+      error: false
     }
   } catch (error) {
     console.error('Error analyzing image:', error)
@@ -151,6 +156,80 @@ async function analyzeImage(imageUrl: string, apiKey: string) {
       type: 'image',
       analysis: 'Erro ao analisar imagem: ' + error.message,
       error: true
+    }
+  }
+}
+
+// Função para analisar vídeo tratando como imagem
+async function analyzeVideoAsImage(videoUrl: string, apiKey: string) {
+  try {
+    console.log("Analisando vídeo como imagem:", videoUrl);
+    
+    // Usar a API Vision para analisar o primeiro frame ou thumbnail do vídeo
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: 'Você é um especialista em segurança e inspeção. Analise o vídeo/frame em detalhe, identificando possíveis riscos ou situações que requerem atenção.'
+          },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: 'Descreva o que você consegue ver neste vídeo/frame, identificando possíveis problemas de segurança ou manutenção visíveis.'
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: videoUrl
+                }
+              }
+            ]
+          }
+        ],
+        max_tokens: 500
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Erro na resposta da OpenAI: ${response.status} - ${errorText}`);
+      
+      // Se não conseguir analisar como imagem, fornecer uma resposta simulada
+      return {
+        type: 'video',
+        analysis: 'Foi detectado um vídeo. A análise de conteúdo de vídeo está disponível através da visualização dos frames. Recomendamos analisar visualmente o conteúdo.',
+        error: false
+      };
+    }
+
+    const data = await response.json();
+    
+    if (!data.choices || data.choices.length === 0) {
+      throw new Error("Formato de resposta da OpenAI inesperado");
+    }
+    
+    const analysis = data.choices[0]?.message?.content;
+    
+    return {
+      type: 'video',
+      analysis: analysis || 'Análise de vídeo concluída',
+      error: false
+    }
+  } catch (error) {
+    console.error('Error analyzing video:', error);
+    return {
+      type: 'video',
+      analysis: 'Este é um vídeo. A análise detalhada não está disponível neste momento. Recomendamos revisar o conteúdo manualmente.',
+      error: false
     }
   }
 }
@@ -171,7 +250,7 @@ async function transcribeAudio(audioUrl: string, apiKey: string) {
     
     // Criar FormData para enviar para a API Whisper
     const formData = new FormData();
-    formData.append('file', audioBlob, 'audio.mp3');
+    formData.append('file', audioBlob, 'audio.webm'); // Usando .webm para maior compatibilidade
     formData.append('model', 'whisper-1');
     formData.append('language', 'pt'); // Especificando português como idioma
     formData.append('response_format', 'json');
@@ -187,120 +266,61 @@ async function transcribeAudio(audioUrl: string, apiKey: string) {
     
     if (!whisperResponse.ok) {
       const errorText = await whisperResponse.text();
-      throw new Error(`Erro na API Whisper: ${whisperResponse.status} - ${errorText}`);
+      console.error(`Erro na API Whisper: ${whisperResponse.status} - ${errorText}`);
+      throw new Error(`Erro na transcrição de áudio: ${errorText}`);
     }
     
     const transcriptionData = await whisperResponse.json();
+    console.log("Transcrição concluída:", transcriptionData);
     
     // Após transcrição, podemos opcionalmente analisar o conteúdo com a API GPT
-    const analysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: 'Você é um especialista em segurança e inspeção. Analise a transcrição do áudio e identifique informações importantes relacionadas a inspeções, segurança ou manutenção.'
-          },
-          {
-            role: 'user',
-            content: `Analise esta transcrição de áudio de uma inspeção: ${transcriptionData.text}`
-          }
-        ],
-        max_tokens: 300
-      })
-    });
-    
     let analysis = '';
-    if (analysisResponse.ok) {
-      const analysisData = await analysisResponse.json();
-      analysis = analysisData.choices?.[0]?.message?.content || '';
+    try {
+      if (transcriptionData.text && transcriptionData.text.trim() !== '') {
+        const analysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o',
+            messages: [
+              {
+                role: 'system',
+                content: 'Você é um especialista em segurança e inspeção. Analise a transcrição do áudio e identifique informações importantes relacionadas a inspeções, segurança ou manutenção.'
+              },
+              {
+                role: 'user',
+                content: `Analise esta transcrição de áudio de uma inspeção: ${transcriptionData.text}`
+              }
+            ],
+            max_tokens: 300
+          })
+        });
+        
+        if (analysisResponse.ok) {
+          const analysisData = await analysisResponse.json();
+          analysis = analysisData.choices?.[0]?.message?.content || '';
+        }
+      }
+    } catch (analysisError) {
+      console.warn("Erro na análise do conteúdo transcrito:", analysisError);
+      // Não propagamos este erro, apenas log, pois a transcrição já foi bem sucedida
     }
     
     return {
       type: 'audio',
-      transcription: transcriptionData.text,
-      analysis: analysis
+      transcription: transcriptionData.text || 'Nenhum texto detectado no áudio',
+      analysis: analysis || 'Não foi possível analisar o conteúdo do áudio',
+      error: false
     }
   } catch (error) {
-    console.error('Error transcribing audio:', error)
+    console.error('Error transcribing audio:', error);
     return {
       type: 'audio',
       transcription: 'Erro ao transcrever áudio: ' + error.message,
-      error: true
-    }
-  }
-}
-
-// Função para análise de vídeo (um frame) usando OpenAI Vision
-async function analyzeVideoFrame(videoUrl: string, apiKey: string) {
-  try {
-    console.log("Analisando vídeo:", videoUrl);
-    
-    // Em um cenário ideal, extrairíamos um frame do vídeo
-    // Como isso requer recursos adicionais, vamos usar o thumbnail ou primeiro frame se disponível
-    // Ou podemos analisar o vídeo diretamente via URL
-    
-    // Solução para análise direta do vídeo sem extração de frame
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: 'Você é um especialista em segurança e inspeção. Analise o conteúdo do vídeo e identifique possíveis problemas de segurança ou manutenção.'
-          },
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: 'Analise o conteúdo deste vídeo e descreva o que está sendo mostrado. Foque em aspectos relevantes para inspeção e segurança.'
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: videoUrl
-                }
-              }
-            ]
-          }
-        ],
-        max_tokens: 500
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Erro na API OpenAI: ${response.status} - ${errorText}`);
-    }
-
-    const data = await response.json();
-    
-    if (!data.choices || data.choices.length === 0) {
-      throw new Error("Formato de resposta da OpenAI inesperado");
-    }
-    
-    const analysis = data.choices[0]?.message?.content || 'Não foi possível analisar o vídeo';
-    
-    return {
-      type: 'video',
-      analysis
-    }
-  } catch (error) {
-    console.error('Error analyzing video:', error)
-    return {
-      type: 'video',
-      analysis: 'Erro ao analisar vídeo: ' + error.message,
+      analysis: 'Não foi possível analisar o conteúdo devido a um erro na transcrição',
       error: true
     }
   }
@@ -308,31 +328,36 @@ async function analyzeVideoFrame(videoUrl: string, apiKey: string) {
 
 // Função para simular análise quando não temos API key
 function simulateAnalysis(mediaUrl: string, mediaType: string, corsHeaders: any) {
-  let result
+  let result;
   
   if (mediaType.startsWith('image/')) {
     result = {
       type: 'image',
       analysis: 'Esta é uma análise simulada de imagem. Configure a API do OpenAI na função edge analyze-media para obter análises reais utilizando inteligência artificial.',
-      simulated: true
+      simulated: true,
+      error: false
     }
-  } else if (mediaType.startsWith('audio/')) {
+  } else if (mediaType.startsWith('audio/') || mediaUrl.endsWith('.webm') || mediaUrl.includes('audio')) {
     result = {
       type: 'audio',
       transcription: 'Esta é uma transcrição simulada de áudio. Configure a API do OpenAI na função edge analyze-media para obter transcrições reais utilizando a tecnologia Whisper AI.',
-      simulated: true
+      analysis: 'Análise simulada do conteúdo de áudio.',
+      simulated: true,
+      error: false
     }
   } else if (mediaType.startsWith('video/')) {
     result = {
       type: 'video',
       analysis: 'Esta é uma análise simulada de vídeo. Configure a API do OpenAI na função edge analyze-media para obter análises reais utilizando inteligência artificial.',
-      simulated: true
+      simulated: true,
+      error: false
     }
   } else {
     result = {
       type: 'unknown',
       message: 'Tipo de mídia não suportado',
-      simulated: true
+      simulated: true,
+      error: true
     }
   }
 

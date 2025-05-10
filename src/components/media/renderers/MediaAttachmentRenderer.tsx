@@ -24,7 +24,7 @@ export const MediaAttachmentRenderer = ({
   readOnly
 }: MediaAttachmentRendererProps) => {
   const fileType = getFileType(url);
-  console.log(`Detected file type: ${fileType}`);
+  console.log(`Detected file type for ${url}: ${fileType}`);
   const fileName = getFilenameFromUrl(url);
   
   const handleDownload = (url: string, filename: string) => {
@@ -40,6 +40,37 @@ export const MediaAttachmentRenderer = ({
       console.error('Erro no download:', error);
     }
   };
+  
+  // Tratamento especial para arquivos webm (podem ser áudio ou vídeo)
+  if (url.endsWith('.webm')) {
+    // Se o URL contiver "audio", consideramos como áudio
+    if (url.includes('audio')) {
+      return (
+        <AudioRenderer 
+          url={url}
+          index={index}
+          fileName={fileName}
+          onOpenPreview={onOpenPreview}
+          onOpenAnalysis={onOpenAnalysis}
+          readOnly={readOnly}
+          onDelete={onDelete}
+          onDownload={handleDownload}
+        />
+      );
+    } else {
+      return (
+        <VideoRenderer 
+          url={url}
+          index={index}
+          fileName={fileName}
+          onOpenPreview={onOpenPreview}
+          onOpenAnalysis={onOpenAnalysis}
+          readOnly={readOnly}
+          onDelete={onDelete}
+        />
+      );
+    }
+  }
   
   // Handle images
   if (fileType === 'image') {

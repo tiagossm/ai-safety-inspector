@@ -8,12 +8,13 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Camera, Mic, FileText, AlertCircle, Sparkles, Settings, CheckCircle2 } from "lucide-react";
+import { Loader2, Camera, Mic, FileText, AlertCircle, Sparkles, Settings, CheckCircle2, Video } from "lucide-react";
 import { useMediaAnalysis } from "@/hooks/useMediaAnalysis";
 import { getFileType } from "@/utils/fileUtils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface MediaAnalysisDialogProps {
   open: boolean;
@@ -31,12 +32,14 @@ export function MediaAnalysisDialog({
   const { analyzeMedia, resetAnalysis, isAnalyzing, result, error } = useMediaAnalysis();
   const [hasAnalyzed, setHasAnalyzed] = useState(false);
   const [apiKeyConfigured, setApiKeyConfigured] = useState(true);
+  const [activeTab, setActiveTab] = useState<string>('analysis');
 
   useEffect(() => {
     // Resetar estado quando a modal é aberta com nova mídia
     if (open) {
       setHasAnalyzed(false);
       resetAnalysis();
+      setActiveTab('analysis');
     }
   }, [open, mediaUrl, resetAnalysis]);
 
@@ -184,56 +187,14 @@ export function MediaAnalysisDialog({
               </div>
               <div className="mt-3 pt-3 border-t">
                 <p className="text-sm font-medium">Resultado simulado:</p>
+                {renderAnalysisContent()}
               </div>
             </AlertDescription>
           </Alert>
         );
       }
 
-      return (
-        <div className="space-y-4">
-          {result.type === 'image' && result.analysis && (
-            <div className="space-y-2">
-              <div className="flex items-center">
-                <Camera className="h-4 w-4 mr-1 text-blue-500" />
-                <h3 className="text-sm font-medium">Análise da Imagem</h3>
-                {!result.simulated && <CheckCircle2 className="h-3 w-3 ml-2 text-green-500" />}
-              </div>
-              <div className="p-4 bg-blue-50 border border-blue-100 rounded-md">
-                <p className="text-sm whitespace-pre-wrap">{result.analysis}</p>
-              </div>
-            </div>
-          )}
-          
-          {(result.type === 'audio' || result.type === 'video') && result.transcription && (
-            <div className="space-y-2">
-              <div className="flex items-center">
-                <Mic className="h-4 w-4 mr-1 text-green-500" />
-                <h3 className="text-sm font-medium">Transcrição</h3>
-                {!result.simulated && <CheckCircle2 className="h-3 w-3 ml-2 text-green-500" />}
-              </div>
-              <div className="p-4 bg-green-50 border border-green-100 rounded-md">
-                <p className="text-sm whitespace-pre-wrap">{result.transcription}</p>
-              </div>
-            </div>
-          )}
-          
-          {(result.type === 'video' || result.type === 'audio') && result.analysis && (
-            <div className="space-y-2">
-              <div className="flex items-center">
-                <Camera className="h-4 w-4 mr-1 text-purple-500" />
-                <h3 className="text-sm font-medium">
-                  Análise {result.type === 'video' ? 'do Vídeo' : 'do Áudio'}
-                </h3>
-                {!result.simulated && <CheckCircle2 className="h-3 w-3 ml-2 text-green-500" />}
-              </div>
-              <div className="p-4 bg-purple-50 border border-purple-100 rounded-md">
-                <p className="text-sm whitespace-pre-wrap">{result.analysis}</p>
-              </div>
-            </div>
-          )}
-        </div>
-      );
+      return renderAnalysisContent();
     }
 
     // Estado inicial, antes da análise
@@ -256,9 +217,110 @@ export function MediaAnalysisDialog({
     );
   };
 
+  const renderAnalysisContent = () => {
+    if (!result) return null;
+
+    // Para mídia de áudio ou vídeo que tem tanto transcrição quanto análise
+    if ((result.type === 'audio' || result.type === 'video') && (result.transcription || result.analysis)) {
+      return (
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="analysis">
+              <Camera className="h-4 w-4 mr-1" />
+              Análise
+            </TabsTrigger>
+            <TabsTrigger value="transcription">
+              <Mic className="h-4 w-4 mr-1" />
+              Transcrição
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="analysis" className="mt-0">
+            {result.analysis && (
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  {result.type === 'video' ? 
+                    <Video className="h-4 w-4 mr-1 text-blue-500" /> : 
+                    <Camera className="h-4 w-4 mr-1 text-blue-500" />
+                  }
+                  <h3 className="text-sm font-medium">Análise {result.type === 'video' ? 'do Vídeo' : result.type === 'audio' ? 'do Áudio' : 'da Imagem'}</h3>
+                  {!result.simulated && !result.error && <CheckCircle2 className="h-3 w-3 ml-2 text-green-500" />}
+                </div>
+                <div className="p-4 bg-blue-50 border border-blue-100 rounded-md">
+                  <p className="text-sm whitespace-pre-wrap">{result.analysis}</p>
+                </div>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="transcription" className="mt-0">
+            {result.transcription && (
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  <Mic className="h-4 w-4 mr-1 text-green-500" />
+                  <h3 className="text-sm font-medium">Transcrição</h3>
+                  {!result.simulated && !result.error && <CheckCircle2 className="h-3 w-3 ml-2 text-green-500" />}
+                </div>
+                <div className="p-4 bg-green-50 border border-green-100 rounded-md">
+                  <p className="text-sm whitespace-pre-wrap">{result.transcription}</p>
+                </div>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      );
+    }
+
+    // Para imagens ou outros tipos que só têm análise
+    return (
+      <div className="space-y-4">
+        {result.type === 'image' && result.analysis && (
+          <div className="space-y-2">
+            <div className="flex items-center">
+              <Camera className="h-4 w-4 mr-1 text-blue-500" />
+              <h3 className="text-sm font-medium">Análise da Imagem</h3>
+              {!result.simulated && !result.error && <CheckCircle2 className="h-3 w-3 ml-2 text-green-500" />}
+            </div>
+            <div className="p-4 bg-blue-50 border border-blue-100 rounded-md">
+              <p className="text-sm whitespace-pre-wrap">{result.analysis}</p>
+            </div>
+          </div>
+        )}
+        
+        {result.type === 'audio' && result.transcription && (
+          <div className="space-y-2">
+            <div className="flex items-center">
+              <Mic className="h-4 w-4 mr-1 text-green-500" />
+              <h3 className="text-sm font-medium">Transcrição</h3>
+              {!result.simulated && !result.error && <CheckCircle2 className="h-3 w-3 ml-2 text-green-500" />}
+            </div>
+            <div className="p-4 bg-green-50 border border-green-100 rounded-md">
+              <p className="text-sm whitespace-pre-wrap">{result.transcription}</p>
+            </div>
+          </div>
+        )}
+        
+        {(result.type === 'video' || result.type === 'audio') && result.analysis && (
+          <div className="space-y-2">
+            <div className="flex items-center">
+              <Camera className="h-4 w-4 mr-1 text-purple-500" />
+              <h3 className="text-sm font-medium">
+                Análise {result.type === 'video' ? 'do Vídeo' : 'do Áudio'}
+              </h3>
+              {!result.simulated && !result.error && <CheckCircle2 className="h-3 w-3 ml-2 text-green-500" />}
+            </div>
+            <div className="p-4 bg-purple-50 border border-purple-100 rounded-md">
+              <p className="text-sm whitespace-pre-wrap">{result.analysis}</p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
