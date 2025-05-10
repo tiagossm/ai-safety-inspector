@@ -5,89 +5,86 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import { Loader2, Check, AlertTriangle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Loader2, Camera, Mic, FileText, AlertCircle, Sparkles, Settings, CheckCircle2, Video } from "lucide-react";
-import { useMediaAnalysis } from "@/hooks/useMediaAnalysis";
+import { useMediaAnalysis, MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 import { getFileType } from "@/utils/fileUtils";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface MediaAnalysisDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mediaUrl: string | null;
-  mediaType?: string;
+  mediaType?: string | null;
   questionText?: string;
-  onAnalysisComplete?: (result: any) => void;
+  onAnalysisComplete?: (result: MediaAnalysisResult) => void;
 }
 
 export function MediaAnalysisDialog({
   open,
   onOpenChange,
   mediaUrl,
-  mediaType,
+  mediaType: suppliedMediaType,
   questionText,
   onAnalysisComplete
 }: MediaAnalysisDialogProps) {
   const { analyzeMedia, resetAnalysis, isAnalyzing, result, error } = useMediaAnalysis();
-  const [hasAnalyzed, setHasAnalyzed] = useState(false);
-  const [apiKeyConfigured, setApiKeyConfigured] = useState(true);
-  const [activeTab, setActiveTab] = useState<string>('analysis');
+  const [hasStarted, setHasStarted] = useState(false);
 
+  // Reset analysis when dialog opens/closes
   useEffect(() => {
-    // Resetar estado quando a modal é aberta com nova mídia
-    if (open) {
-      setHasAnalyzed(false);
+    if (!open) {
       resetAnalysis();
-      setActiveTab('analysis');
+      setHasStarted(false);
     }
-  }, [open, mediaUrl, resetAnalysis]);
+  }, [open, resetAnalysis]);
 
-  const handleAnalyze = async () => {
-    if (!mediaUrl) {
-      toast.error("URL da mídia não fornecida");
-      return;
+  // Start analysis when dialog opens with a mediaUrl
+  useEffect(() => {
+    if (open && mediaUrl && !hasStarted) {
+      startAnalysis();
+      setHasStarted(true);
     }
-    
-    const type = mediaType || getFileTypeFromUrl(mediaUrl);
-    
+  }, [open, mediaUrl, hasStarted]);
+
+  const startAnalysis = async () => {
+    if (!mediaUrl) return;
+
     try {
-      toast.info("Iniciando análise de mídia...");
-      console.log("Analisando mídia:", mediaUrl, type, "Pergunta:", questionText);
+      // Determine media type if not provided
+      const mediaType = suppliedMediaType || getMediaType(mediaUrl);
       
-      const analysisResult = await analyzeMedia(mediaUrl, type, questionText);
-      setHasAnalyzed(true);
+      console.log("Starting analysis of media:", mediaUrl, mediaType);
       
-      if (!analysisResult) {
-        toast.error("Falha na análise de mídia");
-        return;
-      }
+      const analysisResult = await analyzeMedia(mediaUrl, mediaType, questionText);
       
-      // Verificar se a resposta contém indicação de simulação (API key não configurada)
-      if (analysisResult.simulated) {
-        setApiKeyConfigured(false);
-        toast.warning("A chave da API OpenAI não está configurada no servidor");
-      } else {
-        setApiKeyConfigured(true);
-        toast.success("Análise concluída com sucesso");
-      }
-
-      // Call onAnalysisComplete callback if provided
-      if (onAnalysisComplete) {
+      if (analysisResult && onAnalysisComplete) {
+        console.log("Analysis completed:", analysisResult);
         onAnalysisComplete(analysisResult);
+        
+        // Show a toast if non-conformity was detected
+        if (analysisResult.hasNonConformity) {
+          toast.info("IA detectou possível não conformidade", {
+            description: "Foi sugerido um plano de ação baseado na análise.",
+            duration: 5000,
+            icon: <AlertTriangle className="h-4 w-4" />
+          });
+        }
+        
+        // Automatically close the dialog after successful analysis
+        setTimeout(() => {
+          onOpenChange(false);
+        }, 2000);
       }
-    } catch (error: any) {
-      console.error("Erro ao analisar mídia:", error);
-      toast.error(`Erro: ${error.message || "Falha ao analisar mídia"}`);
-      setHasAnalyzed(true);
+    } catch (err) {
+      console.error("Error during analysis:", err);
     }
   };
 
-  const getFileTypeFromUrl = (url: string): string => {
+  const getMediaType = (url: string): string => {
     const fileType = getFileType(url);
     
     switch (fileType) {
@@ -96,283 +93,122 @@ export function MediaAnalysisDialog({
       case 'video':
         return 'video/mp4';
       case 'audio':
-        return 'audio/mpeg';
+        return 'audio/mp3';
       default:
         return 'application/octet-stream';
     }
   };
 
-  const renderMediaPreview = () => {
-    if (!mediaUrl) return null;
-    
-    const fileType = getFileType(mediaUrl);
-    
-    return (
-      <div className="mb-4 border rounded-md overflow-hidden bg-muted/20">
-        {fileType === 'image' ? (
-          <img 
-            src={mediaUrl} 
-            alt="Mídia para análise" 
-            className="max-h-40 max-w-full mx-auto object-contain"
-          />
-        ) : fileType === 'video' ? (
-          <video 
-            src={mediaUrl}
-            controls
-            className="max-h-40 w-full mx-auto"
-          />
-        ) : fileType === 'audio' ? (
-          <div className="p-4 text-center">
-            <Mic className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-            <audio 
-              src={mediaUrl}
-              controls
-              className="w-full mx-auto"
-            />
-          </div>
-        ) : (
-          <div className="p-4 bg-gray-100 text-center rounded-md">
-            <FileText className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
-            <p>Este tipo de mídia não pode ser visualizado.</p>
-          </div>
-        )}
-      </div>
-    );
-  };
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-amber-500" />
+            Análise com IA
+          </DialogTitle>
+          <DialogDescription>
+            {isAnalyzing 
+              ? "Analisando mídia com inteligência artificial..." 
+              : (result 
+                ? "Análise concluída" 
+                : "Pronto para analisar")}
+          </DialogDescription>
+        </DialogHeader>
 
-  const renderContent = () => {
-    if (error) {
-      return (
-        <Alert variant="destructive" className="mb-4">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            <p className="font-medium mb-1">Erro ao analisar mídia</p>
-            <p className="text-sm">{error.message}</p>
-            {!apiKeyConfigured && (
-              <div className="mt-2 pt-2 border-t border-red-200">
-                <p className="text-sm font-medium">Possível causa:</p>
-                <p className="text-sm">A chave da API OpenAI não está configurada ou é inválida.</p>
-                <div className="mt-2">
-                  <Button variant="outline" size="sm" className="mt-1 h-8 text-xs" onClick={() => window.open('https://supabase.com/dashboard/project/jkgmgjjtslkozhehwmng/settings/functions', '_blank')}>
-                    <Settings className="mr-1 h-3 w-3" /> 
-                    Configurar na Supabase
-                  </Button>
-                </div>
-              </div>
-            )}
-          </AlertDescription>
-        </Alert>
-      );
-    }
-
-    if (isAnalyzing) {
-      return (
-        <div className="flex flex-col items-center justify-center py-8">
-          <div className="relative">
-            <Loader2 className="h-8 w-8 text-primary animate-spin mb-4" />
-            <Sparkles className="h-4 w-4 text-yellow-500 absolute -top-1 -right-1" />
-          </div>
-          <p className="text-center text-muted-foreground">Analisando mídia com IA...</p>
-          <p className="text-center text-xs text-muted-foreground mt-1">Isso pode levar alguns segundos.</p>
-        </div>
-      );
-    }
-
-    if (result) {
-      if (result.simulated) {
-        return (
-          <Alert className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              <p className="font-medium">A chave da API OpenAI não está configurada</p>
-              <p className="text-sm mt-1">
-                Para obter análises reais, configure a chave da API OpenAI nas configurações de funções do Supabase.
+        <div className="p-4 flex flex-col items-center justify-center min-h-[200px]">
+          {isAnalyzing ? (
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+              <p className="text-sm text-muted-foreground">
+                Analisando mídia com IA...
               </p>
-              <div className="mt-2">
-                <Button variant="outline" size="sm" className="mt-1 h-8 text-xs" onClick={() => window.open('https://supabase.com/dashboard/project/jkgmgjjtslkozhehwmng/settings/functions', '_blank')}>
-                  <Settings className="mr-1 h-3 w-3" /> 
-                  Configurar na Supabase
-                </Button>
-              </div>
-              <div className="mt-3 pt-3 border-t">
-                <p className="text-sm font-medium">Resultado simulado:</p>
-                {renderAnalysisContent()}
-              </div>
-            </AlertDescription>
-          </Alert>
-        );
-      }
-
-      return renderAnalysisContent();
-    }
-
-    // Estado inicial, antes da análise
-    return (
-      <div className="text-center py-6">
-        {questionText && (
-          <div className="mb-4 p-3 bg-muted/30 rounded-md text-sm">
-            <p className="font-medium mb-1">Contexto da análise:</p>
-            <p className="italic">{questionText}</p>
-          </div>
-        )}
-        
-        <div className="mb-6">
-          <Sparkles className="h-10 w-10 text-primary/60 mx-auto mb-2" />
-          <p className="mb-3 text-muted-foreground">
-            Utilize a inteligência artificial para analisar esta mídia.
-          </p>
-          <p className="text-sm text-muted-foreground mb-4">
-            A IA pode identificar {questionText ? 'se o conteúdo está em conformidade com a pergunta' : 'objetos, pessoas e situações em imagens, transcrever áudio e analisar quadros de vídeo'}.
-          </p>
-        </div>
-        <Button onClick={handleAnalyze} disabled={isAnalyzing} className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4" />
-          Analisar com IA
-        </Button>
-      </div>
-    );
-  };
-
-  const renderAnalysisContent = () => {
-    if (!result) return null;
-
-    // Para mídia de áudio ou vídeo que tem tanto transcrição quanto análise
-    if ((result.type === 'audio' || result.type === 'video') && (result.transcription || result.analysis)) {
-      return (
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="analysis">
-              <Camera className="h-4 w-4 mr-1" />
-              Análise
-            </TabsTrigger>
-            <TabsTrigger value="transcription">
-              <Mic className="h-4 w-4 mr-1" />
-              Transcrição
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="analysis" className="mt-0">
-            {result.analysis && (
-              <div className="space-y-2">
-                <div className="flex items-center">
-                  {result.type === 'video' ? 
-                    <Video className="h-4 w-4 mr-1 text-blue-500" /> : 
-                    <Camera className="h-4 w-4 mr-1 text-blue-500" />
-                  }
-                  <h3 className="text-sm font-medium">Análise {result.type === 'video' ? 'do Vídeo' : result.type === 'audio' ? 'do Áudio' : 'da Imagem'}</h3>
-                  {!result.simulated && !result.error && <CheckCircle2 className="h-3 w-3 ml-2 text-green-500" />}
+              <p className="text-xs text-muted-foreground mt-2">
+                Isso pode levar alguns segundos
+              </p>
+            </div>
+          ) : error ? (
+            <div className="text-center">
+              <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-4" />
+              <p className="font-medium text-red-600 mb-1">Erro na análise</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                {error.message || "Ocorreu um erro ao analisar a mídia."}
+              </p>
+              <Button variant="outline" onClick={startAnalysis}>
+                Tentar novamente
+              </Button>
+            </div>
+          ) : result ? (
+            <div className="w-full">
+              <div className="flex items-center justify-center mb-4">
+                <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                  <Check className="h-5 w-5 text-green-600" />
                 </div>
-                
-                {result.questionText && (
-                  <div className="p-2 bg-gray-50 border-l-2 border-primary/30 text-xs italic mb-1">
-                    Em relação à pergunta: "{result.questionText}"
+              </div>
+              
+              <div className="text-center mb-4">
+                <h3 className="font-medium">Análise concluída com sucesso</h3>
+                {result.hasNonConformity && (
+                  <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded">
+                    <p className="text-amber-700 flex items-center gap-1 text-sm font-medium">
+                      <AlertTriangle className="h-4 w-4" />
+                      Não conformidade detectada
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-3 mt-4 max-h-[200px] overflow-y-auto text-sm">
+                {result.type === 'image' && (
+                  <div>
+                    <p className="font-medium mb-1">Análise da imagem:</p>
+                    <p className="text-muted-foreground whitespace-pre-line">{result.analysis}</p>
                   </div>
                 )}
                 
-                <div className="p-4 bg-blue-50 border border-blue-100 rounded-md">
-                  <p className="text-sm whitespace-pre-wrap">{result.analysis}</p>
-                </div>
+                {result.type === 'video' && (
+                  <div>
+                    <p className="font-medium mb-1">Análise do vídeo:</p>
+                    <p className="text-muted-foreground whitespace-pre-line">{result.analysis}</p>
+                  </div>
+                )}
+                
+                {result.type === 'audio' && (
+                  <div>
+                    <p className="font-medium mb-1">Transcrição do áudio:</p>
+                    <p className="text-muted-foreground whitespace-pre-line">{result.transcription}</p>
+                  </div>
+                )}
+                
+                {result.actionPlanSuggestion && (
+                  <div className="p-2 bg-amber-50 border border-amber-200 rounded mt-4">
+                    <p className="font-medium text-amber-800 flex items-center gap-1 mb-1">
+                      <Sparkles className="h-3 w-3" />
+                      Sugestão para plano de ação:
+                    </p>
+                    <p className="text-amber-700 text-sm">{result.actionPlanSuggestion}</p>
+                  </div>
+                )}
               </div>
-            )}
-          </TabsContent>
-          
-          <TabsContent value="transcription" className="mt-0">
-            {result.transcription && (
-              <div className="space-y-2">
-                <div className="flex items-center">
-                  <Mic className="h-4 w-4 mr-1 text-green-500" />
-                  <h3 className="text-sm font-medium">Transcrição</h3>
-                  {!result.simulated && !result.error && <CheckCircle2 className="h-3 w-3 ml-2 text-green-500" />}
-                </div>
-                <div className="p-4 bg-green-50 border border-green-100 rounded-md">
-                  <p className="text-sm whitespace-pre-wrap">{result.transcription}</p>
-                </div>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      );
-    }
-
-    // Para imagens ou outros tipos que só têm análise
-    return (
-      <div className="space-y-4">
-        {result.type === 'image' && result.analysis && (
-          <div className="space-y-2">
-            <div className="flex items-center">
-              <Camera className="h-4 w-4 mr-1 text-blue-500" />
-              <h3 className="text-sm font-medium">Análise da Imagem</h3>
-              {!result.simulated && !result.error && <CheckCircle2 className="h-3 w-3 ml-2 text-green-500" />}
             </div>
-            
-            {result.questionText && (
-              <div className="p-2 bg-gray-50 border-l-2 border-primary/30 text-xs italic mb-1">
-                Em relação à pergunta: "{result.questionText}"
-              </div>
-            )}
-            
-            <div className="p-4 bg-blue-50 border border-blue-100 rounded-md">
-              <p className="text-sm whitespace-pre-wrap">{result.analysis}</p>
+          ) : (
+            <div className="text-center">
+              <p className="text-sm text-muted-foreground mb-4">
+                Pronto para analisar mídia com inteligência artificial.
+              </p>
+              <Button onClick={startAnalysis} disabled={!mediaUrl}>
+                Iniciar Análise
+              </Button>
             </div>
-          </div>
-        )}
-        
-        {result.type === 'audio' && result.transcription && (
-          <div className="space-y-2">
-            <div className="flex items-center">
-              <Mic className="h-4 w-4 mr-1 text-green-500" />
-              <h3 className="text-sm font-medium">Transcrição</h3>
-              {!result.simulated && !result.error && <CheckCircle2 className="h-3 w-3 ml-2 text-green-500" />}
-            </div>
-            <div className="p-4 bg-green-50 border border-green-100 rounded-md">
-              <p className="text-sm whitespace-pre-wrap">{result.transcription}</p>
-            </div>
-          </div>
-        )}
-        
-        {(result.type === 'video' || result.type === 'audio') && result.analysis && (
-          <div className="space-y-2">
-            <div className="flex items-center">
-              <Camera className="h-4 w-4 mr-1 text-purple-500" />
-              <h3 className="text-sm font-medium">
-                Análise {result.type === 'video' ? 'do Vídeo' : 'do Áudio'}
-              </h3>
-              {!result.simulated && !result.error && <CheckCircle2 className="h-3 w-3 ml-2 text-green-500" />}
-            </div>
-            
-            {result.questionText && (
-              <div className="p-2 bg-gray-50 border-l-2 border-primary/30 text-xs italic mb-1">
-                Em relação à pergunta: "{result.questionText}"
-              </div>
-            )}
-            
-            <div className="p-4 bg-purple-50 border border-purple-100 rounded-md">
-              <p className="text-sm whitespace-pre-wrap">{result.analysis}</p>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center">
-            <Sparkles className="h-4 w-4 mr-2 text-primary" />
-            Análise de Mídia com IA
-          </DialogTitle>
-        </DialogHeader>
-
-        {renderMediaPreview()}
-        
-        <div className="space-y-4">
-          {renderContent()}
+          )}
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button 
+            variant="outline" 
+            onClick={() => onOpenChange(false)}
+            disabled={isAnalyzing}
+          >
             Fechar
           </Button>
         </DialogFooter>

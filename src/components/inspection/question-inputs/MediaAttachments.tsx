@@ -6,6 +6,7 @@ import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { MediaAttachmentRenderer } from "@/components/media/renderers/MediaAttachmentRenderer";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface MediaAttachmentsProps {
   mediaUrls: string[];
@@ -55,10 +56,27 @@ export function MediaAttachments({
       onApplyAISuggestion(analysis.actionPlanSuggestion);
     }
   };
+
+  const hasAnyAnalysis = () => {
+    return Object.keys(analysisResults).length > 0;
+  };
+
+  const hasNonConformity = () => {
+    return Object.values(analysisResults).some(result => result.hasNonConformity);
+  };
   
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {hasAnyAnalysis() && hasNonConformity() && (
+        <div className="mb-3">
+          <Badge className="bg-amber-100 text-amber-800 border-amber-300 flex items-center gap-1 mb-2" variant="outline">
+            <Sparkles className="h-3 w-3 mr-1" />
+            <span>Análise de IA disponível</span>
+          </Badge>
+        </div>
+      )}
+      
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {mediaUrls.map((url, index) => (
           <div key={index} className="relative">
             <MediaAttachmentRenderer
@@ -71,20 +89,23 @@ export function MediaAttachments({
               readOnly={readOnly}
               questionText={questionText}
               analysisResults={analysisResults}
+              smallSize={true} // Add flag to make images smaller
             />
             
             {analysisResults[url]?.actionPlanSuggestion && (
               <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-md">
-                <p className="text-sm font-medium text-amber-700 mb-1">Sugestão da IA:</p>
-                <p className="text-xs text-amber-900 mb-2">{analysisResults[url].actionPlanSuggestion}</p>
+                <p className="text-xs font-medium text-amber-700 mb-1">Sugestão da IA:</p>
+                <p className="text-xs text-amber-900 mb-2 line-clamp-2">
+                  {analysisResults[url].actionPlanSuggestion}
+                </p>
                 <Button 
                   size="sm" 
                   variant="outline"
-                  className="w-full bg-amber-100 hover:bg-amber-200 border-amber-300"
+                  className="w-full bg-amber-100 hover:bg-amber-200 border-amber-300 text-xs py-1 px-2 h-auto"
                   onClick={() => handleApplySuggestion(url)}
                 >
                   <Sparkles className="h-3 w-3 mr-1" />
-                  Aplicar sugestão ao plano de ação
+                  Aplicar sugestão
                 </Button>
               </div>
             )}

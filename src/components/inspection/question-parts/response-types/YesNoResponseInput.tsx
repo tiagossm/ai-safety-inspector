@@ -32,7 +32,16 @@ export function YesNoResponseInput({
   readOnly = false
 }: YesNoResponseInputProps) {
   const [showActionPlanDialog, setShowActionPlanDialog] = useState(false);
-  const [mediaAnalysisResults, setMediaAnalysisResults] = useState<Record<string, MediaAnalysisResult>>({});
+  const [mediaAnalysisResults, setMediaAnalysisResults] = useState<Record<string, MediaAnalysisResult>>(
+    response?.mediaAnalysisResults || {}
+  );
+  
+  // Update internal state when response changes
+  useEffect(() => {
+    if (response?.mediaAnalysisResults) {
+      setMediaAnalysisResults(response.mediaAnalysisResults);
+    }
+  }, [response?.mediaAnalysisResults]);
   
   const handleRadioChange = (value: boolean) => {
     if (readOnly) return;
@@ -40,17 +49,14 @@ export function YesNoResponseInput({
   };
   
   const handleMediaAnalysisResult = (url: string, result: MediaAnalysisResult) => {
-    setMediaAnalysisResults(prev => ({
-      ...prev,
-      [url]: result
-    }));
-    
-    // Update the response with analysis results
     const updatedMediaAnalysisResults = {
-      ...response.mediaAnalysisResults || {},
+      ...mediaAnalysisResults,
       [url]: result
     };
     
+    setMediaAnalysisResults(updatedMediaAnalysisResults);
+    
+    // Update the response with analysis results
     onResponseChange({
       ...response,
       mediaAnalysisResults: updatedMediaAnalysisResults

@@ -15,6 +15,7 @@ interface MediaAttachmentRendererProps {
   readOnly: boolean;
   questionText?: string;
   analysisResults?: Record<string, any>;
+  smallSize?: boolean; // Add prop for smaller images
 }
 
 export const MediaAttachmentRenderer = ({ 
@@ -25,10 +26,10 @@ export const MediaAttachmentRenderer = ({
   onDelete,
   readOnly,
   questionText,
-  analysisResults
+  analysisResults,
+  smallSize = false
 }: MediaAttachmentRendererProps) => {
   const fileType = getFileType(url);
-  console.log(`Detected file type for ${url}: ${fileType}`);
   const fileName = getFilenameFromUrl(url);
   
   const handleDownload = (url: string, filename: string) => {
@@ -63,6 +64,7 @@ export const MediaAttachmentRenderer = ({
           onDownload={handleDownload}
           hasAnalysis={hasAnalysis}
           questionText={questionText}
+          smallSize={smallSize}
         />
       );
     } else {
@@ -77,6 +79,7 @@ export const MediaAttachmentRenderer = ({
           onDelete={onDelete}
           hasAnalysis={hasAnalysis}
           questionText={questionText}
+          smallSize={smallSize}
         />
       );
     }
@@ -95,6 +98,7 @@ export const MediaAttachmentRenderer = ({
         onDelete={onDelete}
         hasAnalysis={hasAnalysis}
         questionText={questionText}
+        smallSize={smallSize}
       />
     );
   }
@@ -113,6 +117,7 @@ export const MediaAttachmentRenderer = ({
         onDownload={handleDownload}
         hasAnalysis={hasAnalysis}
         questionText={questionText}
+        smallSize={smallSize}
       />
     );
   }
@@ -130,17 +135,16 @@ export const MediaAttachmentRenderer = ({
         onDelete={onDelete}
         hasAnalysis={hasAnalysis}
         questionText={questionText}
+        smallSize={smallSize}
       />
     );
   }
   
   // For other file types, we need to identify specific types by extension
   const extension = url.split('.').pop()?.toLowerCase() || '';
-  console.log(`Extension detected: ${extension}`);
   
   // Determine specific file type based on extension
   const specificFileType = determineSpecificFileType(extension);
-  console.log(`Specific file type: ${specificFileType}`);
   
   // Handle PDF
   if (specificFileType === 'pdf') {
@@ -153,6 +157,7 @@ export const MediaAttachmentRenderer = ({
         readOnly={readOnly}
         onDelete={onDelete}
         specificFileType={specificFileType}
+        smallSize={smallSize}
       />
     );
   }
@@ -167,6 +172,7 @@ export const MediaAttachmentRenderer = ({
       onDownload={handleDownload}
       readOnly={readOnly}
       onDelete={onDelete}
+      smallSize={smallSize}
     />
   );
 };

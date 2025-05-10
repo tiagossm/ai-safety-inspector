@@ -1,14 +1,16 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { MediaUploadInput } from "../../question-inputs/MediaUploadInput";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
+import { Badge } from "@/components/ui/badge";
+import { AlertCircle } from "lucide-react";
 
 interface TextResponseInputProps {
   question: any;
   response: any;
   onResponseChange: (value: any) => void;
   onMediaChange: (mediaUrls: string[]) => void;
-  onApplyAISuggestion?: (suggestion: string) => void; // Add this prop
+  onApplyAISuggestion?: (suggestion: string) => void;
   readOnly?: boolean;
 }
 
@@ -23,6 +25,13 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
   const [analysisResults, setAnalysisResults] = useState<Record<string, MediaAnalysisResult>>(
     response?.mediaAnalysis || {}
   );
+  
+  // Update local state when response changes
+  useEffect(() => {
+    if (response?.mediaAnalysis) {
+      setAnalysisResults(response.mediaAnalysis);
+    }
+  }, [response?.mediaAnalysis]);
   
   const handleSaveAnalysis = (url: string, result: MediaAnalysisResult) => {
     const newResults = {
@@ -40,17 +49,32 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
     
     onResponseChange(updatedResponse);
   };
+  
+  // Check if we have non-conformity results in any media analysis
+  const hasNonConformityInAnalysis = Object.values(analysisResults).some(result => 
+    result.hasNonConformity
+  );
 
   return (
     <div className="space-y-4">
-      <textarea
-        className="w-full border rounded p-2 text-sm"
-        rows={3}
-        placeholder="Digite sua resposta..."
-        value={response?.value || ''}
-        onChange={(e) => !readOnly && onResponseChange({ ...response, value: e.target.value })}
-        disabled={readOnly}
-      />
+      <div className="flex flex-wrap gap-2 mb-2">
+        <textarea
+          className="w-full border rounded p-2 text-sm"
+          rows={3}
+          placeholder="Digite sua resposta..."
+          value={response?.value || ''}
+          onChange={(e) => !readOnly && onResponseChange({ ...response, value: e.target.value })}
+          disabled={readOnly}
+        />
+        
+        {/* Show AI analysis indicator if we have non-conformity in media analysis */}
+        {hasNonConformityInAnalysis && (
+          <Badge className="bg-amber-100 text-amber-800 border-amber-300 flex items-center gap-1" variant="outline">
+            <AlertCircle className="h-3 w-3" />
+            <span>IA detectou não conformidade</span>
+          </Badge>
+        )}
+      </div>
       
       {/* Media upload section if allowed */}
       {(question.allowsPhoto || question.permite_foto || 
@@ -68,7 +92,7 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
           questionText={question.text || question.pergunta || ""}
           onSaveAnalysis={handleSaveAnalysis}
           analysisResults={analysisResults}
-          onApplyAISuggestion={onApplyAISuggestion} // Pass the prop
+          onApplyAISuggestion={onApplyAISuggestion}
         />
       )}
       

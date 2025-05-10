@@ -19,7 +19,7 @@ interface MediaUploadInputProps {
   readOnly?: boolean;
   questionText?: string;
   onSaveAnalysis?: (url: string, result: MediaAnalysisResult) => void;
-  onApplyAISuggestion?: (suggestion: string) => void; // Add this prop
+  onApplyAISuggestion?: (suggestion: string) => void;
   analysisResults?: Record<string, MediaAnalysisResult>;
 }
 
@@ -42,9 +42,6 @@ export function MediaUploadInput({
   const [selectedMedia, setSelectedMedia] = useState<string | null>(null);
   const [selectedMediaType, setSelectedMediaType] = useState<string | null>(null);
   
-  console.log("MediaUploadInput rendering with URLs:", mediaUrls);
-  console.log("Allow settings:", { allowsPhoto, allowsVideo, allowsAudio, allowsFiles });
-  
   const handleAddMedia = () => {
     if (!readOnly) {
       setMediaDialogOpen(true);
@@ -52,14 +49,12 @@ export function MediaUploadInput({
   };
   
   const handleMediaUploaded = (urls: string[]) => {
-    console.log("Media uploaded:", urls);
     const newUrls = [...mediaUrls, ...urls];
     onMediaChange(newUrls);
   };
   
   const handleDeleteMedia = (urlToDelete: string) => {
     if (!readOnly) {
-      console.log("Deleting media:", urlToDelete);
       const filteredUrls = mediaUrls.filter(url => url !== urlToDelete);
       onMediaChange(filteredUrls);
     }
@@ -138,7 +133,7 @@ export function MediaUploadInput({
           readOnly={readOnly}
           questionText={questionText}
           onSaveAnalysis={onSaveAnalysis}
-          onApplyAISuggestion={onApplyAISuggestion} // Pass the prop
+          onApplyAISuggestion={onApplyAISuggestion}
           analysisResults={analysisResults}
         />
       )}
