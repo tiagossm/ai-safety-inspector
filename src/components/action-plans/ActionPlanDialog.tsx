@@ -33,6 +33,9 @@ interface ActionPlanDialogProps {
   aiSuggestion?: string | null;
 }
 
+type PriorityType = 'low' | 'medium' | 'high' | 'critical';
+type StatusType = 'pending' | 'in_progress' | 'completed' | 'cancelled';
+
 export function ActionPlanDialog({
   open,
   onOpenChange,
@@ -44,11 +47,11 @@ export function ActionPlanDialog({
 }: ActionPlanDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [description, setDescription] = useState(existingPlan?.description || "");
-  const [priority, setPriority] = useState<"low" | "medium" | "high" | "critical">(
-    existingPlan?.priority as "low" | "medium" | "high" | "critical" || "medium"
+  const [priority, setPriority] = useState<PriorityType>(
+    (existingPlan?.priority as PriorityType) || "medium"
   );
-  const [status, setStatus] = useState<"pending" | "in_progress" | "completed" | "cancelled">(
-    existingPlan?.status as "pending" | "in_progress" | "completed" | "cancelled" || "pending"
+  const [status, setStatus] = useState<StatusType>(
+    (existingPlan?.status as StatusType) || "pending"
   );
   const [assignee, setAssignee] = useState(existingPlan?.assignee || "");
   const [dueDate, setDueDate] = useState<string>(
@@ -67,8 +70,8 @@ export function ActionPlanDialog({
         inspectionId,
         questionId,
         description,
-        priority,
-        status,
+        priority: priority as "low" | "medium" | "high" | "critical",
+        status: status as "pending" | "in_progress" | "completed" | "cancelled",
         assignee: assignee || undefined,
         dueDate: dueDate ? new Date(dueDate) : undefined
       };
@@ -139,7 +142,7 @@ export function ActionPlanDialog({
                 <Label htmlFor="priority">Priority</Label>
                 <Select 
                   value={priority} 
-                  onValueChange={(value) => setPriority(value as "low" | "medium" | "high" | "critical")}
+                  onValueChange={(value) => setPriority(value as PriorityType)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select priority" />
@@ -157,7 +160,7 @@ export function ActionPlanDialog({
                 <Label htmlFor="status">Status</Label>
                 <Select 
                   value={status} 
-                  onValueChange={(value) => setStatus(value as "pending" | "in_progress" | "completed" | "cancelled")}
+                  onValueChange={(value) => setStatus(value as StatusType)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />

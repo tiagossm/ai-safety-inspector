@@ -86,16 +86,6 @@ export function MediaUploadInput({
       default: return 'application/octet-stream';
     }
   };
-  
-  const getMediaIcon = (url: string) => {
-    const fileType = getFileType(url);
-    switch(fileType) {
-      case 'image': return <Image className="h-4 w-4" />;
-      case 'video': return <FileVideo className="h-4 w-4" />;
-      case 'audio': return <Mic className="h-4 w-4" />;
-      default: return <FileText className="h-4 w-4" />;
-    }
-  };
 
   const allowedTypes = [];
   if (allowsPhoto) allowedTypes.push('image/*');

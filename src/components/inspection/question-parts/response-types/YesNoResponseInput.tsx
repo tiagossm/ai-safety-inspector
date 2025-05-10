@@ -135,7 +135,9 @@ export function YesNoResponseInput({
         <div className="mt-4">
           <MediaUploadInput
             mediaUrls={response?.mediaUrls || []}
-            onMediaChange={onMediaChange}
+            onMediaChange={(urls) => {
+              if (onMediaChange) onMediaChange(urls);
+            }}
             readOnly={readOnly}
             questionText={questionText}
             onSaveAnalysis={handleMediaAnalysisResult}

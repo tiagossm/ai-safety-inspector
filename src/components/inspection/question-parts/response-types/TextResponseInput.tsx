@@ -10,7 +10,7 @@ interface TextResponseInputProps {
   question: any;
   response: any;
   onResponseChange: (value: any) => void;
-  onMediaChange: (mediaUrls: string[]) => void;
+  onMediaChange?: (mediaUrls: string[]) => void;
   onApplyAISuggestion?: (suggestion: string) => void;
   readOnly?: boolean;
 }
@@ -24,15 +24,15 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
   readOnly = false
 }) => {
   const [analysisResults, setAnalysisResults] = useState<Record<string, MediaAnalysisResult>>(
-    response?.mediaAnalysis || {}
+    response?.mediaAnalysisResults || {}
   );
   
   // Update local state when response changes
   useEffect(() => {
-    if (response?.mediaAnalysis) {
-      setAnalysisResults(response.mediaAnalysis);
+    if (response?.mediaAnalysisResults) {
+      setAnalysisResults(response.mediaAnalysisResults);
     }
-  }, [response?.mediaAnalysis]);
+  }, [response?.mediaAnalysisResults]);
   
   const handleSaveAnalysis = (url: string, result: MediaAnalysisResult) => {
     const newResults = {
@@ -45,7 +45,7 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
     // Update the response with the new analysis results
     const updatedResponse = {
       ...response,
-      mediaAnalysis: newResults
+      mediaAnalysisResults: newResults
     };
     
     onResponseChange(updatedResponse);
@@ -70,6 +70,18 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
       ...response, 
       value: e.target.value 
     });
+  };
+
+  const handleMediaChange = (urls: string[]) => {
+    if (onMediaChange) {
+      onMediaChange(urls);
+      
+      // Also update the response directly
+      onResponseChange({
+        ...response,
+        mediaUrls: urls
+      });
+    }
   };
 
   return (
@@ -100,7 +112,7 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
         question.allowsFiles || question.permite_files) && (
         <MediaUploadInput 
           mediaUrls={response?.mediaUrls || []}
-          onMediaChange={onMediaChange}
+          onMediaChange={handleMediaChange}
           allowsPhoto={question.allowsPhoto || question.permite_foto}
           allowsVideo={question.allowsVideo || question.permite_video}
           allowsAudio={question.allowsAudio || question.permite_audio}
