@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { getFileType } from "@/utils/fileUtils";
 
 interface MediaRendererProps {
@@ -11,6 +11,11 @@ export function MediaRenderer({ url, className = "" }: MediaRendererProps) {
   const [error, setError] = useState(false);
   const fileType = getFileType(url);
   
+  // Reset error state when URL changes
+  useEffect(() => {
+    setError(false);
+  }, [url]);
+
   const handleError = () => {
     console.error(`Error loading media: ${url}`);
     setError(true);

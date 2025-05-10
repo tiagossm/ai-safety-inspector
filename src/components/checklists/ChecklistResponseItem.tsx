@@ -23,6 +23,7 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { MediaCaptureButton } from "@/components/media/MediaCaptureButton";
 import { FileUploadButton } from "@/components/media/FileUploadButton";
+import { MediaRenderer } from "@/components/media/MediaRenderer";
 
 interface ChecklistResponseItemProps {
   item: ChecklistItem;
@@ -197,31 +198,11 @@ export function ChecklistResponseItem({ item, onResponseChange, index }: Checkli
       <div className="mt-4 border-t pt-2">
         <h4 className="text-sm font-medium mb-2">Arquivos anexados</h4>
         <div className="flex flex-wrap gap-2">
-          {attachments.map((url, i) => {
-            const isImage = url.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i);
-            const isVideo = url.match(/\.(mp4|webm|avi|mov|wmv|mkv)$/i);
-            const isAudio = url.match(/\.(mp3|wav|ogg|m4a)$/i);
-            
-            return (
-              <div key={i} className="w-16 h-16 relative border rounded-md overflow-hidden">
-                {isImage ? (
-                  <img src={url} alt="Anexo" className="w-full h-full object-cover" />
-                ) : isVideo ? (
-                  <div className="w-full h-full flex items-center justify-center bg-black/10">
-                    <Video className="h-8 w-8" />
-                  </div>
-                ) : isAudio ? (
-                  <div className="w-full h-full flex items-center justify-center bg-black/10">
-                    <Mic className="h-8 w-8" />
-                  </div>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-black/10">
-                    <Image className="h-8 w-8" />
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {attachments.map((url, i) => (
+            <div key={i} className="w-16 h-16 relative border rounded-md overflow-hidden">
+              <MediaRenderer url={url} />
+            </div>
+          ))}
         </div>
       </div>
     );
