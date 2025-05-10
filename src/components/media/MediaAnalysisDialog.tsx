@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle, AlertCircle, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { MediaRenderer } from "./MediaRenderer";
+import { MediaRenderer } from "@/components/media/MediaRenderer";
 import { useMediaAnalysis, MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
