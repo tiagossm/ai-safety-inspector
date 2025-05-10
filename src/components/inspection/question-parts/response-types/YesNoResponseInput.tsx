@@ -41,7 +41,7 @@ export function YesNoResponseInput({
   // Update internal state when response changes
   useEffect(() => {
     if (response?.mediaAnalysisResults) {
-      console.log("Updating media analysis results from response:", response.mediaAnalysisResults);
+      console.log("YesNoResponseInput: Updating media analysis results from response:", response.mediaAnalysisResults);
       setMediaAnalysisResults(response.mediaAnalysisResults);
     }
   }, [response?.mediaAnalysisResults]);
@@ -52,12 +52,12 @@ export function YesNoResponseInput({
       result?.actionPlanSuggestion
     )?.actionPlanSuggestion || null;
     
-    console.log("Found AI suggestion:", suggestion);
+    console.log("YesNoResponseInput: Found AI suggestion:", suggestion);
     setAiSuggestion(suggestion);
   }, [mediaAnalysisResults]);
   
   const handleRadioChange = (value: boolean) => {
-    console.log("Radio changed:", value);
+    console.log("YesNoResponseInput: Radio changed to:", value);
     if (readOnly) return;
     // Ensure we don't lose any existing data in the response
     onResponseChange({ 
@@ -67,7 +67,7 @@ export function YesNoResponseInput({
   };
   
   const handleMediaAnalysisResult = (url: string, result: MediaAnalysisResult) => {
-    console.log("Media analysis result for URL:", url, result);
+    console.log("YesNoResponseInput: Media analysis result for URL:", url, result);
     const updatedMediaAnalysisResults = {
       ...mediaAnalysisResults,
       [url]: result
@@ -101,10 +101,10 @@ export function YesNoResponseInput({
   );
   
   // Handle applying AI suggestion to action plan
-  const handleApplyAISuggestion = (suggestion: string) => {
-    console.log("Applying AI suggestion:", suggestion);
-    if (onApplyAISuggestion) {
-      onApplyAISuggestion(suggestion);
+  const handleApplyAISuggestion = () => {
+    console.log("YesNoResponseInput: Applying AI suggestion:", aiSuggestion);
+    if (onApplyAISuggestion && aiSuggestion) {
+      onApplyAISuggestion(aiSuggestion);
       toast.success("Sugestão da IA aplicada", {
         description: "O plano de ação foi preenchido com a sugestão da IA",
       });
@@ -121,6 +121,7 @@ export function YesNoResponseInput({
           onClick={() => handleRadioChange(true)}
           disabled={readOnly}
           className="min-w-[80px]"
+          type="button"
         >
           <ThumbsUp className={`h-4 w-4 ${response?.value === true ? "mr-2" : ""}`} />
           {response?.value === true && "Sim"}
@@ -131,6 +132,7 @@ export function YesNoResponseInput({
           onClick={() => handleRadioChange(false)}
           disabled={readOnly}
           className="min-w-[80px]"
+          type="button"
         >
           <ThumbsDown className={`h-4 w-4 ${response?.value === false ? "mr-2" : ""}`} />
           {response?.value === false && "Não"}
@@ -154,13 +156,13 @@ export function YesNoResponseInput({
           <MediaUploadInput
             mediaUrls={response?.mediaUrls || []}
             onMediaChange={(urls) => {
-              console.log("Media URLs changed:", urls);
+              console.log("YesNoResponseInput: Media URLs changed:", urls);
               if (onMediaChange) onMediaChange(urls);
             }}
             readOnly={readOnly}
             questionText={questionText}
             onSaveAnalysis={handleMediaAnalysisResult}
-            onApplyAISuggestion={handleApplyAISuggestion}
+            onApplyAISuggestion={onApplyAISuggestion}
             analysisResults={mediaAnalysisResults}
             allowsPhoto={question.allowsPhoto || question.permite_foto}
             allowsVideo={question.allowsVideo || question.permite_video}
@@ -182,7 +184,8 @@ export function YesNoResponseInput({
             size="sm" 
             variant="outline" 
             className="w-full bg-amber-100 hover:bg-amber-200 border-amber-300"
-            onClick={() => handleApplyAISuggestion(aiSuggestion)}
+            onClick={handleApplyAISuggestion}
+            type="button"
           >
             <Sparkles className="h-3 w-3 mr-1" />
             Aplicar esta sugestão
@@ -211,6 +214,7 @@ export function YesNoResponseInput({
             size="sm"
             onClick={() => setShowActionPlanDialog(true)}
             className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+            type="button"
           >
             {actionPlan ? (
               <>

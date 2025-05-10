@@ -33,12 +33,13 @@ export function MediaAttachments({
   const [isPlaying, setIsPlaying] = useState(false);
 
   const handleOpenPreview = (url: string) => {
+    console.log("MediaAttachments: Opening preview for URL:", url);
     setActivePreviewUrl(url);
   };
 
   const handleOpenAnalysis = (url: string, type?: string) => {
-    console.log("Opening analysis for URL:", url);
-    console.log("Media type:", type);
+    console.log("MediaAttachments: Opening analysis for URL:", url);
+    console.log("MediaAttachments: Media type:", type);
     setActiveAnalysisUrl(url);
     setActiveMediaType(type || null);
   };
@@ -49,8 +50,8 @@ export function MediaAttachments({
   };
   
   const handleAnalysisComplete = (result: MediaAnalysisResult) => {
-    console.log("Analysis complete:", result);
-    console.log("Active analysis URL:", activeAnalysisUrl);
+    console.log("MediaAttachments: Analysis complete:", result);
+    console.log("MediaAttachments: Active analysis URL:", activeAnalysisUrl);
     if (onSaveAnalysis && activeAnalysisUrl) {
       onSaveAnalysis(activeAnalysisUrl, result);
     }
@@ -58,10 +59,10 @@ export function MediaAttachments({
 
   const handleApplySuggestion = (url: string) => {
     const analysis = analysisResults[url];
-    console.log("Applying suggestion for URL:", url);
-    console.log("Analysis result:", analysis);
+    console.log("MediaAttachments: Applying suggestion for URL:", url);
+    console.log("MediaAttachments: Analysis result:", analysis);
     if (onApplyAISuggestion && analysis?.actionPlanSuggestion) {
-      console.log("Applying suggestion:", analysis.actionPlanSuggestion);
+      console.log("MediaAttachments: Applying suggestion:", analysis.actionPlanSuggestion);
       onApplyAISuggestion(analysis.actionPlanSuggestion);
     }
   };
@@ -92,8 +93,8 @@ export function MediaAttachments({
           const hasActionSuggestion = hasAnalysis && !!analysis.actionPlanSuggestion;
           
           return (
-            <div key={index} className="relative flex flex-col">
-              <div className="relative flex-grow border rounded-md overflow-hidden" style={{maxHeight: "160px"}}>
+            <div key={index} className="relative flex flex-col h-auto">
+              <div className="relative flex-grow border rounded-md overflow-hidden" style={{maxHeight: "160px", minHeight: "100px"}}>
                 <MediaAttachmentRenderer
                   url={url}
                   index={index}
@@ -127,6 +128,7 @@ export function MediaAttachments({
                     variant="outline"
                     className="w-full bg-amber-100 hover:bg-amber-200 border-amber-300 text-xs py-1 px-2 h-auto"
                     onClick={() => handleApplySuggestion(url)}
+                    type="button"
                   >
                     <Sparkles className="h-3 w-3 mr-1" />
                     Aplicar sugestão

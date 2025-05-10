@@ -32,7 +32,7 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
   // Update local state when response changes
   useEffect(() => {
     if (response?.mediaAnalysisResults) {
-      console.log("TextResponseInput updating analysis results:", response.mediaAnalysisResults);
+      console.log("TextResponseInput: updating analysis results:", response.mediaAnalysisResults);
       setAnalysisResults(response.mediaAnalysisResults);
     }
   }, [response?.mediaAnalysisResults]);
@@ -47,7 +47,7 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
   }, [analysisResults]);
   
   const handleSaveAnalysis = (url: string, result: MediaAnalysisResult) => {
-    console.log("TextResponseInput saving analysis for URL:", url, result);
+    console.log("TextResponseInput: saving analysis for URL:", url, result);
     const newResults = {
       ...analysisResults,
       [url]: result
@@ -92,7 +92,7 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
 
   const handleMediaChange = (urls: string[]) => {
     if (onMediaChange) {
-      console.log("TextResponseInput media URLs changed:", urls);
+      console.log("TextResponseInput: media URLs changed:", urls);
       onMediaChange(urls);
       
       // Also update the response directly
@@ -105,7 +105,7 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
   
   const handleApplyAISuggestion = () => {
     if (aiSuggestion && onApplyAISuggestion) {
-      console.log("Applying AI suggestion:", aiSuggestion);
+      console.log("TextResponseInput: Applying AI suggestion:", aiSuggestion);
       onApplyAISuggestion(aiSuggestion);
       toast.success("Sugestão da IA aplicada", {
         description: "O plano de ação foi preenchido com a sugestão da IA",
@@ -144,6 +144,7 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
           <p className="text-sm mb-3 text-amber-800">{aiSuggestion}</p>
           <Button 
             size="sm" 
+            type="button"
             variant="outline" 
             className="w-full bg-amber-100 hover:bg-amber-200 border-amber-300"
             onClick={handleApplyAISuggestion}

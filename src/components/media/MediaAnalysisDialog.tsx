@@ -44,12 +44,16 @@ export function MediaAnalysisDialog({
 
   // Start analysis when dialog opens with a mediaUrl
   useEffect(() => {
-    if (open && mediaUrl && !hasStarted) {
-      console.log("MediaAnalysisDialog: Starting analysis");
-      startAnalysis();
-      setHasStarted(true);
-    }
-  }, [open, mediaUrl, hasStarted]);
+    const autoStartAnalysis = async () => {
+      if (open && mediaUrl && !hasStarted && !isAnalyzing && !result) {
+        console.log("MediaAnalysisDialog: Auto-starting analysis");
+        await startAnalysis();
+        setHasStarted(true);
+      }
+    };
+    
+    autoStartAnalysis();
+  }, [open, mediaUrl, hasStarted, isAnalyzing, result]);
 
   const startAnalysis = async () => {
     if (!mediaUrl) return;
@@ -58,14 +62,14 @@ export function MediaAnalysisDialog({
       // Determine media type if not provided
       const mediaType = suppliedMediaType || getMediaType(mediaUrl);
       
-      console.log("Starting analysis of media:", mediaUrl);
-      console.log("Media type:", mediaType);
-      console.log("Question text:", questionText);
+      console.log("MediaAnalysisDialog: Starting analysis of media:", mediaUrl);
+      console.log("MediaAnalysisDialog: Media type:", mediaType);
+      console.log("MediaAnalysisDialog: Question text:", questionText);
       
       const analysisResult = await analyzeMedia(mediaUrl, mediaType, questionText);
       
       if (analysisResult && onAnalysisComplete) {
-        console.log("Analysis completed:", analysisResult);
+        console.log("MediaAnalysisDialog: Analysis completed:", analysisResult);
         onAnalysisComplete(analysisResult);
         
         // Show a toast if non-conformity was detected
@@ -76,14 +80,9 @@ export function MediaAnalysisDialog({
             icon: <AlertTriangle className="h-4 w-4" />
           });
         }
-        
-        // Automatically close the dialog after successful analysis after a short delay
-        setTimeout(() => {
-          onOpenChange(false);
-        }, 3000);
       }
     } catch (err) {
-      console.error("Error during analysis:", err);
+      console.error("MediaAnalysisDialog: Error during analysis:", err);
     }
   };
 
@@ -206,15 +205,15 @@ export function MediaAnalysisDialog({
           ) : (
             <div className="text-center">
               <p className="text-sm text-muted-foreground">
-                Clique em analisar para iniciar
+                Análise automática iniciando...
               </p>
             </div>
           )}
         </div>
 
         <DialogFooter>
-          {!result && !isAnalyzing && (
-            <Button onClick={startAnalysis} disabled={!mediaUrl || hasStarted}>
+          {!isAnalyzing && !hasStarted && (
+            <Button onClick={startAnalysis} disabled={!mediaUrl}>
               {isAnalyzing ? "Analisando..." : "Analisar com IA"}
             </Button>
           )}

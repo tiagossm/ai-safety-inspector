@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -60,10 +60,32 @@ export function ActionPlanDialog({
       : ""
   );
 
+  // Reset form when dialog opens/closes or when existingPlan changes
+  useEffect(() => {
+    if (open && existingPlan) {
+      setDescription(existingPlan.description || "");
+      setPriority((existingPlan.priority as PriorityType) || "medium");
+      setStatus((existingPlan.status as StatusType) || "pending");
+      setAssignee(existingPlan.assignee || "");
+      setDueDate(
+        existingPlan.due_date 
+          ? new Date(existingPlan.due_date).toISOString().split("T")[0]
+          : ""
+      );
+    } else if (open && !existingPlan) {
+      // Reset to defaults for new action plan
+      setDescription("");
+      setPriority("medium");
+      setStatus("pending");
+      setAssignee("");
+      setDueDate("");
+    }
+  }, [open, existingPlan]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    console.log("Submitting plan with priority:", priority, "and status:", status);
+    console.log("ActionPlanDialog: Submitting plan with priority:", priority, "and status:", status);
 
     try {
       const data: ActionPlanFormData = {
@@ -77,10 +99,11 @@ export function ActionPlanDialog({
         dueDate: dueDate ? new Date(dueDate) : undefined
       };
 
+      console.log("ActionPlanDialog: Submitting data:", data);
       await onSave(data);
       onOpenChange(false);
     } catch (error) {
-      console.error("Failed to save action plan:", error);
+      console.error("ActionPlanDialog: Failed to save action plan:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -88,7 +111,7 @@ export function ActionPlanDialog({
 
   const applyAiSuggestion = () => {
     if (aiSuggestion) {
-      console.log("Applying AI suggestion:", aiSuggestion);
+      console.log("ActionPlanDialog: Applying AI suggestion:", aiSuggestion);
       setDescription(aiSuggestion);
     }
   };

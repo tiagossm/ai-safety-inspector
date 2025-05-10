@@ -27,9 +27,9 @@ export function useMediaAnalysis() {
       setError(null);
       setResult(null);
       
-      console.log("🔍 Iniciando análise de mídia:", mediaUrl);
-      console.log("Tipo de mídia:", mediaType);
-      console.log("Pergunta:", questionText);
+      console.log("🔍 useMediaAnalysis: Iniciando análise de mídia:", mediaUrl);
+      console.log("useMediaAnalysis: Tipo de mídia:", mediaType);
+      console.log("useMediaAnalysis: Pergunta:", questionText);
       
       if (!mediaUrl) {
         throw new Error("URL da mídia não fornecida");
@@ -39,41 +39,40 @@ export function useMediaAnalysis() {
         throw new Error("Tipo de mídia não fornecido");
       }
       
-      // Ajustamos o tipo de mídia para melhor compatibilidade
-      // Se for um arquivo webm de áudio, garantimos que seja tratado como áudio
+      // Adjust media type for better compatibility
+      // If it's a webm audio file, ensure it's treated as audio
       if (mediaUrl.includes('audio') && mediaUrl.endsWith('.webm')) {
         mediaType = 'audio/webm';
       }
       
-      // Obter o tipo específico do arquivo com base na extensão
+      // Get specific file type based on extension
       const fileExtension = mediaUrl.split('.').pop()?.toLowerCase() || '';
       const specificFileType = determineSpecificFileType(fileExtension);
       
-      console.log("Tipo de mídia detectado:", mediaType);
-      console.log("Tipo específico:", specificFileType);
+      console.log("useMediaAnalysis: Tipo de mídia detectado:", mediaType);
+      console.log("useMediaAnalysis: Tipo específico:", specificFileType);
       
-      // Simular análise para desenvolvimento (remova isto em produção)
-      // Esta é uma solução provisória para teste durante desenvolvimento
-      // Durante o desenvolvimento, vamos simular a análise para demonstrar a interface
+      // Simulate analysis for development (remove in production)
+      // This is a temporary solution for testing during development
       const simulateAnalysis = true;
       
       if (simulateAnalysis) {
-        console.log("Usando análise simulada para desenvolvimento");
+        console.log("useMediaAnalysis: Usando análise simulada para desenvolvimento");
         
-        // Esperar um tempo para simular processamento
+        // Wait a bit to simulate processing
         await new Promise(resolve => setTimeout(resolve, 2000));
         
-        // Criar um resultado simulado com base no tipo de mídia
+        // Create a simulated result based on media type
         const simulatedResult: MediaAnalysisResult = {
           type: mediaType.includes('image') ? 'image' : 
                 mediaType.includes('audio') ? 'audio' : 'video',
           simulated: true,
-          hasNonConformity: Math.random() > 0.5, // 50% de chance de ter não conformidade
+          hasNonConformity: Math.random() > 0.5, // 50% chance of non-conformity
           fileType: specificFileType,
           questionText: questionText
         };
         
-        // Adicionar análise específica do tipo
+        // Add type-specific analysis
         if (simulatedResult.type === 'image') {
           simulatedResult.analysis = `Na imagem analisada, observa-se ${Math.random() > 0.5 ? 
             'conformidade com os requisitos de segurança, com uso adequado de EPIs e procedimentos corretos' : 
@@ -88,23 +87,23 @@ export function useMediaAnalysis() {
             'O vídeo revela possíveis falhas nos procedimentos de segurança que precisam ser corrigidas'}`;
         }
         
-        // Adicionar sugestão de plano de ação se houver não conformidade
+        // Add action plan suggestion if there's non-conformity
         if (simulatedResult.hasNonConformity) {
           simulatedResult.actionPlanSuggestion = `Com base na análise, recomenda-se: 1) Realizar treinamento adicional sobre procedimentos de segurança; 2) Verificar disponibilidade e condições dos EPIs; 3) Programar nova inspeção em 15 dias para confirmar a correção das não conformidades.`;
         }
         
-        console.log("Análise simulada concluída:", simulatedResult);
+        console.log("useMediaAnalysis: Análise simulada concluída:", simulatedResult);
         setResult(simulatedResult);
         return simulatedResult;
       }
       
-      // Chamar o edge function para analisar a mídia
+      // Call edge function to analyze media
       const { data, error: functionError } = await supabase.functions.invoke('analyze-media', {
         body: { mediaUrl, mediaType, questionText }
       });
       
       if (functionError) {
-        console.error("Erro na função analyze-media:", functionError);
+        console.error("useMediaAnalysis: Erro na função analyze-media:", functionError);
         throw new Error(`Erro na análise de mídia: ${functionError.message || "Erro desconhecido"}`);
       }
       
@@ -112,23 +111,23 @@ export function useMediaAnalysis() {
         throw new Error("Nenhum dado retornado da análise");
       }
 
-      // Verificar se a resposta indica erro interno na análise
+      // Check if response indicates error in analysis
       if (data.error === true) {
         const errorMessage = data.message || data.analysis || data.transcription || "Erro na análise de mídia";
-        console.error("Erro interno na análise:", errorMessage);
+        console.error("useMediaAnalysis: Erro interno na análise:", errorMessage);
         throw new Error(errorMessage);
       }
       
-      console.log("✅ Análise de mídia concluída:", data);
+      console.log("✅ useMediaAnalysis: Análise de mídia concluída:", data);
       
-      // Verificar se é uma simulação devido à falta de API key
+      // Check if this is a simulation due to missing API key
       if (data.simulated) {
         toast.warning("Usando análise simulada. Configure a API do OpenAI para resultados reais.", {
           duration: 6000
         });
       }
       
-      // Garantir que os campos estejam no formato correto para evitar erros ao salvar no banco
+      // Format result to avoid errors when saving to database
       const formattedResult: MediaAnalysisResult = {
         type: data.type || 'image',
         analysis: data.analysis || undefined,
@@ -144,10 +143,10 @@ export function useMediaAnalysis() {
       
       return formattedResult;
     } catch (error: any) {
-      console.error("Erro ao analisar mídia:", error);
+      console.error("useMediaAnalysis: Erro ao analisar mídia:", error);
       setError(error);
       
-      // Mostrar toast com a mensagem de erro mais amigável
+      // Show user-friendly error message
       const friendlyMessage = error.message?.includes("API do OpenAI") 
         ? "A análise falhou. Verifique se a chave da API OpenAI está configurada corretamente."
         : `Falha na análise: ${error.message || "Erro desconhecido"}`;

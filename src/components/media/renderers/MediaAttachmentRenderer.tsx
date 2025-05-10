@@ -48,9 +48,9 @@ export const MediaAttachmentRenderer = ({
   
   const hasAnalysis = analysisResults && analysisResults[url];
   
-  // Tratamento especial para arquivos webm (podem ser áudio ou vídeo)
+  // Special handling for webm files (can be audio or video)
   if (url.endsWith('.webm')) {
-    // Se o URL contiver "audio", consideramos como áudio
+    // If URL contains "audio", consider it as audio
     if (url.includes('audio')) {
       return (
         <AudioRenderer 
@@ -140,7 +140,7 @@ export const MediaAttachmentRenderer = ({
     );
   }
   
-  // For other file types, we need to identify specific types by extension
+  // For other file types, identify specific types by extension
   const extension = url.split('.').pop()?.toLowerCase() || '';
   
   // Determine specific file type based on extension
