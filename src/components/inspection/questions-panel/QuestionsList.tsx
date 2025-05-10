@@ -83,7 +83,7 @@ export function QuestionsList({
                     size="sm"
                     variant={responses[question.id]?.value === "sim" ? "default" : "outline"}
                     onClick={() => onResponseChange(question.id, { value: "sim" })}
-                    className={responses[question.id]?.value === "sim" ? "bg-green-500 hover:bg-green-600" : ""}
+                    className={responses[question.id]?.value === "sim" ? "bg-green-500 hover:bg-green-600 text-white" : ""}
                   >
                     Sim
                   </Button>
@@ -91,7 +91,7 @@ export function QuestionsList({
                     size="sm"
                     variant={responses[question.id]?.value === "não" ? "default" : "outline"}
                     onClick={() => onResponseChange(question.id, { value: "não" })}
-                    className={responses[question.id]?.value === "não" ? "bg-red-500 hover:bg-red-600" : ""}
+                    className={responses[question.id]?.value === "não" ? "bg-red-500 hover:bg-red-600 text-white" : ""}
                   >
                     Não
                   </Button>
@@ -99,7 +99,7 @@ export function QuestionsList({
                     size="sm"
                     variant={responses[question.id]?.value === "n/a" ? "default" : "outline"}
                     onClick={() => onResponseChange(question.id, { value: "n/a" })}
-                    className={responses[question.id]?.value === "n/a" ? "bg-gray-500 hover:bg-gray-600" : ""}
+                    className={responses[question.id]?.value === "n/a" ? "bg-gray-500 hover:bg-gray-600 text-white" : ""}
                   >
                     N/A
                   </Button>

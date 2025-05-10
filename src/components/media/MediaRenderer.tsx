@@ -33,13 +33,14 @@ export function MediaRenderer({ url, className = "" }: MediaRendererProps) {
   switch (fileType) {
     case "image":
       return (
-        <img 
-          src={url} 
-          alt="Media content" 
-          className={`object-cover w-full h-full ${className}`} 
-          onError={handleError}
-          style={{ maxWidth: '100%', maxHeight: '100%' }}
-        />
+        <div className={`flex items-center justify-center ${className}`}>
+          <img 
+            src={url} 
+            alt="Media content" 
+            className="max-w-full max-h-full object-contain" 
+            onError={handleError}
+          />
+        </div>
       );
     
     case "video":

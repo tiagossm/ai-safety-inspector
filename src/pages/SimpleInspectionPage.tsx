@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useParams } from "react-router-dom";
 import { useSimpleInspection } from "@/hooks/inspection/useSimpleInspection";
@@ -196,6 +195,7 @@ export default function SimpleInspectionPage() {
                                 variant={responses[question.id]?.value === true ? "default" : "outline"}
                                 size="sm"
                                 onClick={() => handleResponseChange(question.id, { value: true })}
+                                className={responses[question.id]?.value === true ? "bg-green-500 hover:bg-green-600 text-white" : ""}
                               >
                                 Sim
                               </Button>
@@ -203,6 +203,7 @@ export default function SimpleInspectionPage() {
                                 variant={responses[question.id]?.value === false ? "default" : "outline"}
                                 size="sm"
                                 onClick={() => handleResponseChange(question.id, { value: false })}
+                                className={responses[question.id]?.value === false ? "bg-red-500 hover:bg-red-600 text-white" : ""}
                               >
                                 Não
                               </Button>

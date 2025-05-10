@@ -149,7 +149,7 @@ export function YesNoResponseInput({
           variant={response?.value === true ? "default" : "outline"}
           onClick={() => handleRadioChange(true)}
           disabled={readOnly}
-          className={`min-w-[80px] ${response?.value === true ? "bg-green-500 hover:bg-green-600" : ""}`}
+          className={response?.value === true ? "bg-green-500 hover:bg-green-600 text-white" : ""}
           type="button"
         >
           <ThumbsUp className="h-4 w-4 mr-2" />
@@ -160,7 +160,7 @@ export function YesNoResponseInput({
           variant={response?.value === false ? "default" : "outline"}
           onClick={() => handleRadioChange(false)}
           disabled={readOnly}
-          className={`min-w-[80px] ${response?.value === false ? "bg-red-500 hover:bg-red-600" : ""}`}
+          className={response?.value === false ? "bg-red-500 hover:bg-red-600 text-white" : ""}
           type="button"
         >
           <ThumbsDown className="h-4 w-4 mr-2" />
