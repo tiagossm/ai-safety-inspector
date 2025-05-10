@@ -1,4 +1,3 @@
-
 import { Mic, FileText, Image, FileVideo, FileSpreadsheet, FileCode, Archive, Presentation } from 'lucide-react';
 
 export function getFileType(url: string): 'image' | 'video' | 'audio' | 'file' {
