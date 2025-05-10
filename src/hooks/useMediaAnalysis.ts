@@ -79,16 +79,21 @@ export function useMediaAnalysis() {
         });
       }
       
-      // Adicionar o tipo específico de arquivo e a pergunta ao resultado
-      const result = {
-        ...(data as MediaAnalysisResult),
+      // Garantir que os campos estejam no formato correto para evitar erros ao salvar no banco
+      const formattedResult: MediaAnalysisResult = {
+        type: data.type || 'image',
+        analysis: data.analysis || undefined,
+        transcription: data.transcription || undefined,
+        hasNonConformity: !!data.hasNonConformity,
+        actionPlanSuggestion: data.actionPlanSuggestion || undefined,
+        simulated: !!data.simulated,
         fileType: specificFileType,
-        questionText
+        questionText: questionText || undefined,
       };
       
-      setResult(result);
+      setResult(formattedResult);
       
-      return result;
+      return formattedResult;
     } catch (error: any) {
       console.error("Erro ao analisar mídia:", error);
       setError(error);

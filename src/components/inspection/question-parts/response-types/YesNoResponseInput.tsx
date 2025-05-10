@@ -7,6 +7,7 @@ import { MediaUploadInput } from "../../question-inputs/MediaUploadInput";
 import { ActionPlanDialog } from "@/components/action-plans/ActionPlanDialog";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 interface YesNoResponseInputProps {
   question: any;
@@ -45,7 +46,11 @@ export function YesNoResponseInput({
   
   const handleRadioChange = (value: boolean) => {
     if (readOnly) return;
-    onResponseChange({ value });
+    // Ensure we don't lose any existing data in the response
+    onResponseChange({ 
+      ...response,
+      value 
+    });
   };
   
   const handleMediaAnalysisResult = (url: string, result: MediaAnalysisResult) => {
@@ -61,6 +66,14 @@ export function YesNoResponseInput({
       ...response,
       mediaAnalysisResults: updatedMediaAnalysisResults
     });
+    
+    // If there's a non-conformity, show a toast notification
+    if (result.hasNonConformity) {
+      toast.info("IA detectou possível não conformidade", {
+        description: "Foi sugerido um plano de ação.",
+        duration: 5000
+      });
+    }
   };
   
   // Check if we have non-conformity results in any media analysis

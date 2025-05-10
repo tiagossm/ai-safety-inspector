@@ -15,7 +15,7 @@ interface MediaAttachmentRendererProps {
   readOnly: boolean;
   questionText?: string;
   analysisResults?: Record<string, any>;
-  smallSize?: boolean; // Add prop for smaller images
+  smallSize?: boolean;
 }
 
 export const MediaAttachmentRenderer = ({ 

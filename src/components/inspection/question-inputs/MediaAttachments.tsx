@@ -76,7 +76,7 @@ export function MediaAttachments({
         </div>
       )}
       
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
         {mediaUrls.map((url, index) => (
           <div key={index} className="relative">
             <MediaAttachmentRenderer
@@ -89,7 +89,7 @@ export function MediaAttachments({
               readOnly={readOnly}
               questionText={questionText}
               analysisResults={analysisResults}
-              smallSize={true} // Add flag to make images smaller
+              smallSize={true}
             />
             
             {analysisResults[url]?.actionPlanSuggestion && (

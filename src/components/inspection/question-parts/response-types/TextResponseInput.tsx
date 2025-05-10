@@ -4,6 +4,7 @@ import { MediaUploadInput } from "../../question-inputs/MediaUploadInput";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 
 interface TextResponseInputProps {
   question: any;
@@ -48,12 +49,28 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
     };
     
     onResponseChange(updatedResponse);
+    
+    // If there's a non-conformity, show a toast notification
+    if (result.hasNonConformity) {
+      toast.info("IA detectou possível não conformidade", {
+        description: "Foi sugerido um plano de ação.",
+        duration: 5000
+      });
+    }
   };
   
   // Check if we have non-conformity results in any media analysis
   const hasNonConformityInAnalysis = Object.values(analysisResults).some(result => 
     result.hasNonConformity
   );
+  
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (readOnly) return;
+    onResponseChange({ 
+      ...response, 
+      value: e.target.value 
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -63,7 +80,7 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
           rows={3}
           placeholder="Digite sua resposta..."
           value={response?.value || ''}
-          onChange={(e) => !readOnly && onResponseChange({ ...response, value: e.target.value })}
+          onChange={handleTextChange}
           disabled={readOnly}
         />
         

@@ -74,10 +74,10 @@ export function MediaAnalysisDialog({
           });
         }
         
-        // Automatically close the dialog after successful analysis
+        // Automatically close the dialog after successful analysis after a short delay
         setTimeout(() => {
           onOpenChange(false);
-        }, 2000);
+        }, 3000);
       }
     } catch (err) {
       console.error("Error during analysis:", err);
