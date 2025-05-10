@@ -141,6 +141,8 @@ export function MediaUploadInput({
           readOnly={readOnly}
           questionText={questionText}
           analysisResults={analysisResults}
+          onSaveAnalysis={onSaveAnalysis}
+          onApplyAISuggestion={onApplyAISuggestion}
         />
       )}
       

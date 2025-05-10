@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 interface MediaAttachmentsProps {
   mediaUrls: string[];
   onDelete?: (url: string) => void;
+  onOpenPreview: (url: string) => void;
+  onOpenAnalysis: (url: string, questionContext?: string) => void;
   readOnly?: boolean;
   questionText?: string;
   onSaveAnalysis?: (url: string, result: MediaAnalysisResult) => void;
@@ -21,6 +23,8 @@ interface MediaAttachmentsProps {
 export function MediaAttachments({ 
   mediaUrls, 
   onDelete, 
+  onOpenPreview,
+  onOpenAnalysis,
   readOnly = false, 
   questionText,
   onSaveAnalysis,
@@ -35,6 +39,7 @@ export function MediaAttachments({
   const handleOpenPreview = (url: string) => {
     console.log("MediaAttachments: Opening preview for URL:", url);
     setActivePreviewUrl(url);
+    onOpenPreview(url);
   };
 
   const handleOpenAnalysis = (url: string, questionText?: string) => {
@@ -42,6 +47,7 @@ export function MediaAttachments({
     console.log("MediaAttachments: Question context:", questionText);
     setActiveAnalysisUrl(url);
     setActiveMediaType(null);
+    onOpenAnalysis(url, questionText);
   };
 
   const toggleAudioPlay = (e: React.MouseEvent) => {
