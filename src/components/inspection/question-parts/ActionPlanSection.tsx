@@ -1,4 +1,5 @@
-import React from "react";
+
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   AlertCircle,
@@ -6,7 +7,8 @@ import {
   Clock,
   AlertTriangle,
   CalendarIcon,
-  User
+  User,
+  Sparkles
 } from "lucide-react";
 import {
   Card,
@@ -21,6 +23,7 @@ import { format } from "date-fns";
 import { ActionPlan } from "@/services/inspection/actionPlanService";
 import { ActionPlanForm } from '@/components/action-plans/form/ActionPlanForm';
 import { ActionPlanFormData } from '@/components/action-plans/form/types';
+import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 
 interface ActionPlanSectionProps {
   isOpen: boolean;
@@ -29,6 +32,8 @@ interface ActionPlanSectionProps {
   onActionPlanChange: (value: string) => void;
   onOpenDialog: () => void;
   hasNegativeResponse: boolean;
+  aiSuggestion?: string;
+  mediaAnalysisResults?: Record<string, MediaAnalysisResult>;
 }
 
 export function ActionPlanSection({
@@ -37,11 +42,43 @@ export function ActionPlanSection({
   actionPlan,
   onActionPlanChange,
   onOpenDialog,
-  hasNegativeResponse
+  hasNegativeResponse,
+  aiSuggestion,
+  mediaAnalysisResults = {}
 }: ActionPlanSectionProps) {
+  const [suggestion, setSuggestion] = useState<string | null>(null);
+
+  // Extract action plan suggestions from media analysis results
+  useEffect(() => {
+    const suggestions: string[] = [];
+    
+    // Collect all suggestions from media analysis results
+    Object.values(mediaAnalysisResults).forEach(result => {
+      if (result?.actionPlanSuggestion) {
+        suggestions.push(result.actionPlanSuggestion);
+      }
+    });
+    
+    // If we have suggestions or a direct AI suggestion, set it
+    if (suggestions.length > 0) {
+      setSuggestion(suggestions[0]); // Use the first suggestion for now
+    } else if (aiSuggestion) {
+      setSuggestion(aiSuggestion);
+    } else {
+      setSuggestion(null);
+    }
+  }, [mediaAnalysisResults, aiSuggestion]);
+
   if (!isOpen) {
     return null;
   }
+
+  // Apply the AI suggestion to the action plan text
+  const applyAISuggestion = () => {
+    if (suggestion) {
+      onActionPlanChange(suggestion);
+    }
+  };
 
   // If actionPlan is just a string, show the simplified view
   if (typeof actionPlan === 'string' || !actionPlan) {
@@ -53,6 +90,25 @@ export function ActionPlanSection({
             Action Plan
           </h4>
         </div>
+        
+        {suggestion && (
+          <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
+            <div className="flex items-center mb-2">
+              <Sparkles className="h-4 w-4 mr-1 text-amber-500" />
+              <span className="text-sm font-medium text-amber-700">Sugestão da IA</span>
+            </div>
+            <p className="text-sm mb-3 text-amber-800">{suggestion}</p>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="w-full bg-amber-100 hover:bg-amber-200 border-amber-300"
+              onClick={applyAISuggestion}
+            >
+              Aplicar esta sugestão
+            </Button>
+          </div>
+        )}
+        
         <textarea
           className="w-full border rounded p-2 text-sm"
           placeholder={hasNegativeResponse ? "Describe the actions needed to address this issue..." : "Add notes for follow-up if needed"}

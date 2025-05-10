@@ -12,6 +12,8 @@ export interface MediaAnalysisResult {
   simulated?: boolean;
   fileType?: string;
   questionText?: string;
+  actionPlanSuggestion?: string;
+  hasNonConformity?: boolean;
 }
 
 export function useMediaAnalysis() {

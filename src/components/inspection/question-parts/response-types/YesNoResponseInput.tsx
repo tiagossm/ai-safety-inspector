@@ -1,22 +1,27 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { ThumbsUp, ThumbsDown, Upload, PenLine, AlertCircle } from "lucide-react";
+import { ActionPlanFormData } from "@/components/action-plans/form/types";
+import { ActionPlanButton } from "../ActionPlanButton";
 import { MediaUploadInput } from "../../question-inputs/MediaUploadInput";
-import { Check, X, Minus } from "lucide-react";
+import { ActionPlanForm } from "@/components/action-plans/form/ActionPlanForm";
+import { ActionPlanDialog } from "@/components/action-plans/ActionPlanDialog";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 
 interface YesNoResponseInputProps {
   question: any;
   response: any;
   inspectionId?: string;
-  onResponseChange: (value: any) => void;
-  onMediaChange?: (mediaUrls: string[]) => void;
+  onResponseChange: (data: any) => void;
+  onMediaChange?: (urls: string[]) => void;
   actionPlan?: any;
-  onSaveActionPlan?: (data: any) => Promise<void>;
+  onSaveActionPlan?: (data: ActionPlanFormData) => Promise<void>;
+  onApplyAISuggestion?: (suggestion: string) => void;
   readOnly?: boolean;
 }
 
-export const YesNoResponseInput: React.FC<YesNoResponseInputProps> = ({
+export function YesNoResponseInput({
   question,
   response,
   inspectionId,
@@ -24,144 +29,141 @@ export const YesNoResponseInput: React.FC<YesNoResponseInputProps> = ({
   onMediaChange,
   actionPlan,
   onSaveActionPlan,
+  onApplyAISuggestion,
   readOnly = false
-}) => {
-  const [analysisResults, setAnalysisResults] = useState<Record<string, MediaAnalysisResult>>(
-    response?.mediaAnalysis || {}
-  );
-
-  const handleValueChange = (value: string) => {
+}: YesNoResponseInputProps) {
+  const [showActionPlanDialog, setShowActionPlanDialog] = useState(false);
+  const [mediaAnalysisResults, setMediaAnalysisResults] = useState<Record<string, MediaAnalysisResult>>({});
+  
+  const handleRadioChange = (value: boolean) => {
     if (readOnly) return;
-    onResponseChange({ ...response, value });
-  };
-
-  const handleMediaChange = (urls: string[]) => {
-    if (onMediaChange) {
-      onMediaChange(urls);
-    }
+    onResponseChange({ value });
   };
   
-  const handleSaveAnalysis = (url: string, result: MediaAnalysisResult) => {
-    const newResults = {
-      ...analysisResults,
+  const handleMediaAnalysisResult = (url: string, result: MediaAnalysisResult) => {
+    setMediaAnalysisResults(prev => ({
+      ...prev,
+      [url]: result
+    }));
+    
+    // Update the response with analysis results
+    const updatedMediaAnalysisResults = {
+      ...response.mediaAnalysisResults || {},
       [url]: result
     };
     
-    setAnalysisResults(newResults);
-    
-    // Update the response with the new analysis results
-    const updatedResponse = {
+    onResponseChange({
       ...response,
-      mediaAnalysis: newResults
-    };
-    
-    onResponseChange(updatedResponse);
+      mediaAnalysisResults: updatedMediaAnalysisResults
+    });
   };
-
-  const renderButtons = () => {
-    const isPositive = response?.value === 'yes' || response?.value === 'sim';
-    const isNegative = response?.value === 'no' || response?.value === 'não';
-    const isNeutral = response?.value === 'na' || response?.value === 'n/a';
-
-    return (
-      <div className="flex gap-2">
-        {/* Yes Button */}
-        <Button
-          variant={isPositive ? "default" : "outline"}
-          className={`flex items-center gap-2 ${isPositive ? "bg-green-500 hover:bg-green-600" : ""}`}
-          onClick={() => handleValueChange('sim')}
-          disabled={readOnly}
-          size="sm"
-        >
-          <Check className="h-4 w-4" />
-          <span>SIM</span>
-        </Button>
-
-        {/* No Button */}
-        <Button
-          variant={isNegative ? "default" : "outline"}
-          className={`flex items-center gap-2 ${isNegative ? "bg-red-500 hover:bg-red-600" : ""}`}
-          onClick={() => handleValueChange('não')}
-          disabled={readOnly}
-          size="sm"
-        >
-          <X className="h-4 w-4" />
-          <span>NÃO</span>
-        </Button>
-
-        {/* N/A Button */}
-        <Button
-          variant={isNeutral ? "default" : "outline"}
-          className={`flex items-center gap-2 ${isNeutral ? "bg-gray-500 hover:bg-gray-600" : ""}`}
-          onClick={() => handleValueChange('n/a')}
-          disabled={readOnly}
-          size="sm"
-        >
-          <Minus className="h-4 w-4" />
-          <span>N/A</span>
-        </Button>
-      </div>
-    );
+  
+  // Check if we have non-conformity results in any media analysis
+  const hasNonConformityInAnalysis = Object.values(mediaAnalysisResults).some(result => 
+    result.hasNonConformity
+  );
+  
+  // Get the first available action plan suggestion
+  const firstSuggestion = Object.values(mediaAnalysisResults).find(result => 
+    result.actionPlanSuggestion
+  )?.actionPlanSuggestion;
+  
+  // Handle applying AI suggestion to action plan
+  const handleApplyAISuggestion = (suggestion: string) => {
+    if (onApplyAISuggestion) {
+      onApplyAISuggestion(suggestion);
+    }
   };
-
+  
+  const questionText = question.text || question.pergunta || "";
+  
   return (
-    <div className="space-y-4">
-      {renderButtons()}
-
-      {/* Media upload section if allowed */}
+    <div>
+      <div className="flex flex-wrap gap-2 mb-3">
+        <Button
+          variant={response?.value === true ? "default" : "outline"}
+          onClick={() => handleRadioChange(true)}
+          disabled={readOnly}
+          className="min-w-[80px]"
+        >
+          <ThumbsUp className={`h-4 w-4 ${response?.value === true ? "mr-2" : ""}`} />
+          {response?.value === true && "Sim"}
+        </Button>
+        
+        <Button
+          variant={response?.value === false ? "default" : "outline"}
+          onClick={() => handleRadioChange(false)}
+          disabled={readOnly}
+          className="min-w-[80px]"
+        >
+          <ThumbsDown className={`h-4 w-4 ${response?.value === false ? "mr-2" : ""}`} />
+          {response?.value === false && "Não"}
+        </Button>
+        
+        {/* Show AI analysis indicator if we have non-conformity in media analysis */}
+        {hasNonConformityInAnalysis && (
+          <Badge className="bg-amber-100 text-amber-800 border-amber-300 flex items-center gap-1" variant="outline">
+            <AlertCircle className="h-3 w-3" />
+            <span>IA detectou não conformidade</span>
+          </Badge>
+        )}
+      </div>
+      
+      {/* Media upload section */}
       {(question.allowsPhoto || question.permite_foto || 
-        question.allowsVideo || question.permite_video ||
-        question.allowsAudio || question.permite_audio ||
+        question.allowsVideo || question.permite_video || 
+        question.allowsAudio || question.permite_audio || 
         question.allowsFiles || question.permite_files) && (
-        <MediaUploadInput 
-          mediaUrls={response?.mediaUrls || []}
-          onMediaChange={handleMediaChange}
-          allowsPhoto={question.allowsPhoto || question.permite_foto}
-          allowsVideo={question.allowsVideo || question.permite_video}
-          allowsAudio={question.allowsAudio || question.permite_audio}
-          allowsFiles={question.allowsFiles || question.permite_files}
-          readOnly={readOnly}
-          questionText={question.text || question.pergunta || ""}
-          onSaveAnalysis={handleSaveAnalysis}
-          analysisResults={analysisResults}
+        <div className="mt-4">
+          <MediaUploadInput
+            mediaUrls={response?.mediaUrls || []}
+            onMediaChange={onMediaChange}
+            readOnly={readOnly}
+            questionText={questionText}
+            onSaveAnalysis={handleMediaAnalysisResult}
+            onApplyAISuggestion={handleApplyAISuggestion}
+            analysisResults={mediaAnalysisResults}
+          />
+        </div>
+      )}
+      
+      {/* Action plan dialog */}
+      {inspectionId && question.id && onSaveActionPlan && (
+        <ActionPlanDialog
+          open={showActionPlanDialog}
+          onOpenChange={setShowActionPlanDialog}
+          inspectionId={inspectionId}
+          questionId={question.id}
+          existingPlan={actionPlan}
+          onSave={onSaveActionPlan}
+          aiSuggestion={firstSuggestion}
         />
       )}
-
-      {/* Display analysis results that are relevant to the question */}
-      {Object.keys(analysisResults).length > 0 && (
-        <div className="mt-4 p-3 bg-blue-50 rounded-md border border-blue-100">
-          <h4 className="text-sm font-medium mb-2 flex items-center">
-            <span>Análises de IA</span>
-          </h4>
-          <div className="space-y-3">
-            {Object.entries(analysisResults).map(([url, result], index) => {
-              // Only show a summary of the analysis here
-              let summary = '';
-              
-              if (result.type === 'image' || result.type === 'video') {
-                summary = result.analysis && result.analysis.length > 100 
-                  ? result.analysis.substring(0, 100) + '...' 
-                  : result.analysis || '';
-              } else if (result.type === 'audio') {
-                summary = result.transcription && result.transcription.length > 100 
-                  ? result.transcription.substring(0, 100) + '...' 
-                  : result.transcription || '';
-              }
-              
-              return (
-                <div key={index} className="text-xs border-l-2 border-blue-300 pl-3 py-1">
-                  <div className="font-medium mb-1">
-                    {result.type === 'image' && 'Análise de Imagem'}
-                    {result.type === 'video' && 'Análise de Vídeo'}
-                    {result.type === 'audio' && 'Transcrição de Áudio'}
-                  </div>
-                  <p className="text-gray-600">{summary}</p>
-                </div>
-              );
-            })}
-          </div>
+      
+      {/* Show action plan button for negative responses */}
+      {response?.value === false && inspectionId && question.id && onSaveActionPlan && !readOnly && (
+        <div className="mt-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowActionPlanDialog(true)}
+            className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+          >
+            {actionPlan ? (
+              <>
+                <PenLine className="h-3.5 w-3.5 mr-1" />
+                Editar plano de ação
+              </>
+            ) : (
+              <>
+                <AlertCircle className="h-3.5 w-3.5 mr-1" />
+                Adicionar plano de ação
+                {firstSuggestion && " (IA sugeriu ações)"}
+              </>
+            )}
+          </Button>
         </div>
       )}
     </div>
   );
-};
+}

@@ -42,6 +42,22 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     onResponseChange(updatedResponse);
   };
 
+  // Handle suggested action plan from AI analysis
+  const handleActionPlanSuggestion = (suggestion: string) => {
+    if (onSaveActionPlan && inspectionId && question.id) {
+      // Create action plan data with the AI suggestion
+      const actionPlanData = {
+        inspectionId,
+        questionId: question.id,
+        description: suggestion,
+        priority: 'medium',
+        status: 'pending'
+      };
+      
+      onSaveActionPlan(actionPlanData);
+    }
+  };
+
   // Handle yes/no responses
   if (responseType === 'yes_no') {
     return (
@@ -53,6 +69,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         onMediaChange={handleMediaChange}
         actionPlan={actionPlan}
         onSaveActionPlan={onSaveActionPlan}
+        onApplyAISuggestion={handleActionPlanSuggestion}
         readOnly={readOnly}
       />
     );
@@ -65,6 +82,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
       response={response}
       onResponseChange={handleResponseWithAnalysis}
       onMediaChange={handleMediaChange}
+      onApplyAISuggestion={handleActionPlanSuggestion}
       readOnly={readOnly}
     />
   );
