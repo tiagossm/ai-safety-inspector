@@ -31,7 +31,11 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   // Extract question text to pass to the analysis
   const questionText = question.text || question.pergunta || "";
   
+  console.log("ResponseInputRenderer: rendering with responseType:", responseType);
+  console.log("ResponseInputRenderer: current response:", response);
+  
   const handleMediaChange = (urls: string[]) => {
+    console.log("ResponseInputRenderer: Media changed:", urls);
     if (onMediaChange) {
       onMediaChange(urls);
     }
@@ -44,6 +48,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
       ...response,
       ...updatedData
     };
+    console.log("ResponseInputRenderer: Final updated response:", updatedResponse);
     onResponseChange(updatedResponse);
   };
 
@@ -61,12 +66,17 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
       };
       
       console.log("ResponseInputRenderer: Creating action plan:", actionPlanData);
-      onSaveActionPlan(actionPlanData);
+      onSaveActionPlan(actionPlanData).then(() => {
+        console.log("ResponseInputRenderer: Action plan saved successfully");
+      }).catch((error) => {
+        console.error("ResponseInputRenderer: Error saving action plan:", error);
+      });
     }
   };
 
   // Handle yes/no responses
   if (responseType === 'yes_no') {
+    console.log("ResponseInputRenderer: Rendering YesNoResponseInput");
     return (
       <YesNoResponseInput
         question={question}
@@ -83,6 +93,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   }
   
   // Default to text input for all other types
+  console.log("ResponseInputRenderer: Rendering TextResponseInput");
   return (
     <TextResponseInput
       question={question}

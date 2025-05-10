@@ -59,11 +59,15 @@ export function YesNoResponseInput({
   const handleRadioChange = (value: boolean) => {
     console.log("YesNoResponseInput: Radio changed to:", value);
     if (readOnly) return;
+    
     // Ensure we don't lose any existing data in the response
-    onResponseChange({ 
+    const updatedResponse = { 
       ...response,
       value 
-    });
+    };
+    
+    console.log("YesNoResponseInput: Sending updated response:", updatedResponse);
+    onResponseChange(updatedResponse);
   };
   
   const handleMediaAnalysisResult = (url: string, result: MediaAnalysisResult) => {
@@ -76,10 +80,13 @@ export function YesNoResponseInput({
     setMediaAnalysisResults(updatedMediaAnalysisResults);
     
     // Update the response with analysis results
-    onResponseChange({
+    const updatedResponse = {
       ...response,
       mediaAnalysisResults: updatedMediaAnalysisResults
-    });
+    };
+    
+    console.log("YesNoResponseInput: Updating response with analysis results:", updatedResponse);
+    onResponseChange(updatedResponse);
     
     // If there's a non-conformity, show a toast notification
     if (result.hasNonConformity) {
@@ -123,8 +130,8 @@ export function YesNoResponseInput({
           className="min-w-[80px]"
           type="button"
         >
-          <ThumbsUp className={`h-4 w-4 ${response?.value === true ? "mr-2" : ""}`} />
-          {response?.value === true && "Sim"}
+          <ThumbsUp className="h-4 w-4 mr-2" />
+          <span>Sim</span>
         </Button>
         
         <Button
@@ -134,8 +141,8 @@ export function YesNoResponseInput({
           className="min-w-[80px]"
           type="button"
         >
-          <ThumbsDown className={`h-4 w-4 ${response?.value === false ? "mr-2" : ""}`} />
-          {response?.value === false && "Não"}
+          <ThumbsDown className="h-4 w-4 mr-2" />
+          <span>Não</span>
         </Button>
         
         {/* Show AI analysis indicator if we have non-conformity in media analysis */}
@@ -158,6 +165,12 @@ export function YesNoResponseInput({
             onMediaChange={(urls) => {
               console.log("YesNoResponseInput: Media URLs changed:", urls);
               if (onMediaChange) onMediaChange(urls);
+              
+              // Also update the response directly to ensure changes are saved
+              onResponseChange({
+                ...response,
+                mediaUrls: urls
+              });
             }}
             readOnly={readOnly}
             questionText={questionText}

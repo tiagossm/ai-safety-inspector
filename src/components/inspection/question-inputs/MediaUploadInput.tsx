@@ -42,6 +42,8 @@ export function MediaUploadInput({
   const [selectedMedia, setSelectedMedia] = useState<string | null>(null);
   const [selectedMediaType, setSelectedMediaType] = useState<string | null>(null);
   
+  console.log("MediaUploadInput: Rendering with mediaUrls:", mediaUrls);
+  
   const handleAddMedia = () => {
     if (!readOnly) {
       console.log("MediaUploadInput: Opening media dialog");
@@ -52,6 +54,7 @@ export function MediaUploadInput({
   const handleMediaUploaded = (urls: string[]) => {
     console.log("MediaUploadInput: Media uploaded:", urls);
     const newUrls = [...mediaUrls, ...urls];
+    console.log("MediaUploadInput: New URLs list:", newUrls);
     onMediaChange(newUrls);
   };
   
@@ -59,11 +62,13 @@ export function MediaUploadInput({
     if (!readOnly) {
       console.log("MediaUploadInput: Deleting media:", urlToDelete);
       const filteredUrls = mediaUrls.filter(url => url !== urlToDelete);
+      console.log("MediaUploadInput: Filtered URLs:", filteredUrls);
       onMediaChange(filteredUrls);
     }
   };
   
   const handlePreviewMedia = (url: string) => {
+    console.log("MediaUploadInput: Previewing media:", url);
     setSelectedMedia(url);
     setPreviewDialogOpen(true);
   };
@@ -131,10 +136,10 @@ export function MediaUploadInput({
         <MediaAttachments 
           mediaUrls={mediaUrls} 
           onDelete={!readOnly ? handleDeleteMedia : undefined} 
+          onOpenPreview={handlePreviewMedia}
+          onOpenAnalysis={handleAnalyzeMedia}
           readOnly={readOnly}
           questionText={questionText}
-          onSaveAnalysis={onSaveAnalysis}
-          onApplyAISuggestion={onApplyAISuggestion}
           analysisResults={analysisResults}
         />
       )}
