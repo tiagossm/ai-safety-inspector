@@ -63,6 +63,7 @@ export function ActionPlanDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    console.log("Submitting plan with priority:", priority, "and status:", status);
 
     try {
       const data: ActionPlanFormData = {
@@ -87,6 +88,7 @@ export function ActionPlanDialog({
 
   const applyAiSuggestion = () => {
     if (aiSuggestion) {
+      console.log("Applying AI suggestion:", aiSuggestion);
       setDescription(aiSuggestion);
     }
   };

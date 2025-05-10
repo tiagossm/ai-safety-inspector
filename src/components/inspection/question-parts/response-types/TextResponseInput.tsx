@@ -3,8 +3,9 @@ import React, { useState, useEffect } from "react";
 import { MediaUploadInput } from "../../question-inputs/MediaUploadInput";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 interface TextResponseInputProps {
   question: any;
@@ -26,15 +27,27 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
   const [analysisResults, setAnalysisResults] = useState<Record<string, MediaAnalysisResult>>(
     response?.mediaAnalysisResults || {}
   );
+  const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
   
   // Update local state when response changes
   useEffect(() => {
     if (response?.mediaAnalysisResults) {
+      console.log("TextResponseInput updating analysis results:", response.mediaAnalysisResults);
       setAnalysisResults(response.mediaAnalysisResults);
     }
   }, [response?.mediaAnalysisResults]);
   
+  // Find the first AI suggestion from all media analysis results
+  useEffect(() => {
+    const suggestion = Object.values(analysisResults).find(result => 
+      result?.actionPlanSuggestion
+    )?.actionPlanSuggestion || null;
+    
+    setAiSuggestion(suggestion);
+  }, [analysisResults]);
+  
   const handleSaveAnalysis = (url: string, result: MediaAnalysisResult) => {
+    console.log("TextResponseInput saving analysis for URL:", url, result);
     const newResults = {
       ...analysisResults,
       [url]: result
@@ -57,6 +70,11 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
         duration: 5000
       });
     }
+    
+    // If we have an action plan suggestion, update state
+    if (result.actionPlanSuggestion) {
+      setAiSuggestion(result.actionPlanSuggestion);
+    }
   };
   
   // Check if we have non-conformity results in any media analysis
@@ -74,12 +92,23 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
 
   const handleMediaChange = (urls: string[]) => {
     if (onMediaChange) {
+      console.log("TextResponseInput media URLs changed:", urls);
       onMediaChange(urls);
       
       // Also update the response directly
       onResponseChange({
         ...response,
         mediaUrls: urls
+      });
+    }
+  };
+  
+  const handleApplyAISuggestion = () => {
+    if (aiSuggestion && onApplyAISuggestion) {
+      console.log("Applying AI suggestion:", aiSuggestion);
+      onApplyAISuggestion(aiSuggestion);
+      toast.success("Sugestão da IA aplicada", {
+        description: "O plano de ação foi preenchido com a sugestão da IA",
       });
     }
   };
@@ -104,6 +133,26 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
           </Badge>
         )}
       </div>
+      
+      {/* AI Suggestion for Action Plan */}
+      {aiSuggestion && (
+        <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-md">
+          <div className="flex items-center mb-2">
+            <Sparkles className="h-4 w-4 mr-1 text-amber-500" />
+            <span className="text-sm font-medium text-amber-700">Sugestão da IA</span>
+          </div>
+          <p className="text-sm mb-3 text-amber-800">{aiSuggestion}</p>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="w-full bg-amber-100 hover:bg-amber-200 border-amber-300"
+            onClick={handleApplyAISuggestion}
+          >
+            <Sparkles className="h-3 w-3 mr-1" />
+            Aplicar esta sugestão
+          </Button>
+        </div>
+      )}
       
       {/* Media upload section if allowed */}
       {(question.allowsPhoto || question.permite_foto || 

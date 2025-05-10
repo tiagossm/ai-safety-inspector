@@ -36,6 +36,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   
   // Handle saving media analysis results
   const handleResponseWithAnalysis = (updatedData: any) => {
+    console.log("Handling response with analysis:", updatedData);
     const updatedResponse = {
       ...response,
       ...updatedData
@@ -45,6 +46,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
 
   // Handle suggested action plan from AI analysis
   const handleActionPlanSuggestion = (suggestion: string) => {
+    console.log("Action plan suggestion received:", suggestion);
     if (onSaveActionPlan && inspectionId && question.id) {
       // Create action plan data with the AI suggestion
       const actionPlanData = {
@@ -55,6 +57,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         status: 'pending'
       };
       
+      console.log("Creating action plan:", actionPlanData);
       onSaveActionPlan(actionPlanData);
     }
   };

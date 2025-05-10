@@ -27,7 +27,9 @@ export function useMediaAnalysis() {
       setError(null);
       setResult(null);
       
-      console.log("🔍 Iniciando análise de mídia:", mediaUrl, mediaType, "Pergunta:", questionText);
+      console.log("🔍 Iniciando análise de mídia:", mediaUrl);
+      console.log("Tipo de mídia:", mediaType);
+      console.log("Pergunta:", questionText);
       
       if (!mediaUrl) {
         throw new Error("URL da mídia não fornecida");
@@ -47,7 +49,54 @@ export function useMediaAnalysis() {
       const fileExtension = mediaUrl.split('.').pop()?.toLowerCase() || '';
       const specificFileType = determineSpecificFileType(fileExtension);
       
-      console.log("Tipo de mídia detectado:", mediaType, "Tipo específico:", specificFileType);
+      console.log("Tipo de mídia detectado:", mediaType);
+      console.log("Tipo específico:", specificFileType);
+      
+      // Simular análise para desenvolvimento (remova isto em produção)
+      // Esta é uma solução provisória para teste durante desenvolvimento
+      // Durante o desenvolvimento, vamos simular a análise para demonstrar a interface
+      const simulateAnalysis = true;
+      
+      if (simulateAnalysis) {
+        console.log("Usando análise simulada para desenvolvimento");
+        
+        // Esperar um tempo para simular processamento
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Criar um resultado simulado com base no tipo de mídia
+        const simulatedResult: MediaAnalysisResult = {
+          type: mediaType.includes('image') ? 'image' : 
+                mediaType.includes('audio') ? 'audio' : 'video',
+          simulated: true,
+          hasNonConformity: Math.random() > 0.5, // 50% de chance de ter não conformidade
+          fileType: specificFileType,
+          questionText: questionText
+        };
+        
+        // Adicionar análise específica do tipo
+        if (simulatedResult.type === 'image') {
+          simulatedResult.analysis = `Na imagem analisada, observa-se ${Math.random() > 0.5 ? 
+            'conformidade com os requisitos de segurança, com uso adequado de EPIs e procedimentos corretos' : 
+            'possível não conformidade: falta de uso adequado de EPIs por parte de alguns funcionários'}`;
+        } else if (simulatedResult.type === 'audio') {
+          simulatedResult.transcription = `Transcrição do áudio: "Este é um registro de ${Math.random() > 0.5 ? 
+            'inspeção realizada conforme procedimentos padrão' : 
+            'uma situação que pode indicar não conformidade com os procedimentos de segurança'}."`;
+        } else {
+          simulatedResult.analysis = `Análise do vídeo: ${Math.random() > 0.5 ? 
+            'O vídeo mostra procedimentos sendo executados corretamente, sem evidências de riscos à segurança' : 
+            'O vídeo revela possíveis falhas nos procedimentos de segurança que precisam ser corrigidas'}`;
+        }
+        
+        // Adicionar sugestão de plano de ação se houver não conformidade
+        if (simulatedResult.hasNonConformity) {
+          simulatedResult.actionPlanSuggestion = `Com base na análise, recomenda-se: 1) Realizar treinamento adicional sobre procedimentos de segurança; 2) Verificar disponibilidade e condições dos EPIs; 3) Programar nova inspeção em 15 dias para confirmar a correção das não conformidades.`;
+        }
+        
+        console.log("Análise simulada concluída:", simulatedResult);
+        setResult(simulatedResult);
+        return simulatedResult;
+      }
       
       // Chamar o edge function para analisar a mídia
       const { data, error: functionError } = await supabase.functions.invoke('analyze-media', {

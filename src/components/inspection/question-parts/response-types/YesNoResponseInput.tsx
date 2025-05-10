@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ThumbsUp, ThumbsDown, Upload, PenLine, AlertCircle } from "lucide-react";
+import { ThumbsUp, ThumbsDown, Upload, PenLine, AlertCircle, Sparkles } from "lucide-react";
 import { ActionPlanFormData } from "@/components/action-plans/form/types";
 import { MediaUploadInput } from "../../question-inputs/MediaUploadInput";
 import { ActionPlanDialog } from "@/components/action-plans/ActionPlanDialog";
@@ -33,6 +33,7 @@ export function YesNoResponseInput({
   readOnly = false
 }: YesNoResponseInputProps) {
   const [showActionPlanDialog, setShowActionPlanDialog] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
   const [mediaAnalysisResults, setMediaAnalysisResults] = useState<Record<string, MediaAnalysisResult>>(
     response?.mediaAnalysisResults || {}
   );
@@ -40,11 +41,23 @@ export function YesNoResponseInput({
   // Update internal state when response changes
   useEffect(() => {
     if (response?.mediaAnalysisResults) {
+      console.log("Updating media analysis results from response:", response.mediaAnalysisResults);
       setMediaAnalysisResults(response.mediaAnalysisResults);
     }
   }, [response?.mediaAnalysisResults]);
   
+  // Find first AI suggestion from media analysis
+  useEffect(() => {
+    const suggestion = Object.values(mediaAnalysisResults).find(result => 
+      result?.actionPlanSuggestion
+    )?.actionPlanSuggestion || null;
+    
+    console.log("Found AI suggestion:", suggestion);
+    setAiSuggestion(suggestion);
+  }, [mediaAnalysisResults]);
+  
   const handleRadioChange = (value: boolean) => {
+    console.log("Radio changed:", value);
     if (readOnly) return;
     // Ensure we don't lose any existing data in the response
     onResponseChange({ 
@@ -54,6 +67,7 @@ export function YesNoResponseInput({
   };
   
   const handleMediaAnalysisResult = (url: string, result: MediaAnalysisResult) => {
+    console.log("Media analysis result for URL:", url, result);
     const updatedMediaAnalysisResults = {
       ...mediaAnalysisResults,
       [url]: result
@@ -74,6 +88,11 @@ export function YesNoResponseInput({
         duration: 5000
       });
     }
+    
+    // Update AI suggestion
+    if (result.actionPlanSuggestion) {
+      setAiSuggestion(result.actionPlanSuggestion);
+    }
   };
   
   // Check if we have non-conformity results in any media analysis
@@ -81,15 +100,14 @@ export function YesNoResponseInput({
     result.hasNonConformity
   );
   
-  // Get the first available action plan suggestion
-  const firstSuggestion = Object.values(mediaAnalysisResults).find(result => 
-    result.actionPlanSuggestion
-  )?.actionPlanSuggestion;
-  
   // Handle applying AI suggestion to action plan
   const handleApplyAISuggestion = (suggestion: string) => {
+    console.log("Applying AI suggestion:", suggestion);
     if (onApplyAISuggestion) {
       onApplyAISuggestion(suggestion);
+      toast.success("Sugestão da IA aplicada", {
+        description: "O plano de ação foi preenchido com a sugestão da IA",
+      });
     }
   };
   
@@ -136,6 +154,7 @@ export function YesNoResponseInput({
           <MediaUploadInput
             mediaUrls={response?.mediaUrls || []}
             onMediaChange={(urls) => {
+              console.log("Media URLs changed:", urls);
               if (onMediaChange) onMediaChange(urls);
             }}
             readOnly={readOnly}
@@ -151,6 +170,26 @@ export function YesNoResponseInput({
         </div>
       )}
       
+      {/* AI Suggestion for Action Plan */}
+      {aiSuggestion && response?.value === false && (
+        <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
+          <div className="flex items-center mb-2">
+            <Sparkles className="h-4 w-4 mr-1 text-amber-500" />
+            <span className="text-sm font-medium text-amber-700">Sugestão da IA</span>
+          </div>
+          <p className="text-sm mb-3 text-amber-800">{aiSuggestion}</p>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="w-full bg-amber-100 hover:bg-amber-200 border-amber-300"
+            onClick={() => handleApplyAISuggestion(aiSuggestion)}
+          >
+            <Sparkles className="h-3 w-3 mr-1" />
+            Aplicar esta sugestão
+          </Button>
+        </div>
+      )}
+      
       {/* Action plan dialog */}
       {inspectionId && question.id && onSaveActionPlan && (
         <ActionPlanDialog
@@ -160,7 +199,7 @@ export function YesNoResponseInput({
           questionId={question.id}
           existingPlan={actionPlan}
           onSave={onSaveActionPlan}
-          aiSuggestion={firstSuggestion}
+          aiSuggestion={aiSuggestion}
         />
       )}
       
@@ -182,7 +221,7 @@ export function YesNoResponseInput({
               <>
                 <AlertCircle className="h-3.5 w-3.5 mr-1" />
                 Adicionar plano de ação
-                {firstSuggestion && " (IA sugeriu ações)"}
+                {aiSuggestion && " (IA sugeriu ações)"}
               </>
             )}
           </Button>

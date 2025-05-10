@@ -11,7 +11,7 @@ import {
 import { Loader2, Check, AlertTriangle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMediaAnalysis, MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
-import { getFileType } from "@/utils/fileUtils";
+import { getFileType, getFilenameFromUrl } from "@/utils/fileUtils";
 import { toast } from "sonner";
 
 interface MediaAnalysisDialogProps {
@@ -45,6 +45,7 @@ export function MediaAnalysisDialog({
   // Start analysis when dialog opens with a mediaUrl
   useEffect(() => {
     if (open && mediaUrl && !hasStarted) {
+      console.log("MediaAnalysisDialog: Starting analysis");
       startAnalysis();
       setHasStarted(true);
     }
@@ -57,7 +58,9 @@ export function MediaAnalysisDialog({
       // Determine media type if not provided
       const mediaType = suppliedMediaType || getMediaType(mediaUrl);
       
-      console.log("Starting analysis of media:", mediaUrl, mediaType);
+      console.log("Starting analysis of media:", mediaUrl);
+      console.log("Media type:", mediaType);
+      console.log("Question text:", questionText);
       
       const analysisResult = await analyzeMedia(mediaUrl, mediaType, questionText);
       
@@ -129,88 +132,97 @@ export function MediaAnalysisDialog({
             </div>
           ) : error ? (
             <div className="text-center">
-              <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-4" />
-              <p className="font-medium text-red-600 mb-1">Erro na análise</p>
-              <p className="text-sm text-muted-foreground mb-4">
-                {error.message || "Ocorreu um erro ao analisar a mídia."}
+              <AlertTriangle className="h-8 w-8 mx-auto mb-4 text-destructive" />
+              <p className="text-sm font-medium text-destructive">
+                Erro na análise
               </p>
-              <Button variant="outline" onClick={startAnalysis}>
+              <p className="text-xs text-muted-foreground mt-2">
+                {error.message || "Ocorreu um erro durante a análise"}
+              </p>
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => {
+                  resetAnalysis();
+                  setHasStarted(false);
+                  startAnalysis();
+                }}
+              >
                 Tentar novamente
               </Button>
             </div>
           ) : result ? (
             <div className="w-full">
-              <div className="flex items-center justify-center mb-4">
-                <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                  <Check className="h-5 w-5 text-green-600" />
-                </div>
+              <div className="flex items-center mb-4">
+                <Check className="h-5 w-5 mr-2 text-green-500" />
+                <p className="font-medium">Análise completa</p>
               </div>
               
-              <div className="text-center mb-4">
-                <h3 className="font-medium">Análise concluída com sucesso</h3>
-                {result.hasNonConformity && (
-                  <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded">
-                    <p className="text-amber-700 flex items-center gap-1 text-sm font-medium">
-                      <AlertTriangle className="h-4 w-4" />
-                      Não conformidade detectada
-                    </p>
+              {result.hasNonConformity && (
+                <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4">
+                  <div className="flex items-center">
+                    <AlertTriangle className="h-4 w-4 text-amber-500 mr-2" />
+                    <p className="text-sm font-medium text-amber-700">Possível não conformidade detectada</p>
                   </div>
-                )}
-              </div>
-
-              <div className="space-y-3 mt-4 max-h-[200px] overflow-y-auto text-sm">
-                {result.type === 'image' && (
-                  <div>
-                    <p className="font-medium mb-1">Análise da imagem:</p>
-                    <p className="text-muted-foreground whitespace-pre-line">{result.analysis}</p>
-                  </div>
-                )}
-                
-                {result.type === 'video' && (
-                  <div>
-                    <p className="font-medium mb-1">Análise do vídeo:</p>
-                    <p className="text-muted-foreground whitespace-pre-line">{result.analysis}</p>
-                  </div>
-                )}
-                
-                {result.type === 'audio' && (
-                  <div>
-                    <p className="font-medium mb-1">Transcrição do áudio:</p>
-                    <p className="text-muted-foreground whitespace-pre-line">{result.transcription}</p>
-                  </div>
-                )}
-                
-                {result.actionPlanSuggestion && (
-                  <div className="p-2 bg-amber-50 border border-amber-200 rounded mt-4">
-                    <p className="font-medium text-amber-800 flex items-center gap-1 mb-1">
-                      <Sparkles className="h-3 w-3" />
-                      Sugestão para plano de ação:
-                    </p>
-                    <p className="text-amber-700 text-sm">{result.actionPlanSuggestion}</p>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
+              
+              {result.type === 'image' && result.analysis && (
+                <div className="mt-2">
+                  <p className="text-sm font-medium">Análise de Imagem:</p>
+                  <p className="text-sm text-muted-foreground border-l-2 border-muted p-2 mt-1 bg-muted/30">
+                    {result.analysis}
+                  </p>
+                </div>
+              )}
+              
+              {result.type === 'audio' && result.transcription && (
+                <div className="mt-2">
+                  <p className="text-sm font-medium">Transcrição do Áudio:</p>
+                  <p className="text-sm text-muted-foreground border-l-2 border-muted p-2 mt-1 bg-muted/30">
+                    {result.transcription}
+                  </p>
+                </div>
+              )}
+              
+              {result.type === 'video' && result.analysis && (
+                <div className="mt-2">
+                  <p className="text-sm font-medium">Análise do Vídeo:</p>
+                  <p className="text-sm text-muted-foreground border-l-2 border-muted p-2 mt-1 bg-muted/30">
+                    {result.analysis}
+                  </p>
+                </div>
+              )}
+              
+              {result.actionPlanSuggestion && (
+                <div className="mt-4 bg-green-50 border border-green-200 rounded-md p-3">
+                  <p className="text-sm font-medium text-green-700 mb-1">Sugestão de Plano de Ação:</p>
+                  <p className="text-sm text-green-800">
+                    {result.actionPlanSuggestion}
+                  </p>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-4">
-                Pronto para analisar mídia com inteligência artificial.
+              <p className="text-sm text-muted-foreground">
+                Clique em analisar para iniciar
               </p>
-              <Button onClick={startAnalysis} disabled={!mediaUrl}>
-                Iniciar Análise
-              </Button>
             </div>
           )}
         </div>
 
         <DialogFooter>
-          <Button 
-            variant="outline" 
-            onClick={() => onOpenChange(false)}
-            disabled={isAnalyzing}
-          >
-            Fechar
-          </Button>
+          {!result && !isAnalyzing && (
+            <Button onClick={startAnalysis} disabled={!mediaUrl || hasStarted}>
+              {isAnalyzing ? "Analisando..." : "Analisar com IA"}
+            </Button>
+          )}
+          {result && (
+            <Button onClick={() => onOpenChange(false)}>
+              Fechar
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

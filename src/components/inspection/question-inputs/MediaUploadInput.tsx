@@ -44,17 +44,20 @@ export function MediaUploadInput({
   
   const handleAddMedia = () => {
     if (!readOnly) {
+      console.log("Opening media dialog");
       setMediaDialogOpen(true);
     }
   };
   
   const handleMediaUploaded = (urls: string[]) => {
+    console.log("Media uploaded:", urls);
     const newUrls = [...mediaUrls, ...urls];
     onMediaChange(newUrls);
   };
   
   const handleDeleteMedia = (urlToDelete: string) => {
     if (!readOnly) {
+      console.log("Deleting media:", urlToDelete);
       const filteredUrls = mediaUrls.filter(url => url !== urlToDelete);
       onMediaChange(filteredUrls);
     }
@@ -66,12 +69,14 @@ export function MediaUploadInput({
   };
   
   const handleAnalyzeMedia = (url: string, type: string) => {
+    console.log("Analyzing media:", url, type);
     setSelectedMedia(url);
     setSelectedMediaType(type);
     setAnalysisDialogOpen(true);
   };
   
   const handleAnalysisComplete = (result: MediaAnalysisResult) => {
+    console.log("Analysis complete:", result);
     if (onSaveAnalysis && selectedMedia) {
       onSaveAnalysis(selectedMedia, result);
     }
