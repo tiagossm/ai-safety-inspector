@@ -58,6 +58,11 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
   const allowsAudio = question.allowsAudio || question.permite_audio || false;
   const allowsFiles = question.allowsFiles || question.permite_files || false;
   
+  useEffect(() => {
+    setComment(response?.comment || "");
+    setIsCommentOpen(!!response?.comment);
+  }, [response?.comment]);
+
   const handleValueChange = useCallback((value: any) => {
     setIsValid(!isRequired || (value !== undefined && value !== null && value !== ""));
     onResponseChange({
@@ -114,6 +119,9 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
 
   if (!shouldBeVisible()) return null;
 
+  // Certifique-se de que mediaUrls seja sempre tratado como um array
+  const mediaUrls = Array.isArray(response?.mediaUrls) ? response.mediaUrls : [];
+
   return (
     <div className={`relative border rounded-lg p-4 mb-4 ${!isValid && response?.value !== undefined ? 'border-l-4 border-l-red-500' : ''}`}>
       <div className="flex items-start gap-2">
@@ -146,12 +154,6 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
               onSaveActionPlan={handleSaveActionPlan}
             />
           </div>
-
-          {Array.isArray(response?.mediaUrls) && response.mediaUrls.length > 0 && (
-            <div className="mt-4">
-              <MediaAttachments mediaUrls={response.mediaUrls} readOnly />
-            </div>
-          )}
 
           <div className="flex justify-between items-center mt-3">
             <CommentSection 

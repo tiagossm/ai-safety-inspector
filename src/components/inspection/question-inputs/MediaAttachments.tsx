@@ -7,6 +7,7 @@ import { MediaAttachmentRenderer } from "@/components/media/renderers/MediaAttac
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { MediaRenderer } from "@/components/media/MediaRenderer";
 
 interface MediaAttachmentsProps {
   mediaUrls: string[];
@@ -35,6 +36,12 @@ export function MediaAttachments({
   const [activeAnalysisUrl, setActiveAnalysisUrl] = useState<string | null>(null);
   const [activeMediaType, setActiveMediaType] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+
+  if (!Array.isArray(mediaUrls) || mediaUrls.length === 0) {
+    return null;
+  }
+
+  console.log("MediaAttachments rendering with URLs:", mediaUrls);
 
   const handleOpenPreview = (url: string) => {
     console.log("MediaAttachments: Opening preview for URL:", url);
@@ -89,6 +96,13 @@ export function MediaAttachments({
   const hasNonConformity = () => {
     return Object.values(analysisResults).some(result => result.hasNonConformity);
   };
+
+  const handleDeleteMedia = (url: string) => {
+    if (onDelete) {
+      console.log("MediaAttachments: Deleting media URL:", url);
+      onDelete(url);
+    }
+  };
   
   return (
     <>
@@ -101,7 +115,7 @@ export function MediaAttachments({
         </div>
       )}
       
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-4">
         {mediaUrls.map((url, index) => {
           const analysis = analysisResults?.[url];
           const hasAnalysis = !!analysis;
@@ -110,20 +124,44 @@ export function MediaAttachments({
           return (
             <div key={index} className="relative flex flex-col h-auto">
               <div className="relative flex-grow border rounded-md overflow-hidden" style={{maxHeight: "160px", minHeight: "100px"}}>
-                <MediaAttachmentRenderer
-                  url={url}
-                  index={index}
-                  onOpenPreview={handleOpenPreview}
-                  onOpenAnalysis={(url) => handleOpenAnalysis(url, questionText)}
-                  onDelete={onDelete}
-                  readOnly={readOnly}
-                  questionText={questionText}
-                  analysisResults={analysisResults}
-                  smallSize={true}
+                <MediaRenderer 
+                  url={url} 
+                  className="w-full h-full object-contain" 
                 />
                 
+                {!readOnly && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteMedia(url)}
+                    className="absolute top-1 right-1 bg-white/80 hover:bg-red-100 rounded-full p-1 transition-colors"
+                    aria-label="Remover mídia"
+                  >
+                    <X className="h-4 w-4 text-red-500" />
+                  </button>
+                )}
+                
+                <div className="absolute bottom-1 right-1 flex gap-1">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenPreview(url)}
+                    className="bg-white/80 hover:bg-blue-100 rounded-full p-1 transition-colors"
+                    aria-label="Visualizar mídia"
+                  >
+                    <ZoomIn className="h-4 w-4 text-blue-500" />
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => handleOpenAnalysis(url, questionText)}
+                    className="bg-white/80 hover:bg-purple-100 rounded-full p-1 transition-colors"
+                    aria-label="Analisar mídia"
+                  >
+                    <Sparkles className="h-4 w-4 text-purple-500" />
+                  </button>
+                </div>
+                
                 {hasAnalysis && analysis.hasNonConformity && (
-                  <div className="absolute top-1 right-1 z-10">
+                  <div className="absolute top-1 left-1 z-10">
                     <Badge className="bg-amber-500 text-white">
                       <AlertTriangle className="h-3 w-3 mr-1" />
                       <span className="text-xs">Não conformidade</span>

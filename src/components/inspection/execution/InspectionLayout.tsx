@@ -79,13 +79,25 @@ export function InspectionLayout({
   const effectiveCurrentGroupId = currentGroupId || (displayGroups.length > 0 ? displayGroups[0].id : null);
 
   const handleQuestionResponseChange = (questionId: string, data: any) => {
+    console.log("Changing response for question:", questionId, data);
+    
+    // Se houver mediaUrls no response atual, certifique-se de preservá-los
+    const currentResponse = responses[questionId] || {};
+    const mediaUrls = data.mediaUrls || currentResponse.mediaUrls || [];
+    
     setResponses(prev => ({
       ...prev,
       [questionId]: {
         ...(prev[questionId] || {}),
-        ...data
+        ...data,
+        mediaUrls: mediaUrls
       }
     }));
+    
+    // Se onMediaChange estiver definido e houver mudanças nas mediaUrls, chame-o
+    if (onMediaChange && data.mediaUrls) {
+      onMediaChange(questionId, data.mediaUrls);
+    }
   };
 
   if (loading) {

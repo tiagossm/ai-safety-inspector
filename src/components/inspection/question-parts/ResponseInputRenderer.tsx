@@ -75,17 +75,8 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     }
   };
 
-  // Funções para lidar com a mídia
-  const handleOpenPreview = (url: string) => {
-    console.log("ResponseInputRenderer: Opening preview for URL:", url);
-  };
-
-  const handleOpenAnalysis = (url: string) => {
-    console.log("ResponseInputRenderer: Opening analysis for URL:", url);
-  };
-
-  // Renderiza as mídias anexadas, se houver
-  const mediaUrls = response?.mediaUrls || [];
+  // Certifique-se de que mediaUrls seja sempre um array
+  const mediaUrls = Array.isArray(response?.mediaUrls) ? response.mediaUrls : [];
   const hasMedia = mediaUrls.length > 0;
 
   // Handle yes/no responses
@@ -97,8 +88,8 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           <MediaAttachments
             mediaUrls={mediaUrls}
             onDelete={!readOnly ? (url) => handleMediaChange(mediaUrls.filter(m => m !== url)) : undefined}
-            onOpenPreview={handleOpenPreview}
-            onOpenAnalysis={handleOpenAnalysis}
+            onOpenPreview={(url) => console.log("Opening preview:", url)}
+            onOpenAnalysis={(url) => console.log("Opening analysis:", url)}
             readOnly={readOnly}
             questionText={questionText}
             analysisResults={response?.mediaAnalysisResults || {}}
@@ -127,8 +118,8 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         <MediaAttachments
           mediaUrls={mediaUrls}
           onDelete={!readOnly ? (url) => handleMediaChange(mediaUrls.filter(m => m !== url)) : undefined}
-          onOpenPreview={handleOpenPreview}
-          onOpenAnalysis={handleOpenAnalysis}
+          onOpenPreview={(url) => console.log("Opening preview:", url)}
+          onOpenAnalysis={(url) => console.log("Opening analysis:", url)}
           readOnly={readOnly}
           questionText={questionText}
           analysisResults={response?.mediaAnalysisResults || {}}
