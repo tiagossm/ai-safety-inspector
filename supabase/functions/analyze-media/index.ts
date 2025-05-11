@@ -10,9 +10,12 @@ const corsHeaders = {
 
 // Interface for the expected body content
 interface RequestBody {
-  mediaUrl: string;
-  mediaType: string;
+  mediaUrl?: string;
+  mediaType?: string;
   questionText?: string;
+  responseValue?: boolean;
+  mediaUrls?: string[];
+  multimodal?: boolean;
 }
 
 serve(async (req) => {
@@ -23,12 +26,7 @@ serve(async (req) => {
 
   try {
     const requestData: RequestBody = await req.json()
-    const { mediaUrl, mediaType, questionText } = requestData
-
-    if (!mediaUrl) {
-      throw new Error('URL da mídia não fornecida')
-    }
-
+    
     // Get environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -36,25 +34,38 @@ serve(async (req) => {
 
     if (!openaiApiKey) {
       console.warn('OpenAI API Key não configurada, usando análise simulada')
-      return simulateAnalysis(mediaUrl, mediaType, questionText, corsHeaders)
+      return simulateAnalysis(requestData, corsHeaders)
     }
 
-    // Determinar o tipo de mídia baseado no mime type ou extensão
-    let result
-    if (mediaType.startsWith('image/')) {
-      result = await analyzeImage(mediaUrl, openaiApiKey, questionText)
-    } else if (mediaType.startsWith('audio/') || mediaUrl.endsWith('.webm') || mediaUrl.includes('audio')) {
-      // Incluindo webm para lidar com gravações de áudio em formato webm
-      result = await transcribeAudio(mediaUrl, openaiApiKey, questionText)
-    } else if (mediaType.startsWith('video/')) {
-      // Para vídeo, vamos analisar um frame como imagem
-      result = await analyzeVideoAsImage(mediaUrl, openaiApiKey, questionText)
+    let result;
+    
+    // Check if we're doing multimodal analysis
+    if (requestData.multimodal && requestData.mediaUrls?.length) {
+      result = await performMultimodalAnalysis(
+        requestData.mediaUrls, 
+        openaiApiKey, 
+        requestData.questionText,
+        requestData.responseValue
+      );
+    } else if (requestData.mediaUrl) {
+      // Determine media type to process single files
+      const mediaType = requestData.mediaType || determineMediaType(requestData.mediaUrl);
+      
+      if (mediaType.startsWith('image/') || mediaType === 'image') {
+        result = await analyzeImage(requestData.mediaUrl, openaiApiKey, requestData.questionText);
+      } else if (mediaType.startsWith('audio/') || mediaType === 'audio' || requestData.mediaUrl.endsWith('.webm') || requestData.mediaUrl.includes('audio')) {
+        result = await transcribeAudio(requestData.mediaUrl, openaiApiKey, requestData.questionText);
+      } else if (mediaType.startsWith('video/') || mediaType === 'video') {
+        result = await analyzeVideoAsImage(requestData.mediaUrl, openaiApiKey, requestData.questionText);
+      } else {
+        throw new Error(`Tipo de mídia não suportado: ${mediaType}`);
+      }
     } else {
-      throw new Error(`Tipo de mídia não suportado: ${mediaType}`)
+      throw new Error('URL da mídia não fornecida');
     }
 
     // Registrar resultado para debug
-    console.log("Análise concluída com sucesso:", JSON.stringify(result).substring(0, 200) + "...")
+    console.log("Análise concluída com sucesso:", JSON.stringify(result).substring(0, 200) + "...");
 
     // Retornar os resultados da análise com cabeçalhos CORS
     return new Response(
@@ -65,9 +76,9 @@ serve(async (req) => {
           'Content-Type': 'application/json'
         }
       }
-    )
+    );
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error:', error);
     
     // Retornar erro com cabeçalhos CORS
     return new Response(
@@ -82,9 +93,17 @@ serve(async (req) => {
           'Content-Type': 'application/json'
         }
       }
-    )
+    );
   }
-})
+});
+
+// Helper to determine media type from URL
+function determineMediaType(url: string): string {
+  if (url.match(/\.(jpeg|jpg|gif|png)$/i)) return 'image';
+  if (url.match(/\.(mp4|webm|mov)$/i)) return 'video';
+  if (url.match(/\.(mp3|wav|ogg|webm)$/i) || url.includes('audio')) return 'audio';
+  return 'image'; // Default to image
+}
 
 // Função para análise de imagem usando OpenAI Vision
 async function analyzeImage(imageUrl: string, apiKey: string, questionText?: string) {
@@ -119,7 +138,7 @@ async function analyzeImage(imageUrl: string, apiKey: string, questionText?: str
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'gpt-4o', // Usando o modelo mais recente gpt-4o
+        model: 'gpt-4o', // Usando o modelo mais recente gpt-4o que substitui o gpt-4-vision-preview
         messages: [
           {
             role: 'system',
@@ -143,7 +162,7 @@ async function analyzeImage(imageUrl: string, apiKey: string, questionText?: str
         ],
         max_tokens: 800
       })
-    })
+    });
 
     if (!response.ok) {
       const errorData = await response.text();
@@ -151,7 +170,7 @@ async function analyzeImage(imageUrl: string, apiKey: string, questionText?: str
       throw new Error(`Erro na API OpenAI: ${response.status} - ${errorData}`);
     }
 
-    const data = await response.json()
+    const data = await response.json();
     
     // Adicionar log para debug
     console.log("OpenAI response:", JSON.stringify(data).substring(0, 300));
@@ -213,13 +232,97 @@ async function analyzeImage(imageUrl: string, apiKey: string, questionText?: str
       questionText
     }
   } catch (error) {
-    console.error('Error analyzing image:', error)
+    console.error('Error analyzing image:', error);
     return {
       type: 'image',
       analysis: 'Erro ao analisar imagem: ' + error.message,
       error: true,
       questionText
     }
+  }
+}
+
+// Function to analyze multiple media files together
+async function performMultimodalAnalysis(mediaUrls: string[], apiKey: string, questionText?: string, responseValue?: boolean) {
+  try {
+    console.log("Performing multimodal analysis of", mediaUrls.length, "media files");
+    
+    // First, categorize media by type
+    const imageUrls = mediaUrls.filter(url => url.match(/\.(jpeg|jpg|gif|png)$/i));
+    const audioUrls = mediaUrls.filter(url => url.match(/\.(mp3|wav|ogg)$/i) || url.includes('audio'));
+    const videoUrls = mediaUrls.filter(url => url.match(/\.(mp4|webm|mov)$/i));
+    
+    console.log("Media breakdown: Images:", imageUrls.length, "Audio:", audioUrls.length, "Video:", videoUrls.length);
+    
+    // Initialize the result object
+    const result: any = {
+      type: "multimodal",
+      hasNonConformity: false,
+      questionText
+    };
+    
+    // If we have images, analyze the first image with GPT-4o
+    if (imageUrls.length > 0) {
+      const imageAnalysis = await analyzeImage(imageUrls[0], apiKey, questionText);
+      result.imageAnalysis = imageAnalysis.analysis;
+      
+      // If any image analysis indicates non-conformity, mark the whole result as non-conformity
+      if (imageAnalysis.hasNonConformity) {
+        result.hasNonConformity = true;
+        result.actionPlanSuggestion = imageAnalysis.actionPlanSuggestion;
+      }
+      
+      // If we have multiple images, add a note about it
+      if (imageUrls.length > 1) {
+        result.imageAnalysis += `\n\nNota: ${imageUrls.length - 1} imagem(ns) adicional(is) também foi/foram anexada(s), mas não analisada(s) individualmente.`;
+      }
+    }
+    
+    // If we have audio files, analyze the first audio file
+    if (audioUrls.length > 0) {
+      const audioAnalysis = await transcribeAudio(audioUrls[0], apiKey, questionText);
+      result.audioTranscription = audioAnalysis.transcription;
+      result.audioSentiment = audioAnalysis.analysis;
+      
+      // If audio analysis indicates non-conformity, mark the result as non-conformity
+      if (audioAnalysis.hasNonConformity) {
+        result.hasNonConformity = true;
+        // Only use audio action plan if we don't already have one from images
+        if (!result.actionPlanSuggestion) {
+          result.actionPlanSuggestion = audioAnalysis.actionPlanSuggestion;
+        }
+      }
+    }
+    
+    // If we have video files, analyze the first video file (as an image)
+    if (videoUrls.length > 0) {
+      const videoAnalysis = await analyzeVideoAsImage(videoUrls[0], apiKey, questionText);
+      result.videoAnalysis = videoAnalysis.analysis;
+      
+      // If video analysis indicates non-conformity, mark the result as non-conformity
+      if (videoAnalysis.hasNonConformity) {
+        result.hasNonConformity = true;
+        // Only use video action plan if we don't already have one from images or audio
+        if (!result.actionPlanSuggestion) {
+          result.actionPlanSuggestion = videoAnalysis.actionPlanSuggestion;
+        }
+      }
+    }
+    
+    // Generate a summary based on all the analysis results
+    result.summary = generateMultimodalSummary(result, questionText, responseValue);
+    
+    console.log("Multimodal analysis complete. HasNonConformity:", result.hasNonConformity);
+    return result;
+  } catch (error) {
+    console.error('Error in multimodal analysis:', error);
+    return {
+      type: 'multimodal',
+      summary: `Erro na análise multimodal: ${error.message}`,
+      hasNonConformity: false,
+      error: true,
+      questionText
+    };
   }
 }
 
@@ -517,70 +620,158 @@ async function transcribeAudio(audioUrl: string, apiKey: string, questionText?: 
   }
 }
 
-// Função para simular análise quando não temos API key
-function simulateAnalysis(mediaUrl: string, mediaType: string, questionText?: string, corsHeaders: any) {
-  let result;
+// Gerar um resumo para análise multimodal
+function generateMultimodalSummary(result: any, questionText?: string, responseValue?: boolean) {
+  const hasImageAnalysis = !!result.imageAnalysis;
+  const hasVideoAnalysis = !!result.videoAnalysis;
+  const hasAudioTranscription = !!result.audioTranscription;
+  const hasNonConformity = result.hasNonConformity;
   
-  if (mediaType.startsWith('image/')) {
-    result = {
-      type: 'image',
-      analysis: questionText 
-        ? `Esta é uma análise simulada de imagem relacionada à pergunta: "${questionText}". Configure a API do OpenAI na função edge analyze-media para obter análises reais utilizando inteligência artificial.`
-        : 'Esta é uma análise simulada de imagem. Configure a API do OpenAI na função edge analyze-media para obter análises reais utilizando inteligência artificial.',
-      hasNonConformity: true,
-      actionPlanSuggestion: questionText
-        ? `Exemplo de sugestão de plano de ação para a pergunta: "${questionText}". Configure a API do OpenAI para obter sugestões reais baseadas na análise da imagem.`
-        : "Exemplo de sugestão de plano de ação simulada. Configure a API do OpenAI para obter sugestões reais.",
-      simulated: true,
-      error: false,
-      questionText
+  let summary = '';
+  
+  if (questionText) {
+    summary = `Análise da questão: "${questionText}"\n\n`;
+  }
+  
+  if (responseValue !== undefined) {
+    summary += `Resposta registrada: ${responseValue ? 'Sim' : 'Não'}\n\n`;
+  }
+  
+  summary += `Resultado da análise de IA: ${hasNonConformity ? 'Potencial não conformidade detectada' : 'Nenhuma não conformidade detectada'}\n\n`;
+  
+  if (hasImageAnalysis || hasVideoAnalysis || hasAudioTranscription) {
+    summary += 'Mídias analisadas:\n';
+    
+    if (hasImageAnalysis) {
+      summary += '- Imagem(ns) analisada(s) com GPT-4o\n';
     }
-  } else if (mediaType.startsWith('audio/') || mediaUrl.endsWith('.webm') || mediaUrl.includes('audio')) {
-    result = {
-      type: 'audio',
-      transcription: 'Esta é uma transcrição simulada de áudio. Configure a API do OpenAI na função edge analyze-media para obter transcrições reais utilizando a tecnologia Whisper AI.',
-      analysis: questionText 
-        ? `Esta é uma análise simulada de áudio relacionada à pergunta: "${questionText}". Configure a API do OpenAI para obter análises reais.`
-        : 'Análise simulada do conteúdo de áudio.',
-      hasNonConformity: true,
-      actionPlanSuggestion: questionText
-        ? `Exemplo de sugestão de plano de ação para a pergunta: "${questionText}". Configure a API do OpenAI para obter sugestões reais baseadas na transcrição e análise do áudio.`
-        : "Exemplo de sugestão de plano de ação simulada. Configure a API do OpenAI para obter sugestões reais.",
-      simulated: true,
-      error: false,
-      questionText
+    
+    if (hasVideoAnalysis) {
+      summary += '- Vídeo(s) analisado(s) com GPT-4o\n';
     }
-  } else if (mediaType.startsWith('video/')) {
-    result = {
-      type: 'video',
-      analysis: questionText 
-        ? `Esta é uma análise simulada de vídeo relacionada à pergunta: "${questionText}". Configure a API do OpenAI na função edge analyze-media para obter análises reais utilizando inteligência artificial.`
-        : 'Esta é uma análise simulada de vídeo. Configure a API do OpenAI na função edge analyze-media para obter análises reais utilizando inteligência artificial.',
-      hasNonConformity: true,
-      actionPlanSuggestion: questionText
-        ? `Exemplo de sugestão de plano de ação para a pergunta: "${questionText}". Configure a API do OpenAI para obter sugestões reais baseadas na análise do vídeo.`
-        : "Exemplo de sugestão de plano de ação simulada. Configure a API do OpenAI para obter sugestões reais.",
-      simulated: true,
-      error: false,
-      questionText
+    
+    if (hasAudioTranscription) {
+      summary += '- Áudio(s) transcrito(s) com Whisper e analisado(s) com GPT-4o\n';
     }
   } else {
-    result = {
-      type: 'unknown',
-      message: 'Tipo de mídia não suportado',
-      simulated: true,
-      error: true,
-      questionText
-    }
+    summary += 'Nenhuma mídia foi analisada.';
   }
+  
+  return summary;
+}
 
-  return new Response(
-    JSON.stringify(result),
-    {
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json'
+// Função para simular análise quando não temos API key
+function simulateAnalysis(requestData: RequestBody, corsHeaders: any) {
+  if (requestData.multimodal && requestData.mediaUrls?.length) {
+    // Simular análise multimodal
+    const result = {
+      type: 'multimodal',
+      summary: `Esta é uma análise simulada de ${requestData.mediaUrls.length} mídias anexadas à pergunta "${requestData.questionText || 'sem pergunta'}". Configure a API do OpenAI para obter análises reais.`,
+      hasNonConformity: true,
+      imageAnalysis: requestData.mediaUrls.some(url => url.match(/\.(jpeg|jpg|gif|png)$/i)) 
+        ? "Esta é uma análise simulada de imagem. Configure a API do OpenAI para obter análises reais." 
+        : undefined,
+      audioTranscription: requestData.mediaUrls.some(url => url.match(/\.(mp3|wav|ogg)$/i) || url.includes('audio'))
+        ? "Esta é uma transcrição simulada de áudio. Configure a API do OpenAI para obter transcrições reais."
+        : undefined,
+      videoAnalysis: requestData.mediaUrls.some(url => url.match(/\.(mp4|webm|mov)$/i))
+        ? "Esta é uma análise simulada de vídeo. Configure a API do OpenAI para obter análises reais."
+        : undefined,
+      actionPlanSuggestion: "Exemplo de sugestão de plano de ação simulada. Configure a API do OpenAI para obter sugestões reais.",
+      simulated: true,
+      error: false,
+      questionText: requestData.questionText
+    };
+    
+    return new Response(
+      JSON.stringify(result),
+      {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+  } else if (requestData.mediaUrl) {
+    const mediaType = requestData.mediaType || determineMediaType(requestData.mediaUrl);
+    let result;
+    
+    if (mediaType === 'image' || mediaType.startsWith('image/')) {
+      result = {
+        type: 'image',
+        analysis: requestData.questionText 
+          ? `Esta é uma análise simulada de imagem relacionada à pergunta: "${requestData.questionText}". Configure a API do OpenAI na função edge analyze-media para obter análises reais utilizando inteligência artificial.`
+          : 'Esta é uma análise simulada de imagem. Configure a API do OpenAI na função edge analyze-media para obter análises reais utilizando inteligência artificial.',
+        hasNonConformity: true,
+        actionPlanSuggestion: requestData.questionText
+          ? `Exemplo de sugestão de plano de ação para a pergunta: "${requestData.questionText}". Configure a API do OpenAI para obter sugestões reais baseadas na análise da imagem.`
+          : "Exemplo de sugestão de plano de ação simulada. Configure a API do OpenAI para obter sugestões reais.",
+        simulated: true,
+        error: false,
+        questionText: requestData.questionText
+      }
+    } else if (mediaType === 'audio' || mediaType.startsWith('audio/') || requestData.mediaUrl.endsWith('.webm') || requestData.mediaUrl.includes('audio')) {
+      result = {
+        type: 'audio',
+        transcription: 'Esta é uma transcrição simulada de áudio. Configure a API do OpenAI na função edge analyze-media para obter transcrições reais utilizando a tecnologia Whisper AI.',
+        analysis: requestData.questionText 
+          ? `Esta é uma análise simulada de áudio relacionada à pergunta: "${requestData.questionText}". Configure a API do OpenAI para obter análises reais.`
+          : 'Análise simulada do conteúdo de áudio.',
+        hasNonConformity: true,
+        actionPlanSuggestion: requestData.questionText
+          ? `Exemplo de sugestão de plano de ação para a pergunta: "${requestData.questionText}". Configure a API do OpenAI para obter sugestões reais baseadas na transcrição e análise do áudio.`
+          : "Exemplo de sugestão de plano de ação simulada. Configure a API do OpenAI para obter sugestões reais.",
+        simulated: true,
+        error: false,
+        questionText: requestData.questionText
+      }
+    } else if (mediaType === 'video' || mediaType.startsWith('video/')) {
+      result = {
+        type: 'video',
+        analysis: requestData.questionText 
+          ? `Esta é uma análise simulada de vídeo relacionada à pergunta: "${requestData.questionText}". Configure a API do OpenAI na função edge analyze-media para obter análises reais utilizando inteligência artificial.`
+          : 'Esta é uma análise simulada de vídeo. Configure a API do OpenAI na função edge analyze-media para obter análises reais utilizando inteligência artificial.',
+        hasNonConformity: true,
+        actionPlanSuggestion: requestData.questionText
+          ? `Exemplo de sugestão de plano de ação para a pergunta: "${requestData.questionText}". Configure a API do OpenAI para obter sugestões reais baseadas na análise do vídeo.`
+          : "Exemplo de sugestão de plano de ação simulada. Configure a API do OpenAI para obter sugestões reais.",
+        simulated: true,
+        error: false,
+        questionText: requestData.questionText
+      }
+    } else {
+      result = {
+        type: 'unknown',
+        message: 'Tipo de mídia não suportado',
+        simulated: true,
+        error: true,
+        questionText: requestData.questionText
       }
     }
-  )
+
+    return new Response(
+      JSON.stringify(result),
+      {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+  } else {
+    return new Response(
+      JSON.stringify({
+        error: true,
+        message: 'Nenhuma mídia fornecida para análise',
+        simulated: true
+      }),
+      {
+        status: 400,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+  }
 }
