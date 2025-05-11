@@ -28,6 +28,7 @@ export function YesNoInput({ value, onChange, readOnly = false }: YesNoInputProp
         disabled={readOnly}
         size="sm"
         type="button"
+        aria-pressed={value === "sim"}
       >
         <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
         <span>SIM</span>
@@ -39,6 +40,7 @@ export function YesNoInput({ value, onChange, readOnly = false }: YesNoInputProp
         disabled={readOnly}
         size="sm"
         type="button"
+        aria-pressed={value === "não"}
       >
         <XCircle className="h-3.5 w-3.5 mr-1.5" />
         <span>NÃO</span>
@@ -50,6 +52,7 @@ export function YesNoInput({ value, onChange, readOnly = false }: YesNoInputProp
         disabled={readOnly}
         size="sm"
         type="button"
+        aria-pressed={value === "n/a"}
       >
         <HelpCircle className="h-3.5 w-3.5 mr-1.5" />
         <span>N/A</span>

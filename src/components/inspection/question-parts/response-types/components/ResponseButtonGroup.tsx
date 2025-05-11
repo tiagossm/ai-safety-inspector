@@ -11,6 +11,8 @@ interface ResponseButtonGroupProps {
 }
 
 export function ResponseButtonGroup({ value, onChange, readOnly }: ResponseButtonGroupProps) {
+  console.log("ResponseButtonGroup rendering with value:", value);
+  
   return (
     <div>
       <div className="flex flex-wrap gap-2 mb-3">
@@ -20,6 +22,7 @@ export function ResponseButtonGroup({ value, onChange, readOnly }: ResponseButto
           disabled={readOnly}
           className={value === true ? "bg-green-500 hover:bg-green-600 text-white" : ""}
           type="button"
+          aria-pressed={value === true}
         >
           <ThumbsUp className="h-4 w-4 mr-2" />
           <span>Sim</span>
@@ -31,6 +34,7 @@ export function ResponseButtonGroup({ value, onChange, readOnly }: ResponseButto
           disabled={readOnly}
           className={value === false ? "bg-red-500 hover:bg-red-600 text-white" : ""}
           type="button"
+          aria-pressed={value === false}
         >
           <ThumbsDown className="h-4 w-4 mr-2" />
           <span>Não</span>

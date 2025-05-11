@@ -1,220 +1,120 @@
 
-import React, { useState, useEffect } from "react";
-import { ActionPlanFormData } from "@/components/action-plans/form/types";
-import { MediaUploadInput } from "../../question-inputs/MediaUploadInput";
-import { ActionPlanDialog } from "@/components/action-plans/ActionPlanDialog";
-import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
-import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
-import { toast } from "sonner";
-import { AISuggestionPanel } from "../AISuggestionPanel";
+import React, { useCallback, useState } from "react";
 import { ResponseButtonGroup } from "./components/ResponseButtonGroup";
-import { MediaAnalysisButton } from "./components/MediaAnalysisButton";
 import { ActionPlanButton } from "./components/ActionPlanButton";
+import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
+import { MediaAnalysisButton } from "./components/MediaAnalysisButton";
+import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 
 interface YesNoResponseInputProps {
   question: any;
   response: any;
-  inspectionId?: string;
   onResponseChange: (data: any) => void;
-  onMediaChange?: (urls: string[]) => void;
+  inspectionId?: string;
+  onMediaChange?: (mediaUrls: string[]) => void;
   actionPlan?: any;
-  onSaveActionPlan?: (data: ActionPlanFormData) => Promise<void>;
+  onSaveActionPlan?: (data: any) => Promise<void>;
   onApplyAISuggestion?: (suggestion: string) => void;
   readOnly?: boolean;
-}
-
-// Define an interface for the analysis result object
-interface AnalysisResultObject {
-  actionPlanSuggestion?: string;
-  [key: string]: any;
 }
 
 export function YesNoResponseInput({
   question,
   response,
-  inspectionId,
   onResponseChange,
+  inspectionId,
   onMediaChange,
   actionPlan,
   onSaveActionPlan,
   onApplyAISuggestion,
   readOnly = false
 }: YesNoResponseInputProps) {
-  const [showActionPlanDialog, setShowActionPlanDialog] = useState(false);
-  const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
-  const [showAnalysisDialog, setShowAnalysisDialog] = useState(false);
-
-  // Ensure we correctly initialize the component with the current response value
-  const [localValue, setLocalValue] = useState<boolean | undefined>(response?.value);
-
-  // Update local state when external response changes
-  useEffect(() => {
-    setLocalValue(response?.value);
-    console.log('YesNoResponseInput: response value changed:', response?.value);
-  }, [response?.value]);
-
-  useEffect(() => {
-    if (response?.mediaAnalysisResults) {
-      const results = Object.values(response.mediaAnalysisResults);
-      // Find the first result that contains an actionPlanSuggestion
-      const resultWithSuggestion = results.find((r): r is AnalysisResultObject => 
-        r !== null && typeof r === 'object' && 'actionPlanSuggestion' in r && typeof r.actionPlanSuggestion === 'string'
-      );
-      
-      setAiSuggestion(resultWithSuggestion?.actionPlanSuggestion || null);
+  const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
+  
+  console.log("YesNoResponseInput: rendering with response:", response);
+  
+  // Extract current value from response or default to undefined
+  const currentValue = response?.value;
+  
+  // Handle local response changes
+  const handleResponseChange = useCallback((value: boolean) => {
+    console.log("YesNoResponseInput: value changed to:", value);
+    const updatedResponse = {
+      ...response,
+      value
+    };
+    console.log("YesNoResponseInput: response value changed:", updatedResponse);
+    onResponseChange(updatedResponse);
+  }, [response, onResponseChange]);
+  
+  // Handle media changes
+  const handleMediaChange = useCallback((mediaUrls: string[]) => {
+    console.log("YesNoResponseInput: media changed:", mediaUrls);
+    if (onMediaChange) {
+      onMediaChange(mediaUrls);
     } else {
-      setAiSuggestion(null);
+      const updatedResponse = {
+        ...response,
+        mediaUrls
+      };
+      onResponseChange(updatedResponse);
     }
-  }, [response?.mediaAnalysisResults]);
-
-  const handleRadioChange = (value: boolean) => {
-    if (readOnly) return;
-    
-    console.log('YesNoResponseInput: handleRadioChange called with value:', value);
-    console.log('YesNoResponseInput: current response before change:', response);
-    
-    // Update local state first for immediate visual feedback
-    setLocalValue(value);
-    
-    // Create a new response object with updated value
+  }, [response, onResponseChange, onMediaChange]);
+  
+  // Handle the AI analysis results
+  const handleAnalysisResults = useCallback((results: any) => {
+    console.log("YesNoResponseInput: analysis results:", results);
     const updatedResponse = {
-      ...(response || {}),
-      value: value,
-      // Preserve existing mediaUrls and analysis results
-      mediaUrls: response?.mediaUrls || [],
-      mediaAnalysisResults: response?.mediaAnalysisResults || {}
+      ...response,
+      mediaAnalysisResults: {
+        ...(response?.mediaAnalysisResults || {}),
+        ...results
+      }
     };
-    
-    console.log('YesNoResponseInput: sending updated response:', updatedResponse);
     onResponseChange(updatedResponse);
-  };
-
-  const handleApplyAISuggestion = () => {
-    if (onApplyAISuggestion && aiSuggestion) {
-      console.log('YesNoResponseInput: applying AI suggestion:', aiSuggestion);
-      onApplyAISuggestion(aiSuggestion);
-      toast.success("Sugestão da IA aplicada");
+    
+    // Apply any suggestions if available
+    if (results.actionPlanSuggestion && onApplyAISuggestion) {
+      onApplyAISuggestion(results.actionPlanSuggestion);
     }
-  };
-
-  const handleMediaChange = (urls: string[]) => {
-    console.log('YesNoResponseInput: handleMediaChange called with URLs:', urls);
-    
-    // Update the response with the new media URLs
-    const updatedResponse = {
-      ...(response || {}),
-      mediaUrls: urls,
-      value: localValue // Ensure we keep the current value when updating media URLs
-    };
-    
-    if (onMediaChange) onMediaChange(urls);
-    onResponseChange(updatedResponse);
-  };
-
-  const handleOpenAnalysisDialog = () => {
-    setShowAnalysisDialog(true);
-  };
-
-  const handleFullAnalysisComplete = (result: MediaAnalysisResult) => {
-    console.log('YesNoResponseInput: full analysis complete with result:', result);
-    
-    if (result.actionPlanSuggestion) {
-      setAiSuggestion(result.actionPlanSuggestion);
-      toast.info("Sugestão de plano de ação disponível pela IA");
-    }
-    
-    // Update response with analysis result for all media
-    const updatedResults = {
-      ...(response?.mediaAnalysisResults || {}),
-      'multimodal': result
-    };
-    
-    onResponseChange({
-      ...(response || {}),
-      mediaAnalysisResults: updatedResults,
-      // Preserve existing data
-      mediaUrls: response?.mediaUrls || [],
-      value: localValue // Ensure we keep the current value
-    });
-  };
-
-  const questionText = question.text || question.pergunta || "";
+  }, [response, onResponseChange, onApplyAISuggestion]);
 
   return (
-    <div>
+    <div className="space-y-4">
       <ResponseButtonGroup 
-        value={localValue} 
-        onChange={handleRadioChange} 
-        readOnly={readOnly}
+        value={currentValue} 
+        onChange={handleResponseChange} 
+        readOnly={readOnly || false}
       />
-
+      
       <div className="flex flex-wrap gap-2">
-        <MediaAnalysisButton onOpenAnalysis={handleOpenAnalysisDialog} />
+        <ActionPlanButton 
+          localValue={currentValue} 
+          onActionPlanClick={onSaveActionPlan ? () => onSaveActionPlan({}) : () => {}} 
+          readOnly={readOnly || false}
+        />
         
-        {inspectionId && question.id && localValue === false && onSaveActionPlan && (
-          <ActionPlanButton 
-            localValue={localValue} 
-            onActionPlanClick={() => setShowActionPlanDialog(true)} 
-            readOnly={readOnly}
-          />
+        {(question.allowsPhoto || question.allowsVideo || question.permite_foto || question.permite_video) && (
+          <MediaAnalysisButton onOpenAnalysis={() => setIsAnalysisOpen(true)} />
         )}
       </div>
-
+      
       <MediaUploadInput
+        allowPhoto={question.allowsPhoto || question.permite_foto || false}
+        allowVideo={question.allowsVideo || question.permite_video || false}
+        allowAudio={question.allowsAudio || question.permite_audio || false}
+        allowFiles={question.allowsFiles || question.permite_files || false}
         mediaUrls={response?.mediaUrls || []}
-        onMediaChange={handleMediaChange}
+        onChange={handleMediaChange}
         readOnly={readOnly}
-        questionText={questionText}
-        onSaveAnalysis={(url, result) => {
-          console.log('YesNoResponseInput: saving analysis for URL:', url, result);
-          const updatedResults = {
-            ...(response?.mediaAnalysisResults || {}),
-            [url]: result
-          };
-          onResponseChange({
-            ...(response || {}),
-            mediaAnalysisResults: updatedResults,
-            // Preserve existing data
-            mediaUrls: response?.mediaUrls || [],
-            value: localValue // Ensure we keep the current value
-          });
-        }}
-        analysisResults={response?.mediaAnalysisResults}
-        onApplyAISuggestion={onApplyAISuggestion}
-        allowsPhoto={question.allowsPhoto || question.permite_foto}
-        allowsVideo={question.allowsVideo || question.permite_video}
-        allowsAudio={question.allowsAudio || question.permite_audio}
-        allowsFiles={question.allowsFiles || question.permite_files}
       />
-
-      {aiSuggestion && localValue === false && (
-        <AISuggestionPanel 
-          suggestion={aiSuggestion} 
-          onApply={handleApplyAISuggestion}
-        />
-      )}
-
-      {inspectionId && question.id && onSaveActionPlan && (
-        <ActionPlanDialog
-          open={showActionPlanDialog}
-          onOpenChange={setShowActionPlanDialog}
-          inspectionId={inspectionId}
-          questionId={question.id}
-          existingPlan={actionPlan}
-          onSave={onSaveActionPlan}
-          aiSuggestion={aiSuggestion}
-        />
-      )}
-
+      
       <MediaAnalysisDialog
-        open={showAnalysisDialog}
-        onOpenChange={setShowAnalysisDialog}
-        mediaUrl={null}
-        questionText={questionText}
-        responseValue={localValue}
+        open={isAnalysisOpen}
+        onOpenChange={setIsAnalysisOpen}
         mediaUrls={response?.mediaUrls || []}
-        onAnalysisComplete={handleFullAnalysisComplete}
-        multimodalAnalysis={true}
+        questionText={question.text || question.pergunta || ""}
+        onAnalysisResults={handleAnalysisResults}
       />
     </div>
   );

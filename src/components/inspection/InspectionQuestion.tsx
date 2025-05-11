@@ -61,8 +61,16 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
 
   const handleValueChange = useCallback((value: any) => {
     console.log('InspectionQuestion: handleValueChange called with:', value);
-    setIsValid(!isRequired || (value !== undefined && value !== null && value !== ""));
-    onResponseChange({
+    
+    // Validate the input if required
+    const isValueDefined = value !== undefined && value !== null && value !== "";
+    const isResponseValueDefined = value?.value !== undefined && value?.value !== null && value?.value !== "";
+    
+    // Update validity state
+    setIsValid(!isRequired || isValueDefined || isResponseValueDefined);
+    
+    // Create updated response object ensuring we preserve all existing fields
+    const updatedResponse = {
       ...response,
       value: value?.value ?? value,
       comment: value?.comment ?? comment,
@@ -70,7 +78,10 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
       mediaUrls: value?.mediaUrls ?? response?.mediaUrls ?? [],
       mediaAnalysisResults: value?.mediaAnalysisResults ?? response?.mediaAnalysisResults ?? {},
       subChecklistResponses: value?.subChecklistResponses ?? response?.subChecklistResponses ?? {},
-    });
+    };
+    
+    console.log('InspectionQuestion: updated response:', updatedResponse);
+    onResponseChange(updatedResponse);
   }, [isRequired, response, comment, onResponseChange]);
 
   const handleCommentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -111,7 +122,11 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
     setShowActionPlanDialog(false);
   }, [onSaveActionPlan]);
 
+  // Don't render if the question shouldn't be visible
   if (!shouldBeVisible()) return null;
+
+  // Debug log to track the response value
+  console.log(`Question ${question.id || index}: Current response value:`, response?.value);
 
   return (
     <div className={`relative border rounded-lg p-4 mb-4 ${!isValid && response?.value !== undefined ? 'border-l-4 border-l-red-500' : ''}`}>
