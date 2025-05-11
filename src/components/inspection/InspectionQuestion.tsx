@@ -5,7 +5,6 @@ import { ActionPlanSection } from "./question-parts/ActionPlanSection";
 import { QuestionHeader } from "./question-components/QuestionHeader";
 import { CommentSection } from "./question-components/CommentSection";
 import { ActionPlanButton } from "./question-components/ActionPlanButton";
-import { MediaAttachments } from "./question-inputs/MediaAttachments";
 import { isNegativeResponse, normalizeResponseType } from "@/utils/inspection/normalizationUtils";
 import { ActionPlanForm } from "@/components/action-plans/form/ActionPlanForm";
 import { ActionPlanFormData } from "@/components/action-plans/form/types";
@@ -59,6 +58,7 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
   const allowsFiles = question.allowsFiles || question.permite_files || false;
 
   const handleValueChange = useCallback((value: any) => {
+    console.log('InspectionQuestion: handleValueChange called with:', value);
     setIsValid(!isRequired || (value !== undefined && value !== null && value !== ""));
     onResponseChange({
       ...response,
@@ -66,6 +66,7 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
       comment: value?.comment ?? comment,
       actionPlan: value?.actionPlan ?? response?.actionPlan,
       mediaUrls: value?.mediaUrls ?? response?.mediaUrls ?? [],
+      mediaAnalysisResults: value?.mediaAnalysisResults ?? response?.mediaAnalysisResults ?? {},
       subChecklistResponses: value?.subChecklistResponses ?? response?.subChecklistResponses ?? {},
     });
   }, [isRequired, response, comment, onResponseChange]);
@@ -86,6 +87,7 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
   }, [response, onResponseChange]);
 
   const handleMediaChange = useCallback((mediaUrls: string[]) => {
+    console.log('InspectionQuestion: handleMediaChange called with:', mediaUrls);
     onResponseChange({
       ...response,
       mediaUrls
@@ -151,18 +153,7 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
             />
           </div>
 
-          {Array.isArray(response?.mediaUrls) && response.mediaUrls.length > 0 && (
-            <div className="mt-4">
-              <MediaAttachments 
-                mediaUrls={response.mediaUrls} 
-                readOnly 
-                onOpenPreview={(url) => console.log("Opening preview:", url)}
-                onOpenAnalysis={(url) => console.log("Opening analysis:", url)}
-                questionText={questionText}
-                analysisResults={response?.mediaAnalysisResults || {}}
-              />
-            </div>
-          )}
+          {/* Removido a renderização duplicada de MediaAttachments aqui */}
 
           <div className="flex justify-between items-center mt-3">
             <CommentSection 
@@ -210,4 +201,4 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
       </div>
     </div>
   );
-});
+}

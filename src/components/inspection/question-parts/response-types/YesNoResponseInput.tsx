@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ThumbsUp, ThumbsDown, Search, PenLine, AlertCircle, Sparkles } from "lucide-react";
@@ -58,25 +59,36 @@ export function YesNoResponseInput({
 
   const handleRadioChange = (value: boolean) => {
     if (readOnly) return;
-    onResponseChange({
-      ...response,
+    
+    console.log('YesNoResponseInput: handleRadioChange called with value:', value);
+    console.log('YesNoResponseInput: current response before change:', response);
+    
+    // Create a new response object with updated value
+    const updatedResponse = {
+      ...(response || {}),
       value,
-      // Preservar as URLs de mídia na resposta
+      // Preserve existing mediaUrls and analysis results
       mediaUrls: response?.mediaUrls || []
-    });
+    };
+    
+    console.log('YesNoResponseInput: sending updated response:', updatedResponse);
+    onResponseChange(updatedResponse);
   };
 
   const handleApplyAISuggestion = () => {
     if (onApplyAISuggestion && aiSuggestion) {
+      console.log('YesNoResponseInput: applying AI suggestion:', aiSuggestion);
       onApplyAISuggestion(aiSuggestion);
       toast.success("Sugestão da IA aplicada");
     }
   };
 
   const handleMediaChange = (urls: string[]) => {
-    // Atualizar a resposta com as novas URLs de mídia
+    console.log('YesNoResponseInput: handleMediaChange called with URLs:', urls);
+    
+    // Update the response with the new media URLs
     const updatedResponse = {
-      ...response,
+      ...(response || {}),
       mediaUrls: urls
     };
     
@@ -89,10 +101,26 @@ export function YesNoResponseInput({
   };
 
   const handleFullAnalysisComplete = (result: MediaAnalysisResult) => {
+    console.log('YesNoResponseInput: full analysis complete with result:', result);
+    
     if (result.actionPlanSuggestion) {
       setAiSuggestion(result.actionPlanSuggestion);
       toast.info("Sugestão de plano de ação disponível pela IA");
     }
+    
+    // Update response with analysis result for all media
+    const updatedResults = {
+      ...(response?.mediaAnalysisResults || {}),
+      'multimodal': result
+    };
+    
+    onResponseChange({
+      ...(response || {}),
+      mediaAnalysisResults: updatedResults,
+      // Preserve existing data
+      mediaUrls: response?.mediaUrls || [],
+      value: response?.value
+    });
   };
 
   const questionText = question.text || question.pergunta || "";
@@ -148,14 +176,17 @@ export function YesNoResponseInput({
         readOnly={readOnly}
         questionText={questionText}
         onSaveAnalysis={(url, result) => {
+          console.log('YesNoResponseInput: saving analysis for URL:', url, result);
           const updatedResults = {
             ...(response?.mediaAnalysisResults || {}),
             [url]: result
           };
           onResponseChange({
-            ...response,
+            ...(response || {}),
             mediaAnalysisResults: updatedResults,
-            mediaUrls: response?.mediaUrls || [] // Preservar as URLs de mídia
+            // Preserve existing data
+            mediaUrls: response?.mediaUrls || [],
+            value: response?.value
           });
         }}
         analysisResults={response?.mediaAnalysisResults}

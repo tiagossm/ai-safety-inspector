@@ -43,57 +43,43 @@ export function MediaAnalysisDialog({
   const { analyze, analyzing, result, error } = useMediaAnalysis();
   const [activeTab, setActiveTab] = useState("overview");
   const [hasStartedAnalysis, setHasStartedAnalysis] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<MediaAnalysisResult | null>(null);
 
   // Reset state when the dialog opens/closes
   useEffect(() => {
     if (!open) {
       setHasStartedAnalysis(false);
       setActiveTab("overview");
+      setAnalysisResult(null);
     }
   }, [open]);
 
   // Automatically start multimodal analysis if requested
   useEffect(() => {
-    if (open && multimodalAnalysis && !hasStartedAnalysis) {
-      console.log("MediaAnalysisDialog: Starting multimodal analysis for question:", questionText);
-      console.log("MediaAnalysisDialog: Response value:", responseValue);
-      console.log("MediaAnalysisDialog: Media URLs:", mediaUrls);
+    if (open && !hasStartedAnalysis) {
+      console.log("MediaAnalysisDialog: Starting analysis with parameters:", {
+        multimodalAnalysis,
+        mediaUrl,
+        responseValue,
+        mediaUrls: mediaUrls?.length
+      });
       
       setHasStartedAnalysis(true);
       
-      // Call the analyze function with multimodal parameters
+      // Call the analyze function with appropriate parameters
       analyze({
-        mediaUrl: null, 
+        mediaUrl: multimodalAnalysis ? null : mediaUrl, 
+        mediaType: multimodalAnalysis ? null : mediaType,
         questionText, 
         responseValue,
-        mediaUrls,
-        multimodal: true
-      }).then((analysisResult) => {
-        console.log("MediaAnalysisDialog: Multimodal analysis complete:", analysisResult);
+        mediaUrls: multimodalAnalysis ? mediaUrls : undefined,
+        multimodal: multimodalAnalysis
+      }).then((result) => {
+        console.log("MediaAnalysisDialog: Analysis complete:", result);
+        setAnalysisResult(result);
         
         if (onAnalysisComplete) {
-          onAnalysisComplete(analysisResult);
-        }
-      }).catch(err => {
-        console.error("MediaAnalysisDialog: Error in multimodal analysis:", err);
-      });
-    } else if (open && mediaUrl && !hasStartedAnalysis) {
-      // Regular single media analysis
-      console.log("MediaAnalysisDialog: Starting analysis for media:", mediaUrl);
-      console.log("MediaAnalysisDialog: Question context:", questionText);
-      
-      setHasStartedAnalysis(true);
-      
-      analyze({
-        mediaUrl,
-        mediaType,
-        questionText,
-        multimodal: false
-      }).then((analysisResult) => {
-        console.log("MediaAnalysisDialog: Analysis complete:", analysisResult);
-        
-        if (onAnalysisComplete) {
-          onAnalysisComplete(analysisResult);
+          onAnalysisComplete(result);
         }
       }).catch(err => {
         console.error("MediaAnalysisDialog: Error in analysis:", err);
@@ -102,55 +88,35 @@ export function MediaAnalysisDialog({
   }, [open, mediaUrl, mediaType, questionText, multimodalAnalysis, hasStartedAnalysis, analyze, responseValue, mediaUrls, onAnalysisComplete]);
 
   const handleStartAnalysis = async () => {
-    if (mediaUrl) {
-      console.log("MediaAnalysisDialog: Manually starting analysis for:", mediaUrl);
+    console.log("MediaAnalysisDialog: Manually starting analysis");
+    setHasStartedAnalysis(true);
+    
+    try {
+      const result = await analyze({
+        mediaUrl: multimodalAnalysis ? null : mediaUrl,
+        mediaType: multimodalAnalysis ? null : mediaType,
+        questionText,
+        responseValue,
+        mediaUrls: multimodalAnalysis ? mediaUrls : undefined,
+        multimodal: multimodalAnalysis
+      });
       
-      setHasStartedAnalysis(true);
+      console.log("MediaAnalysisDialog: Analysis complete:", result);
+      setAnalysisResult(result);
       
-      try {
-        const analysisResult = await analyze({
-          mediaUrl,
-          mediaType,
-          questionText,
-          multimodal: false
-        });
-        
-        console.log("MediaAnalysisDialog: Analysis complete:", analysisResult);
-        
-        if (onAnalysisComplete) {
-          onAnalysisComplete(analysisResult);
-        }
-      } catch (err) {
-        console.error("MediaAnalysisDialog: Error in analysis:", err);
+      if (onAnalysisComplete) {
+        onAnalysisComplete(result);
       }
-    } else if (multimodalAnalysis) {
-      console.log("MediaAnalysisDialog: Manually starting multimodal analysis");
-      
-      setHasStartedAnalysis(true);
-      
-      try {
-        const analysisResult = await analyze({
-          mediaUrl: null,
-          questionText,
-          responseValue,
-          mediaUrls,
-          multimodal: true
-        });
-        
-        console.log("MediaAnalysisDialog: Multimodal analysis complete:", analysisResult);
-        
-        if (onAnalysisComplete) {
-          onAnalysisComplete(analysisResult);
-        }
-      } catch (err) {
-        console.error("MediaAnalysisDialog: Error in multimodal analysis:", err);
-      }
+    } catch (err) {
+      console.error("MediaAnalysisDialog: Error in analysis:", err);
     }
   };
 
   // Function to render the action plan section
   const renderActionPlan = () => {
-    if (!result?.actionPlanSuggestion) {
+    const suggestion = analysisResult?.actionPlanSuggestion || result?.actionPlanSuggestion;
+    
+    if (!suggestion) {
       return (
         <div className="text-center py-6">
           <p className="text-sm text-gray-500">
@@ -164,7 +130,7 @@ export function MediaAnalysisDialog({
       <div className="space-y-4">
         <h4 className="font-medium">Sugestão de Plano de Ação:</h4>
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <p className="whitespace-pre-line text-sm text-amber-800">{result.actionPlanSuggestion}</p>
+          <p className="whitespace-pre-line text-sm text-amber-800">{suggestion}</p>
         </div>
       </div>
     );
@@ -201,7 +167,7 @@ export function MediaAnalysisDialog({
 
   // Function to render the media preview
   const renderMediaPreview = () => {
-    if (mediaUrl) {
+    if (mediaUrl && !multimodalAnalysis) {
       return (
         <div className="mb-6 max-h-96 overflow-hidden rounded-lg border bg-slate-50 flex justify-center">
           <MediaRenderer url={mediaUrl} />
@@ -217,7 +183,7 @@ export function MediaAnalysisDialog({
           ))}
           {mediaUrls.length > 4 && (
             <div className="col-span-2 text-center text-sm text-gray-500 mt-1">
-              +{mediaUrls.length - 4} arquivos adicionais
+              +{mediaUrls.length - 4} mídia(s) adicionais
             </div>
           )}
         </div>
@@ -227,163 +193,172 @@ export function MediaAnalysisDialog({
     return null;
   };
 
-  // Function to render analysis results for different media types
-  const renderAnalysisResults = () => {
-    if (!result) {
-      return (
-        <div className="text-center py-10">
-          <p className="text-sm text-gray-500">Análise ainda não disponível.</p>
-        </div>
-      );
-    }
-
-    return (
-      <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Geral</TabsTrigger>
-          <TabsTrigger value="image" disabled={!result.imageAnalysis}>Imagem</TabsTrigger>
-          <TabsTrigger value="audio" disabled={!result.audioTranscription}>Áudio</TabsTrigger>
-          <TabsTrigger value="action">Plano</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="overview" className="pt-4">
-          <div className="space-y-4">
-            {result.summary && (
-              <>
-                <h4 className="font-medium">Resumo da Análise:</h4>
-                <p className="text-sm">{result.summary}</p>
-              </>
-            )}
-            
-            {result.hasNonConformity !== undefined && (
-              <div className="flex items-center mt-4">
-                <div className="mr-3">
-                  {result.hasNonConformity ? (
-                    <AlertCircle className="h-5 w-5 text-amber-500" />
-                  ) : (
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                  )}
-                </div>
-                <div>
-                  <p className="text-sm font-medium">
-                    {result.hasNonConformity 
-                      ? "Possível não conformidade detectada" 
-                      : "Nenhuma não conformidade detectada"}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {result.hasNonConformity 
-                      ? "Recomendamos verificar o plano de ação sugerido" 
-                      : "Este item parece estar em conformidade"}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="image" className="pt-4">
-          <div className="space-y-4">
-            <h4 className="font-medium">Análise da Imagem:</h4>
-            <p className="text-sm whitespace-pre-line">{result.imageAnalysis}</p>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="audio" className="pt-4">
-          <div className="space-y-4">
-            <h4 className="font-medium">Transcrição de Áudio:</h4>
-            <p className="text-sm whitespace-pre-line">{result.audioTranscription}</p>
-            
-            {result.audioSentiment && (
-              <>
-                <h4 className="font-medium mt-4">Sentimento:</h4>
-                <p className="text-sm">{result.audioSentiment}</p>
-              </>
-            )}
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="action" className="pt-4">
-          {renderActionPlan()}
-        </TabsContent>
-      </Tabs>
-    );
-  };
+  // Determine if we have any analysis results to show
+  const hasAnalysisResults = analysisResult !== null || result !== null;
+  const displayedResult = analysisResult || result;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>
-            {multimodalAnalysis 
-              ? "Análise Multimodal com IA" 
-              : "Análise de Mídia com IA"}
-          </DialogTitle>
+          <DialogTitle>Análise de {multimodalAnalysis ? "Inspeção" : "Mídia"} com IA</DialogTitle>
           <DialogDescription>
-            {multimodalAnalysis
-              ? "Analisando o contexto da questão, resposta e todas as mídias anexadas"
-              : "Analisando a mídia selecionada no contexto da questão"}
+            {multimodalAnalysis 
+              ? "Análise inteligente dos dados da inspeção e mídias associadas" 
+              : "Análise inteligente do conteúdo da mídia"}
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="flex-grow overflow-hidden">
-          <ScrollArea className="h-[60vh] pr-4">
-            {/* Question context section */}
-            {renderQuestionContext()}
-            
-            {/* Media preview section */}
-            {renderMediaPreview()}
-            
-            {/* Analysis status and results */}
-            {analyzing ? (
-              <div className="flex flex-col items-center justify-center py-10">
-                <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-                <p className="text-sm text-gray-500">Analisando com IA...</p>
-                <p className="text-xs text-gray-400 mt-1">Isso pode levar alguns segundos</p>
-              </div>
-            ) : error ? (
-              <div className="text-center py-10">
-                <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-                <p className="text-sm text-red-600 font-medium">Erro na análise</p>
-                <p className="text-xs text-gray-500 mt-1">{error.message || "Falha ao processar a análise"}</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-4"
-                  onClick={handleStartAnalysis}
-                >
-                  Tentar novamente
-                </Button>
-              </div>
-            ) : (
-              renderAnalysisResults()
-            )}
-          </ScrollArea>
-        </div>
-        
-        <DialogFooter className="flex justify-end items-center pt-2 gap-2">
-          {result && (
-            <div className="flex-grow text-left">
-              {result.hasNonConformity && (
-                <Badge className="bg-amber-100 text-amber-800" variant="outline">
-                  <AlertCircle className="h-3 w-3 mr-1" />
-                  Possível não conformidade
-                </Badge>
+
+        {renderQuestionContext()}
+        {renderMediaPreview()}
+
+        {analyzing ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+            <h3 className="text-lg font-medium">Analisando...</h3>
+            <p className="text-muted-foreground mt-2 text-sm text-center max-w-md">
+              Nossa IA está processando os dados e gerando insights. Isto pode levar alguns segundos.
+            </p>
+          </div>
+        ) : hasAnalysisResults ? (
+          <ScrollArea className="flex-1 overflow-auto pr-4">
+            <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="mb-4">
+                <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+                <TabsTrigger value="action-plan">Plano de Ação</TabsTrigger>
+                {displayedResult?.imageAnalysis && <TabsTrigger value="image">Imagens</TabsTrigger>}
+                {displayedResult?.audioTranscription && <TabsTrigger value="audio">Áudio</TabsTrigger>}
+              </TabsList>
+              
+              <TabsContent value="overview" className="space-y-4">
+                {displayedResult?.hasNonConformity === true ? (
+                  <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 mb-4 flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-amber-800 mb-1">Não conformidade detectada</h4>
+                      <p className="text-amber-700 text-sm">
+                        A análise de IA identificou potenciais problemas que necessitam de atenção.
+                      </p>
+                    </div>
+                  </div>
+                ) : displayedResult?.hasNonConformity === false ? (
+                  <div className="bg-green-50 p-4 rounded-lg border border-green-200 mb-4 flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-green-800 mb-1">Em conformidade</h4>
+                      <p className="text-green-700 text-sm">
+                        A análise de IA não identificou problemas significativos.
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+
+                {displayedResult?.summary && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Resumo da Análise</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p>{displayedResult.summary}</p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {displayedResult?.analysis && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Detalhes da Análise</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p>{displayedResult.analysis}</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="action-plan">
+                {renderActionPlan()}
+              </TabsContent>
+              
+              {displayedResult?.imageAnalysis && (
+                <TabsContent value="image">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Análise de Imagem</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p>{displayedResult.imageAnalysis}</p>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
               )}
-            </div>
-          )}
-          
-          {!analyzing && !hasStartedAnalysis && (
+              
+              {displayedResult?.audioTranscription && (
+                <TabsContent value="audio">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Transcrição de Áudio</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="whitespace-pre-line">{displayedResult.audioTranscription}</p>
+                      
+                      {displayedResult?.audioSentiment && (
+                        <div className="mt-4">
+                          <h4 className="font-medium text-sm mb-1">Sentimento:</h4>
+                          <p>{displayedResult.audioSentiment}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              )}
+            </Tabs>
+          </ScrollArea>
+        ) : error ? (
+          <div className="text-center py-8">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-red-700">Erro na análise</h3>
+            <p className="text-red-600 mt-2 max-w-md mx-auto">
+              {error.message || "Ocorreu um erro ao analisar a mídia. Por favor, tente novamente."}
+            </p>
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground mb-4">
+              Clique no botão abaixo para iniciar a análise.
+            </p>
+          </div>
+        )}
+
+        <DialogFooter>
+          {!hasStartedAnalysis && (
             <Button 
-              onClick={handleStartAnalysis}
-              className="mr-2"
+              onClick={handleStartAnalysis} 
+              disabled={analyzing}
+              className="w-full sm:w-auto"
             >
+              {analyzing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Iniciar Análise
             </Button>
           )}
           
+          {hasAnalysisResults && (
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setHasStartedAnalysis(false);
+                setAnalysisResult(null);
+              }}
+              className="w-full sm:w-auto"
+            >
+              Nova Análise
+            </Button>
+          )}
+          
           <Button 
-            variant="outline" 
+            variant="ghost" 
             onClick={() => onOpenChange(false)}
+            className="w-full sm:w-auto"
           >
             Fechar
           </Button>

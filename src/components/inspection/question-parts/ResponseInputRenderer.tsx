@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useCallback } from "react";
 import { YesNoResponseInput } from "./response-types/YesNoResponseInput";
 import { TextResponseInput } from "./response-types/TextResponseInput";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
@@ -34,36 +34,45 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   console.log("ResponseInputRenderer: rendering with responseType:", responseType);
   console.log("ResponseInputRenderer: current response:", response);
   
-  const handleMediaChange = (urls: string[]) => {
+  const handleMediaChange = useCallback((urls: string[]) => {
     console.log("ResponseInputRenderer: Media changed:", urls);
+    
+    // We update the response to include the media URLs
+    const updatedResponse = {
+      ...(response || {}),
+      mediaUrls: urls
+    };
+    
+    console.log("ResponseInputRenderer: Updating response with new media URLs:", updatedResponse);
+    onResponseChange(updatedResponse);
+    
+    // Also call the onMediaChange callback if provided
     if (onMediaChange) {
       onMediaChange(urls);
     }
-    
-    // We also update the response to include the media URLs
-    const updatedResponse = {
-      ...response,
-      mediaUrls: urls
-    };
-    onResponseChange(updatedResponse);
-  };
+  }, [response, onResponseChange, onMediaChange]);
   
   // Handle saving media analysis results
-  const handleResponseWithAnalysis = (updatedData: any) => {
+  const handleResponseWithAnalysis = useCallback((updatedData: any) => {
     console.log("ResponseInputRenderer: Handling response with analysis:", updatedData);
-    // Certifique-se de que mediaUrls seja preservado na atualização
+    
+    // Make sure we preserve all data in the update
     const updatedResponse = {
-      ...response,
+      ...(response || {}),
       ...updatedData,
-      mediaUrls: updatedData.mediaUrls || response?.mediaUrls || []
+      // Explicitly preserve these fields to be sure
+      mediaUrls: updatedData.mediaUrls || response?.mediaUrls || [],
+      mediaAnalysisResults: updatedData.mediaAnalysisResults || response?.mediaAnalysisResults || {}
     };
+    
     console.log("ResponseInputRenderer: Final updated response:", updatedResponse);
     onResponseChange(updatedResponse);
-  };
+  }, [response, onResponseChange]);
 
   // Handle suggested action plan from AI analysis
-  const handleActionPlanSuggestion = (suggestion: string) => {
+  const handleActionPlanSuggestion = useCallback((suggestion: string) => {
     console.log("ResponseInputRenderer: Action plan suggestion received:", suggestion);
+    
     if (onSaveActionPlan && inspectionId && question.id) {
       // Create action plan data with the AI suggestion
       const actionPlanData = {
@@ -81,7 +90,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         console.error("ResponseInputRenderer: Error saving action plan:", error);
       });
     }
-  };
+  }, [inspectionId, question.id, onSaveActionPlan]);
 
   // Handle yes/no responses
   if (responseType === 'yes_no') {
