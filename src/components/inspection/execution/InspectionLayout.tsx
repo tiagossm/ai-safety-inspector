@@ -83,7 +83,7 @@ export function InspectionLayout({
   const handleQuestionResponseChange = (questionId: string, data: any) => {
     console.log("Changing response for question:", questionId, data);
     
-    // Se houver mediaUrls no response atual, certifique-se de preservá-los
+    // Certifique-se de preservar mediaUrls no response atual
     const currentResponse = responses[questionId] || {};
     const mediaUrls = data.mediaUrls || currentResponse.mediaUrls || [];
     
@@ -98,7 +98,10 @@ export function InspectionLayout({
     
     // Se onResponseChange estiver definido, chame-o
     if (onResponseChange) {
-      onResponseChange(questionId, data);
+      onResponseChange(questionId, {
+        ...data,
+        mediaUrls: mediaUrls
+      });
     }
     
     // Se onMediaChange estiver definido e houver mudanças nas mediaUrls, chame-o

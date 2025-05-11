@@ -3,7 +3,6 @@ import React from "react";
 import { YesNoResponseInput } from "./response-types/YesNoResponseInput";
 import { TextResponseInput } from "./response-types/TextResponseInput";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
-import { MediaAttachments } from "@/components/inspection/question-inputs/MediaAttachments";
 
 interface ResponseInputRendererProps {
   question: any;
@@ -40,14 +39,23 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     if (onMediaChange) {
       onMediaChange(urls);
     }
+    
+    // Também atualizamos a resposta para incluir as URLs de mídia
+    const updatedResponse = {
+      ...response,
+      mediaUrls: urls
+    };
+    onResponseChange(updatedResponse);
   };
   
   // Handle saving media analysis results
   const handleResponseWithAnalysis = (updatedData: any) => {
     console.log("ResponseInputRenderer: Handling response with analysis:", updatedData);
+    // Certifique-se de que mediaUrls seja preservado na atualização
     const updatedResponse = {
       ...response,
-      ...updatedData
+      ...updatedData,
+      mediaUrls: updatedData.mediaUrls || response?.mediaUrls || []
     };
     console.log("ResponseInputRenderer: Final updated response:", updatedResponse);
     onResponseChange(updatedResponse);
@@ -75,64 +83,34 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     }
   };
 
-  // Certifique-se de que mediaUrls seja sempre um array
-  const mediaUrls = Array.isArray(response?.mediaUrls) ? response.mediaUrls : [];
-  const hasMedia = mediaUrls.length > 0;
-
   // Handle yes/no responses
   if (responseType === 'yes_no') {
     console.log("ResponseInputRenderer: Rendering YesNoResponseInput");
     return (
-      <div className="space-y-4">
-        {hasMedia && (
-          <MediaAttachments
-            mediaUrls={mediaUrls}
-            onDelete={!readOnly ? (url) => handleMediaChange(mediaUrls.filter(m => m !== url)) : undefined}
-            onOpenPreview={(url) => console.log("Opening preview:", url)}
-            onOpenAnalysis={(url) => console.log("Opening analysis:", url)}
-            readOnly={readOnly}
-            questionText={questionText}
-            analysisResults={response?.mediaAnalysisResults || {}}
-          />
-        )}
-        <YesNoResponseInput
-          question={question}
-          response={response}
-          inspectionId={inspectionId}
-          onResponseChange={handleResponseWithAnalysis}
-          onMediaChange={handleMediaChange}
-          actionPlan={actionPlan}
-          onSaveActionPlan={onSaveActionPlan}
-          onApplyAISuggestion={handleActionPlanSuggestion}
-          readOnly={readOnly}
-        />
-      </div>
+      <YesNoResponseInput
+        question={question}
+        response={response}
+        inspectionId={inspectionId}
+        onResponseChange={handleResponseWithAnalysis}
+        onMediaChange={handleMediaChange}
+        actionPlan={actionPlan}
+        onSaveActionPlan={onSaveActionPlan}
+        onApplyAISuggestion={handleActionPlanSuggestion}
+        readOnly={readOnly}
+      />
     );
   }
   
   // Default to text input for all other types
   console.log("ResponseInputRenderer: Rendering TextResponseInput");
   return (
-    <div className="space-y-4">
-      {hasMedia && (
-        <MediaAttachments
-          mediaUrls={mediaUrls}
-          onDelete={!readOnly ? (url) => handleMediaChange(mediaUrls.filter(m => m !== url)) : undefined}
-          onOpenPreview={(url) => console.log("Opening preview:", url)}
-          onOpenAnalysis={(url) => console.log("Opening analysis:", url)}
-          readOnly={readOnly}
-          questionText={questionText}
-          analysisResults={response?.mediaAnalysisResults || {}}
-        />
-      )}
-      <TextResponseInput
-        question={question}
-        response={response}
-        onResponseChange={handleResponseWithAnalysis}
-        onMediaChange={handleMediaChange}
-        onApplyAISuggestion={handleActionPlanSuggestion}
-        readOnly={readOnly}
-      />
-    </div>
+    <TextResponseInput
+      question={question}
+      response={response}
+      onResponseChange={handleResponseWithAnalysis}
+      onMediaChange={handleMediaChange}
+      onApplyAISuggestion={handleActionPlanSuggestion}
+      readOnly={readOnly}
+    />
   );
 };

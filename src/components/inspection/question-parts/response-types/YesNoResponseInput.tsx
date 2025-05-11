@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ThumbsUp, ThumbsDown, Search, PenLine, AlertCircle, Sparkles } from "lucide-react";
@@ -48,7 +47,9 @@ export function YesNoResponseInput({
     if (readOnly) return;
     onResponseChange({
       ...response,
-      value
+      value,
+      // Preservar as URLs de mídia na resposta
+      mediaUrls: response?.mediaUrls || []
     });
   };
 
@@ -60,10 +61,12 @@ export function YesNoResponseInput({
   };
 
   const handleMediaChange = (urls: string[]) => {
+    // Atualizar a resposta com as novas URLs de mídia
     const updatedResponse = {
       ...response,
       mediaUrls: urls
     };
+    
     if (onMediaChange) onMediaChange(urls);
     onResponseChange(updatedResponse);
   };
@@ -138,7 +141,8 @@ export function YesNoResponseInput({
           };
           onResponseChange({
             ...response,
-            mediaAnalysisResults: updatedResults
+            mediaAnalysisResults: updatedResults,
+            mediaUrls: response?.mediaUrls || [] // Preservar as URLs de mídia
           });
         }}
         analysisResults={response?.mediaAnalysisResults}
