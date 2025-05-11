@@ -30,6 +30,7 @@ export function YesNoResponseInput({
   readOnly = false
 }: YesNoResponseInputProps) {
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
+  const [selectedMediaUrl, setSelectedMediaUrl] = useState<string | null>(null);
   
   console.log("YesNoResponseInput: rendering with response:", response);
   
@@ -79,6 +80,17 @@ export function YesNoResponseInput({
     }
   }, [response, onResponseChange, onApplyAISuggestion]);
 
+  // Handle opening the analysis dialog for a specific media
+  const handleOpenAnalysis = useCallback(() => {
+    // If we have media URLs, select the first one by default
+    if (response?.mediaUrls && response.mediaUrls.length > 0) {
+      setSelectedMediaUrl(response.mediaUrls[0]);
+    } else {
+      setSelectedMediaUrl(null);
+    }
+    setIsAnalysisOpen(true);
+  }, [response?.mediaUrls]);
+
   return (
     <div className="space-y-4">
       <ResponseButtonGroup 
@@ -95,7 +107,7 @@ export function YesNoResponseInput({
         />
         
         {(question.allowsPhoto || question.allowsVideo || question.permite_foto || question.permite_video) && (
-          <MediaAnalysisButton onOpenAnalysis={() => setIsAnalysisOpen(true)} />
+          <MediaAnalysisButton onOpenAnalysis={handleOpenAnalysis} />
         )}
       </div>
       
@@ -105,16 +117,18 @@ export function YesNoResponseInput({
         allowsAudio={question.allowsAudio || question.permite_audio || false}
         allowsFiles={question.allowsFiles || question.permite_files || false}
         mediaUrls={response?.mediaUrls || []}
-        onChange={handleMediaChange}
+        onMediaChange={handleMediaChange}
         readOnly={readOnly}
       />
       
       <MediaAnalysisDialog
         open={isAnalysisOpen}
         onOpenChange={setIsAnalysisOpen}
+        mediaUrl={selectedMediaUrl}
         mediaUrls={response?.mediaUrls || []}
         questionText={question.text || question.pergunta || ""}
         onAnalysisComplete={handleAnalysisResults}
+        multimodalAnalysis={true}
       />
     </div>
   );
