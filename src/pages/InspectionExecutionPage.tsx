@@ -327,6 +327,7 @@ export default function InspectionExecutionPage() {
           onViewActionPlan={handleViewActionPlan}
           onGenerateReport={handleGenerateReport}
           refreshData={refreshData}
+          setResponses={setResponses}
           onResponseChange={handleResponseChange}
           onMediaChange={handleMediaChange}
           onMediaUpload={handleMediaUpload}

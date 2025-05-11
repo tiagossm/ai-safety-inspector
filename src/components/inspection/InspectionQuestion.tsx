@@ -5,7 +5,7 @@ import { ActionPlanSection } from "./question-parts/ActionPlanSection";
 import { QuestionHeader } from "./question-components/QuestionHeader";
 import { CommentSection } from "./question-components/CommentSection";
 import { ActionPlanButton } from "./question-components/ActionPlanButton";
-import { MediaAttachments } from "@/components/media/MediaAttachments";
+import { MediaAttachments } from "@/components/inspection/question-inputs/MediaAttachments";
 import { isNegativeResponse, normalizeResponseType } from "@/utils/inspection/normalizationUtils";
 import { ActionPlanForm } from "@/components/action-plans/form/ActionPlanForm";
 import { ActionPlanFormData } from "@/components/action-plans/form/types";

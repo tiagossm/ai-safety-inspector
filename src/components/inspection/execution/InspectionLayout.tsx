@@ -37,6 +37,7 @@ interface InspectionLayoutProps {
   onGenerateReport: () => Promise<void>;
   refreshData: () => void;
   setResponses: (data: Record<string, any>) => void;
+  onResponseChange?: (questionId: string, data: any) => void;
   onMediaChange?: (questionId: string, mediaUrls: string[]) => void;
   onMediaUpload?: (questionId: string, file: File) => Promise<string | null>;
   onSaveSubChecklistResponses: (subChecklistId: string, responses: Record<string, any>) => Promise<void>;
@@ -68,6 +69,7 @@ export function InspectionLayout({
   onGenerateReport,
   refreshData,
   setResponses,
+  onResponseChange,
   onMediaChange,
   onMediaUpload,
   onSaveSubChecklistResponses,
@@ -93,6 +95,11 @@ export function InspectionLayout({
         mediaUrls: mediaUrls
       }
     }));
+    
+    // Se onResponseChange estiver definido, chame-o
+    if (onResponseChange) {
+      onResponseChange(questionId, data);
+    }
     
     // Se onMediaChange estiver definido e houver mudanças nas mediaUrls, chame-o
     if (onMediaChange && data.mediaUrls) {
