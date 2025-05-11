@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ThumbsUp, ThumbsDown, Search, PenLine, AlertCircle, Sparkles } from "lucide-react";
@@ -22,6 +21,12 @@ interface YesNoResponseInputProps {
   readOnly?: boolean;
 }
 
+// Define an interface for the analysis result object
+interface AnalysisResultObject {
+  actionPlanSuggestion?: string;
+  [key: string]: any;
+}
+
 export function YesNoResponseInput({
   question,
   response,
@@ -38,12 +43,17 @@ export function YesNoResponseInput({
   const [showAnalysisDialog, setShowAnalysisDialog] = useState(false);
 
   useEffect(() => {
-    const suggestion = response?.mediaAnalysisResults
-      ? Object.values(response.mediaAnalysisResults)
-          .find(r => r && typeof r === 'object' && 'actionPlanSuggestion' in r)
-          ?.actionPlanSuggestion || null
-      : null;
-    setAiSuggestion(suggestion);
+    if (response?.mediaAnalysisResults) {
+      const results = Object.values(response.mediaAnalysisResults);
+      // Find the first result that contains an actionPlanSuggestion
+      const resultWithSuggestion = results.find((r): r is AnalysisResultObject => 
+        r !== null && typeof r === 'object' && 'actionPlanSuggestion' in r && typeof r.actionPlanSuggestion === 'string'
+      );
+      
+      setAiSuggestion(resultWithSuggestion?.actionPlanSuggestion || null);
+    } else {
+      setAiSuggestion(null);
+    }
   }, [response?.mediaAnalysisResults]);
 
   const handleRadioChange = (value: boolean) => {
