@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ThumbsUp, ThumbsDown, Search, PenLine, AlertCircle, Sparkles } from "lucide-react";
+import { ThumbsUp, ThumbsDown, Search, AlertCircle } from "lucide-react";
 import { ActionPlanFormData } from "@/components/action-plans/form/types";
 import { MediaUploadInput } from "../../question-inputs/MediaUploadInput";
 import { ActionPlanDialog } from "@/components/action-plans/ActionPlanDialog";
@@ -9,6 +9,8 @@ import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { AISuggestionPanel } from "../AISuggestionPanel";
+import { YesNoInput } from "../../question-inputs/YesNoInput";
 
 interface YesNoResponseInputProps {
   question: any;
@@ -212,23 +214,10 @@ export function YesNoResponseInput({
       />
 
       {aiSuggestion && localValue === false && (
-        <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
-          <div className="flex items-center mb-2">
-            <Sparkles className="h-4 w-4 mr-1 text-amber-500" />
-            <span className="text-sm font-medium text-amber-700">Sugestão da IA</span>
-          </div>
-          <p className="text-sm mb-3 text-amber-800">{aiSuggestion}</p>
-          <Button
-            size="sm"
-            variant="outline"
-            className="w-full bg-amber-100 hover:bg-amber-200 border-amber-300"
-            onClick={handleApplyAISuggestion}
-            type="button"
-          >
-            <Sparkles className="h-3 w-3 mr-1" />
-            Aplicar esta sugestão
-          </Button>
-        </div>
+        <AISuggestionPanel 
+          suggestion={aiSuggestion} 
+          onApply={handleApplyAISuggestion}
+        />
       )}
 
       {inspectionId && question.id && onSaveActionPlan && (
