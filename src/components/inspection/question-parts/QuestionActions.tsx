@@ -1,46 +1,40 @@
 
 import React from "react";
-import { Button } from "@/components/ui/button";
-import { MessageSquare, ClipboardList } from "lucide-react";
+import { CommentSection } from "../question-components/CommentSection";
+import { ActionPlanButton } from "../question-components/ActionPlanButton";
 
 interface QuestionActionsProps {
-  response: any;
-  onOpenCommentDialog: () => void;
-  onOpenActionPlanDialog: () => void;
+  isCommentOpen: boolean;
+  setIsCommentOpen: (isOpen: boolean) => void;
+  comment: string;
+  handleCommentChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  hasNegativeResponse: boolean;
+  isActionPlanOpen: boolean;
   setIsActionPlanOpen: (isOpen: boolean) => void;
 }
 
 export function QuestionActions({
-  response,
-  onOpenCommentDialog,
-  onOpenActionPlanDialog,
+  isCommentOpen,
+  setIsCommentOpen,
+  comment,
+  handleCommentChange,
+  hasNegativeResponse,
+  isActionPlanOpen,
   setIsActionPlanOpen
 }: QuestionActionsProps) {
   return (
-    <div className="flex flex-wrap justify-end gap-2 mt-3">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-7 text-xs"
-        onClick={onOpenCommentDialog}
-      >
-        <MessageSquare className="h-3.5 w-3.5 mr-1" />
-        {response?.comment ? "Editar comentário" : "Adicionar comentário"}
-      </Button>
-      
-      {response?.value === "não" && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 text-xs text-amber-600"
-          onClick={() => {
-            setIsActionPlanOpen(true);
-            onOpenActionPlanDialog();
-          }}
-        >
-          <ClipboardList className="h-3.5 w-3.5 mr-1" />
-          {response?.actionPlan ? "Editar plano de ação" : "Adicionar plano de ação"}
-        </Button>
+    <div className="flex justify-between items-center mt-3">
+      <CommentSection 
+        isCommentOpen={isCommentOpen}
+        setIsCommentOpen={setIsCommentOpen}
+        comment={comment}
+        handleCommentChange={handleCommentChange}
+      />
+      {hasNegativeResponse && (
+        <ActionPlanButton 
+          isActionPlanOpen={isActionPlanOpen}
+          setIsActionPlanOpen={setIsActionPlanOpen}
+        />
       )}
     </div>
   );
