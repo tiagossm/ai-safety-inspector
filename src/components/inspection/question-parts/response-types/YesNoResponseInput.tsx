@@ -43,6 +43,15 @@ export function YesNoResponseInput({
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
   const [showAnalysisDialog, setShowAnalysisDialog] = useState(false);
 
+  // Ensure we correctly initialize the component with the current response value
+  const [localValue, setLocalValue] = useState<boolean | undefined>(response?.value);
+
+  // Update local state when external response changes
+  useEffect(() => {
+    setLocalValue(response?.value);
+    console.log('YesNoResponseInput: response value changed:', response?.value);
+  }, [response?.value]);
+
   useEffect(() => {
     if (response?.mediaAnalysisResults) {
       const results = Object.values(response.mediaAnalysisResults);
@@ -63,12 +72,16 @@ export function YesNoResponseInput({
     console.log('YesNoResponseInput: handleRadioChange called with value:', value);
     console.log('YesNoResponseInput: current response before change:', response);
     
+    // Update local state first for immediate visual feedback
+    setLocalValue(value);
+    
     // Create a new response object with updated value
     const updatedResponse = {
       ...(response || {}),
-      value,
+      value: value,
       // Preserve existing mediaUrls and analysis results
-      mediaUrls: response?.mediaUrls || []
+      mediaUrls: response?.mediaUrls || [],
+      mediaAnalysisResults: response?.mediaAnalysisResults || {}
     };
     
     console.log('YesNoResponseInput: sending updated response:', updatedResponse);
@@ -89,7 +102,8 @@ export function YesNoResponseInput({
     // Update the response with the new media URLs
     const updatedResponse = {
       ...(response || {}),
-      mediaUrls: urls
+      mediaUrls: urls,
+      value: localValue // Ensure we keep the current value when updating media URLs
     };
     
     if (onMediaChange) onMediaChange(urls);
@@ -119,7 +133,7 @@ export function YesNoResponseInput({
       mediaAnalysisResults: updatedResults,
       // Preserve existing data
       mediaUrls: response?.mediaUrls || [],
-      value: response?.value
+      value: localValue // Ensure we keep the current value
     });
   };
 
@@ -129,10 +143,10 @@ export function YesNoResponseInput({
     <div>
       <div className="flex flex-wrap gap-2 mb-3">
         <Button
-          variant={response?.value === true ? "default" : "outline"}
+          variant={localValue === true ? "default" : "outline"}
           onClick={() => handleRadioChange(true)}
           disabled={readOnly}
-          className={response?.value === true ? "bg-green-500 hover:bg-green-600 text-white" : ""}
+          className={localValue === true ? "bg-green-500 hover:bg-green-600 text-white" : ""}
           type="button"
         >
           <ThumbsUp className="h-4 w-4 mr-2" />
@@ -140,21 +154,21 @@ export function YesNoResponseInput({
         </Button>
 
         <Button
-          variant={response?.value === false ? "default" : "outline"}
+          variant={localValue === false ? "default" : "outline"}
           onClick={() => handleRadioChange(false)}
           disabled={readOnly}
-          className={response?.value === false ? "bg-red-500 hover:bg-red-600 text-white" : ""}
+          className={localValue === false ? "bg-red-500 hover:bg-red-600 text-white" : ""}
           type="button"
         >
           <ThumbsDown className="h-4 w-4 mr-2" />
           <span>Não</span>
         </Button>
 
-        {response?.value === true && (
+        {localValue === true && (
           <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">OK</Badge>
         )}
 
-        {response?.value === false && (
+        {localValue === false && (
           <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300">Necessita de Plano de Ação</Badge>
         )}
       </div>
@@ -186,7 +200,7 @@ export function YesNoResponseInput({
             mediaAnalysisResults: updatedResults,
             // Preserve existing data
             mediaUrls: response?.mediaUrls || [],
-            value: response?.value
+            value: localValue // Ensure we keep the current value
           });
         }}
         analysisResults={response?.mediaAnalysisResults}
@@ -197,7 +211,7 @@ export function YesNoResponseInput({
         allowsFiles={question.allowsFiles || question.permite_files}
       />
 
-      {aiSuggestion && response?.value === false && (
+      {aiSuggestion && localValue === false && (
         <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
           <div className="flex items-center mb-2">
             <Sparkles className="h-4 w-4 mr-1 text-amber-500" />
@@ -234,7 +248,7 @@ export function YesNoResponseInput({
         onOpenChange={setShowAnalysisDialog}
         mediaUrl={null}
         questionText={questionText}
-        responseValue={response?.value}
+        responseValue={localValue}
         mediaUrls={response?.mediaUrls || []}
         onAnalysisComplete={handleFullAnalysisComplete}
         multimodalAnalysis={true}

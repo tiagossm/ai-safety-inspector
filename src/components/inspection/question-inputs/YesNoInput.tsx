@@ -6,14 +6,17 @@ import { CheckCircle, XCircle, HelpCircle } from "lucide-react";
 interface YesNoInputProps {
   value: string | undefined;
   onChange: (value: string) => void;
+  readOnly?: boolean;
 }
 
-export function YesNoInput({ value, onChange }: YesNoInputProps) {
+export function YesNoInput({ value, onChange, readOnly = false }: YesNoInputProps) {
   console.log("YesNoInput: rendering with value:", value);
   
   const handleClick = (newValue: string) => {
     console.log("YesNoInput: button clicked with value:", newValue);
-    onChange(newValue);
+    if (!readOnly) {
+      onChange(newValue);
+    }
   };
   
   return (
@@ -22,6 +25,7 @@ export function YesNoInput({ value, onChange }: YesNoInputProps) {
         variant={value === "sim" ? "default" : "outline"}
         className={value === "sim" ? "bg-green-500 hover:bg-green-600 text-white" : ""}
         onClick={() => handleClick("sim")}
+        disabled={readOnly}
         size="sm"
         type="button"
       >
@@ -32,6 +36,7 @@ export function YesNoInput({ value, onChange }: YesNoInputProps) {
         variant={value === "não" ? "default" : "outline"}
         className={value === "não" ? "bg-red-500 hover:bg-red-600 text-white" : ""}
         onClick={() => handleClick("não")}
+        disabled={readOnly}
         size="sm"
         type="button"
       >
@@ -42,6 +47,7 @@ export function YesNoInput({ value, onChange }: YesNoInputProps) {
         variant={value === "n/a" ? "default" : "outline"}
         className={value === "n/a" ? "bg-gray-500 hover:bg-gray-600 text-white" : ""}
         onClick={() => handleClick("n/a")}
+        disabled={readOnly}
         size="sm"
         type="button"
       >
