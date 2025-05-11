@@ -201,4 +201,4 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
       </div>
     </div>
   );
-}
+});
