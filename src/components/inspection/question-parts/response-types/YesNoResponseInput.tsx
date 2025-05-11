@@ -1,16 +1,15 @@
 
 import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { ThumbsUp, ThumbsDown, Search, AlertCircle } from "lucide-react";
 import { ActionPlanFormData } from "@/components/action-plans/form/types";
 import { MediaUploadInput } from "../../question-inputs/MediaUploadInput";
 import { ActionPlanDialog } from "@/components/action-plans/ActionPlanDialog";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { AISuggestionPanel } from "../AISuggestionPanel";
-import { YesNoInput } from "../../question-inputs/YesNoInput";
+import { ResponseButtonGroup } from "./components/ResponseButtonGroup";
+import { MediaAnalysisButton } from "./components/MediaAnalysisButton";
+import { ActionPlanButton } from "./components/ActionPlanButton";
 
 interface YesNoResponseInputProps {
   question: any;
@@ -143,48 +142,23 @@ export function YesNoResponseInput({
 
   return (
     <div>
-      <div className="flex flex-wrap gap-2 mb-3">
-        <Button
-          variant={localValue === true ? "default" : "outline"}
-          onClick={() => handleRadioChange(true)}
-          disabled={readOnly}
-          className={localValue === true ? "bg-green-500 hover:bg-green-600 text-white" : ""}
-          type="button"
-        >
-          <ThumbsUp className="h-4 w-4 mr-2" />
-          <span>Sim</span>
-        </Button>
+      <ResponseButtonGroup 
+        value={localValue} 
+        onChange={handleRadioChange} 
+        readOnly={readOnly}
+      />
 
-        <Button
-          variant={localValue === false ? "default" : "outline"}
-          onClick={() => handleRadioChange(false)}
-          disabled={readOnly}
-          className={localValue === false ? "bg-red-500 hover:bg-red-600 text-white" : ""}
-          type="button"
-        >
-          <ThumbsDown className="h-4 w-4 mr-2" />
-          <span>Não</span>
-        </Button>
-
-        {localValue === true && (
-          <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">OK</Badge>
-        )}
-
-        {localValue === false && (
-          <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300">Necessita de Plano de Ação</Badge>
+      <div className="flex flex-wrap gap-2">
+        <MediaAnalysisButton onOpenAnalysis={handleOpenAnalysisDialog} />
+        
+        {inspectionId && question.id && localValue === false && onSaveActionPlan && (
+          <ActionPlanButton 
+            localValue={localValue} 
+            onActionPlanClick={() => setShowActionPlanDialog(true)} 
+            readOnly={readOnly}
+          />
         )}
       </div>
-
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={handleOpenAnalysisDialog}
-        className="mb-4 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
-        type="button"
-      >
-        <Search className="h-3.5 w-3.5 mr-1" />
-        Analisar com IA
-      </Button>
 
       <MediaUploadInput
         mediaUrls={response?.mediaUrls || []}

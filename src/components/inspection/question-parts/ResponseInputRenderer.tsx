@@ -1,8 +1,6 @@
-
 import React, { useCallback } from "react";
 import { YesNoResponseInput } from "./response-types/YesNoResponseInput";
 import { TextResponseInput } from "./response-types/TextResponseInput";
-import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 
 interface ResponseInputRendererProps {
   question: any;
