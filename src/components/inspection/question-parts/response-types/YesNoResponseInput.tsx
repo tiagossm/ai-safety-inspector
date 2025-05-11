@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ThumbsUp, ThumbsDown, Search, PenLine, AlertCircle, Sparkles } from "lucide-react";
@@ -38,7 +39,9 @@ export function YesNoResponseInput({
 
   useEffect(() => {
     const suggestion = response?.mediaAnalysisResults
-      ? Object.values(response.mediaAnalysisResults).find(r => r.actionPlanSuggestion)?.actionPlanSuggestion || null
+      ? Object.values(response.mediaAnalysisResults)
+          .find(r => r && typeof r === 'object' && 'actionPlanSuggestion' in r)
+          ?.actionPlanSuggestion || null
       : null;
     setAiSuggestion(suggestion);
   }, [response?.mediaAnalysisResults]);

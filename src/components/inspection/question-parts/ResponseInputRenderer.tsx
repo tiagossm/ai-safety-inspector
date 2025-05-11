@@ -40,7 +40,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
       onMediaChange(urls);
     }
     
-    // Também atualizamos a resposta para incluir as URLs de mídia
+    // We also update the response to include the media URLs
     const updatedResponse = {
       ...response,
       mediaUrls: urls
