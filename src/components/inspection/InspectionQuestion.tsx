@@ -153,7 +153,7 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
             />
           </div>
 
-          {/* Removido a renderização duplicada de MediaAttachments aqui */}
+          {/* Removed duplicate MediaAttachments rendering */}
 
           <div className="flex justify-between items-center mt-3">
             <CommentSection 
