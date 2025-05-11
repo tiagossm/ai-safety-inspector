@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { InspectionHeader } from "@/components/inspection/InspectionHeader";
 import { QuestionGroups } from "@/components/inspection/QuestionGroups";
@@ -35,7 +36,7 @@ interface InspectionLayoutProps {
   onViewActionPlan: () => Promise<void>;
   onGenerateReport: () => Promise<void>;
   refreshData: () => void;
-  onResponseChange: (questionId: string, value: any, additionalData?: any) => void;
+  setResponses: (data: Record<string, any>) => void;
   onMediaChange?: (questionId: string, mediaUrls: string[]) => void;
   onMediaUpload?: (questionId: string, file: File) => Promise<string | null>;
   onSaveSubChecklistResponses: (subChecklistId: string, responses: Record<string, any>) => Promise<void>;
@@ -66,85 +67,30 @@ export function InspectionLayout({
   onViewActionPlan,
   onGenerateReport,
   refreshData,
-  onResponseChange,
+  setResponses,
   onMediaChange,
   onMediaUpload,
   onSaveSubChecklistResponses,
   plansByQuestion = {},
   onSaveActionPlan
 }: InspectionLayoutProps) {
-  // Auto-save timer
-  const [autoSaveTimer, setAutoSaveTimer] = useState<NodeJS.Timeout | null>(null);
-  
-  // Set up auto-save
-  useEffect(() => {
-    if (autoSave && !autoSaveTimer) {
-      const timer = setInterval(() => {
-        console.log("Auto-saving inspection responses...");
-        onSaveProgress();
-      }, 60000); // Auto-save every minute
-      
-      setAutoSaveTimer(timer);
-    } else if (!autoSave && autoSaveTimer) {
-      clearInterval(autoSaveTimer);
-      setAutoSaveTimer(null);
-    }
-    
-    return () => {
-      if (autoSaveTimer) {
-        clearInterval(autoSaveTimer);
-      }
-    };
-  }, [autoSave, autoSaveTimer, onSaveProgress]);
-
-  // Definir grupo padrão se não houver nenhum
-  const DEFAULT_GROUP = {
-    id: "default-group",
-    title: "Perguntas",
-    order: 0
-  };
-  
-  // Garantir que sempre existe pelo menos um grupo
+  const DEFAULT_GROUP = { id: "default-group", title: "Perguntas", order: 0 };
   const displayGroups = groups.length > 0 ? groups : [DEFAULT_GROUP];
-  
-  // Definir currentGroupId se não estiver definido
   const effectiveCurrentGroupId = currentGroupId || (displayGroups.length > 0 ? displayGroups[0].id : null);
-  
+
+  const handleQuestionResponseChange = (questionId: string, data: any) => {
+    setResponses(prev => ({
+      ...prev,
+      [questionId]: {
+        ...(prev[questionId] || {}),
+        ...data
+      }
+    }));
+  };
+
   if (loading) {
     return (
-      <div className="container max-w-7xl mx-auto py-8">
-        <div className="mb-4">
-          <Skeleton className="h-7 w-2/3 max-w-md mb-1" />
-          <Skeleton className="h-4 w-1/3 max-w-xs" />
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="md:col-span-1">
-            <Card className="p-4">
-              <Skeleton className="h-4 w-3/4 mb-4" />
-              <Skeleton className="h-10 w-full mb-2" />
-              <Skeleton className="h-10 w-full mb-2" />
-              <Skeleton className="h-10 w-full" />
-            </Card>
-          </div>
-          
-          <div className="md:col-span-3">
-            <Card className="p-4">
-              <Skeleton className="h-6 w-1/3 mb-6" />
-              <div className="space-y-8">
-                <div className="space-y-4">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-20 w-full" />
-                </div>
-                <div className="space-y-4">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-20 w-full" />
-                </div>
-              </div>
-            </Card>
-          </div>
-        </div>
-      </div>
+      <div className="container max-w-7xl mx-auto py-8">Carregando...</div>
     );
   }
 
@@ -155,7 +101,7 @@ export function InspectionLayout({
           <AlertCircle className="h-5 w-5" />
           <AlertTitle className="text-base font-medium">Inspeção não encontrada</AlertTitle>
           <AlertDescription className="mt-2">
-            Não foi possível carregar os dados da inspeção. Tente novamente mais tarde ou contate o suporte.
+            Não foi possível carregar os dados da inspeção.
           </AlertDescription>
         </Alert>
       </div>
@@ -163,20 +109,10 @@ export function InspectionLayout({
   }
 
   const isInspectionCompleted = inspection.status === "Concluída" || inspection.status === "Completed";
-  
-  // Handle response change for a question
-  const handleQuestionResponseChange = (questionId: string, data: any) => {
-    onResponseChange(questionId, data.value, {
-      comment: data.comment,
-      actionPlan: data.actionPlan,
-      mediaUrls: data.mediaUrls
-    });
-  };
 
   return (
     <div className="container max-w-7xl mx-auto py-8">
       <InspectionHeader loading={loading} inspection={inspection} />
-      
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="md:col-span-1 space-y-6">
           <Card className="p-4">
@@ -196,7 +132,6 @@ export function InspectionLayout({
               refreshData={refreshData}
             />
           </Card>
-          
           <Card>
             <ScrollArea className="h-[calc(100vh-350px)]">
               <QuestionGroups 
@@ -208,14 +143,9 @@ export function InspectionLayout({
             </ScrollArea>
           </Card>
         </div>
-        
         <div className="md:col-span-3">
           <Card>
             <div className="p-4">
-              <h3 className="text-lg font-semibold mb-4">
-                {groups.find(g => g.id === effectiveCurrentGroupId)?.title || "Perguntas"}
-              </h3>
-              
               {filteredQuestions.length > 0 ? (
                 <div className="space-y-6">
                   {filteredQuestions.map((question, index) => (
@@ -244,8 +174,6 @@ export function InspectionLayout({
           </Card>
         </div>
       </div>
-      
-      {/* Floating action buttons */}
       <FloatingActionButtons 
         saving={saving}
         autoSave={autoSave}
