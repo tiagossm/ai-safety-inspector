@@ -100,10 +100,10 @@ export function YesNoResponseInput({
       </div>
       
       <MediaUploadInput
-        allowPhoto={question.allowsPhoto || question.permite_foto || false}
-        allowVideo={question.allowsVideo || question.permite_video || false}
-        allowAudio={question.allowsAudio || question.permite_audio || false}
-        allowFiles={question.allowsFiles || question.permite_files || false}
+        allowsPhoto={question.allowsPhoto || question.permite_foto || false}
+        allowsVideo={question.allowsVideo || question.permite_video || false}
+        allowsAudio={question.allowsAudio || question.permite_audio || false}
+        allowsFiles={question.allowsFiles || question.permite_files || false}
         mediaUrls={response?.mediaUrls || []}
         onChange={handleMediaChange}
         readOnly={readOnly}
@@ -114,7 +114,7 @@ export function YesNoResponseInput({
         onOpenChange={setIsAnalysisOpen}
         mediaUrls={response?.mediaUrls || []}
         questionText={question.text || question.pergunta || ""}
-        onAnalysisResults={handleAnalysisResults}
+        onAnalysisComplete={handleAnalysisResults}
       />
     </div>
   );
