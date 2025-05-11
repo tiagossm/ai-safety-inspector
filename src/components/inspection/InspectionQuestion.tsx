@@ -5,7 +5,7 @@ import { ActionPlanSection } from "./question-parts/ActionPlanSection";
 import { QuestionHeader } from "./question-components/QuestionHeader";
 import { CommentSection } from "./question-components/CommentSection";
 import { ActionPlanButton } from "./question-components/ActionPlanButton";
-import { MediaAttachments } from "@/components/inspection/question-inputs/MediaAttachments";
+import { MediaAttachments } from "@/components/media/MediaAttachments";
 import { isNegativeResponse, normalizeResponseType } from "@/utils/inspection/normalizationUtils";
 import { ActionPlanForm } from "@/components/action-plans/form/ActionPlanForm";
 import { ActionPlanFormData } from "@/components/action-plans/form/types";
@@ -44,31 +44,29 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
   const [isValid, setIsValid] = useState(!question.isRequired);
   const [isCommentOpen, setIsCommentOpen] = useState(!!response?.comment);
   const [showActionPlanDialog, setShowActionPlanDialog] = useState(false);
-  
+
   const normalizedType = useMemo(() => {
     return normalizeResponseType(question.responseType || question.tipo_resposta || "");
   }, [question.responseType, question.tipo_resposta]);
-  
+
   const questionText = question.text || question.pergunta || "";
   const isRequired = question.isRequired !== undefined ? question.isRequired : question.obrigatorio;
   const hasSubChecklist = question.hasSubChecklist || false;
-  
+
   const allowsPhoto = question.allowsPhoto || question.permite_foto || false;
   const allowsVideo = question.allowsVideo || question.permite_video || false;
   const allowsAudio = question.allowsAudio || question.permite_audio || false;
   const allowsFiles = question.allowsFiles || question.permite_files || false;
-  
-  useEffect(() => {
-    setComment(response?.comment || "");
-    setIsCommentOpen(!!response?.comment);
-  }, [response?.comment]);
 
   const handleValueChange = useCallback((value: any) => {
     setIsValid(!isRequired || (value !== undefined && value !== null && value !== ""));
     onResponseChange({
       ...response,
-      value,
-      comment
+      value: value?.value ?? value,
+      comment: value?.comment ?? comment,
+      actionPlan: value?.actionPlan ?? response?.actionPlan,
+      mediaUrls: value?.mediaUrls ?? response?.mediaUrls ?? [],
+      subChecklistResponses: value?.subChecklistResponses ?? response?.subChecklistResponses ?? {},
     });
   }, [isRequired, response, comment, onResponseChange]);
 
@@ -119,9 +117,6 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
 
   if (!shouldBeVisible()) return null;
 
-  // Certifique-se de que mediaUrls seja sempre tratado como um array
-  const mediaUrls = Array.isArray(response?.mediaUrls) ? response.mediaUrls : [];
-
   return (
     <div className={`relative border rounded-lg p-4 mb-4 ${!isValid && response?.value !== undefined ? 'border-l-4 border-l-red-500' : ''}`}>
       <div className="flex items-start gap-2">
@@ -154,6 +149,12 @@ export const InspectionQuestion = React.memo(function InspectionQuestion({
               onSaveActionPlan={handleSaveActionPlan}
             />
           </div>
+
+          {Array.isArray(response?.mediaUrls) && response.mediaUrls.length > 0 && (
+            <div className="mt-4">
+              <MediaAttachments mediaUrls={response.mediaUrls} readOnly />
+            </div>
+          )}
 
           <div className="flex justify-between items-center mt-3">
             <CommentSection 
