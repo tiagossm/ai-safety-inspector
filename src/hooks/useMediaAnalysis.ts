@@ -9,6 +9,7 @@ export interface MediaAnalysisResult {
   transcription?: string;
   summary?: string;
   hasNonConformity?: boolean;
+  psychosocialRiskDetected?: boolean;
   confidence?: number;
   actionPlanSuggestion?: string;
   questionText?: string;
@@ -78,6 +79,7 @@ export function useMediaAnalysis() {
             type: "multimodal",
             summary: data.summary || createContextualSummary(questionText, responseValue, mediaUrls.length, data.hasNonConformity),
             hasNonConformity: data.hasNonConformity,
+            psychosocialRiskDetected: data.psychosocialRiskDetected,
             questionText: questionText,
             imageAnalysis: data.imageAnalysis,
             audioTranscription: data.audioTranscription,
@@ -120,6 +122,7 @@ export function useMediaAnalysis() {
           analysis: data.analysis,
           transcription: data.transcription,
           hasNonConformity: data.hasNonConformity,
+          psychosocialRiskDetected: data.psychosocialRiskDetected,
           actionPlanSuggestion: data.actionPlanSuggestion,
           questionText
         };

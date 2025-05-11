@@ -8,6 +8,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// List of psychosocial risk keywords for detection
+const PSYCHOSOCIAL_KEYWORDS = [
+  "estresse", "cansaço", "exaustão", "pressão", "fadiga", "burnout", "grito", "xingar", "humilhação", "assédio",
+  "autoritarismo", "ansiedade", "depressão", "medo", "tristeza", "ambiente pesado", "clima ruim", "isolado",
+  "sem apoio", "falta de reconhecimento", "correria", "sem pausa", "rigidez", "sem autonomia", "sem liberdade",
+  "não posso opinar", "ameaça de punição", "discriminação", "preconceito"
+];
+
 // Interface for the expected body content
 interface RequestBody {
   mediaUrl?: string;
@@ -105,6 +113,14 @@ function determineMediaType(url: string): string {
   return 'image'; // Default to image
 }
 
+// Function to check for psychosocial risk keywords in text
+function detectPsychosocialRisks(text: string): boolean {
+  if (!text) return false;
+  
+  const lowercaseText = text.toLowerCase();
+  return PSYCHOSOCIAL_KEYWORDS.some(keyword => lowercaseText.includes(keyword.toLowerCase()));
+}
+
 // Função para análise de imagem usando OpenAI Vision
 async function analyzeImage(imageUrl: string, apiKey: string, questionText?: string) {
   try {
@@ -193,9 +209,12 @@ async function analyzeImage(imageUrl: string, apiKey: string, questionText?: str
       analysis.toLowerCase().includes("non-compliance") ||
       analysis.toLowerCase().includes("não conforme");
     
+    // Check for psychosocial risk indicators in image analysis
+    const psychosocialRiskDetected = detectPsychosocialRisks(analysis);
+    
     let actionPlanSuggestion = null;
     
-    if (hasNonConformity) {
+    if (hasNonConformity || psychosocialRiskDetected) {
       // Tentar extrair as ações corretivas ou plano de ação sugerido
       const actionPlanMatch = analysis.match(/ações corretivas[:\s]*([\s\S]*?)(?=\n\n|\n$|$)/i) ||
                               analysis.match(/plano de ação[:\s]*([\s\S]*?)(?=\n\n|\n$|$)/i) ||
@@ -218,7 +237,16 @@ async function analyzeImage(imageUrl: string, apiKey: string, questionText?: str
         if (relevantSentences.length > 0) {
           actionPlanSuggestion = relevantSentences.join('. ').trim() + '.';
         } else {
-          actionPlanSuggestion = "Desenvolver plano de ação para corrigir a não conformidade detectada na imagem.";
+          let suggestion = "Desenvolver plano de ação para corrigir ";
+          if (hasNonConformity) {
+            suggestion += "a não conformidade detectada na imagem";
+          }
+          if (psychosocialRiskDetected) {
+            suggestion += hasNonConformity ? " e " : "";
+            suggestion += "os possíveis riscos psicossociais identificados";
+          }
+          suggestion += ".";
+          actionPlanSuggestion = suggestion;
         }
       }
     }
@@ -227,6 +255,7 @@ async function analyzeImage(imageUrl: string, apiKey: string, questionText?: str
       type: 'image',
       analysis: analysis,
       hasNonConformity,
+      psychosocialRiskDetected,
       actionPlanSuggestion,
       error: false,
       questionText
@@ -258,6 +287,7 @@ async function performMultimodalAnalysis(mediaUrls: string[], apiKey: string, qu
     const result: any = {
       type: "multimodal",
       hasNonConformity: false,
+      psychosocialRiskDetected: false,
       questionText
     };
     
@@ -270,6 +300,14 @@ async function performMultimodalAnalysis(mediaUrls: string[], apiKey: string, qu
       if (imageAnalysis.hasNonConformity) {
         result.hasNonConformity = true;
         result.actionPlanSuggestion = imageAnalysis.actionPlanSuggestion;
+      }
+      
+      // If psychosocial risks detected, mark the result
+      if (imageAnalysis.psychosocialRiskDetected) {
+        result.psychosocialRiskDetected = true;
+        if (!result.actionPlanSuggestion) {
+          result.actionPlanSuggestion = imageAnalysis.actionPlanSuggestion;
+        }
       }
       
       // If we have multiple images, add a note about it
@@ -292,6 +330,18 @@ async function performMultimodalAnalysis(mediaUrls: string[], apiKey: string, qu
           result.actionPlanSuggestion = audioAnalysis.actionPlanSuggestion;
         }
       }
+      
+      // If audio analysis indicates psychosocial risk, mark the result
+      if (audioAnalysis.psychosocialRiskDetected) {
+        result.psychosocialRiskDetected = true;
+        // Add or enhance action plan for psychosocial risks
+        if (!result.actionPlanSuggestion) {
+          result.actionPlanSuggestion = audioAnalysis.actionPlanSuggestion;
+        } else if (audioAnalysis.actionPlanSuggestion && !result.actionPlanSuggestion.includes("psicossocial")) {
+          result.actionPlanSuggestion += "\n\nRecomendações para riscos psicossociais: " + 
+            audioAnalysis.actionPlanSuggestion;
+        }
+      }
     }
     
     // If we have video files, analyze the first video file (as an image)
@@ -303,6 +353,15 @@ async function performMultimodalAnalysis(mediaUrls: string[], apiKey: string, qu
       if (videoAnalysis.hasNonConformity) {
         result.hasNonConformity = true;
         // Only use video action plan if we don't already have one from images or audio
+        if (!result.actionPlanSuggestion) {
+          result.actionPlanSuggestion = videoAnalysis.actionPlanSuggestion;
+        }
+      }
+      
+      // If video analysis indicates psychosocial risk, mark the result
+      if (videoAnalysis.psychosocialRiskDetected) {
+        result.psychosocialRiskDetected = true;
+        // Add or enhance action plan for psychosocial risks
         if (!result.actionPlanSuggestion) {
           result.actionPlanSuggestion = videoAnalysis.actionPlanSuggestion;
         }
@@ -320,6 +379,7 @@ async function performMultimodalAnalysis(mediaUrls: string[], apiKey: string, qu
       type: 'multimodal',
       summary: `Erro na análise multimodal: ${error.message}`,
       hasNonConformity: false,
+      psychosocialRiskDetected: false,
       error: true,
       questionText
     };
@@ -413,10 +473,13 @@ async function analyzeVideoAsImage(videoUrl: string, apiKey: string, questionTex
       analysis.toLowerCase().includes("não está em conformidade") ||
       analysis.toLowerCase().includes("non-compliance") ||
       analysis.toLowerCase().includes("não conforme");
+      
+    // Check for psychosocial risk indicators in video analysis
+    const psychosocialRiskDetected = detectPsychosocialRisks(analysis);
     
     let actionPlanSuggestion = null;
     
-    if (hasNonConformity) {
+    if (hasNonConformity || psychosocialRiskDetected) {
       // Tentar extrair as ações corretivas ou plano de ação sugerido
       const actionPlanMatch = analysis.match(/ações corretivas[:\s]*([\s\S]*?)(?=\n\n|\n$|$)/i) ||
                               analysis.match(/plano de ação[:\s]*([\s\S]*?)(?=\n\n|\n$|$)/i) ||
@@ -439,7 +502,16 @@ async function analyzeVideoAsImage(videoUrl: string, apiKey: string, questionTex
         if (relevantSentences.length > 0) {
           actionPlanSuggestion = relevantSentences.join('. ').trim() + '.';
         } else {
-          actionPlanSuggestion = "Desenvolver plano de ação para corrigir a não conformidade detectada no vídeo.";
+          let suggestion = "Desenvolver plano de ação para corrigir ";
+          if (hasNonConformity) {
+            suggestion += "a não conformidade detectada no vídeo";
+          }
+          if (psychosocialRiskDetected) {
+            suggestion += hasNonConformity ? " e " : "";
+            suggestion += "os possíveis riscos psicossociais identificados";
+          }
+          suggestion += ".";
+          actionPlanSuggestion = suggestion;
         }
       }
     }
@@ -448,6 +520,7 @@ async function analyzeVideoAsImage(videoUrl: string, apiKey: string, questionTex
       type: 'video',
       analysis: analysis || 'Análise de vídeo concluída',
       hasNonConformity,
+      psychosocialRiskDetected,
       actionPlanSuggestion,
       error: false,
       questionText
@@ -502,6 +575,9 @@ async function transcribeAudio(audioUrl: string, apiKey: string, questionText?: 
     const transcriptionData = await whisperResponse.json();
     console.log("Transcrição concluída:", transcriptionData);
     
+    // Check for psychosocial risk keywords in the transcription
+    const psychosocialRiskDetected = detectPsychosocialRisks(transcriptionData.text);
+    
     // Após transcrição, podemos opcionalmente analisar o conteúdo com a API GPT
     let analysis = '';
     let hasNonConformity = false;
@@ -514,10 +590,13 @@ async function transcribeAudio(audioUrl: string, apiKey: string, questionText?: 
           ? `Analise a seguinte transcrição de áudio no contexto da pergunta: "${questionText}".
              Identifique se o conteúdo do áudio indica conformidade ou não conformidade com os requisitos mencionados.
              Se houver não conformidade, sugira ações corretivas específicas para um plano de ação.
+             Além disso, verifique se há indícios de riscos psicossociais (como estresse, fadiga, assédio, autoritarismo, etc.) no conteúdo.
              A transcrição é: ${transcriptionData.text}
              
-             No final, indique claramente se foi detectada uma não-conformidade.`
-          : `Analise esta transcrição de áudio de uma inspeção: ${transcriptionData.text}`;
+             No final, indique claramente se foi detectada uma não-conformidade e/ou riscos psicossociais.`
+          : `Analise esta transcrição de áudio de uma inspeção: ${transcriptionData.text}
+             Verifique se há indícios de riscos psicossociais (como estresse, fadiga, assédio, autoritarismo, etc.) no conteúdo.
+             Indique claramente se foram detectados riscos psicossociais.`;
         
         // Criar instruções de sistema contextualizadas
         const systemContent = questionText 
@@ -525,12 +604,33 @@ async function transcribeAudio(audioUrl: string, apiKey: string, questionText?: 
              Avalie se o conteúdo do áudio indica conformidade ou não com os requisitos mencionados na pergunta.
              Se houver não conformidade, identifique o que está errado e sugira medidas corretivas específicas.
              
-             Sua resposta deve ter dois componentes principais:
-             1. Análise detalhada da transcrição em relação à pergunta.
-             2. Se detectada uma não conformidade, forneça uma lista clara de ações corretivas sugeridas para um plano de ação.
+             Além disso, analise se há indícios de riscos psicossociais, como:
+             - Estresse ou exaustão emocional
+             - Assédio moral ou bullying
+             - Ambiente de trabalho hostil
+             - Pressão excessiva
+             - Autoritarismo ou abuso de poder
+             - Falta de reconhecimento ou suporte
+             - Discriminação ou preconceito
              
-             Concluir sua análise indicando explicitamente se há não-conformidade detectada.`
-          : 'Você é um especialista em segurança e inspeção. Analise a transcrição do áudio e identifique informações importantes relacionadas a inspeções, segurança ou manutenção.';
+             Sua resposta deve ter três componentes principais:
+             1. Análise detalhada da transcrição em relação à pergunta.
+             2. Análise de potenciais riscos psicossociais na comunicação.
+             3. Se detectada uma não conformidade ou riscos psicossociais, forneça uma lista clara de ações corretivas sugeridas.
+             
+             Concluir sua análise indicando explicitamente se há não-conformidade e/ou riscos psicossociais detectados.`
+          : `Você é um especialista em segurança e inspeção. Analise a transcrição do áudio e identifique informações importantes relacionadas a inspeções, segurança ou manutenção.
+             
+             Analise também se há indícios de riscos psicossociais, como:
+             - Estresse ou exaustão emocional
+             - Assédio moral ou bullying
+             - Ambiente de trabalho hostil
+             - Pressão excessiva
+             - Autoritarismo ou abuso de poder
+             - Falta de reconhecimento ou suporte
+             - Discriminação ou preconceito
+             
+             Concluir sua análise indicando explicitamente se há riscos psicossociais detectados.`;
         
         const analysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -564,8 +664,17 @@ async function transcribeAudio(audioUrl: string, apiKey: string, questionText?: 
             analysis.toLowerCase().includes("não está em conformidade") ||
             analysis.toLowerCase().includes("non-compliance") ||
             analysis.toLowerCase().includes("não conforme");
+          
+          // If we already detected psychosocial risks in transcription or the analysis confirms it
+          const psychosocialDetectedInAnalysis = 
+            analysis.toLowerCase().includes("risco psicossocial") || 
+            analysis.toLowerCase().includes("riscos psicossociais") ||
+            analysis.toLowerCase().includes("indício de risco psicossocial");
+          
+          // Use either the automatic detection or the GPT analysis detection
+          const finalPsychosocialRiskDetected = psychosocialRiskDetected || psychosocialDetectedInAnalysis;
             
-          if (hasNonConformity) {
+          if (hasNonConformity || finalPsychosocialRiskDetected) {
             // Tentar extrair as ações corretivas ou plano de ação sugerido
             const actionPlanMatch = analysis.match(/ações corretivas[:\s]*([\s\S]*?)(?=\n\n|\n$|$)/i) ||
                                    analysis.match(/plano de ação[:\s]*([\s\S]*?)(?=\n\n|\n$|$)/i) ||
@@ -588,9 +697,29 @@ async function transcribeAudio(audioUrl: string, apiKey: string, questionText?: 
               if (relevantSentences.length > 0) {
                 actionPlanSuggestion = relevantSentences.join('. ').trim() + '.';
               } else {
-                actionPlanSuggestion = "Desenvolver plano de ação para corrigir a não conformidade detectada no áudio.";
+                let suggestion = "Desenvolver plano de ação para abordar ";
+                if (hasNonConformity) {
+                  suggestion += "a não conformidade detectada no áudio";
+                }
+                if (finalPsychosocialRiskDetected) {
+                  suggestion += hasNonConformity ? " e " : "";
+                  suggestion += "os riscos psicossociais identificados na comunicação";
+                }
+                suggestion += ".";
+                actionPlanSuggestion = suggestion;
               }
             }
+          }
+          
+          return {
+            type: 'audio',
+            transcription: transcriptionData.text || 'Nenhum texto detectado no áudio',
+            analysis: analysis || 'Não foi possível analisar o conteúdo do áudio',
+            hasNonConformity,
+            psychosocialRiskDetected: finalPsychosocialRiskDetected,
+            actionPlanSuggestion,
+            error: false,
+            questionText
           }
         }
       }
@@ -604,6 +733,7 @@ async function transcribeAudio(audioUrl: string, apiKey: string, questionText?: 
       transcription: transcriptionData.text || 'Nenhum texto detectado no áudio',
       analysis: analysis || 'Não foi possível analisar o conteúdo do áudio',
       hasNonConformity,
+      psychosocialRiskDetected,
       actionPlanSuggestion,
       error: false,
       questionText
@@ -626,6 +756,7 @@ function generateMultimodalSummary(result: any, questionText?: string, responseV
   const hasVideoAnalysis = !!result.videoAnalysis;
   const hasAudioTranscription = !!result.audioTranscription;
   const hasNonConformity = result.hasNonConformity;
+  const hasPsychosocialRisk = result.psychosocialRiskDetected;
   
   let summary = '';
   
@@ -637,7 +768,18 @@ function generateMultimodalSummary(result: any, questionText?: string, responseV
     summary += `Resposta registrada: ${responseValue ? 'Sim' : 'Não'}\n\n`;
   }
   
-  summary += `Resultado da análise de IA: ${hasNonConformity ? 'Potencial não conformidade detectada' : 'Nenhuma não conformidade detectada'}\n\n`;
+  let analysisResult = '';
+  if (hasNonConformity && hasPsychosocialRisk) {
+    analysisResult = 'Potencial não conformidade e riscos psicossociais detectados';
+  } else if (hasNonConformity) {
+    analysisResult = 'Potencial não conformidade detectada';
+  } else if (hasPsychosocialRisk) {
+    analysisResult = 'Riscos psicossociais detectados';
+  } else {
+    analysisResult = 'Nenhuma não conformidade ou risco psicossocial detectado';
+  }
+  
+  summary += `Resultado da análise de IA: ${analysisResult}\n\n`;
   
   if (hasImageAnalysis || hasVideoAnalysis || hasAudioTranscription) {
     summary += 'Mídias analisadas:\n';
@@ -668,6 +810,7 @@ function simulateAnalysis(requestData: RequestBody, corsHeaders: any) {
       type: 'multimodal',
       summary: `Esta é uma análise simulada de ${requestData.mediaUrls.length} mídias anexadas à pergunta "${requestData.questionText || 'sem pergunta'}". Configure a API do OpenAI para obter análises reais.`,
       hasNonConformity: true,
+      psychosocialRiskDetected: Math.random() > 0.5, // Simulate psychosocial risk detection randomly
       imageAnalysis: requestData.mediaUrls.some(url => url.match(/\.(jpeg|jpg|gif|png)$/i)) 
         ? "Esta é uma análise simulada de imagem. Configure a API do OpenAI para obter análises reais." 
         : undefined,
@@ -703,6 +846,7 @@ function simulateAnalysis(requestData: RequestBody, corsHeaders: any) {
           ? `Esta é uma análise simulada de imagem relacionada à pergunta: "${requestData.questionText}". Configure a API do OpenAI na função edge analyze-media para obter análises reais utilizando inteligência artificial.`
           : 'Esta é uma análise simulada de imagem. Configure a API do OpenAI na função edge analyze-media para obter análises reais utilizando inteligência artificial.',
         hasNonConformity: true,
+        psychosocialRiskDetected: Math.random() > 0.7, // 30% chance of psychosocial risk in image
         actionPlanSuggestion: requestData.questionText
           ? `Exemplo de sugestão de plano de ação para a pergunta: "${requestData.questionText}". Configure a API do OpenAI para obter sugestões reais baseadas na análise da imagem.`
           : "Exemplo de sugestão de plano de ação simulada. Configure a API do OpenAI para obter sugestões reais.",
@@ -718,9 +862,10 @@ function simulateAnalysis(requestData: RequestBody, corsHeaders: any) {
           ? `Esta é uma análise simulada de áudio relacionada à pergunta: "${requestData.questionText}". Configure a API do OpenAI para obter análises reais.`
           : 'Análise simulada do conteúdo de áudio.',
         hasNonConformity: true,
+        psychosocialRiskDetected: true, // Always show psychosocial risk in simulated audio analysis
         actionPlanSuggestion: requestData.questionText
-          ? `Exemplo de sugestão de plano de ação para a pergunta: "${requestData.questionText}". Configure a API do OpenAI para obter sugestões reais baseadas na transcrição e análise do áudio.`
-          : "Exemplo de sugestão de plano de ação simulada. Configure a API do OpenAI para obter sugestões reais.",
+          ? `Exemplo de sugestão de plano de ação para a pergunta: "${requestData.questionText}". Configure a API do OpenAI para obter sugestões reais baseadas na transcrição e análise do áudio. Recomendamos também atenção aos riscos psicossociais identificados no áudio.`
+          : "Exemplo de sugestão de plano de ação simulada, incluindo abordagem para riscos psicossociais detectados. Configure a API do OpenAI para obter sugestões reais.",
         simulated: true,
         error: false,
         questionText: requestData.questionText
@@ -732,6 +877,7 @@ function simulateAnalysis(requestData: RequestBody, corsHeaders: any) {
           ? `Esta é uma análise simulada de vídeo relacionada à pergunta: "${requestData.questionText}". Configure a API do OpenAI na função edge analyze-media para obter análises reais utilizando inteligência artificial.`
           : 'Esta é uma análise simulada de vídeo. Configure a API do OpenAI na função edge analyze-media para obter análises reais utilizando inteligência artificial.',
         hasNonConformity: true,
+        psychosocialRiskDetected: Math.random() > 0.5, // 50% chance of psychosocial risk in video
         actionPlanSuggestion: requestData.questionText
           ? `Exemplo de sugestão de plano de ação para a pergunta: "${requestData.questionText}". Configure a API do OpenAI para obter sugestões reais baseadas na análise do vídeo.`
           : "Exemplo de sugestão de plano de ação simulada. Configure a API do OpenAI para obter sugestões reais.",

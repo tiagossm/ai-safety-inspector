@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle, AlertCircle, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Loader2, CheckCircle, AlertCircle, ThumbsUp, ThumbsDown, Heart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { MediaRenderer } from "@/components/media/MediaRenderer";
 import { useMediaAnalysis, MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
@@ -136,6 +136,67 @@ export function MediaAnalysisDialog({
     );
   };
 
+  // Function to render the psychosocial risks section
+  const renderPsychosocialRisks = () => {
+    const psychosocialRiskDetected = analysisResult?.psychosocialRiskDetected || result?.psychosocialRiskDetected;
+    const transcription = analysisResult?.audioTranscription || result?.transcription;
+    
+    return (
+      <div className="space-y-4">
+        {psychosocialRiskDetected ? (
+          <>
+            <div className="bg-rose-50 p-4 rounded-lg border border-rose-200 mb-4 flex items-start gap-3">
+              <Heart className="h-5 w-5 text-rose-600 mt-0.5" />
+              <div>
+                <h4 className="font-medium text-rose-800 mb-1">Risco psicossocial detectado</h4>
+                <p className="text-rose-700 text-sm">
+                  A análise de IA identificou indícios de possíveis riscos psicossociais que necessitam de atenção.
+                </p>
+              </div>
+            </div>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Análise de Riscos Psicossociais</CardTitle>
+                <CardDescription>
+                  Baseado nas transcrições e contexto da inspeção
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {transcription ? (
+                  <div>
+                    <h4 className="font-medium text-sm mb-2">Transcrição analisada:</h4>
+                    <div className="bg-gray-50 p-3 rounded border text-sm mb-4">
+                      <p className="whitespace-pre-line">{transcription}</p>
+                    </div>
+                    <h4 className="font-medium text-sm mb-1">Recomendações:</h4>
+                    <ul className="list-disc pl-5 space-y-1 text-sm">
+                      <li>Realizar entrevistas individuais para aprofundar a análise</li>
+                      <li>Considerar avaliação com psicólogo do trabalho</li>
+                      <li>Revisar fatores organizacionais que podem estar gerando sobrecarga</li>
+                      <li>Implementar canais seguros para denúncias e relatos</li>
+                    </ul>
+                  </div>
+                ) : (
+                  <p>
+                    Indícios de riscos psicossociais foram detectados na análise. 
+                    Recomenda-se uma avaliação mais aprofundada deste item da inspeção.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </>
+        ) : (
+          <div className="text-center py-6">
+            <p className="text-sm text-gray-500">
+              Nenhum indício de risco psicossocial foi detectado.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Function to render the question context section
   const renderQuestionContext = () => {
     return (
@@ -196,6 +257,7 @@ export function MediaAnalysisDialog({
   // Determine if we have any analysis results to show
   const hasAnalysisResults = analysisResult !== null || result !== null;
   const displayedResult = analysisResult || result;
+  const psychosocialRiskDetected = displayedResult?.psychosocialRiskDetected;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -226,6 +288,13 @@ export function MediaAnalysisDialog({
               <TabsList className="mb-4">
                 <TabsTrigger value="overview">Visão Geral</TabsTrigger>
                 <TabsTrigger value="action-plan">Plano de Ação</TabsTrigger>
+                {psychosocialRiskDetected && <TabsTrigger value="psychosocial" className="relative">
+                  Riscos Psicossociais
+                  <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                  </span>
+                </TabsTrigger>}
                 {displayedResult?.imageAnalysis && <TabsTrigger value="image">Imagens</TabsTrigger>}
                 {displayedResult?.audioTranscription && <TabsTrigger value="audio">Áudio</TabsTrigger>}
               </TabsList>
@@ -253,6 +322,18 @@ export function MediaAnalysisDialog({
                   </div>
                 ) : null}
 
+                {psychosocialRiskDetected && (
+                  <div className="bg-rose-50 p-4 rounded-lg border border-rose-200 mb-4 flex items-start gap-3">
+                    <Heart className="h-5 w-5 text-rose-600 mt-0.5" />
+                    <div>
+                      <h4 className="font-medium text-rose-800 mb-1">Risco psicossocial detectado</h4>
+                      <p className="text-rose-700 text-sm">
+                        A análise de IA identificou possíveis riscos psicossociais. Veja mais na aba específica.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {displayedResult?.summary && (
                   <Card>
                     <CardHeader>
@@ -278,6 +359,10 @@ export function MediaAnalysisDialog({
               
               <TabsContent value="action-plan">
                 {renderActionPlan()}
+              </TabsContent>
+              
+              <TabsContent value="psychosocial">
+                {renderPsychosocialRisks()}
               </TabsContent>
               
               {displayedResult?.imageAnalysis && (

@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { X, PlayCircle, PauseCircle, ZoomIn, Download, Sparkles, AlertTriangle } from "lucide-react";
+import { X, ZoomIn, Download, Sparkles, AlertTriangle, Heart } from "lucide-react";
 import { MediaPreviewDialog } from "@/components/media/MediaPreviewDialog";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { MediaAttachmentRenderer } from "@/components/media/renderers/MediaAttachmentRenderer";
@@ -97,6 +97,10 @@ export function MediaAttachments({
     return Object.values(analysisResults).some(result => result.hasNonConformity);
   };
 
+  const hasPsychosocialRisk = () => {
+    return Object.values(analysisResults).some(result => result.psychosocialRiskDetected);
+  };
+
   const handleDeleteMedia = (url: string) => {
     if (onDelete) {
       console.log("MediaAttachments: Deleting media URL:", url);
@@ -106,12 +110,21 @@ export function MediaAttachments({
   
   return (
     <>
-      {hasAnyAnalysis() && hasNonConformity() && (
-        <div className="mb-3">
-          <Badge className="bg-amber-100 text-amber-800 border-amber-300 flex items-center gap-1 mb-2" variant="outline">
-            <AlertTriangle className="h-3 w-3 mr-1" />
-            <span>Análise de IA detectou possível não conformidade</span>
-          </Badge>
+      {hasAnyAnalysis() && (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {hasNonConformity() && (
+            <Badge className="bg-amber-100 text-amber-800 border-amber-300 flex items-center gap-1 mb-2" variant="outline">
+              <AlertTriangle className="h-3 w-3 mr-1" />
+              <span>Análise de IA detectou possível não conformidade</span>
+            </Badge>
+          )}
+          
+          {hasPsychosocialRisk() && (
+            <Badge className="bg-rose-100 text-rose-800 border-rose-300 flex items-center gap-1 mb-2" variant="outline">
+              <Heart className="h-3 w-3 mr-1" />
+              <span>Risco psicossocial detectado</span>
+            </Badge>
+          )}
         </div>
       )}
       
@@ -120,6 +133,7 @@ export function MediaAttachments({
           const analysis = analysisResults?.[url];
           const hasAnalysis = !!analysis;
           const hasActionSuggestion = hasAnalysis && !!analysis.actionPlanSuggestion;
+          const hasPsychosocialRisk = hasAnalysis && !!analysis.psychosocialRiskDetected;
           
           return (
             <div key={index} className="relative flex flex-col h-auto">
@@ -160,14 +174,21 @@ export function MediaAttachments({
                   </button>
                 </div>
                 
-                {hasAnalysis && analysis.hasNonConformity && (
-                  <div className="absolute top-1 left-1 z-10">
+                <div className="absolute top-1 left-1 z-10 flex flex-col gap-1">
+                  {hasAnalysis && analysis.hasNonConformity && (
                     <Badge className="bg-amber-500 text-white">
                       <AlertTriangle className="h-3 w-3 mr-1" />
                       <span className="text-xs">Não conformidade</span>
                     </Badge>
-                  </div>
-                )}
+                  )}
+                  
+                  {hasAnalysis && analysis.psychosocialRiskDetected && (
+                    <Badge className="bg-rose-500 text-white">
+                      <Heart className="h-3 w-3 mr-1" />
+                      <span className="text-xs">Risco psicossocial</span>
+                    </Badge>
+                  )}
+                </div>
               </div>
               
               {hasActionSuggestion && (
