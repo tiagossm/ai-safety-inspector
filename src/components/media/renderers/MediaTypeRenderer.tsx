@@ -45,8 +45,8 @@ export function ImageRenderer({
       <img
         src={url}
         alt={`Attachment ${index + 1}`}
-        className="w-full h-full object-cover rounded-md"
-        style={{ maxHeight: smallSize ? '120px' : '200px' }}
+        className="w-full h-full object-cover rounded-md cursor-pointer"
+        style={{ maxHeight: smallSize ? '120px' : '200px', minHeight: '80px' }}
       />
       
       {/* Overlay controls */}
