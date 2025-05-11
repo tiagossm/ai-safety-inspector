@@ -3,6 +3,7 @@ import React from "react";
 import { YesNoResponseInput } from "./response-types/YesNoResponseInput";
 import { TextResponseInput } from "./response-types/TextResponseInput";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
+import { MediaAttachments } from "@/components/inspection/question-inputs/MediaAttachments";
 
 interface ResponseInputRendererProps {
   question: any;
@@ -74,34 +75,73 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     }
   };
 
+  // Funções para lidar com a mídia
+  const handleOpenPreview = (url: string) => {
+    console.log("ResponseInputRenderer: Opening preview for URL:", url);
+  };
+
+  const handleOpenAnalysis = (url: string) => {
+    console.log("ResponseInputRenderer: Opening analysis for URL:", url);
+  };
+
+  // Renderiza as mídias anexadas, se houver
+  const mediaUrls = response?.mediaUrls || [];
+  const hasMedia = mediaUrls.length > 0;
+
   // Handle yes/no responses
   if (responseType === 'yes_no') {
     console.log("ResponseInputRenderer: Rendering YesNoResponseInput");
     return (
-      <YesNoResponseInput
-        question={question}
-        response={response}
-        inspectionId={inspectionId}
-        onResponseChange={handleResponseWithAnalysis}
-        onMediaChange={handleMediaChange}
-        actionPlan={actionPlan}
-        onSaveActionPlan={onSaveActionPlan}
-        onApplyAISuggestion={handleActionPlanSuggestion}
-        readOnly={readOnly}
-      />
+      <div className="space-y-4">
+        {hasMedia && (
+          <MediaAttachments
+            mediaUrls={mediaUrls}
+            onDelete={!readOnly ? (url) => handleMediaChange(mediaUrls.filter(m => m !== url)) : undefined}
+            onOpenPreview={handleOpenPreview}
+            onOpenAnalysis={handleOpenAnalysis}
+            readOnly={readOnly}
+            questionText={questionText}
+            analysisResults={response?.mediaAnalysisResults || {}}
+          />
+        )}
+        <YesNoResponseInput
+          question={question}
+          response={response}
+          inspectionId={inspectionId}
+          onResponseChange={handleResponseWithAnalysis}
+          onMediaChange={handleMediaChange}
+          actionPlan={actionPlan}
+          onSaveActionPlan={onSaveActionPlan}
+          onApplyAISuggestion={handleActionPlanSuggestion}
+          readOnly={readOnly}
+        />
+      </div>
     );
   }
   
   // Default to text input for all other types
   console.log("ResponseInputRenderer: Rendering TextResponseInput");
   return (
-    <TextResponseInput
-      question={question}
-      response={response}
-      onResponseChange={handleResponseWithAnalysis}
-      onMediaChange={handleMediaChange}
-      onApplyAISuggestion={handleActionPlanSuggestion}
-      readOnly={readOnly}
-    />
+    <div className="space-y-4">
+      {hasMedia && (
+        <MediaAttachments
+          mediaUrls={mediaUrls}
+          onDelete={!readOnly ? (url) => handleMediaChange(mediaUrls.filter(m => m !== url)) : undefined}
+          onOpenPreview={handleOpenPreview}
+          onOpenAnalysis={handleOpenAnalysis}
+          readOnly={readOnly}
+          questionText={questionText}
+          analysisResults={response?.mediaAnalysisResults || {}}
+        />
+      )}
+      <TextResponseInput
+        question={question}
+        response={response}
+        onResponseChange={handleResponseWithAnalysis}
+        onMediaChange={handleMediaChange}
+        onApplyAISuggestion={handleActionPlanSuggestion}
+        readOnly={readOnly}
+      />
+    </div>
   );
 };

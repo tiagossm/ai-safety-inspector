@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { MediaAttachments } from "@/components/inspection/question-inputs/MediaAttachments";
 
 interface TextResponseInputProps {
   question: any;
@@ -113,8 +114,36 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
     }
   };
 
+  // Funções para lidar com a mídia
+  const handleOpenPreview = (url: string) => {
+    console.log("TextResponseInput: Opening preview for URL:", url);
+  };
+
+  const handleOpenAnalysis = (url: string) => {
+    console.log("TextResponseInput: Opening analysis for URL:", url);
+  };
+
+  // Verificar se existem mídias anexadas
+  const mediaUrls = response?.mediaUrls || [];
+  const hasMedia = mediaUrls.length > 0;
+
   return (
     <div className="space-y-4">
+      {/* Renderiza as mídias anexadas inline se existirem */}
+      {hasMedia && (
+        <MediaAttachments
+          mediaUrls={mediaUrls}
+          onDelete={!readOnly ? (url) => handleMediaChange(mediaUrls.filter(m => m !== url)) : undefined}
+          onOpenPreview={handleOpenPreview}
+          onOpenAnalysis={handleOpenAnalysis}
+          readOnly={readOnly}
+          questionText={question.text || question.pergunta || ""}
+          analysisResults={analysisResults}
+          onSaveAnalysis={handleSaveAnalysis}
+          onApplyAISuggestion={onApplyAISuggestion}
+        />
+      )}
+
       <div className="flex flex-wrap gap-2 mb-2">
         <textarea
           className="w-full border rounded p-2 text-sm"

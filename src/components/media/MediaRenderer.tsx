@@ -37,8 +37,9 @@ export function MediaRenderer({ url, className = "" }: MediaRendererProps) {
           <img 
             src={url} 
             alt="Media content" 
-            className="max-w-full max-h-full object-contain" 
+            className="w-full h-full object-contain" 
             onError={handleError}
+            style={{ maxHeight: "100%", maxWidth: "100%" }}
           />
         </div>
       );
