@@ -6,6 +6,8 @@ import { Image, FileText, ScanSearch, Sparkles, Loader2 } from "lucide-react";
 import { useMediaUpload } from "@/hooks/useMediaUpload";
 import { MediaAttachments } from "./MediaAttachments";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
+import { MediaPreviewDialog } from "@/components/media/MediaPreviewDialog";
+import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 
 interface MediaUploadSectionProps {
   mediaUrls: string[];
@@ -36,17 +38,12 @@ export function MediaUploadSection({
 }: MediaUploadSectionProps) {
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState<string | null>(null);
+  const [selectedMediaType, setSelectedMediaType] = useState<string | null>(null);
 
-  const { uploadMedia, uploading, previewUrl, openMediaPreview, openMediaAnalysis } = useMediaUpload({
-    questionId,
-    inspectionId,
-    onUploadComplete: (uploadedUrl) => {
-      if (uploadedUrl) {
-        const updatedMediaUrls = [...mediaUrls, uploadedUrl];
-        onMediaChange(updatedMediaUrls);
-      }
-    }
-  });
+  const { uploadFile, isUploading, progress, error: uploadError } = useMediaUpload();
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
@@ -82,7 +79,12 @@ export function MediaUploadSection({
     }
     
     try {
-      await uploadMedia(file);
+      const result = await uploadFile(file);
+      
+      if (result && result.url) {
+        const updatedMediaUrls = [...mediaUrls, result.url];
+        onMediaChange(updatedMediaUrls);
+      }
       
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -91,7 +93,7 @@ export function MediaUploadSection({
       console.error("Error uploading file:", err);
       setError("Erro ao enviar arquivo. Tente novamente.");
     }
-  }, [uploadMedia]);
+  }, [uploadFile, mediaUrls, onMediaChange]);
 
   const handleDeleteMedia = useCallback((urlToDelete: string) => {
     const updatedMediaUrls = mediaUrls.filter(url => url !== urlToDelete);
@@ -99,12 +101,30 @@ export function MediaUploadSection({
   }, [mediaUrls, onMediaChange]);
 
   const handleOpenPreview = useCallback((url: string) => {
-    openMediaPreview(url);
-  }, [openMediaPreview]);
+    setSelectedMedia(url);
+    setPreviewDialogOpen(true);
+  }, []);
 
-  const handleOpenAnalysis = useCallback((url: string, questionText?: string) => {
-    openMediaAnalysis(url, questionText);
-  }, [openMediaAnalysis]);
+  const handleOpenAnalysis = useCallback((url: string, questionContext?: string) => {
+    setSelectedMedia(url);
+    // Determine media type from URL
+    if (url.match(/\.(jpeg|jpg|gif|png)$/i)) {
+      setSelectedMediaType("image/jpeg");
+    } else if (url.match(/\.(mp4|webm|mov)$/i)) {
+      setSelectedMediaType("video/mp4");
+    } else if (url.match(/\.(mp3|wav|ogg)$/i)) {
+      setSelectedMediaType("audio/mp3");
+    } else {
+      setSelectedMediaType("image/jpeg"); // Default to image
+    }
+    setAnalysisDialogOpen(true);
+  }, []);
+
+  const handleAnalysisComplete = (result: MediaAnalysisResult) => {
+    if (onSaveAnalysis && selectedMedia) {
+      onSaveAnalysis(selectedMedia, result);
+    }
+  };
 
   return (
     <div>
@@ -117,9 +137,9 @@ export function MediaUploadSection({
               variant="outline"
               onClick={() => fileInputRef.current?.click()}
               className="gap-1"
-              disabled={uploading}
+              disabled={isUploading}
             >
-              {uploading ? (
+              {isUploading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
                   <span>Enviando...</span>
@@ -162,7 +182,7 @@ export function MediaUploadSection({
             className="hidden"
             accept="image/*,video/*,audio/*"
             onChange={handleFileUpload}
-            disabled={uploading}
+            disabled={isUploading}
           />
           
           {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
@@ -179,6 +199,23 @@ export function MediaUploadSection({
         onSaveAnalysis={onSaveAnalysis}
         onApplyAISuggestion={onApplyAISuggestion}
         analysisResults={analysisResults}
+      />
+
+      {/* Media Preview Dialog */}
+      <MediaPreviewDialog
+        open={previewDialogOpen}
+        onOpenChange={setPreviewDialogOpen}
+        url={selectedMedia}
+      />
+
+      {/* Media Analysis Dialog */}
+      <MediaAnalysisDialog
+        open={analysisDialogOpen}
+        onOpenChange={setAnalysisDialogOpen}
+        mediaUrl={selectedMedia}
+        mediaType={selectedMediaType}
+        questionText={questionText}
+        onAnalysisComplete={handleAnalysisComplete}
       />
     </div>
   );

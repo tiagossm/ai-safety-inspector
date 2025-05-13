@@ -156,6 +156,21 @@ export function InspectionQuestion({
     }
   };
 
+  const handleToggleComments = () => {
+    setShowComments(!showComments);
+  };
+
+  const handleOpenSubChecklist = () => {
+    if (onOpenSubChecklist) {
+      setLoadingSubChecklist(true);
+      try {
+        onOpenSubChecklist();
+      } finally {
+        setLoadingSubChecklist(false);
+      }
+    }
+  };
+
   return (
     <Card className={isSubQuestion ? "border-gray-200 bg-gray-50" : ""}>
       <CardHeader className="py-3 px-4">
@@ -164,10 +179,10 @@ export function InspectionQuestion({
           index={index}
           numberLabel={numberLabel}
           showComments={showComments}
-          onToggleComments={() => setShowComments(!showComments)}
+          onToggleComments={handleToggleComments}
           hasSubChecklist={question.hasSubChecklist}
           loadingSubChecklist={loadingSubChecklist}
-          onOpenSubChecklist={onOpenSubChecklist}
+          onOpenSubChecklist={handleOpenSubChecklist}
         />
       </CardHeader>
       <CardContent className="py-3 px-4">
