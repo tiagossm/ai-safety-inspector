@@ -7,7 +7,6 @@ import { MediaAttachmentRenderer } from "@/components/media/renderers/MediaAttac
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MediaRenderer } from "@/components/media/MediaRenderer";
 
 interface MediaAttachmentsProps {
   mediaUrls: string[];
@@ -183,59 +182,17 @@ export function MediaAttachments({
           
           return (
             <div key={index} className="relative flex flex-col h-auto">
-              <div className="relative flex-grow border rounded-md overflow-hidden" style={{maxHeight: "160px", minHeight: "100px"}}>
-                <MediaRenderer 
-                  url={url} 
-                  className="w-full h-full object-contain" 
-                />
-                
-                {!readOnly && (
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteMedia(url)}
-                    className="absolute top-1 right-1 bg-white/80 hover:bg-red-100 rounded-full p-1 transition-colors"
-                    aria-label="Remover mídia"
-                  >
-                    <X className="h-4 w-4 text-red-500" />
-                  </button>
-                )}
-                
-                <div className="absolute bottom-1 right-1 flex gap-1">
-                  <button
-                    type="button"
-                    onClick={() => handleOpenPreview(url)}
-                    className="bg-white/80 hover:bg-blue-100 rounded-full p-1 transition-colors"
-                    aria-label="Visualizar mídia"
-                  >
-                    <ZoomIn className="h-4 w-4 text-blue-500" />
-                  </button>
-                  
-                  <button
-                    type="button"
-                    onClick={() => handleOpenAnalysis(url, questionText)}
-                    className="bg-white/80 hover:bg-purple-100 rounded-full p-1 transition-colors"
-                    aria-label="Analisar mídia"
-                  >
-                    <Sparkles className="h-4 w-4 text-purple-500" />
-                  </button>
-                </div>
-                
-                <div className="absolute top-1 left-1 z-10 flex flex-col gap-1">
-                  {hasAnalysis && analysis.hasNonConformity && (
-                    <Badge className="bg-amber-500 text-white">
-                      <AlertTriangle className="h-3 w-3 mr-1" />
-                      <span className="text-xs">Não conformidade</span>
-                    </Badge>
-                  )}
-                  
-                  {hasAnalysis && analysis.psychosocialRiskDetected && (
-                    <Badge className="bg-rose-500 text-white">
-                      <Heart className="h-3 w-3 mr-1" />
-                      <span className="text-xs">Risco psicossocial</span>
-                    </Badge>
-                  )}
-                </div>
-              </div>
+              <MediaAttachmentRenderer
+                url={url}
+                index={index}
+                onOpenPreview={handleOpenPreview}
+                onOpenAnalysis={(url) => handleOpenAnalysis(url, questionText)}
+                readOnly={readOnly}
+                onDelete={handleDeleteMedia}
+                questionText={questionText}
+                analysisResults={analysisResults}
+                smallSize={false}
+              />
               
               {hasActionSuggestion && (
                 <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-md">
