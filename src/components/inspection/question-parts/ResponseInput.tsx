@@ -19,7 +19,12 @@ export function ResponseInput({ question, value, onChange }: ResponseInputProps)
       return <YesNoInput value={value} onChange={onChange} />;
     
     case "text":
-      return <TextInput value={value} onChange={onChange} multiline={question.multiline} />;
+      // Make sure we're passing the multiline prop correctly
+      return <TextInput 
+        value={value} 
+        onChange={onChange} 
+        multiline={Boolean(question.multiline)} 
+      />;
     
     case "multiple_choice":
       return <MultipleChoiceInput options={question.options || []} value={value} onChange={onChange} />;
