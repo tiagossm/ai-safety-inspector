@@ -3,17 +3,13 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Check, X } from 'lucide-react';
 
-interface ResponseButtonGroupProps {
+interface YesNoInputProps {
   value: boolean | undefined;
   onChange: (value: boolean) => void;
   readOnly?: boolean;
 }
 
-export function ResponseButtonGroup({ 
-  value, 
-  onChange, 
-  readOnly = false 
-}: ResponseButtonGroupProps) {
+export function YesNoInput({ value, onChange, readOnly = false }: YesNoInputProps) {
   return (
     <div className="flex space-x-3 mt-1">
       <Button

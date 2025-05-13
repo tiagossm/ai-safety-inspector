@@ -1,38 +1,60 @@
 
-import React from "react";
-import { YesNoInput } from "../question-inputs/YesNoInput";
-import { TextInput } from "../question-inputs/TextInput";
-import { MultipleChoiceInput } from "../question-inputs/MultipleChoiceInput";
-import { NumberInput } from "../question-inputs/NumberInput";
+import React from 'react';
+import { YesNoResponseInput } from './response-types/YesNoResponseInput';
+import { TextResponseInput } from './response-types/TextResponseInput';
+import { NumberResponseInput } from './response-types/NumberResponseInput';
 
 interface ResponseInputProps {
   question: any;
-  value: any;
+  value?: any;
   onChange: (value: any) => void;
 }
 
 export function ResponseInput({ question, value, onChange }: ResponseInputProps) {
-  if (!question) return null;
+  // Determina o tipo de resposta com base na pergunta
+  const responseType = question.responseType || 'yes_no';
   
-  switch (question.responseType) {
+  const handleValueChange = (newValue: any) => {
+    onChange(newValue);
+  };
+
+  console.log("ResponseInput rendering with type:", responseType, "value:", value);
+  
+  // Renderiza o input apropriado com base no tipo de resposta
+  switch (responseType) {
     case "yes_no":
-      return <YesNoInput value={value} onChange={onChange} />;
+      return (
+        <YesNoResponseInput 
+          question={question} 
+          response={{ value }} 
+          onResponseChange={(data) => handleValueChange(data.value)} 
+        />
+      );
     
     case "text":
-      // Make sure we're passing the multiline prop correctly
-      return <TextInput 
-        value={value} 
-        onChange={onChange} 
-        multiline={Boolean(question.multiline)} 
-      />;
-    
-    case "multiple_choice":
-      return <MultipleChoiceInput options={question.options || []} value={value} onChange={onChange} />;
+      return (
+        <TextResponseInput 
+          question={question} 
+          response={{ value }} 
+          onResponseChange={(data) => handleValueChange(data.value)} 
+        />
+      );
     
     case "number":
-      return <NumberInput value={value} onChange={onChange} />;
-    
+      return (
+        <NumberResponseInput 
+          value={value} 
+          onChange={handleValueChange} 
+        />
+      );
+      
     default:
-      return <p className="text-sm text-muted-foreground">Tipo de resposta não suportado: {question.responseType}</p>;
+      return (
+        <div className="p-4 border border-red-300 bg-red-50 rounded-md">
+          <p className="text-red-700">
+            Tipo de resposta não suportado: {responseType}
+          </p>
+        </div>
+      );
   }
 }

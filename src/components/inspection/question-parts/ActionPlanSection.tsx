@@ -1,204 +1,112 @@
 
-import React, { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  AlertCircle,
-  CheckCircle2,
-  Clock,
-  AlertTriangle,
-  CalendarIcon,
-  User,
-  Sparkles
-} from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import { ActionPlan } from "@/services/inspection/actionPlanService";
-import { ActionPlanForm } from '@/components/action-plans/form/ActionPlanForm';
-import { ActionPlanFormData } from '@/components/action-plans/form/types';
-import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { AlertCircle, Sparkles } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface ActionPlanSectionProps {
   isOpen: boolean;
-  onOpenChange: (isOpen: boolean) => void;
-  actionPlan?: string | ActionPlan;
-  onActionPlanChange: (value: string) => void;
-  onOpenDialog: () => void;
-  hasNegativeResponse: boolean;
+  onOpenChange: (open: boolean) => void;
+  actionPlan?: string | null;
+  onActionPlanChange: (actionPlan: string) => void;
+  onOpenDialog?: () => void;
+  hasNegativeResponse?: boolean;
   aiSuggestion?: string;
-  mediaAnalysisResults?: Record<string, MediaAnalysisResult>;
+  mediaAnalysisResults?: Record<string, any>;
 }
 
 export function ActionPlanSection({
   isOpen,
   onOpenChange,
-  actionPlan,
+  actionPlan = "",
   onActionPlanChange,
   onOpenDialog,
-  hasNegativeResponse,
+  hasNegativeResponse = false,
   aiSuggestion,
   mediaAnalysisResults = {}
 }: ActionPlanSectionProps) {
-  const [suggestion, setSuggestion] = useState<string | null>(null);
+  if (!isOpen && !actionPlan && !hasNegativeResponse) return null;
 
-  // Extract action plan suggestions from media analysis results
-  useEffect(() => {
-    const suggestions: string[] = [];
-    
-    // Collect all suggestions from media analysis results
-    Object.values(mediaAnalysisResults).forEach(result => {
-      if (result?.actionPlanSuggestion) {
-        suggestions.push(result.actionPlanSuggestion);
-      }
-    });
-    
-    // If we have suggestions or a direct AI suggestion, set it
-    if (suggestions.length > 0) {
-      setSuggestion(suggestions[0]); // Use the first suggestion for now
-    } else if (aiSuggestion) {
-      setSuggestion(aiSuggestion);
-    } else {
-      setSuggestion(null);
-    }
-  }, [mediaAnalysisResults, aiSuggestion]);
+  // Função para alternar a visibilidade
+  const toggleOpen = () => {
+    onOpenChange(!isOpen);
+  };
 
-  if (!isOpen) {
-    return null;
-  }
+  // Tratamento da alteração do plano de ação
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    onActionPlanChange(e.target.value);
+  };
 
-  // Apply the AI suggestion to the action plan text
-  const applyAISuggestion = () => {
-    if (suggestion) {
-      onActionPlanChange(suggestion);
+  // Aplicar a sugestão da IA ao plano de ação
+  const handleApplySuggestion = () => {
+    if (aiSuggestion) {
+      onActionPlanChange(aiSuggestion);
     }
   };
 
-  // If actionPlan is just a string, show the simplified view
-  if (typeof actionPlan === 'string' || !actionPlan) {
+  // Se está fechado mas tem um plano de ação, mostrar resumo
+  if (!isOpen && actionPlan) {
     return (
-      <div className="mt-4 pt-4 border-t border-dashed">
-        <div className="flex justify-between items-center mb-2">
-          <h4 className="text-sm font-medium flex items-center">
-            <AlertCircle className="h-4 w-4 mr-1 text-yellow-600" />
-            Action Plan
-          </h4>
-        </div>
-        
-        {suggestion && (
-          <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-md">
-            <div className="flex items-center mb-2">
-              <Sparkles className="h-4 w-4 mr-1 text-amber-500" />
-              <span className="text-sm font-medium text-amber-700">Sugestão da IA</span>
-            </div>
-            <p className="text-sm mb-3 text-amber-800">{suggestion}</p>
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className="w-full bg-amber-100 hover:bg-amber-200 border-amber-300"
-              onClick={applyAISuggestion}
-            >
-              Aplicar esta sugestão
-            </Button>
+      <div className="mt-4 p-3 bg-amber-50 rounded-md border border-amber-200 cursor-pointer" onClick={toggleOpen}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <AlertCircle className="h-4 w-4 mr-2 text-amber-600" />
+            <h4 className="text-sm font-medium text-amber-700">Plano de Ação</h4>
           </div>
-        )}
-        
-        <textarea
-          className="w-full border rounded p-2 text-sm"
-          placeholder={hasNegativeResponse ? "Describe the actions needed to address this issue..." : "Add notes for follow-up if needed"}
-          value={typeof actionPlan === 'string' ? actionPlan : ""}
-          onChange={(e) => onActionPlanChange(e.target.value)}
-          rows={3}
-        />
-        
-        <div className="mt-2 flex justify-end">
-          <Button variant="outline" size="sm" onClick={onOpenDialog}>
-            Use Action Plan Builder
-          </Button>
+          <Badge variant="outline" className="bg-amber-100 text-amber-700">
+            Ver detalhes
+          </Badge>
         </div>
+        <p className="text-sm mt-2 text-amber-800 line-clamp-2">{actionPlan}</p>
       </div>
     );
   }
 
-  // For detailed action plan object
-  const getPriorityBadge = (priority: string) => {
-    switch (priority) {
-      case 'critical':
-        return <Badge variant="destructive">Critical</Badge>;
-      case 'high':
-        return <Badge className="bg-orange-500">High</Badge>;
-      case 'medium':
-        return <Badge className="bg-yellow-500">Medium</Badge>;
-      case 'low':
-        return <Badge className="bg-green-500">Low</Badge>;
-      default:
-        return <Badge>{priority}</Badge>;
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle2 className="h-4 w-4 text-green-600" />;
-      case 'in_progress':
-        return <Clock className="h-4 w-4 text-blue-600" />;
-      case 'pending':
-        return <AlertCircle className="h-4 w-4 text-yellow-600" />;
-      case 'cancelled':
-        return <AlertTriangle className="h-4 w-4 text-gray-400" />;
-      default:
-        return null;
-    }
-  };
-
   return (
-    <div className="mt-4 pt-4 border-t border-dashed">
-      <Card>
-        <CardHeader className="py-3 px-4">
-          <div className="flex justify-between items-center">
-            <CardTitle className="text-base flex items-center">
-              {getStatusIcon(actionPlan.status)}
-              <span className="ml-1">Action Plan</span>
-            </CardTitle>
-            <div className="flex gap-1">
-              {getPriorityBadge(actionPlan.priority)}
-              <Badge variant="outline" className="capitalize">{actionPlan.status.replace('_', ' ')}</Badge>
-            </div>
-          </div>
-          <CardDescription className="mt-1">
-            {actionPlan.description}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="py-2 px-4">
-          {(actionPlan.assignee || actionPlan.due_date) && (
-            <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-500">
-              {actionPlan.assignee && (
-                <div className="flex items-center">
-                  <User className="h-3.5 w-3.5 mr-1" />
-                  <span>{actionPlan.assignee}</span>
-                </div>
-              )}
-              {actionPlan.due_date && (
-                <div className="flex items-center">
-                  <CalendarIcon className="h-3.5 w-3.5 mr-1" />
-                  <span>{format(new Date(actionPlan.due_date), 'MMM d, yyyy')}</span>
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-        <CardFooter className="py-2 px-4 flex justify-end">
-          <Button variant="outline" size="sm" onClick={onOpenDialog}>
-            Edit Plan
+    <div className="mt-4 p-3 bg-amber-50 rounded-md border border-amber-200">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center">
+          <AlertCircle className="h-4 w-4 mr-2 text-amber-600" />
+          <h4 className="text-sm font-medium text-amber-700">Plano de Ação</h4>
+        </div>
+        {actionPlan && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs"
+            onClick={toggleOpen}
+          >
+            Ocultar
           </Button>
-        </CardFooter>
-      </Card>
+        )}
+      </div>
+
+      <textarea
+        className="w-full border rounded p-2 text-sm mt-2"
+        rows={5}
+        placeholder="Descreva as ações necessárias para corrigir esta não conformidade"
+        value={actionPlan || ""}
+        onChange={handleChange}
+      />
+
+      {aiSuggestion && (
+        <div className="mt-3 p-2 bg-amber-100 border border-amber-300 rounded-md">
+          <div className="flex items-center mb-1">
+            <Sparkles className="h-3.5 w-3.5 mr-1 text-amber-600" />
+            <span className="text-xs font-medium text-amber-700">Sugestão da IA</span>
+          </div>
+          <p className="text-xs text-amber-800 mb-2">{aiSuggestion}</p>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="w-full h-7 text-xs bg-amber-200 hover:bg-amber-300 text-amber-800 border-amber-400"
+            onClick={handleApplySuggestion}
+          >
+            <Sparkles className="h-3 w-3 mr-1" />
+            Aplicar esta sugestão
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
