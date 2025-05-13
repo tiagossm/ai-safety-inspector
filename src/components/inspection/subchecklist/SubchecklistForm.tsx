@@ -15,6 +15,7 @@ export function SubchecklistForm({
   onSave
 }: SubchecklistFormProps) {
   const [localResponses, setLocalResponses] = useState<Record<string, any>>(responses || {});
+  const [saving, setSaving] = useState(false);
 
   const handleResponseChange = (questionId: string, data: any) => {
     setLocalResponses(prev => ({
@@ -28,7 +29,14 @@ export function SubchecklistForm({
   };
 
   const handleSubmit = async () => {
-    await onSave(localResponses);
+    try {
+      setSaving(true);
+      await onSave(localResponses);
+      setSaving(false);
+    } catch (error) {
+      console.error("Error saving subchecklist responses:", error);
+      setSaving(false);
+    }
   };
 
   if (!questions || questions.length === 0) {
@@ -58,8 +66,12 @@ export function SubchecklistForm({
       </div>
       
       <div className="flex justify-end">
-        <Button type="button" onClick={handleSubmit}>
-          Salvar Respostas
+        <Button 
+          type="button" 
+          onClick={handleSubmit}
+          disabled={saving}
+        >
+          {saving ? "Salvando..." : "Salvar Respostas"}
         </Button>
       </div>
     </div>

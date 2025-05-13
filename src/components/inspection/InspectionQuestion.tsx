@@ -1,198 +1,220 @@
 
-import React, { useState, useCallback, useMemo } from "react";
-import { ResponseInputRenderer } from "./question-parts/ResponseInputRenderer";
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { QuestionHeader } from "./question-parts/QuestionHeader";
+import { ResponseInput } from "./question-parts/ResponseInput";
+import { CommentsSection } from "./question-parts/CommentsSection";
 import { ActionPlanSection } from "./question-parts/ActionPlanSection";
-import { QuestionHeader } from "./question-components/QuestionHeader";
-import { QuestionBadges } from "./question-parts/QuestionBadges";
-import { QuestionActions } from "./question-parts/QuestionActions";
-import { ActionPlanFormSection } from "./question-parts/ActionPlanFormSection";
-import { useQuestionVisibility } from "./hooks/useQuestionVisibility";
-import { isNegativeResponse, normalizeResponseType } from "@/utils/inspection/normalizationUtils";
-import { ActionPlanFormData } from "@/components/action-plans/form/types";
-import { ActionPlan } from "@/services/inspection/actionPlanService";
+import { MediaUploadSection } from "./question-inputs/MediaUploadSection";
+import { ActionPlan } from '@/services/inspection/actionPlanService';
+import { ActionPlanFormData } from '@/components/action-plans/form/types';
+import { useMediaAnalysis, MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 
 interface InspectionQuestionProps {
   question: any;
   index: number;
   response: any;
   onResponseChange: (data: any) => void;
-  allQuestions: any[];
-  numberLabel?: string;
-  isSubQuestion?: boolean;
-  onOpenSubChecklist?: () => void;
+  allQuestions?: any[];
+  numberLabel?: string; 
   inspectionId?: string;
+  isSubQuestion?: boolean;
   actionPlan?: ActionPlan;
   onSaveActionPlan?: (data: ActionPlanFormData) => Promise<ActionPlan | void>;
+  onOpenSubChecklist?: () => void;
 }
 
-export const InspectionQuestion = React.memo(function InspectionQuestion({
+export function InspectionQuestion({
   question,
   index,
   response,
   onResponseChange,
-  allQuestions,
-  numberLabel,
-  isSubQuestion = false,
-  onOpenSubChecklist,
+  allQuestions = [],
+  numberLabel = "",
   inspectionId,
+  isSubQuestion = false,
   actionPlan,
-  onSaveActionPlan
+  onSaveActionPlan,
+  onOpenSubChecklist
 }: InspectionQuestionProps) {
-  const [comment, setComment] = useState(response?.comment || "");
-  const [isActionPlanOpen, setIsActionPlanOpen] = useState(false);
-  const [isValid, setIsValid] = useState(!question.isRequired);
-  const [isCommentOpen, setIsCommentOpen] = useState(!!response?.comment);
-  const [showActionPlanDialog, setShowActionPlanDialog] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [showActionPlan, setShowActionPlan] = useState(false);
+  const [loadingSubChecklist, setLoadingSubChecklist] = useState(false);
+  const [multiModalLoading, setMultiModalLoading] = useState(false);
+  
+  // Track media analysis results
+  const [mediaAnalysisResults, setMediaAnalysisResults] = useState<Record<string, MediaAnalysisResult>>({});
+  
+  // Get the analyze function
+  const { analyze, analyzing } = useMediaAnalysis();
 
-  const { shouldBeVisible } = useQuestionVisibility(question, allQuestions);
-
-  const normalizedType = useMemo(() => {
-    return normalizeResponseType(question.responseType || question.tipo_resposta || "");
-  }, [question.responseType, question.tipo_resposta]);
-
-  const questionText = question.text || question.pergunta || "";
-  const isRequired = question.isRequired !== undefined ? question.isRequired : question.obrigatorio;
-  const hasSubChecklist = question.hasSubChecklist || false;
-
-  const allowsPhoto = question.allowsPhoto || question.permite_foto || false;
-  const allowsVideo = question.allowsVideo || question.permite_video || false;
-  const allowsAudio = question.allowsAudio || question.permite_audio || false;
-  const allowsFiles = question.allowsFiles || question.permite_files || false;
-
-  const handleValueChange = useCallback((value: any) => {
-    console.log('InspectionQuestion: handleValueChange called with:', value);
-    
-    // Validate the input if required
-    const isValueDefined = value !== undefined && value !== null && value !== "";
-    const isResponseValueDefined = value?.value !== undefined && value?.value !== null && value?.value !== "";
-    
-    // Update validity state
-    setIsValid(!isRequired || isValueDefined || isResponseValueDefined);
-    
-    // Create updated response object ensuring we preserve all existing fields
-    const updatedResponse = {
-      ...response,
-      value: value?.value ?? value,
-      comment: value?.comment ?? comment,
-      actionPlan: value?.actionPlan ?? response?.actionPlan,
-      mediaUrls: value?.mediaUrls ?? response?.mediaUrls ?? [],
-      mediaAnalysisResults: value?.mediaAnalysisResults ?? response?.mediaAnalysisResults ?? {},
-      subChecklistResponses: value?.subChecklistResponses ?? response?.subChecklistResponses ?? {},
-    };
-    
-    console.log('InspectionQuestion: updated response:', updatedResponse);
-    onResponseChange(updatedResponse);
-  }, [isRequired, response, comment, onResponseChange]);
-
-  const handleCommentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setComment(e.target.value);
+  const handleCommentChange = (comment: string) => {
     onResponseChange({
       ...response,
-      comment: e.target.value
+      comment
     });
-  }, [response, onResponseChange]);
+  };
 
-  const handleActionPlanChange = useCallback((actionPlan: string) => {
+  const handleActionPlanChange = (actionPlan: string) => {
     onResponseChange({
       ...response,
       actionPlan
     });
-  }, [response, onResponseChange]);
+  };
 
-  const handleMediaChange = useCallback((mediaUrls: string[]) => {
-    console.log('InspectionQuestion: handleMediaChange called with:', mediaUrls);
+  const handleResponseValueChange = (value: any) => {
+    // If the response has changed to negative, show the action plan section
+    if (isNegativeResponse(value)) {
+      setShowActionPlan(true);
+    }
+    
+    onResponseChange({
+      ...response,
+      value
+    });
+  };
+
+  const handleMediaChange = (mediaUrls: string[]) => {
     onResponseChange({
       ...response,
       mediaUrls
     });
-  }, [response, onResponseChange]);
+  };
 
-  const hasNegativeResponse = useMemo(() => {
-    return isNegativeResponse(response?.value);
-  }, [response?.value]);
-
-  const handleOpenActionPlanDialog = useCallback(() => {
-    setShowActionPlanDialog(true);
-  }, []);
-
-  const handleSaveActionPlan = useCallback(async (data: ActionPlanFormData) => {
-    if (onSaveActionPlan) {
-      await onSaveActionPlan(data);
+  const isNegativeResponse = (value: any): boolean => {
+    // Check if this is a negative response based on the question type
+    if (question.responseType === 'yes_no') {
+      return value === false || value === 'no' || value === 'não';
     }
-    setShowActionPlanDialog(false);
-  }, [onSaveActionPlan]);
+    
+    // For other question types, they might have custom "negative" values
+    return false;
+  };
 
-  // Don't render if the question shouldn't be visible
-  if (!shouldBeVisible()) return null;
+  const handleSaveAnalysis = (url: string, result: MediaAnalysisResult) => {
+    console.log("Saving analysis for URL:", url, result);
+    
+    setMediaAnalysisResults(prev => ({
+      ...prev,
+      [url]: result
+    }));
+    
+    // If it's a non-conformity and action plan section isn't shown yet, show it
+    if (result.hasNonConformity) {
+      setShowActionPlan(true);
+    }
+  };
 
-  // Debug log to track the response value
-  console.log(`Question ${question.id || index}: Current response value:`, response?.value);
+  const handleApplyAISuggestion = (suggestion: string) => {
+    if (!suggestion) return;
+    
+    handleActionPlanChange(suggestion);
+  };
+
+  // Handle multi-modal analysis of all media for the question
+  const handleAnalyzeAllMedia = async () => {
+    // Only proceed if we have media URLs
+    if (!response.mediaUrls || response.mediaUrls.length === 0) return;
+    
+    try {
+      setMultiModalLoading(true);
+      
+      const result = await analyze({
+        mediaUrls: response.mediaUrls, 
+        questionText: question.text,
+        responseValue: response.value,
+        multimodal: true
+      });
+      
+      // If the analysis was successful, save it for each media URL
+      if (result) {
+        const updatedResults = {...mediaAnalysisResults};
+        
+        // Apply the relevant parts of the multimodal analysis to each media URL
+        response.mediaUrls.forEach((url: string) => {
+          updatedResults[url] = {
+            ...result,
+            type: 'multimodal',
+            questionText: question.text,
+            hasNonConformity: result.hasNonConformity,
+            psychosocialRiskDetected: result.psychosocialRiskDetected,
+            actionPlanSuggestion: result.actionPlanSuggestion
+          };
+        });
+        
+        setMediaAnalysisResults(updatedResults);
+        
+        // If it's a non-conformity and action plan section isn't shown yet, show it
+        if (result.hasNonConformity) {
+          setShowActionPlan(true);
+        }
+      }
+    } catch (error) {
+      console.error("Error in multi-modal analysis:", error);
+    } finally {
+      setMultiModalLoading(false);
+    }
+  };
 
   return (
-    <div className={`relative border rounded-lg p-4 mb-4 ${!isValid && response?.value !== undefined ? 'border-l-4 border-l-red-500' : ''}`}>
-      <div className="flex items-start gap-2">
-        <div className="font-medium min-w-[24px] mt-0.5">{numberLabel || (index + 1)}</div>
-        <div className="flex-1">
-          <div className="flex justify-between mb-2">
-            <QuestionHeader 
-              questionText={questionText} 
-              numberLabel={numberLabel || (index + 1)}
-              index={index}
-              hasSubChecklist={hasSubChecklist}
-              onOpenSubChecklist={onOpenSubChecklist}
-            />
-            <QuestionBadges 
-              isRequired={isRequired}
-              allowsPhoto={allowsPhoto}
-              allowsVideo={allowsVideo}
-              allowsAudio={allowsAudio}
-              allowsFiles={allowsFiles}
-            />
-          </div>
-
-          <div className="mt-2">
-            <ResponseInputRenderer
-              question={question}
-              response={response}
-              onResponseChange={handleValueChange}
-              onMediaChange={handleMediaChange}
-              inspectionId={inspectionId}
-              actionPlan={actionPlan}
-              onSaveActionPlan={handleSaveActionPlan}
-            />
-          </div>
-
-          <QuestionActions
-            isCommentOpen={isCommentOpen}
-            setIsCommentOpen={setIsCommentOpen}
-            comment={comment}
-            handleCommentChange={handleCommentChange}
-            hasNegativeResponse={hasNegativeResponse}
-            isActionPlanOpen={isActionPlanOpen}
-            setIsActionPlanOpen={setIsActionPlanOpen}
+    <Card className={isSubQuestion ? "border-gray-200 bg-gray-50" : ""}>
+      <CardHeader className="py-3 px-4">
+        <QuestionHeader 
+          question={question} 
+          index={index}
+          numberLabel={numberLabel}
+          showComments={showComments}
+          onToggleComments={() => setShowComments(!showComments)}
+          hasSubChecklist={question.hasSubChecklist}
+          loadingSubChecklist={loadingSubChecklist}
+          onOpenSubChecklist={onOpenSubChecklist}
+        />
+      </CardHeader>
+      <CardContent className="py-3 px-4">
+        <ResponseInput
+          question={question}
+          value={response?.value}
+          onChange={handleResponseValueChange}
+        />
+        
+        {showComments && (
+          <CommentsSection
+            comment={response?.comment || ""}
+            onCommentChange={handleCommentChange}
           />
-
-          {hasNegativeResponse && inspectionId && question.id && (
-            <ActionPlanSection
-              isOpen={isActionPlanOpen}
-              onOpenChange={setIsActionPlanOpen}
-              actionPlan={actionPlan || response?.actionPlan}
-              onActionPlanChange={handleActionPlanChange}
-              onOpenDialog={handleOpenActionPlanDialog}
-              hasNegativeResponse={hasNegativeResponse}
-            />
-          )}
-
-          {hasNegativeResponse && inspectionId && question.id && onSaveActionPlan && (
-            <ActionPlanFormSection
-              inspectionId={inspectionId}
+        )}
+        
+        {response?.mediaUrls && response.mediaUrls.length > 0 && (
+          <div className="mt-4">
+            <MediaUploadSection
+              mediaUrls={response.mediaUrls || []}
+              onMediaChange={handleMediaChange}
               questionId={question.id}
-              actionPlan={actionPlan}
-              onSaveActionPlan={handleSaveActionPlan}
+              inspectionId={inspectionId}
+              isReadOnly={false}
+              questionText={question.text}
+              onSaveAnalysis={handleSaveAnalysis}
+              onApplyAISuggestion={handleApplyAISuggestion}
+              analysisResults={mediaAnalysisResults}
+              onAnalyzeAll={handleAnalyzeAllMedia}
+              multiModalLoading={multiModalLoading}
             />
-          )}
-        </div>
-      </div>
-    </div>
+          </div>
+        )}
+        
+        {(isNegativeResponse(response?.value) || showActionPlan) && (
+          <ActionPlanSection
+            isOpen={showActionPlan}
+            onOpenChange={setShowActionPlan}
+            actionPlan={actionPlan || response?.actionPlan || ""}
+            onActionPlanChange={handleActionPlanChange}
+            onOpenDialog={() => {}} // We'll implement this later if needed
+            hasNegativeResponse={isNegativeResponse(response?.value)}
+            aiSuggestion={Object.values(mediaAnalysisResults)[0]?.actionPlanSuggestion}
+            mediaAnalysisResults={mediaAnalysisResults}
+          />
+        )}
+      </CardContent>
+    </Card>
   );
-});
+}

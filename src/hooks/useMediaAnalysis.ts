@@ -74,9 +74,10 @@ export function useMediaAnalysis() {
           
           console.log("useMediaAnalysis: Edge Function response:", data);
           
-          // Use the response from the Edge Function directly
+          // Standardize the response format for consistency between single and multimodal analyses
           const analysisResult: MediaAnalysisResult = {
             type: "multimodal",
+            analysis: data.imageAnalysis || data.analysis, // Ensure we have an analysis field
             summary: data.summary || createContextualSummary(questionText, responseValue, mediaUrls.length, data.hasNonConformity),
             hasNonConformity: data.hasNonConformity,
             psychosocialRiskDetected: data.psychosocialRiskDetected,
@@ -84,7 +85,8 @@ export function useMediaAnalysis() {
             imageAnalysis: data.imageAnalysis,
             audioTranscription: data.audioTranscription,
             audioSentiment: data.audioSentiment,
-            actionPlanSuggestion: data.actionPlanSuggestion
+            videoAnalysis: data.videoAnalysis || data.analysis,
+            actionPlanSuggestion: data.actionPlanSuggestion || extractActionPlanSuggestion(data.imageAnalysis || data.analysis)
           };
           
           console.log("useMediaAnalysis: Multimodal analysis result:", analysisResult);
@@ -116,15 +118,19 @@ export function useMediaAnalysis() {
         
         console.log("useMediaAnalysis: Edge Function response:", data);
         
-        // Use the response from the Edge Function directly
+        // Standardize the response format for consistency with multimodal analysis
         const analysisResult: MediaAnalysisResult = {
           type,
           analysis: data.analysis,
           transcription: data.transcription,
+          summary: data.summary || createContextualSummary(questionText, responseValue, 1, data.hasNonConformity),
           hasNonConformity: data.hasNonConformity,
           psychosocialRiskDetected: data.psychosocialRiskDetected,
-          actionPlanSuggestion: data.actionPlanSuggestion,
-          questionText
+          actionPlanSuggestion: data.actionPlanSuggestion || extractActionPlanSuggestion(data.analysis),
+          questionText,
+          imageAnalysis: type === "image" ? data.analysis : undefined,
+          videoAnalysis: type === "video" ? data.analysis : undefined,
+          audioTranscription: type === "audio" ? data.transcription : undefined
         };
         
         console.log("useMediaAnalysis: Single media analysis result:", analysisResult);
@@ -146,6 +152,28 @@ export function useMediaAnalysis() {
     } finally {
       setAnalyzing(false);
     }
+  };
+
+  // Helper function to extract action plan suggestions from analysis text if not explicitly provided
+  const extractActionPlanSuggestion = (analysisText?: string): string | undefined => {
+    if (!analysisText) return undefined;
+    
+    // Look for common patterns that indicate an action plan suggestion in the analysis
+    const actionPlanPatterns = [
+      /Plano de ação sugerido:([^]*?)(?=\n\n|\n$|$)/i,
+      /Sugestão de ação:([^]*?)(?=\n\n|\n$|$)/i,
+      /Recomendação:([^]*?)(?=\n\n|\n$|$)/i,
+      /Ação recomendada:([^]*?)(?=\n\n|\n$|$)/i
+    ];
+    
+    for (const pattern of actionPlanPatterns) {
+      const match = analysisText.match(pattern);
+      if (match && match[1]) {
+        return match[1].trim();
+      }
+    }
+    
+    return undefined;
   };
 
   // Helper function to determine media type from URL or provided type

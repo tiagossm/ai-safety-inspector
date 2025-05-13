@@ -15,6 +15,9 @@ import { useInspectionStatus } from "@/hooks/inspection/useInspectionStatus";
 import { useResponseHandling } from "@/hooks/inspection/useResponseHandling";
 import { useActionPlans } from "@/hooks/inspection/useActionPlans";
 import { INSPECTION_STATUSES } from "@/types/inspection";
+import { SubChecklistDialog } from "@/components/inspection/dialogs/SubChecklistDialog";
+import { useSubChecklistDialog } from "@/hooks/inspection/useSubChecklistDialog";
+import { generateInspectionPDF } from "@/services/inspection/reportService";
 
 export default function InspectionExecutionPage() {
   const { id } = useParams<{ id: string }>();
@@ -60,6 +63,18 @@ export default function InspectionExecutionPage() {
     saveActionPlan,
     refreshPlans
   } = useActionPlans(id);
+  
+  // Add sub-checklist dialog hook
+  const {
+    subChecklistDialogOpen,
+    setSubChecklistDialogOpen,
+    currentSubChecklist,
+    currentParentQuestionId,
+    savingSubChecklist,
+    handleOpenSubChecklist,
+    handleSaveSubChecklistResponses: saveSubChecklistResponses,
+    safeParseResponse
+  } = useSubChecklistDialog(responses, handleResponseChange, handleSaveSubChecklistResponses);
 
   // Set initial group when data is loaded
   React.useEffect(() => {
@@ -141,18 +156,48 @@ export default function InspectionExecutionPage() {
     }
   };
 
-  // Complete inspection
+  // Complete inspection and generate PDF
   const handleCompleteInspection = async () => {
     if (!id || !inspection) return;
     
     try {
       setSaving(true);
+      // First save all responses
       await handleSaveInspection(responses, inspection);
+      
+      // Complete the inspection
       await completeInspection(inspection);
-      toast.success("Inspeção finalizada com sucesso");
-      refreshData();
-      // Also refresh action plans
-      refreshPlans();
+      
+      // Generate PDF report
+      try {
+        toast.info("Gerando relatório PDF...");
+        const reportOptions = { 
+          inspectionId: id, 
+          includeImages: true, 
+          includeComments: true, 
+          includeActionPlans: true,
+          format: 'pdf' as 'pdf'
+        };
+        
+        const pdfUrl = await generateInspectionPDF(reportOptions);
+        
+        toast.success("Inspeção finalizada com sucesso e relatório gerado");
+        
+        // Refresh data to get updated status
+        await refreshData();
+        
+        // Also refresh action plans
+        await refreshPlans();
+        
+        // Navigate to inspection page after completion and report generation
+        navigate(`/inspections/${id}`);
+      } catch (pdfError: any) {
+        console.error("Error generating PDF:", pdfError);
+        toast.error(`Erro ao gerar relatório: ${pdfError.message || 'Erro desconhecido'}`);
+        
+        // Even if PDF fails, we've completed the inspection, so navigate back
+        navigate(`/inspections/${id}`);
+      }
     } catch (error: any) {
       console.error("Error completing inspection:", error);
       toast.error(`Erro ao finalizar inspeção: ${error.message || 'Erro desconhecido'}`);
@@ -191,8 +236,34 @@ export default function InspectionExecutionPage() {
 
   // Function for report generation
   const handleGenerateReport = async () => {
-    // This will be handled by the ReportGenerationDialog directly
-    return Promise.resolve();
+    try {
+      toast.info("Gerando relatório PDF...");
+      const reportOptions = { 
+        inspectionId: id!, 
+        includeImages: true, 
+        includeComments: true, 
+        includeActionPlans: true,
+        format: 'pdf' as 'pdf'
+      };
+      
+      const pdfUrl = await generateInspectionPDF(reportOptions);
+      toast.success("Relatório gerado com sucesso");
+      
+      return Promise.resolve();
+    } catch (error: any) {
+      console.error("Error generating report:", error);
+      toast.error(`Erro ao gerar relatório: ${error.message || 'Erro desconhecido'}`);
+      return Promise.reject(error);
+    }
+  };
+
+  // Handle opening sub-checklist
+  const onOpenSubChecklist = (questionId: string) => {
+    if (subChecklists && subChecklists[questionId]) {
+      handleOpenSubChecklist(questionId, subChecklists);
+    } else {
+      toast.error("Sub-checklist não encontrado");
+    }
   };
 
   // If ID is invalid
@@ -244,6 +315,11 @@ export default function InspectionExecutionPage() {
   // Calculate action plan stats - significant non-conformities
   const hasActionPlans = Object.keys(plansByQuestion).length > 0;
   const pendingActionPlans = actionPlanStats?.pending || 0;
+
+  // Get current sub-checklist responses if available
+  const currentSubChecklistResponses = currentParentQuestionId && responses[currentParentQuestionId]?.subChecklistResponses 
+    ? safeParseResponse(responses[currentParentQuestionId].subChecklistResponses) 
+    : {};
 
   return (
     <div className="container max-w-7xl mx-auto py-6">
@@ -334,6 +410,7 @@ export default function InspectionExecutionPage() {
           onSaveSubChecklistResponses={handleSaveSubChecklistResponses}
           plansByQuestion={plansByQuestion}
           onSaveActionPlan={saveActionPlan}
+          onOpenSubChecklist={onOpenSubChecklist}
         />
       ) : (
         !loading && (
@@ -346,6 +423,17 @@ export default function InspectionExecutionPage() {
           </Card>
         )
       )}
+      
+      {/* Sub-checklist dialog */}
+      <SubChecklistDialog
+        open={subChecklistDialogOpen}
+        onOpenChange={setSubChecklistDialogOpen}
+        subChecklist={currentSubChecklist}
+        subChecklistQuestions={currentSubChecklist?.questions || []}
+        currentResponses={currentSubChecklistResponses}
+        onSaveResponses={saveSubChecklistResponses}
+        saving={savingSubChecklist}
+      />
     </div>
   );
 }

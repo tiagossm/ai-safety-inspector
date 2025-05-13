@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { X, ZoomIn, Download, Sparkles, AlertTriangle, Heart } from "lucide-react";
 import { MediaPreviewDialog } from "@/components/media/MediaPreviewDialog";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
@@ -101,6 +101,51 @@ export function MediaAttachments({
     return Object.values(analysisResults).some(result => result.psychosocialRiskDetected);
   };
 
+  const getSuggestionFromAnalysis = (url: string): string | undefined => {
+    const analysis = analysisResults[url];
+    if (!analysis) return undefined;
+    
+    // First try to get the dedicated actionPlanSuggestion field
+    if (analysis.actionPlanSuggestion) {
+      return analysis.actionPlanSuggestion;
+    }
+    
+    // If there's no specific suggestion but there's non-conformity, extract from analysis
+    if (analysis.hasNonConformity) {
+      // Try to extract action plan from any analysis text available
+      if (analysis.analysis) {
+        return extractActionPlanSuggestion(analysis.analysis);
+      }
+      if (analysis.imageAnalysis) {
+        return extractActionPlanSuggestion(analysis.imageAnalysis);
+      }
+      if (analysis.videoAnalysis) {
+        return extractActionPlanSuggestion(analysis.videoAnalysis);
+      }
+    }
+    
+    return undefined;
+  };
+  
+  // Helper function to extract action plan suggestions from text
+  const extractActionPlanSuggestion = (text: string): string | undefined => {
+    const actionPlanPatterns = [
+      /Plano de ação sugerido:([^]*?)(?=\n\n|\n$|$)/i,
+      /Sugestão de ação:([^]*?)(?=\n\n|\n$|$)/i,
+      /Recomendação:([^]*?)(?=\n\n|\n$|$)/i,
+      /Ação recomendada:([^]*?)(?=\n\n|\n$|$)/i
+    ];
+    
+    for (const pattern of actionPlanPatterns) {
+      const match = text.match(pattern);
+      if (match && match[1]) {
+        return match[1].trim();
+      }
+    }
+    
+    return undefined;
+  };
+
   const handleDeleteMedia = (url: string) => {
     if (onDelete) {
       console.log("MediaAttachments: Deleting media URL:", url);
@@ -132,7 +177,8 @@ export function MediaAttachments({
         {mediaUrls.map((url, index) => {
           const analysis = analysisResults?.[url];
           const hasAnalysis = !!analysis;
-          const hasActionSuggestion = hasAnalysis && !!analysis.actionPlanSuggestion;
+          const actionSuggestion = getSuggestionFromAnalysis(url);
+          const hasActionSuggestion = !!actionSuggestion;
           const hasPsychosocialRisk = hasAnalysis && !!analysis.psychosocialRiskDetected;
           
           return (
@@ -195,7 +241,7 @@ export function MediaAttachments({
                 <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-md">
                   <p className="text-xs font-medium text-amber-700 mb-1">Sugestão da IA:</p>
                   <p className="text-xs text-amber-900 mb-2 line-clamp-2">
-                    {analysis.actionPlanSuggestion}
+                    {actionSuggestion}
                   </p>
                   <Button 
                     size="sm" 

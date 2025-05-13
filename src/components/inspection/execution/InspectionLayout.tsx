@@ -43,6 +43,7 @@ interface InspectionLayoutProps {
   onSaveSubChecklistResponses: (subChecklistId: string, responses: Record<string, any>) => Promise<void>;
   plansByQuestion?: Record<string, ActionPlan>;
   onSaveActionPlan?: (data: ActionPlanFormData) => Promise<ActionPlan | void>;
+  onOpenSubChecklist?: (questionId: string) => void;
 }
 
 export function InspectionLayout({
@@ -74,7 +75,8 @@ export function InspectionLayout({
   onMediaUpload,
   onSaveSubChecklistResponses,
   plansByQuestion = {},
-  onSaveActionPlan
+  onSaveActionPlan,
+  onOpenSubChecklist
 }: InspectionLayoutProps) {
   const DEFAULT_GROUP = { id: "default-group", title: "Perguntas", order: 0 };
   const displayGroups = groups.length > 0 ? groups : [DEFAULT_GROUP];
@@ -177,6 +179,7 @@ export function InspectionLayout({
                       index={index}
                       response={responses[question.id] || {}}
                       onResponseChange={(data) => handleQuestionResponseChange(question.id, data)}
+                      onOpenSubChecklist={onOpenSubChecklist && question.hasSubChecklist ? () => onOpenSubChecklist(question.id) : undefined}
                       allQuestions={questions}
                       numberLabel={`${index + 1}`}
                       inspectionId={inspection.id}
