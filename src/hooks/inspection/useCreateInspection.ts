@@ -48,6 +48,7 @@ export function useCreateInspection() {
       const { error: insertError } = await supabase
         .from('inspections')
         .insert({
+          id: inspectionId,
           checklist_id: checklistId,
           company_id: finalCompanyId,
           responsible_id: responsibleId,
@@ -80,6 +81,8 @@ export function useCreateInspection() {
           inspection_id: inspectionId,
           question_id: q.id,
           answer: '', // Add default empty answer as it's required
+          media_urls: [], // Add empty media urls array as it might be expected
+          notes: '', // Add empty notes to ensure all fields are covered
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }));
