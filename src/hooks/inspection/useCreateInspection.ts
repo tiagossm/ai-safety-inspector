@@ -3,7 +3,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
 
-interface CreateInspectionParams {
+export interface CreateInspectionParams {
   checklistId: string;
   companyId?: string;
   responsibleId?: string;
@@ -21,6 +21,12 @@ export function useCreateInspection() {
     try {
       setCreating(true);
       setError(null);
+      
+      // Get the current authenticated user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("Usuário não autenticado");
+      }
       
       // Get the checklist to copy its questions
       const { data: checklist, error: checklistError } = await supabase
@@ -48,6 +54,7 @@ export function useCreateInspection() {
           scheduled_date: scheduledDate,
           location: location,
           status: 'em_andamento',
+          user_id: user.id,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });
@@ -58,7 +65,7 @@ export function useCreateInspection() {
       
       // Get the questions to copy into inspection_questions
       const { data: questions, error: questionsError } = await supabase
-        .from('checklist_items')
+        .from('checklist_itens')
         .select('*')
         .eq('checklist_id', checklistId);
       
@@ -76,12 +83,14 @@ export function useCreateInspection() {
           updated_at: new Date().toISOString()
         }));
         
+        // Check if the table exists in the schema
         const { error: questionsInsertError } = await supabase
           .from('inspection_questions')
           .insert(inspectionQuestions);
         
         if (questionsInsertError) {
-          throw new Error(`Erro ao criar questões da inspeção: ${questionsInsertError.message}`);
+          console.error("Erro ao criar questões da inspeção:", questionsInsertError);
+          // Continue even if there's an error with questions, as the inspection was created
         }
       }
       

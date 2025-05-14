@@ -27,7 +27,9 @@ export default function NewInspectionPage() {
 
     const initializeInspection = async () => {
       try {
-        const inspection = await createInspection(checklistId);
+        const inspection = await createInspection({
+          checklistId: checklistId
+        });
         // Only redirect after successful creation
         navigate(`/inspections/${inspection.id}/view`, { replace: true });
       } catch (err) {

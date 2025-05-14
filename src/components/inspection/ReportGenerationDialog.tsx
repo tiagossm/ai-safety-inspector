@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { 
   Dialog, 
@@ -5,7 +6,8 @@ import {
   DialogDescription, 
   DialogFooter, 
   DialogHeader, 
-  DialogTitle 
+  DialogTitle,
+  DialogTrigger
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -72,13 +74,13 @@ export function ReportGenerationDialog({
     }
   };
 
-  // If trigger is provided, use Dialog.Root pattern
+  // If trigger is provided, use Dialog with DialogTrigger pattern
   if (trigger) {
     return (
       <Dialog>
-        <Dialog.Trigger asChild>
+        <DialogTrigger asChild>
           {trigger}
-        </Dialog.Trigger>
+        </DialogTrigger>
         <DialogContent className="max-w-md">
           {renderDialogContent()}
         </DialogContent>

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Building2, CheckCircle, ClipboardCheck, User } from "lucide-react";
@@ -228,6 +227,8 @@ export function InspectionCreationWizard() {
             </CardFooter>
           </>
         )}
+        
+        
         
         {currentStep === "details" && (
           <>
