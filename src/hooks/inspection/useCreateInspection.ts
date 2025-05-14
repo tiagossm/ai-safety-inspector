@@ -79,13 +79,12 @@ export function useCreateInspection() {
         const inspectionQuestions = questions.map(q => ({
           inspection_id: inspectionId,
           question_id: q.id,
+          answer: '', // Add default empty answer as it's required
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }));
         
-        // Check if the table exists in the schema
-        // Since 'inspection_questions' table doesn't seem to exist, let's use 'inspection_responses' instead
-        // which seems to be the correct table based on the error message
+        // Use 'inspection_responses' table instead of 'inspection_questions'
         const { error: questionsInsertError } = await supabase
           .from('inspection_responses')
           .insert(inspectionQuestions);
