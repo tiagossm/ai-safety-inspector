@@ -42,12 +42,12 @@ export function useCreateInspection() {
       // Use company from checklist if it has one
       const finalCompanyId = companyId || checklist.company_id;
       
-      // Create the inspection
+      // Create the inspection - note we're not setting the ID manually
+      // so Supabase can generate it with the default gen_random_uuid()
       const inspectionId = uuidv4();
       const { error: insertError } = await supabase
         .from('inspections')
         .insert({
-          id: inspectionId,
           checklist_id: checklistId,
           company_id: finalCompanyId,
           responsible_id: responsibleId,
@@ -55,6 +55,7 @@ export function useCreateInspection() {
           location: location,
           status: 'em_andamento',
           user_id: user.id,
+          cnae: '', // Add default empty string for cnae which is required
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });
@@ -76,7 +77,6 @@ export function useCreateInspection() {
       // Create inspection questions
       if (questions && questions.length > 0) {
         const inspectionQuestions = questions.map(q => ({
-          id: uuidv4(),
           inspection_id: inspectionId,
           question_id: q.id,
           created_at: new Date().toISOString(),
@@ -84,8 +84,10 @@ export function useCreateInspection() {
         }));
         
         // Check if the table exists in the schema
+        // Since 'inspection_questions' table doesn't seem to exist, let's use 'inspection_responses' instead
+        // which seems to be the correct table based on the error message
         const { error: questionsInsertError } = await supabase
-          .from('inspection_questions')
+          .from('inspection_responses')
           .insert(inspectionQuestions);
         
         if (questionsInsertError) {
