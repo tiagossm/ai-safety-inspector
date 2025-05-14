@@ -75,13 +75,13 @@ export function InspectionCreationWizard() {
         return;
       }
       
-      const inspection = await createInspection(
-        formData.checklistId, 
-        formData.companyId, 
-        formData.responsibleId,
-        formData.scheduledDate ? new Date(formData.scheduledDate).toISOString() : undefined,
-        formData.location
-      );
+      const inspection = await createInspection({
+        checklistId: formData.checklistId,
+        companyId: formData.companyId,
+        responsibleId: formData.responsibleId,
+        scheduledDate: formData.scheduledDate ? new Date(formData.scheduledDate).toISOString() : undefined,
+        location: formData.location
+      });
       
       navigate(`/inspections/${inspection.id}/view`);
     } catch (err) {
@@ -139,7 +139,7 @@ export function InspectionCreationWizard() {
                   </Select>
                 </div>
                 
-                {formData.checklistId && !selectedChecklist?.isTemplate && selectedChecklist?.companyId && (
+                {formData.checklistId && !selectedChecklist?.is_template && selectedChecklist?.company_id && (
                   <div className="bg-blue-50 p-3 rounded-md">
                     <p className="text-sm text-blue-800">
                       Este checklist já está vinculado a uma empresa. 
@@ -181,7 +181,7 @@ export function InspectionCreationWizard() {
                   <Select 
                     value={formData.companyId} 
                     onValueChange={value => handleInputChange("companyId", value)}
-                    disabled={selectedChecklist?.companyId !== undefined}
+                    disabled={selectedChecklist?.company_id !== undefined}
                   >
                     <SelectTrigger id="company">
                       <SelectValue placeholder="Selecione uma empresa" />
@@ -201,7 +201,7 @@ export function InspectionCreationWizard() {
                     </SelectContent>
                   </Select>
                   
-                  {selectedChecklist?.companyId && (
+                  {selectedChecklist?.company_id && (
                     <p className="text-xs text-muted-foreground mt-1">
                       Empresa vinculada automaticamente pelo checklist
                     </p>
@@ -222,7 +222,7 @@ export function InspectionCreationWizard() {
               <Button variant="outline" onClick={goToPreviousStep}>
                 Voltar
               </Button>
-              <Button onClick={goToNextStep} disabled={!formData.companyId && !selectedChecklist?.companyId}>
+              <Button onClick={goToNextStep} disabled={!formData.companyId && !selectedChecklist?.company_id}>
                 Próximo
               </Button>
             </CardFooter>

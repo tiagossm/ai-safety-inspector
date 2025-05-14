@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { 
   Dialog, 
@@ -16,26 +15,36 @@ import { FileText, FileSpreadsheet, FileJson, Loader2 } from "lucide-react";
 import { generateInspectionReport } from "@/services/inspection/reportService";
 import { toast } from "sonner";
 
-interface ReportGenerationDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+export interface ReportGenerationDialogProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   inspectionId: string;
+  inspectionData?: any;
   companyName?: string;
   checklistTitle?: string;
+  trigger?: React.ReactNode;
 }
 
 export function ReportGenerationDialog({
   open,
   onOpenChange,
   inspectionId,
+  inspectionData,
   companyName,
-  checklistTitle
+  checklistTitle,
+  trigger
 }: ReportGenerationDialogProps) {
   const [format, setFormat] = useState<"pdf" | "excel" | "csv">("pdf");
   const [includeImages, setIncludeImages] = useState(true);
   const [includeComments, setIncludeComments] = useState(true);
   const [includeActionPlans, setIncludeActionPlans] = useState(true);
   const [generating, setGenerating] = useState(false);
+
+  // Use data from inspectionData if available
+  const displayCompanyName = companyName || 
+    (inspectionData?.company?.fantasy_name || inspectionData?.companyName);
+  const displayChecklistTitle = checklistTitle || 
+    (inspectionData?.checklist?.title || inspectionData?.checklistTitle);
 
   const handleGenerateReport = async () => {
     try {
@@ -52,7 +61,7 @@ export function ReportGenerationDialog({
       await generateInspectionReport(options);
       
       toast.success("Relatório gerado com sucesso");
-      onOpenChange(false);
+      if (onOpenChange) onOpenChange(false);
     } catch (error) {
       console.error("Erro ao gerar relatório:", error);
       toast.error("Erro ao gerar relatório", {
@@ -63,15 +72,38 @@ export function ReportGenerationDialog({
     }
   };
 
+  // If trigger is provided, use Dialog.Root pattern
+  if (trigger) {
+    return (
+      <Dialog>
+        <Dialog.Trigger asChild>
+          {trigger}
+        </Dialog.Trigger>
+        <DialogContent className="max-w-md">
+          {renderDialogContent()}
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // Otherwise use controlled dialog
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
+        {renderDialogContent()}
+      </DialogContent>
+    </Dialog>
+  );
+
+  function renderDialogContent() {
+    return (
+      <>
         <DialogHeader>
           <DialogTitle>Gerar Relatório</DialogTitle>
           <DialogDescription>
             Selecione as opções para gerar o relatório da inspeção
-            {checklistTitle && <span className="font-medium block mt-1">{checklistTitle}</span>}
-            {companyName && <span className="text-muted-foreground">{companyName}</span>}
+            {displayChecklistTitle && <span className="font-medium block mt-1">{displayChecklistTitle}</span>}
+            {displayCompanyName && <span className="text-muted-foreground">{displayCompanyName}</span>}
           </DialogDescription>
         </DialogHeader>
         
@@ -152,7 +184,7 @@ export function ReportGenerationDialog({
           <Button
             type="button"
             variant="outline"
-            onClick={() => onOpenChange(false)}
+            onClick={() => onOpenChange && onOpenChange(false)}
             disabled={generating}
           >
             Cancelar
@@ -165,7 +197,7 @@ export function ReportGenerationDialog({
             {generating ? "Gerando..." : "Gerar Relatório"}
           </Button>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
+      </>
+    );
+  }
 }
