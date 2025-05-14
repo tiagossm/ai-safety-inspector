@@ -2,7 +2,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Copy, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Copy, Pencil, Trash2, PlayCircle } from "lucide-react";
 import { ChecklistOriginBadge } from "@/components/new-checklist/ChecklistOriginBadge";
 import { ChecklistWithStats } from "@/types/newChecklist";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -19,6 +19,11 @@ export function ChecklistDetailsHeader({
   onDelete 
 }: ChecklistDetailsHeaderProps) {
   const navigate = useNavigate();
+  
+  const handleStartInspection = () => {
+    // Navigate directly to the inspection execution page
+    navigate(`/inspections/${checklist.id}/view`);
+  };
   
   return (
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -60,6 +65,26 @@ export function ChecklistDetailsHeader({
             </TooltipTrigger>
             <TooltipContent>
               <p>Criar uma cópia deste checklist</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="default" 
+                size="sm"
+                onClick={handleStartInspection} 
+                className="bg-green-600 hover:bg-green-700"
+                aria-label={`Iniciar inspeção para ${checklist.title}`}
+              >
+                <PlayCircle className="h-4 w-4 mr-2" />
+                <span>Iniciar Inspeção</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Iniciar uma nova inspeção com este checklist</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

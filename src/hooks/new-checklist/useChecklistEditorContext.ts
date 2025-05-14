@@ -206,10 +206,10 @@ export function useChecklistEditorContext() {
         return false;
       }
       
-      // Corrigido o formato da URL para usar o parâmetro checklistId correto
-      console.log(`Redirecionando para inspeção com checklistId=${id}`);
-      toast.success("Navegando para nova inspeção...");
-      navigate(`/inspections/new?checklistId=${id}`);
+      // Navigate directly to inspection execution page
+      console.log(`Redirecionando para execução da inspeção com checklistId=${id}`);
+      toast.success("Navegando para execução de inspeção...");
+      navigate(`/inspections/${id}/view`);
       setIsSubmitting(false);
       return true;
     } catch (error) {

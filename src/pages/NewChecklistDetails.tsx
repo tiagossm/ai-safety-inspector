@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -9,6 +8,7 @@ import { ChecklistInfoCard } from "@/components/new-checklist/details/ChecklistI
 import { ChecklistQuestionsTable } from "@/components/new-checklist/details/ChecklistQuestionsTable";
 import { ChecklistLoadingState } from "@/components/new-checklist/details/ChecklistLoadingState";
 import { ChecklistErrorState } from "@/components/new-checklist/details/ChecklistErrorState";
+import { GlobalFloatingActionButton } from "@/components/inspection/GlobalFloatingActionButton";
 
 export default function NewChecklistDetails() {
   const { id } = useParams<{ id: string }>();
@@ -91,6 +91,8 @@ export default function NewChecklistDetails() {
         onDeleted={confirmDeleteChecklist}
         isDeleting={isDeleting}
       />
+      
+      <GlobalFloatingActionButton />
     </div>
   );
 }

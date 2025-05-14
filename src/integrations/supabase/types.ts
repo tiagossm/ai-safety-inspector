@@ -979,7 +979,7 @@ export type Database = {
           responsible_ids: string[] | null
           risks: Json | null
           scheduled_date: string | null
-          status: string | null
+          status: string
           sync_status: string | null
           unit_id: string | null
           updated_at: string | null
@@ -1008,7 +1008,7 @@ export type Database = {
           responsible_ids?: string[] | null
           risks?: Json | null
           scheduled_date?: string | null
-          status?: string | null
+          status?: string
           sync_status?: string | null
           unit_id?: string | null
           updated_at?: string | null
@@ -1037,7 +1037,7 @@ export type Database = {
           responsible_ids?: string[] | null
           risks?: Json | null
           scheduled_date?: string | null
-          status?: string | null
+          status?: string
           sync_status?: string | null
           unit_id?: string | null
           updated_at?: string | null

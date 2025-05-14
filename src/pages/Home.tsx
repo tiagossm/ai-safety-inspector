@@ -8,6 +8,7 @@ import { WorkflowGuide } from "@/components/workflow/WorkflowGuide";
 import { useInspections } from "@/hooks/useInspections";
 import { useCompanies } from "@/hooks/useCompanies";
 import { useChecklists } from "@/hooks/useChecklists";
+import { GlobalFloatingActionButton } from "@/components/inspection/GlobalFloatingActionButton";
 
 const Home = () => {
   const { user } = useAuth();
@@ -135,6 +136,8 @@ const DashboardView = () => {
           </Link>
         </Card>
       </div>
+      
+      <GlobalFloatingActionButton />
     </div>
   );
 };

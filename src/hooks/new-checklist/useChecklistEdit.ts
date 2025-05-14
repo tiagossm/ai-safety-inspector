@@ -154,10 +154,10 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
         return;
       }
       
-      // Corrigido o formato da URL para incluir o parâmetro checklistId corretamente
-      console.log(`Redirecionando para inspeção com checklistId=${id}`);
+      // Navigate directly to the inspection execution
+      console.log(`Redirecionando para execução da inspeção com checklistId=${id}`);
       toast.success("Redirecionando para a inspeção...", { duration: 2000 });
-      navigate(`/inspections/new?checklistId=${id}`);
+      navigate(`/inspections/${id}/view`);
     } catch (error) {
       console.error("Error starting inspection:", error);
       toast.error(`Erro ao iniciar inspeção: ${error instanceof Error ? error.message : "Erro desconhecido"}`, { duration: 5000 });

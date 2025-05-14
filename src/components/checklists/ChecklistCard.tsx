@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -77,7 +76,8 @@ export function ChecklistCard({
   };
 
   const startInspection = () => {
-    navigate(`/inspections/new/${id}`);
+    // Navigate directly to the inspection execution page
+    navigate(`/inspections/${id}/view`);
   };
   
   return (

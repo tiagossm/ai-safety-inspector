@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BarChart, LineChart, PieChart } from "@/components/ui/chart";
@@ -16,6 +15,7 @@ import {
   Clock,
   FileText
 } from "lucide-react";
+import { GlobalFloatingActionButton } from "@/components/inspection/GlobalFloatingActionButton";
 
 export default function Dashboard() {
   // Dados de exemplo para os gráficos
@@ -372,6 +372,8 @@ export default function Dashboard() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <GlobalFloatingActionButton />
     </div>
   );
 }
