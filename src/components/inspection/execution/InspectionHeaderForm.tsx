@@ -65,7 +65,7 @@ export function InspectionHeaderForm({
   inspection,
   company,
   responsible,
-  isEditable = true,
+  isEditable = true, // Default to true so the form is always editable
   onSave,
 }: InspectionHeaderFormProps) {
   const [expanded, setExpanded] = useState(true);
@@ -85,7 +85,17 @@ export function InspectionHeaderForm({
     return null;
   };
 
-  const initialResponsibleIds = responsible?.id ? [responsible.id] : [];
+  // Initialize responsibleIds from either the array or a single ID for backward compatibility
+  const initialResponsibleIds = inspection?.responsible_ids?.length 
+    ? inspection.responsible_ids 
+    : (responsible?.id ? [responsible.id] : []);
+
+  console.log("Initial form data:", {
+    inspectionId,
+    companyId: company?.id,
+    responsibleIds: initialResponsibleIds,
+    inspection
+  });
 
   const defaultValues: Partial<InspectionFormValues> = {
     companyId: company?.id || "",
@@ -102,6 +112,31 @@ export function InspectionHeaderForm({
     resolver: zodResolver(inspectionFormSchema),
     defaultValues,
   });
+
+  // Force form values to be set from props when they change
+  React.useEffect(() => {
+    if (company?.id) {
+      form.setValue('companyId', company.id);
+    }
+    if (initialResponsibleIds.length) {
+      form.setValue('responsibleIds', initialResponsibleIds);
+    }
+    if (inspection?.scheduled_date) {
+      form.setValue('scheduledDate', new Date(inspection.scheduled_date));
+    }
+    if (inspection?.location) {
+      form.setValue('location', inspection.location);
+    }
+    if (inspection?.metadata?.notes) {
+      form.setValue('notes', inspection.metadata.notes);
+    }
+    if (inspection?.inspection_type) {
+      form.setValue('inspectionType', inspection.inspection_type);
+    }
+    if (inspection?.priority) {
+      form.setValue('priority', inspection.priority);
+    }
+  }, [company, inspection, responsible, form]);
 
   const calculateProgress = (data: Partial<InspectionFormValues>) => {
     const requiredFields = ['companyId', 'responsibleIds', 'location', 'inspectionType'];
@@ -194,16 +229,10 @@ export function InspectionHeaderForm({
           </CardDescription>
         </div>
         <div className="flex space-x-2 items-center">
-          {isEditable ? (
-            expanded ? (
-              <ChevronUp className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            )
+          {expanded ? (
+            <ChevronUp className="h-4 w-4 text-muted-foreground" />
           ) : (
-            <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
-              Somente leitura
-            </span>
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
           )}
         </div>
       </CardHeader>
@@ -245,9 +274,6 @@ export function InspectionHeaderForm({
                               form.setValue('location', data.address);
                             }
                           }}
-                          className={cn(
-                            !isEditable && "opacity-70 pointer-events-none"
-                          )}
                         />
                       </FormControl>
                       <FormMessage />
@@ -266,9 +292,6 @@ export function InspectionHeaderForm({
                           <ResponsibleSelector
                             value={field.value}
                             onSelect={(ids, data) => field.onChange(ids)}
-                            className={cn(
-                              !isEditable && "opacity-70 pointer-events-none"
-                            )}
                           />
                         </FormControl>
                         <FormMessage />
@@ -286,9 +309,6 @@ export function InspectionHeaderForm({
                           <DateTimePicker
                             date={field.value}
                             setDate={field.onChange}
-                            className={cn(
-                              !isEditable && "opacity-70 pointer-events-none"
-                            )}
                           />
                         </FormControl>
                       </FormItem>
@@ -317,7 +337,6 @@ export function InspectionHeaderForm({
                             }
                           }}
                           coordinates={form.watch('coordinates')}
-                          disabled={!isEditable}
                         />
                       </FormControl>
                       <FormMessage />
@@ -335,7 +354,6 @@ export function InspectionHeaderForm({
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
-                          disabled={!isEditable}
                         >
                           <FormControl>
                             <SelectTrigger>
@@ -391,7 +409,6 @@ export function InspectionHeaderForm({
                         <Select
                           onValueChange={field.onChange}
                           defaultValue={field.value}
-                          disabled={!isEditable}
                         >
                           <FormControl>
                             <SelectTrigger
@@ -440,7 +457,6 @@ export function InspectionHeaderForm({
                         <Textarea
                           {...field}
                           placeholder="Observações adicionais sobre a inspeção"
-                          disabled={!isEditable}
                           className="min-h-[100px]"
                         />
                       </FormControl>
@@ -465,23 +481,21 @@ export function InspectionHeaderForm({
               type="button"
               variant="outline"
               onClick={handleSaveAsDraft}
-              disabled={updating || !isEditable}
+              disabled={updating}
               size="sm"
             >
               Salvar Rascunho
             </Button>
             
-            {isEditable && (
-              <Button
-                type="button"
-                onClick={form.handleSubmit(onSubmit)}
-                disabled={updating || progress !== 100}
-                size="sm"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {updating ? "Salvando..." : "Salvar Dados da Inspeção"}
-              </Button>
-            )}
+            <Button
+              type="button"
+              onClick={form.handleSubmit(onSubmit)}
+              disabled={updating || progress !== 100}
+              size="sm"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {updating ? "Salvando..." : "Salvar Dados da Inspeção"}
+            </Button>
             
             <Button
               type="button"

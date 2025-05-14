@@ -28,14 +28,19 @@ export default function NewInspectionPage() {
     const initializeInspection = async () => {
       try {
         setLoading(true);
+        // Create a new inspection with the checklist ID
         const inspection = await createInspection({
           checklistId: checklistId
         });
         
         console.log("Inspection created successfully:", inspection);
         
-        // Only redirect after successful creation
-        navigate(`/inspections/${inspection.id}/view`, { replace: true });
+        // Directly navigate to the inspection execution page
+        if (inspection && inspection.id) {
+          navigate(`/inspections/${inspection.id}/view`, { replace: true });
+        } else {
+          throw new Error("Falha ao criar inspeção: ID não retornado");
+        }
       } catch (err) {
         console.error("Error creating inspection:", err);
         setError((err as Error).message);

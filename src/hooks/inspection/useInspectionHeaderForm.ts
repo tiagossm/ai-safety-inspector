@@ -157,11 +157,9 @@ export function useInspectionHeaderForm(inspectionId: string | undefined) {
         ...(processedData.location !== undefined && { location: processedData.location }),
         ...(processedData.inspectionType && { inspection_type: processedData.inspectionType }),
         ...(processedData.priority && { priority: processedData.priority }),
-        ...(processedData.notes || processedData.coordinates) && { 
-          metadata: {
-            notes: processedData.notes || "",
-            coordinates: processedData.coordinates
-          }
+        metadata: {
+          notes: processedData.notes || "",
+          coordinates: processedData.coordinates
         },
         status: 'Pendente',
         updated_at: new Date().toISOString()
