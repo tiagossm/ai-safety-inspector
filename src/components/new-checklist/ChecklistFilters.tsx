@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import {
@@ -29,7 +28,7 @@ interface Company {
   fantasy_name: string;
 }
 
-interface ChecklistFiltersProps {
+export interface ChecklistFiltersProps {
   search: string;
   setSearch: (search: string) => void;
   selectedChecklists: string[];
@@ -49,6 +48,7 @@ interface ChecklistFiltersProps {
   categories: string[];
   filterType: string;
   setFilterType: (type: string) => void;
+  minimal?: boolean;
 }
 
 export function ChecklistFilters({
@@ -70,7 +70,8 @@ export function ChecklistFilters({
   companies,
   categories,
   filterType,
-  setFilterType
+  setFilterType,
+  minimal = false
 }: ChecklistFiltersProps) {
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("all");
@@ -163,7 +164,7 @@ export function ChecklistFilters({
               )}
             </Button>
             
-            {selectedChecklists.length > 0 && (
+            {!minimal && selectedChecklists.length > 0 && (
               <TooltipProvider>
                 <div className="flex items-center gap-2">
                   <Tooltip>

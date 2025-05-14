@@ -40,6 +40,14 @@ export function InspectionCreationWizard() {
     navigate(`/inspections/new/${id}`);
   };
 
+  // Mock functions for props that are required but not used
+  const mockOnBatchUpdateStatus = () => {};
+  const mockOnEdit = () => {};
+  const mockOnDelete = () => {};
+  const mockOnStatusChange = () => {};
+  const [selectedChecklists, setSelectedChecklists] = useState<string[]>([]);
+  const [isBatchUpdating, setIsBatchUpdating] = useState(false);
+
   return (
     <div className="container max-w-7xl mx-auto py-6 space-y-6">
       <div className="flex items-center gap-4 mb-6">
@@ -61,6 +69,9 @@ export function InspectionCreationWizard() {
       <ChecklistFilters
         search={searchTerm}
         setSearch={setSearchTerm}
+        selectedChecklists={selectedChecklists}
+        isBatchUpdating={isBatchUpdating}
+        onBatchUpdateStatus={mockOnBatchUpdateStatus}
         sortColumn={sortOrder.split('_')[0]}
         setSortColumn={(col) => setSortOrder(`${col}_${sortOrder.split('_')[1]}`)}
         sort={sortOrder.split('_')[1] as 'asc' | 'desc'}
@@ -75,8 +86,6 @@ export function InspectionCreationWizard() {
         categories={categories}
         filterType={filterType}
         setFilterType={setFilterType}
-        selectedChecklists={[]}
-        minimal={true}
       />
 
       <Tabs defaultValue="grid" className="space-y-4">
@@ -113,12 +122,11 @@ export function InspectionCreationWizard() {
           <ChecklistGrid
             checklists={activeChecklists}
             isLoading={isLoading}
-            onEdit={() => {}}
-            onDelete={() => {}}
+            onEdit={mockOnEdit}
+            onDelete={mockOnDelete}
             onOpen={handleSelectChecklist}
-            onStatusChange={() => {}}
-            selectionMode={true}
-            onSelect={handleSelectChecklist}
+            onStatusChange={mockOnStatusChange}
+            onBulkDelete={undefined}
           />
         </TabsContent>
       </Tabs>
