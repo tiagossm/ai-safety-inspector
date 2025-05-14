@@ -1,368 +1,173 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, CheckCircle, ClipboardCheck, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { WorkflowProgress } from "@/components/workflow/WorkflowProgress";
-import { useCompanies } from "@/hooks/useCompanies";
-import { useChecklists } from "@/hooks/useChecklists";
-import { useCreateInspection } from "@/hooks/inspection/useCreateInspection";
-
-const steps = [
-  { id: "checklist", label: "Checklist" },
-  { id: "company", label: "Empresa" },
-  { id: "details", label: "Detalhes" },
-  { id: "review", label: "Revisar" },
-];
+import { toast } from "sonner";
+import { ChecklistWithStats } from "@/types/newChecklist";
+import { ChecklistGrid } from "@/components/new-checklist/ChecklistGrid";
+import { useNewChecklists } from "@/hooks/new-checklist/useNewChecklists";
+import { ChecklistFilters } from "@/components/new-checklist/ChecklistFilters";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, CheckSquare, Grid, List } from "lucide-react";
 
 export function InspectionCreationWizard() {
-  const [currentStep, setCurrentStep] = useState("checklist");
-  const [formData, setFormData] = useState({
-    checklistId: "",
-    companyId: "",
-    responsibleId: "",
-    scheduledDate: "",
-    location: "",
-    notes: "",
-  });
-  
   const navigate = useNavigate();
-  const { companies, loading: loadingCompanies } = useCompanies();
-  const { checklists, isLoading: loadingChecklists } = useChecklists();
-  const { createInspection, creating, error } = useCreateInspection();
-  
-  // Map steps for the workflow progress component
-  const workflowSteps = steps.map(step => ({
-    ...step,
-    completed: getStepIndex(currentStep) > getStepIndex(step.id),
-    current: currentStep === step.id,
-  }));
-  
-  function getStepIndex(stepId: string): number {
-    return steps.findIndex(s => s.id === stepId);
-  }
-  
-  function goToNextStep() {
-    const currentIndex = getStepIndex(currentStep);
-    if (currentIndex < steps.length - 1) {
-      setCurrentStep(steps[currentIndex + 1].id);
-    }
-  }
-  
-  function goToPreviousStep() {
-    const currentIndex = getStepIndex(currentStep);
-    if (currentIndex > 0) {
-      setCurrentStep(steps[currentIndex - 1].id);
-    }
-  }
-  
-  function handleInputChange(field: string, value: string) {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  }
-  
-  async function handleCreateInspection() {
-    try {
-      if (!formData.checklistId) {
-        alert("Por favor, selecione um checklist");
-        return;
-      }
-      
-      const inspection = await createInspection({
-        checklistId: formData.checklistId,
-        companyId: formData.companyId,
-        responsibleId: formData.responsibleId,
-        scheduledDate: formData.scheduledDate ? new Date(formData.scheduledDate).toISOString() : undefined,
-        location: formData.location
-      });
-      
-      navigate(`/inspections/${inspection.id}/view`);
-    } catch (err) {
-      console.error("Erro ao criar inspeção:", err);
-    }
-  }
-  
-  // Find selected checklist and company objects
-  const selectedChecklist = checklists.find(c => c.id === formData.checklistId);
-  const selectedCompany = companies.find(c => c.id === formData.companyId);
-  
+  const {
+    checklists,
+    isLoading,
+    searchTerm,
+    setSearchTerm,
+    filterType,
+    setFilterType,
+    selectedCompanyId,
+    setSelectedCompanyId,
+    selectedCategory,
+    setSelectedCategory,
+    selectedOrigin,
+    setSelectedOrigin,
+    sortOrder,
+    setSortOrder,
+    companies,
+    categories,
+  } = useNewChecklists();
+
+  // We only want to display active checklists for inspections
+  const activeChecklists = checklists.filter(
+    (checklist) => checklist.status === "active"
+  );
+
+  const handleSelectChecklist = (id: string) => {
+    navigate(`/inspections/new/${id}`);
+  };
+
   return (
-    <div className="max-w-3xl mx-auto py-8">
-      <h1 className="text-2xl font-semibold mb-6">Nova Inspeção</h1>
-      
-      {/* Progress indicator */}
-      <div className="mb-8">
-        <WorkflowProgress steps={workflowSteps} />
+    <div className="container max-w-7xl mx-auto py-6 space-y-6">
+      <div className="flex items-center gap-4 mb-6">
+        <Button 
+          variant="ghost" 
+          onClick={() => navigate(-1)}
+          className="p-2"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Nova Inspeção</h1>
+          <p className="text-muted-foreground">
+            Selecione um checklist para iniciar sua inspeção
+          </p>
+        </div>
       </div>
-      
-      {/* Step content */}
-      <Card className="mb-6">
-        {currentStep === "checklist" && (
-          <>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ClipboardCheck className="h-5 w-5" />
-                Selecione um Checklist
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="checklist">Checklist</Label>
-                  <Select 
-                    value={formData.checklistId} 
-                    onValueChange={value => handleInputChange("checklistId", value)}
-                  >
-                    <SelectTrigger id="checklist">
-                      <SelectValue placeholder="Selecione um checklist" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {loadingChecklists ? (
-                        <SelectItem value="loading" disabled>Carregando...</SelectItem>
-                      ) : checklists.length === 0 ? (
-                        <SelectItem value="empty" disabled>Nenhum checklist encontrado</SelectItem>
-                      ) : (
-                        checklists.map(checklist => (
-                          <SelectItem key={checklist.id} value={checklist.id}>
-                            {checklist.title}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {formData.checklistId && !selectedChecklist?.is_template && selectedChecklist?.company_id && (
-                  <div className="bg-blue-50 p-3 rounded-md">
-                    <p className="text-sm text-blue-800">
-                      Este checklist já está vinculado a uma empresa. 
-                      Alguns campos serão preenchidos automaticamente.
-                    </p>
-                  </div>
-                )}
-                
-                <div className="flex justify-center pt-2">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => navigate("/new-checklists/create")}
-                  >
-                    Criar Novo Checklist
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-end">
-              <Button onClick={goToNextStep} disabled={!formData.checklistId}>
-                Próximo
-              </Button>
-            </CardFooter>
-          </>
+
+      <ChecklistFilters
+        search={searchTerm}
+        setSearch={setSearchTerm}
+        sortColumn={sortOrder.split('_')[0]}
+        setSortColumn={(col) => setSortOrder(`${col}_${sortOrder.split('_')[1]}`)}
+        sort={sortOrder.split('_')[1] as 'asc' | 'desc'}
+        setSort={(dir) => setSortOrder(`${sortOrder.split('_')[0]}_${dir}`)}
+        selectedCompanyId={selectedCompanyId}
+        setSelectedCompanyId={setSelectedCompanyId}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        selectedOrigin={selectedOrigin}
+        setSelectedOrigin={setSelectedOrigin}
+        companies={companies}
+        categories={categories}
+        filterType={filterType}
+        setFilterType={setFilterType}
+        selectedChecklists={[]}
+        minimal={true}
+      />
+
+      <Tabs defaultValue="grid" className="space-y-4">
+        <div className="flex justify-between items-center">
+          <TabsList>
+            <TabsTrigger value="grid" className="flex items-center gap-2">
+              <Grid className="h-4 w-4" />
+              <span>Cartões</span>
+            </TabsTrigger>
+            <TabsTrigger value="list" className="flex items-center gap-2">
+              <List className="h-4 w-4" />
+              <span>Lista</span>
+            </TabsTrigger>
+          </TabsList>
+          
+          <p className="text-sm text-muted-foreground">
+            {activeChecklists.length} {activeChecklists.length === 1 ? 'checklist' : 'checklists'} disponíveis
+          </p>
+        </div>
+
+        <TabsContent value="grid" className="m-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {activeChecklists.map((checklist) => (
+              <ChecklistSelectionCard
+                key={checklist.id}
+                checklist={checklist}
+                onSelect={handleSelectChecklist}
+              />
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="list" className="m-0">
+          <ChecklistGrid
+            checklists={activeChecklists}
+            isLoading={isLoading}
+            onEdit={() => {}}
+            onDelete={() => {}}
+            onOpen={handleSelectChecklist}
+            onStatusChange={() => {}}
+            selectionMode={true}
+            onSelect={handleSelectChecklist}
+          />
+        </TabsContent>
+      </Tabs>
+
+      {activeChecklists.length === 0 && !isLoading && (
+        <div className="flex flex-col items-center justify-center p-8 border rounded-lg bg-muted/20">
+          <CheckSquare className="h-16 w-16 text-muted-foreground mb-4" />
+          <h3 className="text-lg font-medium">Nenhum checklist disponível</h3>
+          <p className="text-muted-foreground mb-4 text-center max-w-md">
+            Não há checklists ativos para iniciar uma inspeção. 
+            Você precisará criar um checklist primeiro.
+          </p>
+          <Button onClick={() => navigate("/new-checklists/create")}>
+            Criar Checklist
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface ChecklistSelectionCardProps {
+  checklist: ChecklistWithStats;
+  onSelect: (id: string) => void;
+}
+
+function ChecklistSelectionCard({ checklist, onSelect }: ChecklistSelectionCardProps) {
+  return (
+    <div 
+      className="border rounded-md p-4 hover:border-primary cursor-pointer transition-all hover:shadow-md"
+      onClick={() => onSelect(checklist.id)}
+    >
+      <div className="space-y-2">
+        <h3 className="font-medium line-clamp-1">{checklist.title}</h3>
+        {checklist.description && (
+          <p className="text-sm text-muted-foreground line-clamp-2">
+            {checklist.description}
+          </p>
         )}
-        
-        {currentStep === "company" && (
-          <>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
-                Selecione a Empresa
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="company">Empresa</Label>
-                  <Select 
-                    value={formData.companyId} 
-                    onValueChange={value => handleInputChange("companyId", value)}
-                    disabled={selectedChecklist?.company_id !== undefined}
-                  >
-                    <SelectTrigger id="company">
-                      <SelectValue placeholder="Selecione uma empresa" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {loadingCompanies ? (
-                        <SelectItem value="loading" disabled>Carregando...</SelectItem>
-                      ) : companies.length === 0 ? (
-                        <SelectItem value="empty" disabled>Nenhuma empresa encontrada</SelectItem>
-                      ) : (
-                        companies.map(company => (
-                          <SelectItem key={company.id} value={company.id}>
-                            {company.fantasy_name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                  
-                  {selectedChecklist?.company_id && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Empresa vinculada automaticamente pelo checklist
-                    </p>
-                  )}
-                </div>
-                
-                <div className="flex justify-center pt-2">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => navigate("/companies")}
-                  >
-                    Cadastrar Nova Empresa
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button variant="outline" onClick={goToPreviousStep}>
-                Voltar
-              </Button>
-              <Button onClick={goToNextStep} disabled={!formData.companyId && !selectedChecklist?.company_id}>
-                Próximo
-              </Button>
-            </CardFooter>
-          </>
-        )}
-        
-        
-        
-        {currentStep === "details" && (
-          <>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
-                Detalhes da Inspeção
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="responsible">Responsável</Label>
-                  <Input
-                    id="responsible"
-                    placeholder="Nome do responsável"
-                    value={formData.responsibleId}
-                    onChange={e => handleInputChange("responsibleId", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="scheduledDate">Data Programada</Label>
-                  <Input
-                    id="scheduledDate"
-                    type="date"
-                    value={formData.scheduledDate}
-                    onChange={e => handleInputChange("scheduledDate", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="location">Localização</Label>
-                  <Input
-                    id="location"
-                    placeholder="Local da inspeção"
-                    value={formData.location}
-                    onChange={e => handleInputChange("location", e.target.value)}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Observações</Label>
-                  <Textarea
-                    id="notes"
-                    placeholder="Observações adicionais"
-                    value={formData.notes}
-                    onChange={e => handleInputChange("notes", e.target.value)}
-                  />
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button variant="outline" onClick={goToPreviousStep}>
-                Voltar
-              </Button>
-              <Button onClick={goToNextStep}>
-                Próximo
-              </Button>
-            </CardFooter>
-          </>
-        )}
-        
-        {currentStep === "review" && (
-          <>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5" />
-                Revisar e Confirmar
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Checklist</p>
-                    <p className="font-medium">{selectedChecklist?.title || "Não selecionado"}</p>
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Empresa</p>
-                    <p className="font-medium">{selectedCompany?.fantasy_name || "Não selecionada"}</p>
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Responsável</p>
-                    <p className="font-medium">{formData.responsibleId || "Não definido"}</p>
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Data Programada</p>
-                    <p className="font-medium">
-                      {formData.scheduledDate ? new Date(formData.scheduledDate).toLocaleDateString() : "Não definida"}
-                    </p>
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Localização</p>
-                    <p className="font-medium">{formData.location || "Não definida"}</p>
-                  </div>
-                </div>
-                
-                {formData.notes && (
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-muted-foreground">Observações</p>
-                    <p className="text-sm">{formData.notes}</p>
-                  </div>
-                )}
-                
-                {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                    <p className="text-sm text-red-600">{error}</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button variant="outline" onClick={goToPreviousStep}>
-                Voltar
-              </Button>
-              <Button onClick={handleCreateInspection} disabled={creating}>
-                {creating ? "Criando..." : "Criar Inspeção"}
-              </Button>
-            </CardFooter>
-          </>
-        )}
-      </Card>
-      
-      {/* Help text */}
-      <div className="text-sm text-muted-foreground">
-        <p>
-          Esta inspeção será criada com base no checklist e empresa selecionados. 
-          Após criar a inspeção, você poderá preencher respostas para cada item do checklist.
-        </p>
+        <div className="flex justify-between text-sm text-muted-foreground">
+          <span>{checklist.totalQuestions || 0} perguntas</span>
+          <span>{checklist.category || "Sem categoria"}</span>
+        </div>
+      </div>
+      <div className="mt-4 flex justify-end">
+        <Button size="sm" className="gap-2">
+          <CheckSquare className="h-4 w-4" />
+          Selecionar
+        </Button>
       </div>
     </div>
   );

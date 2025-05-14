@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { ChecklistWithStats } from "@/types/newChecklist";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
@@ -11,7 +12,8 @@ import {
   CheckCircle,
   XCircle,
   Trash2,
-  ExternalLink
+  ExternalLink,
+  PlayCircle
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -22,6 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChecklistOriginBadge } from "./ChecklistOriginBadge";
 import { formatDate } from "@/utils/format";
+import { useNavigate } from "react-router-dom";
 
 interface ChecklistCardProps {
   checklist: ChecklistWithStats;
@@ -43,6 +46,7 @@ export function ChecklistCard({
   onSelect
 }: ChecklistCardProps) {
   const [isToggling, setIsToggling] = useState(false);
+  const navigate = useNavigate();
   
   const isActive = checklist.status === "active";
   const originValue = checklist.origin as "manual" | "ia" | "csv" | undefined;
@@ -93,6 +97,11 @@ export function ChecklistCard({
     onOpen(checklist.id);
   };
 
+  const handleStartInspection = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/inspections/new/${checklist.id}`);
+  };
+
   return (
     <Card className="overflow-hidden relative hover:shadow-md transition-all">
       {onSelect && (
@@ -131,6 +140,12 @@ export function ChecklistCard({
                 <Pencil className="mr-2 h-4 w-4" />
                 <span>Editar</span>
               </DropdownMenuItem>
+              {isActive && (
+                <DropdownMenuItem onClick={handleStartInspection}>
+                  <PlayCircle className="mr-2 h-4 w-4 text-green-500" />
+                  <span>Iniciar Inspeção</span>
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={(e) => handleToggleStatus(e)} disabled={isToggling}>
                 {isActive ? (
                   <>
@@ -194,14 +209,26 @@ export function ChecklistCard({
       </CardContent>
       
       <CardFooter>
-        <Button 
-          onClick={handleOpen} 
-          variant="ghost" 
-          className="ml-auto gap-2"
-        >
-          <ExternalLink className="h-4 w-4" />
-          <span>Abrir</span>
-        </Button>
+        <div className="flex gap-2 ml-auto">
+          {isActive && (
+            <Button 
+              onClick={handleStartInspection}
+              variant="outline" 
+              className="gap-2"
+            >
+              <PlayCircle className="h-4 w-4 text-green-500" />
+              <span>Iniciar Inspeção</span>
+            </Button>
+          )}
+          <Button 
+            onClick={handleOpen} 
+            variant="ghost" 
+            className="gap-2"
+          >
+            <ExternalLink className="h-4 w-4" />
+            <span>Abrir</span>
+          </Button>
+        </div>
       </CardFooter>
     </Card>
   );

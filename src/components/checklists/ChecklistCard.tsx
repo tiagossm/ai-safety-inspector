@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Eye, Pencil, Trash2, ClipboardCheck, Briefcase, Calendar } from "lucide-react";
+import { Eye, Pencil, Trash2, ClipboardCheck, Briefcase, Calendar, PlayCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -75,6 +75,10 @@ export function ChecklistCard({
   const goToDetail = () => {
     navigate(`/checklists/${id}`);
   };
+
+  const startInspection = () => {
+    navigate(`/inspections/new/${id}`);
+  };
   
   return (
     <Card className={cn(
@@ -131,8 +135,24 @@ export function ChecklistCard({
           )}
         </div>
       </CardContent>
-      <CardFooter className="pt-2">
-        <div className="flex w-full justify-end gap-2">
+      <CardFooter className="pt-2 flex justify-end">
+        <div className="flex gap-2">
+          {statusChecklist === "ativo" && !isTemplate && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="outline" onClick={startInspection} className="text-green-600">
+                    <PlayCircle className="h-4 w-4 mr-1" />
+                    Iniciar
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Iniciar uma inspeção</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>

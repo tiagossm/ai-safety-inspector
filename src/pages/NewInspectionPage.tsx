@@ -19,9 +19,9 @@ export default function NewInspectionPage() {
   const checklistId = id || searchParams.get("checklistId") || "";
 
   useEffect(() => {
+    // If no checklist ID is provided, redirect to the checklist selection wizard
     if (!checklistId) {
-      setError("ID do checklist não fornecido. Verifique a URL.");
-      setLoading(false);
+      navigate("/inspections/wizard", { replace: true });
       return;
     }
 
