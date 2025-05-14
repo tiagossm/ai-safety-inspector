@@ -1,10 +1,13 @@
-
 import { Brain, ClipboardCheck, FileText, Building2, AlertTriangle, Calendar, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { Logo } from "@/components/Logo";
 import { useAuth } from "@/components/AuthProvider";
+import { WorkflowGuide } from "@/components/workflow/WorkflowGuide";
+import { useInspections } from "@/hooks/useInspections";
+import { useCompanies } from "@/hooks/useCompanies";
+import { useChecklists } from "@/hooks/useChecklists";
 
 const Home = () => {
   const { user } = useAuth();
@@ -16,89 +19,125 @@ const Home = () => {
   return <LandingView />;
 };
 
-const DashboardView = () => (
-  <div className="container mx-auto px-4 py-8">
-    <div className="flex justify-between items-center mb-8">
-      <h1 className="text-3xl font-bold">Dashboard</h1>
-      <Button asChild>
-        <Link to="/inspecoes/nova" className="flex items-center gap-2">
-          <Plus className="h-5 w-5" />
-          Nova Inspeção
-        </Link>
-      </Button>
-    </div>
+const DashboardView = () => {
+  const { inspections = [], loading: inspectionsLoading } = useInspections();
+  const { companies = [], loading: companiesLoading } = useCompanies();
+  const { checklists = [], isLoading: checklistsLoading } = useChecklists();
+  
+  // Filter data for metrics
+  const pendingInspections = inspections.filter(i => i.status === 'Pendente').length;
+  const criticalIssues = inspections.filter(i => i.priority === 'high').length;
+  
+  // Calculate days to next inspection
+  const getNextInspectionDays = () => {
+    const plannedInspections = inspections
+      .filter(i => i.scheduledDate)
+      .sort((a, b) => {
+        const dateA = a.scheduledDate ? new Date(a.scheduledDate).getTime() : 0;
+        const dateB = b.scheduledDate ? new Date(b.scheduledDate).getTime() : 0;
+        return dateA - dateB;
+      });
+      
+    if (plannedInspections.length && plannedInspections[0].scheduledDate) {
+      const nextDate = new Date(plannedInspections[0].scheduledDate);
+      const today = new Date();
+      const diffTime = nextDate.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays > 0 ? diffDays : 0;
+    }
     
-    {/* Metrics Cards */}
-    <div className="grid md:grid-cols-3 gap-6 mb-8">
-      <MetricCard
-        icon={<ClipboardCheck className="h-8 w-8 text-yellow-500" />}
-        title="Inspeções Pendentes"
-        value="3"
-      />
-      <MetricCard
-        icon={<AlertTriangle className="h-8 w-8 text-red-500" />}
-        title="Não Conformidades Críticas"
-        value="5"
-      />
-      <MetricCard
-        icon={<Calendar className="h-8 w-8 text-blue-500" />}
-        title="Dias para Próxima Inspeção"
-        value="15"
-      />
-    </div>
+    return "-";
+  };
 
-    {/* Quick Access Cards */}
-    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <Card className="col-span-full md:col-span-1 hover:shadow-lg transition-shadow">
-        <Link to="/companies">
-          <CardHeader>
-            <div className="flex items-center gap-4">
-              <Building2 className="h-8 w-8 text-primary" />
-              <CardTitle className="font-montserrat">Cadastrar Empresa</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground font-opensans">
-              Adicione uma nova empresa ao sistema
-            </p>
-          </CardContent>
-        </Link>
-      </Card>
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <Button asChild>
+          <Link to="/inspections/new" className="flex items-center gap-2">
+            <Plus className="h-5 w-5" />
+            Nova Inspeção
+          </Link>
+        </Button>
+      </div>
       
-      <Card className="col-span-full md:col-span-1 hover:shadow-lg transition-shadow">
-        <Link to="/inspecoes/nova">
-          <CardHeader>
-            <div className="flex items-center gap-4">
-              <ClipboardCheck className="h-8 w-8 text-primary" />
-              <CardTitle className="font-montserrat">Nova Inspeção</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground font-opensans">
-              Inicie uma nova inspeção de segurança
-            </p>
-          </CardContent>
-        </Link>
-      </Card>
+      {/* Workflow Guide */}
+      <div className="mb-8">
+        <WorkflowGuide />
+      </div>
       
-      <Card className="col-span-full md:col-span-1 hover:shadow-lg transition-shadow">
-        <Link to="/inspecoes">
-          <CardHeader>
-            <div className="flex items-center gap-4">
-              <FileText className="h-8 w-8 text-primary" />
-              <CardTitle className="font-montserrat">Histórico de Relatórios</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground font-opensans">
-              Visualize relatórios anteriores
-            </p>
-          </CardContent>
-        </Link>
-      </Card>
+      {/* Metrics Cards */}
+      <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <MetricCard
+          icon={<ClipboardCheck className="h-8 w-8 text-yellow-500" />}
+          title="Inspeções Pendentes"
+          value={inspectionsLoading ? "..." : pendingInspections.toString()}
+        />
+        <MetricCard
+          icon={<AlertTriangle className="h-8 w-8 text-red-500" />}
+          title="Não Conformidades Críticas"
+          value={inspectionsLoading ? "..." : criticalIssues.toString()}
+        />
+        <MetricCard
+          icon={<Calendar className="h-8 w-8 text-blue-500" />}
+          title="Dias para Próxima Inspeção"
+          value={inspectionsLoading ? "..." : getNextInspectionDays().toString()}
+        />
+      </div>
+
+      {/* Quick Access Cards */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Card className="col-span-full md:col-span-1 hover:shadow-lg transition-shadow">
+          <Link to="/companies">
+            <CardHeader>
+              <div className="flex items-center gap-4">
+                <Building2 className="h-8 w-8 text-primary" />
+                <CardTitle className="font-montserrat">Cadastrar Empresa</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground font-opensans">
+                Adicione uma nova empresa ao sistema
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
+        
+        <Card className="col-span-full md:col-span-1 hover:shadow-lg transition-shadow">
+          <Link to="/inspections/new">
+            <CardHeader>
+              <div className="flex items-center gap-4">
+                <ClipboardCheck className="h-8 w-8 text-primary" />
+                <CardTitle className="font-montserrat">Nova Inspeção</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground font-opensans">
+                Inicie uma nova inspeção de segurança
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
+        
+        <Card className="col-span-full md:col-span-1 hover:shadow-lg transition-shadow">
+          <Link to="/inspections">
+            <CardHeader>
+              <div className="flex items-center gap-4">
+                <FileText className="h-8 w-8 text-primary" />
+                <CardTitle className="font-montserrat">Histórico de Relatórios</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground font-opensans">
+                Visualize relatórios anteriores
+              </p>
+            </CardContent>
+          </Link>
+        </Card>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const LandingView = () => (
   <div className="min-h-screen bg-background hero-background">

@@ -1,310 +1,141 @@
-import React from "react";
+
+import React, { useState } from "react";
 import { useParams } from "react-router-dom";
-import { useSimpleInspection } from "@/hooks/inspection/useSimpleInspection";
+import { useInspectionData } from "@/hooks/inspection/useInspectionData";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
+import { Loader2, FileText } from "lucide-react";
 import { toast } from "sonner";
-import { ArrowLeft, Save, Loader2 } from "lucide-react";
-import { DateTimePicker } from "@/components/inspection/DateTimePicker";
+import { ReportGenerationDialog } from "@/components/inspection/ReportGenerationDialog";
 
 export default function SimpleInspectionPage() {
   const { id } = useParams<{ id: string }>();
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
   
   const {
     loading,
     error,
     inspection,
     questions,
-    groups,
     responses,
     company,
-    responsible,
-    currentGroupId,
-    setCurrentGroupId,
-    filteredQuestions,
-    stats,
-    handleResponseChange,
-    saveInspection,
-    refreshData
-  } = useSimpleInspection(id);
-
+  } = useInspectionData(id);
+  
+  // Handle any loading/error states
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-200px)]">
-        <div className="text-center">
-          <Loader2 className="h-10 w-10 animate-spin mx-auto text-primary" />
-          <h2 className="mt-4 text-xl font-medium">Carregando inspeção...</h2>
-        </div>
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  if (error) {
+  if (error || !inspection) {
     return (
-      <div className="container py-8 max-w-5xl mx-auto">
-        <Card className="border-red-200 bg-red-50">
-          <CardHeader>
-            <CardTitle className="text-red-700">Erro ao carregar inspeção</CardTitle>
-            <CardDescription className="text-red-600">
-              {error}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4 text-red-600">
-              Não foi possível carregar os dados da inspeção. Tente novamente mais tarde.
-            </p>
-            <Button 
-              variant="outline" 
-              onClick={() => refreshData()}
-              className="mr-2"
-            >
-              Tentar novamente
-            </Button>
-            <Button onClick={() => window.history.back()}>
-              Voltar
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="py-10 px-4 text-center">
+        <p className="text-xl text-red-600 mb-4">Erro ao carregar inspeção</p>
+        <p className="text-gray-600">{error || "Inspeção não encontrada"}</p>
       </div>
     );
   }
-
+  
+  const companyName = company?.fantasy_name || "Empresa não identificada";
+  const checklistTitle = inspection?.checklist?.title || "Inspeção";
+  
   return (
-    <div className="container py-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-        <div>
-          <Button 
-            variant="ghost" 
-            className="mb-2 pl-0" 
-            onClick={() => window.history.back()}
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
-          </Button>
-          <h1 className="text-2xl font-bold">{inspection?.title || "Inspeção"}</h1>
-          <p className="text-muted-foreground">
-            {company?.fantasy_name ? `${company.fantasy_name}` : "Sem empresa selecionada"} • 
-            {inspection?.status === "completed" ? " Concluída" : " Em andamento"}
-          </p>
-        </div>
-        <div className="mt-4 md:mt-0">
-          <Button 
-            onClick={saveInspection}
-            className="flex items-center"
-          >
-            <Save className="h-4 w-4 mr-2" /> 
-            Salvar progresso
-          </Button>
-        </div>
-      </div>
-      
-      {/* Info Card */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-lg">Informações da Inspeção</CardTitle>
-        </CardHeader>
-        <CardContent className="grid md:grid-cols-3 gap-4">
-          <div>
-            <label className="text-sm font-medium text-gray-700">Empresa</label>
-            <p>{company?.fantasy_name || "Não definido"}</p>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Responsável</label>
-            <p>{responsible?.name || "Não definido"}</p>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Data Agendada</label>
-            <p>
-              {inspection?.scheduledDate ? 
-                new Date(inspection.scheduledDate).toLocaleDateString('pt-BR') : 
-                "Não agendada"}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Content */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Left sidebar */}
-        <div className="md:col-span-1">
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Progresso</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>{stats.answeredQuestions} de {stats.totalQuestions} perguntas</span>
-                  <span>{stats.completionPercentage}% completo</span>
-                </div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-green-500 transition-all" 
-                    style={{width: `${stats.completionPercentage}%`}}
-                  ></div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Seções</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-1">
-                {groups.map(group => (
-                  <Button
-                    key={group.id}
-                    variant={currentGroupId === group.id ? "default" : "outline"}
-                    className="w-full justify-start text-left"
-                    onClick={() => setCurrentGroupId(group.id)}
-                  >
-                    {group.title}
-                  </Button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        
-        {/* Main content */}
-        <div className="md:col-span-3">
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                {groups.find(g => g.id === currentGroupId)?.title || "Perguntas"}
-              </CardTitle>
-              <CardDescription>
-                {filteredQuestions.length} {filteredQuestions.length === 1 ? 'pergunta' : 'perguntas'} nesta seção
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {filteredQuestions.length > 0 ? (
-                <div className="space-y-5">
-                  {filteredQuestions.map((question, index) => (
-                    <div key={question.id} className="border p-4 rounded-md">
-                      <div className="flex">
-                        <span className="font-medium mr-2">{index + 1}.</span>
-                        <div className="flex-1">
-                          <p className="font-medium mb-2">{question.text}</p>
-                          
-                          {question.responseType === "yes_no" && (
-                            <div className="flex space-x-2">
-                              <Button 
-                                variant={responses[question.id]?.value === true ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => handleResponseChange(question.id, { value: true })}
-                                className={responses[question.id]?.value === true ? "bg-green-500 hover:bg-green-600 text-white" : ""}
-                              >
-                                Sim
-                              </Button>
-                              <Button 
-                                variant={responses[question.id]?.value === false ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => handleResponseChange(question.id, { value: false })}
-                                className={responses[question.id]?.value === false ? "bg-red-500 hover:bg-red-600 text-white" : ""}
-                              >
-                                Não
-                              </Button>
-                            </div>
-                          )}
-                          
-                          {question.responseType === "text" && (
-                            <textarea 
-                              className="w-full border rounded p-2 h-24"
-                              value={responses[question.id]?.value || ""}
-                              onChange={(e) => handleResponseChange(question.id, { value: e.target.value })}
-                              placeholder="Digite sua resposta..."
-                            />
-                          )}
-                          
-                          {question.responseType === "multiple_choice" && question.options && (
-                            <div className="space-y-1">
-                              {Array.isArray(question.options) ? question.options.map((option, i) => (
-                                <Button 
-                                  key={i}
-                                  variant={responses[question.id]?.value === option ? "default" : "outline"}
-                                  size="sm"
-                                  className="mr-2 mb-2"
-                                  onClick={() => handleResponseChange(question.id, { value: option })}
-                                >
-                                  {option}
-                                </Button>
-                              )) : (
-                                <p className="text-red-500 text-sm">Erro nas opções</p>
-                              )}
-                            </div>
-                          )}
-                          
-                          {/* Comentários */}
-                          <div className="mt-3 pt-3 border-t">
-                            <label className="text-sm font-medium">Comentários:</label>
-                            <textarea 
-                              className="w-full border rounded p-2 mt-1 h-16 text-sm"
-                              value={responses[question.id]?.comment || ""}
-                              onChange={(e) => handleResponseChange(
-                                question.id, 
-                                { ...responses[question.id] || {}, comment: e.target.value }
-                              )}
-                              placeholder="Adicione comentários adicionais..."
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="p-6 text-center">
-                  <p className="text-muted-foreground">Nenhuma pergunta disponível nesta seção.</p>
-                  {questions.length > 0 && (
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Selecione outra seção ou verifique se o checklist contém perguntas.
-                    </p>
-                  )}
-                  {questions.length === 0 && (
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Este checklist não contém perguntas. Verifique se o checklist foi configurado corretamente.
-                    </p>
-                  )}
-                </div>
-              )}
-              
-              {/* Debugging info */}
-              <details className="mt-8 border-t pt-4">
-                <summary className="text-sm text-muted-foreground cursor-pointer">Informações de debug</summary>
-                <div className="mt-2 text-xs overflow-auto bg-gray-50 p-2 rounded">
-                  <p>Inspection ID: {id}</p>
-                  <p>Checklist ID: {inspection?.checklistId}</p>
-                  <p>Total questions: {questions.length}</p>
-                  <p>Current group: {currentGroupId}</p>
-                  <p>Filtered questions: {filteredQuestions.length}</p>
-                  <p>Groups count: {groups.length}</p>
-                  <p>Groups: {groups.map(g => g.title).join(', ')}</p>
-                  <p>Questions per group: {
-                    Object.entries(questions.reduce((acc, q) => {
-                      const groupId = q.groupId || 'undefined';
-                      acc[groupId] = (acc[groupId] || 0) + 1;
-                      return acc;
-                    }, {})).map(([k, v]) => `${k}: ${v}`).join(', ')
-                  }</p>
-                </div>
-              </details>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-      
-      <div className="mt-6 text-center">
+    <div className="container py-8">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-semibold">{checklistTitle}</h1>
         <Button 
-          onClick={() => toast.success("Finalização da inspeção será implementada em breve")}
-          variant="default"
-          size="lg"
+          onClick={() => setReportDialogOpen(true)}
+          className="flex items-center gap-2"
         >
-          Finalizar Inspeção
+          <FileText className="h-4 w-4" />
+          Gerar Relatório
         </Button>
       </div>
+      
+      <Card className="p-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h2 className="text-lg font-medium mb-2">Empresa</h2>
+            <p>{companyName}</p>
+          </div>
+          
+          <div>
+            <h2 className="text-lg font-medium mb-2">Status</h2>
+            <p>{inspection.status}</p>
+          </div>
+          
+          <div>
+            <h2 className="text-lg font-medium mb-2">Responsável</h2>
+            <p>{inspection.responsible?.name || "Não definido"}</p>
+          </div>
+          
+          <div>
+            <h2 className="text-lg font-medium mb-2">Data</h2>
+            <p>{new Date(inspection.created_at).toLocaleDateString()}</p>
+          </div>
+        </div>
+      </Card>
+      
+      <div className="space-y-6">
+        {questions.length === 0 ? (
+          <p className="text-center text-muted-foreground py-8">
+            Este checklist não possui questões.
+          </p>
+        ) : (
+          questions.map((question) => {
+            const response = responses[question.id];
+            const answer = response?.answer || "Não respondido";
+            
+            return (
+              <Card key={question.id} className="p-4">
+                <div className="space-y-2">
+                  <h3 className="font-medium">{question.text || question.pergunta}</h3>
+                  
+                  <div className="flex justify-between">
+                    <p>
+                      <span className="text-muted-foreground mr-2">Resposta:</span> 
+                      <span className={answer === "Não respondido" ? "text-amber-600" : undefined}>
+                        {answer}
+                      </span>
+                    </p>
+                  </div>
+                  
+                  {response?.notes && (
+                    <div className="pt-2">
+                      <p className="text-sm text-muted-foreground">Observações:</p>
+                      <p className="text-sm">{response.notes}</p>
+                    </div>
+                  )}
+                  
+                  {response?.mediaUrls && response.mediaUrls.length > 0 && (
+                    <div className="pt-2">
+                      <p className="text-sm text-muted-foreground mb-1">Mídias:</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {response.mediaUrls.map((url, index) => (
+                          <div key={index} className="border rounded overflow-hidden h-20">
+                            <img src={url} alt="Anexo" className="w-full h-full object-cover" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            );
+          })
+        )}
+      </div>
+      
+      <ReportGenerationDialog
+        open={reportDialogOpen}
+        onOpenChange={setReportDialogOpen}
+        inspectionId={id || ""}
+        companyName={companyName}
+        checklistTitle={checklistTitle}
+      />
     </div>
   );
 }

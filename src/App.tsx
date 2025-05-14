@@ -26,6 +26,7 @@ import SharedInspectionPage from "./pages/SharedInspectionPage";
 import Reports from "./pages/Reports";
 import ActionPlans from "./pages/ActionPlans";
 import ActionPlansPage from "./pages/ActionPlansPage";
+import NewInspectionWizard from "./pages/NewInspectionWizard";
 
 function App() {
   return (
@@ -52,7 +53,8 @@ function App() {
             <Route path="inspections" element={<Inspections />} />
             <Route path="inspections/redirect/:id" element={<ChecklistRedirectPage />} />
             <Route path="inspections/new/:id" element={<NewInspectionPage />} />
-            <Route path="inspections/new" element={<NewInspectionPage />} />
+            <Route path="inspections/wizard" element={<NewInspectionWizard />} />
+            <Route path="inspections/new" element={<NewInspectionWizard />} />
             <Route path="inspections/:id/view" element={<InspectionExecutionPage />} />
             <Route path="inspections/:id/action-plans" element={<ActionPlansPage />} />
             <Route path="inspections/:id" element={<SimpleInspectionPage />} />
