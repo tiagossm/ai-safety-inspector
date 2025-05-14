@@ -42,8 +42,7 @@ export function useCreateInspection() {
       // Use company from checklist if it has one
       const finalCompanyId = companyId || checklist.company_id;
       
-      // Create the inspection - note we're not setting the ID manually
-      // so Supabase can generate it with the default gen_random_uuid()
+      // Create the inspection with an ID
       const inspectionId = uuidv4();
       const { error: insertError } = await supabase
         .from('inspections')
@@ -80,14 +79,14 @@ export function useCreateInspection() {
         const inspectionQuestions = questions.map(q => ({
           inspection_id: inspectionId,
           question_id: q.id,
-          answer: '', // Add default empty answer as it's required
-          media_urls: [], // Add empty media urls array as it might be expected
-          notes: '', // Add empty notes to ensure all fields are covered
+          answer: '', // Required field
+          media_urls: [], // Required field as an array
+          notes: '', // Required field
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }));
         
-        // Use 'inspection_responses' table instead of 'inspection_questions'
+        // Use 'inspection_responses' table 
         const { error: questionsInsertError } = await supabase
           .from('inspection_responses')
           .insert(inspectionQuestions);
