@@ -40,6 +40,8 @@ export function useInspectionHeaderForm(inspectionId: string | undefined) {
       setUpdating(true);
       setError(null);
       
+      console.log("Updating inspection data:", data);
+      
       // Format the update data
       const updateData = {
         company_id: data.companyId,
@@ -59,14 +61,21 @@ export function useInspectionHeaderForm(inspectionId: string | undefined) {
         updated_at: new Date().toISOString()
       };
 
+      console.log("Formatted update data:", updateData);
+
       // Update the inspection in Supabase
-      const { error: updateError } = await supabase
+      const { error: updateError, data: updatedData } = await supabase
         .from("inspections")
         .update(updateData)
-        .eq("id", inspectionId);
+        .eq("id", inspectionId)
+        .select();
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error("Supabase update error:", updateError);
+        throw updateError;
+      }
 
+      console.log("Inspection updated successfully:", updatedData);
       toast.success("Dados da inspeção atualizados com sucesso");
       
       // If we have responsibleIds, send notifications
@@ -129,6 +138,8 @@ export function useInspectionHeaderForm(inspectionId: string | undefined) {
       setUpdating(true);
       setError(null);
 
+      console.log("Saving inspection as draft:", data);
+
       // Process coordinates to ensure they're valid
       let processedData = { ...data };
       
@@ -140,18 +151,36 @@ export function useInspectionHeaderForm(inspectionId: string | undefined) {
       }
 
       const updateData = {
-        ...processedData,
+        ...(processedData.companyId && { company_id: processedData.companyId }),
+        ...(processedData.responsibleIds && { responsible_ids: processedData.responsibleIds }),
+        ...(processedData.scheduledDate && { scheduled_date: processedData.scheduledDate.toISOString() }),
+        ...(processedData.location !== undefined && { location: processedData.location }),
+        ...(processedData.inspectionType && { inspection_type: processedData.inspectionType }),
+        ...(processedData.priority && { priority: processedData.priority }),
+        ...(processedData.notes || processedData.coordinates) && { 
+          metadata: {
+            notes: processedData.notes || "",
+            coordinates: processedData.coordinates
+          }
+        },
         status: 'Pendente',
         updated_at: new Date().toISOString()
       };
 
-      const { error: updateError } = await supabase
+      console.log("Formatted draft data:", updateData);
+
+      const { error: updateError, data: updatedData } = await supabase
         .from("inspections")
         .update(updateData)
-        .eq("id", inspectionId);
+        .eq("id", inspectionId)
+        .select();
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error("Supabase draft save error:", updateError);
+        throw updateError;
+      }
 
+      console.log("Draft saved successfully:", updatedData);
       toast.success("Rascunho salvo com sucesso");
       return true;
     } catch (err: any) {

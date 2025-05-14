@@ -2,11 +2,12 @@
 import { ReactNode, useState, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { useTheme } from "@/components/theme-provider";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useSwipeable } from "react-swipeable";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sidebar } from "../dashboard/Sidebar";
 import { Header } from "../dashboard/Header";
+import { GlobalFloatingActionButton } from "../inspection/GlobalFloatingActionButton";
 
 interface DashboardLayoutProps {
   children?: ReactNode;
@@ -24,6 +25,7 @@ export function DashboardLayout({
     logout
   } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -85,6 +87,9 @@ export function DashboardLayout({
           <Outlet />
           {children}
         </div>
+        
+        {/* Global Floating Action Button */}
+        <GlobalFloatingActionButton />
       </main>
 
       {/* Mobile Overlay */}

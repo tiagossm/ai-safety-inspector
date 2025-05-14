@@ -21,8 +21,8 @@ export function ChecklistDetailsHeader({
   const navigate = useNavigate();
   
   const handleStartInspection = () => {
-    // Navigate directly to the inspection execution page
-    navigate(`/inspections/${checklist.id}/view`);
+    // Navigate to new inspection page with checklist ID
+    navigate(`/inspections/new?checklistId=${checklist.id}`);
   };
   
   return (

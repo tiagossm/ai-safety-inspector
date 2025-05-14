@@ -11,8 +11,24 @@ export function GlobalFloatingActionButton() {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Hide on inspection execution pages
-  if (location.pathname.includes('/inspections/') && location.pathname.includes('/view')) {
+  // Hide on inspection execution pages, checklists creation/edit pages and specific wizard pages
+  const hideOnPaths = [
+    '/inspections/',
+    '/new-checklists/create',
+    '/new-checklists/edit'
+  ];
+  
+  const shouldHideButton = () => {
+    // Hide on inspection execution pages (view)
+    if (location.pathname.includes('/inspections/') && location.pathname.includes('/view')) {
+      return true;
+    }
+    
+    // Hide on specific paths
+    return hideOnPaths.some(path => location.pathname.includes(path));
+  };
+  
+  if (shouldHideButton()) {
     return null;
   }
 
@@ -26,7 +42,7 @@ export function GlobalFloatingActionButton() {
   };
 
   const handleStartInspection = () => {
-    navigate('/inspections/new');
+    navigate('/inspections/wizard');
     setIsOpen(false);
   };
 
