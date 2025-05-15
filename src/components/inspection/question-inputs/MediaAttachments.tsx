@@ -183,6 +183,7 @@ export function MediaAttachments({
             onDelete={onDelete ? () => handleDeleteMedia(url) : undefined}
             analysisResults={analysisResults}
             questionText={questionText}
+            smallSize={true}  // <<< Imagem inline menor
           />
         ))}
       </div>
