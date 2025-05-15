@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { InspectionHeader } from "@/components/inspection/InspectionHeader";
 import { QuestionGroups } from "@/components/inspection/QuestionGroups";
@@ -78,13 +79,16 @@ export function InspectionLayout({
   onOpenSubChecklist
 }: InspectionLayoutProps) {
   const DEFAULT_GROUP = { id: "default-group", title: "Perguntas", order: 0 };
-  const displayGroups = Array.isArray(groups) && groups.length > 0 ? groups : [DEFAULT_GROUP];
+  const displayGroups = groups.length > 0 ? groups : [DEFAULT_GROUP];
   const effectiveCurrentGroupId = currentGroupId || (displayGroups.length > 0 ? displayGroups[0].id : null);
 
   const handleQuestionResponseChange = (questionId: string, data: any) => {
+    console.log("Changing response for question:", questionId, data);
+    
+    // Certifique-se de preservar mediaUrls no response atual
     const currentResponse = responses[questionId] || {};
     const mediaUrls = data.mediaUrls || currentResponse.mediaUrls || [];
-
+    
     setResponses(prev => ({
       ...prev,
       [questionId]: {
@@ -93,14 +97,16 @@ export function InspectionLayout({
         mediaUrls: mediaUrls
       }
     }));
-
+    
+    // Se onResponseChange estiver definido, chame-o
     if (onResponseChange) {
       onResponseChange(questionId, {
         ...data,
         mediaUrls: mediaUrls
       });
     }
-
+    
+    // Se onMediaChange estiver definido e houver mudanças nas mediaUrls, chame-o
     if (onMediaChange && data.mediaUrls) {
       onMediaChange(questionId, data.mediaUrls);
     }
@@ -141,7 +147,7 @@ export function InspectionLayout({
               setAutoSave={setAutoSave}
               lastSaved={lastSaved}
               inspectionStatus={inspection?.status}
-              completionPercentage={stats?.completionPercentage ?? 0}
+              completionPercentage={stats.completionPercentage}
               onSaveProgress={onSaveProgress}
               onCompleteInspection={onCompleteInspection}
               onReopenInspection={onReopenInspection}
@@ -156,7 +162,7 @@ export function InspectionLayout({
                 groups={displayGroups}
                 currentGroupId={effectiveCurrentGroupId}
                 onGroupChange={setCurrentGroupId}
-                stats={stats ?? { groupStats: {} }}
+                stats={stats}
               />
             </ScrollArea>
           </Card>
@@ -164,7 +170,7 @@ export function InspectionLayout({
         <div className="md:col-span-3">
           <Card>
             <div className="p-4">
-              {Array.isArray(filteredQuestions) && filteredQuestions.length > 0 ? (
+              {filteredQuestions.length > 0 ? (
                 <div className="space-y-6">
                   {filteredQuestions.map((question, index) => (
                     <InspectionQuestion
