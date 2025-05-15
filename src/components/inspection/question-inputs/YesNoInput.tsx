@@ -1,8 +1,9 @@
+
 import React, { useCallback, useState } from "react";
-import { ResponseButtonGroup } from "./components/ResponseButtonGroup";
-import { ActionPlanButton } from "./components/ActionPlanButton";
+import { ResponseButtonGroup } from "../question-parts/response-types/components/ResponseButtonGroup";
+import { ActionPlanButton } from "../question-parts/response-types/components/ActionPlanButton";
 import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
-import { MediaAnalysisButton } from "./components/MediaAnalysisButton";
+import { MediaAnalysisButton } from "../question-parts/response-types/components/MediaAnalysisButton";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 
 interface YesNoResponseInputProps {
