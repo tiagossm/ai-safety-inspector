@@ -1,4 +1,3 @@
-
 import React, { useCallback, useState } from "react";
 import { ResponseButtonGroup } from "./components/ResponseButtonGroup";
 import { ActionPlanButton } from "./components/ActionPlanButton";
@@ -31,13 +30,11 @@ export function YesNoResponseInput({
 }: YesNoResponseInputProps) {
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
   const [selectedMediaUrl, setSelectedMediaUrl] = useState<string | null>(null);
-  
+
   console.log("YesNoResponseInput: rendering with response:", response);
-  
-  // Extract current value from response or default to undefined
+
   const currentValue = response?.value;
-  
-  // Handle local response changes
+
   const handleResponseChange = useCallback((value: boolean) => {
     console.log("YesNoResponseInput: value changed to:", value);
     const updatedResponse = {
@@ -47,22 +44,22 @@ export function YesNoResponseInput({
     console.log("YesNoResponseInput: response value changed:", updatedResponse);
     onResponseChange(updatedResponse);
   }, [response, onResponseChange]);
-  
-  // Handle media changes
-  const handleMediaChange = useCallback((mediaUrls: string[]) => {
-    console.log("YesNoResponseInput: media changed:", mediaUrls);
+
+  const handleMediaChange = useCallback((newMediaUrls: string[]) => {
+    console.log("YesNoResponseInput: media changed:", newMediaUrls);
+    const combinedMediaUrls = [...(response?.mediaUrls ?? []), ...newMediaUrls];
+
     if (onMediaChange) {
-      onMediaChange(mediaUrls);
+      onMediaChange(combinedMediaUrls);
     } else {
       const updatedResponse = {
         ...response,
-        mediaUrls
+        mediaUrls: combinedMediaUrls
       };
       onResponseChange(updatedResponse);
     }
   }, [response, onResponseChange, onMediaChange]);
-  
-  // Handle the AI analysis results
+
   const handleAnalysisResults = useCallback((results: any) => {
     console.log("YesNoResponseInput: analysis results:", results);
     const updatedResponse = {
@@ -73,16 +70,13 @@ export function YesNoResponseInput({
       }
     };
     onResponseChange(updatedResponse);
-    
-    // Apply any suggestions if available
+
     if (results.actionPlanSuggestion && onApplyAISuggestion) {
       onApplyAISuggestion(results.actionPlanSuggestion);
     }
   }, [response, onResponseChange, onApplyAISuggestion]);
 
-  // Handle opening the analysis dialog for a specific media
   const handleOpenAnalysis = useCallback(() => {
-    // If we have media URLs, select the first one by default
     if (response?.mediaUrls && response.mediaUrls.length > 0) {
       setSelectedMediaUrl(response.mediaUrls[0]);
     } else {
@@ -105,27 +99,27 @@ export function YesNoResponseInput({
           onActionPlanClick={onSaveActionPlan ? () => onSaveActionPlan({}) : () => {}} 
           readOnly={readOnly || false}
         />
-        
+
         {(question.allowsPhoto || question.allowsVideo || question.permite_foto || question.permite_video) && (
           <MediaAnalysisButton onOpenAnalysis={handleOpenAnalysis} />
         )}
       </div>
-      
+
       <MediaUploadInput
         allowsPhoto={question.allowsPhoto || question.permite_foto || false}
         allowsVideo={question.allowsVideo || question.permite_video || false}
         allowsAudio={question.allowsAudio || question.permite_audio || false}
         allowsFiles={question.allowsFiles || question.permite_files || false}
-        mediaUrls={response?.mediaUrls || []}
+        mediaUrls={response?.mediaUrls ?? []}
         onMediaChange={handleMediaChange}
         readOnly={readOnly}
       />
-      
+
       <MediaAnalysisDialog
         open={isAnalysisOpen}
         onOpenChange={setIsAnalysisOpen}
         mediaUrl={selectedMediaUrl}
-        mediaUrls={response?.mediaUrls || []}
+        mediaUrls={response?.mediaUrls ?? []}
         questionText={question.text || question.pergunta || ""}
         onAnalysisComplete={handleAnalysisResults}
         multimodalAnalysis={true}
