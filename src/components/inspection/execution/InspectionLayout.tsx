@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
 import { InspectionHeader } from "@/components/inspection/InspectionHeader";
 import { QuestionGroups } from "@/components/inspection/QuestionGroups";
 import { Card } from "@/components/ui/card";
@@ -131,6 +131,11 @@ export function InspectionLayout({
 
   const isInspectionCompleted = inspection.status === "Concluída" || inspection.status === "Completed";
 
+  // Adiciona logs úteis para auditoria do fluxo de atualização
+  React.useEffect(() => {
+    console.log("[InspectionLayout] Atualização responses GLOBAL:", responses);
+  }, [responses]);
+
   return (
     <div className="container max-w-7xl mx-auto py-8">
       <InspectionHeader loading={loading} inspection={inspection} />
@@ -170,9 +175,12 @@ export function InspectionLayout({
               {filteredQuestions.length > 0 ? (
                 <div className="space-y-6">
                   {filteredQuestions.map((question, index) => {
+                    // Sempre buscar response atualizada
                     const response = responses[question.id] || {};
-                    // Força a atualização quando muda mídias ou value!
-                    const questionKey = `${question.id}-${JSON.stringify(response.mediaUrls || [])}-${typeof response.value !== "undefined" ? String(response.value) : ""}`;
+                    // Força rerender com mediaUrls/value
+                    const questionKey = `${question.id}-${JSON.stringify(response.mediaUrls || [])}-${String(response.value ?? "")}`;
+                    console.log("[InspectionLayout] Renderizando Question:", question.id, questionKey, response.mediaUrls);
+
                     return (
                       <InspectionQuestion
                         key={questionKey}

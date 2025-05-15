@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { YesNoResponseInput } from './response-types/YesNoResponseInput';
 import { TextResponseInput } from './response-types/TextResponseInput';
@@ -11,16 +10,14 @@ interface ResponseInputProps {
 }
 
 export function ResponseInput({ question, value, onChange }: ResponseInputProps) {
-  // Determina o tipo de resposta com base na pergunta
   const responseType = question.responseType || 'yes_no';
   
   const handleValueChange = (newValue: any) => {
     onChange(newValue);
   };
 
-  console.log("ResponseInput rendering with type:", responseType, "value:", value);
+  console.log("[ResponseInput] rendering with type:", responseType, "value:", value);
   
-  // Renderiza o input apropriado com base no tipo de resposta
   switch (responseType) {
     case "yes_no":
       return (

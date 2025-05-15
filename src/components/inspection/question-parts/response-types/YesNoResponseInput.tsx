@@ -31,30 +31,26 @@ export function YesNoResponseInput({
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
   const [selectedMediaUrl, setSelectedMediaUrl] = useState<string | null>(null);
 
-  console.log("YesNoResponseInput: rendering with response:", response);
+  console.log("[YesNoResponseInput] rendering with response:", response);
 
   const currentValue = response?.value;
 
   const handleResponseChange = useCallback((value: boolean) => {
-    console.log("YesNoResponseInput: value changed to:", value);
     const updatedResponse = {
       ...response,
       value
     };
-    console.log("YesNoResponseInput: response value changed:", updatedResponse);
     onResponseChange(updatedResponse);
   }, [response, onResponseChange]);
 
   const handleMediaChange = useCallback((newMediaUrls: string[]) => {
-    console.log("YesNoResponseInput: media changed:", newMediaUrls);
-    const combinedMediaUrls = [...(response?.mediaUrls ?? []), ...newMediaUrls];
-
+    console.log("[YesNoResponseInput] handleMediaChange:", newMediaUrls);
     if (onMediaChange) {
-      onMediaChange(combinedMediaUrls);
+      onMediaChange(newMediaUrls);
     } else {
       const updatedResponse = {
         ...response,
-        mediaUrls: combinedMediaUrls
+        mediaUrls: newMediaUrls
       };
       onResponseChange(updatedResponse);
     }

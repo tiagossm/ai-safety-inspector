@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { QuestionHeader } from "./question-parts/QuestionHeader";
@@ -75,9 +74,10 @@ export function InspectionQuestion({
   };
 
   const handleMediaChange = (mediaUrls: string[]) => {
+    console.log("[InspectionQuestion] handleMediaChange:", question.id, mediaUrls);
     onResponseChange({
       ...response,
-      mediaUrls
+      mediaUrls,
     });
   };
 
@@ -189,7 +189,13 @@ export function InspectionQuestion({
         <ResponseInput
           question={question}
           value={response?.value}
-          onChange={handleResponseValueChange}
+          onChange={(val) => {
+            // Valor da resposta também sempre vem da prop
+            onResponseChange({
+              ...response,
+              value: val,
+            });
+          }}
         />
         
         {showComments && (

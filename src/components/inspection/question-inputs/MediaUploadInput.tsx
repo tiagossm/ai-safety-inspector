@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, Pencil, Trash2, Search, Play, FileText, Mic, FileVideo, Image, Sparkles } from "lucide-react";
@@ -42,7 +41,7 @@ export function MediaUploadInput({
   const [selectedMedia, setSelectedMedia] = useState<string | null>(null);
   const [selectedMediaType, setSelectedMediaType] = useState<string | null>(null);
   
-  console.log("MediaUploadInput: Rendering with mediaUrls:", mediaUrls);
+  console.log("[MediaUploadInput] Rendering with mediaUrls:", mediaUrls);
   
   const handleAddMedia = () => {
     if (!readOnly) {
@@ -52,9 +51,7 @@ export function MediaUploadInput({
   };
   
   const handleMediaUploaded = (urls: string[]) => {
-    console.log("MediaUploadInput: Media uploaded:", urls);
     const newUrls = [...mediaUrls, ...urls];
-    console.log("MediaUploadInput: New URLs list:", newUrls);
     onMediaChange(newUrls);
   };
   
