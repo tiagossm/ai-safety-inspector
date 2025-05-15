@@ -220,4 +220,4 @@ export function InspectionLayout({
       />
     </div>
   );
-}
+}.
