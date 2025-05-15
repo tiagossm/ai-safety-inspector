@@ -82,7 +82,6 @@ export function InspectionLayout({
   const effectiveCurrentGroupId = currentGroupId || (displayGroups.length > 0 ? displayGroups[0].id : null);
 
   const handleQuestionResponseChange = (questionId: string, data: any) => {
-    console.log("Changing response for question:", questionId, data);
     const currentResponse = responses[questionId] || {};
     const mediaUrls = data.mediaUrls || currentResponse.mediaUrls || [];
 
@@ -157,7 +156,7 @@ export function InspectionLayout({
                 groups={displayGroups}
                 currentGroupId={effectiveCurrentGroupId}
                 onGroupChange={setCurrentGroupId}
-                stats={stats}
+                stats={stats ?? { groupStats: {} }}
               />
             </ScrollArea>
           </Card>
