@@ -83,29 +83,32 @@ export function InspectionLayout({
 
   const handleQuestionResponseChange = useCallback(
     (questionId: string, data: any) => {
-      const currentResponse = responses[questionId] || {};
-      const mediaUrls = data.mediaUrls || currentResponse.mediaUrls || [];
+      setResponses((prev) => {
+        const current = prev[questionId] || {};
+        const mediaUrls = data.mediaUrls || current.mediaUrls || [];
 
-      setResponses((prev) => ({
-        ...prev,
-        [questionId]: {
-          ...(prev[questionId] || {}),
+        const updated = {
+          ...current,
           ...data,
-          mediaUrls: mediaUrls
+          mediaUrls
+        };
+
+        console.log("[handleQuestionResponseChange] Atualizando resposta:", questionId, updated);
+
+        if (onResponseChange) {
+          onResponseChange(questionId, updated);
         }
-      }));
+        if (onMediaChange && mediaUrls) {
+          onMediaChange(questionId, mediaUrls);
+        }
 
-      if (onResponseChange) {
-        onResponseChange(questionId, {
-          ...data,
-          mediaUrls: mediaUrls
-        });
-      }
-      if (onMediaChange && data.mediaUrls) {
-        onMediaChange(questionId, data.mediaUrls);
-      }
+        return {
+          ...prev,
+          [questionId]: updated
+        };
+      });
     },
-    [responses, setResponses, onResponseChange, onMediaChange]
+    [setResponses, onResponseChange, onMediaChange]
   );
 
   if (loading) {
