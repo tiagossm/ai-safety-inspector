@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { X, ZoomIn, Download, Sparkles, AlertTriangle, Heart } from "lucide-react";
 import { MediaPreviewDialog } from "@/components/media/MediaPreviewDialog";
@@ -92,12 +91,13 @@ export function MediaAttachments({
     return Object.keys(analysisResults).length > 0;
   };
 
+  // Corrigido para evitar erro se result estiver undefined
   const hasNonConformity = () => {
-    return Object.values(analysisResults).some(result => result.hasNonConformity);
+    return Object.values(analysisResults).some(result => result && result.hasNonConformity);
   };
 
   const hasPsychosocialRisk = () => {
-    return Object.values(analysisResults).some(result => result.psychosocialRiskDetected);
+    return Object.values(analysisResults).some(result => result && result.psychosocialRiskDetected);
   };
 
   const getSuggestionFromAnalysis = (url: string): string | undefined => {
@@ -171,61 +171,33 @@ export function MediaAttachments({
           )}
         </div>
       )}
-      
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-4">
-        {mediaUrls.map((url, index) => {
-          const analysis = analysisResults?.[url];
-          const hasAnalysis = !!analysis;
-          const actionSuggestion = getSuggestionFromAnalysis(url);
-          const hasActionSuggestion = !!actionSuggestion;
-          const hasPsychosocialRisk = hasAnalysis && !!analysis.psychosocialRiskDetected;
-          
-          return (
-            <div key={index} className="relative flex flex-col h-auto">
-              <MediaAttachmentRenderer
-                url={url}
-                index={index}
-                onOpenPreview={handleOpenPreview}
-                onOpenAnalysis={(url) => handleOpenAnalysis(url, questionText)}
-                readOnly={readOnly}
-                onDelete={handleDeleteMedia}
-                questionText={questionText}
-                analysisResults={analysisResults}
-                smallSize={false}
-              />
-              
-              {hasActionSuggestion && (
-                <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded-md">
-                  <p className="text-xs font-medium text-amber-700 mb-1">Sugestão da IA:</p>
-                  <p className="text-xs text-amber-900 mb-2 line-clamp-2">
-                    {actionSuggestion}
-                  </p>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    className="w-full bg-amber-100 hover:bg-amber-200 border-amber-300 text-xs py-1 px-2 h-auto"
-                    onClick={() => handleApplySuggestion(url)}
-                    type="button"
-                  >
-                    <Sparkles className="h-3 w-3 mr-1" />
-                    Aplicar sugestão
-                  </Button>
-                </div>
-              )}
-            </div>
-          );
-        })}
+      <div className="flex flex-wrap gap-2">
+        {mediaUrls.map((url, index) => (
+          <MediaAttachmentRenderer
+            key={url}
+            url={url}
+            index={index}
+            onOpenPreview={handleOpenPreview}
+            onOpenAnalysis={handleOpenAnalysis}
+            readOnly={readOnly}
+            onDelete={onDelete ? () => handleDeleteMedia(url) : undefined}
+            analysisResults={analysisResults}
+            questionText={questionText}
+          />
+        ))}
       </div>
-      
-      <MediaPreviewDialog 
+      <MediaPreviewDialog
         open={!!activePreviewUrl}
-        onOpenChange={() => setActivePreviewUrl(null)}
+        onOpenChange={open => {
+          if (!open) setActivePreviewUrl(null);
+        }}
         url={activePreviewUrl}
       />
-      
-      <MediaAnalysisDialog 
+      <MediaAnalysisDialog
         open={!!activeAnalysisUrl}
-        onOpenChange={() => setActiveAnalysisUrl(null)}
+        onOpenChange={open => {
+          if (!open) setActiveAnalysisUrl(null);
+        }}
         mediaUrl={activeAnalysisUrl}
         mediaType={activeMediaType}
         questionText={questionText}
