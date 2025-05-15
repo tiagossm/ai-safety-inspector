@@ -170,15 +170,9 @@ export function InspectionLayout({
               {filteredQuestions.length > 0 ? (
                 <div className="space-y-6">
                   {filteredQuestions.map((question, index) => {
-                    // Essencial! Pegue sempre a resposta mais recente direto de "responses"
                     const response = responses[question.id] || {};
-                    // Cria uma key única que depende da resposta e das mediaUrls para garantir rerender imediato após upload
-                    const questionKey =
-                      question.id +
-                      "_" +
-                      (response.mediaUrls ? response.mediaUrls.join(",") : "") +
-                      "_" +
-                      (typeof response.value !== "undefined" ? String(response.value) : "");
+                    // Força a atualização quando muda mídias ou value!
+                    const questionKey = `${question.id}-${JSON.stringify(response.mediaUrls || [])}-${typeof response.value !== "undefined" ? String(response.value) : ""}`;
                     return (
                       <InspectionQuestion
                         key={questionKey}
