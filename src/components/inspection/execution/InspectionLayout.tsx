@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useCallback } from "react";
 import { InspectionHeader } from "@/components/inspection/InspectionHeader";
 import { QuestionGroups } from "@/components/inspection/QuestionGroups";
 import { Card } from "@/components/ui/card";
@@ -81,11 +81,9 @@ export function InspectionLayout({
   const displayGroups = groups.length > 0 ? groups : [DEFAULT_GROUP];
   const effectiveCurrentGroupId = currentGroupId || (displayGroups.length > 0 ? displayGroups[0].id : null);
 
-  // Remover qualquer function definida inline que feche sobre props antigas (especialmente sobre `responses`)
-  // Usar useCallback e fazer com que a dependência traga o valor mais recente
+  // Mantém a mesma lógica: sempre usar as versões mais recentes do estado
   const handleQuestionResponseChange = useCallback(
     (questionId: string, data: any) => {
-      // Usar responses do último ciclo ao mesclar mídia!
       const currentResponse = responses[questionId] || {};
       const mediaUrls = data.mediaUrls || currentResponse.mediaUrls || [];
 
@@ -171,28 +169,38 @@ export function InspectionLayout({
             <div className="p-4">
               {filteredQuestions.length > 0 ? (
                 <div className="space-y-6">
-                  {filteredQuestions.map((question, index) => (
-                    <InspectionQuestion
-                      key={question.id}
-                      question={question}
-                      index={index}
-                      // **IMPORTANTE**: pegar responses[question.id] a cada render!
-                      response={responses[question.id] || {}}
-                      onResponseChange={(data) =>
-                        handleQuestionResponseChange(question.id, data)
-                      }
-                      onOpenSubChecklist={
-                        onOpenSubChecklist && question.hasSubChecklist
-                          ? () => onOpenSubChecklist(question.id)
-                          : undefined
-                      }
-                      allQuestions={questions}
-                      numberLabel={`${index + 1}`}
-                      inspectionId={inspection.id}
-                      actionPlan={plansByQuestion?.[question.id]}
-                      onSaveActionPlan={onSaveActionPlan}
-                    />
-                  ))}
+                  {filteredQuestions.map((question, index) => {
+                    // Essencial! Pegue sempre a resposta mais recente direto de "responses"
+                    const response = responses[question.id] || {};
+                    // Cria uma key única que depende da resposta e das mediaUrls para garantir rerender imediato após upload
+                    const questionKey =
+                      question.id +
+                      "_" +
+                      (response.mediaUrls ? response.mediaUrls.join(",") : "") +
+                      "_" +
+                      (typeof response.value !== "undefined" ? String(response.value) : "");
+                    return (
+                      <InspectionQuestion
+                        key={questionKey}
+                        question={question}
+                        index={index}
+                        response={response}
+                        onResponseChange={(data) =>
+                          handleQuestionResponseChange(question.id, data)
+                        }
+                        onOpenSubChecklist={
+                          onOpenSubChecklist && question.hasSubChecklist
+                            ? () => onOpenSubChecklist(question.id)
+                            : undefined
+                        }
+                        allQuestions={questions}
+                        numberLabel={`${index + 1}`}
+                        inspectionId={inspection.id}
+                        actionPlan={plansByQuestion?.[question.id]}
+                        onSaveActionPlan={onSaveActionPlan}
+                      />
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-12">
