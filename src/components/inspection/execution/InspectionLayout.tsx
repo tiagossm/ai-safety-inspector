@@ -176,7 +176,7 @@ export function InspectionLayout({
               {filteredQuestions.length > 0 ? (
                 <div className="space-y-6">
                   {filteredQuestions.map((question, index) => {
-                    const response = { ...(responses[question.id] || {}) };
+                    const response = JSON.parse(JSON.stringify(responses[question.id] || {}));
                     const key = `${question.id}-${JSON.stringify(response.mediaUrls || [])}-${response.value ?? ''}`;
 
                     console.log('[InspectionLayout] Renderizando Question:', question.id, key, response.mediaUrls);
@@ -220,4 +220,4 @@ export function InspectionLayout({
       />
     </div>
   );
-}.
+}
