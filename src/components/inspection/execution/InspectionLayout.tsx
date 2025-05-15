@@ -81,7 +81,6 @@ export function InspectionLayout({
   const displayGroups = groups.length > 0 ? groups : [DEFAULT_GROUP];
   const effectiveCurrentGroupId = currentGroupId || (displayGroups.length > 0 ? displayGroups[0].id : null);
 
-  // Mantém a mesma lógica: sempre usar as versões mais recentes do estado
   const handleQuestionResponseChange = useCallback(
     (questionId: string, data: any) => {
       const currentResponse = responses[questionId] || {};
@@ -131,8 +130,7 @@ export function InspectionLayout({
 
   const isInspectionCompleted = inspection.status === "Concluída" || inspection.status === "Completed";
 
-  // Adiciona logs úteis para auditoria do fluxo de atualização
-  React.useEffect(() => {
+  useEffect(() => {
     console.log("[InspectionLayout] Atualização responses GLOBAL:", responses);
   }, [responses]);
 
@@ -175,26 +173,19 @@ export function InspectionLayout({
               {filteredQuestions.length > 0 ? (
                 <div className="space-y-6">
                   {filteredQuestions.map((question, index) => {
-                    // Sempre buscar response atualizada
                     const response = responses[question.id] || {};
-                    // Força rerender com mediaUrls/value
-                    const questionKey = `${question.id}-${JSON.stringify(response.mediaUrls || [])}-${String(response.value ?? "")}`;
-                    console.log("[InspectionLayout] Renderizando Question:", question.id, questionKey, response.mediaUrls);
+                    const key = `${question.id}-${JSON.stringify(response.mediaUrls || [])}-${response.value ?? ''}`;
+
+                    console.log('[InspectionLayout] Renderizando Question:', question.id, key, response.mediaUrls);
 
                     return (
                       <InspectionQuestion
-                        key={questionKey}
+                        key={key}
                         question={question}
                         index={index}
                         response={response}
-                        onResponseChange={(data) =>
-                          handleQuestionResponseChange(question.id, data)
-                        }
-                        onOpenSubChecklist={
-                          onOpenSubChecklist && question.hasSubChecklist
-                            ? () => onOpenSubChecklist(question.id)
-                            : undefined
-                        }
+                        onResponseChange={(data) => handleQuestionResponseChange(question.id, data)}
+                        onOpenSubChecklist={onOpenSubChecklist && question.hasSubChecklist ? () => onOpenSubChecklist(question.id) : undefined}
                         allQuestions={questions}
                         numberLabel={`${index + 1}`}
                         inspectionId={inspection.id}
