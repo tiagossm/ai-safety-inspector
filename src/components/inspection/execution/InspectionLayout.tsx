@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { InspectionHeader } from "@/components/inspection/InspectionHeader";
 import { QuestionGroups } from "@/components/inspection/QuestionGroups";
 import { Card } from "@/components/ui/card";
@@ -82,35 +81,35 @@ export function InspectionLayout({
   const displayGroups = groups.length > 0 ? groups : [DEFAULT_GROUP];
   const effectiveCurrentGroupId = currentGroupId || (displayGroups.length > 0 ? displayGroups[0].id : null);
 
-  const handleQuestionResponseChange = (questionId: string, data: any) => {
-    console.log("Changing response for question:", questionId, data);
-    
-    // Certifique-se de preservar mediaUrls no response atual
-    const currentResponse = responses[questionId] || {};
-    const mediaUrls = data.mediaUrls || currentResponse.mediaUrls || [];
-    
-    setResponses(prev => ({
-      ...prev,
-      [questionId]: {
-        ...(prev[questionId] || {}),
-        ...data,
-        mediaUrls: mediaUrls
+  // Remover qualquer function definida inline que feche sobre props antigas (especialmente sobre `responses`)
+  // Usar useCallback e fazer com que a dependência traga o valor mais recente
+  const handleQuestionResponseChange = useCallback(
+    (questionId: string, data: any) => {
+      // Usar responses do último ciclo ao mesclar mídia!
+      const currentResponse = responses[questionId] || {};
+      const mediaUrls = data.mediaUrls || currentResponse.mediaUrls || [];
+
+      setResponses((prev) => ({
+        ...prev,
+        [questionId]: {
+          ...(prev[questionId] || {}),
+          ...data,
+          mediaUrls: mediaUrls
+        }
+      }));
+
+      if (onResponseChange) {
+        onResponseChange(questionId, {
+          ...data,
+          mediaUrls: mediaUrls
+        });
       }
-    }));
-    
-    // Se onResponseChange estiver definido, chame-o
-    if (onResponseChange) {
-      onResponseChange(questionId, {
-        ...data,
-        mediaUrls: mediaUrls
-      });
-    }
-    
-    // Se onMediaChange estiver definido e houver mudanças nas mediaUrls, chame-o
-    if (onMediaChange && data.mediaUrls) {
-      onMediaChange(questionId, data.mediaUrls);
-    }
-  };
+      if (onMediaChange && data.mediaUrls) {
+        onMediaChange(questionId, data.mediaUrls);
+      }
+    },
+    [responses, setResponses, onResponseChange, onMediaChange]
+  );
 
   if (loading) {
     return (
@@ -177,9 +176,16 @@ export function InspectionLayout({
                       key={question.id}
                       question={question}
                       index={index}
+                      // **IMPORTANTE**: pegar responses[question.id] a cada render!
                       response={responses[question.id] || {}}
-                      onResponseChange={(data) => handleQuestionResponseChange(question.id, data)}
-                      onOpenSubChecklist={onOpenSubChecklist && question.hasSubChecklist ? () => onOpenSubChecklist(question.id) : undefined}
+                      onResponseChange={(data) =>
+                        handleQuestionResponseChange(question.id, data)
+                      }
+                      onOpenSubChecklist={
+                        onOpenSubChecklist && question.hasSubChecklist
+                          ? () => onOpenSubChecklist(question.id)
+                          : undefined
+                      }
                       allQuestions={questions}
                       numberLabel={`${index + 1}`}
                       inspectionId={inspection.id}
