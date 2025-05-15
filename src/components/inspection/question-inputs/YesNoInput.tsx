@@ -1,62 +1,121 @@
+import React, { useCallback, useState } from "react";
+import { ResponseButtonGroup } from "./components/ResponseButtonGroup";
+import { ActionPlanButton } from "./components/ActionPlanButton";
+import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
+import { MediaAnalysisButton } from "./components/MediaAnalysisButton";
+import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { CheckCircle, XCircle, HelpCircle } from "lucide-react";
-
-interface YesNoInputProps {
-  value: string | undefined;
-  onChange: (value: string) => void;
+interface YesNoResponseInputProps {
+  question: any;
+  response: any;
+  onResponseChange: (data: any) => void;
+  inspectionId?: string;
+  onMediaChange?: (mediaUrls: string[]) => void;
+  actionPlan?: any;
+  onSaveActionPlan?: (data: any) => Promise<void>;
+  onApplyAISuggestion?: (suggestion: string) => void;
   readOnly?: boolean;
 }
 
-export function YesNoInput({ value, onChange, readOnly = false }: YesNoInputProps) {
-  console.log("YesNoInput: rendering with value:", value);
-  
-  const handleClick = (newValue: string) => {
-    console.log("YesNoInput: button clicked with value:", newValue);
-    if (!readOnly) {
-      onChange(newValue);
+export function YesNoResponseInput({
+  question,
+  response,
+  onResponseChange,
+  inspectionId,
+  onMediaChange,
+  actionPlan,
+  onSaveActionPlan,
+  onApplyAISuggestion,
+  readOnly = false
+}: YesNoResponseInputProps) {
+  const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
+  const [selectedMediaUrl, setSelectedMediaUrl] = useState<string | null>(null);
+
+  console.log("[YesNoResponseInput] rendering with response:", response);
+
+  const currentValue = response?.value;
+
+  const handleResponseChange = useCallback((value: boolean) => {
+    const updatedResponse = {
+      ...response,
+      value
+    };
+    onResponseChange(updatedResponse);
+  }, [response, onResponseChange]);
+
+  const handleMediaChange = useCallback((newMediaUrls: string[]) => {
+    console.log("[YesNoResponseInput] handleMediaChange:", newMediaUrls);
+    const updatedResponse = {
+      ...response,
+      mediaUrls: newMediaUrls
+    };
+    onResponseChange(updatedResponse);
+  }, [response, onResponseChange]);
+
+  const handleAnalysisResults = useCallback((results: any) => {
+    console.log("YesNoResponseInput: analysis results:", results);
+    const updatedResponse = {
+      ...response,
+      mediaAnalysisResults: {
+        ...(response?.mediaAnalysisResults || {}),
+        ...results
+      }
+    };
+    onResponseChange(updatedResponse);
+
+    if (results.actionPlanSuggestion && onApplyAISuggestion) {
+      onApplyAISuggestion(results.actionPlanSuggestion);
     }
-  };
-  
+  }, [response, onResponseChange, onApplyAISuggestion]);
+
+  const handleOpenAnalysis = useCallback(() => {
+    if (response?.mediaUrls && response.mediaUrls.length > 0) {
+      setSelectedMediaUrl(response.mediaUrls[0]);
+    } else {
+      setSelectedMediaUrl(null);
+    }
+    setIsAnalysisOpen(true);
+  }, [response?.mediaUrls]);
+
   return (
-    <div className="flex flex-wrap gap-2 mt-2">
-      <Button
-        variant={value === "sim" ? "default" : "outline"}
-        className={value === "sim" ? "bg-green-500 hover:bg-green-600 text-white" : ""}
-        onClick={() => handleClick("sim")}
-        disabled={readOnly}
-        size="sm"
-        type="button"
-        aria-pressed={value === "sim"}
-      >
-        <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
-        <span>SIM</span>
-      </Button>
-      <Button
-        variant={value === "não" ? "default" : "outline"}
-        className={value === "não" ? "bg-red-500 hover:bg-red-600 text-white" : ""}
-        onClick={() => handleClick("não")}
-        disabled={readOnly}
-        size="sm"
-        type="button"
-        aria-pressed={value === "não"}
-      >
-        <XCircle className="h-3.5 w-3.5 mr-1.5" />
-        <span>NÃO</span>
-      </Button>
-      <Button
-        variant={value === "n/a" ? "default" : "outline"}
-        className={value === "n/a" ? "bg-gray-500 hover:bg-gray-600 text-white" : ""}
-        onClick={() => handleClick("n/a")}
-        disabled={readOnly}
-        size="sm"
-        type="button"
-        aria-pressed={value === "n/a"}
-      >
-        <HelpCircle className="h-3.5 w-3.5 mr-1.5" />
-        <span>N/A</span>
-      </Button>
+    <div className="space-y-4">
+      <ResponseButtonGroup 
+        value={currentValue} 
+        onChange={handleResponseChange} 
+        readOnly={readOnly || false}
+      />
+      
+      <div className="flex flex-wrap gap-2">
+        <ActionPlanButton 
+          localValue={currentValue} 
+          onActionPlanClick={onSaveActionPlan ? () => onSaveActionPlan({}) : () => {}} 
+          readOnly={readOnly || false}
+        />
+
+        {(question.allowsPhoto || question.allowsVideo || question.permite_foto || question.permite_video) && (
+          <MediaAnalysisButton onOpenAnalysis={handleOpenAnalysis} />
+        )}
+      </div>
+
+      <MediaUploadInput
+        allowsPhoto={question.allowsPhoto || question.permite_foto || false}
+        allowsVideo={question.allowsVideo || question.permite_video || false}
+        allowsAudio={question.allowsAudio || question.permite_audio || false}
+        allowsFiles={question.allowsFiles || question.permite_files || false}
+        mediaUrls={response?.mediaUrls ?? []}
+        onMediaChange={handleMediaChange}
+        readOnly={readOnly}
+      />
+
+      <MediaAnalysisDialog
+        open={isAnalysisOpen}
+        onOpenChange={setIsAnalysisOpen}
+        mediaUrl={selectedMediaUrl}
+        mediaUrls={response?.mediaUrls ?? []}
+        questionText={question.text || question.pergunta || ""}
+        onAnalysisComplete={handleAnalysisResults}
+        multimodalAnalysis={true}
+      />
     </div>
   );
 }
