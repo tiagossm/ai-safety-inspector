@@ -962,6 +962,8 @@ export type Database = {
           approval_notes: string | null
           approval_status: Database["public"]["Enums"]["approval_status"] | null
           approved_by: string | null
+          assinatura_responsavel: string | null
+          assinatura_tecnico: string | null
           audio_url: string | null
           checklist: Json | null
           checklist_id: string | null
@@ -991,6 +993,8 @@ export type Database = {
             | Database["public"]["Enums"]["approval_status"]
             | null
           approved_by?: string | null
+          assinatura_responsavel?: string | null
+          assinatura_tecnico?: string | null
           audio_url?: string | null
           checklist?: Json | null
           checklist_id?: string | null
@@ -1020,6 +1024,8 @@ export type Database = {
             | Database["public"]["Enums"]["approval_status"]
             | null
           approved_by?: string | null
+          assinatura_responsavel?: string | null
+          assinatura_tecnico?: string | null
           audio_url?: string | null
           checklist?: Json | null
           checklist_id?: string | null
