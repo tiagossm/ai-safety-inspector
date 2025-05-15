@@ -1,3 +1,4 @@
+
 import React, { useCallback, useEffect } from "react";
 import { InspectionHeader } from "@/components/inspection/InspectionHeader";
 import { QuestionGroups } from "@/components/inspection/QuestionGroups";
@@ -83,25 +84,31 @@ export function InspectionLayout({
 
   const handleQuestionResponseChange = useCallback(
     (questionId: string, data: any) => {
+      console.log("[InspectionLayout] handleQuestionResponseChange:", questionId, data);
       setResponses((prev) => {
         const current = prev[questionId] || {};
+        
+        // Ensuring mediaUrls is always an array
         const mediaUrls = data.mediaUrls || current.mediaUrls || [];
-
+        
+        // Creating a completely new object to ensure React detects the change
         const updated = {
           ...current,
           ...data,
-          mediaUrls
+          mediaUrls: [...mediaUrls] // Clone the array to ensure reference change
         };
-
-        console.log("[handleQuestionResponseChange] Atualizando resposta:", questionId, updated);
+        
+        console.log("[InspectionLayout] Atualizando resposta:", questionId, updated);
 
         if (onResponseChange) {
           onResponseChange(questionId, updated);
         }
-        if (onMediaChange && mediaUrls) {
-          onMediaChange(questionId, mediaUrls);
+        
+        if (onMediaChange && data.mediaUrls) {
+          onMediaChange(questionId, [...data.mediaUrls]); // Clone array here too
         }
 
+        // Return completely new object with updated question
         return {
           ...prev,
           [questionId]: updated
@@ -133,8 +140,9 @@ export function InspectionLayout({
 
   const isInspectionCompleted = inspection.status === "Concluída" || inspection.status === "Completed";
 
+  // Efeito de debug para monitorar mudanças no objeto responses
   useEffect(() => {
-    console.log("[InspectionLayout] Atualização responses GLOBAL:", responses);
+    console.log("[InspectionLayout] GLOBAL responses update:", responses);
   }, [responses]);
 
   return (
@@ -176,17 +184,23 @@ export function InspectionLayout({
               {filteredQuestions.length > 0 ? (
                 <div className="space-y-6">
                   {filteredQuestions.map((question, index) => {
-                    const response = JSON.parse(JSON.stringify(responses[question.id] || {}));
-                    const key = `${question.id}-${JSON.stringify(response.mediaUrls || [])}-${response.value ?? ''}`;
-
-                    console.log('[InspectionLayout] Renderizando Question:', question.id, key, response.mediaUrls);
+                    // Get response safely (or empty object)
+                    const response = responses[question.id] || {};
+                    
+                    // Ensure mediaUrls is always an array
+                    const mediaUrls = response.mediaUrls || [];
+                    
+                    // Create a reactive key that includes both the question ID, media URLs, and response value
+                    const key = `${question.id}-${JSON.stringify(mediaUrls)}-${response.value !== undefined ? String(response.value) : ""}`;
+                    
+                    console.log('[InspectionLayout] Renderizando Question:', question.id, key, mediaUrls);
 
                     return (
                       <InspectionQuestion
                         key={key}
                         question={question}
                         index={index}
-                        response={response}
+                        response={{...response}} // Clone to ensure refs differ
                         onResponseChange={(data) => handleQuestionResponseChange(question.id, data)}
                         onOpenSubChecklist={onOpenSubChecklist && question.hasSubChecklist ? () => onOpenSubChecklist(question.id) : undefined}
                         allQuestions={questions}

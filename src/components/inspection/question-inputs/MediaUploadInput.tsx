@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, Pencil, Trash2, Search, Play, FileText, Mic, FileVideo, Image, Sparkles } from "lucide-react";
 import { MediaDialog } from "../dialogs/MediaDialog";
@@ -43,42 +44,46 @@ export function MediaUploadInput({
   
   console.log("[MediaUploadInput] Rendering with mediaUrls:", mediaUrls);
   
-  const handleAddMedia = () => {
+  const handleAddMedia = useCallback(() => {
     if (!readOnly) {
       console.log("MediaUploadInput: Opening media dialog");
       setMediaDialogOpen(true);
     }
-  };
+  }, [readOnly]);
   
-  const handleMediaUploaded = (urls: string[]) => {
-    const newUrls = [...mediaUrls, ...urls];
-    onMediaChange(newUrls);
-  };
+  const handleMediaUploaded = useCallback((urls: string[]) => {
+    console.log("MediaUploadInput: Media uploaded:", urls);
+    if (urls.length > 0) {
+      const newUrls = [...mediaUrls, ...urls];
+      console.log("MediaUploadInput: New mediaUrls after upload:", newUrls);
+      onMediaChange(newUrls);
+    }
+  }, [mediaUrls, onMediaChange]);
   
-  const handleDeleteMedia = (urlToDelete: string) => {
+  const handleDeleteMedia = useCallback((urlToDelete: string) => {
     if (!readOnly) {
       console.log("MediaUploadInput: Deleting media:", urlToDelete);
       const filteredUrls = mediaUrls.filter(url => url !== urlToDelete);
-      console.log("MediaUploadInput: Filtered URLs:", filteredUrls);
+      console.log("MediaUploadInput: Filtered URLs after deletion:", filteredUrls);
       onMediaChange(filteredUrls);
     }
-  };
+  }, [readOnly, mediaUrls, onMediaChange]);
   
-  const handlePreviewMedia = (url: string) => {
+  const handlePreviewMedia = useCallback((url: string) => {
     console.log("MediaUploadInput: Previewing media:", url);
     setSelectedMedia(url);
     setPreviewDialogOpen(true);
-  };
+  }, []);
   
-  const handleAnalyzeMedia = (url: string, questionContext?: string) => {
+  const handleAnalyzeMedia = useCallback((url: string, questionContext?: string) => {
     console.log("MediaUploadInput: Analyzing media:", url, "with question context:", questionContext || questionText);
     setSelectedMedia(url);
     const mediaType = getMediaType(url);
     setSelectedMediaType(mediaType);
     setAnalysisDialogOpen(true);
-  };
+  }, [questionText]);
   
-  const handleAnalysisComplete = (result: MediaAnalysisResult) => {
+  const handleAnalysisComplete = useCallback((result: MediaAnalysisResult) => {
     console.log("MediaUploadInput: Analysis complete:", result);
     if (onSaveAnalysis && selectedMedia) {
       // Ensure the question context is included in the result
@@ -88,7 +93,7 @@ export function MediaUploadInput({
       };
       onSaveAnalysis(selectedMedia, resultWithContext);
     }
-  };
+  }, [onSaveAnalysis, selectedMedia, questionText]);
 
   const getMediaType = (url: string): string => {
     const fileType = getFileType(url);
@@ -128,20 +133,6 @@ export function MediaUploadInput({
           </span>
         )}
       </div>
-      
-      {mediaUrls.length > 0 && (
-        <MediaAttachments 
-          mediaUrls={mediaUrls} 
-          onDelete={!readOnly ? handleDeleteMedia : undefined} 
-          onOpenPreview={handlePreviewMedia}
-          onOpenAnalysis={handleAnalyzeMedia}
-          readOnly={readOnly}
-          questionText={questionText}
-          analysisResults={analysisResults}
-          onSaveAnalysis={onSaveAnalysis}
-          onApplyAISuggestion={onApplyAISuggestion}
-        />
-      )}
       
       <MediaDialog
         open={mediaDialogOpen}

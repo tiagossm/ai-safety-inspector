@@ -1,9 +1,11 @@
-import React, { useCallback, useState } from "react";
+
+import React, { useCallback, useState, useEffect } from "react";
 import { ResponseButtonGroup } from "./components/ResponseButtonGroup";
 import { ActionPlanButton } from "./components/ActionPlanButton";
 import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
 import { MediaAnalysisButton } from "./components/MediaAnalysisButton";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
+import { MediaAttachments } from "@/components/inspection/question-inputs/MediaAttachments";
 
 interface YesNoResponseInputProps {
   question: any;
@@ -30,10 +32,21 @@ export function YesNoResponseInput({
 }: YesNoResponseInputProps) {
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
   const [selectedMediaUrl, setSelectedMediaUrl] = useState<string | null>(null);
+  const [mediaAnalysisResults, setMediaAnalysisResults] = useState<Record<string, any>>(
+    response?.mediaAnalysisResults || {}
+  );
 
   console.log("[YesNoResponseInput] rendering with response:", response);
 
   const currentValue = response?.value;
+  const mediaUrls = response?.mediaUrls || [];
+
+  // Atualizar os resultados de análise locais quando response mudar
+  useEffect(() => {
+    if (response?.mediaAnalysisResults) {
+      setMediaAnalysisResults(response.mediaAnalysisResults);
+    }
+  }, [response?.mediaAnalysisResults]);
 
   const handleResponseChange = useCallback((value: boolean) => {
     const updatedResponse = {
@@ -65,6 +78,12 @@ export function YesNoResponseInput({
         ...results
       }
     };
+    
+    setMediaAnalysisResults(prev => ({
+      ...prev,
+      ...results
+    }));
+    
     onResponseChange(updatedResponse);
 
     if (results.actionPlanSuggestion && onApplyAISuggestion) {
@@ -80,6 +99,41 @@ export function YesNoResponseInput({
     }
     setIsAnalysisOpen(true);
   }, [response?.mediaUrls]);
+
+  const handleDeleteMedia = useCallback((urlToDelete: string) => {
+    console.log("[YesNoResponseInput] handleDeleteMedia:", urlToDelete);
+    const updatedMediaUrls = mediaUrls.filter(url => url !== urlToDelete);
+    handleMediaChange(updatedMediaUrls);
+  }, [mediaUrls, handleMediaChange]);
+
+  const handleOpenPreview = useCallback((url: string) => {
+    console.log("[YesNoResponseInput] handleOpenPreview:", url);
+    // Esta função será implementada pelo MediaAttachments
+  }, []);
+
+  const handleOpenMediaAnalysis = useCallback((url: string, questionContext?: string) => {
+    console.log("[YesNoResponseInput] handleOpenMediaAnalysis:", url);
+    setSelectedMediaUrl(url);
+    setIsAnalysisOpen(true);
+  }, []);
+
+  const handleSaveAnalysis = useCallback((url: string, result: any) => {
+    console.log("[YesNoResponseInput] handleSaveAnalysis:", url, result);
+    const newResults = {
+      ...mediaAnalysisResults,
+      [url]: result
+    };
+    
+    setMediaAnalysisResults(newResults);
+    
+    // Atualizar o response com os novos resultados de análise
+    const updatedResponse = {
+      ...response,
+      mediaAnalysisResults: newResults
+    };
+    
+    onResponseChange(updatedResponse);
+  }, [mediaAnalysisResults, response, onResponseChange]);
 
   return (
     <div className="space-y-4">
@@ -100,22 +154,41 @@ export function YesNoResponseInput({
           <MediaAnalysisButton onOpenAnalysis={handleOpenAnalysis} />
         )}
       </div>
+      
+      {/* Renderização inline das mídias anexadas (imediatamente após os botões) */}
+      {mediaUrls.length > 0 && (
+        <MediaAttachments
+          mediaUrls={mediaUrls}
+          onDelete={!readOnly ? handleDeleteMedia : undefined}
+          onOpenPreview={handleOpenPreview}
+          onOpenAnalysis={handleOpenMediaAnalysis}
+          readOnly={readOnly}
+          questionText={question.text || question.pergunta || ""}
+          analysisResults={mediaAnalysisResults}
+          onSaveAnalysis={handleSaveAnalysis}
+          onApplyAISuggestion={onApplyAISuggestion}
+        />
+      )}
 
       <MediaUploadInput
         allowsPhoto={question.allowsPhoto || question.permite_foto || false}
         allowsVideo={question.allowsVideo || question.permite_video || false}
         allowsAudio={question.allowsAudio || question.permite_audio || false}
         allowsFiles={question.allowsFiles || question.permite_files || false}
-        mediaUrls={response?.mediaUrls ?? []}
+        mediaUrls={mediaUrls}
         onMediaChange={handleMediaChange}
         readOnly={readOnly}
+        questionText={question.text || question.pergunta || ""}
+        onSaveAnalysis={handleSaveAnalysis}
+        analysisResults={mediaAnalysisResults}
+        onApplyAISuggestion={onApplyAISuggestion}
       />
 
       <MediaAnalysisDialog
         open={isAnalysisOpen}
         onOpenChange={setIsAnalysisOpen}
         mediaUrl={selectedMediaUrl}
-        mediaUrls={response?.mediaUrls ?? []}
+        mediaUrls={mediaUrls}
         questionText={question.text || question.pergunta || ""}
         onAnalysisComplete={handleAnalysisResults}
         multimodalAnalysis={true}

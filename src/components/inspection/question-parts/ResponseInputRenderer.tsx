@@ -1,3 +1,4 @@
+
 import React, { useCallback } from "react";
 import { YesNoResponseInput } from "./response-types/YesNoResponseInput";
 import { TextResponseInput } from "./response-types/TextResponseInput";
@@ -29,46 +30,59 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   console.log("ResponseInputRenderer: rendering with responseType:", responseType);
   console.log("ResponseInputRenderer: current response:", response);
 
+  // Ensure response is always an object (even if empty)
+  const safeResponse = response || {};
+  
+  // Make sure mediaUrls is always an array
+  const mediaUrls = safeResponse.mediaUrls || [];
+
   const handleMediaChange = useCallback((urls: string[]) => {
     console.log("ResponseInputRenderer: Media changed:", urls);
-
-    const existingMedia = response?.mediaUrls ?? [];
-    const combinedUrls = [...existingMedia, ...urls];
-
+    
     const updatedResponse = {
-      ...(response || {}),
-      mediaUrls: combinedUrls
+      ...safeResponse,
+      mediaUrls: urls
     };
-
-    console.log("ResponseInputRenderer: Updating response with combined media URLs:", updatedResponse);
+    
+    console.log("ResponseInputRenderer: Updating response with media URLs:", updatedResponse);
     onResponseChange(updatedResponse);
-
+    
     if (onMediaChange) {
-      onMediaChange(combinedUrls);
+      onMediaChange(urls);
     }
-  }, [response, onResponseChange, onMediaChange]);
+  }, [safeResponse, onResponseChange, onMediaChange]);
 
   const handleResponseWithAnalysis = useCallback((updatedData: any) => {
     console.log("ResponseInputRenderer: Handling response with analysis:", updatedData);
 
     const updatedResponse = {
-      ...(response || {}),
+      ...safeResponse,
       ...updatedData,
     };
 
     onResponseChange(updatedResponse);
-  }, [response, onResponseChange]);
+  }, [safeResponse, onResponseChange]);
+
+  const handleSaveActionPlan = useCallback(
+    async (actionPlanData: any) => {
+      console.log("ResponseInputRenderer: Saving action plan:", actionPlanData);
+      if (onSaveActionPlan) {
+        await onSaveActionPlan(actionPlanData);
+      }
+    },
+    [onSaveActionPlan]
+  );
 
   if (responseType === "yes_no") {
     return (
       <YesNoResponseInput
         question={question}
-        response={response}
+        response={safeResponse}
         inspectionId={inspectionId}
         onResponseChange={onResponseChange}
         onMediaChange={handleMediaChange}
         actionPlan={actionPlan}
-        onSaveActionPlan={onSaveActionPlan}
+        onSaveActionPlan={handleSaveActionPlan}
         readOnly={readOnly}
         onApplyAISuggestion={(suggestion: string) =>
           handleResponseWithAnalysis({ aiSuggestion: suggestion })
@@ -81,8 +95,12 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     return (
       <TextResponseInput
         question={question}
-        response={response}
+        response={safeResponse}
         onResponseChange={onResponseChange}
+        onMediaChange={handleMediaChange}
+        onApplyAISuggestion={(suggestion: string) =>
+          handleResponseWithAnalysis({ aiSuggestion: suggestion })
+        }
         readOnly={readOnly}
       />
     );

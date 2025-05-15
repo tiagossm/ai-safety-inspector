@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { MediaUploadInput } from "../../question-inputs/MediaUploadInput";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 import { Badge } from "@/components/ui/badge";
@@ -47,7 +47,7 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
     setAiSuggestion(suggestion);
   }, [analysisResults]);
   
-  const handleSaveAnalysis = (url: string, result: MediaAnalysisResult) => {
+  const handleSaveAnalysis = useCallback((url: string, result: MediaAnalysisResult) => {
     console.log("TextResponseInput: saving analysis for URL:", url, result);
     const newResults = {
       ...analysisResults,
@@ -76,35 +76,37 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
     if (result.actionPlanSuggestion) {
       setAiSuggestion(result.actionPlanSuggestion);
     }
-  };
+  }, [analysisResults, response, onResponseChange]);
   
   // Check if we have non-conformity results in any media analysis
   const hasNonConformityInAnalysis = Object.values(analysisResults).some(result => 
     result.hasNonConformity
   );
   
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (readOnly) return;
     onResponseChange({ 
       ...response, 
       value: e.target.value 
     });
-  };
+  }, [readOnly, response, onResponseChange]);
 
-  const handleMediaChange = (urls: string[]) => {
+  const handleMediaChange = useCallback((urls: string[]) => {
+    console.log("TextResponseInput: media URLs changed:", urls);
+    
+    const updatedResponse = {
+      ...response,
+      mediaUrls: urls
+    };
+    
+    onResponseChange(updatedResponse);
+    
     if (onMediaChange) {
-      console.log("TextResponseInput: media URLs changed:", urls);
       onMediaChange(urls);
-      
-      // Also update the response directly
-      onResponseChange({
-        ...response,
-        mediaUrls: urls
-      });
     }
-  };
+  }, [response, onResponseChange, onMediaChange]);
   
-  const handleApplyAISuggestion = () => {
+  const handleApplyAISuggestion = useCallback(() => {
     if (aiSuggestion && onApplyAISuggestion) {
       console.log("TextResponseInput: Applying AI suggestion:", aiSuggestion);
       onApplyAISuggestion(aiSuggestion);
@@ -112,16 +114,23 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
         description: "O plano de ação foi preenchido com a sugestão da IA",
       });
     }
-  };
+  }, [aiSuggestion, onApplyAISuggestion]);
 
   // Funções para lidar com a mídia
-  const handleOpenPreview = (url: string) => {
+  const handleOpenPreview = useCallback((url: string) => {
     console.log("TextResponseInput: Opening preview for URL:", url);
-  };
+  }, []);
 
-  const handleOpenAnalysis = (url: string) => {
+  const handleOpenAnalysis = useCallback((url: string) => {
     console.log("TextResponseInput: Opening analysis for URL:", url);
-  };
+  }, []);
+
+  const handleDeleteMedia = useCallback((urlToDelete: string) => {
+    console.log("TextResponseInput: Deleting media URL:", urlToDelete);
+    const currentMediaUrls = response?.mediaUrls || [];
+    const updatedMediaUrls = currentMediaUrls.filter(url => url !== urlToDelete);
+    handleMediaChange(updatedMediaUrls);
+  }, [response, handleMediaChange]);
 
   // Verificar se existem mídias anexadas
   const mediaUrls = response?.mediaUrls || [];
@@ -129,21 +138,6 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Renderiza as mídias anexadas inline se existirem */}
-      {hasMedia && (
-        <MediaAttachments
-          mediaUrls={mediaUrls}
-          onDelete={!readOnly ? (url) => handleMediaChange(mediaUrls.filter(m => m !== url)) : undefined}
-          onOpenPreview={handleOpenPreview}
-          onOpenAnalysis={handleOpenAnalysis}
-          readOnly={readOnly}
-          questionText={question.text || question.pergunta || ""}
-          analysisResults={analysisResults}
-          onSaveAnalysis={handleSaveAnalysis}
-          onApplyAISuggestion={onApplyAISuggestion}
-        />
-      )}
-
       <div className="flex flex-wrap gap-2 mb-2">
         <textarea
           className="w-full border rounded p-2 text-sm"
@@ -162,6 +156,21 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
           </Badge>
         )}
       </div>
+
+      {/* Renderização inline das mídias anexadas (imediatamente após o textarea) */}
+      {hasMedia && (
+        <MediaAttachments
+          mediaUrls={mediaUrls}
+          onDelete={!readOnly ? handleDeleteMedia : undefined}
+          onOpenPreview={handleOpenPreview}
+          onOpenAnalysis={handleOpenAnalysis}
+          readOnly={readOnly}
+          questionText={question.text || question.pergunta || ""}
+          analysisResults={analysisResults}
+          onSaveAnalysis={handleSaveAnalysis}
+          onApplyAISuggestion={onApplyAISuggestion}
+        />
+      )}
       
       {/* AI Suggestion for Action Plan */}
       {aiSuggestion && (
@@ -190,7 +199,7 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
         question.allowsAudio || question.permite_audio ||
         question.allowsFiles || question.permite_files) && (
         <MediaUploadInput 
-          mediaUrls={response?.mediaUrls || []}
+          mediaUrls={mediaUrls}
           onMediaChange={handleMediaChange}
           allowsPhoto={question.allowsPhoto || question.permite_foto}
           allowsVideo={question.allowsVideo || question.permite_video}
