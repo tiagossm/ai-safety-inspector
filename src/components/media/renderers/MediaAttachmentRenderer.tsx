@@ -1,14 +1,12 @@
-
 import React from "react";
-import { X, ZoomIn, Sparkles, Download } from "lucide-react";
 import { getFileType, getFilenameFromUrl } from "@/utils/fileUtils";
 import { determineSpecificFileType } from "@/utils/fileTypeUtils";
 import { toast } from "sonner";
 import { ImageRenderer, AudioRenderer, VideoRenderer, DocumentRenderer, GenericFileRenderer } from "./MediaTypeRenderer";
+import { MediaGallery } from "./MediaGallery"; // <-- Import do novo componente de galeria
 
 interface MediaAttachmentRendererProps {
-  url: string;
-  index: number;
+  urls: string[]; // <- agora aceita array
   onOpenPreview: (url: string) => void;
   onOpenAnalysis: (url: string, questionText?: string) => void;
   onDelete?: (url: string) => void;
@@ -18,20 +16,19 @@ interface MediaAttachmentRendererProps {
   smallSize?: boolean;
 }
 
-export const MediaAttachmentRenderer = ({ 
-  url, 
-  index, 
-  onOpenPreview, 
-  onOpenAnalysis, 
+export const MediaAttachmentRenderer = ({
+  urls = [],
+  onOpenPreview,
+  onOpenAnalysis,
   onDelete,
   readOnly,
   questionText,
   analysisResults,
   smallSize = false
 }: MediaAttachmentRendererProps) => {
-  const fileType = getFileType(url);
-  const fileName = getFilenameFromUrl(url);
-  
+  if (!urls || urls.length === 0) return null;
+
+  // Função de download (única para todos os tipos)
   const handleDownload = (url: string, filename: string) => {
     try {
       const a = document.createElement('a');
@@ -45,140 +42,157 @@ export const MediaAttachmentRenderer = ({
       console.error('Erro no download:', error);
     }
   };
-  
-  const hasAnalysis = analysisResults && analysisResults[url];
 
-  // Function to handle analysis with context
-  const handleOpenAnalysisWithContext = (url: string) => {
-    console.log("MediaAttachmentRenderer: Opening analysis with question context:", questionText);
-    onOpenAnalysis(url, questionText);
-  };
-  
-  // Special handling for webm files (can be audio or video)
-  if (url.endsWith('.webm')) {
-    // If URL contains "audio", consider it as audio
-    if (url.includes('audio')) {
-      return (
-        <AudioRenderer 
-          url={url}
-          index={index}
-          fileName={fileName}
-          onOpenPreview={onOpenPreview}
-          onOpenAnalysis={handleOpenAnalysisWithContext}
-          readOnly={readOnly}
-          onDelete={onDelete}
-          onDownload={handleDownload}
-          hasAnalysis={hasAnalysis}
-          questionText={questionText}
-          smallSize={smallSize}
-        />
-      );
-    } else {
-      return (
-        <VideoRenderer 
-          url={url}
-          index={index}
-          fileName={fileName}
-          onOpenPreview={onOpenPreview}
-          onOpenAnalysis={handleOpenAnalysisWithContext}
-          readOnly={readOnly}
-          onDelete={onDelete}
-          hasAnalysis={hasAnalysis}
-          questionText={questionText}
-          smallSize={smallSize}
-        />
-      );
-    }
-  }
-  
-  // Handle images
-  if (fileType === 'image') {
+  // Se todos forem imagem, mostra a galeria
+  const allImages = urls.every((u) => getFileType(u) === 'image');
+  if (allImages) {
     return (
-      <ImageRenderer 
-        url={url}
-        index={index}
-        fileName={fileName}
-        onOpenPreview={onOpenPreview}
-        onOpenAnalysis={handleOpenAnalysisWithContext}
-        readOnly={readOnly}
-        onDelete={onDelete}
-        hasAnalysis={hasAnalysis}
-        questionText={questionText}
-        smallSize={smallSize}
+      <MediaGallery
+        urls={urls}
+        columns={Math.min(5, Math.ceil(Math.sqrt(urls.length)))}
+        maxThumbSize={90}
       />
     );
   }
-  
-  // Handle audio
-  if (fileType === 'audio') {
-    return (
-      <AudioRenderer 
-        url={url}
-        index={index}
-        fileName={fileName}
-        onOpenPreview={onOpenPreview}
-        onOpenAnalysis={handleOpenAnalysisWithContext}
-        readOnly={readOnly}
-        onDelete={onDelete}
-        onDownload={handleDownload}
-        hasAnalysis={hasAnalysis}
-        questionText={questionText}
-        smallSize={smallSize}
-      />
-    );
-  }
-  
-  // Handle video
-  if (fileType === 'video') {
-    return (
-      <VideoRenderer 
-        url={url}
-        index={index}
-        fileName={fileName}
-        onOpenPreview={onOpenPreview}
-        onOpenAnalysis={handleOpenAnalysisWithContext}
-        readOnly={readOnly}
-        onDelete={onDelete}
-        hasAnalysis={hasAnalysis}
-        questionText={questionText}
-        smallSize={smallSize}
-      />
-    );
-  }
-  
-  // For other file types, identify specific types by extension
-  const extension = url.split('.').pop()?.toLowerCase() || '';
-  
-  // Determine specific file type based on extension
-  const specificFileType = determineSpecificFileType(extension);
-  
-  // Handle PDF
-  if (specificFileType === 'pdf') {
-    return (
-      <DocumentRenderer 
-        url={url}
-        index={index}
-        fileName={fileName}
-        onOpenPreview={onOpenPreview}
-        readOnly={readOnly}
-        onDelete={onDelete}
-        specificFileType={specificFileType}
-        smallSize={smallSize}
-      />
-    );
-  }
-  
-  // Handle other types of files
+
+  // Caso misto ou não-imagem, renderiza cada arquivo conforme tipo
   return (
-    <GenericFileRenderer 
-      url={url}
-      index={index}
-      fileName={fileName}
-      specificFileType={specificFileType}
-      onDownload={handleDownload}
-      readOnly={readOnly}
-      onDelete={onDelete}
-      smallSize={smallSize}
-    />
+    <div className="flex flex-wrap gap-2">
+      {urls.map((url, index) => {
+        const fileType = getFileType(url);
+        const fileName = getFilenameFromUrl(url);
+        const hasAnalysis = analysisResults && analysisResults[url];
+        const extension = url.split('.').pop()?.toLowerCase() || '';
+        const specificFileType = determineSpecificFileType(extension);
+
+        // Video ou áudio .webm (lógica preservada)
+        if (url.endsWith('.webm')) {
+          if (url.includes('audio')) {
+            return (
+              <AudioRenderer
+                key={url}
+                url={url}
+                index={index}
+                fileName={fileName}
+                onOpenPreview={onOpenPreview}
+                onOpenAnalysis={onOpenAnalysis}
+                readOnly={readOnly}
+                onDelete={onDelete}
+                onDownload={handleDownload}
+                hasAnalysis={hasAnalysis}
+                questionText={questionText}
+                smallSize={smallSize}
+              />
+            );
+          } else {
+            return (
+              <VideoRenderer
+                key={url}
+                url={url}
+                index={index}
+                fileName={fileName}
+                onOpenPreview={onOpenPreview}
+                onOpenAnalysis={onOpenAnalysis}
+                readOnly={readOnly}
+                onDelete={onDelete}
+                hasAnalysis={hasAnalysis}
+                questionText={questionText}
+                smallSize={smallSize}
+              />
+            );
+          }
+        }
+
+        // Imagem avulsa (não entra na galeria)
+        if (fileType === 'image') {
+          return (
+            <ImageRenderer
+              key={url}
+              url={url}
+              index={index}
+              fileName={fileName}
+              onOpenPreview={onOpenPreview}
+              onOpenAnalysis={onOpenAnalysis}
+              readOnly={readOnly}
+              onDelete={onDelete}
+              hasAnalysis={hasAnalysis}
+              questionText={questionText}
+              smallSize={smallSize}
+            />
+          );
+        }
+
+        // Áudio
+        if (fileType === 'audio') {
+          return (
+            <AudioRenderer
+              key={url}
+              url={url}
+              index={index}
+              fileName={fileName}
+              onOpenPreview={onOpenPreview}
+              onOpenAnalysis={onOpenAnalysis}
+              readOnly={readOnly}
+              onDelete={onDelete}
+              onDownload={handleDownload}
+              hasAnalysis={hasAnalysis}
+              questionText={questionText}
+              smallSize={smallSize}
+            />
+          );
+        }
+
+        // Vídeo
+        if (fileType === 'video') {
+          return (
+            <VideoRenderer
+              key={url}
+              url={url}
+              index={index}
+              fileName={fileName}
+              onOpenPreview={onOpenPreview}
+              onOpenAnalysis={onOpenAnalysis}
+              readOnly={readOnly}
+              onDelete={onDelete}
+              hasAnalysis={hasAnalysis}
+              questionText={questionText}
+              smallSize={smallSize}
+            />
+          );
+        }
+
+        // PDF
+        if (specificFileType === 'pdf') {
+          return (
+            <DocumentRenderer
+              key={url}
+              url={url}
+              index={index}
+              fileName={fileName}
+              onOpenPreview={onOpenPreview}
+              readOnly={readOnly}
+              onDelete={onDelete}
+              specificFileType={specificFileType}
+              smallSize={smallSize}
+            />
+          );
+        }
+
+        // Qualquer outro tipo
+        return (
+          <GenericFileRenderer
+            key={url}
+            url={url}
+            index={index}
+            fileName={fileName}
+            specificFileType={specificFileType}
+            onDownload={handleDownload}
+            readOnly={readOnly}
+            onDelete={onDelete}
+            smallSize={smallSize}
+          />
+        );
+      })}
+    </div>
   );
 };
