@@ -10,7 +10,6 @@ export function MediaRenderer({ url, className = "" }: MediaRendererProps) {
   const [error, setError] = useState(false);
   const fileType = getFileType(url);
 
-  // Reset error state when URL changes
   useEffect(() => {
     setError(false);
   }, [url]);
@@ -28,15 +27,14 @@ export function MediaRenderer({ url, className = "" }: MediaRendererProps) {
     );
   }
 
-  // Render different types of media based on file type
   switch (fileType) {
     case "image":
       return (
         <div className={`flex items-center justify-center ${className}`}>
-          <img 
-            src={url} 
-            alt="Media content" 
-            className="max-w-full max-h-48 object-cover rounded-lg border"
+          <img
+            src={url}
+            alt="Prévia"
+            className="w-auto max-w-full h-auto max-h-48 object-cover rounded-lg border"
             onError={handleError}
           />
         </div>
