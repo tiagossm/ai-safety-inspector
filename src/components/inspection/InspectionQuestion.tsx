@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { QuestionHeader } from "./question-parts/QuestionHeader";
 import { ResponseInput } from "./question-parts/ResponseInput";
@@ -165,6 +164,11 @@ export function InspectionQuestion({
           if (inspectionId && question.id && onSaveActionPlan) {
             setShowActionPlanImplementation(true);
           }
+          
+          // Se houver uma sugestão de plano de ação, aplique-a automaticamente se não houver plano existente
+          if (result.actionPlanSuggestion && (!response.actionPlan || response.actionPlan === "")) {
+            handleActionPlanChange(result.actionPlanSuggestion);
+          }
         }
       }
     } catch (error) {
@@ -176,6 +180,10 @@ export function InspectionQuestion({
 
   const handleToggleComments = () => {
     setShowComments(!showComments);
+  };
+
+  const handleOpenActionPlanDialog = () => {
+    setShowActionPlanImplementation(true);
   };
 
   const handleOpenSubChecklist = () => {
@@ -201,6 +209,23 @@ export function InspectionQuestion({
     
     return suggestions;
   };
+
+  // Se a resposta é negativa, mostrar o plano de ação mesmo que não tenha explicitamente definido showActionPlan
+  useEffect(() => {
+    if (response && isNegativeResponse(response.value)) {
+      setShowActionPlan(true);
+      
+      // Se tivermos um inspectionId, questionId e um manipulador de saveActionPlan, mostrar a implementação do plano de ação
+      if (inspectionId && question.id && onSaveActionPlan) {
+        setShowActionPlanImplementation(true);
+      }
+    }
+    
+    // Se há um plano de ação existente, também mostrar a seção de plano de ação
+    if (response && response.actionPlan) {
+      setShowActionPlan(true);
+    }
+  }, [response, question.id, inspectionId, onSaveActionPlan]);
 
   return (
     <Card className={isSubQuestion ? "border-gray-200 bg-gray-50" : ""}>
@@ -248,17 +273,13 @@ export function InspectionQuestion({
           </div>
         )}
         
-        {(isNegativeResponse(response?.value) || showActionPlan) && !showActionPlanImplementation && (
+        {(isNegativeResponse(response?.value) || showActionPlan || response?.actionPlan) && !showActionPlanImplementation && (
           <ActionPlanSection
             isOpen={showActionPlan}
             onOpenChange={setShowActionPlan}
-            actionPlan={actionPlan || response?.actionPlan || ""}
+            actionPlan={response?.actionPlan || ""}
             onActionPlanChange={handleActionPlanChange}
-            onOpenDialog={() => {
-              if (inspectionId && question.id && onSaveActionPlan) {
-                setShowActionPlanImplementation(true);
-              }
-            }}
+            onOpenDialog={inspectionId && question.id && onSaveActionPlan ? handleOpenActionPlanDialog : undefined}
             hasNegativeResponse={isNegativeResponse(response?.value)}
             aiSuggestion={Object.values(mediaAnalysisResults)[0]?.actionPlanSuggestion}
             mediaAnalysisResults={mediaAnalysisResults}

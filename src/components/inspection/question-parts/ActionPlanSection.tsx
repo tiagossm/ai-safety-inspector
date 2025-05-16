@@ -25,6 +25,7 @@ export function ActionPlanSection({
   aiSuggestion,
   mediaAnalysisResults = {}
 }: ActionPlanSectionProps) {
+  // Se houver resposta negativa ou plano de ação existente, sempre mostrar o componente
   if (!isOpen && !actionPlan && !hasNegativeResponse) return null;
 
   // Função para alternar a visibilidade
@@ -41,6 +42,13 @@ export function ActionPlanSection({
   const handleApplySuggestion = () => {
     if (aiSuggestion) {
       onActionPlanChange(aiSuggestion);
+    }
+  };
+
+  // Função para abrir o diálogo completo quando disponível
+  const handleOpenFullDialog = () => {
+    if (onOpenDialog) {
+      onOpenDialog();
     }
   };
 
@@ -69,16 +77,28 @@ export function ActionPlanSection({
           <AlertCircle className="h-4 w-4 mr-2 text-amber-600" />
           <h4 className="text-sm font-medium text-amber-700">Plano de Ação</h4>
         </div>
-        {actionPlan && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs"
-            onClick={toggleOpen}
-          >
-            Ocultar
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {onOpenDialog && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs bg-amber-200 hover:bg-amber-300 text-amber-800 border-amber-400"
+              onClick={handleOpenFullDialog}
+            >
+              Plano Detalhado
+            </Button>
+          )}
+          {actionPlan && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={toggleOpen}
+            >
+              Ocultar
+            </Button>
+          )}
+        </div>
       </div>
 
       <textarea

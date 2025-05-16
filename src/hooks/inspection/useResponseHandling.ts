@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -15,25 +16,32 @@ export interface ResponseData {
 export function useResponseHandling(inspectionId: string | undefined, setResponses: (responses: Record<string, any>) => void) {
   const [savingResponses, setSavingResponses] = useState(false);
 
-  const handleResponseChange = useCallback((questionId: string, value: any, additionalData?: any) => {
+  // Função melhorada para garantir que as respostas tenham atualizações corretas
+  const handleResponseChange = useCallback((questionId: string, data: any) => {
     setResponses((prev) => {
-      const currentResponse = prev[questionId] || {};
-
-      let updatedResponse;
-
-      if (typeof additionalData === 'object') {
-        updatedResponse = {
-          ...currentResponse,
-          ...(typeof value === 'object' && value !== null ? value : { value }),
-          ...additionalData
-        };
-      } else {
-        updatedResponse = {
-          ...currentResponse,
-          ...(typeof value === 'object' && value !== null ? value : { value })
-        };
+      // Certifique-se de que estamos trabalhando com uma cópia do objeto de resposta atual
+      const currentResponse = prev[questionId] ? {...prev[questionId]} : {};
+      
+      // Se data é um objeto, spread suas propriedades para a resposta atual
+      // Se não, assume que é um valor simples para o campo value
+      const updatedResponse = typeof data === 'object' && data !== null
+        ? { ...currentResponse, ...data, updatedAt: new Date().toISOString() }
+        : { ...currentResponse, value: data, updatedAt: new Date().toISOString() };
+      
+      // Garantir que mediaUrls seja sempre um array
+      if (updatedResponse.mediaUrls) {
+        updatedResponse.mediaUrls = [...updatedResponse.mediaUrls];
+      } else if (data && data.mediaUrls) {
+        updatedResponse.mediaUrls = [...data.mediaUrls];
+      } else if (!updatedResponse.mediaUrls) {
+        updatedResponse.mediaUrls = [];
       }
-
+      
+      // Console log para debugging
+      console.log(`[useResponseHandling] Atualizando resposta para questão ${questionId}:`, 
+        { anterior: currentResponse, nova: updatedResponse });
+      
+      // Retornar um novo objeto de respostas com a resposta atualizada
       return {
         ...prev,
         [questionId]: updatedResponse
@@ -42,14 +50,18 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
   }, [setResponses]);
 
   const handleMediaChange = useCallback((questionId: string, mediaUrls: string[]) => {
+    console.log(`[useResponseHandling] handleMediaChange para questão ${questionId}:`, mediaUrls);
+    
     setResponses((prev) => {
-      const currentResponse = prev[questionId] || {};
-
+      const currentResponse = prev[questionId] ? {...prev[questionId]} : {};
+      
+      // Garantir que estamos criando um novo array para mediaUrls
       return {
         ...prev,
         [questionId]: {
           ...currentResponse,
-          mediaUrls
+          mediaUrls: [...mediaUrls],
+          updatedAt: new Date().toISOString()
         }
       };
     });
@@ -90,12 +102,15 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
       const fileUrl = urlData.publicUrl;
 
       setResponses(currentResponses => {
-        const currentMediaUrls = currentResponses[questionId]?.mediaUrls || [];
+        const currentResponse = currentResponses[questionId] ? {...currentResponses[questionId]} : {};
+        const currentMediaUrls = currentResponse.mediaUrls || [];
+        
         return {
           ...currentResponses,
           [questionId]: {
-            ...currentResponses[questionId],
-            mediaUrls: [...currentMediaUrls, fileUrl]
+            ...currentResponse,
+            mediaUrls: [...currentMediaUrls, fileUrl],
+            updatedAt: new Date().toISOString()
           }
         };
       });
@@ -108,12 +123,73 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
     }
   }, [inspectionId, setResponses]);
 
+  // Implementando o salvamento real da inspeção
   const handleSaveInspection = useCallback(async (currentResponses: Record<string, any>, inspection: any) => {
-    return;
+    if (!inspectionId) return;
+    
+    setSavingResponses(true);
+    
+    try {
+      console.log("[useResponseHandling] Salvando respostas:", currentResponses);
+      
+      // Preparar dados para salvar
+      const responsesToSave = {};
+      Object.entries(currentResponses).forEach(([questionId, responseData]) => {
+        responsesToSave[questionId] = {
+          ...responseData,
+          // Garantir que temos os campos necessários
+          value: responseData.value,
+          comment: responseData.comment || "",
+          actionPlan: responseData.actionPlan || "",
+          mediaUrls: responseData.mediaUrls || [],
+          updatedAt: new Date().toISOString()
+        };
+      });
+      
+      // Salvar no banco de dados
+      const { error } = await supabase
+        .from('inspection_responses')
+        .upsert({
+          inspection_id: inspectionId,
+          responses: responsesToSave,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'inspection_id'
+        });
+      
+      if (error) {
+        throw new Error(`Erro ao salvar respostas: ${error.message}`);
+      }
+      
+      // Atualizar status da inspeção para "Em Andamento" se estiver "Pendente"
+      if (inspection?.status === 'Pendente') {
+        const { error: updateError } = await supabase
+          .from('inspections')
+          .update({ status: 'Em Andamento' })
+          .eq('id', inspectionId);
+        
+        if (updateError) {
+          console.error("Erro ao atualizar status da inspeção:", updateError);
+          // Não interromper o fluxo por causa disso
+        }
+      }
+      
+      console.log("[useResponseHandling] Respostas salvas com sucesso");
+      
+    } catch (error: any) {
+      console.error("[useResponseHandling] Erro ao salvar inspeção:", error);
+      throw error;
+    } finally {
+      setSavingResponses(false);
+    }
   }, [inspectionId]);
 
   const handleSaveSubChecklistResponses = useCallback(async (subChecklistId: string, subResponses: Record<string, any>) => {
-    return;
+    if (!inspectionId || !subChecklistId) return;
+    
+    console.log("[useResponseHandling] Salvando respostas de sub-checklist:", subChecklistId, subResponses);
+    
+    // Implementar a lógica de salvamento de sub-checklist aqui se necessário
   }, [inspectionId]);
 
   return {
