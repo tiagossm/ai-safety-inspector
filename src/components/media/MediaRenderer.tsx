@@ -21,8 +21,12 @@ export function MediaRenderer({ url, className = "" }: MediaRendererProps) {
 
   if (error) {
     return (
-      <div className={`flex items-center justify-center bg-gray-100 p-4 ${className}`}>
-        <p className="text-sm text-gray-500">Não foi possível carregar a mídia</p>
+      <div
+        className={`flex items-center justify-center bg-gray-100 p-4 ${className}`}
+      >
+        <p className="text-sm text-gray-500">
+          Não foi possível carregar a mídia
+        </p>
       </div>
     );
   }
@@ -34,7 +38,16 @@ export function MediaRenderer({ url, className = "" }: MediaRendererProps) {
           <img
             src={url}
             alt="Prévia"
-            className="w-auto max-w-full h-auto max-h-48 object-cover rounded-lg border"
+            style={{
+              width: "auto",
+              height: "auto",
+              maxWidth: "100%",
+              maxHeight: "180px",
+              objectFit: "cover",
+              borderRadius: "0.5rem",
+              border: "1px solid #e5e7eb",
+              display: "block"
+            }}
             onError={handleError}
           />
         </div>
@@ -44,7 +57,14 @@ export function MediaRenderer({ url, className = "" }: MediaRendererProps) {
         <video
           src={url}
           controls
-          className={`max-w-full max-h-64 rounded-lg border ${className}`}
+          style={{
+            maxWidth: "100%",
+            maxHeight: "240px",
+            borderRadius: "0.5rem",
+            border: "1px solid #e5e7eb",
+            display: "block"
+          }}
+          className={className}
           onError={handleError}
         />
       );
