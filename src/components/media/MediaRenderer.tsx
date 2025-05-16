@@ -34,19 +34,22 @@ export function MediaRenderer({ url, className = "" }: MediaRendererProps) {
   switch (fileType) {
     case "image":
       return (
-        <div className={`flex items-center justify-center ${className}`}>
+        <div
+          className={`flex items-center justify-center ${className}`}
+          style={{ width: "100%" }}
+        >
           <img
             src={url}
             alt="Prévia"
             style={{
-              width: "auto",
-              height: "auto",
-              maxWidth: "100%",
-              maxHeight: "180px",
-              objectFit: "cover",
+              width: "100%",
+              maxHeight: "220px",
+              objectFit: "contain",
+              background: "#f8fafc",
               borderRadius: "0.5rem",
               border: "1px solid #e5e7eb",
-              display: "block"
+              display: "block",
+              boxSizing: "border-box",
             }}
             onError={handleError}
           />
@@ -58,7 +61,7 @@ export function MediaRenderer({ url, className = "" }: MediaRendererProps) {
           src={url}
           controls
           style={{
-            maxWidth: "100%",
+            width: "100%",
             maxHeight: "240px",
             borderRadius: "0.5rem",
             border: "1px solid #e5e7eb",
