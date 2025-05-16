@@ -1,9 +1,10 @@
+
 import React from "react";
 import { getFileType, getFilenameFromUrl } from "@/utils/fileUtils";
 import { determineSpecificFileType } from "@/utils/fileTypeUtils";
 import { toast } from "sonner";
 import { ImageRenderer, AudioRenderer, VideoRenderer, DocumentRenderer, GenericFileRenderer } from "./MediaTypeRenderer";
-import { MediaGallery } from "./MediaGallery"; // <-- Import do novo componente de galeria
+import { MediaGallery } from "./MediaGalleryGrid"; // Corrigido: Importando do arquivo correto
 
 interface MediaAttachmentRendererProps {
   urls: string[]; // <- agora aceita array
