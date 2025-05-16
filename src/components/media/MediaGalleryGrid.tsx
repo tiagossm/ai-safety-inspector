@@ -46,4 +46,4 @@ export const MediaGalleryGrid: React.FC<MediaGalleryGridProps> = ({
       ))}
     </div>
   );
-};
+};x
