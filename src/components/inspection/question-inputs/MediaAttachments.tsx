@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { X, ZoomIn, Download, Sparkles, AlertTriangle, Heart } from "lucide-react";
 import { MediaPreviewDialog } from "@/components/media/MediaPreviewDialog";
@@ -172,20 +173,16 @@ export function MediaAttachments({
         </div>
       )}
       <div className="flex flex-wrap gap-2">
-        {mediaUrls.map((url, index) => (
-          <MediaAttachmentRenderer
-            key={url}
-            url={url}
-            index={index}
-            onOpenPreview={handleOpenPreview}
-            onOpenAnalysis={handleOpenAnalysis}
-            readOnly={readOnly}
-            onDelete={onDelete ? () => handleDeleteMedia(url) : undefined}
-            analysisResults={analysisResults}
-            questionText={questionText}
-            smallSize={true}  // <<< Imagem inline menor
-          />
-        ))}
+        <MediaAttachmentRenderer
+          urls={mediaUrls}
+          onOpenPreview={handleOpenPreview}
+          onOpenAnalysis={handleOpenAnalysis}
+          readOnly={readOnly}
+          onDelete={onDelete ? handleDeleteMedia : undefined}
+          questionText={questionText}
+          analysisResults={analysisResults}
+          smallSize={true}
+        />
       </div>
       <MediaPreviewDialog
         open={!!activePreviewUrl}
