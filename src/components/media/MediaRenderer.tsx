@@ -72,4 +72,3 @@ export function MediaRenderer({ url, className = "" }: MediaRendererProps) {
       );
   }
 }
-s
