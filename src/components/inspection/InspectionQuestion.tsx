@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { QuestionHeader } from "./question-parts/QuestionHeader";
@@ -8,6 +9,7 @@ import { MediaUploadSection } from "./question-inputs/MediaUploadSection";
 import { ActionPlan } from '@/services/inspection/actionPlanService';
 import { ActionPlanFormData } from '@/components/action-plans/form/types';
 import { useMediaAnalysis, MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
+import { ActionPlanImplementation } from "./ActionPlanImplementation";
 
 interface InspectionQuestionProps {
   question: any;
@@ -38,6 +40,7 @@ export function InspectionQuestion({
 }: InspectionQuestionProps) {
   const [showComments, setShowComments] = useState(false);
   const [showActionPlan, setShowActionPlan] = useState(false);
+  const [showActionPlanImplementation, setShowActionPlanImplementation] = useState(false);
   const [loadingSubChecklist, setLoadingSubChecklist] = useState(false);
   const [multiModalLoading, setMultiModalLoading] = useState(false);
   
@@ -65,6 +68,11 @@ export function InspectionQuestion({
     // If the response has changed to negative, show the action plan section
     if (isNegativeResponse(value)) {
       setShowActionPlan(true);
+      
+      // If it's a negative response, also show the implementation UI
+      if (inspectionId && question.id && onSaveActionPlan) {
+        setShowActionPlanImplementation(true);
+      }
     }
     
     onResponseChange({
@@ -102,6 +110,11 @@ export function InspectionQuestion({
     // If it's a non-conformity and action plan section isn't shown yet, show it
     if (result.hasNonConformity) {
       setShowActionPlan(true);
+      
+      // Also show action plan implementation if we have inspection and question IDs
+      if (inspectionId && question.id && onSaveActionPlan) {
+        setShowActionPlanImplementation(true);
+      }
     }
   };
 
@@ -147,6 +160,11 @@ export function InspectionQuestion({
         // If it's a non-conformity and action plan section isn't shown yet, show it
         if (result.hasNonConformity) {
           setShowActionPlan(true);
+          
+          // Also show action plan implementation if we have inspection and question IDs
+          if (inspectionId && question.id && onSaveActionPlan) {
+            setShowActionPlanImplementation(true);
+          }
         }
       }
     } catch (error) {
@@ -171,6 +189,19 @@ export function InspectionQuestion({
     }
   };
 
+  // Extract AI suggestions from media analysis results
+  const getAISuggestions = (): string[] => {
+    const suggestions: string[] = [];
+    
+    Object.values(mediaAnalysisResults).forEach(result => {
+      if (result?.actionPlanSuggestion && !suggestions.includes(result.actionPlanSuggestion)) {
+        suggestions.push(result.actionPlanSuggestion);
+      }
+    });
+    
+    return suggestions;
+  };
+
   return (
     <Card className={isSubQuestion ? "border-gray-200 bg-gray-50" : ""}>
       <CardHeader className="py-3 px-4">
@@ -189,13 +220,7 @@ export function InspectionQuestion({
         <ResponseInput
           question={question}
           value={response?.value}
-          onChange={(val) => {
-            // Valor da resposta também sempre vem da prop
-            onResponseChange({
-              ...response,
-              value: val,
-            });
-          }}
+          onChange={handleResponseValueChange}
         />
         
         {showComments && (
@@ -223,17 +248,36 @@ export function InspectionQuestion({
           </div>
         )}
         
-        {(isNegativeResponse(response?.value) || showActionPlan) && (
+        {(isNegativeResponse(response?.value) || showActionPlan) && !showActionPlanImplementation && (
           <ActionPlanSection
             isOpen={showActionPlan}
             onOpenChange={setShowActionPlan}
             actionPlan={actionPlan || response?.actionPlan || ""}
             onActionPlanChange={handleActionPlanChange}
-            onOpenDialog={() => {}} // We'll implement this later if needed
+            onOpenDialog={() => {
+              if (inspectionId && question.id && onSaveActionPlan) {
+                setShowActionPlanImplementation(true);
+              }
+            }}
             hasNegativeResponse={isNegativeResponse(response?.value)}
             aiSuggestion={Object.values(mediaAnalysisResults)[0]?.actionPlanSuggestion}
             mediaAnalysisResults={mediaAnalysisResults}
           />
+        )}
+
+        {/* Structured Action Plan Implementation Component */}
+        {showActionPlanImplementation && inspectionId && question.id && onSaveActionPlan && (
+          <div className="mt-4 pt-4 border-t border-dashed">
+            <ActionPlanImplementation
+              inspectionId={inspectionId}
+              questionId={question.id}
+              questionText={question.text || ""}
+              actionPlans={actionPlan ? [actionPlan] : []}
+              loading={false}
+              onSaveActionPlan={onSaveActionPlan}
+              aiSuggestions={getAISuggestions()}
+            />
+          </div>
         )}
       </CardContent>
     </Card>
