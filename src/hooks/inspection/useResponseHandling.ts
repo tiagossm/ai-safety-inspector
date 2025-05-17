@@ -224,8 +224,8 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
     console.log("[useResponseHandling] Salvando respostas de sub-checklist:", parentQuestionId, subResponses);
     
     return new Promise<void>((resolve, reject) => {
-      setResponses((prev) => {
-        try {
+      try {
+        setResponses((prev) => {
           // Garantir que estamos trabalhando com uma cópia do objeto de resposta atual
           const currentResponse = prev[parentQuestionId] ? {...prev[parentQuestionId]} : {};
           
@@ -239,17 +239,15 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
             }
           };
           
-          resolve();
           return updatedResponses;
-        } catch (error) {
-          reject(error);
-          return prev;
-        }
-      });
+        });
+        
+        resolve();
+      } catch (error) {
+        console.error("[useResponseHandling] Erro ao salvar respostas do sub-checklist:", error);
+        reject(error);
+      }
     });
-    
-    // Salvar a inspeção para persistir as alterações das sub-checklists
-    // Isso será chamado pela página de execução da inspeção após o fechamento do diálogo
   }, [inspectionId, setResponses]);
 
   return {
