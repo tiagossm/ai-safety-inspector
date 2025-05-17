@@ -123,7 +123,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
     }
   }, [inspectionId, setResponses]);
 
-  // Correção para garantir que o tipo de retorno seja sempre Promise<any>
+  // Corrigindo para garantir que o tipo de retorno seja sempre Promise<any>
   const handleSaveInspection = useCallback(async (currentResponses: Record<string, any>, inspection: any): Promise<any> => {
     if (!inspectionId) return Promise.resolve({});
     
@@ -150,19 +150,19 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
         
         console.log(`[useResponseHandling] Salvando resposta para questão ${questionId}:`, responseToSave);
         
-        // Criando uma Promise explícita que sempre será do tipo Promise<any>
+        // Criando Promise explícita para gerenciar corretamente o fluxo com then/catch
         const savePromise = new Promise<any>((resolve, reject) => {
           supabase
             .from('inspection_responses')
             .upsert(responseToSave, {
               onConflict: 'inspection_id,question_id'
             })
-            .then(({ error }) => {
+            .then(({ data, error }) => {
               if (error) {
                 console.error(`[useResponseHandling] Erro ao salvar resposta para questão ${questionId}:`, error);
                 reject(error);
               } else {
-                resolve({});
+                resolve(data);
               }
             })
             .catch((err) => {
@@ -179,18 +179,21 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
       
       // Atualizar status da inspeção para "Em Andamento" se estiver "Pendente"
       if (inspection?.status === 'Pendente') {
-        const updatePromise = new Promise<any>((resolve, reject) => {
+        // Usando Promise explícita para gerenciar corretamente o fluxo com then/catch
+        return new Promise<any>((resolve, reject) => {
           supabase
             .from('inspections')
             .update({ status: 'Em Andamento' })
             .eq('id', inspectionId)
-            .then(({ error: updateError }) => {
-              if (updateError) {
-                console.error("Erro ao atualizar status da inspeção:", updateError);
+            .then(({ data, error }) => {
+              if (error) {
+                console.error("Erro ao atualizar status da inspeção:", error);
                 // Não interrompemos o fluxo por causa disso, apenas logamos o erro
                 resolve({});
               } else {
-                resolve({});
+                console.log("[useResponseHandling] Respostas salvas com sucesso");
+                toast.success("Respostas salvas com sucesso");
+                resolve(data);
               }
             })
             .catch((err) => {
@@ -199,8 +202,6 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
               resolve({});
             });
         });
-        
-        await updatePromise;
       }
       
       console.log("[useResponseHandling] Respostas salvas com sucesso");
@@ -218,23 +219,28 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
   }, [inspectionId]);
 
   const handleSaveSubChecklistResponses = useCallback(async (parentQuestionId: string, subResponses: Record<string, any>) => {
-    if (!inspectionId || !parentQuestionId) return;
+    if (!inspectionId || !parentQuestionId) return Promise.resolve();
     
     console.log("[useResponseHandling] Salvando respostas de sub-checklist:", parentQuestionId, subResponses);
     
-    setResponses((prev) => {
-      // Garantir que estamos trabalhando com uma cópia do objeto de resposta atual
-      const currentResponse = prev[parentQuestionId] ? {...prev[parentQuestionId]} : {};
-      
-      // Atualizar as subChecklistResponses para a questão pai
-      return {
-        ...prev,
-        [parentQuestionId]: {
-          ...currentResponse,
-          subChecklistResponses: JSON.stringify(subResponses),
-          updatedAt: new Date().toISOString()
-        }
-      };
+    return new Promise<void>((resolve, reject) => {
+      setResponses((prev) => {
+        // Garantir que estamos trabalhando com uma cópia do objeto de resposta atual
+        const currentResponse = prev[parentQuestionId] ? {...prev[parentQuestionId]} : {};
+        
+        // Atualizar as subChecklistResponses para a questão pai
+        const updatedResponses = {
+          ...prev,
+          [parentQuestionId]: {
+            ...currentResponse,
+            subChecklistResponses: JSON.stringify(subResponses),
+            updatedAt: new Date().toISOString()
+          }
+        };
+        
+        resolve();
+        return updatedResponses;
+      });
     });
     
     // Salvar a inspeção para persistir as alterações das sub-checklists
