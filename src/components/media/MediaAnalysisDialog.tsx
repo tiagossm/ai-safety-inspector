@@ -20,6 +20,8 @@ interface MediaAnalysisDialogProps {
   mediaType?: string | null;
   questionText?: string;
   onAnalysisComplete?: (result: MediaAnalysisResult) => void;
+  multimodalAnalysis?: boolean;
+  mediaUrls?: string[]; // Added this prop to fix the TypeScript error
 }
 
 export function MediaAnalysisDialog({
@@ -28,7 +30,9 @@ export function MediaAnalysisDialog({
   mediaUrl,
   mediaType,
   questionText,
-  onAnalysisComplete
+  onAnalysisComplete,
+  multimodalAnalysis,
+  mediaUrls = [] // Added with a default empty array
 }: MediaAnalysisDialogProps) {
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState<MediaAnalysisResult | null>(null);
@@ -49,7 +53,9 @@ export function MediaAnalysisDialog({
       const analysisResult = await analyze({
         mediaUrl,
         mediaType,
-        questionText
+        questionText,
+        multimodalAnalysis,
+        additionalMediaUrls: mediaUrls.filter(url => url !== mediaUrl) // Use the additional media URLs if provided
       });
       
       setResult(analysisResult);

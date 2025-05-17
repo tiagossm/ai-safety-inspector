@@ -146,7 +146,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
         };
       });
       
-      // Salvar no banco de dados
+      // Salvar no banco de dados usando o formato correto esperado pela API
       const { error } = await supabase
         .from('inspection_responses')
         .upsert({
