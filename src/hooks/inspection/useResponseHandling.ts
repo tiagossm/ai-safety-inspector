@@ -223,6 +223,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
     
     console.log("[useResponseHandling] Salvando respostas de sub-checklist:", parentQuestionId, subResponses);
     
+    // Usando Promise explícita para garantir que temos um objeto Promise completo com métodos .then() e .catch()
     return new Promise<void>((resolve, reject) => {
       try {
         setResponses((prev) => {
