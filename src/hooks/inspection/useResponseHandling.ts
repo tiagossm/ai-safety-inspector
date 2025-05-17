@@ -123,9 +123,9 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
     }
   }, [inspectionId, setResponses]);
 
-  // Correção explícita para garantir que o tipo de retorno seja sempre Promise<any>
+  // Correção para garantir que o tipo de retorno seja sempre Promise<any>
   const handleSaveInspection = useCallback(async (currentResponses: Record<string, any>, inspection: any): Promise<any> => {
-    if (!inspectionId) return Promise.resolve();
+    if (!inspectionId) return Promise.resolve({});
     
     setSavingResponses(true);
     
@@ -150,18 +150,26 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
         
         console.log(`[useResponseHandling] Salvando resposta para questão ${questionId}:`, responseToSave);
         
-        const savePromise = supabase
-          .from('inspection_responses')
-          .upsert(responseToSave, {
-            onConflict: 'inspection_id,question_id'
-          })
-          .then(({ error }) => {
-            if (error) {
+        // Criando uma Promise que sempre retornará Promise<any>
+        const savePromise = new Promise<any>((resolve, reject) => {
+          supabase
+            .from('inspection_responses')
+            .upsert(responseToSave, {
+              onConflict: 'inspection_id,question_id'
+            })
+            .then(({ error }) => {
+              if (error) {
+                console.error(`[useResponseHandling] Erro ao salvar resposta para questão ${questionId}:`, error);
+                reject(error);
+              } else {
+                resolve({});
+              }
+            })
+            .catch(error => {
               console.error(`[useResponseHandling] Erro ao salvar resposta para questão ${questionId}:`, error);
-              return Promise.reject(error);
-            }
-            return Promise.resolve();
-          });
+              reject(error);
+            });
+        });
         
         savingPromises.push(savePromise);
       }
@@ -185,7 +193,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
       console.log("[useResponseHandling] Respostas salvas com sucesso");
       toast.success("Respostas salvas com sucesso");
       
-      return Promise.resolve();
+      return Promise.resolve({});
       
     } catch (error: any) {
       console.error("[useResponseHandling] Erro ao salvar inspeção:", error);
