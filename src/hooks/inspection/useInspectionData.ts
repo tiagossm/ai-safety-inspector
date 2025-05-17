@@ -1,3 +1,4 @@
+
 import { useCallback } from "react";
 import { useInspectionFetch } from "@/hooks/inspection/useInspectionFetch";
 import { useInspectionStatus } from "@/hooks/inspection/useInspectionStatus";
@@ -49,7 +50,7 @@ export function useInspectionData(inspectionId: string | undefined): InspectionD
   // Use the status hook for completing/reopening the inspection
   const { completeInspection, reopenInspection } = useInspectionStatus(inspectionId);
   
-  // ✅ Use the questions management hook with the correct response handler
+  // Use the questions management hook with the correct response handler
   const {
     handleResponseChange: onQuestionResponseChange
   } = useQuestionsManagement(
@@ -60,7 +61,7 @@ export function useInspectionData(inspectionId: string | undefined): InspectionD
 
   // Use the response handling hook (for uploads, media, etc.)
   const {
-    handleResponseChange: _unusedHandleResponseChange, // <– substituído corretamente
+    handleResponseChange: _unusedHandleResponseChange,
     handleMediaChange,
     handleMediaUpload,
     handleSaveInspection: saveInspection,
@@ -69,8 +70,8 @@ export function useInspectionData(inspectionId: string | undefined): InspectionD
 
   // Wrap the save inspection function to provide the current responses and inspection
   const handleSaveInspection = useCallback(async () => {
-    if (!inspection) return;
-    await saveInspection(responses, inspection);
+    if (!inspection) return Promise.resolve();
+    return saveInspection(responses, inspection);
   }, [saveInspection, responses, inspection]);
 
   return {
@@ -89,7 +90,7 @@ export function useInspectionData(inspectionId: string | undefined): InspectionD
     refreshData,
     completeInspection,
     reopenInspection,
-    handleResponseChange: onQuestionResponseChange, // ✅ aqui é o correto!
+    handleResponseChange: onQuestionResponseChange, // aqui é o correto!
     handleMediaUpload,
     handleMediaChange,
     handleSaveInspection,
