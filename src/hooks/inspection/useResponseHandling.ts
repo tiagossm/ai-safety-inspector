@@ -218,28 +218,33 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
     }
   }, [inspectionId]);
 
-  const handleSaveSubChecklistResponses = useCallback(async (parentQuestionId: string, subResponses: Record<string, any>) => {
+  const handleSaveSubChecklistResponses = useCallback(async (parentQuestionId: string, subResponses: Record<string, any>): Promise<void> => {
     if (!inspectionId || !parentQuestionId) return Promise.resolve();
     
     console.log("[useResponseHandling] Salvando respostas de sub-checklist:", parentQuestionId, subResponses);
     
     return new Promise<void>((resolve, reject) => {
       setResponses((prev) => {
-        // Garantir que estamos trabalhando com uma cópia do objeto de resposta atual
-        const currentResponse = prev[parentQuestionId] ? {...prev[parentQuestionId]} : {};
-        
-        // Atualizar as subChecklistResponses para a questão pai
-        const updatedResponses = {
-          ...prev,
-          [parentQuestionId]: {
-            ...currentResponse,
-            subChecklistResponses: JSON.stringify(subResponses),
-            updatedAt: new Date().toISOString()
-          }
-        };
-        
-        resolve();
-        return updatedResponses;
+        try {
+          // Garantir que estamos trabalhando com uma cópia do objeto de resposta atual
+          const currentResponse = prev[parentQuestionId] ? {...prev[parentQuestionId]} : {};
+          
+          // Atualizar as subChecklistResponses para a questão pai
+          const updatedResponses = {
+            ...prev,
+            [parentQuestionId]: {
+              ...currentResponse,
+              subChecklistResponses: JSON.stringify(subResponses),
+              updatedAt: new Date().toISOString()
+            }
+          };
+          
+          resolve();
+          return updatedResponses;
+        } catch (error) {
+          reject(error);
+          return prev;
+        }
       });
     });
     
