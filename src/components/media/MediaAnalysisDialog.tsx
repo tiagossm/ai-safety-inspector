@@ -7,9 +7,9 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useMediaAnalysis, MediaAnalysisResult } from '@/hooks/useMediaAnalysis';
 import { Loader2, AlertTriangle, CheckCircle2, Sparkles } from 'lucide-react';
+import ReactMarkdown from "react-markdown"; // <== Markdown support
 
 interface MediaAnalysisDialogProps {
   open: boolean;
@@ -44,13 +44,11 @@ export function MediaAnalysisDialog({
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [isMultiModalAnalysis, setIsMultiModalAnalysis] = useState(false);
 
-  // Detectar se estamos fazendo análise multimodal
   useEffect(() => {
     const hasMultipleImages = (mediaUrls && mediaUrls.length > 1) || (additionalMediaUrls && additionalMediaUrls.length > 0);
     setIsMultiModalAnalysis(multimodalAnalysis || hasMultipleImages);
   }, [additionalMediaUrls, mediaUrls, multimodalAnalysis]);
 
-  // Reset state when dialog opens/closes
   useEffect(() => {
     if (!open) {
       setAnalysisResult(null);
@@ -59,7 +57,6 @@ export function MediaAnalysisDialog({
     }
   }, [open]);
 
-  // Trigger analysis when dialog opens
   useEffect(() => {
     const runAnalysis = async () => {
       if (open && mediaUrl && !analyzing && !analysisResult) {
@@ -76,19 +73,15 @@ export function MediaAnalysisDialog({
             multimodalAnalysis: isMultiModalAnalysis,
             additionalMediaUrls: imagesToAnalyze
           });
-          
           setAnalysisResult(result);
-          
           if (onAnalysisComplete) {
             onAnalysisComplete(result);
           }
         } catch (err: any) {
-          console.error("Error analyzing media:", err);
           setError(err.message || "Error analyzing media");
         }
       }
     };
-
     runAnalysis();
   }, [open, mediaUrl, mediaType, questionText, analyzing, analyze, onAnalysisComplete, analysisResult, isMultiModalAnalysis, additionalMediaUrls, mediaUrls]);
 
@@ -96,7 +89,6 @@ export function MediaAnalysisDialog({
     if (!mediaUrl) return null;
     const isImage = mediaType?.startsWith('image') || mediaUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i);
     const isVideo = mediaType?.startsWith('video') || mediaUrl.match(/\.(mp4|webm|ogg|mov)$/i);
-    
     if (isImage) {
       if (isMultiModalAnalysis) {
         const allImages = [mediaUrl];
@@ -149,6 +141,12 @@ export function MediaAnalysisDialog({
     );
   };
 
+  // === PARSE FIELDS FOR PRESENTATION ===
+  const analysis = analysisResult?.analysis ?? "";
+  const actionPlanSuggestion = analysisResult?.actionPlanSuggestion ?? "";
+  // Detect if there is markdown
+  const renderMarkdown = (md: string) => <ReactMarkdown className="prose">{md}</ReactMarkdown>;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
@@ -162,28 +160,23 @@ export function MediaAnalysisDialog({
           </DialogTitle>
         </DialogHeader>
 
-        {/* Media preview section */}
-        <div className="mb-4">
-          {renderMediaPreview()}
-        </div>
-        
-        {/* Question context */}
+        <div className="mb-4">{renderMediaPreview()}</div>
+
+        {/* Contexto da questão */}
         {questionText && (
           <div className="mb-4 p-3 bg-gray-50 rounded-md border">
             <h3 className="text-sm font-medium text-gray-700 mb-1">Contexto da Questão:</h3>
             <p className="text-sm text-gray-600">{questionText}</p>
           </div>
         )}
-        
-        {/* Loading state */}
+
         {analyzing && (
           <div className="flex flex-col items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
             <p className="text-sm text-gray-600">Analisando mídia...</p>
           </div>
         )}
-        
-        {/* Error state */}
+
         {error && (
           <div className="p-4 bg-red-50 rounded-md border border-red-200">
             <div className="flex items-start">
@@ -195,11 +188,12 @@ export function MediaAnalysisDialog({
             </div>
           </div>
         )}
-        
-        {/* Analysis result */}
+
+        {/* Resultados */}
         {analysisResult && !analyzing && (
           <div className="space-y-4">
-            {/* Result summary */}
+
+            {/* Status */}
             <div className={`p-4 rounded-md border ${analysisResult.hasNonConformity ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'}`}>
               <div className="flex items-center">
                 {analysisResult.hasNonConformity ? (
@@ -214,45 +208,37 @@ export function MediaAnalysisDialog({
                 </h3>
               </div>
             </div>
-            
-            {/* Show full analysis or summary */}
-            <div className="border rounded-md p-4 bg-white">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">Resultado da Análise:</h3>
-              
-              {showFullAnalysis ? (
-                <div className="text-sm whitespace-pre-line">{analysisResult.analysis}</div>
-              ) : (
-                <div className="text-sm line-clamp-3">{analysisResult.analysis}</div>
-              )}
-              
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="mt-2" 
-                onClick={() => setShowFullAnalysis(!showFullAnalysis)}
-              >
-                {showFullAnalysis ? 'Mostrar menos' : 'Mostrar mais'}
-              </Button>
-            </div>
-            
-            {/* Action plan suggestion if available */}
-            {analysisResult.actionPlanSuggestion && (
+
+            {/* Detalhamento da análise */}
+            {!!analysis && (
+              <div className="border rounded-md p-4 bg-white">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">Resultado da Análise:</h3>
+                <div className="text-sm whitespace-pre-line">
+                  {renderMarkdown(analysis)}
+                </div>
+              </div>
+            )}
+
+            {/* Plano de ação, se houver */}
+            {analysisResult.hasNonConformity && !!actionPlanSuggestion && (
               <div className="border rounded-md p-4 bg-amber-50 border-amber-200">
                 <div className="flex items-center mb-2">
                   <Sparkles className="h-4 w-4 text-amber-500 mr-2" />
                   <h3 className="text-sm font-medium text-amber-800">Sugestão de Plano de Ação:</h3>
                 </div>
-                <p className="text-sm text-amber-700 whitespace-pre-line">{analysisResult.actionPlanSuggestion}</p>
+                <div className="text-sm text-amber-700 whitespace-pre-line">
+                  {renderMarkdown(actionPlanSuggestion)}
+                </div>
               </div>
             )}
 
-            {/* Botões de ação: plano de ação ou comentário */}
+            {/* Botões de ação */}
             <div className="flex flex-col sm:flex-row gap-3 mt-4">
-              {analysisResult.hasNonConformity && analysisResult.actionPlanSuggestion && (
+              {analysisResult.hasNonConformity && !!actionPlanSuggestion && (
                 <Button
                   variant="destructive"
                   onClick={() => {
-                    onAddActionPlan?.(analysisResult.actionPlanSuggestion || "");
+                    onAddActionPlan?.(actionPlanSuggestion);
                   }}
                 >
                   Adicionar ação sugerida ao Plano de Ação
