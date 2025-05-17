@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -145,7 +146,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
         };
       });
       
-      // Salvando no banco de dados - atualização da chamada para adequar à estrutura da tabela
+      // Salvando no banco de dados - corrigindo a estrutura para adequar ao tipo esperado
       const { error } = await supabase
         .from('inspection_responses')
         .upsert({
