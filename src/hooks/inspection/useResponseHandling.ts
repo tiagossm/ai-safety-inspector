@@ -123,9 +123,9 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
     }
   }, [inspectionId, setResponses]);
 
-  // Implementando o salvamento real da inspeção
-  const handleSaveInspection = useCallback(async (currentResponses: Record<string, any>, inspection: any): Promise<void> => {
-    if (!inspectionId) return;
+  // Aqui está a correção: modificado para retornar explicitamente Promise<any> em vez de PromiseLike<void>
+  const handleSaveInspection = useCallback(async (currentResponses: Record<string, any>, inspection: any): Promise<any> => {
+    if (!inspectionId) return Promise.resolve();  // Retornando Promise explicitamente
     
     setSavingResponses(true);
     
@@ -184,10 +184,12 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
       console.log("[useResponseHandling] Respostas salvas com sucesso");
       toast.success("Respostas salvas com sucesso");
       
+      return Promise.resolve();  // Retornando uma Promise explícita
+      
     } catch (error: any) {
       console.error("[useResponseHandling] Erro ao salvar inspeção:", error);
       toast.error(`Erro ao salvar inspeção: ${error.message || "Erro desconhecido"}`);
-      throw error;
+      return Promise.reject(error);  // Rejeitando com erro explicitamente
     } finally {
       setSavingResponses(false);
     }
