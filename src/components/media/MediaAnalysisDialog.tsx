@@ -57,6 +57,7 @@ export function MediaAnalysisDialog({
     }
   }, [open]);
 
+  // Corrigido: removido analysisResult do array de dependências!
   useEffect(() => {
     const runAnalysis = async () => {
       if (open && mediaUrl && !analyzing && !analysisResult) {
@@ -65,7 +66,6 @@ export function MediaAnalysisDialog({
           const imagesToAnalyze = mediaUrls && mediaUrls.length > 0 
             ? mediaUrls.filter(url => url !== mediaUrl) 
             : additionalMediaUrls;
-            
           const result = await analyze({
             mediaUrl,
             mediaType,
@@ -83,7 +83,8 @@ export function MediaAnalysisDialog({
       }
     };
     runAnalysis();
-  }, [open, mediaUrl, mediaType, questionText, analyzing, analyze, onAnalysisComplete, analysisResult, isMultiModalAnalysis, additionalMediaUrls, mediaUrls]);
+  // --> Removido analysisResult das dependências
+  }, [open, mediaUrl, mediaType, questionText, analyzing, analyze, onAnalysisComplete, isMultiModalAnalysis, additionalMediaUrls, mediaUrls]);
 
   const renderMediaPreview = () => {
     if (!mediaUrl) return null;
