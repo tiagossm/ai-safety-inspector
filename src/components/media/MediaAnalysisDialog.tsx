@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -19,6 +18,8 @@ interface MediaAnalysisDialogProps {
   mediaType?: string | null;
   questionText?: string;
   onAnalysisComplete?: (result: MediaAnalysisResult) => void;
+  onAddActionPlan?: (suggestion: string) => void;
+  onAddComment?: (comment: string) => void;
   multimodalAnalysis?: boolean;
   mediaUrls?: string[];
   additionalMediaUrls?: string[];
@@ -31,6 +32,8 @@ export function MediaAnalysisDialog({
   mediaType,
   questionText = "",
   onAnalysisComplete,
+  onAddActionPlan,
+  onAddComment,
   multimodalAnalysis = false,
   mediaUrls = [],
   additionalMediaUrls = []
@@ -43,7 +46,6 @@ export function MediaAnalysisDialog({
 
   // Detectar se estamos fazendo análise multimodal
   useEffect(() => {
-    // Usar mediaUrls se fornecido, caso contrário usar additionalMediaUrls
     const hasMultipleImages = (mediaUrls && mediaUrls.length > 1) || (additionalMediaUrls && additionalMediaUrls.length > 0);
     setIsMultiModalAnalysis(multimodalAnalysis || hasMultipleImages);
   }, [additionalMediaUrls, mediaUrls, multimodalAnalysis]);
@@ -63,7 +65,6 @@ export function MediaAnalysisDialog({
       if (open && mediaUrl && !analyzing && !analysisResult) {
         try {
           setError(null);
-          // Determinar quais URLs de mídia usar para análise
           const imagesToAnalyze = mediaUrls && mediaUrls.length > 0 
             ? mediaUrls.filter(url => url !== mediaUrl) 
             : additionalMediaUrls;
@@ -93,14 +94,11 @@ export function MediaAnalysisDialog({
 
   const renderMediaPreview = () => {
     if (!mediaUrl) return null;
-    
     const isImage = mediaType?.startsWith('image') || mediaUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i);
     const isVideo = mediaType?.startsWith('video') || mediaUrl.match(/\.(mp4|webm|ogg|mov)$/i);
     
     if (isImage) {
-      // Para análise multi-modal, mostrar todas as imagens (principal + adicionais)
       if (isMultiModalAnalysis) {
-        // Reunir todas as imagens para exibição
         const allImages = [mediaUrl];
         if (mediaUrls && mediaUrls.length > 0) {
           mediaUrls.forEach(url => {
@@ -109,7 +107,6 @@ export function MediaAnalysisDialog({
         } else if (additionalMediaUrls && additionalMediaUrls.length > 0) {
           additionalMediaUrls.forEach(url => allImages.push(url));
         }
-        
         return (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {allImages.map((url, index) => (
@@ -127,7 +124,6 @@ export function MediaAnalysisDialog({
           </div>
         );
       } else {
-        // Análise de imagem única
         return (
           <img 
             src={mediaUrl} 
@@ -137,7 +133,6 @@ export function MediaAnalysisDialog({
         );
       }
     }
-    
     if (isVideo) {
       return (
         <video 
@@ -147,7 +142,6 @@ export function MediaAnalysisDialog({
         />
       );
     }
-    
     return (
       <div className="bg-gray-100 p-4 rounded-md text-center text-gray-500">
         Prévia não disponível para este tipo de mídia
@@ -251,6 +245,31 @@ export function MediaAnalysisDialog({
                 <p className="text-sm text-amber-700 whitespace-pre-line">{analysisResult.actionPlanSuggestion}</p>
               </div>
             )}
+
+            {/* Botões de ação: plano de ação ou comentário */}
+            <div className="flex flex-col sm:flex-row gap-3 mt-4">
+              {analysisResult.hasNonConformity && analysisResult.actionPlanSuggestion && (
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    onAddActionPlan?.(analysisResult.actionPlanSuggestion || "");
+                  }}
+                >
+                  Adicionar ação sugerida ao Plano de Ação
+                </Button>
+              )}
+
+              {!analysisResult.hasNonConformity && (
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    onAddComment?.("Situação em conformidade conforme análise IA.");
+                  }}
+                >
+                  Adicionar comentário de conformidade
+                </Button>
+              )}
+            </div>
           </div>
         )}
 
