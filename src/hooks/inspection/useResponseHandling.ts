@@ -123,7 +123,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
     }
   }, [inspectionId, setResponses]);
 
-  // Correção para garantir que o tipo de retorno seja sempre Promise<any>
+  // Correção completa para garantir que o tipo de retorno seja sempre Promise<any>
   const handleSaveInspection = useCallback(async (currentResponses: Record<string, any>, inspection: any): Promise<any> => {
     if (!inspectionId) return Promise.resolve({});
     
@@ -132,7 +132,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
     try {
       console.log("[useResponseHandling] Salvando respostas:", currentResponses);
       
-      const savingPromises: Promise<any>[] = [];
+      const savingPromises: Array<Promise<any>> = []; // Especificando explicitamente o tipo Promise<any>
       
       // Para cada resposta, precisamos salvar em um formato compatível com a tabela inspection_responses
       for (const [questionId, responseData] of Object.entries(currentResponses)) {
@@ -150,7 +150,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
         
         console.log(`[useResponseHandling] Salvando resposta para questão ${questionId}:`, responseToSave);
         
-        // Criando uma Promise que sempre retornará Promise<any>
+        // Criando uma Promise que sempre será do tipo Promise<any>
         const savePromise = new Promise<any>((resolve, reject) => {
           supabase
             .from('inspection_responses')
@@ -165,7 +165,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
                 resolve({});
               }
             })
-            .catch(error => {
+            .catch((error) => {
               console.error(`[useResponseHandling] Erro ao salvar resposta para questão ${questionId}:`, error);
               reject(error);
             });
