@@ -112,10 +112,10 @@ export function YesNoResponseInput({
         open={isAnalysisOpen}
         onOpenChange={setIsAnalysisOpen}
         mediaUrl={selectedMediaUrl}
-        mediaUrls={response?.mediaUrls ?? []}
         questionText={question.text || question.pergunta || ""}
         onAnalysisComplete={handleAnalysisResults}
         multimodalAnalysis={true}
+        additionalMediaUrls={response?.mediaUrls ?? []} // Usar additionalMediaUrls ao invés de mediaUrls
       />
     </div>
   );

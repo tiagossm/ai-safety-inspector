@@ -187,10 +187,10 @@ export function YesNoResponseInput({
         open={isAnalysisOpen}
         onOpenChange={setIsAnalysisOpen}
         mediaUrl={selectedMediaUrl}
-        mediaUrls={mediaUrls}
         questionText={question.text || question.pergunta || ""}
         onAnalysisComplete={handleAnalysisResults}
         multimodalAnalysis={true}
+        additionalMediaUrls={mediaUrls}
       />
     </div>
   );

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { X, ZoomIn, Download, Sparkles, AlertTriangle, Heart } from "lucide-react";
 import { MediaPreviewDialog } from "@/components/media/MediaPreviewDialog";
@@ -199,7 +198,7 @@ export function MediaAttachments({
         mediaType={activeMediaType}
         questionText={questionText}
         onAnalysisComplete={handleAnalysisComplete}
-        mediaUrls={mediaUrls} // Pass all media URLs
+        additionalMediaUrls={mediaUrls} // Usar additionalMediaUrls ao invés de mediaUrls
       />
     </>
   );

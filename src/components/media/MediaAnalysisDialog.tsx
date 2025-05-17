@@ -16,9 +16,11 @@ interface MediaAnalysisDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mediaUrl: string | null;
-  mediaType: string | null;
+  mediaType?: string | null;
   questionText?: string;
   onAnalysisComplete?: (result: MediaAnalysisResult) => void;
+  multimodalAnalysis?: boolean;
+  mediaUrls?: string[];
   additionalMediaUrls?: string[];
 }
 
@@ -29,6 +31,8 @@ export function MediaAnalysisDialog({
   mediaType,
   questionText = "",
   onAnalysisComplete,
+  multimodalAnalysis = false,
+  mediaUrls = [],
   additionalMediaUrls = []
 }: MediaAnalysisDialogProps) {
   const [analysisResult, setAnalysisResult] = useState<MediaAnalysisResult | null>(null);
@@ -39,8 +43,10 @@ export function MediaAnalysisDialog({
 
   // Detectar se estamos fazendo análise multimodal
   useEffect(() => {
-    setIsMultiModalAnalysis(additionalMediaUrls && additionalMediaUrls.length > 0);
-  }, [additionalMediaUrls]);
+    // Usar mediaUrls se fornecido, caso contrário usar additionalMediaUrls
+    const hasMultipleImages = (mediaUrls && mediaUrls.length > 1) || (additionalMediaUrls && additionalMediaUrls.length > 0);
+    setIsMultiModalAnalysis(multimodalAnalysis || hasMultipleImages);
+  }, [additionalMediaUrls, mediaUrls, multimodalAnalysis]);
 
   // Reset state when dialog opens/closes
   useEffect(() => {
@@ -57,12 +63,17 @@ export function MediaAnalysisDialog({
       if (open && mediaUrl && !analyzing && !analysisResult) {
         try {
           setError(null);
+          // Determinar quais URLs de mídia usar para análise
+          const imagesToAnalyze = mediaUrls && mediaUrls.length > 0 
+            ? mediaUrls.filter(url => url !== mediaUrl) 
+            : additionalMediaUrls;
+            
           const result = await analyze({
             mediaUrl,
             mediaType,
             questionText,
             multimodalAnalysis: isMultiModalAnalysis,
-            additionalMediaUrls
+            additionalMediaUrls: imagesToAnalyze
           });
           
           setAnalysisResult(result);
@@ -78,7 +89,7 @@ export function MediaAnalysisDialog({
     };
 
     runAnalysis();
-  }, [open, mediaUrl, mediaType, questionText, analyzing, analyze, onAnalysisComplete, analysisResult, isMultiModalAnalysis, additionalMediaUrls]);
+  }, [open, mediaUrl, mediaType, questionText, analyzing, analyze, onAnalysisComplete, analysisResult, isMultiModalAnalysis, additionalMediaUrls, mediaUrls]);
 
   const renderMediaPreview = () => {
     if (!mediaUrl) return null;
@@ -88,25 +99,29 @@ export function MediaAnalysisDialog({
     
     if (isImage) {
       // Para análise multi-modal, mostrar todas as imagens (principal + adicionais)
-      if (isMultiModalAnalysis && additionalMediaUrls.length > 0) {
+      if (isMultiModalAnalysis) {
+        // Reunir todas as imagens para exibição
+        const allImages = [mediaUrl];
+        if (mediaUrls && mediaUrls.length > 0) {
+          mediaUrls.forEach(url => {
+            if (url !== mediaUrl) allImages.push(url);
+          });
+        } else if (additionalMediaUrls && additionalMediaUrls.length > 0) {
+          additionalMediaUrls.forEach(url => allImages.push(url));
+        }
+        
         return (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            <div className="col-span-1 sm:col-span-1">
-              <img 
-                src={mediaUrl} 
-                alt="Media principal" 
-                className="w-full h-auto rounded-md border border-green-300 shadow-sm" 
-              />
-              <p className="text-xs text-center mt-1 text-gray-500">Imagem principal</p>
-            </div>
-            {additionalMediaUrls.map((url, index) => (
-              <div key={index} className="col-span-1 sm:col-span-1">
+            {allImages.map((url, index) => (
+              <div key={index} className={`col-span-1 sm:col-span-1 ${index === 0 ? 'border-green-300' : 'border-gray-200'}`}>
                 <img 
                   src={url} 
-                  alt={`Media adicional ${index + 1}`} 
-                  className="w-full h-auto rounded-md border border-gray-200 shadow-sm" 
+                  alt={`Media ${index === 0 ? 'principal' : `adicional ${index}`}`} 
+                  className={`w-full h-auto rounded-md border shadow-sm ${index === 0 ? 'border-green-300' : 'border-gray-200'}`} 
                 />
-                <p className="text-xs text-center mt-1 text-gray-500">Imagem adicional {index + 1}</p>
+                <p className="text-xs text-center mt-1 text-gray-500">
+                  {index === 0 ? 'Imagem principal' : `Imagem adicional ${index}`}
+                </p>
               </div>
             ))}
           </div>

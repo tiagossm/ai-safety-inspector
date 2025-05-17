@@ -124,7 +124,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
   }, [inspectionId, setResponses]);
 
   // Implementando o salvamento real da inspeção
-  const handleSaveInspection = useCallback(async (currentResponses: Record<string, any>, inspection: any) => {
+  const handleSaveInspection = useCallback(async (currentResponses: Record<string, any>, inspection: any): Promise<void> => {
     if (!inspectionId) return;
     
     setSavingResponses(true);
