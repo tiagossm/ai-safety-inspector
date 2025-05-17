@@ -151,7 +151,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
         .from('inspection_responses')
         .upsert({
           inspection_id: inspectionId,
-          responses: responsesToSave,
+          responses: JSON.stringify(responsesToSave),
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'inspection_id'
