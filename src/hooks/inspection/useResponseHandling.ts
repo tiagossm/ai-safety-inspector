@@ -146,12 +146,15 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
         };
       });
       
-      // Salvar no banco de dados usando o formato correto esperado pela API
+      // Salvando no banco de dados - atualização da chamada para adequar à estrutura da tabela
       const { error } = await supabase
         .from('inspection_responses')
         .upsert({
           inspection_id: inspectionId,
-          responses: JSON.stringify(responsesToSave),
+          // Convertemos o objeto para uma string JSON
+          answer: 'N/A', // Campo obrigatório na tabela
+          question_id: 'all', // Campo obrigatório na tabela
+          notes: JSON.stringify(responsesToSave), // Armazenamos as respostas como um JSON no campo notes
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'inspection_id'
