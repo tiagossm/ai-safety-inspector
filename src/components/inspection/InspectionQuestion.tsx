@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { QuestionHeader } from "./question-parts/QuestionHeader";
@@ -9,6 +10,7 @@ import { ActionPlan } from '@/services/inspection/actionPlanService';
 import { ActionPlanFormData } from '@/components/action-plans/form/types';
 import { useMediaAnalysis, MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 import { ActionPlanImplementation } from "./ActionPlanImplementation";
+import { ActionPlanDialog } from "@/components/action-plans/ActionPlanDialog"; // Importe o componente de diálogo
 
 interface InspectionQuestionProps {
   question: any;
@@ -40,6 +42,7 @@ export function InspectionQuestion({
   const [showComments, setShowComments] = useState(false);
   const [showActionPlan, setShowActionPlan] = useState(false);
   const [showActionPlanImplementation, setShowActionPlanImplementation] = useState(false);
+  const [showActionPlanDialog, setShowActionPlanDialog] = useState(false); // Novo estado para controlar o diálogo
   const [loadingSubChecklist, setLoadingSubChecklist] = useState(false);
   const [multiModalLoading, setMultiModalLoading] = useState(false);
   
@@ -67,11 +70,6 @@ export function InspectionQuestion({
     // If the response has changed to negative, show the action plan section
     if (isNegativeResponse(value)) {
       setShowActionPlan(true);
-      
-      // If it's a negative response, also show the implementation UI
-      if (inspectionId && question.id && onSaveActionPlan) {
-        setShowActionPlanImplementation(true);
-      }
     }
     
     onResponseChange({
@@ -110,9 +108,9 @@ export function InspectionQuestion({
     if (result.hasNonConformity) {
       setShowActionPlan(true);
       
-      // Also show action plan implementation if we have inspection and question IDs
-      if (inspectionId && question.id && onSaveActionPlan) {
-        setShowActionPlanImplementation(true);
+      // Se houver uma sugestão de plano de ação, aplique-a automaticamente se não houver plano existente
+      if (result.actionPlanSuggestion && (!response.actionPlan || response.actionPlan === "")) {
+        handleActionPlanChange(result.actionPlanSuggestion);
       }
     }
   };
@@ -126,7 +124,10 @@ export function InspectionQuestion({
   // Handle multi-modal analysis of all media for the question
   const handleAnalyzeAllMedia = async () => {
     // Only proceed if we have media URLs
-    if (!response.mediaUrls || response.mediaUrls.length === 0) return;
+    if (!response.mediaUrls || response.mediaUrls.length <= 1) {
+      console.log("Pelo menos 2 imagens são necessárias para análise em conjunto");
+      return;
+    }
     
     try {
       setMultiModalLoading(true);
@@ -159,11 +160,6 @@ export function InspectionQuestion({
         if (result.hasNonConformity) {
           setShowActionPlan(true);
           
-          // Also show action plan implementation if we have inspection and question IDs
-          if (inspectionId && question.id && onSaveActionPlan) {
-            setShowActionPlanImplementation(true);
-          }
-          
           // Se houver uma sugestão de plano de ação, aplique-a automaticamente se não houver plano existente
           if (result.actionPlanSuggestion && (!response.actionPlan || response.actionPlan === "")) {
             handleActionPlanChange(result.actionPlanSuggestion);
@@ -182,7 +178,8 @@ export function InspectionQuestion({
   };
 
   const handleOpenActionPlanDialog = () => {
-    setShowActionPlanImplementation(true);
+    // Abrir o diálogo de plano de ação estruturado
+    setShowActionPlanDialog(true); // Abre o diálogo de plano de ação
   };
 
   const handleOpenSubChecklist = () => {
@@ -208,23 +205,47 @@ export function InspectionQuestion({
     
     return suggestions;
   };
+  
+  // Função para salvar o plano de ação estruturado
+  const handleSaveStructuredActionPlan = async (data: ActionPlanFormData) => {
+    if (onSaveActionPlan) {
+      const result = await onSaveActionPlan(data);
+      
+      // Após salvar o plano de ação estruturado, exibir o componente de implementação
+      if (result) {
+        setShowActionPlanImplementation(true);
+        setShowActionPlanDialog(false); // Fechar o diálogo após salvar
+      }
+      
+      return result;
+    }
+  };
 
   // Se a resposta é negativa, mostrar o plano de ação mesmo que não tenha explicitamente definido showActionPlan
   useEffect(() => {
     if (response && isNegativeResponse(response.value)) {
       setShowActionPlan(true);
-      
-      // Se tivermos um inspectionId, questionId e um manipulador de saveActionPlan, mostrar a implementação do plano de ação
-      if (inspectionId && question.id && onSaveActionPlan) {
-        setShowActionPlanImplementation(true);
-      }
     }
     
     // Se há um plano de ação existente, também mostrar a seção de plano de ação
     if (response && response.actionPlan) {
       setShowActionPlan(true);
     }
-  }, [response, question.id, inspectionId, onSaveActionPlan]);
+    
+    // Se já existe um plano de ação estruturado para esta questão, mostrar a implementação
+    if (actionPlan && inspectionId && question.id) {
+      setShowActionPlanImplementation(true);
+    }
+  }, [response, actionPlan, inspectionId, question.id]);
+
+  // Extrair a melhor sugestão de plano de ação das análises de IA
+  const getBestAISuggestion = (): string | undefined => {
+    const suggestions = Object.values(mediaAnalysisResults)
+      .map(result => result?.actionPlanSuggestion)
+      .filter(Boolean);
+    
+    return suggestions.length > 0 ? suggestions[0] : undefined;
+  };
 
   return (
     <Card className={isSubQuestion ? "border-gray-200 bg-gray-50" : ""}>
@@ -272,16 +293,30 @@ export function InspectionQuestion({
           </div>
         )}
         
+        {/* Mostrar seção de plano de ação simples quando não está mostrando a implementação */}
         {(isNegativeResponse(response?.value) || showActionPlan || response?.actionPlan) && !showActionPlanImplementation && (
           <ActionPlanSection
             isOpen={showActionPlan}
             onOpenChange={setShowActionPlan}
             actionPlan={response?.actionPlan || ""}
             onActionPlanChange={handleActionPlanChange}
-            onOpenDialog={inspectionId && question.id && onSaveActionPlan ? handleOpenActionPlanDialog : undefined}
+            onOpenDialog={inspectionId && question.id ? handleOpenActionPlanDialog : undefined}
             hasNegativeResponse={isNegativeResponse(response?.value)}
-            aiSuggestion={Object.values(mediaAnalysisResults)[0]?.actionPlanSuggestion}
+            aiSuggestion={getBestAISuggestion()}
             mediaAnalysisResults={mediaAnalysisResults}
+          />
+        )}
+
+        {/* Structured Action Plan Dialog */}
+        {inspectionId && question.id && onSaveActionPlan && (
+          <ActionPlanDialog
+            open={showActionPlanDialog}
+            onOpenChange={setShowActionPlanDialog}
+            inspectionId={inspectionId}
+            questionId={question.id}
+            existingPlan={actionPlan}
+            onSave={handleSaveStructuredActionPlan}
+            aiSuggestion={getBestAISuggestion()}
           />
         )}
 

@@ -4,7 +4,7 @@ import { getFileType, getFilenameFromUrl } from "@/utils/fileUtils";
 import { determineSpecificFileType } from "@/utils/fileTypeUtils";
 import { toast } from "sonner";
 import { ImageRenderer, AudioRenderer, VideoRenderer, DocumentRenderer, GenericFileRenderer } from "./MediaTypeRenderer";
-import { MediaGallery } from "./MediaGalleryGrid"; // Corrigido: Importando do arquivo correto
+import { MediaGallery } from "./MediaGalleryGrid";
 
 interface MediaAttachmentRendererProps {
   urls: string[]; // <- agora aceita array
@@ -24,7 +24,7 @@ export const MediaAttachmentRenderer = ({
   onDelete,
   readOnly,
   questionText,
-  analysisResults,
+  analysisResults = {},
   smallSize = false
 }: MediaAttachmentRendererProps) => {
   if (!urls || urls.length === 0) return null;
@@ -46,12 +46,18 @@ export const MediaAttachmentRenderer = ({
 
   // Se todos forem imagem, mostra a galeria
   const allImages = urls.every((u) => getFileType(u) === 'image');
-  if (allImages) {
+  if (allImages && urls.length > 1) {
     return (
       <MediaGallery
         urls={urls}
+        analysisResults={analysisResults}
+        onOpenPreview={onOpenPreview}
+        onOpenAnalysis={onOpenAnalysis}
+        onDelete={onDelete}
+        readOnly={readOnly}
+        questionText={questionText}
         columns={Math.min(5, Math.ceil(Math.sqrt(urls.length)))}
-        maxThumbSize={90}
+        maxThumbSize={smallSize ? 75 : 90}
       />
     );
   }
@@ -196,4 +202,4 @@ export const MediaAttachmentRenderer = ({
       })}
     </div>
   );
-};
+}

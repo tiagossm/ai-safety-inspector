@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, ScanSearch, Sparkles } from 'lucide-react';
 import { MediaRenderer } from "@/components/media/MediaRenderer";
 import { useMediaAnalysis, MediaAnalysisResult } from '@/hooks/useMediaAnalysis';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface MediaAnalysisDialogProps {
   open: boolean;
@@ -36,6 +37,7 @@ export function MediaAnalysisDialog({
 }: MediaAnalysisDialogProps) {
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState<MediaAnalysisResult | null>(null);
+  const [activeTab, setActiveTab] = useState('analysis');
   const { analyze, analyzing: isAnalyzing } = useMediaAnalysis();
 
   // Reset state when dialog closes or media changes
@@ -50,18 +52,30 @@ export function MediaAnalysisDialog({
     
     setAnalyzing(true);
     try {
+      // Preparar URLs adicionais para análise multimodal
+      const additionalUrls = mediaUrls
+        .filter(url => url !== mediaUrl)
+        .filter(url => !!url);
+      
+      console.log("MediaAnalysisDialog: Analisando com URLs adicionais:", additionalUrls.length);
+      
       const analysisResult = await analyze({
         mediaUrl,
         mediaType,
         questionText,
-        multimodalAnalysis,
-        additionalMediaUrls: mediaUrls.filter(url => url !== mediaUrl) // Use the additional media URLs if provided
+        multimodalAnalysis: multimodalAnalysis || additionalUrls.length > 0,
+        additionalMediaUrls: additionalUrls
       });
       
       setResult(analysisResult);
       
       if (onAnalysisComplete) {
         onAnalysisComplete(analysisResult);
+      }
+      
+      // Se houver uma sugestão de plano de ação, mudar para essa aba
+      if (analysisResult.actionPlanSuggestion) {
+        setActiveTab('action-plan');
       }
     } catch (error) {
       console.error("Error analyzing media:", error);
@@ -77,38 +91,84 @@ export function MediaAnalysisDialog({
     
     return (
       <div className="mt-4 space-y-4">
-        {hasNonConformity && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="font-medium text-red-700">⚠️ Não conformidade detectada!</p>
-          </div>
-        )}
-        
-        {psychosocialRiskDetected && (
-          <div className="p-3 bg-purple-50 border border-purple-200 rounded-md">
-            <p className="font-medium text-purple-700">⚠️ Risco psicossocial detectado!</p>
-          </div>
-        )}
-        
-        {analysis && (
-          <div>
-            <h4 className="font-medium mb-1">Análise:</h4>
-            <div className="p-3 bg-gray-50 border border-gray-200 rounded-md whitespace-pre-line">
-              {analysis}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="w-full">
+            <TabsTrigger value="analysis" className="flex-1">Análise</TabsTrigger>
+            <TabsTrigger value="action-plan" className="flex-1">
+              Plano de Ação
+              {actionPlanSuggestion && <Sparkles className="h-3 w-3 ml-1" />}
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="analysis" className="mt-4 space-y-4">
+            {hasNonConformity && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                <p className="font-medium text-red-700">⚠️ Não conformidade detectada!</p>
+              </div>
+            )}
+            
+            {psychosocialRiskDetected && (
+              <div className="p-3 bg-purple-50 border border-purple-200 rounded-md">
+                <p className="font-medium text-purple-700">⚠️ Risco psicossocial detectado!</p>
+              </div>
+            )}
+            
+            {analysis && (
+              <div>
+                <h4 className="font-medium mb-1">Análise Detalhada:</h4>
+                <div className="p-3 bg-gray-50 border border-gray-200 rounded-md whitespace-pre-line">
+                  {analysis}
+                </div>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="action-plan" className="mt-4 space-y-4">
+            {actionPlanSuggestion ? (
+              <div>
+                <h4 className="font-medium mb-1 flex items-center">
+                  <Sparkles className="h-4 w-4 mr-1 text-amber-500" />
+                  <span>Sugestão de Plano de Ação:</span>
+                </h4>
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-md whitespace-pre-line text-amber-800">
+                  {actionPlanSuggestion}
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 text-center text-gray-500">
+                <p>Nenhuma sugestão de plano de ação disponível.</p>
+                {hasNonConformity && (
+                  <p className="mt-2 text-sm text-amber-600">
+                    Uma não conformidade foi detectada, mas a IA não gerou um plano de ação específico.
+                    Considere criar um plano manualmente com base na análise.
+                  </p>
+                )}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </div>
+    );
+  };
+  
+  const renderMediaThumbnails = () => {
+    if (!mediaUrls || mediaUrls.length <= 1) return null;
+    
+    return (
+      <div className="mt-4">
+        <p className="text-sm text-gray-500 mb-2">
+          {multimodalAnalysis ? "Analisando todas as imagens em conjunto:" : "Outras imagens relacionadas:"}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {mediaUrls.map((url) => (
+            <div 
+              key={url} 
+              className={`border rounded w-16 h-16 overflow-hidden ${url === mediaUrl ? 'ring-2 ring-primary' : ''}`}
+            >
+              <MediaRenderer url={url} className="object-cover w-full h-full" />
             </div>
-          </div>
-        )}
-        
-        {actionPlanSuggestion && (
-          <div>
-            <h4 className="font-medium mb-1 flex items-center">
-              <Sparkles className="h-4 w-4 mr-1 text-amber-500" />
-              <span>Sugestão de Plano de Ação:</span>
-            </h4>
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-md whitespace-pre-line text-amber-800">
-              {actionPlanSuggestion}
-            </div>
-          </div>
-        )}
+          ))}
+        </div>
       </div>
     );
   };
@@ -117,9 +177,11 @@ export function MediaAnalysisDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Análise de Mídia</DialogTitle>
+          <DialogTitle>Análise de Mídia{multimodalAnalysis ? " (Análise Múltipla)" : ""}</DialogTitle>
           <DialogDescription>
-            Visualize e analise o conteúdo desta mídia
+            {multimodalAnalysis 
+              ? `Analisando ${mediaUrls.length} imagens em conjunto para uma avaliação completa`
+              : "Visualize e analise o conteúdo desta mídia"}
           </DialogDescription>
         </DialogHeader>
         
@@ -128,6 +190,8 @@ export function MediaAnalysisDialog({
             <div className="mb-4 max-h-[300px] overflow-hidden flex justify-center border rounded">
               <MediaRenderer url={mediaUrl} className="object-contain max-h-[300px] w-auto" />
             </div>
+            
+            {renderMediaThumbnails()}
             
             {!analyzing && !result && (
               <div className="mb-4 flex justify-center">
@@ -144,7 +208,7 @@ export function MediaAnalysisDialog({
                   ) : (
                     <>
                       <ScanSearch className="h-4 w-4 mr-2" />
-                      {multimodalAnalysis && mediaUrls.length > 1 
+                      {multimodalAnalysis || mediaUrls.length > 1 
                         ? `Analisar ${mediaUrls.length} imagens em conjunto` 
                         : "Analisar esta Mídia"}
                     </>

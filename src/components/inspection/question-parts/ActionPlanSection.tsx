@@ -11,7 +11,7 @@ interface ActionPlanSectionProps {
   onActionPlanChange: (actionPlan: string) => void;
   onOpenDialog?: () => void;
   hasNegativeResponse?: boolean;
-  aiSuggestion?: string;
+  aiSuggestion?: string | null;
   mediaAnalysisResults?: Record<string, any>;
 }
 
@@ -85,7 +85,7 @@ export function ActionPlanSection({
               className="h-7 text-xs bg-amber-200 hover:bg-amber-300 text-amber-800 border-amber-400"
               onClick={handleOpenFullDialog}
             >
-              Plano Detalhado
+              Plano de Ação Detalhado
             </Button>
           )}
           {actionPlan && (

@@ -67,13 +67,22 @@ export function useMediaAnalysis() {
       }
 
       console.log('Analysis result:', data);
+      
+      // Extrair a sugestão de plano de ação do resultado da análise
+      let actionPlanSuggestion = data.actionPlanSuggestion || null;
+      
+      // Se não tiver uma sugestão de plano de ação mas tiver uma não-conformidade,
+      // vamos tentar extrair do texto da análise
+      if (!actionPlanSuggestion && data.hasNonConformity) {
+        actionPlanSuggestion = extractActionPlanFromText(data.analysis || '');
+      }
 
       // Transform the raw response into the expected format
       const result: MediaAnalysisResult = {
         analysis: data.analysis || '',
         hasNonConformity: data.hasNonConformity || false,
         psychosocialRiskDetected: data.psychosocialRiskDetected || false,
-        actionPlanSuggestion: data.actionPlanSuggestion || null,
+        actionPlanSuggestion: actionPlanSuggestion,
         rawResponse: data,
         // Add additional properties that might be used in components
         type: data.type || (contentType.startsWith('image') ? 'image' : contentType.startsWith('video') ? 'video' : 'unknown'),
@@ -122,6 +131,41 @@ export function useMediaAnalysis() {
       default:
         return 'application/octet-stream';
     }
+  };
+  
+  // Função melhorada para extrair planos de ação do texto da análise
+  const extractActionPlanFromText = (text: string): string | null => {
+    // Padrões comuns para identificar seções de planos de ação no texto
+    const patterns = [
+      /Plano de [Aa]ção [Ss]ugerido:([^]*?)(?=\n\n|\n$|$)/i,
+      /Sugestão de [Pp]lano de [Aa]ção:([^]*?)(?=\n\n|\n$|$)/i,
+      /Ação [Rr]ecomendada:([^]*?)(?=\n\n|\n$|$)/i,
+      /Recomendaç[õo]es:([^]*?)(?=\n\n|\n$|$)/i,
+      /Plano de [Aa]ção:([^]*?)(?=\n\n|\n$|$)/i,
+      /Aç[õo]es [Rr]ecomendadas:([^]*?)(?=\n\n|\n$|$)/i,
+      /Medidas [Cc]orretivas:([^]*?)(?=\n\n|\n$|$)/i,
+      /Medidas a [Ss]erem [Aa]dotadas:([^]*?)(?=\n\n|\n$|$)/i
+    ];
+    
+    // Tentar cada padrão em sequência
+    for (const pattern of patterns) {
+      const match = text.match(pattern);
+      if (match && match[1]) {
+        return match[1].trim();
+      }
+    }
+    
+    // Se não encontrou com os padrões específicos, procurar por uma seção intitulada 'Plano de Ação'
+    // que pode estar em um formato diferente
+    const sections = text.split(/\n\s*\n|\n\d+\.\s/);
+    for (const section of sections) {
+      if (/plano de ação|ações recomendadas|medidas corretivas/i.test(section)) {
+        // Retornar a seção completa se contiver palavras-chave relevantes
+        return section.replace(/^(plano de ação|ações recomendadas|medidas corretivas)[:\s]*/i, '').trim();
+      }
+    }
+    
+    return null;
   };
 
   return {

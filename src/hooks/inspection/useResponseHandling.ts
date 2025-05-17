@@ -132,35 +132,28 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
     try {
       console.log("[useResponseHandling] Salvando respostas:", currentResponses);
       
-      // Preparar dados para salvar
-      const responsesToSave = {};
-      Object.entries(currentResponses).forEach(([questionId, responseData]) => {
-        responsesToSave[questionId] = {
-          ...responseData,
-          // Garantir que temos os campos necessários
-          value: responseData.value,
-          comment: responseData.comment || "",
-          actionPlan: responseData.actionPlan || "",
-          mediaUrls: responseData.mediaUrls || [],
-          updatedAt: new Date().toISOString()
-        };
-      });
-      
-      // Salvando no banco de dados - corrigindo a estrutura para adequar ao tipo esperado
-      const { error } = await supabase
-        .from('inspection_responses')
-        .upsert({
-          inspection_id: inspectionId,
-          answer: 'N/A', // Campo obrigatório na tabela
-          question_id: 'all', // Campo obrigatório na tabela
-          notes: JSON.stringify(responsesToSave), // Armazenamos as respostas como um JSON no campo notes
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'inspection_id,question_id'
-        });
-      
-      if (error) {
-        throw new Error(`Erro ao salvar respostas: ${error.message}`);
+      // Para cada resposta, precisamos salvar em um formato compatível com a tabela inspection_responses
+      for (const [questionId, responseData] of Object.entries(currentResponses)) {
+        // Preparar dados para salvar
+        const { error } = await supabase
+          .from('inspection_responses')
+          .upsert({
+            inspection_id: inspectionId,
+            question_id: questionId,
+            answer: responseData.value?.toString() || 'N/A',
+            notes: JSON.stringify(responseData), // Armazenamos todos os dados da resposta como um JSON no campo notes
+            media_urls: responseData.mediaUrls || [],
+            action_plan: responseData.actionPlan || '',
+            sub_checklist_responses: responseData.subChecklistResponses || null,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'inspection_id,question_id'
+          });
+        
+        if (error) {
+          console.error("[useResponseHandling] Erro ao salvar resposta:", error);
+          toast.error(`Erro ao salvar resposta: ${error.message}`);
+        }
       }
       
       // Atualizar status da inspeção para "Em Andamento" se estiver "Pendente"
@@ -177,9 +170,11 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
       }
       
       console.log("[useResponseHandling] Respostas salvas com sucesso");
+      toast.success("Respostas salvas com sucesso");
       
     } catch (error: any) {
       console.error("[useResponseHandling] Erro ao salvar inspeção:", error);
+      toast.error(`Erro ao salvar inspeção: ${error.message || "Erro desconhecido"}`);
       throw error;
     } finally {
       setSavingResponses(false);
