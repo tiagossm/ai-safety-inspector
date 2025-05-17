@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -151,13 +150,12 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
         .from('inspection_responses')
         .upsert({
           inspection_id: inspectionId,
-          // Convertemos o objeto para uma string JSON
           answer: 'N/A', // Campo obrigatório na tabela
           question_id: 'all', // Campo obrigatório na tabela
           notes: JSON.stringify(responsesToSave), // Armazenamos as respostas como um JSON no campo notes
           updated_at: new Date().toISOString()
         }, {
-          onConflict: 'inspection_id'
+          onConflict: 'inspection_id,question_id'
         });
       
       if (error) {
