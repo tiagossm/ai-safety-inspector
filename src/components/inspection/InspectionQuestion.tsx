@@ -209,15 +209,23 @@ export function InspectionQuestion({
   // Função para salvar o plano de ação estruturado
   const handleSaveStructuredActionPlan = async (data: ActionPlanFormData) => {
     if (onSaveActionPlan) {
-      const result = await onSaveActionPlan(data);
-      
-      // Após salvar o plano de ação estruturado, exibir o componente de implementação
-      if (result) {
-        setShowActionPlanImplementation(true);
-        setShowActionPlanDialog(false); // Fechar o diálogo após salvar
+      try {
+        const result = await onSaveActionPlan(data);
+        
+        // Após salvar o plano de ação estruturado, exibir o componente de implementação
+        if (result) {
+          setShowActionPlanImplementation(true);
+          setShowActionPlanDialog(false); // Fechar o diálogo após salvar
+          
+          // Forçar um refresh do componente para mostrar o plano salvo
+          console.log("Plano de ação salvo com sucesso, exibindo componente de implementação:", result);
+        }
+        
+        return result;
+      } catch (error) {
+        console.error("Erro ao salvar plano de ação:", error);
+        return undefined;
       }
-      
-      return result;
     }
   };
 
@@ -321,15 +329,15 @@ export function InspectionQuestion({
         )}
 
         {/* Structured Action Plan Implementation Component */}
-        {showActionPlanImplementation && inspectionId && question.id && onSaveActionPlan && (
+        {showActionPlanImplementation && inspectionId && question.id && onSaveActionPlan && actionPlan && (
           <div className="mt-4 pt-4 border-t border-dashed">
             <ActionPlanImplementation
               inspectionId={inspectionId}
               questionId={question.id}
               questionText={question.text || ""}
-              actionPlans={actionPlan ? [actionPlan] : []}
+              actionPlans={[actionPlan]}
               loading={false}
-              onSaveActionPlan={onSaveActionPlan}
+              onSaveActionPlan={handleSaveStructuredActionPlan}
               aiSuggestions={getAISuggestions()}
             />
           </div>

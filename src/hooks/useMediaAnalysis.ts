@@ -144,7 +144,10 @@ export function useMediaAnalysis() {
       /Plano de [Aa]ção:([^]*?)(?=\n\n|\n$|$)/i,
       /Aç[õo]es [Rr]ecomendadas:([^]*?)(?=\n\n|\n$|$)/i,
       /Medidas [Cc]orretivas:([^]*?)(?=\n\n|\n$|$)/i,
-      /Medidas a [Ss]erem [Aa]dotadas:([^]*?)(?=\n\n|\n$|$)/i
+      /Medidas a [Ss]erem [Aa]dotadas:([^]*?)(?=\n\n|\n$|$)/i,
+      /Para [Cc]orrigir [Ee]sta [Nn]ão [Cc]onformidade:([^]*?)(?=\n\n|\n$|$)/i,
+      /Para [Rr]esolver [Ee]ste [Pp]roblema:([^]*?)(?=\n\n|\n$|$)/i,
+      /[Ss]ugestões [Pp]ara [Cc]orreção:([^]*?)(?=\n\n|\n$|$)/i
     ];
     
     // Tentar cada padrão em sequência
@@ -159,10 +162,22 @@ export function useMediaAnalysis() {
     // que pode estar em um formato diferente
     const sections = text.split(/\n\s*\n|\n\d+\.\s/);
     for (const section of sections) {
-      if (/plano de ação|ações recomendadas|medidas corretivas/i.test(section)) {
+      if (/plano de ação|ações recomendadas|medidas corretivas|sugestões para correção|para corrigir|recomendações/i.test(section)) {
         // Retornar a seção completa se contiver palavras-chave relevantes
-        return section.replace(/^(plano de ação|ações recomendadas|medidas corretivas)[:\s]*/i, '').trim();
+        return section.replace(/^(plano de ação|ações recomendadas|medidas corretivas|sugestões para correção|para corrigir|recomendações)[:\s]*/i, '').trim();
       }
+    }
+    
+    // Se ainda não encontrou nada, tentar extrair um parágrafo que mencione "deve" ou "recomenda-se"
+    const recommendationPattern = /(?:deve[- ]?se|recomenda[- ]?se|é necessário|é recomendado|é preciso)([^.!?]*[.!?])/i;
+    const recommendationMatch = text.match(recommendationPattern);
+    if (recommendationMatch && recommendationMatch[0]) {
+      return recommendationMatch[0].trim();
+    }
+    
+    // Se ainda não encontrou nada e o texto for curto, usar o texto inteiro como sugestão
+    if (text.length < 500) {
+      return text.trim();
     }
     
     return null;

@@ -79,8 +79,13 @@ export function ActionPlanDialog({
       setStatus("pending");
       setAssignee("");
       setDueDate("");
+      
+      // Aplicar sugestão da IA se disponível
+      if (aiSuggestion) {
+        setDescription(aiSuggestion);
+      }
     }
-  }, [open, existingPlan]);
+  }, [open, existingPlan, aiSuggestion]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,11 +126,11 @@ export function ActionPlanDialog({
       <DialogContent className="sm:max-w-[500px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>{existingPlan ? "Edit Action Plan" : "Create Action Plan"}</DialogTitle>
+            <DialogTitle>{existingPlan ? "Editar Plano de Ação" : "Criar Plano de Ação"}</DialogTitle>
             <DialogDescription>
               {existingPlan 
-                ? "Update the action plan details below."
-                : "Add details for the new action plan."}
+                ? "Atualize os detalhes do plano de ação abaixo."
+                : "Adicione detalhes para o novo plano de ação."}
             </DialogDescription>
           </DialogHeader>
           
@@ -151,12 +156,12 @@ export function ActionPlanDialog({
           
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">Descrição</Label>
               <Textarea
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe the actions needed..."
+                placeholder="Descreva as ações necessárias..."
                 rows={4}
                 required
               />
@@ -164,19 +169,19 @@ export function ActionPlanDialog({
             
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="priority">Priority</Label>
+                <Label htmlFor="priority">Prioridade</Label>
                 <Select 
                   value={priority} 
                   onValueChange={(value) => setPriority(value as PriorityType)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select priority" />
+                    <SelectValue placeholder="Selecione a prioridade" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="low">Low</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="critical">Critical</SelectItem>
+                    <SelectItem value="low">Baixa</SelectItem>
+                    <SelectItem value="medium">Média</SelectItem>
+                    <SelectItem value="high">Alta</SelectItem>
+                    <SelectItem value="critical">Crítica</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -188,30 +193,30 @@ export function ActionPlanDialog({
                   onValueChange={(value) => setStatus(value as StatusType)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
+                    <SelectValue placeholder="Selecione o status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="pending">Pendente</SelectItem>
+                    <SelectItem value="in_progress">Em Andamento</SelectItem>
+                    <SelectItem value="completed">Concluído</SelectItem>
+                    <SelectItem value="cancelled">Cancelado</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             
             <div className="grid gap-2">
-              <Label htmlFor="assignee">Assignee (optional)</Label>
+              <Label htmlFor="assignee">Responsável (opcional)</Label>
               <Input
                 id="assignee"
                 value={assignee}
                 onChange={(e) => setAssignee(e.target.value)}
-                placeholder="Who is responsible for this action"
+                placeholder="Quem é responsável por esta ação"
               />
             </div>
             
             <div className="grid gap-2">
-              <Label htmlFor="dueDate">Due Date (optional)</Label>
+              <Label htmlFor="dueDate">Data de Vencimento (opcional)</Label>
               <Input
                 id="dueDate"
                 type="date"
@@ -223,10 +228,10 @@ export function ActionPlanDialog({
           
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : existingPlan ? "Update" : "Create"}
+              {isSubmitting ? "Salvando..." : existingPlan ? "Atualizar" : "Criar"}
             </Button>
           </DialogFooter>
         </form>

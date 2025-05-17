@@ -132,29 +132,41 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
     try {
       console.log("[useResponseHandling] Salvando respostas:", currentResponses);
       
+      const savingPromises: Promise<any>[] = [];
+      
       // Para cada resposta, precisamos salvar em um formato compatível com a tabela inspection_responses
       for (const [questionId, responseData] of Object.entries(currentResponses)) {
         // Preparar dados para salvar
-        const { error } = await supabase
+        const responseToSave = {
+          inspection_id: inspectionId,
+          question_id: questionId,
+          answer: responseData.value?.toString() || 'N/A',
+          notes: JSON.stringify(responseData), // Armazenamos todos os dados da resposta como um JSON no campo notes
+          media_urls: responseData.mediaUrls || [],
+          action_plan: responseData.actionPlan || '',
+          sub_checklist_responses: responseData.subChecklistResponses || null,
+          updated_at: new Date().toISOString()
+        };
+        
+        console.log(`[useResponseHandling] Salvando resposta para questão ${questionId}:`, responseToSave);
+        
+        const savePromise = supabase
           .from('inspection_responses')
-          .upsert({
-            inspection_id: inspectionId,
-            question_id: questionId,
-            answer: responseData.value?.toString() || 'N/A',
-            notes: JSON.stringify(responseData), // Armazenamos todos os dados da resposta como um JSON no campo notes
-            media_urls: responseData.mediaUrls || [],
-            action_plan: responseData.actionPlan || '',
-            sub_checklist_responses: responseData.subChecklistResponses || null,
-            updated_at: new Date().toISOString()
-          }, {
+          .upsert(responseToSave, {
             onConflict: 'inspection_id,question_id'
+          })
+          .then(({ error }) => {
+            if (error) {
+              console.error(`[useResponseHandling] Erro ao salvar resposta para questão ${questionId}:`, error);
+              throw error;
+            }
           });
         
-        if (error) {
-          console.error("[useResponseHandling] Erro ao salvar resposta:", error);
-          toast.error(`Erro ao salvar resposta: ${error.message}`);
-        }
+        savingPromises.push(savePromise);
       }
+      
+      // Aguardar todas as operações de salvamento
+      await Promise.all(savingPromises);
       
       // Atualizar status da inspeção para "Em Andamento" se estiver "Pendente"
       if (inspection?.status === 'Pendente') {
@@ -181,13 +193,29 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
     }
   }, [inspectionId]);
 
-  const handleSaveSubChecklistResponses = useCallback(async (subChecklistId: string, subResponses: Record<string, any>) => {
-    if (!inspectionId || !subChecklistId) return;
+  const handleSaveSubChecklistResponses = useCallback(async (parentQuestionId: string, subResponses: Record<string, any>) => {
+    if (!inspectionId || !parentQuestionId) return;
     
-    console.log("[useResponseHandling] Salvando respostas de sub-checklist:", subChecklistId, subResponses);
+    console.log("[useResponseHandling] Salvando respostas de sub-checklist:", parentQuestionId, subResponses);
     
-    // Implementar a lógica de salvamento de sub-checklist aqui se necessário
-  }, [inspectionId]);
+    setResponses((prev) => {
+      // Garantir que estamos trabalhando com uma cópia do objeto de resposta atual
+      const currentResponse = prev[parentQuestionId] ? {...prev[parentQuestionId]} : {};
+      
+      // Atualizar as subChecklistResponses para a questão pai
+      return {
+        ...prev,
+        [parentQuestionId]: {
+          ...currentResponse,
+          subChecklistResponses: JSON.stringify(subResponses),
+          updatedAt: new Date().toISOString()
+        }
+      };
+    });
+    
+    // Salvar a inspeção para persistir as alterações das sub-checklists
+    // Isso será chamado pela página de execução da inspeção após o fechamento do diálogo
+  }, [inspectionId, setResponses]);
 
   return {
     handleResponseChange,
