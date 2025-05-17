@@ -179,15 +179,28 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
       
       // Atualizar status da inspeção para "Em Andamento" se estiver "Pendente"
       if (inspection?.status === 'Pendente') {
-        const { error: updateError } = await supabase
-          .from('inspections')
-          .update({ status: 'Em Andamento' })
-          .eq('id', inspectionId);
+        const updatePromise = new Promise<any>((resolve, reject) => {
+          supabase
+            .from('inspections')
+            .update({ status: 'Em Andamento' })
+            .eq('id', inspectionId)
+            .then(({ error: updateError }) => {
+              if (updateError) {
+                console.error("Erro ao atualizar status da inspeção:", updateError);
+                // Não interrompemos o fluxo por causa disso, apenas logamos o erro
+                resolve({});
+              } else {
+                resolve({});
+              }
+            })
+            .catch((error) => {
+              console.error("Erro ao atualizar status da inspeção:", error);
+              // Não interrompemos o fluxo por causa disso
+              resolve({});
+            });
+        });
         
-        if (updateError) {
-          console.error("Erro ao atualizar status da inspeção:", updateError);
-          // Não interromper o fluxo por causa disso
-        }
+        await updatePromise;
       }
       
       console.log("[useResponseHandling] Respostas salvas com sucesso");
