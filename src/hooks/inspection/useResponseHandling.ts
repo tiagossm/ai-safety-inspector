@@ -132,7 +132,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
     try {
       console.log("[useResponseHandling] Salvando respostas:", currentResponses);
       
-      const savingPromises: Array<Promise<any>> = []; // Especificando explicitamente o tipo Promise<any>
+      const savingPromises: Array<Promise<any>> = [];
       
       // Para cada resposta, precisamos salvar em um formato compatível com a tabela inspection_responses
       for (const [questionId, responseData] of Object.entries(currentResponses)) {
@@ -141,7 +141,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
           inspection_id: inspectionId,
           question_id: questionId,
           answer: responseData.value?.toString() || 'N/A',
-          notes: JSON.stringify(responseData), // Armazenamos todos os dados da resposta como um JSON no campo notes
+          notes: JSON.stringify(responseData),
           media_urls: responseData.mediaUrls || [],
           action_plan: responseData.actionPlan || '',
           sub_checklist_responses: responseData.subChecklistResponses || null,
@@ -150,7 +150,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
         
         console.log(`[useResponseHandling] Salvando resposta para questão ${questionId}:`, responseToSave);
         
-        // Criando uma Promise que sempre será do tipo Promise<any>
+        // Criando uma Promise explícita que sempre será do tipo Promise<any>
         const savePromise = new Promise<any>((resolve, reject) => {
           supabase
             .from('inspection_responses')
@@ -165,9 +165,9 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
                 resolve({});
               }
             })
-            .catch((error) => {
-              console.error(`[useResponseHandling] Erro ao salvar resposta para questão ${questionId}:`, error);
-              reject(error);
+            .catch((err) => {
+              console.error(`[useResponseHandling] Erro ao salvar resposta para questão ${questionId}:`, err);
+              reject(err);
             });
         });
         
@@ -193,8 +193,8 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
                 resolve({});
               }
             })
-            .catch((error) => {
-              console.error("Erro ao atualizar status da inspeção:", error);
+            .catch((err) => {
+              console.error("Erro ao atualizar status da inspeção:", err);
               // Não interrompemos o fluxo por causa disso
               resolve({});
             });
