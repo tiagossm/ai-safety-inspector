@@ -12,7 +12,7 @@ export function useSubChecklistHandler(
     
     console.log("[useSubChecklistHandler] Salvando respostas de sub-checklist:", parentQuestionId, subResponses);
     
-    // Usando Promise explícita para garantir que temos um objeto Promise completo
+    // Usar Promise completa em vez de PromiseLike para garantir que .catch() esteja disponível
     return new Promise<void>((resolve, reject) => {
       try {
         setResponses((prev) => {
