@@ -123,7 +123,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
     }
   }, [inspectionId, setResponses]);
 
-  // Correção completa para garantir que o tipo de retorno seja sempre Promise<any>
+  // Correção para garantir que o tipo de retorno seja sempre Promise<any>
   const handleSaveInspection = useCallback(async (currentResponses: Record<string, any>, inspection: any): Promise<any> => {
     if (!inspectionId) return Promise.resolve({});
     
