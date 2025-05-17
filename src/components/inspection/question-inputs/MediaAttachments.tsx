@@ -70,7 +70,7 @@ export function MediaAttachments({
       // Make sure the question text is included in the result
       const resultWithContext = {
         ...result,
-        questionText: questionText || result.questionText
+        questionText: questionText || ''
       };
       onSaveAnalysis(activeAnalysisUrl, resultWithContext);
     }
@@ -80,7 +80,6 @@ export function MediaAttachments({
     const analysis = analysisResults[url];
     console.log("MediaAttachments: Applying suggestion for URL:", url);
     console.log("MediaAttachments: Analysis result:", analysis);
-    console.log("MediaAttachments: Question context:", analysis?.questionText || questionText);
     
     if (onApplyAISuggestion && analysis?.actionPlanSuggestion) {
       console.log("MediaAttachments: Applying suggestion:", analysis.actionPlanSuggestion);
@@ -200,6 +199,7 @@ export function MediaAttachments({
         mediaType={activeMediaType}
         questionText={questionText}
         onAnalysisComplete={handleAnalysisComplete}
+        mediaUrls={mediaUrls} // Pass all media URLs
       />
     </>
   );

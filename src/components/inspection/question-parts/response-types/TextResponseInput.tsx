@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { MediaUploadInput } from "../../question-inputs/MediaUploadInput";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
@@ -222,24 +221,21 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
           <div className="space-y-3">
             {Object.entries(analysisResults).map(([url, result], index) => {
               // Only show a summary of the analysis here
-              let summary = '';
+              let summary = result.analysis || '';
               
-              if (result.type === 'image' || result.type === 'video') {
-                summary = result.analysis && result.analysis.length > 100 
-                  ? result.analysis.substring(0, 100) + '...' 
-                  : result.analysis || '';
-              } else if (result.type === 'audio') {
-                summary = result.transcription && result.transcription.length > 100 
-                  ? result.transcription.substring(0, 100) + '...' 
-                  : result.transcription || '';
+              if (summary && summary.length > 100) {
+                summary = summary.substring(0, 100) + '...';
               }
+              
+              const mediaType = result.type || 'document';
               
               return (
                 <div key={index} className="text-xs border-l-2 border-blue-300 pl-3 py-1">
                   <div className="font-medium mb-1">
-                    {result.type === 'image' && 'Análise de Imagem'}
-                    {result.type === 'video' && 'Análise de Vídeo'}
-                    {result.type === 'audio' && 'Transcrição de Áudio'}
+                    {mediaType === 'image' && 'Análise de Imagem'}
+                    {mediaType === 'video' && 'Análise de Vídeo'}
+                    {mediaType === 'audio' && 'Transcrição de Áudio'}
+                    {mediaType === 'document' && 'Análise de Documento'}
                   </div>
                   <p className="text-gray-600">{summary}</p>
                 </div>

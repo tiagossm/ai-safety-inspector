@@ -1,4 +1,3 @@
-
 import React, { useCallback, useState, useEffect } from "react";
 import { ResponseButtonGroup } from "./components/ResponseButtonGroup";
 import { ActionPlanButton } from "./components/ActionPlanButton";

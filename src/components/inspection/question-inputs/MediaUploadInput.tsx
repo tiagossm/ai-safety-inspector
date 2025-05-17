@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, Pencil, Trash2, Search, Play, FileText, Mic, FileVideo, Image, Sparkles } from "lucide-react";
@@ -89,7 +88,7 @@ export function MediaUploadInput({
       // Ensure the question context is included in the result
       const resultWithContext = {
         ...result,
-        questionText: questionText || result.questionText
+        questionText: questionText || ''
       };
       onSaveAnalysis(selectedMedia, resultWithContext);
     }

@@ -132,10 +132,10 @@ export function InspectionQuestion({
       setMultiModalLoading(true);
       
       const result = await analyze({
-        mediaUrls: response.mediaUrls, 
+        mediaUrl: response.mediaUrls[0], // Use the first URL as the primary
         questionText: question.text,
-        responseValue: response.value,
-        multimodal: true
+        multimodalAnalysis: true,
+        additionalMediaUrls: response.mediaUrls.slice(1) // Add the rest as additional
       });
       
       // If the analysis was successful, save it for each media URL
@@ -146,7 +146,6 @@ export function InspectionQuestion({
         response.mediaUrls.forEach((url: string) => {
           updatedResults[url] = {
             ...result,
-            type: 'multimodal',
             questionText: question.text,
             hasNonConformity: result.hasNonConformity,
             psychosocialRiskDetected: result.psychosocialRiskDetected,

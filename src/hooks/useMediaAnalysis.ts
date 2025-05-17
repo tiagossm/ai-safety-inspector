@@ -9,6 +9,12 @@ export interface MediaAnalysisResult {
   psychosocialRiskDetected: boolean;
   actionPlanSuggestion: string | null;
   rawResponse?: any;
+  // Add these fields to match usage in components
+  type?: string;
+  imageAnalysis?: string;
+  videoAnalysis?: string;
+  transcription?: string;
+  questionText?: string;
 }
 
 interface AnalyzeParams {
@@ -68,7 +74,13 @@ export function useMediaAnalysis() {
         hasNonConformity: data.hasNonConformity || false,
         psychosocialRiskDetected: data.psychosocialRiskDetected || false,
         actionPlanSuggestion: data.actionPlanSuggestion || null,
-        rawResponse: data
+        rawResponse: data,
+        // Add additional properties that might be used in components
+        type: data.type || (contentType.startsWith('image') ? 'image' : contentType.startsWith('video') ? 'video' : 'unknown'),
+        imageAnalysis: data.imageAnalysis || data.analysis || '',
+        videoAnalysis: data.videoAnalysis || data.analysis || '',
+        transcription: data.transcription || '',
+        questionText: questionText || data.questionText || ''
       };
 
       return result;

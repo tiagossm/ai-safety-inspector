@@ -17,22 +17,22 @@ interface MediaAnalysisDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mediaUrl: string | null;
+  mediaUrls?: string[]; // Support for multiple URLs
   mediaType?: string | null;
   questionText?: string;
   onAnalysisComplete?: (result: MediaAnalysisResult) => void;
   multimodalAnalysis?: boolean;
-  mediaUrls?: string[]; // Added this prop to fix the TypeScript error
 }
 
 export function MediaAnalysisDialog({
   open,
   onOpenChange,
   mediaUrl,
+  mediaUrls = [], // Default empty array
   mediaType,
   questionText,
   onAnalysisComplete,
-  multimodalAnalysis,
-  mediaUrls = [] // Added with a default empty array
+  multimodalAnalysis = false
 }: MediaAnalysisDialogProps) {
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState<MediaAnalysisResult | null>(null);
@@ -144,7 +144,9 @@ export function MediaAnalysisDialog({
                   ) : (
                     <>
                       <ScanSearch className="h-4 w-4 mr-2" />
-                      Analisar esta Mídia
+                      {multimodalAnalysis && mediaUrls.length > 1 
+                        ? `Analisar ${mediaUrls.length} imagens em conjunto` 
+                        : "Analisar esta Mídia"}
                     </>
                   )}
                 </Button>
