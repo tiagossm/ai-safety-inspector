@@ -48,7 +48,7 @@ export function useSaveInspection(inspectionId: string | undefined) {
                 resolve(data);
               }
             })
-            .catch((err) => {
+            .catch(err => {
               console.error(`[useSaveInspection] Erro ao salvar resposta para questão ${questionId}:`, err);
               reject(err);
             });
@@ -79,7 +79,7 @@ export function useSaveInspection(inspectionId: string | undefined) {
                 resolve(data);
               }
             })
-            .catch((err) => {
+            .catch(err => {
               console.error("Erro ao atualizar status da inspeção:", err);
               // Não interrompemos o fluxo por causa disso
               resolve({});
