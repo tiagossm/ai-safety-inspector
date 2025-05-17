@@ -123,9 +123,9 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
     }
   }, [inspectionId, setResponses]);
 
-  // Aqui está a correção: modificado para retornar explicitamente Promise<any> em vez de PromiseLike<void>
+  // Correção explícita para garantir que o tipo de retorno seja sempre Promise<any>
   const handleSaveInspection = useCallback(async (currentResponses: Record<string, any>, inspection: any): Promise<any> => {
-    if (!inspectionId) return Promise.resolve();  // Retornando Promise explicitamente
+    if (!inspectionId) return Promise.resolve();
     
     setSavingResponses(true);
     
@@ -158,8 +158,9 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
           .then(({ error }) => {
             if (error) {
               console.error(`[useResponseHandling] Erro ao salvar resposta para questão ${questionId}:`, error);
-              throw error;
+              return Promise.reject(error);
             }
+            return Promise.resolve();
           });
         
         savingPromises.push(savePromise);
@@ -184,12 +185,12 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
       console.log("[useResponseHandling] Respostas salvas com sucesso");
       toast.success("Respostas salvas com sucesso");
       
-      return Promise.resolve();  // Retornando uma Promise explícita
+      return Promise.resolve();
       
     } catch (error: any) {
       console.error("[useResponseHandling] Erro ao salvar inspeção:", error);
       toast.error(`Erro ao salvar inspeção: ${error.message || "Erro desconhecido"}`);
-      return Promise.reject(error);  // Rejeitando com erro explicitamente
+      return Promise.reject(error);
     } finally {
       setSavingResponses(false);
     }
