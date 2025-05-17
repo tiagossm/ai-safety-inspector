@@ -81,11 +81,11 @@ export function MediaGallery({
             {hasAnalysis(url) && (
               <div className="absolute top-1 right-1 z-10">
                 {hasNonConformity(url) ? (
-                  <Badge className="bg-amber-100 text-amber-800 border-amber-300 flex items-center gap-1" variant="outline" size="sm">
+                  <Badge className="bg-amber-100 text-amber-800 border-amber-300 flex items-center gap-1" variant="outline">
                     <AlertTriangle className="h-3 w-3" />
                   </Badge>
                 ) : (
-                  <Badge className="bg-green-100 text-green-800 border-green-300 flex items-center gap-1" variant="outline" size="sm">
+                  <Badge className="bg-green-100 text-green-800 border-green-300 flex items-center gap-1" variant="outline">
                     <Sparkles className="h-3 w-3" />
                   </Badge>
                 )}
