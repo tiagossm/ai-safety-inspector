@@ -38,9 +38,6 @@ export function YesNoResponseInput({
   const currentValue = response?.value;
   const mediaUrls = response?.mediaUrls || [];
 
-  // DEBUG LOG
-  console.log("[YesNoResponseInput] Chegou no render. currentValue:", currentValue);
-
   useEffect(() => {
     if (response?.mediaAnalysisResults) {
       setMediaAnalysisResults(response.mediaAnalysisResults);
@@ -125,6 +122,9 @@ export function YesNoResponseInput({
     : currentValue === false ? "Não"
     : "";
 
+  // LOGS para debug!
+  console.log("[YesNoResponseInput] Chegou no render. currentValue:", currentValue);
+
   return (
     <div className="space-y-4">
       <ResponseButtonGroup 
@@ -134,6 +134,10 @@ export function YesNoResponseInput({
       />
 
       <div className="flex flex-wrap gap-2">
+        {/* BLOCO DE TESTE FIXO */}
+        <div style={{ background: "yellow", color: "black", padding: 8 }}>
+          TESTE FIXO
+        </div>
         {console.log("[YesNoResponseInput] Antes de renderizar ActionPlanButton")}
         <ActionPlanButton 
           onActionPlanClick={onSaveActionPlan ? () => onSaveActionPlan({}) : undefined} 
