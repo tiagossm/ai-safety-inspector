@@ -48,6 +48,7 @@ function forceListMarkdown(text: string): string {
 
 // Fallback para extrair ações corretivas do texto da análise
 function getSafeActionPlan(result: MediaAnalysisResult): string {
+  console.log("[getSafeActionPlan] result recebido:", result);
   const isInvalid = !result.actionPlanSuggestion 
     || result.actionPlanSuggestion.trim() === "" 
     || result.actionPlanSuggestion.trim().toLowerCase() === "sugeridas:**";
