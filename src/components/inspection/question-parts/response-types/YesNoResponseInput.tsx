@@ -5,6 +5,8 @@ import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaU
 import { MediaAnalysisButton } from "./components/MediaAnalysisButton";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { MediaAttachments } from "@/components/inspection/question-inputs/MediaAttachments";
+// IMPORTANTE: Adicione o import do seu modal, ajuste o caminho se necessário!
+import { ActionPlanDialog } from "@/components/action-plans/ActionPlanDialog";
 
 interface YesNoResponseInputProps {
   question: any;
@@ -34,6 +36,8 @@ export function YesNoResponseInput({
   const [mediaAnalysisResults, setMediaAnalysisResults] = useState<Record<string, any>>(
     response?.mediaAnalysisResults || {}
   );
+  // NOVO: controle do modal/plano de ação
+  const [isActionPlanDialogOpen, setIsActionPlanDialogOpen] = useState(false);
 
   const currentValue = response?.value;
   const mediaUrls = response?.mediaUrls || [];
@@ -140,16 +144,9 @@ export function YesNoResponseInput({
       />
 
       <div className="flex flex-wrap gap-2">
+        {/* Aqui: agora o botão só abre o modal */}
         <ActionPlanButton
-          onActionPlanClick={
-            onSaveActionPlan
-              ? () => onSaveActionPlan({
-                  resposta: currentValue,
-                  questionId: question?.id,
-                  // acrescente outros campos relevantes para seu contexto
-                })
-              : undefined
-          }
+          onActionPlanClick={() => setIsActionPlanDialogOpen(true)}
           readOnly={readOnly}
         />
         {(question.allowsPhoto || question.allowsVideo || question.permite_foto || question.permite_video) && (
@@ -194,6 +191,21 @@ export function YesNoResponseInput({
         onAnalysisComplete={handleAnalysisResults}
         multimodalAnalysis={true}
         additionalMediaUrls={mediaUrls}
+      />
+
+      {/* --- MODAL DE PLANO DE AÇÃO (popup) --- */}
+      <ActionPlanDialog
+        open={isActionPlanDialogOpen}
+        onOpenChange={setIsActionPlanDialogOpen}
+        questionId={question?.id}
+        inspectionId={inspectionId}
+        // Passe aqui as props que seu modal espera, exemplo:
+        existingPlan={actionPlan}
+        onSave={async (data: any) => {
+          await onSaveActionPlan?.(data);
+          setIsActionPlanDialogOpen(false);
+        }}
+        aiSuggestion={mediaAnalysisResults?.actionPlanSuggestion || null}
       />
     </div>
   );
