@@ -15,6 +15,20 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 
+interface MediaUploadInputProps {
+  mediaUrls: string[];
+  onMediaChange: (mediaUrls: string[]) => void;
+  allowsPhoto?: boolean;
+  allowsVideo?: boolean;
+  allowsAudio?: boolean;
+  allowsFiles?: boolean;
+  readOnly?: boolean;
+  questionText?: string;
+  onSaveAnalysis?: (url: string, result: MediaAnalysisResult) => void;
+  onApplyAISuggestion?: (suggestion: string) => void;
+  analysisResults?: Record<string, MediaAnalysisResult>;
+}
+
 export function MediaUploadInput({
   mediaUrls = [],
   onMediaChange,
@@ -27,43 +41,56 @@ export function MediaUploadInput({
   onSaveAnalysis,
   onApplyAISuggestion,
   analysisResults = {}
-}) {
+}: MediaUploadInputProps) {
   const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false);
-  const [selectedMedia, setSelectedMedia] = useState(null);
-  const [selectedMediaType, setSelectedMediaType] = useState(null);
+  const [selectedMedia, setSelectedMedia] = useState<string | null>(null);
+  const [selectedMediaType, setSelectedMediaType] = useState<string | null>(null);
 
-  // --- Estados do 5W2H
+  // 5W2H
   const [modalPlanoAcaoAberto, setModalPlanoAcaoAberto] = useState(false);
   const [planoAcaoSugestao, setPlanoAcaoSugestao] = useState("");
-  const [planoAcao, setPlanoAcao] = useState([]); // Lista de ações salvas
+  const [planoAcao, setPlanoAcao] = useState<string[]>([]);
 
-  // Handler para abrir o modal de ação já preenchido
-  const handleAddActionPlan = useCallback((suggestion) => {
+  // Handler: abrir modal 5W2H com sugestão da IA
+  const handleAddActionPlan = useCallback((suggestion: string) => {
     setPlanoAcaoSugestao(suggestion || "");
     setModalPlanoAcaoAberto(true);
-    setAnalysisDialogOpen(false); // opcional, fecha o anterior
+    setAnalysisDialogOpen(false);
   }, []);
 
-  // O resto dos handlers padrões...
-  const handleAddMedia = useCallback(() => { if (!readOnly) setMediaDialogOpen(true); }, [readOnly]);
-  const handleMediaUploaded = useCallback((urls) => { if (urls.length > 0) onMediaChange([...mediaUrls, ...urls]); }, [mediaUrls, onMediaChange]);
-  const handleDeleteMedia = useCallback((urlToDelete) => { if (!readOnly) onMediaChange(mediaUrls.filter(url => url !== urlToDelete)); }, [readOnly, mediaUrls, onMediaChange]);
-  const handlePreviewMedia = useCallback((url) => { setSelectedMedia(url); setPreviewDialogOpen(true); }, []);
-  const handleAnalyzeMedia = useCallback((url, questionContext) => {
+  const handleAddMedia = useCallback(() => {
+    if (!readOnly) setMediaDialogOpen(true);
+  }, [readOnly]);
+
+  const handleMediaUploaded = useCallback((urls: string[]) => {
+    if (urls.length > 0) onMediaChange([...mediaUrls, ...urls]);
+  }, [mediaUrls, onMediaChange]);
+
+  const handleDeleteMedia = useCallback((urlToDelete: string) => {
+    if (!readOnly) onMediaChange(mediaUrls.filter(url => url !== urlToDelete));
+  }, [readOnly, mediaUrls, onMediaChange]);
+
+  const handlePreviewMedia = useCallback((url: string) => {
+    setSelectedMedia(url);
+    setPreviewDialogOpen(true);
+  }, []);
+
+  const handleAnalyzeMedia = useCallback((url: string, questionContext?: string) => {
     setSelectedMedia(url);
     setSelectedMediaType(getMediaType(url));
     setAnalysisDialogOpen(true);
   }, [questionText]);
-  const handleAnalysisComplete = useCallback((result) => {
+
+  const handleAnalysisComplete = useCallback((result: MediaAnalysisResult) => {
     if (onSaveAnalysis && selectedMedia) {
       const resultWithContext = { ...result, questionText: questionText || '' };
       onSaveAnalysis(selectedMedia, resultWithContext);
     }
   }, [onSaveAnalysis, selectedMedia, questionText]);
 
-  function getMediaType(url) {
+  function getMediaType(url: string): string {
     const fileType = getFileType(url);
     switch (fileType) {
       case 'image': return 'image/jpeg';
@@ -78,11 +105,11 @@ export function MediaUploadInput({
   if (allowsAudio) allowedTypes.push('audio/*');
   if (allowsFiles) allowedTypes.push('application/pdf', '.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar');
 
-  // --- Handler para salvar a ação no array (ou envie para backend)
+  // Salvar ação 5W2H
   function handleSalvarPlanoAcao() {
     setPlanoAcao(prev => [...prev, planoAcaoSugestao]);
     setModalPlanoAcaoAberto(false);
-    setPlanoAcaoSugestao(""); // limpa campo
+    setPlanoAcaoSugestao("");
   }
 
   return (
@@ -157,13 +184,14 @@ export function MediaUploadInput({
           </DialogHeader>
           <div>
             <label className="block text-xs font-semibold mb-1">O quê?</label>
-            <input
+            <textarea
               className="w-full border px-2 py-1 rounded mb-2"
               value={planoAcaoSugestao}
               onChange={e => setPlanoAcaoSugestao(e.target.value)}
               placeholder="Descreva a ação"
+              rows={4}
             />
-            {/* Adapte para outros campos do 5W2H conforme necessário */}
+            {/* Adapte aqui para incluir os demais campos do 5W2H */}
           </div>
           <DialogFooter>
             <Button onClick={handleSalvarPlanoAcao}>Salvar</Button>
