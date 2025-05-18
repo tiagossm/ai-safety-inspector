@@ -1,26 +1,24 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ClipboardList } from 'lucide-react';
 
 interface ActionPlanButtonProps {
-  isActionPlanOpen: boolean;
-  setIsActionPlanOpen: (isOpen: boolean) => void;
+  onActionPlanClick?: () => void;
+  readOnly?: boolean;
 }
 
-export function ActionPlanButton({
-  isActionPlanOpen,
-  setIsActionPlanOpen
-}: ActionPlanButtonProps) {
+export function ActionPlanButton({ onActionPlanClick, readOnly = false }: ActionPlanButtonProps) {
   return (
     <Button
-      variant={isActionPlanOpen ? "secondary" : "ghost"}
+      variant="outline"
       size="sm"
-      onClick={() => setIsActionPlanOpen(!isActionPlanOpen)}
+      onClick={onActionPlanClick}
       className="flex items-center"
+      disabled={readOnly}
+      data-testid="action-plan-btn"
     >
       <ClipboardList className="h-4 w-4 mr-1" />
-      {isActionPlanOpen ? "Hide Action Plan" : "Action Plan"}
+      Criar Plano de Ação
     </Button>
   );
 }

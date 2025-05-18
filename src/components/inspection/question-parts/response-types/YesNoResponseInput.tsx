@@ -35,12 +35,9 @@ export function YesNoResponseInput({
     response?.mediaAnalysisResults || {}
   );
 
-  console.log("[YesNoResponseInput] rendering with response:", response);
-
   const currentValue = response?.value;
   const mediaUrls = response?.mediaUrls || [];
 
-  // Atualizar os resultados de análise locais quando response mudar
   useEffect(() => {
     if (response?.mediaAnalysisResults) {
       setMediaAnalysisResults(response.mediaAnalysisResults);
@@ -56,7 +53,6 @@ export function YesNoResponseInput({
   }, [response, onResponseChange]);
 
   const handleMediaChange = useCallback((newMediaUrls: string[]) => {
-    console.log("[YesNoResponseInput] handleMediaChange:", newMediaUrls);
     if (onMediaChange) {
       onMediaChange(newMediaUrls);
     } else {
@@ -69,7 +65,6 @@ export function YesNoResponseInput({
   }, [response, onResponseChange, onMediaChange]);
 
   const handleAnalysisResults = useCallback((results: any) => {
-    console.log("YesNoResponseInput: analysis results:", results);
     const updatedResponse = {
       ...response,
       mediaAnalysisResults: {
@@ -77,12 +72,10 @@ export function YesNoResponseInput({
         ...results
       }
     };
-    
     setMediaAnalysisResults(prev => ({
       ...prev,
       ...results
     }));
-    
     onResponseChange(updatedResponse);
 
     if (results.actionPlanSuggestion && onApplyAISuggestion) {
@@ -100,39 +93,34 @@ export function YesNoResponseInput({
   }, [response?.mediaUrls]);
 
   const handleDeleteMedia = useCallback((urlToDelete: string) => {
-    console.log("[YesNoResponseInput] handleDeleteMedia:", urlToDelete);
     const updatedMediaUrls = mediaUrls.filter(url => url !== urlToDelete);
     handleMediaChange(updatedMediaUrls);
   }, [mediaUrls, handleMediaChange]);
 
-  const handleOpenPreview = useCallback((url: string) => {
-    console.log("[YesNoResponseInput] handleOpenPreview:", url);
-    // Esta função será implementada pelo MediaAttachments
-  }, []);
+  const handleOpenPreview = useCallback((url: string) => {}, []);
 
   const handleOpenMediaAnalysis = useCallback((url: string, questionContext?: string) => {
-    console.log("[YesNoResponseInput] handleOpenMediaAnalysis:", url);
     setSelectedMediaUrl(url);
     setIsAnalysisOpen(true);
   }, []);
 
   const handleSaveAnalysis = useCallback((url: string, result: any) => {
-    console.log("[YesNoResponseInput] handleSaveAnalysis:", url, result);
     const newResults = {
       ...mediaAnalysisResults,
       [url]: result
     };
-    
     setMediaAnalysisResults(newResults);
-    
-    // Atualizar o response com os novos resultados de análise
     const updatedResponse = {
       ...response,
       mediaAnalysisResults: newResults
     };
-    
     onResponseChange(updatedResponse);
   }, [mediaAnalysisResults, response, onResponseChange]);
+
+  const userAnswer =
+    currentValue === true ? "Sim"
+    : currentValue === false ? "Não"
+    : "";
 
   return (
     <div className="space-y-4">
@@ -141,20 +129,17 @@ export function YesNoResponseInput({
         onChange={handleResponseChange} 
         readOnly={readOnly || false}
       />
-      
+
       <div className="flex flex-wrap gap-2">
         <ActionPlanButton 
-          localValue={currentValue} 
-          onActionPlanClick={onSaveActionPlan ? () => onSaveActionPlan({}) : () => {}} 
+          onActionPlanClick={onSaveActionPlan ? () => onSaveActionPlan({}) : undefined} 
           readOnly={readOnly || false}
         />
-
         {(question.allowsPhoto || question.allowsVideo || question.permite_foto || question.permite_video) && (
           <MediaAnalysisButton onOpenAnalysis={handleOpenAnalysis} />
         )}
       </div>
-      
-      {/* Renderização inline das mídias anexadas (imediatamente após os botões) */}
+
       {mediaUrls.length > 0 && (
         <MediaAttachments
           mediaUrls={mediaUrls}
@@ -188,6 +173,7 @@ export function YesNoResponseInput({
         onOpenChange={setIsAnalysisOpen}
         mediaUrl={selectedMediaUrl}
         questionText={question.text || question.pergunta || ""}
+        userAnswer={userAnswer}
         onAnalysisComplete={handleAnalysisResults}
         multimodalAnalysis={true}
         additionalMediaUrls={mediaUrls}

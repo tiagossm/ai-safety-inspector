@@ -1,0 +1,165 @@
+[33md222e71[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m tyess
+[33m0654042[m yes
+[33me6133ec[m botao
+[33mea2f6e4[m botao
+[33m71097b3[m analise de midia
+[33m878f61b[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m fix: remove analysisResult do array de dependências do useEffect para evitar múltiplas execuções de análise na MediaAnalysisDialog
+[33md8e08cc[m asd
+[33m3625c8a[m sera
+[33m9a03b70[m vaai
+[33m2b9565b[m analise de midia
+[33m64072f0[m Fix: Add .catch() to PromiseLike<void>
+[33m1904ad0[m Fix: Add .catch() to Supabase calls
+[33me0a178f[m Fix: Ensure .catch() in useSaveInspection
+[33m86fbe38[m Refactor: Split useResponseHandling.ts into modules
+[33m2bcedbf[m Fix: Add catch to PromiseLike<void>
+[33m4c99f40[m Fix: Add .catch() to promise calls
+[33ma60413b[m Fix: Add .catch() to PromiseLike<void>
+[33m89159a5[m Fix missing .catch() in useResponseHandling.ts
+[33me37c5c2[m Fix: Add .catch() to promise calls
+[33m9a0dfc6[m Fix: Ensure Promise<any> in response handling
+[33m59ab4f9[m Fix: Ensure Promise<any> in handleSaveInspection
+[33m3174de7[m Fix: Add catch to promise in handleSaveInspection
+[33m1476029[m Fix: Resolve promise type mismatch in useResponseHandling
+[33mdb63d78[m Fix: Ensure handleSaveInspection returns Promise
+[33mc71c48c[m Fix: useResponseHandling.ts type error
+[33m897cf55[m Fix MediaAnalysisDialog prop errors
+[33ma9761ec[m Implement inspection plan
+[33mfe4bcec[m Fix: MediaGalleryGrid BadgeProps error
+[33m9898b87[m Fix: MediaAttachmentRenderer type error
+[33m9e258c4[m Fix: Implement inspection execution plan
+[33ma117af8[m Fix: Correct Supabase data structure
+[33m8e4695c[m Fix: Correct Supabase data structure
+[33me9151e1[m Fix: Resolve Supabase upsert error
+[33me62f9a8[m Fix: Supabase upsert error in useResponseHandling
+[33medf4be6[m Fix type errors in inspection components
+[33mc8467b1[m Fix MediaAnalysisDialog prop and Supabase query errors
+[33mfafb9ce[m Fix: Implement action plan adjustments
+[33mcb4e6dc[m Refactor: Implement action plan features
+[33m86343dc[m Fix: Resolve MediaRenderer import error
+[33m0d8bdd1[m Fix: MediaGallery import error
+[33m3eb08a4[m novo
+[33m50179aa[m ds
+[33m3f86143[m vaavvavava
+[33mf3b8c19[m asdada
+[33m4382cce[m grid
+[33m8560be1[m mdia4
+[33ma01ccd9[m midia3
+[33mf4558c9[m imagem2
+[33mbb7f6db[m midia
+[33m29b21e6[m 1
+[33m39f7d6c[m imagem
+[33mf39924f[m midia
+[33m0af141e[m Fix: Resolve module import errors in YesNoInput.tsx
+[33m66cf4e8[m Fix: Inline media rendering in inspection checklist
+[33m49a4558[m yes
+[33mc21695d[m ssss
+[33m22dcb96[m aaaa
+[33m94e3bde[m insplay
+[33ma406a7b[m aaaaaaaaaaaaaaaaa
+[33mdc08802[m afeee
+[33m7ccbed2[m Fix: Ensure inline media display in inspection
+[33m1dc256c[m Fix: Inline media display after upload
+[33m2607701[m Fix: Media not displaying inline after upload
+[33m1e6c9ae[m Fix: Media not displaying inline after upload
+[33md7fa5b7[m Reverted to commit 67523147a272263a0d1000eee2b58066324506aa
+[33m0f68ce1[m af
+[33mf78489b[m lay
+[33m5c93e7a[m sera?
+[33m6752314[m data
+[33mad72e01[m response
+[33mbc9e839[m midia
+[33mcd65f6e[m Implement inspection summary view
+[33m7d01d05[m Apply SQL schema changes
+[33m73dc63f[m Fix: Inspection navigation and data handling
+[33mef46ba4[m Fix: Implement the plan for inspection flow
+[33m6714e62[m feat: Implement new inspection workflow
+[33m2765b30[m Fix: InspectionCreationWizard type errors
+[33m6fdfa43[m feat: Implement checklist start and inspection flow
+[33m79046a3[m Fix: Add missing fields to inspection responses
+[33mf7b0cbc[m Fix: Add missing fields to inspection responses
+[33med2d720[m Fix: Correct inspection response insertion
+[33m336bfd7[m Fix: useCreateInspection type errors
+[33m2be0330[m Fix: Resolve TypeScript errors in inspection flow
+[33mdc6e023[m Fix: InspectionCreationWizard and ReportGenerationDialog errors
+[33m88c842e[m Implement inspection workflow
+[33m73ef6a0[m feat: Use MediaAttachmentRenderer and add PDF report generation
+[33m0875eed[m Fix: Restore missing UI elements
+[33m77ade28[m Fix: Add multiline prop to TextInput
+[33m29b38d9[m Fix: TextInputProps multiline error
+[33ma039dca[m Fix: Resolve module and type errors
+[33m999d549[m feat: Implement inspection execution features
+[33m6210674[m Refactor: Improve media analysis and UI
+[33m2f5236e[m Implement action plan features
+[33m96b7649[m Implement media analysis and action plan suggestions
+[33maa21ef8[m vaai
+[33m5241613[m Fix: MediaUploadInput and MediaAnalysisDialog props
+[33m13039b1[m Fix: YesNoResponseInput type errors
+[33m19558a1[m Fix: YesNoInput button style not updating
+[33md0b379c[m Refactor: Split YesNoResponseInput into smaller files
+[33m998c911[m Refactor: Split YesNoResponseInput into smaller components
+[33mdf0e31d[m Refactor: Split InspectionQuestion component
+[33me15dea9[m Fix: YesNoResponseInput not updating response
+[33mc0e5baf[m Fix: InspectionQuestion syntax error
+[33md447b3a[m Fix: Syntax error in InspectionQuestion.tsx
+[33m7d02988[m Refactor: Implement the plan
+[33mcca50a5[m Fix TS2339 error in YesNoResponseInput
+[33m6e28b0e[m Fix: Resolve module import and type errors
+[33mf0470f1[m Fix: Display media attachments inline
+[33md9ff69b[m question
+[33mc67e6db[m erere
+[33mfec3403[m midia
+[33m5bc68a4[m Fix: Import and type errors in InspectionQuestion and ExecutionPage
+[33mad9fb76[m Fix: Resolve issues with inspection execution page
+[33m8b0d643[m layout
+[33m2ae91c0[m midias
+[33m3c430f2[m feat: Render media attachments inline
+[33mafa1ae9[m Fix: Address display issues in inspection.
+[33m82fca8d[m Implement inspection plan features
+[33mdc87b5f[m Refactor: Apply recommendations and fix issues
+[33m2762cbb[m Fix: Resolve MediaRenderer import errors
+[33mc42c8c3[m Fix: Resolve module import errors
+[33m37b093c[m Fix: Resolve MediaRenderer import error
+[33mc49fa34[m Implement action plan features
+[33m58be3f2[m Implement action plan features
+[33m2d560aa[m Fix: MediaUploadInput type error
+[33ma6ef0be[m Fix: MediaUploadInput type error
+[33mfd6503f[m Fix: Button not working
+[33mb818b7f[m Fix: Improve AI analysis context
+[33mb8da247[m Fix: Resolve issues in the code
+[33m34f8c59[m Implement action plan features
+[33m6c7a4a7[m Implement action plan features
+[33m69c4186[m Implement action plan features
+[33m18b550a[m Implement action plan features
+[33mfc26c16[m Fix: Resolve TypeScript errors
+[33mac05f71[m Fix: Resolve type errors and import issues
+[33m95db408[m Implement action plan features
+[33maf9000a[m Implement checklist features
+[33m8a3e044[m Implement media analysis and upload
+[33m29d63e6[m Run SQL migration
+[33m5f3654a[m Fix: Pass 'open' prop to ReportGenerationDialog
+[33md584509[m Implement inspection features
+[33m1197e94[m Implement inspection features
+[33m22c66a4[m feat: Implement select all for bulk delete
+[33ma4c9cad[m Fix: Supabase RPC function call
+[33m2d47387[m Run inspection schema initialization SQL
+[33mb9bcc72[m Refactor: Implement sync manager
+[33m2a1b56e[m feat: Implement report generation
+[33mc2d4cfc[m Fix: Resolve merge conflicts
+[33maa6c275[m Fix: InspectionCard and DataCard type errors
+[33med2343d[m Fix: InspectionCard and DataCard type errors
+[33mfe47f2c[m Implement inspection and checklist features
+[33mfcbfd27[m Refactor: Implement media capture menu refactor
+[33me37fb07[m Refactor: Implement the plan
+[33m0f7ee3b[m Refactor: Split MediaAttachments component
+[33me387314[m Fix: Import FilePresentation from lucide-react
+[33mafddcee[m Fix: Import missing icons in MediaAttachments
+[33mfb590b8[m Implement media upload and display
+[33mf08635f[m Fix: Media preview display for uploaded images
+[33md83a1ef[m Refactor: Implement offline sync functionality
+[33m66be181[m Fix: MediaAttachments component errors
+[33ma27cb90[m feat: Add OpenAI API keys
+[33me836f86[m Run SQL migration
+[33m187c63a[m Implement action plan features
+[33mb07fd76[m Fix: Resolve AI edit issue
+[33m531b406[m Fix: ActionPlan type mismatch in Insp

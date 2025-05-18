@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -21,6 +20,7 @@ interface AnalyzeParams {
   mediaUrl: string;
   mediaType?: string | null;
   questionText?: string;
+  userAnswer?: string; // <-- NOVO CAMPO!
   multimodalAnalysis?: boolean;
   additionalMediaUrls?: string[];
 }
@@ -32,6 +32,7 @@ export function useMediaAnalysis() {
     mediaUrl,
     mediaType,
     questionText,
+    userAnswer, // <-- NOVO CAMPO!
     multimodalAnalysis = false,
     additionalMediaUrls = []
   }: AnalyzeParams): Promise<MediaAnalysisResult> => {
@@ -45,6 +46,7 @@ export function useMediaAnalysis() {
         mediaUrl,
         contentType,
         questionText,
+        userAnswer, // <-- LOGA PARA GARANTIR QUE VEM DO FRONT
         multimodalAnalysis,
         additionalUrls: additionalMediaUrls?.length || 0
       });
@@ -55,6 +57,7 @@ export function useMediaAnalysis() {
           mediaUrl,
           contentType,
           questionText,
+          userAnswer, // <-- ENVIA PARA O BACKEND!
           multimodalAnalysis,
           additionalMediaUrls
         },
