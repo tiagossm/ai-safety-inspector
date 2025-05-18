@@ -38,6 +38,9 @@ export function YesNoResponseInput({
   const currentValue = response?.value;
   const mediaUrls = response?.mediaUrls || [];
 
+  // DEBUG LOG
+  console.log("[YesNoResponseInput] Chegou no render. currentValue:", currentValue);
+
   useEffect(() => {
     if (response?.mediaAnalysisResults) {
       setMediaAnalysisResults(response.mediaAnalysisResults);
@@ -131,6 +134,7 @@ export function YesNoResponseInput({
       />
 
       <div className="flex flex-wrap gap-2">
+        {console.log("[YesNoResponseInput] Antes de renderizar ActionPlanButton")}
         <ActionPlanButton 
           onActionPlanClick={onSaveActionPlan ? () => onSaveActionPlan({}) : undefined} 
           readOnly={readOnly || false}
