@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { QuestionHeader } from "./question-parts/QuestionHeader";
@@ -10,7 +9,7 @@ import { ActionPlan } from '@/services/inspection/actionPlanService';
 import { ActionPlanFormData } from '@/components/action-plans/form/types';
 import { useMediaAnalysis, MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 import { ActionPlanImplementation } from "./ActionPlanImplementation";
-import { ActionPlanDialog } from "@/components/action-plans/ActionPlanDialog"; // Importe o componente de diálogo
+import { ActionPlanDialog } from "@/components/action-plans/ActionPlanDialog";
 
 interface InspectionQuestionProps {
   question: any;
@@ -18,7 +17,7 @@ interface InspectionQuestionProps {
   response: any;
   onResponseChange: (data: any) => void;
   allQuestions?: any[];
-  numberLabel?: string; 
+  numberLabel?: string;
   inspectionId?: string;
   isSubQuestion?: boolean;
   actionPlan?: ActionPlan;
@@ -42,15 +41,16 @@ export function InspectionQuestion({
   const [showComments, setShowComments] = useState(false);
   const [showActionPlan, setShowActionPlan] = useState(false);
   const [showActionPlanImplementation, setShowActionPlanImplementation] = useState(false);
-  const [showActionPlanDialog, setShowActionPlanDialog] = useState(false); // Novo estado para controlar o diálogo
+  const [showActionPlanDialog, setShowActionPlanDialog] = useState(false);
   const [loadingSubChecklist, setLoadingSubChecklist] = useState(false);
   const [multiModalLoading, setMultiModalLoading] = useState(false);
   
-  // Track media analysis results
   const [mediaAnalysisResults, setMediaAnalysisResults] = useState<Record<string, MediaAnalysisResult>>({});
   
-  // Get the analyze function
   const { analyze, analyzing } = useMediaAnalysis();
+
+  // Nova state para sugestão da IA no dialog
+  const [aiSuggestion, setAiSuggestion] = useState<string | undefined>();
 
   const handleCommentChange = (comment: string) => {
     onResponseChange({
@@ -67,7 +67,6 @@ export function InspectionQuestion({
   };
 
   const handleResponseValueChange = (value: any) => {
-    // If the response has changed to negative, show the action plan section
     if (isNegativeResponse(value)) {
       setShowActionPlan(true);
     }
@@ -79,7 +78,6 @@ export function InspectionQuestion({
   };
 
   const handleMediaChange = (mediaUrls: string[]) => {
-    console.log("[InspectionQuestion] handleMediaChange:", question.id, mediaUrls);
     onResponseChange({
       ...response,
       mediaUrls,
@@ -87,43 +85,34 @@ export function InspectionQuestion({
   };
 
   const isNegativeResponse = (value: any): boolean => {
-    // Check if this is a negative response based on the question type
     if (question.responseType === 'yes_no') {
       return value === false || value === 'no' || value === 'não';
     }
-    
-    // For other question types, they might have custom "negative" values
     return false;
   };
 
   const handleSaveAnalysis = (url: string, result: MediaAnalysisResult) => {
-    console.log("Saving analysis for URL:", url, result);
-    
     setMediaAnalysisResults(prev => ({
       ...prev,
       [url]: result
     }));
     
-    // If it's a non-conformity and action plan section isn't shown yet, show it
     if (result.hasNonConformity) {
       setShowActionPlan(true);
-      
-      // Se houver uma sugestão de plano de ação, aplique-a automaticamente se não houver plano existente
       if (result.actionPlanSuggestion && (!response.actionPlan || response.actionPlan === "")) {
         handleActionPlanChange(result.actionPlanSuggestion);
       }
     }
   };
 
+  // Aqui o ponto-chave para abrir dialog com sugestão da IA
   const handleApplyAISuggestion = (suggestion: string) => {
     if (!suggestion) return;
-    
-    handleActionPlanChange(suggestion);
+    setAiSuggestion(suggestion);
+    setShowActionPlanDialog(true);
   };
 
-  // Handle multi-modal analysis of all media for the question
   const handleAnalyzeAllMedia = async () => {
-    // Only proceed if we have media URLs
     if (!response.mediaUrls || response.mediaUrls.length <= 1) {
       console.log("Pelo menos 2 imagens são necessárias para análise em conjunto");
       return;
@@ -133,17 +122,15 @@ export function InspectionQuestion({
       setMultiModalLoading(true);
       
       const result = await analyze({
-        mediaUrl: response.mediaUrls[0], // Use the first URL as the primary
+        mediaUrl: response.mediaUrls[0],
         questionText: question.text,
         multimodalAnalysis: true,
-        additionalMediaUrls: response.mediaUrls.slice(1) // Add the rest as additional
+        additionalMediaUrls: response.mediaUrls.slice(1)
       });
       
-      // If the analysis was successful, save it for each media URL
       if (result) {
         const updatedResults = {...mediaAnalysisResults};
         
-        // Apply the relevant parts of the multimodal analysis to each media URL
         response.mediaUrls.forEach((url: string) => {
           updatedResults[url] = {
             ...result,
@@ -156,11 +143,8 @@ export function InspectionQuestion({
         
         setMediaAnalysisResults(updatedResults);
         
-        // If it's a non-conformity and action plan section isn't shown yet, show it
         if (result.hasNonConformity) {
           setShowActionPlan(true);
-          
-          // Se houver uma sugestão de plano de ação, aplique-a automaticamente se não houver plano existente
           if (result.actionPlanSuggestion && (!response.actionPlan || response.actionPlan === "")) {
             handleActionPlanChange(result.actionPlanSuggestion);
           }
@@ -178,8 +162,7 @@ export function InspectionQuestion({
   };
 
   const handleOpenActionPlanDialog = () => {
-    // Abrir o diálogo de plano de ação estruturado
-    setShowActionPlanDialog(true); // Abre o diálogo de plano de ação
+    setShowActionPlanDialog(true);
   };
 
   const handleOpenSubChecklist = () => {
@@ -193,7 +176,6 @@ export function InspectionQuestion({
     }
   };
 
-  // Extract AI suggestions from media analysis results
   const getAISuggestions = (): string[] => {
     const suggestions: string[] = [];
     
@@ -206,19 +188,15 @@ export function InspectionQuestion({
     return suggestions;
   };
   
-  // Função para salvar o plano de ação estruturado
   const handleSaveStructuredActionPlan = async (data: ActionPlanFormData) => {
     if (onSaveActionPlan) {
       try {
         const result = await onSaveActionPlan(data);
         
-        // Após salvar o plano de ação estruturado, exibir o componente de implementação
         if (result) {
           setShowActionPlanImplementation(true);
-          setShowActionPlanDialog(false); // Fechar o diálogo após salvar
-          
-          // Forçar um refresh do componente para mostrar o plano salvo
-          console.log("Plano de ação salvo com sucesso, exibindo componente de implementação:", result);
+          setShowActionPlanDialog(false);
+          console.log("Plano de ação salvo com sucesso:", result);
         }
         
         return result;
@@ -229,24 +207,20 @@ export function InspectionQuestion({
     }
   };
 
-  // Se a resposta é negativa, mostrar o plano de ação mesmo que não tenha explicitamente definido showActionPlan
   useEffect(() => {
     if (response && isNegativeResponse(response.value)) {
       setShowActionPlan(true);
     }
     
-    // Se há um plano de ação existente, também mostrar a seção de plano de ação
     if (response && response.actionPlan) {
       setShowActionPlan(true);
     }
     
-    // Se já existe um plano de ação estruturado para esta questão, mostrar a implementação
     if (actionPlan && inspectionId && question.id) {
       setShowActionPlanImplementation(true);
     }
   }, [response, actionPlan, inspectionId, question.id]);
 
-  // Extrair a melhor sugestão de plano de ação das análises de IA
   const getBestAISuggestion = (): string | undefined => {
     const suggestions = Object.values(mediaAnalysisResults)
       .map(result => result?.actionPlanSuggestion)
@@ -301,7 +275,6 @@ export function InspectionQuestion({
           </div>
         )}
         
-        {/* Mostrar seção de plano de ação simples quando não está mostrando a implementação */}
         {(isNegativeResponse(response?.value) || showActionPlan || response?.actionPlan) && !showActionPlanImplementation && (
           <ActionPlanSection
             isOpen={showActionPlan}
@@ -315,7 +288,6 @@ export function InspectionQuestion({
           />
         )}
 
-        {/* Structured Action Plan Dialog */}
         {inspectionId && question.id && onSaveActionPlan && (
           <ActionPlanDialog
             open={showActionPlanDialog}
@@ -324,11 +296,10 @@ export function InspectionQuestion({
             questionId={question.id}
             existingPlan={actionPlan}
             onSave={handleSaveStructuredActionPlan}
-            aiSuggestion={getBestAISuggestion()}
+            aiSuggestion={aiSuggestion}
           />
         )}
 
-        {/* Structured Action Plan Implementation Component */}
         {showActionPlanImplementation && inspectionId && question.id && onSaveActionPlan && actionPlan && (
           <div className="mt-4 pt-4 border-t border-dashed">
             <ActionPlanImplementation
