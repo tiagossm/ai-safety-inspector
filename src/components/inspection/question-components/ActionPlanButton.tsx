@@ -7,8 +7,12 @@ interface ActionPlanButtonProps {
   readOnly?: boolean;
 }
 
-export function ActionPlanButton({ onActionPlanClick, readOnly = false }: ActionPlanButtonProps) {
-  console.log('[ActionPlanButton] RENDERIZADO - readOnly:', readOnly);
+export function ActionPlanButton({
+  onActionPlanClick,
+  readOnly = false,
+}: ActionPlanButtonProps) {
+  console.log('[ActionPlanButton] Renderizando. onActionPlanClick:', !!onActionPlanClick, 'readOnly:', readOnly);
+
   return (
     <Button
       variant="outline"
@@ -17,6 +21,7 @@ export function ActionPlanButton({ onActionPlanClick, readOnly = false }: Action
       className="flex items-center"
       disabled={readOnly}
       data-testid="action-plan-btn"
+      type="button"
     >
       <ClipboardList className="h-4 w-4 mr-1" />
       Criar Plano de Ação
