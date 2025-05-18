@@ -46,6 +46,25 @@ function forceListMarkdown(text: string): string {
     .join('\n');
 }
 
+// Fallback para extrair ações corretivas do texto da análise
+function getSafeActionPlan(result: MediaAnalysisResult): string {
+  const isInvalid = !result.actionPlanSuggestion 
+    || result.actionPlanSuggestion.trim() === "" 
+    || result.actionPlanSuggestion.trim().toLowerCase() === "sugeridas:**";
+
+  if (!isInvalid) return result.actionPlanSuggestion!;
+  
+  // Procura seção "Ações Corretivas Sugeridas:" ou similar no texto da análise
+  if (result.analysis) {
+    const regex = /Ações? [Cc]orretivas [Ss]ugeridas?:([\s\S]+?)(?:\n\S|\n\n|Conclusão:|$)/i;
+    const match = result.analysis.match(regex);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+  }
+  return ""; // Pode retornar "Sem ações corretivas identificadas." se preferir.
+}
+
 export function MediaAnalysisDialog({
   open,
   onOpenChange,
@@ -178,7 +197,9 @@ export function MediaAnalysisDialog({
             {allImages.map((url, idx) => {
               const state = analysisMap[url];
               const result = state?.result;
-              const hasActionSuggestion = !!result?.actionPlanSuggestion && result.actionPlanSuggestion.trim().length > 0;
+              // Usa a função com fallback!
+              const actionSuggestion = result ? getSafeActionPlan(result) : "";
+              const hasActionSuggestion = !!actionSuggestion && actionSuggestion.trim().length > 0;
 
               return (
                 <div key={url} className="col-span-1 border rounded-lg shadow-sm p-2 bg-white flex flex-col items-center">
@@ -227,15 +248,15 @@ export function MediaAnalysisDialog({
                             <h3 className="text-xs font-medium text-amber-800">Ações Corretivas Sugeridas:</h3>
                           </div>
                           <div className="text-xs text-amber-700">
-                            {renderMarkdown(forceListMarkdown(result.actionPlanSuggestion!))}
+                            {renderMarkdown(forceListMarkdown(actionSuggestion))}
                           </div>
                           <Button
                             size="sm"
                             variant="destructive"
                             className="mt-2 w-full"
                             onClick={() => {
-                              console.log("clicou", result.actionPlanSuggestion); // debug!
-                              onAddActionPlan?.(result.actionPlanSuggestion!);
+                              console.log("clicou", actionSuggestion); // debug!
+                              onAddActionPlan?.(actionSuggestion);
                             }}
                           >
                             Adicionar ao Plano de Ação
