@@ -1,25 +1,21 @@
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { ClipboardList } from 'lucide-react';
-
-interface ActionPlanButtonProps {
-  onActionPlanClick?: () => void;
-  readOnly?: boolean;
-}
-
-export function ActionPlanButton({ onActionPlanClick, readOnly = false }: ActionPlanButtonProps) {
-  console.log('[ActionPlanButton] RENDERIZADO - readOnly:', readOnly);
-  return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={onActionPlanClick}
-      className="flex items-center"
-      disabled={readOnly}
-      data-testid="action-plan-btn"
-    >
-      <ClipboardList className="h-4 w-4 mr-1" />
-      Criar Plano de Ação
-    </Button>
-  );
-}
+      <div className="flex flex-wrap gap-2">
+        <div style={{ background: "yellow", color: "black", padding: 8 }}>
+          TESTE FIXO
+        </div>
+        {/* BOTÃO DE TESTE SIMPLES */}
+        <button
+          style={{
+            border: '2px solid #888',
+            padding: '6px 16px',
+            borderRadius: '8px',
+            background: 'white',
+            color: 'black'
+          }}
+          onClick={() => alert('Cliquei no Plano de Ação')}
+        >
+          Plano de Ação TESTE
+        </button>
+        {(question.allowsPhoto || question.allowsVideo || question.permite_foto || question.permite_video) && (
+          <MediaAnalysisButton onOpenAnalysis={handleOpenAnalysis} />
+        )}
+      </div>
