@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useEffect } from "react";
 import { ResponseButtonGroup } from "./components/ResponseButtonGroup";
-// import { ActionPlanButton } from "./components/ActionPlanButton"; // Comentado para o teste
+import { ActionPlanButton } from "./components/ActionPlanButton";
 import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
 import { MediaAnalysisButton } from "./components/MediaAnalysisButton";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
@@ -122,6 +122,11 @@ export function YesNoResponseInput({
     : currentValue === false ? "Não"
     : "";
 
+  // LOGS para DEBUG
+  console.log("[YesNoResponseInput] Chegou no render. currentValue:", currentValue);
+  console.log("[YesNoResponseInput] Antes de renderizar ActionPlanButton");
+  console.log("[YesNoResponseInput] Renderizando ActionPlanButton. onSaveActionPlan:", onSaveActionPlan, "readOnly:", readOnly);
+
   return (
     <div className="space-y-4">
       <ResponseButtonGroup 
@@ -130,34 +135,22 @@ export function YesNoResponseInput({
         readOnly={readOnly || false}
       />
 
-     <div className="flex flex-wrap gap-2">
-  <div style={{ border: '2px dashed orange', padding: 6, marginRight: 10 }}>
-    <strong>[DEBUG]</strong> Renderizando ActionPlanButton.<br />
-    <span>
-      <b>onSaveActionPlan:</b> {onSaveActionPlan ? "definido" : "undefined"}<br />
-      <b>readOnly:</b> {readOnly ? "true" : "false"}
-    </span>
-  </div>
-  <ActionPlanButton 
-    onActionPlanClick={onSaveActionPlan ? () => onSaveActionPlan({}) : undefined}
-    readOnly={readOnly || false}
-  />
-  {(question.allowsPhoto || question.allowsVideo || question.permite_foto || question.permite_video) && (
-    <MediaAnalysisButton onOpenAnalysis={handleOpenAnalysis} />
-  )}
-</div>
-
-
-      {/* Deixe os outros elementos comentados para garantir o teste do debug primeiro */}
-      {/* <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2">
+        <div style={{ border: '2px dashed orange', padding: 6, marginRight: 10 }}>
+          <strong>[DEBUG]</strong> Renderizando ActionPlanButton.<br />
+          <span>
+            <b>onSaveActionPlan:</b> {onSaveActionPlan ? "definido" : "undefined"}<br />
+            <b>readOnly:</b> {readOnly ? "true" : "false"}
+          </span>
+        </div>
         <ActionPlanButton 
-          onActionPlanClick={onSaveActionPlan ? () => onSaveActionPlan({}) : undefined} 
+          onActionPlanClick={onSaveActionPlan ? () => onSaveActionPlan({}) : undefined}
           readOnly={readOnly || false}
         />
         {(question.allowsPhoto || question.allowsVideo || question.permite_foto || question.permite_video) && (
           <MediaAnalysisButton onOpenAnalysis={handleOpenAnalysis} />
         )}
-      </div> */}
+      </div>
 
       {mediaUrls.length > 0 && (
         <MediaAttachments
