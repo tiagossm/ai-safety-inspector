@@ -138,13 +138,30 @@ NUNCA conclua por "Sem não conformidade" se houver qualquer sinal de incoerênc
       throw new Error(`OpenAI API error: ${data.error?.message || "Unknown error"}`);
     }
     const analysisText = data.choices[0].message.content || "";
+
     // Parsing para separar cada campo
     const commentMatch = analysisText.match(/Comentário:\s*([\s\S]*?)(?:Plano de Ação:|$)/i);
     const actionPlanMatch = analysisText.match(/Plano de Ação:\s*([\s\S]*?)(?:Não Conformidade:|$)/i);
     const ncMatch = analysisText.match(/Não Conformidade:\s*(SIM|NÃO)/i);
     const comment = commentMatch ? commentMatch[1].trim() : "";
     const actionPlan = actionPlanMatch ? actionPlanMatch[1].trim() : "";
-    const hasNonConformity = ncMatch ? ncMatch[1].toUpperCase() === "SIM" : !!actionPlan && actionPlan !== "Não aplicável.";
+
+    // BLOCO ROBUSTO: detectar não conformidade por padrão textual
+    const palavrasProblema = [
+      'não conformidade',
+      'nervosismo acentuado',
+      'problema',
+      'alteração',
+      'risco',
+      'sinal de',
+      'anomalia'
+    ];
+    const lowerAnalysis = (analysisText || '').toLowerCase();
+    const containsProblema = palavrasProblema.some(palavra => lowerAnalysis.includes(palavra));
+
+    const hasNonConformity =
+      ncMatch ? ncMatch[1].toUpperCase() === "SIM"
+      : (!!actionPlan && actionPlan !== "Não aplicável.") || containsProblema;
 
     return new Response(JSON.stringify({
       analysis: {
