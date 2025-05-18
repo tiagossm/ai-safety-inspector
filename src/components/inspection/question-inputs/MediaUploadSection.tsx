@@ -211,7 +211,8 @@ export function MediaUploadSection({
         mediaType={selectedMediaType}
         questionText={questionText}
         onAnalysisComplete={handleAnalysisComplete}
-        onAddActionPlan={handleAddActionPlan}
+          onAddActionPlan={onApplyAISuggestion}
+
       />
       {planoAcao.length > 0 && (
         <ul className="mt-2">
