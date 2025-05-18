@@ -130,26 +130,23 @@ export function YesNoResponseInput({
         readOnly={readOnly || false}
       />
 
-      {/* BLOCO DEBUG: Se não aparecer, tem algo errado no fluxo/JSX/import */}
-      <div style={{ border: '2px solid red', padding: 8 }}>
-        <strong>BLOCO DEBUG: O botão deveria aparecer abaixo.</strong>
-        <button
-          style={{
-            background: 'yellow',
-            color: 'black',
-            fontWeight: 'bold',
-            fontSize: 18,
-            padding: 12,
-            border: '2px solid #333',
-            borderRadius: 8,
-            margin: 10
-          }}
-          onClick={() => alert("Clicou!")}
-        >
-          DEBUG: Criar Plano de Ação
-        </button>
-      </div>
-      {/* FIM DO BLOCO DEBUG */}
+     <div className="flex flex-wrap gap-2">
+  <div style={{ border: '2px dashed orange', padding: 6, marginRight: 10 }}>
+    <strong>[DEBUG]</strong> Renderizando ActionPlanButton.<br />
+    <span>
+      <b>onSaveActionPlan:</b> {onSaveActionPlan ? "definido" : "undefined"}<br />
+      <b>readOnly:</b> {readOnly ? "true" : "false"}
+    </span>
+  </div>
+  <ActionPlanButton 
+    onActionPlanClick={onSaveActionPlan ? () => onSaveActionPlan({}) : undefined}
+    readOnly={readOnly || false}
+  />
+  {(question.allowsPhoto || question.allowsVideo || question.permite_foto || question.permite_video) && (
+    <MediaAnalysisButton onOpenAnalysis={handleOpenAnalysis} />
+  )}
+</div>
+
 
       {/* Deixe os outros elementos comentados para garantir o teste do debug primeiro */}
       {/* <div className="flex flex-wrap gap-2">
