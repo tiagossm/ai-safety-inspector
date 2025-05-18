@@ -298,6 +298,7 @@ export function InspectionQuestion({
             aiSuggestion={aiSuggestion}
           />
         )}
+<button onClick={() => setShowActionPlanDialog(true)}>Abrir Modal de Plano de Ação</button>
 
         {showActionPlanImplementation && inspectionId && question.id && onSaveActionPlan && actionPlan && (
           <div className="mt-4 pt-4 border-t border-dashed">
