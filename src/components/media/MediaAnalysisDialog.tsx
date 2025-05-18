@@ -251,16 +251,16 @@ export function MediaAnalysisDialog({
                             {renderMarkdown(forceListMarkdown(actionSuggestion))}
                           </div>
                           <Button
-                            size="sm"
-                            variant="destructive"
-                            className="mt-2 w-full"
-                            onClick={() => {
-                              console.log("clicou", actionSuggestion); // debug!
-                              onAddActionPlan?.(actionSuggestion);
-                            }}
-                          >
-                            Adicionar ao Plano de Ação
-                          </Button>
+  size="sm"
+  variant="destructive"
+  className="mt-2 w-full"
+  onClick={() => {
+    console.log("clicou", actionSuggestion); // debug!
+    onAddActionPlan?.(actionSuggestion);
+  }}
+>
+  Adicionar ao Plano de Ação
+</Button>
                         </div>
                       )}
                       {!hasActionSuggestion && (
