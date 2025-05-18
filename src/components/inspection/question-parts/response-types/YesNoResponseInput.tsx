@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useEffect } from "react";
 import { ResponseButtonGroup } from "./components/ResponseButtonGroup";
-// import { ActionPlanButton } from "./components/ActionPlanButton"; // Comentei só para garantir
+import { ActionPlanButton } from "./components/ActionPlanButton";
 import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
 import { MediaAnalysisButton } from "./components/MediaAnalysisButton";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
@@ -122,6 +122,11 @@ export function YesNoResponseInput({
     : currentValue === false ? "Não"
     : "";
 
+  // --- LOGs para depuração ---
+  console.log("[YesNoResponseInput] Chegou no render. currentValue:", currentValue);
+  // LOG antes de renderizar o botão
+  console.log("[YesNoResponseInput] Antes de renderizar ActionPlanButton");
+
   return (
     <div className="space-y-4">
       <ResponseButtonGroup 
@@ -134,19 +139,11 @@ export function YesNoResponseInput({
         <div style={{ background: "yellow", color: "black", padding: 8 }}>
           TESTE FIXO
         </div>
-        {/* BOTÃO DE TESTE SIMPLES */}
-        <button
-          style={{
-            border: '2px solid #888',
-            padding: '6px 16px',
-            borderRadius: '8px',
-            background: 'white',
-            color: 'black'
-          }}
-          onClick={() => alert('Cliquei no Plano de Ação')}
-        >
-          Plano de Ação TESTE
-        </button>
+        {console.log("[YesNoResponseInput] Renderizando ActionPlanButton. onSaveActionPlan:", onSaveActionPlan, "readOnly:", readOnly)}
+        <ActionPlanButton 
+          onActionPlanClick={onSaveActionPlan ? () => onSaveActionPlan({}) : undefined}
+          readOnly={readOnly || false}
+        />
         {(question.allowsPhoto || question.allowsVideo || question.permite_foto || question.permite_video) && (
           <MediaAnalysisButton onOpenAnalysis={handleOpenAnalysis} />
         )}
