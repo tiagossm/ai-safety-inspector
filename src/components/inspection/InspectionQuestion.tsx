@@ -44,12 +44,11 @@ export function InspectionQuestion({
   const [showActionPlanDialog, setShowActionPlanDialog] = useState(false);
   const [loadingSubChecklist, setLoadingSubChecklist] = useState(false);
   const [multiModalLoading, setMultiModalLoading] = useState(false);
-
+  
   const [mediaAnalysisResults, setMediaAnalysisResults] = useState<Record<string, MediaAnalysisResult>>({});
-
+  
   const { analyze, analyzing } = useMediaAnalysis();
 
-  // Guarda a sugestão da IA para o diálogo
   const [aiSuggestion, setAiSuggestion] = useState<string | undefined>();
 
   const handleCommentChange = (comment: string) => {
@@ -70,7 +69,7 @@ export function InspectionQuestion({
     if (isNegativeResponse(value)) {
       setShowActionPlan(true);
     }
-
+    
     onResponseChange({
       ...response,
       value
@@ -96,7 +95,7 @@ export function InspectionQuestion({
       ...prev,
       [url]: result
     }));
-
+    
     if (result.hasNonConformity) {
       setShowActionPlan(true);
       if (result.actionPlanSuggestion && (!response.actionPlan || response.actionPlan === "")) {
@@ -105,7 +104,6 @@ export function InspectionQuestion({
     }
   };
 
-  // **Função para abrir o diálogo do plano de ação com sugestão da IA**
   const handleApplyAISuggestion = (suggestion: string) => {
     if (!suggestion) return;
     setAiSuggestion(suggestion);
@@ -117,20 +115,20 @@ export function InspectionQuestion({
       console.log("Pelo menos 2 imagens são necessárias para análise em conjunto");
       return;
     }
-
+    
     try {
       setMultiModalLoading(true);
-
+      
       const result = await analyze({
         mediaUrl: response.mediaUrls[0],
         questionText: question.text,
         multimodalAnalysis: true,
         additionalMediaUrls: response.mediaUrls.slice(1)
       });
-
+      
       if (result) {
         const updatedResults = {...mediaAnalysisResults};
-
+        
         response.mediaUrls.forEach((url: string) => {
           updatedResults[url] = {
             ...result,
@@ -140,9 +138,9 @@ export function InspectionQuestion({
             actionPlanSuggestion: result.actionPlanSuggestion
           };
         });
-
+        
         setMediaAnalysisResults(updatedResults);
-
+        
         if (result.hasNonConformity) {
           setShowActionPlan(true);
           if (result.actionPlanSuggestion && (!response.actionPlan || response.actionPlan === "")) {
@@ -178,27 +176,27 @@ export function InspectionQuestion({
 
   const getAISuggestions = (): string[] => {
     const suggestions: string[] = [];
-
+    
     Object.values(mediaAnalysisResults).forEach(result => {
       if (result?.actionPlanSuggestion && !suggestions.includes(result.actionPlanSuggestion)) {
         suggestions.push(result.actionPlanSuggestion);
       }
     });
-
+    
     return suggestions;
   };
-
+  
   const handleSaveStructuredActionPlan = async (data: ActionPlanFormData) => {
     if (onSaveActionPlan) {
       try {
         const result = await onSaveActionPlan(data);
-
+        
         if (result) {
           setShowActionPlanImplementation(true);
           setShowActionPlanDialog(false);
           console.log("Plano de ação salvo com sucesso:", result);
         }
-
+        
         return result;
       } catch (error) {
         console.error("Erro ao salvar plano de ação:", error);
@@ -211,11 +209,11 @@ export function InspectionQuestion({
     if (response && isNegativeResponse(response.value)) {
       setShowActionPlan(true);
     }
-
+    
     if (response && response.actionPlan) {
       setShowActionPlan(true);
     }
-
+    
     if (actionPlan && inspectionId && question.id) {
       setShowActionPlanImplementation(true);
     }
@@ -225,7 +223,7 @@ export function InspectionQuestion({
     const suggestions = Object.values(mediaAnalysisResults)
       .map(result => result?.actionPlanSuggestion)
       .filter(Boolean);
-
+    
     return suggestions.length > 0 ? suggestions[0] : undefined;
   };
 
@@ -249,14 +247,14 @@ export function InspectionQuestion({
           value={response?.value}
           onChange={handleResponseValueChange}
         />
-
+        
         {showComments && (
           <CommentsSection
             comment={response?.comment || ""}
             onCommentChange={handleCommentChange}
           />
         )}
-
+        
         {response?.mediaUrls && response.mediaUrls.length > 0 && (
           <div className="mt-4">
             <MediaUploadSection
@@ -268,14 +266,13 @@ export function InspectionQuestion({
               questionText={question.text}
               onSaveAnalysis={handleSaveAnalysis}
               onApplyAISuggestion={handleApplyAISuggestion}
-              onAddActionPlan={handleApplyAISuggestion}   {/* <-- chave para funcionar */}
               analysisResults={mediaAnalysisResults}
               onAnalyzeAll={handleAnalyzeAllMedia}
               multiModalLoading={multiModalLoading}
             />
           </div>
         )}
-
+        
         {(isNegativeResponse(response?.value) || showActionPlan || response?.actionPlan) && !showActionPlanImplementation && (
           <ActionPlanSection
             isOpen={showActionPlan}
