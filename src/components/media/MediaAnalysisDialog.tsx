@@ -34,6 +34,18 @@ type AnalysisState = {
   errorMessage?: string;
 };
 
+// Função para garantir que cada linha vira um item de lista markdown
+function forceListMarkdown(text: string): string {
+  return text
+    .split('\n')
+    .map(line => {
+      if (/^(\s*-|\s*\d+\.)/.test(line) || line.trim() === "") return line;
+      if (/sugeridas?:/i.test(line)) return `**${line.trim()}**`;
+      return `- ${line.trim()}`;
+    })
+    .join('\n');
+}
+
 export function MediaAnalysisDialog({
   open,
   onOpenChange,
@@ -215,9 +227,8 @@ export function MediaAnalysisDialog({
                             <h3 className="text-xs font-medium text-amber-800">Ações Corretivas Sugeridas:</h3>
                           </div>
                           <div className="text-xs text-amber-700">
-  {renderMarkdown(result.actionPlanSuggestion!)}
-</div>
-
+                            {renderMarkdown(forceListMarkdown(result.actionPlanSuggestion!))}
+                          </div>
                           <Button
                             size="sm"
                             variant="destructive"
