@@ -104,11 +104,12 @@ export function InspectionQuestion({
     }
   };
 
-  const handleApplyAISuggestion = (suggestion: string) => {
-    if (!suggestion) return;
-    setAiSuggestion(suggestion);
-    setShowActionPlanDialog(true);
-  };
+ const handleApplyAISuggestion = (suggestion: string) => {
+  console.log("handleApplyAISuggestion foi chamado com:", suggestion);
+  if (!suggestion) return;
+  setAiSuggestion(suggestion);
+  setShowActionPlanDialog(true);
+};
 
   const handleAnalyzeAllMedia = async () => {
     if (!response.mediaUrls || response.mediaUrls.length <= 1) {
