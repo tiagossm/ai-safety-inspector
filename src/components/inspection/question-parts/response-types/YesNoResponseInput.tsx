@@ -122,10 +122,10 @@ export function YesNoResponseInput({
     : currentValue === false ? "Não"
     : "";
 
-  // --- LOGs para depuração ---
+  // LOGs para depuração!
   console.log("[YesNoResponseInput] Chegou no render. currentValue:", currentValue);
-  // LOG antes de renderizar o botão
   console.log("[YesNoResponseInput] Antes de renderizar ActionPlanButton");
+  console.log("[YesNoResponseInput] Renderizando ActionPlanButton. onSaveActionPlan:", onSaveActionPlan, "readOnly:", readOnly);
 
   return (
     <div className="space-y-4">
@@ -136,10 +136,6 @@ export function YesNoResponseInput({
       />
 
       <div className="flex flex-wrap gap-2">
-        <div style={{ background: "yellow", color: "black", padding: 8 }}>
-          TESTE FIXO
-        </div>
-        {console.log("[YesNoResponseInput] Renderizando ActionPlanButton. onSaveActionPlan:", onSaveActionPlan, "readOnly:", readOnly)}
         <ActionPlanButton 
           onActionPlanClick={onSaveActionPlan ? () => onSaveActionPlan({}) : undefined}
           readOnly={readOnly || false}
