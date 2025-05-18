@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useEffect } from "react";
 import { ResponseButtonGroup } from "./components/ResponseButtonGroup";
-import { ActionPlanButton } from "./components/ActionPlanButton";
+// import { ActionPlanButton } from "./components/ActionPlanButton"; // Comentado para o teste
 import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
 import { MediaAnalysisButton } from "./components/MediaAnalysisButton";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
@@ -122,11 +122,6 @@ export function YesNoResponseInput({
     : currentValue === false ? "Não"
     : "";
 
-  // -------- LOG DE DEBUG --------
-  console.log("[YesNoResponseInput] Chegou no render. currentValue:", currentValue);
-  console.log("[YesNoResponseInput] Antes de renderizar ActionPlanButton");
-  console.log("[YesNoResponseInput] Renderizando ActionPlanButton. onSaveActionPlan:", onSaveActionPlan, "readOnly:", readOnly);
-
   return (
     <div className="space-y-4">
       <ResponseButtonGroup 
@@ -135,16 +130,37 @@ export function YesNoResponseInput({
         readOnly={readOnly || false}
       />
 
-      <div className="flex flex-wrap gap-2">
-        {/* Plano de Ação SEMPRE VISÍVEL */}
+      {/* BLOCO DEBUG: Se não aparecer, tem algo errado no fluxo/JSX/import */}
+      <div style={{ border: '2px solid red', padding: 8 }}>
+        <strong>BLOCO DEBUG: O botão deveria aparecer abaixo.</strong>
+        <button
+          style={{
+            background: 'yellow',
+            color: 'black',
+            fontWeight: 'bold',
+            fontSize: 18,
+            padding: 12,
+            border: '2px solid #333',
+            borderRadius: 8,
+            margin: 10
+          }}
+          onClick={() => alert("Clicou!")}
+        >
+          DEBUG: Criar Plano de Ação
+        </button>
+      </div>
+      {/* FIM DO BLOCO DEBUG */}
+
+      {/* Deixe os outros elementos comentados para garantir o teste do debug primeiro */}
+      {/* <div className="flex flex-wrap gap-2">
         <ActionPlanButton 
-          onActionPlanClick={onSaveActionPlan ? () => onSaveActionPlan({}) : undefined}
+          onActionPlanClick={onSaveActionPlan ? () => onSaveActionPlan({}) : undefined} 
           readOnly={readOnly || false}
         />
         {(question.allowsPhoto || question.allowsVideo || question.permite_foto || question.permite_video) && (
           <MediaAnalysisButton onOpenAnalysis={handleOpenAnalysis} />
         )}
-      </div>
+      </div> */}
 
       {mediaUrls.length > 0 && (
         <MediaAttachments
