@@ -5,7 +5,8 @@ import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaU
 import { MediaAnalysisButton } from "./components/MediaAnalysisButton";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { MediaAttachments } from "@/components/inspection/question-inputs/MediaAttachments";
-import { ActionPlanDialog } from "@/components/action-plans/ActionPlanDialog";
+// ALTERE aqui conforme o nome do seu novo modal!
+import { ActionPlan5W2HDialog } from "@/components/action-plans/ActionPlan5W2HDialog";
 
 interface YesNoResponseInputProps {
   question: any;
@@ -35,6 +36,7 @@ export function YesNoResponseInput({
   const [mediaAnalysisResults, setMediaAnalysisResults] = useState<Record<string, any>>(
     response?.mediaAnalysisResults || {}
   );
+  // Novo estado para o modal 5W2H:
   const [isActionPlanDialogOpen, setIsActionPlanDialogOpen] = useState(false);
 
   const currentValue = response?.value;
@@ -124,15 +126,6 @@ export function YesNoResponseInput({
     : currentValue === false ? "Não"
     : "";
 
-  // LOG para depuração avançada:
-  console.log("[YesNoResponseInput] Chegou no render. currentValue:", currentValue);
-  console.log("[YesNoResponseInput] Antes de renderizar ActionPlanButton");
-  console.log(
-    "[YesNoResponseInput] Renderizando ActionPlanButton. onSaveActionPlan:",
-    typeof onSaveActionPlan,
-    "readOnly:", readOnly
-  );
-
   return (
     <div className="space-y-4">
       <ResponseButtonGroup 
@@ -142,7 +135,7 @@ export function YesNoResponseInput({
       />
 
       <div className="flex flex-wrap gap-2">
-        {/* Botão de Plano de Ação - agora abre o popup/modal! */}
+        {/* Agora o botão abre o modal 5W2H */}
         <ActionPlanButton
           onActionPlanClick={() => setIsActionPlanDialogOpen(true)}
           readOnly={readOnly}
@@ -191,19 +184,18 @@ export function YesNoResponseInput({
         additionalMediaUrls={mediaUrls}
       />
 
-      {/* --- MODAL DE PLANO DE AÇÃO (popup) --- */}
-      <ActionPlanDialog
+      {/* MODAL 5W2H */}
+      <ActionPlan5W2HDialog
         open={isActionPlanDialogOpen}
         onOpenChange={setIsActionPlanDialogOpen}
         questionId={question?.id}
         inspectionId={inspectionId}
-        // Passe aqui as props que seu modal espera, exemplo:
         existingPlan={actionPlan}
         onSave={async (data: any) => {
           await onSaveActionPlan?.(data);
           setIsActionPlanDialogOpen(false);
         }}
-        aiSuggestion={mediaAnalysisResults?.actionPlanSuggestion || null}
+        iaSuggestions={mediaAnalysisResults}
       />
     </div>
   );
