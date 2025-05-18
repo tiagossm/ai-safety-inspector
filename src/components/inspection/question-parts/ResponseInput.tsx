@@ -1,4 +1,3 @@
-
 import React, { useCallback } from 'react';
 import { YesNoResponseInput } from './response-types/YesNoResponseInput';
 import { TextResponseInput } from './response-types/TextResponseInput';
@@ -19,16 +18,19 @@ export function ResponseInput({ question, value, onChange }: ResponseInputProps)
     : { value: value, mediaUrls: [] }; // Caso value seja primitivo, criamos um objeto completo
   
   console.log("[ResponseInput] rendering with type:", responseType, "value:", value);
+
+  // Função de salvar plano de ação (deve ser customizada conforme seu fluxo)
+  const handleSaveActionPlan = async (data: any) => {
+    console.log("[ResponseInput] Salvando plano de ação:", data);
+    // Aqui vai sua lógica real (dispatch, setState, chamada API, etc)
+    // Por enquanto só loga pra debug.
+  };
   
   const handleValueChange = useCallback((newValue: any) => {
     console.log("[ResponseInput] handleValueChange:", newValue);
-    
-    // Se o valor recebido já for um objeto de resposta completo, usamos ele
     if (typeof newValue === 'object' && newValue !== null) {
       onChange(newValue);
-    } 
-    // Se for um valor primitivo, atualizamos apenas o campo value no objeto
-    else {
+    } else {
       onChange({
         ...responseObject,
         value: newValue
@@ -43,6 +45,7 @@ export function ResponseInput({ question, value, onChange }: ResponseInputProps)
           question={question} 
           response={responseObject}
           onResponseChange={handleValueChange}
+          onSaveActionPlan={handleSaveActionPlan}  // <-- PASSA A FUNÇÃO AQUI
         />
       );
     
