@@ -7,13 +7,18 @@ interface ActionPlanButtonProps {
   readOnly?: boolean;
 }
 
-export function ActionPlanButton({ onActionPlanClick, readOnly = false }: ActionPlanButtonProps) {
-  console.log('[DEBUG] ActionPlanButton FINAL, onActionPlanClick:', !!onActionPlanClick, 'readOnly:', readOnly);
+export function ActionPlanButton({
+  onActionPlanClick,
+  readOnly = false
+}: ActionPlanButtonProps) {
   return (
     <Button
       variant="outline"
       size="sm"
-      onClick={onActionPlanClick}
+      onClick={(e) => {
+        e.preventDefault();
+        if (onActionPlanClick) onActionPlanClick();
+      }}
       className="flex items-center"
       disabled={readOnly}
       data-testid="action-plan-btn"
