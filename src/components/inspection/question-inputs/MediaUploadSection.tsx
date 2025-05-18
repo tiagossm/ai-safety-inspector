@@ -1,4 +1,3 @@
-
 import React, { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +42,14 @@ export function MediaUploadSection({
   const [selectedMedia, setSelectedMedia] = useState<string | null>(null);
   const [selectedMediaType, setSelectedMediaType] = useState<string | null>(null);
 
+  // NOVO: Plano de ação
+  const [planoAcao, setPlanoAcao] = useState<string[]>([]);
+
+  const handleAddActionPlan = useCallback((suggestion: string) => {
+    setPlanoAcao(prev => [...prev, suggestion]);
+    setAnalysisDialogOpen(false);
+  }, []);
+
   const { uploadFile, isUploading, progress, error: uploadError } = useMediaUpload();
 
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,7 +61,6 @@ export function MediaUploadSection({
 
     const file = e.target.files[0];
     
-    // Validate file size (max 50MB)
     if (file.size > 50 * 1024 * 1024) {
       setError("Arquivo muito grande. Tamanho máximo: 50MB");
       if (fileInputRef.current) {
@@ -63,11 +69,9 @@ export function MediaUploadSection({
       return;
     }
     
-    // Validate file type
     const acceptedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/jpg'];
     const acceptedVideoTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'];
     const acceptedAudioTypes = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/x-m4a'];
-    
     const acceptedTypes = [...acceptedImageTypes, ...acceptedVideoTypes, ...acceptedAudioTypes];
     
     if (!acceptedTypes.includes(file.type)) {
@@ -80,17 +84,14 @@ export function MediaUploadSection({
     
     try {
       const result = await uploadFile(file);
-      
       if (result && result.url) {
         const updatedMediaUrls = [...mediaUrls, result.url];
         onMediaChange(updatedMediaUrls);
       }
-      
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     } catch (err) {
-      console.error("Error uploading file:", err);
       setError("Erro ao enviar arquivo. Tente novamente.");
     }
   }, [uploadFile, mediaUrls, onMediaChange]);
@@ -107,7 +108,6 @@ export function MediaUploadSection({
 
   const handleOpenAnalysis = useCallback((url: string, questionContext?: string) => {
     setSelectedMedia(url);
-    // Determine media type from URL
     if (url.match(/\.(jpeg|jpg|gif|png)$/i)) {
       setSelectedMediaType("image/jpeg");
     } else if (url.match(/\.(mp4|webm|mov)$/i)) {
@@ -115,7 +115,7 @@ export function MediaUploadSection({
     } else if (url.match(/\.(mp3|wav|ogg)$/i)) {
       setSelectedMediaType("audio/mp3");
     } else {
-      setSelectedMediaType("image/jpeg"); // Default to image
+      setSelectedMediaType("image/jpeg");
     }
     setAnalysisDialogOpen(true);
   }, []);
@@ -151,7 +151,6 @@ export function MediaUploadSection({
                 </>
               )}
             </Button>
-            
             {mediaUrls.length > 1 && onAnalyzeAll && (
               <Button
                 type="button"
@@ -175,7 +174,6 @@ export function MediaUploadSection({
               </Button>
             )}
           </div>
-          
           <Input
             ref={fileInputRef}
             type="file"
@@ -184,11 +182,9 @@ export function MediaUploadSection({
             onChange={handleFileUpload}
             disabled={isUploading}
           />
-          
           {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
         </div>
       )}
-      
       <MediaAttachments
         mediaUrls={mediaUrls}
         onDelete={isReadOnly ? undefined : handleDeleteMedia}
@@ -200,15 +196,11 @@ export function MediaUploadSection({
         onApplyAISuggestion={onApplyAISuggestion}
         analysisResults={analysisResults}
       />
-
-      {/* Media Preview Dialog */}
       <MediaPreviewDialog
         open={previewDialogOpen}
         onOpenChange={setPreviewDialogOpen}
         url={selectedMedia}
       />
-
-      {/* Media Analysis Dialog */}
       <MediaAnalysisDialog
         open={analysisDialogOpen}
         onOpenChange={setAnalysisDialogOpen}
@@ -216,7 +208,15 @@ export function MediaUploadSection({
         mediaType={selectedMediaType}
         questionText={questionText}
         onAnalysisComplete={handleAnalysisComplete}
+        onAddActionPlan={handleAddActionPlan}
       />
+      {planoAcao.length > 0 && (
+        <ul className="mt-2">
+          {planoAcao.map((acao, idx) => (
+            <li key={idx} className="text-xs text-green-800">{acao}</li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

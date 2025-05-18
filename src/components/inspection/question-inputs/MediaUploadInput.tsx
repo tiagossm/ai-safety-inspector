@@ -1,10 +1,10 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, Pencil, Trash2, Search, Play, FileText, Mic, FileVideo, Image, Sparkles } from "lucide-react";
+import { Camera } from "lucide-react";
 import { MediaDialog } from "../dialogs/MediaDialog";
 import { MediaPreviewDialog } from "@/components/media/MediaPreviewDialog";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
-import { getFileType, getFilenameFromUrl } from "@/utils/fileUtils";
+import { getFileType } from "@/utils/fileUtils";
 import { MediaAttachments } from "./MediaAttachments";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 
@@ -40,52 +40,42 @@ export function MediaUploadInput({
   const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<string | null>(null);
   const [selectedMediaType, setSelectedMediaType] = useState<string | null>(null);
-  
-  console.log("[MediaUploadInput] Rendering with mediaUrls:", mediaUrls);
-  
+  const [planoAcao, setPlanoAcao] = useState<string[]>([]);
+
   const handleAddMedia = useCallback(() => {
     if (!readOnly) {
-      console.log("MediaUploadInput: Opening media dialog");
       setMediaDialogOpen(true);
     }
   }, [readOnly]);
-  
+
   const handleMediaUploaded = useCallback((urls: string[]) => {
-    console.log("MediaUploadInput: Media uploaded:", urls);
     if (urls.length > 0) {
       const newUrls = [...mediaUrls, ...urls];
-      console.log("MediaUploadInput: New mediaUrls after upload:", newUrls);
       onMediaChange(newUrls);
     }
   }, [mediaUrls, onMediaChange]);
-  
+
   const handleDeleteMedia = useCallback((urlToDelete: string) => {
     if (!readOnly) {
-      console.log("MediaUploadInput: Deleting media:", urlToDelete);
       const filteredUrls = mediaUrls.filter(url => url !== urlToDelete);
-      console.log("MediaUploadInput: Filtered URLs after deletion:", filteredUrls);
       onMediaChange(filteredUrls);
     }
   }, [readOnly, mediaUrls, onMediaChange]);
-  
+
   const handlePreviewMedia = useCallback((url: string) => {
-    console.log("MediaUploadInput: Previewing media:", url);
     setSelectedMedia(url);
     setPreviewDialogOpen(true);
   }, []);
-  
+
   const handleAnalyzeMedia = useCallback((url: string, questionContext?: string) => {
-    console.log("MediaUploadInput: Analyzing media:", url, "with question context:", questionContext || questionText);
     setSelectedMedia(url);
     const mediaType = getMediaType(url);
     setSelectedMediaType(mediaType);
     setAnalysisDialogOpen(true);
   }, [questionText]);
-  
+
   const handleAnalysisComplete = useCallback((result: MediaAnalysisResult) => {
-    console.log("MediaUploadInput: Analysis complete:", result);
     if (onSaveAnalysis && selectedMedia) {
-      // Ensure the question context is included in the result
       const resultWithContext = {
         ...result,
         questionText: questionText || ''
@@ -93,6 +83,12 @@ export function MediaUploadInput({
       onSaveAnalysis(selectedMedia, resultWithContext);
     }
   }, [onSaveAnalysis, selectedMedia, questionText]);
+
+  // NOVO: Handler do plano de ação
+  const handleAddActionPlan = useCallback((suggestion: string) => {
+    setPlanoAcao(prev => [...prev, suggestion]);
+    setAnalysisDialogOpen(false);
+  }, []);
 
   const getMediaType = (url: string): string => {
     const fileType = getFileType(url);
@@ -109,7 +105,7 @@ export function MediaUploadInput({
   if (allowsVideo) allowedTypes.push('video/*');
   if (allowsAudio) allowedTypes.push('audio/*');
   if (allowsFiles) allowedTypes.push('application/pdf', '.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar');
-  
+
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-2">
@@ -147,6 +143,7 @@ export function MediaUploadInput({
         url={selectedMedia}
       />
 
+      {/* Aqui passa o handler de adicionar ao plano de ação */}
       <MediaAnalysisDialog
         open={analysisDialogOpen}
         onOpenChange={setAnalysisDialogOpen}
@@ -154,7 +151,17 @@ export function MediaUploadInput({
         mediaType={selectedMediaType}
         questionText={questionText}
         onAnalysisComplete={handleAnalysisComplete}
+        onAddActionPlan={handleAddActionPlan}
       />
+
+      {/* Visualização do plano de ação */}
+      {planoAcao.length > 0 && (
+        <ul className="mt-2">
+          {planoAcao.map((acao, idx) => (
+            <li key={idx} className="text-xs text-green-800">{acao}</li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
