@@ -126,6 +126,7 @@ export function MediaAnalysisDialog({
             ...prev,
             [url]: { status: 'done', result }
           }));
+          if (onAnalysisComplete) onAnalysisComplete(result);
         })
         .catch((err: any) => {
           setAnalysisMap(prev => ({
@@ -197,7 +198,6 @@ export function MediaAnalysisDialog({
             {allImages.map((url, idx) => {
               const state = analysisMap[url];
               const result = state?.result;
-              // Usa a função com fallback!
               const actionSuggestion = result ? getSafeActionPlan(result) : "";
               const hasActionSuggestion = !!actionSuggestion && actionSuggestion.trim().length > 0;
 
