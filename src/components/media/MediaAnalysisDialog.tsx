@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useMediaAnalysis, MediaAnalysisResult } from '@/hooks/useMediaAnalysis';
-import { Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 import ReactMarkdown from "react-markdown";
 
 interface MediaAnalysisDialogProps {
@@ -17,7 +17,7 @@ interface MediaAnalysisDialogProps {
   mediaUrl: string | null;
   mediaType?: string | null;
   questionText?: string;
-  userAnswer?: string; // Adicionado para análise crítica
+  userAnswer?: string;
   onAnalysisComplete?: (result: MediaAnalysisResult) => void;
   onAddActionPlan?: (suggestion: string) => void;
   onAddComment?: (comment: string) => void;
@@ -40,7 +40,7 @@ export function MediaAnalysisDialog({
   mediaUrl,
   mediaType,
   questionText = "",
-  userAnswer = "",        // Recebe a resposta do usuário
+  userAnswer = "",
   onAnalysisComplete,
   onAddActionPlan,
   onAddComment,
@@ -49,7 +49,6 @@ export function MediaAnalysisDialog({
   additionalMediaUrls = []
 }: MediaAnalysisDialogProps) {
   const MAX_IMAGES = 4;
-  // Lista todas as imagens únicas e limita a 4
   const allImages: string[] = React.useMemo(() => {
     if (!mediaUrl) return [];
     const base = mediaUrls.length > 0 ? mediaUrls : additionalMediaUrls;
@@ -57,11 +56,9 @@ export function MediaAnalysisDialog({
     return [mediaUrl, ...filtered].slice(0, MAX_IMAGES);
   }, [mediaUrl, mediaUrls, additionalMediaUrls]);
 
-  // Map: url -> state de análise
   const [analysisMap, setAnalysisMap] = useState<Record<string, AnalysisState>>({});
   const { analyze } = useMediaAnalysis();
 
-  // Inicializa análise ao abrir dialog
   useEffect(() => {
     if (open) {
       let map: Record<string, AnalysisState> = {};
@@ -72,10 +69,8 @@ export function MediaAnalysisDialog({
     } else {
       setAnalysisMap({});
     }
-    // eslint-disable-next-line
   }, [open, allImages.join('-')]);
 
-  // Faz análise apenas para imagens pendentes ou em retry
   useEffect(() => {
     if (!open) return;
     allImages.forEach(url => {
@@ -91,7 +86,7 @@ export function MediaAnalysisDialog({
           mediaUrl: url,
           mediaType,
           questionText,
-          userAnswer, // ENVIA a resposta do usuário para IA!
+          userAnswer,
           multimodalAnalysis: false,
           additionalMediaUrls: contextImages
         })
@@ -112,7 +107,6 @@ export function MediaAnalysisDialog({
     // eslint-disable-next-line
   }, [open, analyze, mediaUrl, mediaType, questionText, userAnswer, allImages.join('-'), analysisMap]);
 
-  // Retry manual para uma imagem
   const handleRetry = (url: string) => {
     setAnalysisMap(prev => ({
       ...prev,
@@ -120,7 +114,6 @@ export function MediaAnalysisDialog({
     }));
   };
 
-  // Loader global: se ao menos uma imagem está em processing
   const isLoading = Object.values(analysisMap).some(state => state?.status === 'processing');
 
   const renderMarkdown = (md: string) =>
@@ -131,7 +124,6 @@ export function MediaAnalysisDialog({
       }}
     >{md}</ReactMarkdown>;
 
-  // Exibir aviso de limite
   const showMaxWarning = (mediaUrls.length > MAX_IMAGES || additionalMediaUrls.length > MAX_IMAGES);
 
   return (
@@ -143,14 +135,12 @@ export function MediaAnalysisDialog({
           </DialogTitle>
         </DialogHeader>
 
-        {/* Aviso de limite de imagens */}
         {showMaxWarning && (
           <div className="mb-3 bg-yellow-100 text-yellow-900 text-xs rounded px-3 py-2 border border-yellow-300">
             Atenção: apenas as 4 primeiras imagens foram analisadas. As demais não serão processadas.
           </div>
         )}
 
-        {/* Contexto da Questão e Resposta do Usuário */}
         {questionText && (
           <div className="mb-4 p-3 bg-gray-50 rounded-md border">
             <h3 className="text-sm font-medium text-gray-700 mb-1">Contexto da Questão:</h3>
@@ -164,7 +154,6 @@ export function MediaAnalysisDialog({
           </div>
         )}
 
-        {/* Loader global */}
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
@@ -172,13 +161,12 @@ export function MediaAnalysisDialog({
           </div>
         )}
 
-        {/* Resultados das análises por imagem */}
         {allImages.length > 0 && (
           <div className={`grid gap-4 ${allImages.length > 1 ? 'grid-cols-2 sm:grid-cols-4' : ''}`}>
             {allImages.map((url, idx) => {
               const state = analysisMap[url];
               const result = state?.result;
-              const hasActionSuggestion = !!result?.actionPlanSuggestion;
+              const hasActionSuggestion = !!result?.actionPlanSuggestion && result.actionPlanSuggestion.trim().length > 0;
 
               return (
                 <div key={url} className="col-span-1 border rounded-lg shadow-sm p-2 bg-white flex flex-col items-center">
@@ -190,7 +178,6 @@ export function MediaAnalysisDialog({
                   <p className="text-xs text-center mt-1 text-gray-500">
                     {idx === 0 ? 'Imagem principal' : `Imagem adicional ${idx}`}
                   </p>
-                  {/* Status */}
                   {state?.status === 'processing' && (
                     <div className="flex flex-col items-center mt-3 mb-3">
                       <Loader2 className="h-5 w-5 animate-spin text-primary" />
@@ -205,7 +192,6 @@ export function MediaAnalysisDialog({
                   )}
                   {state?.status === 'done' && result && (
                     <>
-                      {/* Badge SÓ SE TIVER SUGESTÃO DE AÇÃO */}
                       {hasActionSuggestion && (
                         <div className="w-full my-2 p-2 rounded-md border text-center bg-amber-50 border-amber-200">
                           <div className="flex items-center justify-center gap-1">
@@ -222,7 +208,6 @@ export function MediaAnalysisDialog({
                           {renderMarkdown(result.analysis ?? "")}
                         </div>
                       </div>
-                      {/* Ações sugeridas */}
                       {hasActionSuggestion && (
                         <div className="w-full border rounded-md p-2 bg-amber-50 border-amber-200 mt-1">
                           <div className="flex items-center mb-1">
@@ -230,19 +215,22 @@ export function MediaAnalysisDialog({
                             <h3 className="text-xs font-medium text-amber-800">Ações Corretivas Sugeridas:</h3>
                           </div>
                           <div className="text-xs text-amber-700 whitespace-pre-line">
+                            {/* Aqui está o markdown! */}
                             {renderMarkdown(result.actionPlanSuggestion!)}
                           </div>
                           <Button
                             size="sm"
                             variant="destructive"
                             className="mt-2 w-full"
-                            onClick={() => onAddActionPlan?.(result.actionPlanSuggestion!)}
+                            onClick={() => {
+                              console.log("clicou", result.actionPlanSuggestion); // debug!
+                              onAddActionPlan?.(result.actionPlanSuggestion!);
+                            }}
                           >
                             Adicionar ao Plano de Ação
                           </Button>
                         </div>
                       )}
-                      {/* Caso não haja sugestão de ação, você pode manter um botão de comentário de conformidade */}
                       {!hasActionSuggestion && (
                         <Button
                           size="sm"
