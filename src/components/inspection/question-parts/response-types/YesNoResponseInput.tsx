@@ -122,22 +122,34 @@ export function YesNoResponseInput({
     : currentValue === false ? "Não"
     : "";
 
-  // -------- LOGS PARA DEBUG --------
+  // LOG para depuração avançada:
   console.log("[YesNoResponseInput] Chegou no render. currentValue:", currentValue);
   console.log("[YesNoResponseInput] Antes de renderizar ActionPlanButton");
-  console.log("[YesNoResponseInput] Renderizando ActionPlanButton. onSaveActionPlan:", onSaveActionPlan, "readOnly:", readOnly);
+  console.log(
+    "[YesNoResponseInput] Renderizando ActionPlanButton. onSaveActionPlan:",
+    typeof onSaveActionPlan,
+    "readOnly:", readOnly
+  );
 
   return (
     <div className="space-y-4">
       <ResponseButtonGroup 
         value={currentValue} 
         onChange={handleResponseChange} 
-        readOnly={readOnly || false}
+        readOnly={readOnly}
       />
 
       <div className="flex flex-wrap gap-2">
-        <ActionPlanButton 
-          onActionPlanClick={onSaveActionPlan}
+        <ActionPlanButton
+          onActionPlanClick={
+            onSaveActionPlan
+              ? () => onSaveActionPlan({
+                  resposta: currentValue,
+                  questionId: question?.id,
+                  // acrescente outros campos relevantes para seu contexto
+                })
+              : undefined
+          }
           readOnly={readOnly}
         />
         {(question.allowsPhoto || question.allowsVideo || question.permite_foto || question.permite_video) && (
