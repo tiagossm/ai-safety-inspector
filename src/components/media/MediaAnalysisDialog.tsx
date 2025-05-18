@@ -214,10 +214,10 @@ export function MediaAnalysisDialog({
                             <Sparkles className="h-3 w-3 text-amber-500 mr-1" />
                             <h3 className="text-xs font-medium text-amber-800">Ações Corretivas Sugeridas:</h3>
                           </div>
-                          <div className="text-xs text-amber-700 whitespace-pre-line">
-                            {/* Aqui está o markdown! */}
-                            {renderMarkdown(result.actionPlanSuggestion!)}
-                          </div>
+                          <div className="text-xs text-amber-700">
+  {renderMarkdown(result.actionPlanSuggestion!)}
+</div>
+
                           <Button
                             size="sm"
                             variant="destructive"
