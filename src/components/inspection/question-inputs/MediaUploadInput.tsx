@@ -7,20 +7,8 @@ import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { getFileType } from "@/utils/fileUtils";
 import { MediaAttachments } from "./MediaAttachments";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
-
-interface MediaUploadInputProps {
-  mediaUrls: string[];
-  onMediaChange: (mediaUrls: string[]) => void;
-  allowsPhoto?: boolean;
-  allowsVideo?: boolean;
-  allowsAudio?: boolean;
-  allowsFiles?: boolean;
-  readOnly?: boolean;
-  questionText?: string;
-  onSaveAnalysis?: (url: string, result: MediaAnalysisResult) => void;
-  onApplyAISuggestion?: (suggestion: string) => void;
-  analysisResults?: Record<string, MediaAnalysisResult>;
-}
+// Supondo que você já tenha esse modal 5W2H:
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 export function MediaUploadInput({
   mediaUrls = [],
@@ -34,77 +22,63 @@ export function MediaUploadInput({
   onSaveAnalysis,
   onApplyAISuggestion,
   analysisResults = {}
-}: MediaUploadInputProps) {
+}) {
   const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [analysisDialogOpen, setAnalysisDialogOpen] = useState(false);
-  const [selectedMedia, setSelectedMedia] = useState<string | null>(null);
-  const [selectedMediaType, setSelectedMediaType] = useState<string | null>(null);
-  const [planoAcao, setPlanoAcao] = useState<string[]>([]);
+  const [selectedMedia, setSelectedMedia] = useState(null);
+  const [selectedMediaType, setSelectedMediaType] = useState(null);
 
-  const handleAddMedia = useCallback(() => {
-    if (!readOnly) {
-      setMediaDialogOpen(true);
-    }
-  }, [readOnly]);
+  // --- Estados do 5W2H
+  const [modalPlanoAcaoAberto, setModalPlanoAcaoAberto] = useState(false);
+  const [planoAcaoSugestao, setPlanoAcaoSugestao] = useState("");
+  const [planoAcao, setPlanoAcao] = useState([]); // Lista de ações salvas
 
-  const handleMediaUploaded = useCallback((urls: string[]) => {
-    if (urls.length > 0) {
-      const newUrls = [...mediaUrls, ...urls];
-      onMediaChange(newUrls);
-    }
-  }, [mediaUrls, onMediaChange]);
-
-  const handleDeleteMedia = useCallback((urlToDelete: string) => {
-    if (!readOnly) {
-      const filteredUrls = mediaUrls.filter(url => url !== urlToDelete);
-      onMediaChange(filteredUrls);
-    }
-  }, [readOnly, mediaUrls, onMediaChange]);
-
-  const handlePreviewMedia = useCallback((url: string) => {
-    setSelectedMedia(url);
-    setPreviewDialogOpen(true);
+  // Handler para abrir o modal de ação já preenchido
+  const handleAddActionPlan = useCallback((suggestion) => {
+    setPlanoAcaoSugestao(suggestion || "");
+    setModalPlanoAcaoAberto(true);
+    setAnalysisDialogOpen(false); // opcional, fecha o anterior
   }, []);
 
-  const handleAnalyzeMedia = useCallback((url: string, questionContext?: string) => {
+  // O resto dos handlers padrões...
+  const handleAddMedia = useCallback(() => { if (!readOnly) setMediaDialogOpen(true); }, [readOnly]);
+  const handleMediaUploaded = useCallback((urls) => { if (urls.length > 0) onMediaChange([...mediaUrls, ...urls]); }, [mediaUrls, onMediaChange]);
+  const handleDeleteMedia = useCallback((urlToDelete) => { if (!readOnly) onMediaChange(mediaUrls.filter(url => url !== urlToDelete)); }, [readOnly, mediaUrls, onMediaChange]);
+  const handlePreviewMedia = useCallback((url) => { setSelectedMedia(url); setPreviewDialogOpen(true); }, []);
+  const handleAnalyzeMedia = useCallback((url, questionContext) => {
     setSelectedMedia(url);
-    const mediaType = getMediaType(url);
-    setSelectedMediaType(mediaType);
+    setSelectedMediaType(getMediaType(url));
     setAnalysisDialogOpen(true);
   }, [questionText]);
-
-  const handleAnalysisComplete = useCallback((result: MediaAnalysisResult) => {
+  const handleAnalysisComplete = useCallback((result) => {
     if (onSaveAnalysis && selectedMedia) {
-      const resultWithContext = {
-        ...result,
-        questionText: questionText || ''
-      };
+      const resultWithContext = { ...result, questionText: questionText || '' };
       onSaveAnalysis(selectedMedia, resultWithContext);
     }
   }, [onSaveAnalysis, selectedMedia, questionText]);
 
-  // NOVO: Handler do plano de ação
-  const handleAddActionPlan = useCallback((suggestion: string) => {
-    setPlanoAcao(prev => [...prev, suggestion]);
-    setAnalysisDialogOpen(false);
-  }, []);
-
-  const getMediaType = (url: string): string => {
+  function getMediaType(url) {
     const fileType = getFileType(url);
-    switch(fileType) {
+    switch (fileType) {
       case 'image': return 'image/jpeg';
       case 'video': return 'video/mp4';
       case 'audio': return 'audio/mp3';
       default: return 'application/octet-stream';
     }
-  };
-
+  }
   const allowedTypes = [];
   if (allowsPhoto) allowedTypes.push('image/*');
   if (allowsVideo) allowedTypes.push('video/*');
   if (allowsAudio) allowedTypes.push('audio/*');
   if (allowsFiles) allowedTypes.push('application/pdf', '.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar');
+
+  // --- Handler para salvar a ação no array (você pode adaptar para salvar em backend)
+  function handleSalvarPlanoAcao() {
+    setPlanoAcao(prev => [...prev, planoAcaoSugestao]);
+    setModalPlanoAcaoAberto(false);
+    setPlanoAcaoSugestao(""); // limpa campo
+  }
 
   return (
     <div className="space-y-2">
@@ -121,14 +95,13 @@ export function MediaUploadInput({
             <span>Adicionar mídia</span>
           </Button>
         )}
-        
         {mediaUrls.length > 0 && (
           <span className="text-xs text-muted-foreground">
             {mediaUrls.length} {mediaUrls.length === 1 ? 'arquivo' : 'arquivos'}
           </span>
         )}
       </div>
-      
+
       <MediaDialog
         open={mediaDialogOpen}
         onOpenChange={setMediaDialogOpen}
@@ -136,14 +109,11 @@ export function MediaUploadInput({
         response={{ mediaUrls }}
         allowedTypes={allowedTypes}
       />
-      
       <MediaPreviewDialog
         open={previewDialogOpen}
         onOpenChange={setPreviewDialogOpen}
         url={selectedMedia}
       />
-
-      {/* Aqui passa o handler de adicionar ao plano de ação */}
       <MediaAnalysisDialog
         open={analysisDialogOpen}
         onOpenChange={setAnalysisDialogOpen}
@@ -153,8 +123,19 @@ export function MediaUploadInput({
         onAnalysisComplete={handleAnalysisComplete}
         onAddActionPlan={handleAddActionPlan}
       />
+      <MediaAttachments
+        mediaUrls={mediaUrls}
+        onDelete={readOnly ? undefined : handleDeleteMedia}
+        onOpenPreview={handlePreviewMedia}
+        onOpenAnalysis={handleAnalyzeMedia}
+        readOnly={readOnly}
+        questionText={questionText}
+        onSaveAnalysis={onSaveAnalysis}
+        onApplyAISuggestion={handleAddActionPlan}
+        analysisResults={analysisResults}
+      />
 
-      {/* Visualização do plano de ação */}
+      {/* Visualização rápida das ações salvas */}
       {planoAcao.length > 0 && (
         <ul className="mt-2">
           {planoAcao.map((acao, idx) => (
@@ -162,6 +143,28 @@ export function MediaUploadInput({
           ))}
         </ul>
       )}
+
+      {/* Modal 5W2H simplificado */}
+      <Dialog open={modalPlanoAcaoAberto} onOpenChange={setModalPlanoAcaoAberto}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Plano de Ação (5W2H)</DialogTitle>
+          </DialogHeader>
+          <div>
+            <label className="block text-xs font-semibold mb-1">O quê?</label>
+            <input
+              className="w-full border px-2 py-1 rounded mb-2"
+              value={planoAcaoSugestao}
+              onChange={e => setPlanoAcaoSugestao(e.target.value)}
+              placeholder="Descreva a ação"
+            />
+            {/* Coloque os outros campos do seu 5W2H aqui */}
+          </div>
+          <DialogFooter>
+            <Button onClick={handleSalvarPlanoAcao}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
