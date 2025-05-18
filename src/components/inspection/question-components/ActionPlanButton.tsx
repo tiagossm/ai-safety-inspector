@@ -8,6 +8,9 @@ interface ActionPlanButtonProps {
 }
 
 export function ActionPlanButton({ onActionPlanClick, readOnly = false }: ActionPlanButtonProps) {
+  // LOG para identificar se está sendo renderizado!
+  console.log("Renderizando ActionPlanButton");
+
   return (
     <Button
       variant="outline"
