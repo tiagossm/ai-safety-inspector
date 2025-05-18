@@ -122,7 +122,7 @@ export function YesNoResponseInput({
     : currentValue === false ? "Não"
     : "";
 
-  // LOGs para depuração!
+  // -------- LOG DE DEBUG --------
   console.log("[YesNoResponseInput] Chegou no render. currentValue:", currentValue);
   console.log("[YesNoResponseInput] Antes de renderizar ActionPlanButton");
   console.log("[YesNoResponseInput] Renderizando ActionPlanButton. onSaveActionPlan:", onSaveActionPlan, "readOnly:", readOnly);
@@ -136,6 +136,7 @@ export function YesNoResponseInput({
       />
 
       <div className="flex flex-wrap gap-2">
+        {/* Plano de Ação SEMPRE VISÍVEL */}
         <ActionPlanButton 
           onActionPlanClick={onSaveActionPlan ? () => onSaveActionPlan({}) : undefined}
           readOnly={readOnly || false}

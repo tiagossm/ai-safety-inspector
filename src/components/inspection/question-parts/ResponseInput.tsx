@@ -11,23 +11,19 @@ interface ResponseInputProps {
 
 export function ResponseInput({ question, value, onChange }: ResponseInputProps) {
   const responseType = question.responseType || 'yes_no';
-  
-  // Construindo o objeto de resposta completo (incluindo o valor)
-  const responseObject = typeof value === 'object' 
-    ? value 
-    : { value: value, mediaUrls: [] }; // Caso value seja primitivo, criamos um objeto completo
-  
-  console.log("[ResponseInput] rendering with type:", responseType, "value:", value);
 
-  // Função de salvar plano de ação (deve ser customizada conforme seu fluxo)
-  const handleSaveActionPlan = async (data: any) => {
+  // Se não vier objeto, constrói o padrão
+  const responseObject = typeof value === 'object'
+    ? value
+    : { value: value, mediaUrls: [] };
+
+  // Função para salvar o plano de ação
+  const handleSaveActionPlan = useCallback(async (data: any) => {
     console.log("[ResponseInput] Salvando plano de ação:", data);
-    // Aqui vai sua lógica real (dispatch, setState, chamada API, etc)
-    // Por enquanto só loga pra debug.
-  };
-  
+    // Implemente aqui a lógica real, se necessário.
+  }, []);
+
   const handleValueChange = useCallback((newValue: any) => {
-    console.log("[ResponseInput] handleValueChange:", newValue);
     if (typeof newValue === 'object' && newValue !== null) {
       onChange(newValue);
     } else {
@@ -37,43 +33,35 @@ export function ResponseInput({ question, value, onChange }: ResponseInputProps)
       });
     }
   }, [onChange, responseObject]);
-  
+
   switch (responseType) {
     case "yes_no":
       return (
-        <YesNoResponseInput 
-  question={question} 
-  response={responseObject}
-  onResponseChange={handleValueChange}
-  onSaveActionPlan={async (data) => {
-    // Exemplo: abrir modal, chamar API, salvar local, etc.
-    console.log("[ResponseInput] Salvando plano de ação:", data);
-  }}
-/>
-
+        <YesNoResponseInput
+          question={question}
+          response={responseObject}
+          onResponseChange={handleValueChange}
+          onSaveActionPlan={handleSaveActionPlan} // <- Aqui está a chave!
         />
       );
-    
     case "text":
       return (
-        <TextResponseInput 
-          question={question} 
+        <TextResponseInput
+          question={question}
           response={responseObject}
           onResponseChange={handleValueChange}
         />
       );
-    
     case "number":
       return (
-        <NumberResponseInput 
-          value={responseObject.value} 
+        <NumberResponseInput
+          value={responseObject.value}
           onChange={(numberValue) => handleValueChange({
             ...responseObject,
             value: numberValue
           })}
         />
       );
-      
     default:
       return (
         <div className="p-4 border border-red-300 bg-red-50 rounded-md">
