@@ -42,10 +42,15 @@ export function ResponseInput({ question, value, onChange }: ResponseInputProps)
     case "yes_no":
       return (
         <YesNoResponseInput 
-          question={question} 
-          response={responseObject}
-          onResponseChange={handleValueChange}
-          onSaveActionPlan={handleSaveActionPlan}  // <-- PASSA A FUNÇÃO AQUI
+  question={question} 
+  response={responseObject}
+  onResponseChange={handleValueChange}
+  onSaveActionPlan={async (data) => {
+    // Exemplo: abrir modal, chamar API, salvar local, etc.
+    console.log("[ResponseInput] Salvando plano de ação:", data);
+  }}
+/>
+
         />
       );
     
