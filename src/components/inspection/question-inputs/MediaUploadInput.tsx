@@ -7,8 +7,13 @@ import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { getFileType } from "@/utils/fileUtils";
 import { MediaAttachments } from "./MediaAttachments";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
-// Supondo que você já tenha esse modal 5W2H:
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog";
 
 export function MediaUploadInput({
   mediaUrls = [],
@@ -73,7 +78,7 @@ export function MediaUploadInput({
   if (allowsAudio) allowedTypes.push('audio/*');
   if (allowsFiles) allowedTypes.push('application/pdf', '.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar');
 
-  // --- Handler para salvar a ação no array (você pode adaptar para salvar em backend)
+  // --- Handler para salvar a ação no array (ou envie para backend)
   function handleSalvarPlanoAcao() {
     setPlanoAcao(prev => [...prev, planoAcaoSugestao]);
     setModalPlanoAcaoAberto(false);
@@ -158,7 +163,7 @@ export function MediaUploadInput({
               onChange={e => setPlanoAcaoSugestao(e.target.value)}
               placeholder="Descreva a ação"
             />
-            {/* Coloque os outros campos do seu 5W2H aqui */}
+            {/* Adapte para outros campos do 5W2H conforme necessário */}
           </div>
           <DialogFooter>
             <Button onClick={handleSalvarPlanoAcao}>Salvar</Button>
