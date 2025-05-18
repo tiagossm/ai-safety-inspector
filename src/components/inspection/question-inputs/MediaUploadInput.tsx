@@ -48,12 +48,12 @@ export function MediaUploadInput({
   const [selectedMedia, setSelectedMedia] = useState<string | null>(null);
   const [selectedMediaType, setSelectedMediaType] = useState<string | null>(null);
 
-  // 5W2H
+  // Estado do modal 5W2H e sugestão
   const [modalPlanoAcaoAberto, setModalPlanoAcaoAberto] = useState(false);
   const [planoAcaoSugestao, setPlanoAcaoSugestao] = useState("");
   const [planoAcao, setPlanoAcao] = useState<string[]>([]);
 
-  // Handler: abrir modal 5W2H com sugestão da IA
+  // Handler para abrir o modal 5W2H com sugestão da IA
   const handleAddActionPlan = useCallback((suggestion: string) => {
     setPlanoAcaoSugestao(suggestion || "");
     setModalPlanoAcaoAberto(true);
@@ -105,7 +105,7 @@ export function MediaUploadInput({
   if (allowsAudio) allowedTypes.push('audio/*');
   if (allowsFiles) allowedTypes.push('application/pdf', '.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar');
 
-  // Salvar ação 5W2H
+  // Salvar ação 5W2H (simples, adiciona à lista local)
   function handleSalvarPlanoAcao() {
     setPlanoAcao(prev => [...prev, planoAcaoSugestao]);
     setModalPlanoAcaoAberto(false);
@@ -182,17 +182,12 @@ export function MediaUploadInput({
           <DialogHeader>
             <DialogTitle>Plano de Ação (5W2H)</DialogTitle>
           </DialogHeader>
-          <div>
-            <label className="block text-xs font-semibold mb-1">O quê?</label>
-            <textarea
-              className="w-full border px-2 py-1 rounded mb-2"
-              value={planoAcaoSugestao}
-              onChange={e => setPlanoAcaoSugestao(e.target.value)}
-              placeholder="Descreva a ação"
-              rows={4}
-            />
-            {/* Adapte aqui para incluir os demais campos do 5W2H */}
-          </div>
+          <textarea
+            className="w-full border rounded p-2 mb-2"
+            rows={6}
+            value={planoAcaoSugestao}
+            onChange={e => setPlanoAcaoSugestao(e.target.value)}
+          />
           <DialogFooter>
             <Button onClick={handleSalvarPlanoAcao}>Salvar</Button>
           </DialogFooter>
