@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useMediaAnalysis, MediaAnalysisResult } from '@/hooks/useMediaAnalysis';
-import { Loader2, AlertTriangle, CheckCircle2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
 import ReactMarkdown from "react-markdown";
 
 interface MediaAnalysisDialogProps {
@@ -178,7 +178,7 @@ export function MediaAnalysisDialog({
             {allImages.map((url, idx) => {
               const state = analysisMap[url];
               const result = state?.result;
-              const isNc = result?.hasNonConformity;
+              const hasActionSuggestion = !!result?.actionPlanSuggestion;
 
               return (
                 <div key={url} className="col-span-1 border rounded-lg shadow-sm p-2 bg-white flex flex-col items-center">
@@ -205,32 +205,32 @@ export function MediaAnalysisDialog({
                   )}
                   {state?.status === 'done' && result && (
                     <>
-                      <div className={`w-full my-2 p-2 rounded-md border text-center ${isNc ? 'bg-amber-50 border-amber-200' : 'bg-green-50 border-green-200'}`}>
-                        <div className="flex items-center justify-center gap-1">
-                          {isNc ? (
-                            <AlertTriangle className="h-4 w-4 text-amber-500" />
-                          ) : (
-                            <CheckCircle2 className="h-4 w-4 text-green-500" />
-                          )}
-                          <span className={`text-xs font-medium ${isNc ? 'text-amber-800' : 'text-green-800'}`}>
-                            {isNc ? 'Não conformidade detectada' : 'Sem não conformidade'}
-                          </span>
+                      {/* Badge SÓ SE TIVER SUGESTÃO DE AÇÃO */}
+                      {hasActionSuggestion && (
+                        <div className="w-full my-2 p-2 rounded-md border text-center bg-amber-50 border-amber-200">
+                          <div className="flex items-center justify-center gap-1">
+                            <Sparkles className="h-4 w-4 text-amber-500" />
+                            <span className="text-xs font-medium text-amber-800">
+                              Plano de ação sugerido
+                            </span>
+                          </div>
                         </div>
-                      </div>
+                      )}
                       <div className="w-full border rounded-md p-2 bg-gray-50 mb-1">
                         <h3 className="text-xs font-medium text-gray-700 mb-1">Análise da Imagem:</h3>
                         <div className="text-xs whitespace-pre-line">
                           {renderMarkdown(result.analysis ?? "")}
                         </div>
                       </div>
-                      {result.hasNonConformity && !!result.actionPlanSuggestion && (
+                      {/* Ações sugeridas */}
+                      {hasActionSuggestion && (
                         <div className="w-full border rounded-md p-2 bg-amber-50 border-amber-200 mt-1">
                           <div className="flex items-center mb-1">
                             <Sparkles className="h-3 w-3 text-amber-500 mr-1" />
                             <h3 className="text-xs font-medium text-amber-800">Ações Corretivas Sugeridas:</h3>
                           </div>
                           <div className="text-xs text-amber-700 whitespace-pre-line">
-                            {renderMarkdown(result.actionPlanSuggestion)}
+                            {renderMarkdown(result.actionPlanSuggestion!)}
                           </div>
                           <Button
                             size="sm"
@@ -242,7 +242,8 @@ export function MediaAnalysisDialog({
                           </Button>
                         </div>
                       )}
-                      {!result.hasNonConformity && (
+                      {/* Caso não haja sugestão de ação, você pode manter um botão de comentário de conformidade */}
+                      {!hasActionSuggestion && (
                         <Button
                           size="sm"
                           variant="secondary"

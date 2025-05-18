@@ -4,11 +4,9 @@ import { toast } from 'sonner';
 
 export interface MediaAnalysisResult {
   analysis: string;
-  hasNonConformity: boolean;
   psychosocialRiskDetected: boolean;
   actionPlanSuggestion: string | null;
   rawResponse?: any;
-  // Add these fields to match usage in components
   type?: string;
   imageAnalysis?: string;
   videoAnalysis?: string;
@@ -20,7 +18,7 @@ interface AnalyzeParams {
   mediaUrl: string;
   mediaType?: string | null;
   questionText?: string;
-  userAnswer?: string; // <-- NOVO CAMPO!
+  userAnswer?: string;
   multimodalAnalysis?: boolean;
   additionalMediaUrls?: string[];
 }
@@ -32,62 +30,39 @@ export function useMediaAnalysis() {
     mediaUrl,
     mediaType,
     questionText,
-    userAnswer, // <-- NOVO CAMPO!
+    userAnswer,
     multimodalAnalysis = false,
     additionalMediaUrls = []
   }: AnalyzeParams): Promise<MediaAnalysisResult> => {
     setAnalyzing(true);
 
     try {
-      // Determine content type if not provided
       const contentType = mediaType || determineContentType(mediaUrl);
 
-      console.log('Starting media analysis:', {
-        mediaUrl,
-        contentType,
-        questionText,
-        userAnswer, // <-- LOGA PARA GARANTIR QUE VEM DO FRONT
-        multimodalAnalysis,
-        additionalUrls: additionalMediaUrls?.length || 0
-      });
-
-      // Call the analyze-media Edge Function
       const { data, error } = await supabase.functions.invoke('analyze-media', {
         body: {
           mediaUrl,
           contentType,
           questionText,
-          userAnswer, // <-- ENVIA PARA O BACKEND!
+          userAnswer,
           multimodalAnalysis,
           additionalMediaUrls
         },
       });
 
       if (error) {
-        console.error('Error analyzing media:', error);
         toast.error('Erro ao analisar mídia: ' + (error.message || 'Erro desconhecido'));
         throw error;
       }
 
-      console.log('Analysis result:', data);
-      
-      // Extrair a sugestão de plano de ação do resultado da análise
-      let actionPlanSuggestion = data.actionPlanSuggestion || null;
-      
-      // Se não tiver uma sugestão de plano de ação mas tiver uma não-conformidade,
-      // vamos tentar extrair do texto da análise
-      if (!actionPlanSuggestion && data.hasNonConformity) {
-        actionPlanSuggestion = extractActionPlanFromText(data.analysis || '');
-      }
+      // Sempre tenta garantir que haja uma sugestão de plano de ação (seja do backend, seja extraído do texto)
+      let actionPlanSuggestion = data.actionPlanSuggestion || extractActionPlanFromText(data.analysis || '');
 
-      // Transform the raw response into the expected format
       const result: MediaAnalysisResult = {
         analysis: data.analysis || '',
-        hasNonConformity: data.hasNonConformity || false,
         psychosocialRiskDetected: data.psychosocialRiskDetected || false,
         actionPlanSuggestion: actionPlanSuggestion,
         rawResponse: data,
-        // Add additional properties that might be used in components
         type: data.type || (contentType.startsWith('image') ? 'image' : contentType.startsWith('video') ? 'video' : 'unknown'),
         imageAnalysis: data.imageAnalysis || data.analysis || '',
         videoAnalysis: data.videoAnalysis || data.analysis || '',
@@ -97,7 +72,6 @@ export function useMediaAnalysis() {
 
       return result;
     } catch (error) {
-      console.error('Error in media analysis:', error);
       toast.error('Erro ao processar análise: ' + (error as Error).message);
       throw error;
     } finally {
@@ -105,10 +79,9 @@ export function useMediaAnalysis() {
     }
   };
 
-  // Helper to determine content type from URL
+  // Helper para determinar o tipo de conteúdo pela extensão
   const determineContentType = (url: string): string => {
     const extension = url.split('.').pop()?.toLowerCase();
-    
     if (!extension) return 'image/jpeg'; // Default
 
     switch (extension) {
@@ -135,10 +108,9 @@ export function useMediaAnalysis() {
         return 'application/octet-stream';
     }
   };
-  
-  // Função melhorada para extrair planos de ação do texto da análise
+
+  // Função para extrair plano de ação do texto, se necessário
   const extractActionPlanFromText = (text: string): string | null => {
-    // Padrões comuns para identificar seções de planos de ação no texto
     const patterns = [
       /Plano de [Aa]ção [Ss]ugerido:([^]*?)(?=\n\n|\n$|$)/i,
       /Sugestão de [Pp]lano de [Aa]ção:([^]*?)(?=\n\n|\n$|$)/i,
@@ -152,37 +124,31 @@ export function useMediaAnalysis() {
       /Para [Rr]esolver [Ee]ste [Pp]roblema:([^]*?)(?=\n\n|\n$|$)/i,
       /[Ss]ugestões [Pp]ara [Cc]orreção:([^]*?)(?=\n\n|\n$|$)/i
     ];
-    
-    // Tentar cada padrão em sequência
+
     for (const pattern of patterns) {
       const match = text.match(pattern);
       if (match && match[1]) {
         return match[1].trim();
       }
     }
-    
-    // Se não encontrou com os padrões específicos, procurar por uma seção intitulada 'Plano de Ação'
-    // que pode estar em um formato diferente
+
     const sections = text.split(/\n\s*\n|\n\d+\.\s/);
     for (const section of sections) {
       if (/plano de ação|ações recomendadas|medidas corretivas|sugestões para correção|para corrigir|recomendações/i.test(section)) {
-        // Retornar a seção completa se contiver palavras-chave relevantes
         return section.replace(/^(plano de ação|ações recomendadas|medidas corretivas|sugestões para correção|para corrigir|recomendações)[:\s]*/i, '').trim();
       }
     }
-    
-    // Se ainda não encontrou nada, tentar extrair um parágrafo que mencione "deve" ou "recomenda-se"
+
     const recommendationPattern = /(?:deve[- ]?se|recomenda[- ]?se|é necessário|é recomendado|é preciso)([^.!?]*[.!?])/i;
     const recommendationMatch = text.match(recommendationPattern);
     if (recommendationMatch && recommendationMatch[0]) {
       return recommendationMatch[0].trim();
     }
-    
-    // Se ainda não encontrou nada e o texto for curto, usar o texto inteiro como sugestão
+
     if (text.length < 500) {
       return text.trim();
     }
-    
+
     return null;
   };
 
