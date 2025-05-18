@@ -5,7 +5,6 @@ import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaU
 import { MediaAnalysisButton } from "./components/MediaAnalysisButton";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { MediaAttachments } from "@/components/inspection/question-inputs/MediaAttachments";
-// IMPORTANTE: Adicione o import do seu modal, ajuste o caminho se necessário!
 import { ActionPlanDialog } from "@/components/action-plans/ActionPlanDialog";
 
 interface YesNoResponseInputProps {
@@ -36,7 +35,6 @@ export function YesNoResponseInput({
   const [mediaAnalysisResults, setMediaAnalysisResults] = useState<Record<string, any>>(
     response?.mediaAnalysisResults || {}
   );
-  // NOVO: controle do modal/plano de ação
   const [isActionPlanDialogOpen, setIsActionPlanDialogOpen] = useState(false);
 
   const currentValue = response?.value;
@@ -144,7 +142,7 @@ export function YesNoResponseInput({
       />
 
       <div className="flex flex-wrap gap-2">
-        {/* Aqui: agora o botão só abre o modal */}
+        {/* Botão de Plano de Ação - agora abre o popup/modal! */}
         <ActionPlanButton
           onActionPlanClick={() => setIsActionPlanDialogOpen(true)}
           readOnly={readOnly}
