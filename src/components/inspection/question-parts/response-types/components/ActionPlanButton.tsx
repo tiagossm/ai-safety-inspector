@@ -1,27 +1,24 @@
-
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { AlertCircle } from "lucide-react";
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { ClipboardList } from 'lucide-react';
 
 interface ActionPlanButtonProps {
-  localValue: boolean | undefined;
-  onActionPlanClick: () => void;
-  readOnly: boolean;
+  onActionPlanClick?: () => void;
+  readOnly?: boolean;
 }
 
-export function ActionPlanButton({ localValue, onActionPlanClick, readOnly }: ActionPlanButtonProps) {
-  if (localValue !== false) return null;
-  
+export function ActionPlanButton({ onActionPlanClick, readOnly = false }: ActionPlanButtonProps) {
+  console.log('[DEBUG] ActionPlanButton FINAL, onActionPlanClick:', !!onActionPlanClick, 'readOnly:', readOnly);
   return (
     <Button
       variant="outline"
       size="sm"
       onClick={onActionPlanClick}
+      className="flex items-center"
       disabled={readOnly}
-      className="mb-3 bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
-      type="button"
+      data-testid="action-plan-btn"
     >
-      <AlertCircle className="h-3.5 w-3.5 mr-1" />
+      <ClipboardList className="h-4 w-4 mr-1" />
       Criar Plano de Ação
     </Button>
   );
