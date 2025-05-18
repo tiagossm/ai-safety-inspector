@@ -257,11 +257,14 @@ export function MediaAnalysisDialog({
   className="mt-2 w-full"
   onClick={() => {
     console.log("clicou no botão Adicionar ao Plano de Ação com:", actionSuggestion);
-    onAddActionPlan?.(actionSuggestion);
+    if (typeof onApplyAISuggestion === "function") {
+      onApplyAISuggestion(actionSuggestion);
+    }
   }}
 >
   Adicionar ao Plano de Ação
 </Button>
+
 
                         </div>
                       )}

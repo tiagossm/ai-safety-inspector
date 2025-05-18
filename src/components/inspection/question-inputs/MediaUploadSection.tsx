@@ -42,13 +42,16 @@ export function MediaUploadSection({
   const [selectedMedia, setSelectedMedia] = useState<string | null>(null);
   const [selectedMediaType, setSelectedMediaType] = useState<string | null>(null);
 
-  // NOVO: Plano de ação
+  // Ajuste aqui no handleAddActionPlan para disparar onApplyAISuggestion
   const [planoAcao, setPlanoAcao] = useState<string[]>([]);
 
   const handleAddActionPlan = useCallback((suggestion: string) => {
     setPlanoAcao(prev => [...prev, suggestion]);
     setAnalysisDialogOpen(false);
-  }, []);
+    if (onApplyAISuggestion) {
+      onApplyAISuggestion(suggestion);  // <-- dispara modal 5w2h no pai
+    }
+  }, [onApplyAISuggestion]);
 
   const { uploadFile, isUploading, progress, error: uploadError } = useMediaUpload();
 
