@@ -255,12 +255,13 @@ export function MediaAnalysisDialog({
   variant="destructive"
   className="mt-2 w-full"
   onClick={() => {
-    console.log("clicou", actionSuggestion); // debug!
+    console.log("clicou no botão Adicionar ao Plano de Ação com:", actionSuggestion);
     onAddActionPlan?.(actionSuggestion);
   }}
 >
   Adicionar ao Plano de Ação
 </Button>
+
                         </div>
                       )}
                       {!hasActionSuggestion && (
