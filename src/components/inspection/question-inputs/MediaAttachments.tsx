@@ -15,7 +15,7 @@ interface MediaAttachmentsProps {
   readOnly?: boolean;
   questionText?: string;
   onSaveAnalysis?: (url: string, result: MediaAnalysisResult) => void;
-  onApplyAISuggestion?: (suggestion: string) => void;
+  onApplyAISuggestion?: (suggestion: string) => void; // Função que abre modal 5W2H!
   analysisResults?: Record<string, MediaAnalysisResult>;
 }
 
@@ -134,6 +134,7 @@ export function MediaAttachments({
         questionText={questionText}
         onAnalysisComplete={handleAnalysisComplete}
         additionalMediaUrls={mediaUrls}
+        onAddActionPlan={onApplyAISuggestion}  // <-- ESSA LINHA É O PULO DO GATO!
       />
     </>
   );
