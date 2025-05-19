@@ -49,21 +49,27 @@ function forceListMarkdown(text: string): string {
 // Fallback para extrair ações corretivas do texto da análise
 function getSafeActionPlan(result: MediaAnalysisResult): string {
   console.log("[getSafeActionPlan] result recebido:", result);
-  const isInvalid = !result.actionPlanSuggestion 
-    || result.actionPlanSuggestion.trim() === "" 
-    || result.actionPlanSuggestion.trim().toLowerCase() === "sugeridas:**";
 
-  if (!isInvalid) return result.actionPlanSuggestion!;
-  
-  // Procura seção "Ações Corretivas Sugeridas:" ou similar no texto da análise
+  const suggestion = result?.actionPlanSuggestion?.trim();
+
+  // Se veio uma sugestão válida que não é só "**", retorna direto
+  if (suggestion && suggestion !== "**" && !suggestion.toLowerCase().includes("sugeridas:**")) {
+    return suggestion;
+  }
+
+  // Tenta extrair da análise textual
   if (result.analysis) {
     const regex = /Ações? [Cc]orretivas [Ss]ugeridas?:([\s\S]+?)(?:\n\S|\n\n|Conclusão:|$)/i;
     const match = result.analysis.match(regex);
     if (match && match[1]) {
-      return match[1].trim();
+      const extracted = match[1].trim();
+      if (extracted && extracted !== "**") {
+        return extracted;
+      }
     }
   }
-  return ""; // Pode retornar "Sem ações corretivas identificadas." se preferir.
+
+  return ""; // Se nada for útil
 }
 
 export function MediaAnalysisDialog({
