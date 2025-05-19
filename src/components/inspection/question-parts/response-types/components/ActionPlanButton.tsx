@@ -1,30 +1,43 @@
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { ClipboardList } from 'lucide-react';
 
-interface ActionPlanButtonProps {
-  onActionPlanClick?: () => void;
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { ClipboardEdit } from "lucide-react";
+
+export interface ActionPlanButtonProps {
+  onActionPlanClick: () => void;
   readOnly?: boolean;
+  localValue?: any;  // Adicionando esta prop
+  isActionPlanOpen?: boolean;  // Adicionando esta prop
+  setIsActionPlanOpen?: (isOpen: boolean) => void;  // Adicionando esta prop
 }
 
 export function ActionPlanButton({
   onActionPlanClick,
-  readOnly = false
+  readOnly = false,
+  localValue,  // Suportando esta prop
+  isActionPlanOpen,  // Suportando esta prop
+  setIsActionPlanOpen  // Suportando esta prop
 }: ActionPlanButtonProps) {
+  
+  // Handle click baseado nas props disponíveis
+  const handleClick = () => {
+    if (setIsActionPlanOpen) {
+      setIsActionPlanOpen(!isActionPlanOpen);
+    } else {
+      onActionPlanClick();
+    }
+  };
+
   return (
     <Button
       variant="outline"
       size="sm"
-      onClick={(e) => {
-        e.preventDefault();
-        if (onActionPlanClick) onActionPlanClick();
-      }}
-      className="flex items-center"
+      className="gap-2 text-amber-600 border-amber-300"
+      onClick={handleClick}
       disabled={readOnly}
-      data-testid="action-plan-btn"
     >
-      <ClipboardList className="h-4 w-4 mr-1" />
-      Criar Plano de Ação
+      <ClipboardEdit className="w-4 h-4" />
+      <span>Plano de Ação</span>
     </Button>
   );
 }
