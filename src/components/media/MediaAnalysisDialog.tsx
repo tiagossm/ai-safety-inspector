@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -84,6 +85,25 @@ export function MediaAnalysisDialog({
   const [error, setError] = useState<string | null>(null);
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [isMultiModalAnalysis, setIsMultiModalAnalysis] = useState(false);
+  
+  // Adicionando o estado para o analysisMap
+  const [analysisMap, setAnalysisMap] = useState<Record<string, AnalysisState>>({});
+  
+  // Criar um array com todas as imagens combinadas
+  const allImages = React.useMemo(() => {
+    const images: string[] = [];
+    if (mediaUrl) images.push(mediaUrl);
+    
+    if (mediaUrls && mediaUrls.length > 0) {
+      mediaUrls.filter(url => url !== mediaUrl).forEach(url => images.push(url));
+    }
+    
+    if (additionalMediaUrls && additionalMediaUrls.length > 0) {
+      additionalMediaUrls.forEach(url => images.push(url));
+    }
+    
+    return images;
+  }, [mediaUrl, mediaUrls, additionalMediaUrls]);
 
   // Detectar se estamos fazendo análise multimodal
   useEffect(() => {
@@ -102,7 +122,7 @@ export function MediaAnalysisDialog({
     } else {
       setAnalysisMap({});
     }
-  }, [open, allImages.join('-')]);
+  }, [open, allImages]);
 
   // Trigger analysis when dialog opens
   useEffect(() => {
@@ -144,14 +164,7 @@ export function MediaAnalysisDialog({
     
     if (isImage) {
       if (isMultiModalAnalysis) {
-        const allImages = [mediaUrl];
-        if (mediaUrls && mediaUrls.length > 0) {
-          mediaUrls.forEach(url => {
-            if (url !== mediaUrl) allImages.push(url);
-          });
-        } else if (additionalMediaUrls && additionalMediaUrls.length > 0) {
-          additionalMediaUrls.forEach(url => allImages.push(url));
-        }
+        // Usando allImages aqui diretamente em vez de recriá-lo
         return (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {allImages.map((url, index) => (
@@ -329,4 +342,3 @@ export function MediaAnalysisDialog({
     </Dialog>
   );
 }
-
