@@ -34,36 +34,36 @@ type AnalysisState = {
   errorMessage?: string;
 };
 
-// Função para garantir que cada linha vira um item de lista markdown
 function forceListMarkdown(text: string): string {
   return text
-    .split('\n')
+    .split('
+')
     .map(line => {
       if (/^(\s*-|\s*\d+\.)/.test(line) || line.trim() === "") return line;
       if (/sugeridas?:/i.test(line)) return `**${line.trim()}**`;
       return `- ${line.trim()}`;
     })
-    .join('\n');
+    .join('
+');
 }
 
-// Fallback para extrair ações corretivas do texto da análise
 function getSafeActionPlan(result: MediaAnalysisResult): string {
   console.log("[getSafeActionPlan] result recebido:", result);
-  const isInvalid = !result.actionPlanSuggestion 
-    || result.actionPlanSuggestion.trim() === "" 
-    || result.actionPlanSuggestion.trim().toLowerCase() === "sugeridas:**";
+
+  const plain = result.actionPlanSuggestion?.trim().toLowerCase();
+  const isInvalid = !plain || plain === "**" || plain === "sugeridas:**" || plain === "- **sugeridas:**";
 
   if (!isInvalid) return result.actionPlanSuggestion!;
-  
-  // Procura seção "Ações Corretivas Sugeridas:" ou similar no texto da análise
+
   if (result.analysis) {
     const regex = /Ações? [Cc]orretivas [Ss]ugeridas?:([\s\S]+?)(?:\n\S|\n\n|Conclusão:|$)/i;
     const match = result.analysis.match(regex);
     if (match && match[1]) {
-      return match[1].trim();
+      const suggestion = match[1].trim();
+      return suggestion.length > 2 ? suggestion : "";
     }
   }
-  return ""; // Pode retornar "Sem ações corretivas identificadas." se preferir.
+  return "";
 }
 
 export function MediaAnalysisDialog({
@@ -137,7 +137,6 @@ export function MediaAnalysisDialog({
         });
       }
     });
-    // eslint-disable-next-line
   }, [open, analyze, mediaUrl, mediaType, questionText, userAnswer, allImages.join('-'), analysisMap]);
 
   const handleRetry = (url: string) => {
@@ -170,7 +169,7 @@ export function MediaAnalysisDialog({
 
         {showMaxWarning && (
           <div className="mb-3 bg-yellow-100 text-yellow-900 text-xs rounded px-3 py-2 border border-yellow-300">
-            Atenção: apenas as 4 primeiras imagens foram analisadas. As demais não serão processadas.
+            Atenção: apenas as 4 primeiras imagens foram analisadas.
           </div>
         )}
 
@@ -200,7 +199,7 @@ export function MediaAnalysisDialog({
               const state = analysisMap[url];
               const result = state?.result;
               const actionSuggestion = result ? getSafeActionPlan(result) : "";
-              const hasActionSuggestion = !!actionSuggestion && actionSuggestion.trim().length > 0;
+              const hasActionSuggestion = !!actionSuggestion && actionSuggestion.trim().length > 2;
 
               return (
                 <div key={url} className="col-span-1 border rounded-lg shadow-sm p-2 bg-white flex flex-col items-center">
@@ -212,30 +211,8 @@ export function MediaAnalysisDialog({
                   <p className="text-xs text-center mt-1 text-gray-500">
                     {idx === 0 ? 'Imagem principal' : `Imagem adicional ${idx}`}
                   </p>
-                  {state?.status === 'processing' && (
-                    <div className="flex flex-col items-center mt-3 mb-3">
-                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                      <span className="text-xs mt-1 text-gray-600">Analisando...</span>
-                    </div>
-                  )}
-                  {state?.status === 'error' && (
-                    <div className="w-full border rounded-md p-2 bg-red-50 border-red-200 mt-1">
-                      <div className="text-xs text-red-700 mb-2">{state.errorMessage}</div>
-                      <Button size="sm" variant="secondary" onClick={() => handleRetry(url)}>Tentar novamente</Button>
-                    </div>
-                  )}
                   {state?.status === 'done' && result && (
                     <>
-                      {hasActionSuggestion && (
-                        <div className="w-full my-2 p-2 rounded-md border text-center bg-amber-50 border-amber-200">
-                          <div className="flex items-center justify-center gap-1">
-                            <Sparkles className="h-4 w-4 text-amber-500" />
-                            <span className="text-xs font-medium text-amber-800">
-                              Plano de ação sugerido
-                            </span>
-                          </div>
-                        </div>
-                      )}
                       <div className="w-full border rounded-md p-2 bg-gray-50 mb-1">
                         <h3 className="text-xs font-medium text-gray-700 mb-1">Análise da Imagem:</h3>
                         <div className="text-xs whitespace-pre-line">
@@ -252,29 +229,16 @@ export function MediaAnalysisDialog({
                             {renderMarkdown(actionSuggestion)}
                           </div>
                           <Button
-  size="sm"
-  variant="destructive"
-  className="mt-2 w-full"
-  onClick={() => {
-    onAddActionPlan?.(actionSuggestion);
-  }}
->
-  Adicionar ao Plano de Ação
-</Button>
-
-
-
+                            size="sm"
+                            variant="destructive"
+                            className="mt-2 w-full"
+                            onClick={() => {
+                              onAddActionPlan?.(actionSuggestion);
+                            }}
+                          >
+                            Adicionar ao Plano de Ação
+                          </Button>
                         </div>
-                      )}
-                      {!hasActionSuggestion && (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          className="mt-2 w-full"
-                          onClick={() => onAddComment?.("Situação em conformidade conforme análise IA.")}
-                        >
-                          Adicionar comentário de conformidade
-                        </Button>
                       )}
                     </>
                   )}
@@ -283,7 +247,6 @@ export function MediaAnalysisDialog({
             })}
           </div>
         )}
-
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Fechar
