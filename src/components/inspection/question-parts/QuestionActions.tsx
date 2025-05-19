@@ -32,8 +32,8 @@ export function QuestionActions({
       />
       {hasNegativeResponse && (
         <ActionPlanButton 
-          isActionPlanOpen={isActionPlanOpen}
-          setIsActionPlanOpen={setIsActionPlanOpen}
+          onActionPlanClick={() => setIsActionPlanOpen(!isActionPlanOpen)}
+          readOnly={false}
         />
       )}
     </div>

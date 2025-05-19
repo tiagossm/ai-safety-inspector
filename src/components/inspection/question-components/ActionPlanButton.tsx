@@ -1,9 +1,10 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ClipboardList } from 'lucide-react';
 
 interface ActionPlanButtonProps {
-  onActionPlanClick?: () => void;
+  onActionPlanClick: () => void;
   readOnly?: boolean;
 }
 
