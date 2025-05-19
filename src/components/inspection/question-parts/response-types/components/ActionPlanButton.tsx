@@ -4,26 +4,26 @@ import { Button } from "@/components/ui/button";
 import { ClipboardEdit } from "lucide-react";
 
 export interface ActionPlanButtonProps {
-  onActionPlanClick: () => void;
+  onActionPlanClick?: () => void;
   readOnly?: boolean;
-  localValue?: any;  // Adicionando esta prop
-  isActionPlanOpen?: boolean;  // Adicionando esta prop
-  setIsActionPlanOpen?: (isOpen: boolean) => void;  // Adicionando esta prop
+  localValue?: any;
+  isActionPlanOpen?: boolean;
+  setIsActionPlanOpen?: (isOpen: boolean) => void;
 }
 
 export function ActionPlanButton({
   onActionPlanClick,
   readOnly = false,
-  localValue,  // Suportando esta prop
-  isActionPlanOpen,  // Suportando esta prop
-  setIsActionPlanOpen  // Suportando esta prop
+  localValue,
+  isActionPlanOpen,
+  setIsActionPlanOpen
 }: ActionPlanButtonProps) {
   
   // Handle click baseado nas props disponíveis
   const handleClick = () => {
     if (setIsActionPlanOpen) {
       setIsActionPlanOpen(!isActionPlanOpen);
-    } else {
+    } else if (onActionPlanClick) {
       onActionPlanClick();
     }
   };

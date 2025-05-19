@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 export interface ActionPlan5W2HDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  questionId?: any; // Adicionando esta prop
+  questionId?: any;
   inspectionId?: string;
   existingPlan?: any;
   onSave: (data: any) => Promise<void>;
