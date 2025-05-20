@@ -1,13 +1,12 @@
-
 import React, { useCallback, useState, useEffect } from "react";
 import { ResponseButtonGroup } from "./components/ResponseButtonGroup";
 import { ActionPlanButton } from "./components/ActionPlanButton";
 import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
 import { MediaAnalysisButton } from "./components/MediaAnalysisButton";
+import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { MediaAttachments } from "@/components/inspection/question-inputs/MediaAttachments";
 // ALTERE aqui conforme o nome do seu novo modal!
 import { ActionPlan5W2HDialog } from "@/components/action-plans/ActionPlan5W2HDialog";
-import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 
 interface YesNoResponseInputProps {
   question: any;

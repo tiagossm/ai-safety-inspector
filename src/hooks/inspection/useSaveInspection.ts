@@ -33,7 +33,7 @@ export function useSaveInspection(inspectionId: string | undefined) {
         
         console.log(`[useSaveInspection] Salvando resposta para questão ${questionId}:`, responseToSave);
         
-        // Criar uma Promise completa para garantir que catch() está disponível
+        // Criar uma Promise completa (não apenas PromiseLike) para garantir que catch() está disponível
         const savePromise = new Promise<any>((resolve, reject) => {
           supabase
             .from('inspection_responses')
@@ -62,7 +62,7 @@ export function useSaveInspection(inspectionId: string | undefined) {
       
       // Atualizar status da inspeção para "Em Andamento" se estiver "Pendente"
       if (inspection?.status === 'Pendente') {
-        // Usando Promise completa em vez de PromiseLike
+        // Criar uma Promise completa para garantir que catch() está disponível
         return new Promise<any>((resolve, reject) => {
           supabase
             .from('inspections')
@@ -71,7 +71,8 @@ export function useSaveInspection(inspectionId: string | undefined) {
             .then(({ data, error }) => {
               if (error) {
                 console.error("Erro ao atualizar status da inspeção:", error);
-                reject(error); // Rejeitamos a promise em caso de erro
+                // Não interrompemos o fluxo por causa disso, apenas logamos o erro
+                resolve({});
               } else {
                 console.log("[useSaveInspection] Respostas salvas com sucesso");
                 toast.success("Respostas salvas com sucesso");
@@ -80,7 +81,8 @@ export function useSaveInspection(inspectionId: string | undefined) {
             })
             .catch(err => {
               console.error("Erro ao atualizar status da inspeção:", err);
-              reject(err); // Rejeitamos a promise em caso de erro
+              // Não interrompemos o fluxo por causa disso
+              resolve({});
             });
         });
       }

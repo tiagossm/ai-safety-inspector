@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { MediaUploadInput } from "../../question-inputs/MediaUploadInput";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
@@ -7,7 +6,6 @@ import { AlertCircle, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { MediaAttachments } from "@/components/inspection/question-inputs/MediaAttachments";
-import { ActionPlanButton } from "../../question-components/ActionPlanButton";
 
 interface TextResponseInputProps {
   question: any;
@@ -15,8 +13,6 @@ interface TextResponseInputProps {
   onResponseChange: (value: any) => void;
   onMediaChange?: (mediaUrls: string[]) => void;
   onApplyAISuggestion?: (suggestion: string) => void;
-  onSaveActionPlan?: (data: any) => Promise<void>;
-  inspectionId?: string;
   readOnly?: boolean;
 }
 
@@ -26,11 +22,8 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
   onResponseChange,
   onMediaChange,
   onApplyAISuggestion,
-  onSaveActionPlan,
-  inspectionId,
   readOnly = false
 }) => {
-  const [isActionPlanOpen, setIsActionPlanOpen] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<Record<string, MediaAnalysisResult>>(
     response?.mediaAnalysisResults || {}
   );
@@ -142,15 +135,6 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
   const mediaUrls = response?.mediaUrls || [];
   const hasMedia = mediaUrls.length > 0;
 
-  // Função para abrir o diálogo do plano de ação
-  const handleActionPlanClick = () => {
-    setIsActionPlanOpen(!isActionPlanOpen);
-    // Se houver uma função para abrir o plano de ação, podemos chamar aqui
-    // if (onSaveActionPlan) {
-    //   onSaveActionPlan({});
-    // }
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2 mb-2">
@@ -170,16 +154,6 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
             <span>IA detectou não conformidade</span>
           </Badge>
         )}
-      </div>
-
-      {/* Botão de plano de ação - adicionado */}
-      <div className="flex gap-2">
-        <ActionPlanButton
-          onActionPlanClick={handleActionPlanClick}
-          readOnly={readOnly}
-          isActionPlanOpen={isActionPlanOpen}
-          setIsActionPlanOpen={setIsActionPlanOpen}
-        />
       </div>
 
       {/* Renderização inline das mídias anexadas (imediatamente após o textarea) */}

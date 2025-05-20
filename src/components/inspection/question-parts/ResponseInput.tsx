@@ -1,4 +1,3 @@
-
 import React, { useCallback } from 'react';
 import { YesNoResponseInput } from './response-types/YesNoResponseInput';
 import { TextResponseInput } from './response-types/TextResponseInput';
@@ -8,10 +7,9 @@ interface ResponseInputProps {
   question: any;
   value?: any;
   onChange: (value: any) => void;
-  inspectionId?: string; // Adicionado para passar para todos os tipos de entrada
 }
 
-export function ResponseInput({ question, value, onChange, inspectionId }: ResponseInputProps) {
+export function ResponseInput({ question, value, onChange }: ResponseInputProps) {
   const responseType = question.responseType || 'yes_no';
 
   // Se não vier objeto, constrói o padrão
@@ -43,8 +41,7 @@ export function ResponseInput({ question, value, onChange, inspectionId }: Respo
           question={question}
           response={responseObject}
           onResponseChange={handleValueChange}
-          onSaveActionPlan={handleSaveActionPlan}
-          inspectionId={inspectionId}
+          onSaveActionPlan={handleSaveActionPlan} // <- Aqui está a chave!
         />
       );
     case "text":
@@ -53,8 +50,6 @@ export function ResponseInput({ question, value, onChange, inspectionId }: Respo
           question={question}
           response={responseObject}
           onResponseChange={handleValueChange}
-          onSaveActionPlan={handleSaveActionPlan}
-          inspectionId={inspectionId}
         />
       );
     case "number":
@@ -65,9 +60,6 @@ export function ResponseInput({ question, value, onChange, inspectionId }: Respo
             ...responseObject,
             value: numberValue
           })}
-          onSaveActionPlan={handleSaveActionPlan}
-          inspectionId={inspectionId}
-          question={question}
         />
       );
     default:

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -6,7 +5,6 @@ import { toast } from 'sonner';
 export interface MediaAnalysisResult {
   analysis: string;
   psychosocialRiskDetected: boolean;
-  hasNonConformity: boolean; // Adicionando esta propriedade
   actionPlanSuggestion: string | null;
   rawResponse?: any;
   type?: string;
@@ -59,17 +57,10 @@ export function useMediaAnalysis() {
 
       // Sempre tenta garantir que haja uma sugestão de plano de ação (seja do backend, seja extraído do texto)
       let actionPlanSuggestion = data.actionPlanSuggestion || extractActionPlanFromText(data.analysis || '');
-      
-      // Extraindo ou determinando se há não conformidade do resultado da análise
-      const hasNonConformity = data.hasNonConformity ?? 
-        (actionPlanSuggestion ? true : 
-         data.analysis?.toLowerCase().includes('não conformidade') || 
-         data.analysis?.toLowerCase().includes('não está em conformidade'));
 
       const result: MediaAnalysisResult = {
         analysis: data.analysis || '',
         psychosocialRiskDetected: data.psychosocialRiskDetected || false,
-        hasNonConformity: hasNonConformity, // Usando a variável calculada
         actionPlanSuggestion: actionPlanSuggestion,
         rawResponse: data,
         type: data.type || (contentType.startsWith('image') ? 'image' : contentType.startsWith('video') ? 'video' : 'unknown'),
