@@ -6,7 +6,7 @@ import { AlertCircle, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { MediaAttachments } from "@/components/inspection/question-inputs/MediaAttachments";
-import { ActionPlanButton } from "../question-components/ActionPlanButton";
+import { ActionPlanButton } from "../../question-components/ActionPlanButton";
 
 interface TextResponseInputProps {
   question: any;

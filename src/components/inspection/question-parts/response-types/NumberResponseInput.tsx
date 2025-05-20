@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ActionPlanButton } from '../question-components/ActionPlanButton';
+import { ActionPlanButton } from '../../question-components/ActionPlanButton';
 
 interface NumberResponseInputProps {
   value: number | undefined;
