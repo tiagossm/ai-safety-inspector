@@ -1,122 +1,39 @@
 
-import React, { useCallback, useState } from "react";
-import { ResponseButtonGroup } from "../question-parts/response-types/components/ResponseButtonGroup";
-import { ActionPlanButton } from "../question-parts/response-types/components/ActionPlanButton";
-import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
-import { MediaAnalysisButton } from "../question-parts/response-types/components/MediaAnalysisButton";
-import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Check, X } from 'lucide-react';
 
-interface YesNoResponseInputProps {
-  question: any;
-  response: any;
-  onResponseChange: (data: any) => void;
-  inspectionId?: string;
-  onMediaChange?: (mediaUrls: string[]) => void;
-  actionPlan?: any;
-  onSaveActionPlan?: (data: any) => Promise<void>;
-  onApplyAISuggestion?: (suggestion: string) => void;
+interface YesNoInputProps {
+  value: boolean | undefined;
+  onChange: (value: boolean) => void;
   readOnly?: boolean;
 }
 
-export function YesNoResponseInput({
-  question,
-  response,
-  onResponseChange,
-  inspectionId,
-  onMediaChange,
-  actionPlan,
-  onSaveActionPlan,
-  onApplyAISuggestion,
-  readOnly = false
-}: YesNoResponseInputProps) {
-  const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
-  const [selectedMediaUrl, setSelectedMediaUrl] = useState<string | null>(null);
-
-  console.log("[YesNoResponseInput] rendering with response:", response);
-
-  const currentValue = response?.value;
-
-  const handleResponseChange = useCallback((value: boolean) => {
-    const updatedResponse = {
-      ...response,
-      value
-    };
-    onResponseChange(updatedResponse);
-  }, [response, onResponseChange]);
-
-  const handleMediaChange = useCallback((newMediaUrls: string[]) => {
-    console.log("[YesNoResponseInput] handleMediaChange:", newMediaUrls);
-    const updatedResponse = {
-      ...response,
-      mediaUrls: newMediaUrls
-    };
-    onResponseChange(updatedResponse);
-  }, [response, onResponseChange]);
-
-  const handleAnalysisResults = useCallback((results: any) => {
-    console.log("YesNoResponseInput: analysis results:", results);
-    const updatedResponse = {
-      ...response,
-      mediaAnalysisResults: {
-        ...(response?.mediaAnalysisResults || {}),
-        ...results
-      }
-    };
-    onResponseChange(updatedResponse);
-
-    if (results.actionPlanSuggestion && onApplyAISuggestion) {
-      onApplyAISuggestion(results.actionPlanSuggestion);
-    }
-  }, [response, onResponseChange, onApplyAISuggestion]);
-
-  const handleOpenAnalysis = useCallback(() => {
-    if (response?.mediaUrls && response.mediaUrls.length > 0) {
-      setSelectedMediaUrl(response.mediaUrls[0]);
-    } else {
-      setSelectedMediaUrl(null);
-    }
-    setIsAnalysisOpen(true);
-  }, [response?.mediaUrls]);
-
+export function YesNoInput({ value, onChange, readOnly = false }: YesNoInputProps) {
   return (
-    <div className="space-y-4">
-      <ResponseButtonGroup 
-        value={currentValue} 
-        onChange={handleResponseChange} 
-        readOnly={readOnly || false}
-      />
-      
-      <div className="flex flex-wrap gap-2">
-        <ActionPlanButton 
-          localValue={currentValue} 
-          onActionPlanClick={onSaveActionPlan ? () => onSaveActionPlan({}) : () => {}} 
-          readOnly={readOnly || false}
-        />
-
-        {(question.allowsPhoto || question.allowsVideo || question.permite_foto || question.permite_video) && (
-          <MediaAnalysisButton onOpenAnalysis={handleOpenAnalysis} />
-        )}
-      </div>
-
-      <MediaUploadInput
-        allowsPhoto={question.allowsPhoto || question.permite_foto || false}
-        allowsVideo={question.allowsVideo || question.permite_video || false}
-        allowsAudio={question.allowsAudio || question.permite_audio || false}
-        allowsFiles={question.allowsFiles || question.permite_files || false}
-        mediaUrls={response?.mediaUrls ?? []}
-        onMediaChange={handleMediaChange}
-        readOnly={readOnly}
-      />
-
-      <MediaAnalysisDialog
-        open={isAnalysisOpen}
-        onOpenChange={setIsAnalysisOpen}
-        mediaUrl={selectedMediaUrl}
-        questionText={question.text || question.pergunta || ""}
-        onAnalysisComplete={handleAnalysisResults}
-        multimodalAnalysis={true}
-        additionalMediaUrls={response?.mediaUrls ?? []} // Usar additionalMediaUrls ao invés de mediaUrls
-      />
+    <div className="flex space-x-3 mt-1">
+      <Button
+        type="button"
+        variant={value === true ? "default" : "outline"}
+        size="sm"
+        onClick={() => !readOnly && onChange(true)}
+        disabled={readOnly}
+        className={value === true ? "bg-green-600 hover:bg-green-700" : ""}
+      >
+        <Check className="h-4 w-4 mr-1" />
+        Sim
+      </Button>
+      <Button
+        type="button"
+        variant={value === false ? "default" : "outline"}
+        size="sm"
+        onClick={() => !readOnly && onChange(false)}
+        disabled={readOnly}
+        className={value === false ? "bg-red-600 hover:bg-red-700" : ""}
+      >
+        <X className="h-4 w-4 mr-1" />
+        Não
+      </Button>
     </div>
   );
 }

@@ -1,6 +1,7 @@
+
 import React, { useCallback, useState, useEffect } from "react";
 import { ResponseButtonGroup } from "./components/ResponseButtonGroup";
-import { ActionPlanButton } from "./components/ActionPlanButton";
+import { ActionPlanButton } from "../../../question-components/ActionPlanButton";
 import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
 import { MediaAnalysisButton } from "./components/MediaAnalysisButton";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
