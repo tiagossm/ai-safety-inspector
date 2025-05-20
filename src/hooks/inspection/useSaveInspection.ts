@@ -71,8 +71,7 @@ export function useSaveInspection(inspectionId: string | undefined) {
             .then(({ data, error }) => {
               if (error) {
                 console.error("Erro ao atualizar status da inspeção:", error);
-                // Não interrompemos o fluxo por causa disso, apenas logamos o erro
-                resolve({});
+                reject(error); // Rejeitamos a promise em caso de erro
               } else {
                 console.log("[useSaveInspection] Respostas salvas com sucesso");
                 toast.success("Respostas salvas com sucesso");
@@ -81,8 +80,7 @@ export function useSaveInspection(inspectionId: string | undefined) {
             })
             .catch(err => {
               console.error("Erro ao atualizar status da inspeção:", err);
-              // Não interrompemos o fluxo por causa disso
-              resolve({});
+              reject(err); // Rejeitamos a promise em caso de erro
             });
         });
       }
