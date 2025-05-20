@@ -33,7 +33,7 @@ export function useSaveInspection(inspectionId: string | undefined) {
         
         console.log(`[useSaveInspection] Salvando resposta para questão ${questionId}:`, responseToSave);
         
-        // Criar uma Promise completa (não apenas PromiseLike) para garantir que catch() está disponível
+        // Envolver a chamada Supabase em uma Promise completa
         const savePromise = new Promise<any>((resolve, reject) => {
           supabase
             .from('inspection_responses')
@@ -62,7 +62,7 @@ export function useSaveInspection(inspectionId: string | undefined) {
       
       // Atualizar status da inspeção para "Em Andamento" se estiver "Pendente"
       if (inspection?.status === 'Pendente') {
-        // Usar nova Promise para garantir que catch() está disponível
+        // Envolver a chamada Supabase em uma Promise completa
         return new Promise<any>((resolve, reject) => {
           supabase
             .from('inspections')
