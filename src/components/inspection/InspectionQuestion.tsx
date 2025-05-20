@@ -65,9 +65,6 @@ export function InspectionQuestion({
   };
 
   const handleResponseValueChange = (value: any) => {
-    if (isNegativeResponse(value)) {
-      setShowActionPlan(true);
-    }
     onResponseChange({
       ...response,
       value
@@ -82,10 +79,7 @@ export function InspectionQuestion({
   };
 
   const isNegativeResponse = (value: any): boolean => {
-    if (question.responseType === 'yes_no') {
-      return value === false || value === 'no' || value === 'não';
-    }
-    return false;
+    return true;
   };
 
   const handleSaveAnalysis = (url: string, result: MediaAnalysisResult) => {
@@ -239,6 +233,7 @@ export function InspectionQuestion({
           question={question}
           value={response?.value}
           onChange={handleResponseValueChange}
+          inspectionId={inspectionId}
         />
         {showComments && (
           <CommentsSection
@@ -263,14 +258,14 @@ export function InspectionQuestion({
             />
           </div>
         )}
-        {(isNegativeResponse(response?.value) || showActionPlan || response?.actionPlan) && !showActionPlanImplementation && (
+        {(showActionPlan || response?.actionPlan) && !showActionPlanImplementation && (
           <ActionPlanSection
             isOpen={showActionPlan}
             onOpenChange={setShowActionPlan}
             actionPlan={response?.actionPlan || ""}
             onActionPlanChange={handleActionPlanChange}
             onOpenDialog={inspectionId && question.id ? handleOpenActionPlanDialog : undefined}
-            hasNegativeResponse={isNegativeResponse(response?.value)}
+            hasNegativeResponse={true}
             aiSuggestion={getBestAISuggestion()}
             mediaAnalysisResults={mediaAnalysisResults}
           />

@@ -8,7 +8,7 @@ interface QuestionActionsProps {
   setIsCommentOpen: (isOpen: boolean) => void;
   comment: string;
   handleCommentChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  hasNegativeResponse: boolean;
+  hasNegativeResponse: boolean; // Não vamos usar essa propriedade mais
   isActionPlanOpen: boolean;
   setIsActionPlanOpen: (isOpen: boolean) => void;
 }
@@ -18,7 +18,7 @@ export function QuestionActions({
   setIsCommentOpen,
   comment,
   handleCommentChange,
-  hasNegativeResponse,
+  hasNegativeResponse, // Mantemos para não quebrar a interface
   isActionPlanOpen,
   setIsActionPlanOpen
 }: QuestionActionsProps) {
@@ -30,12 +30,11 @@ export function QuestionActions({
         comment={comment}
         handleCommentChange={handleCommentChange}
       />
-      {hasNegativeResponse && (
-        <ActionPlanButton 
-          onActionPlanClick={() => setIsActionPlanOpen(!isActionPlanOpen)}
-          readOnly={false}
-        />
-      )}
+      {/* Removemos a verificação de hasNegativeResponse para mostrar sempre o botão */}
+      <ActionPlanButton 
+        onActionPlanClick={() => setIsActionPlanOpen(!isActionPlanOpen)}
+        readOnly={false}
+      />
     </div>
   );
 }
