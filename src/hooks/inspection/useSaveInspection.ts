@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -33,25 +32,22 @@ export function useSaveInspection(inspectionId: string | undefined) {
         
         console.log(`[useSaveInspection] Salvando resposta para questão ${questionId}:`, responseToSave);
         
-        // Criar uma Promise completa (não apenas PromiseLike) para garantir que catch() está disponível
-        const savePromise = new Promise<any>((resolve, reject) => {
+        // Garante que a promise é um Promise real (não apenas PromiseLike)
+        const savePromise = Promise.resolve(
           supabase
             .from('inspection_responses')
             .upsert(responseToSave, {
               onConflict: 'inspection_id,question_id'
             })
-            .then(({ data, error }) => {
-              if (error) {
-                console.error(`[useSaveInspection] Erro ao salvar resposta para questão ${questionId}:`, error);
-                reject(error);
-              } else {
-                resolve(data);
-              }
-            })
-            .catch(err => {
-              console.error(`[useSaveInspection] Erro ao salvar resposta para questão ${questionId}:`, err);
-              reject(err);
-            });
+        ).then(({ data, error }) => {
+          if (error) {
+            console.error(`[useSaveInspection] Erro ao salvar resposta para questão ${questionId}:`, error);
+            throw error;
+          }
+          return data;
+        }).catch(err => {
+          console.error(`[useSaveInspection] Erro ao salvar resposta para questão ${questionId}:`, err);
+          throw err;
         });
         
         savingPromises.push(savePromise);
@@ -62,28 +58,26 @@ export function useSaveInspection(inspectionId: string | undefined) {
       
       // Atualizar status da inspeção para "Em Andamento" se estiver "Pendente"
       if (inspection?.status === 'Pendente') {
-        // Criar uma Promise completa para garantir que catch() está disponível
-        return new Promise<any>((resolve, reject) => {
+        // Garante que a promise é um Promise real (não apenas PromiseLike)
+        return Promise.resolve(
           supabase
             .from('inspections')
             .update({ status: 'Em Andamento' })
             .eq('id', inspectionId)
-            .then(({ data, error }) => {
-              if (error) {
-                console.error("Erro ao atualizar status da inspeção:", error);
-                // Não interrompemos o fluxo por causa disso, apenas logamos o erro
-                resolve({});
-              } else {
-                console.log("[useSaveInspection] Respostas salvas com sucesso");
-                toast.success("Respostas salvas com sucesso");
-                resolve(data);
-              }
-            })
-            .catch(err => {
-              console.error("Erro ao atualizar status da inspeção:", err);
-              // Não interrompemos o fluxo por causa disso
-              resolve({});
-            });
+        ).then(({ data, error }) => {
+          if (error) {
+            console.error("Erro ao atualizar status da inspeção:", error);
+            // Não interrompemos o fluxo por causa disso, apenas logamos o erro
+            return {};
+          } else {
+            console.log("[useSaveInspection] Respostas salvas com sucesso");
+            toast.success("Respostas salvas com sucesso");
+            return data;
+          }
+        }).catch(err => {
+          console.error("Erro ao atualizar status da inspeção:", err);
+          // Não interrompemos o fluxo por causa disso
+          return {};
         });
       }
       
