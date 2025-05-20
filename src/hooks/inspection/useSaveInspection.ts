@@ -62,7 +62,7 @@ export function useSaveInspection(inspectionId: string | undefined) {
       
       // Atualizar status da inspeção para "Em Andamento" se estiver "Pendente"
       if (inspection?.status === 'Pendente') {
-        // Criar uma Promise completa para garantir que catch() está disponível
+        // Usar nova Promise para garantir que catch() está disponível
         return new Promise<any>((resolve, reject) => {
           supabase
             .from('inspections')
