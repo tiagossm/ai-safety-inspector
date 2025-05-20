@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useMediaAnalysis, MediaAnalysisResult } from '@/hooks/useMediaAnalysis';
 import { Loader2, Sparkles } from 'lucide-react';
 import ReactMarkdown from "react-markdown";
+import { parseAISuggestion, ParsedActionPlan } from '@/utils/aiSuggestionParser';
 
 interface MediaAnalysisDialogProps {
   open: boolean;
@@ -19,7 +21,7 @@ interface MediaAnalysisDialogProps {
   questionText?: string;
   userAnswer?: string;
   onAnalysisComplete?: (result: MediaAnalysisResult) => void;
-  onAddActionPlan?: (suggestion: string) => void;
+  onAddActionPlan?: (suggestion: string, structuredData?: ParsedActionPlan) => void;
   onAddComment?: (comment: string) => void;
   multimodalAnalysis?: boolean;
   mediaUrls?: string[];
@@ -147,6 +149,17 @@ export function MediaAnalysisDialog({
     }));
   };
 
+  const handleAddActionPlanClick = (actionSuggestion: string) => {
+    if (onAddActionPlan) {
+      // Analisar a sugestão e extrair dados estruturados
+      const parsedData = parseAISuggestion(actionSuggestion);
+      console.log("[MediaAnalysisDialog] Dados estruturados extraídos:", parsedData);
+      
+      // Passar tanto o texto bruto quanto os dados estruturados
+      onAddActionPlan(actionSuggestion, parsedData);
+    }
+  };
+
   const isLoading = Object.values(analysisMap).some(state => state?.status === 'processing');
 
   const renderMarkdown = (md: string) =>
@@ -255,9 +268,7 @@ export function MediaAnalysisDialog({
                             size="sm"
                             variant="destructive"
                             className="mt-2 w-full"
-                            onClick={() => {
-                              onAddActionPlan?.(actionSuggestion);
-                            }}
+                            onClick={() => handleAddActionPlanClick(actionSuggestion)}
                           >
                             Adicionar ao Plano de Ação
                           </Button>
