@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ClipboardEdit } from "lucide-react";
 
 export interface ActionPlanButtonProps {
-  onActionPlanClick: () => void;
+  onActionPlanClick?: () => void;
   readOnly?: boolean;
   localValue?: any;
   isActionPlanOpen?: boolean;
@@ -21,7 +21,7 @@ export function ActionPlanButton({
   const handleClick = () => {
     if (setIsActionPlanOpen) {
       setIsActionPlanOpen(!isActionPlanOpen);
-    } else {
+    } else if (onActionPlanClick) {
       onActionPlanClick();
     }
   };

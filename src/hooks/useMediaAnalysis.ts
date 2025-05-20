@@ -21,13 +21,14 @@ export interface MediaAnalysisOptions {
   userAnswer?: string;
   multimodalAnalysis?: boolean;
   additionalMediaUrls?: string[];
+  mediaType?: string;
 }
 
 export function useMediaAnalysis() {
   const [analyzing, setAnalyzing] = useState(false);
 
   const analyze = useCallback(async (options: MediaAnalysisOptions): Promise<MediaAnalysisResult | null> => {
-    const { mediaUrl, questionText, userAnswer, multimodalAnalysis, additionalMediaUrls } = options;
+    const { mediaUrl, questionText, userAnswer, multimodalAnalysis, additionalMediaUrls, mediaType } = options;
     
     if (!mediaUrl) {
       toast.error("URL de mídia inválida para análise");
@@ -38,14 +39,14 @@ export function useMediaAnalysis() {
     
     try {
       // Determinar o tipo de mídia
-      const mediaType = getMediaType(mediaUrl);
+      const detectedMediaType = mediaType || getMediaType(mediaUrl);
       
       // Construir o payload para a função Edge
       const payload = {
         mediaUrl,
         questionText: questionText || "",
         userAnswer: userAnswer || "",
-        mediaType,
+        mediaType: detectedMediaType,
         multimodalAnalysis: multimodalAnalysis || false,
         additionalMediaUrls: additionalMediaUrls || []
       };
@@ -74,7 +75,7 @@ export function useMediaAnalysis() {
       // Formatar resultado
       const result: MediaAnalysisResult = {
         analysis: data.analysis || data.transcript || "Sem análise disponível",
-        type: mediaType,
+        type: detectedMediaType,
         analysisType: data.analysisType || "general",
         actionPlanSuggestion: data.actionPlanSuggestion || null,
         hasNonConformity: data.hasNonConformity || false,
