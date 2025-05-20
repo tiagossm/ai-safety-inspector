@@ -1,3 +1,4 @@
+
 import React, { useCallback } from 'react';
 import { YesNoResponseInput } from './response-types/YesNoResponseInput';
 import { TextResponseInput } from './response-types/TextResponseInput';
@@ -7,21 +8,25 @@ interface ResponseInputProps {
   question: any;
   value?: any;
   onChange: (value: any) => void;
+  inspectionId?: string;
+  actionPlan?: any;
+  onSaveActionPlan?: (data: any) => Promise<void>;
 }
 
-export function ResponseInput({ question, value, onChange }: ResponseInputProps) {
+export function ResponseInput({ 
+  question, 
+  value, 
+  onChange,
+  inspectionId,
+  actionPlan,
+  onSaveActionPlan
+}: ResponseInputProps) {
   const responseType = question.responseType || 'yes_no';
 
   // Se não vier objeto, constrói o padrão
   const responseObject = typeof value === 'object'
     ? value
     : { value: value, mediaUrls: [] };
-
-  // Função para salvar o plano de ação
-  const handleSaveActionPlan = useCallback(async (data: any) => {
-    console.log("[ResponseInput] Salvando plano de ação:", data);
-    // Implemente aqui a lógica real, se necessário.
-  }, []);
 
   const handleValueChange = useCallback((newValue: any) => {
     if (typeof newValue === 'object' && newValue !== null) {
@@ -41,7 +46,9 @@ export function ResponseInput({ question, value, onChange }: ResponseInputProps)
           question={question}
           response={responseObject}
           onResponseChange={handleValueChange}
-          onSaveActionPlan={handleSaveActionPlan} // <- Aqui está a chave!
+          inspectionId={inspectionId}
+          actionPlan={actionPlan}
+          onSaveActionPlan={onSaveActionPlan}
         />
       );
     case "text":
@@ -50,16 +57,24 @@ export function ResponseInput({ question, value, onChange }: ResponseInputProps)
           question={question}
           response={responseObject}
           onResponseChange={handleValueChange}
+          inspectionId={inspectionId}
+          actionPlan={actionPlan}
+          onSaveActionPlan={onSaveActionPlan}
         />
       );
     case "number":
       return (
         <NumberResponseInput
-          value={responseObject.value}
+          question={question}
+          response={responseObject}
+          onResponseChange={handleValueChange}
           onChange={(numberValue) => handleValueChange({
             ...responseObject,
             value: numberValue
           })}
+          inspectionId={inspectionId}
+          actionPlan={actionPlan}
+          onSaveActionPlan={onSaveActionPlan}
         />
       );
     default:
