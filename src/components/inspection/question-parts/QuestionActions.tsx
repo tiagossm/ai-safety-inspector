@@ -1,7 +1,7 @@
 
 import React from "react";
 import { CommentSection } from "../question-components/CommentSection";
-import { ActionPlanButton } from "../question-components/ActionPlanButton";
+import { ActionPlanButton } from "../question-parts/response-types/components/ActionPlanButton";
 
 interface QuestionActionsProps {
   isCommentOpen: boolean;
