@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from "react";
 import { MediaUploadInput } from "../../question-inputs/MediaUploadInput";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
@@ -14,6 +15,9 @@ interface TextResponseInputProps {
   onMediaChange?: (mediaUrls: string[]) => void;
   onApplyAISuggestion?: (suggestion: string) => void;
   readOnly?: boolean;
+  inspectionId?: string;
+  actionPlan?: any;
+  onSaveActionPlan?: (data: any) => Promise<void>;
 }
 
 export const TextResponseInput: React.FC<TextResponseInputProps> = ({
@@ -22,7 +26,10 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
   onResponseChange,
   onMediaChange,
   onApplyAISuggestion,
-  readOnly = false
+  readOnly = false,
+  inspectionId,
+  actionPlan,
+  onSaveActionPlan
 }) => {
   const [analysisResults, setAnalysisResults] = useState<Record<string, MediaAnalysisResult>>(
     response?.mediaAnalysisResults || {}
