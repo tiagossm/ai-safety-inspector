@@ -53,6 +53,8 @@ export function NumberResponseInput({
         <ActionPlanButton
           onActionPlanClick={handleActionPlanClick}
           readOnly={false}
+          isActionPlanOpen={isActionPlanOpen}
+          setIsActionPlanOpen={setIsActionPlanOpen}
         />
       </div>
     </div>
