@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { YesNoResponseInput } from './response-types/YesNoResponseInput';
 import { TextResponseInput } from './response-types/TextResponseInput';
 import { NumberResponseInput } from './response-types/NumberResponseInput';
+import { MultipleChoiceInput } from "@/components/inspection/question-inputs/MultipleChoiceInput";
 
 interface ResponseInputProps {
   question: any;
