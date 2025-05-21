@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
@@ -53,19 +52,23 @@ function getSafeActionPlan(result: MediaAnalysisResult): string {
   console.log("[getSafeActionPlan] result recebido:", result);
   const isInvalid = !result.actionPlanSuggestion 
     || result.actionPlanSuggestion.trim() === "" 
-    || result.actionPlanSuggestion.trim().toLowerCase() === "sugeridas:**";
+    || result.actionPlanSuggestion.trim().toLowerCase() === "sugeridas:**"
+    || result.actionPlanSuggestion.trim() === "**";
 
   if (!isInvalid) return result.actionPlanSuggestion!;
   
-  // Procura seção "Ações? Corretivas Sugeridas:" ou similar no texto da análise
+  // Regex melhorado para capturar variações e ignorar linhas vazias ou só "**"
   if (result.analysis) {
-    const regex = /Ações? [Cc]orretivas [Ss]ugeridas?:([\s\S]+?)(?:\n\S|\n\n|Conclusão:|$)/i;
+    const regex = /Ações? [Cc]orretivas [Ss]ugeridas?:\s*\n?([\s\S]+?)(?:\n\S|\n\n|Conclusão:|$)/i;
     const match = result.analysis.match(regex);
     if (match && match[1]) {
-      return match[1].trim();
+      const cleaned = match[1].replace(/^\s*\*\*\s*$/gm, '').trim();
+      if (cleaned && cleaned !== "**") {
+        return cleaned;
+      }
     }
   }
-  return ""; // Pode retornar "Sem ações corretivas identificadas." se preferir.
+  return ""; // Retorna vazio para indicar ausência de ações corretivas
 }
 
 export function MediaAnalysisDialog({
@@ -214,7 +217,8 @@ export function MediaAnalysisDialog({
               const state = analysisMap[url];
               const result = state?.result;
               const actionSuggestion = result ? getSafeActionPlan(result) : "";
-              const hasActionSuggestion = !!actionSuggestion && actionSuggestion.trim().length > 0;
+              // Só considera sugestão válida se não for vazio ou só "**"
+              const hasActionSuggestion = !!actionSuggestion && actionSuggestion.trim() !== "" && actionSuggestion.trim() !== "**";
 
               return (
                 <div key={url} className="col-span-1 border rounded-lg shadow-sm p-2 bg-white flex flex-col items-center">
@@ -256,25 +260,27 @@ export function MediaAnalysisDialog({
                           {renderMarkdown(result.analysis ?? "")}
                         </div>
                       </div>
-                      {hasActionSuggestion && (
-                        <div className="w-full border rounded-md p-2 bg-amber-50 border-amber-200 mt-1">
-                          <div className="flex items-center mb-1">
-                            <Sparkles className="h-3 w-3 text-amber-500 mr-1" />
-                            <h3 className="text-xs font-medium text-amber-800">Ações Corretivas Sugeridas:</h3>
-                          </div>
-                          <div className="text-xs text-amber-700">
-                            {renderMarkdown(actionSuggestion)}
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            className="mt-2 w-full"
-                            onClick={() => handleAddActionPlanClick(actionSuggestion)}
-                          >
-                            Adicionar ao Plano de Ação
-                          </Button>
+                      <div className="w-full border rounded-md p-2 bg-amber-50 border-amber-200 mt-1">
+                        <div className="flex items-center mb-1">
+                          <Sparkles className="h-3 w-3 text-amber-500 mr-1" />
+                          <h3 className="text-xs font-medium text-amber-800">Ações Corretivas Sugeridas:</h3>
                         </div>
-                      )}
+                        <div className="text-xs text-amber-700">
+                          {hasActionSuggestion
+                            ? renderMarkdown(actionSuggestion)
+                            : <span className="italic text-gray-400">Sem ações corretivas identificadas.</span>
+                          }
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="mt-2 w-full"
+                          onClick={() => hasActionSuggestion && handleAddActionPlanClick(actionSuggestion)}
+                          disabled={!hasActionSuggestion}
+                        >
+                          Adicionar ao Plano de Ação
+                        </Button>
+                      </div>
                       {!hasActionSuggestion && (
                         <Button
                           size="sm"
