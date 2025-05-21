@@ -97,7 +97,16 @@ export function ResponseInput({
           onChange={(dateValue) => handleValueChange({
             ...responseObject,
             value: dateValue
-          })}
+          })}          const handleAddOption = () => {
+            // ...existing code...
+            console.log("Adicionando opção:", newOption, "Novo array:", [...currentOptions, newOption.trim()]);
+          };
+          const handleRemoveOption = (index: number) => {
+            // ...existing code...
+            console.log("Removendo opção índice:", index, "Novo array:", currentOptions);
+          };          console.log("QuestionEditor: question", question);
+          console.log("Tipo de resposta:", frontendResponseType);
+          console.log("Opções:", question.options);
         />
       );
     case "time":

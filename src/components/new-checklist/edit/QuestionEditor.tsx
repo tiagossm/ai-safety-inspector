@@ -199,8 +199,16 @@ export function QuestionEditor({
             <label className="text-sm font-medium mb-1 block">Opções</label>
             <div className="space-y-2">
               {(question.options || []).map((option, index) => (
-                <div key={index} className="flex gap-2 items-center">
-                  <span className="w-4 h-4 rounded-full border border-gray-300 bg-white mr-2 flex-shrink-0" />
+                <label
+                  key={index}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <input
+                    type="radio"
+                    disabled
+                    className="w-4 h-4"
+                    style={{ appearance: 'auto' }}
+                  />
                   <Input
                     value={option}
                     onChange={(e) => {
@@ -219,10 +227,15 @@ export function QuestionEditor({
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
-                </div>
+                </label>
               ))}
-              <div className="flex gap-2 items-center">
-                <span className="w-4 h-4 rounded-full border border-gray-300 bg-white mr-2 flex-shrink-0" />
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  disabled
+                  className="w-4 h-4"
+                  style={{ appearance: 'auto' }}
+                />
                 <Input
                   placeholder="Adicionar opção"
                   value={newOption}
@@ -244,10 +257,10 @@ export function QuestionEditor({
                   <Plus className="h-4 w-4 mr-2" />
                   Adicionar
                 </Button>
-              </div>
+              </label>
             </div>
           </div>
-        ) : null}
+        )}
 
         <div>
           <label className="text-sm font-medium mb-1 block">Dica para o inspetor</label>
