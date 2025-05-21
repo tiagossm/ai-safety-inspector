@@ -2,6 +2,8 @@
 import React, { useCallback } from "react";
 import { YesNoResponseInput } from "./response-types/YesNoResponseInput";
 import { TextResponseInput } from "./response-types/TextResponseInput";
+import { DateResponseInput } from "./response-types/DateResponseInput";
+import { TimeResponseInput } from "./response-types/TimeResponseInput";
 
 interface ResponseInputRendererProps {
   question: any;
@@ -94,6 +96,36 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   if (responseType === "text") {
     return (
       <TextResponseInput
+        question={question}
+        response={safeResponse}
+        onResponseChange={onResponseChange}
+        onMediaChange={handleMediaChange}
+        onApplyAISuggestion={(suggestion: string) =>
+          handleResponseWithAnalysis({ aiSuggestion: suggestion })
+        }
+        readOnly={readOnly}
+      />
+    );
+  }
+
+  if (responseType === "date") {
+    return (
+      <DateResponseInput
+        question={question}
+        response={safeResponse}
+        onResponseChange={onResponseChange}
+        onMediaChange={handleMediaChange}
+        onApplyAISuggestion={(suggestion: string) =>
+          handleResponseWithAnalysis({ aiSuggestion: suggestion })
+        }
+        readOnly={readOnly}
+      />
+    );
+  }
+
+  if (responseType === "time") {
+    return (
+      <TimeResponseInput
         question={question}
         response={safeResponse}
         onResponseChange={onResponseChange}

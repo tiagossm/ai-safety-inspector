@@ -74,12 +74,18 @@ export const fetchAllSubChecklists = async (questions: any[]): Promise<Record<st
   if (questionsWithSubchecklist.length > 0) {
     console.log(`Fetching ${questionsWithSubchecklist.length} subchecklists`);
     
-    for (const question of questionsWithSubchecklist) {
-      const subChecklist = await fetchSubChecklist(question.id, question.subChecklistId);
-      if (subChecklist) {
-        subChecklistsMap[question.id] = subChecklist;
-      }
-    }
+    // Melhoria: carregar os subchecklists em paralelo
+    const subChecklistPromises = questionsWithSubchecklist.map(question => 
+      fetchSubChecklist(question.id, question.subChecklistId)
+        .then(subChecklist => {
+          if (subChecklist) {
+            subChecklistsMap[question.id] = subChecklist;
+          }
+          return subChecklist;
+        })
+    );
+    
+    await Promise.all(subChecklistPromises);
   }
 
   return subChecklistsMap;
