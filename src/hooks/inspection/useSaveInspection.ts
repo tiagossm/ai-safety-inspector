@@ -27,7 +27,7 @@ export const useSaveInspection = () => {
   
   // Função para salvar respostas da inspeção
   const saveResponses = async (inspectionId: string, responses: any[]) => {
-    if (!responses || !responses.length) return;
+    if (!responses || !responses.length) return true;
     
     let hasError = false;
     setIsSaving(true);

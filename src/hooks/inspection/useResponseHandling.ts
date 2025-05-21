@@ -8,6 +8,8 @@ import { useSaveInspection } from "./useSaveInspection";
 export type { ResponseData } from "./types/inspectionTypes";
 
 export function useResponseHandling(inspectionId: string | undefined, setResponses: (responses: Record<string, any>) => void) {
+  const [savingData, setSavingData] = useState(false);
+
   // Função melhorada para garantir que as respostas tenham atualizações corretas
   const handleResponseChange = useCallback((questionId: string, data: any) => {
     setResponses((prev) => {
@@ -44,7 +46,27 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
   // Integrar handlers específicos
   const { handleMediaChange, handleMediaUpload } = useMediaHandler(inspectionId, handleResponseChange);
   const { handleSaveSubChecklistResponses } = useSubChecklistHandler(setResponses);
-  const { handleSaveInspection, savingResponses } = useSaveInspection(inspectionId);
+  const { saveInspection, isSaving } = useSaveInspection();
+
+  // Função para salvar a inspeção
+  const handleSaveInspection = useCallback(async (responses: Record<string, any>, inspection: any) => {
+    setSavingData(true);
+    try {
+      // Transformar o objeto responses em um array de responses como esperado pelo saveInspection
+      const responsesArray = Object.entries(responses).map(([questionId, response]) => ({
+        questionId,
+        ...response
+      }));
+      
+      const result = await saveInspection(inspection, responsesArray);
+      return result;
+    } catch (error) {
+      console.error("Erro ao salvar inspeção:", error);
+      return false;
+    } finally {
+      setSavingData(false);
+    }
+  }, [saveInspection]);
 
   return {
     handleResponseChange,
@@ -52,6 +74,6 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
     handleMediaUpload,
     handleSaveInspection,
     handleSaveSubChecklistResponses,
-    savingResponses
+    savingResponses: savingData || isSaving
   };
 }

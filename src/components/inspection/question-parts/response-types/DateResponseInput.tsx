@@ -7,11 +7,16 @@ import { MediaUploadButton } from "@/components/inspection/question-inputs/Media
 import { ResponseWrapper } from "./components/ResponseWrapper";
 
 interface DateResponseInputProps {
-  value: string;
+  value?: string;
   onChange: (value: string) => void;
   onMediaUpload?: () => void;
   allowsMedia?: boolean;
   disabled?: boolean;
+  question?: any;
+  response?: any;
+  onMediaChange?: (urls: string[]) => void;
+  onApplyAISuggestion?: (suggestion: string) => void;
+  readOnly?: boolean;
 }
 
 export function DateResponseInput({
@@ -20,8 +25,14 @@ export function DateResponseInput({
   onMediaUpload,
   allowsMedia = false,
   disabled = false,
+  question,
+  response,
+  onMediaChange,
+  readOnly = false
 }: DateResponseInputProps) {
-  const selectedDate = value ? new Date(value) : undefined;
+  // Use o value direto se fornecido, ou tente pegar de response.value se existir
+  const currentValue = value || (response?.value || "");
+  const selectedDate = currentValue ? new Date(currentValue) : undefined;
 
   const handleDateChange = (date: Date | undefined) => {
     if (date) {
@@ -38,18 +49,18 @@ export function DateResponseInput({
           mode="single"
           selected={selectedDate}
           onSelect={handleDateChange}
-          disabled={disabled}
+          disabled={disabled || readOnly}
           locale={ptBR}
           className="border rounded-md p-3"
         />
       </div>
       
-      {allowsMedia && onMediaUpload && (
+      {allowsMedia && onMediaUpload && !readOnly && (
         <div className="flex justify-start mt-2">
           <MediaUploadButton
             type="photo"
             onClick={onMediaUpload}
-            disabled={disabled}
+            disabled={disabled || readOnly}
           />
         </div>
       )}

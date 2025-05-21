@@ -111,13 +111,12 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   if (responseType === "date") {
     return (
       <DateResponseInput
-        question={question}
         response={safeResponse}
-        onResponseChange={onResponseChange}
+        value={safeResponse.value}
+        onChange={(value) => onResponseChange({ ...safeResponse, value })}
         onMediaChange={handleMediaChange}
-        onApplyAISuggestion={(suggestion: string) =>
-          handleResponseWithAnalysis({ aiSuggestion: suggestion })
-        }
+        allowsMedia={!!mediaUrls.length || question.permite_foto}
+        onMediaUpload={() => console.log("Media upload for date question")}
         readOnly={readOnly}
       />
     );
@@ -126,13 +125,12 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   if (responseType === "time") {
     return (
       <TimeResponseInput
-        question={question}
         response={safeResponse}
-        onResponseChange={onResponseChange}
+        value={safeResponse.value}
+        onChange={(value) => onResponseChange({ ...safeResponse, value })}
         onMediaChange={handleMediaChange}
-        onApplyAISuggestion={(suggestion: string) =>
-          handleResponseWithAnalysis({ aiSuggestion: suggestion })
-        }
+        allowsMedia={!!mediaUrls.length || question.permite_foto}
+        onMediaUpload={() => console.log("Media upload for time question")}
         readOnly={readOnly}
       />
     );

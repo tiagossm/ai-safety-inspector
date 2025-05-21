@@ -5,11 +5,16 @@ import { MediaUploadButton } from "@/components/inspection/question-inputs/Media
 import { ResponseWrapper } from "./components/ResponseWrapper";
 
 interface TimeResponseInputProps {
-  value: string;
+  value?: string;
   onChange: (value: string) => void;
   onMediaUpload?: () => void;
   allowsMedia?: boolean;
   disabled?: boolean;
+  question?: any;
+  response?: any;
+  onMediaChange?: (urls: string[]) => void;
+  onApplyAISuggestion?: (suggestion: string) => void;
+  readOnly?: boolean;
 }
 
 export function TimeResponseInput({
@@ -18,7 +23,14 @@ export function TimeResponseInput({
   onMediaUpload,
   allowsMedia = false,
   disabled = false,
+  question,
+  response,
+  onMediaChange,
+  readOnly = false
 }: TimeResponseInputProps) {
+  // Use o value direto se fornecido, ou tente pegar de response.value se existir
+  const currentValue = value || (response?.value || "");
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value);
   };
@@ -27,18 +39,18 @@ export function TimeResponseInput({
     <ResponseWrapper>
       <Input
         type="time"
-        value={value}
+        value={currentValue}
         onChange={handleChange}
-        disabled={disabled}
+        disabled={disabled || readOnly}
         className="w-full"
       />
       
-      {allowsMedia && onMediaUpload && (
+      {allowsMedia && onMediaUpload && !readOnly && (
         <div className="flex justify-start mt-2">
           <MediaUploadButton
             type="photo"
             onClick={onMediaUpload}
-            disabled={disabled}
+            disabled={disabled || readOnly}
           />
         </div>
       )}
