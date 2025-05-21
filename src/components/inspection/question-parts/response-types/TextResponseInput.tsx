@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { MediaUploadInput } from "../../question-inputs/MediaUploadInput";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
@@ -197,26 +196,6 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
             Aplicar esta sugestão
           </Button>
         </div>
-      )}
-      
-      {/* Media upload section if allowed */}
-      {(question.allowsPhoto || question.permite_foto || 
-        question.allowsVideo || question.permite_video ||
-        question.allowsAudio || question.permite_audio ||
-        question.allowsFiles || question.permite_files) && (
-        <MediaUploadInput 
-          mediaUrls={mediaUrls}
-          onMediaChange={handleMediaChange}
-          allowsPhoto={question.allowsPhoto || question.permite_foto}
-          allowsVideo={question.allowsVideo || question.permite_video}
-          allowsAudio={question.allowsAudio || question.permite_audio}
-          allowsFiles={question.allowsFiles || question.permite_files}
-          readOnly={readOnly}
-          questionText={question.text || question.pergunta || ""}
-          onSaveAnalysis={handleSaveAnalysis}
-          analysisResults={analysisResults}
-          onApplyAISuggestion={onApplyAISuggestion}
-        />
       )}
       
       {/* Display analysis results that are relevant to the question */}
