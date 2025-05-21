@@ -1,9 +1,29 @@
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { toast } from "sonner";
 import { frontendToDatabaseResponseType } from "@/utils/responseTypeMap";
+
+// Função robusta para mapeamento do tipo de resposta (garante integridade)
+function safeFrontendToDatabaseResponseType(frontendType: string): string {
+  const typeMap: Record<string, string> = {
+    'yes_no': 'sim/não',
+    'text': 'texto',
+    'numeric': 'numérico',
+    'multiple_choice': 'seleção múltipla',
+    'photo': 'foto',
+    'signature': 'assinatura',
+    'time': 'time',
+    'date': 'date'
+  };
+
+  if (typeMap[frontendType]) {
+    return typeMap[frontendType];
+  } else {
+    console.warn(`[CHECKLIST][TIPO_RESPOSTA] Valor inesperado: "${frontendType}". Usando fallback "texto".`);
+    return 'texto';
+  }
+}
 
 interface ChecklistUpdateParams extends Partial<ChecklistWithStats> {
   id: string;
@@ -54,6 +74,18 @@ export function useChecklistUpdate() {
         throw new Error(`Falha ao atualizar dados básicos: ${error.message}`);
       }
 
+      // Auditoria: log dos tipos de resposta a serem enviados
+      if (questions && questions.length > 0) {
+        questions.forEach(q => {
+          const dbType = safeFrontendToDatabaseResponseType(q.responseType ?? "text");
+          if (
+            !["sim/não", "texto", "numérico", "seleção múltipla", "foto", "assinatura", "time", "date"].includes(dbType)
+          ) {
+            console.error(`[ALERTA] Tipo de resposta inválido: "${q.responseType}" mapeado para "${dbType}"`);
+          }
+        });
+      }
+
       if (questions && questions.length > 0) {
         const newQuestions = questions.filter((q) => q.id.startsWith("new-"));
         const existingQuestions = questions.filter((q) => !q.id.startsWith("new-"));
@@ -71,7 +103,7 @@ export function useChecklistUpdate() {
             }
 
             const options = Array.isArray(q.options) ? q.options.map((opt) => String(opt)) : [];
-            const dbResponseType = frontendToDatabaseResponseType(q.responseType);
+            const dbResponseType = safeFrontendToDatabaseResponseType(q.responseType ?? "text");
 
             return {
               checklist_id: id,
@@ -116,7 +148,7 @@ export function useChecklistUpdate() {
             ? question.options.map((opt) => String(opt))
             : [];
             
-          const dbResponseType = frontendToDatabaseResponseType(question.responseType);
+          const dbResponseType = safeFrontendToDatabaseResponseType(question.responseType ?? "text");
 
           const { error: updateError } = await supabase
             .from("checklist_itens")
