@@ -1,8 +1,10 @@
-
 import React, { useCallback } from 'react';
 import { YesNoResponseInput } from './response-types/YesNoResponseInput';
 import { TextResponseInput } from './response-types/TextResponseInput';
 import { NumberResponseInput } from './response-types/NumberResponseInput';
+import { DateResponseInput } from './response-types/DateResponseInput';
+import { TimeResponseInput } from './response-types/TimeResponseInput';
+import { MultipleChoiceInput } from '../question-inputs/MultipleChoiceInput';
 
 interface ResponseInputProps {
   question: any;
@@ -62,7 +64,7 @@ export function ResponseInput({
           onSaveActionPlan={onSaveActionPlan}
         />
       );
-    case "number":
+    case "numeric":
       return (
         <NumberResponseInput
           question={question}
@@ -75,6 +77,37 @@ export function ResponseInput({
           inspectionId={inspectionId}
           actionPlan={actionPlan}
           onSaveActionPlan={onSaveActionPlan}
+        />
+      );
+    case "multiple_choice":
+      return (
+        <MultipleChoiceInput
+          options={question.options || []}
+          value={responseObject.value}
+          onChange={(option) => handleValueChange({
+            ...responseObject,
+            value: option
+          })}
+        />
+      );
+    case "date":
+      return (
+        <DateResponseInput
+          value={responseObject.value}
+          onChange={(dateValue) => handleValueChange({
+            ...responseObject,
+            value: dateValue
+          })}
+        />
+      );
+    case "time":
+      return (
+        <TimeResponseInput
+          value={responseObject.value}
+          onChange={(timeValue) => handleValueChange({
+            ...responseObject,
+            value: timeValue
+          })}
         />
       );
     default:
