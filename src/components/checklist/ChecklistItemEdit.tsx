@@ -13,16 +13,28 @@ import { toast } from 'sonner';
 // Definindo o tipo ChecklistItem localmente
 interface ChecklistItem {
   id: string;
-  descricao: string;
+  pergunta: string;
   tipo_resposta: string;
   obrigatorio: boolean;
   checklist_id: string;
+  opcoes?: any;
+  ordem?: number;
+  weight?: number;
+  permite_foto?: boolean;
+  permite_video?: boolean;
+  permite_audio?: boolean;
+  permite_files?: boolean;
+  hint?: string;
+  condition_value?: string;
+  parent_item_id?: string;
+  has_subchecklist?: boolean;
+  sub_checklist_id?: string;
 }
 
 const ChecklistItemEdit: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [checklistItem, setChecklistItem] = useState<ChecklistItem | null>(null);
-  const [descricao, setDescricao] = useState('');
+  const [pergunta, setPergunta] = useState('');
   const [tipoResposta, setTipoResposta] = useState('');
   const [obrigatorio, setObrigatorio] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -39,8 +51,8 @@ const ChecklistItemEdit: React.FC = () => {
 
         if (error) throw error;
 
-        setChecklistItem(data);
-        setDescricao(data.descricao);
+        setChecklistItem(data as ChecklistItem);
+        setPergunta(data.pergunta);
         setTipoResposta(data.tipo_resposta);
         setObrigatorio(data.obrigatorio);
       } catch (error) {
@@ -62,7 +74,7 @@ const ChecklistItemEdit: React.FC = () => {
       const { error } = await supabase
         .from('checklist_itens')
         .update({
-          descricao,
+          pergunta,
           tipo_resposta: tipoResposta,
           obrigatorio,
         })
@@ -105,12 +117,12 @@ const ChecklistItemEdit: React.FC = () => {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="descricao">Descrição</Label>
+            <Label htmlFor="pergunta">Descrição</Label>
             <Input
-              id="descricao"
+              id="pergunta"
               type="text"
-              value={descricao}
-              onChange={(e) => setDescricao(e.target.value)}
+              value={pergunta}
+              onChange={(e) => setPergunta(e.target.value)}
               required
             />
           </div>

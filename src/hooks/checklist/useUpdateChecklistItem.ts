@@ -21,10 +21,13 @@ export function useUpdateChecklistItem() {
           permite_audio: item.permite_audio,
           permite_video: item.permite_video,
           permite_foto: item.permite_foto,
+          permite_files: item.permite_files,
           hint: item.hint,
           weight: item.weight,
           parent_item_id: item.parent_item_id,
-          condition_value: item.condition_value
+          condition_value: item.condition_value,
+          has_subchecklist: item.has_subchecklist,
+          sub_checklist_id: item.sub_checklist_id
         })
         .eq("id", item.id);
 

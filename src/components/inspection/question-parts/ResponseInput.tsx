@@ -44,7 +44,7 @@ export function ResponseInput({
     }
   }, [onChange, responseObject]);
 
-  const handleSimpleValueChange = useCallback((value: string) => {
+  const handleSimpleValueChange = useCallback((value: any) => {
     onChange({
       ...responseObject,
       value
@@ -91,7 +91,7 @@ export function ResponseInput({
             question={question}
             response={responseObject}
             onResponseChange={handleValueChange}
-            onChange={handleSimpleValueChange} // Corrigido o tipo aqui, garantindo que string é passado
+            onChange={handleSimpleValueChange}
             inspectionId={inspectionId}
             actionPlan={actionPlan}
             onSaveActionPlan={onSaveActionPlan}

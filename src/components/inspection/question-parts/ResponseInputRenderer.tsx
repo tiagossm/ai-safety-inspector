@@ -80,7 +80,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   );
 
   // Função para lidar com mudanças em componentes simples
-  const handleSimpleValueChange = useCallback((value: string) => {
+  const handleSimpleValueChange = useCallback((value: any) => {
     onResponseChange({
       ...safeResponse,
       value
