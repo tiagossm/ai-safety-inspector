@@ -39,18 +39,15 @@ export function useSaveInspection(inspectionId: string | undefined) {
             .upsert(responseToSave, {
               onConflict: 'inspection_id,question_id'
             })
-            .then(({ data, error }) => {
-              if (error) {
-                console.error(`[useSaveInspection] Erro ao salvar resposta para questão ${questionId}:`, error);
-                reject(error);
-              } else {
-                resolve(data);
-              }
-            })
-            .catch(err => {
-              console.error(`[useSaveInspection] Erro ao salvar resposta para questão ${questionId}:`, err);
-              reject(err);
-            });
+        ).then(({ data, error }) => {
+          if (error) {
+            console.error(`[useSaveInspection] Erro ao salvar resposta para questão ${questionId}:`, error);
+            throw error;
+          }
+          return data;
+        }).catch(err => {
+          console.error(`[useSaveInspection] Erro ao salvar resposta para questão ${questionId}:`, err);
+          throw err;
         });
         
         savingPromises.push(savePromise);
@@ -67,22 +64,20 @@ export function useSaveInspection(inspectionId: string | undefined) {
             .from('inspections')
             .update({ status: 'Em Andamento' })
             .eq('id', inspectionId)
-            .then(({ data, error }) => {
-              if (error) {
-                console.error("Erro ao atualizar status da inspeção:", error);
-                // Não interrompemos o fluxo por causa disso, apenas logamos o erro
-                resolve({});
-              } else {
-                console.log("[useSaveInspection] Respostas salvas com sucesso");
-                toast.success("Respostas salvas com sucesso");
-                resolve(data);
-              }
-            })
-            .catch(err => {
-              console.error("Erro ao atualizar status da inspeção:", err);
-              // Não interrompemos o fluxo por causa disso
-              resolve({});
-            });
+        ).then(({ data, error }) => {
+          if (error) {
+            console.error("Erro ao atualizar status da inspeção:", error);
+            // Não interrompemos o fluxo por causa disso, apenas logamos o erro
+            return {};
+          } else {
+            console.log("[useSaveInspection] Respostas salvas com sucesso");
+            toast.success("Respostas salvas com sucesso");
+            return data;
+          }
+        }).catch(err => {
+          console.error("Erro ao atualizar status da inspeção:", err);
+          // Não interrompemos o fluxo por causa disso
+          return {};
         });
       }
       
