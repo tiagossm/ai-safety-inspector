@@ -10,6 +10,7 @@ import { ActionPlanFormData } from '@/components/action-plans/form/types';
 import { useMediaAnalysis, MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 import { ActionPlanImplementation } from "./ActionPlanImplementation";
 import { ActionPlanDialog } from "@/components/action-plans/ActionPlanDialog";
+import { Button } from "@/components/ui/button";
 
 interface InspectionQuestionProps {
   question: any;
@@ -235,55 +236,81 @@ export function InspectionQuestion({
         />
       </CardHeader>
       <CardContent className="py-3 px-4">
+        {/* Input de resposta no topo */}
         <ResponseInput
           question={question}
           value={response?.value}
           onChange={handleResponseValueChange}
         />
+
+        {/* Rodapé padronizado para todos os tipos de resposta */}
+        <div className="mt-4 flex flex-wrap gap-2 items-center border-t pt-4">
+          {/* Plano de Ação */}
+          {(isNegativeResponse(response?.value) || showActionPlan || response?.actionPlan) && !showActionPlanImplementation && (
+            <ActionPlanSection
+              isOpen={showActionPlan}
+              onOpenChange={setShowActionPlan}
+              actionPlan={response?.actionPlan || ""}
+              onActionPlanChange={handleActionPlanChange}
+              onOpenDialog={inspectionId && question.id ? handleOpenActionPlanDialog : undefined}
+              hasNegativeResponse={isNegativeResponse(response?.value)}
+              aiSuggestion={getBestAISuggestion()}
+              mediaAnalysisResults={mediaAnalysisResults}
+            />
+          )}
+
+          {/* Botão para abrir o modal de Plano de Ação estruturado */}
+          {inspectionId && question.id && onSaveActionPlan && (
+            <ActionPlanDialog
+              open={showActionPlanDialog}
+              onOpenChange={setShowActionPlanDialog}
+              inspectionId={inspectionId}
+              questionId={question.id}
+              existingPlan={actionPlan}
+              onSave={handleSaveStructuredActionPlan}
+              aiSuggestion={aiSuggestion}
+            />
+          )}
+
+          {/* Botão para Analisar com IA (multi-modal) */}
+          {response?.mediaUrls && response.mediaUrls.length > 1 && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleAnalyzeAllMedia}
+              disabled={multiModalLoading}
+              className="ml-2"
+            >
+              {multiModalLoading ? "Analisando..." : "Analisar com IA"}
+            </Button>
+          )}
+
+          {/* Adicionar mídia */}
+          {response?.mediaUrls && (
+            <div className="ml-2">
+              <MediaUploadSection
+                mediaUrls={response.mediaUrls || []}
+                onMediaChange={handleMediaChange}
+                questionId={question.id}
+                inspectionId={inspectionId}
+                isReadOnly={false}
+                questionText={question.text}
+                onSaveAnalysis={handleSaveAnalysis}
+                onApplyAISuggestion={handleApplyAISuggestion}
+                analysisResults={mediaAnalysisResults}
+                onAnalyzeAll={handleAnalyzeAllMedia}
+                multiModalLoading={multiModalLoading}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Comentários e implementação do plano de ação continuam abaixo */}
         {showComments && (
           <CommentsSection
             comment={response?.comment || ""}
             onCommentChange={handleCommentChange}
-          />
-        )}
-        {response?.mediaUrls && response.mediaUrls.length > 0 && (
-          <div className="mt-4">
-            <MediaUploadSection
-              mediaUrls={response.mediaUrls || []}
-              onMediaChange={handleMediaChange}
-              questionId={question.id}
-              inspectionId={inspectionId}
-              isReadOnly={false}
-              questionText={question.text}
-              onSaveAnalysis={handleSaveAnalysis}
-              onApplyAISuggestion={handleApplyAISuggestion}
-              analysisResults={mediaAnalysisResults}
-              onAnalyzeAll={handleAnalyzeAllMedia}
-              multiModalLoading={multiModalLoading}
-            />
-          </div>
-        )}
-        {(isNegativeResponse(response?.value) || showActionPlan || response?.actionPlan) && !showActionPlanImplementation && (
-          <ActionPlanSection
-            isOpen={showActionPlan}
-            onOpenChange={setShowActionPlan}
-            actionPlan={response?.actionPlan || ""}
-            onActionPlanChange={handleActionPlanChange}
-            onOpenDialog={inspectionId && question.id ? handleOpenActionPlanDialog : undefined}
-            hasNegativeResponse={isNegativeResponse(response?.value)}
-            aiSuggestion={getBestAISuggestion()}
-            mediaAnalysisResults={mediaAnalysisResults}
-          />
-        )}
-        {inspectionId && question.id && onSaveActionPlan && (
-          <ActionPlanDialog
-            open={showActionPlanDialog}
-            onOpenChange={setShowActionPlanDialog}
-            inspectionId={inspectionId}
-            questionId={question.id}
-            existingPlan={actionPlan}
-            onSave={handleSaveStructuredActionPlan}
-            aiSuggestion={aiSuggestion}
           />
         )}
         {showActionPlanImplementation && inspectionId && question.id && onSaveActionPlan && actionPlan && (
