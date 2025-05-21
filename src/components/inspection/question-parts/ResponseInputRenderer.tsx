@@ -4,6 +4,10 @@ import { YesNoResponseInput } from "./response-types/YesNoResponseInput";
 import { TextResponseInput } from "./response-types/TextResponseInput";
 import { DateResponseInput } from "./response-types/DateResponseInput";
 import { TimeResponseInput } from "./response-types/TimeResponseInput";
+import { NumberInput } from "@/components/inspection/question-inputs/NumberInput";
+import { MultipleChoiceInput } from "@/components/inspection/question-inputs/MultipleChoiceInput";
+import { PhotoInput } from "@/components/inspection/question-inputs/PhotoInput";
+import { SignatureInput } from "@/components/checklist/SignatureInput";
 
 interface ResponseInputRendererProps {
   question: any;
@@ -75,6 +79,14 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     [onSaveActionPlan]
   );
 
+  // Função para lidar com mudanças em componentes simples
+  const handleSimpleValueChange = useCallback((value: string) => {
+    onResponseChange({
+      ...safeResponse,
+      value
+    });
+  }, [safeResponse, onResponseChange]);
+
   if (responseType === "yes_no") {
     return (
       <YesNoResponseInput
@@ -108,6 +120,99 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     );
   }
 
+  if (responseType === "multiple_choice") {
+    return (
+      <div className="space-y-2">
+        <MultipleChoiceInput 
+          options={question.options || []}
+          value={safeResponse.value}
+          onChange={handleSimpleValueChange}
+        />
+        {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
+          <PhotoInput
+            mediaUrls={mediaUrls}
+            onAddMedia={() => console.log("Adicionar mídia para questão multiple_choice")}
+            onDeleteMedia={(url) => {
+              const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
+              handleMediaChange(updatedUrls);
+            }}
+            allowsPhoto={question.allowsPhoto}
+            allowsVideo={question.allowsVideo}
+            allowsAudio={question.allowsAudio}
+            allowsFiles={question.allowsFiles}
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (responseType === "numeric" || responseType === "number") {
+    return (
+      <div className="space-y-2">
+        <NumberInput
+          value={safeResponse.value}
+          onChange={handleSimpleValueChange}
+        />
+        {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
+          <PhotoInput
+            mediaUrls={mediaUrls}
+            onAddMedia={() => console.log("Adicionar mídia para questão numeric")}
+            onDeleteMedia={(url) => {
+              const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
+              handleMediaChange(updatedUrls);
+            }}
+            allowsPhoto={question.allowsPhoto}
+            allowsVideo={question.allowsVideo}
+            allowsAudio={question.allowsAudio}
+            allowsFiles={question.allowsFiles}
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (responseType === "photo") {
+    return (
+      <PhotoInput
+        mediaUrls={mediaUrls}
+        onAddMedia={() => console.log("Adicionar mídia para questão photo")}
+        onDeleteMedia={(url) => {
+          const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
+          handleMediaChange(updatedUrls);
+        }}
+        allowsPhoto={true}
+        allowsVideo={question.allowsVideo}
+        allowsAudio={question.allowsAudio}
+        allowsFiles={question.allowsFiles}
+      />
+    );
+  }
+
+  if (responseType === "signature") {
+    return (
+      <div className="space-y-2">
+        <SignatureInput 
+          value={safeResponse.value || ""}
+          onChange={handleSimpleValueChange}
+        />
+        {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
+          <PhotoInput
+            mediaUrls={mediaUrls}
+            onAddMedia={() => console.log("Adicionar mídia para questão signature")}
+            onDeleteMedia={(url) => {
+              const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
+              handleMediaChange(updatedUrls);
+            }}
+            allowsPhoto={question.allowsPhoto}
+            allowsVideo={question.allowsVideo}
+            allowsAudio={question.allowsAudio}
+            allowsFiles={question.allowsFiles}
+          />
+        )}
+      </div>
+    );
+  }
+
   if (responseType === "date") {
     return (
       <DateResponseInput
@@ -136,5 +241,11 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     );
   }
 
-  return null;
+  return (
+    <div className="p-4 border border-red-300 bg-red-50 rounded-md">
+      <p className="text-red-700">
+        Tipo de resposta não suportado: {responseType}
+      </p>
+    </div>
+  );
 };

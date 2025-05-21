@@ -3,6 +3,11 @@ import React, { useCallback } from 'react';
 import { YesNoResponseInput } from './response-types/YesNoResponseInput';
 import { TextResponseInput } from './response-types/TextResponseInput';
 import { NumberResponseInput } from './response-types/NumberResponseInput';
+import { MultipleChoiceInput } from '@/components/inspection/question-inputs/MultipleChoiceInput';
+import { PhotoInput } from '@/components/inspection/question-inputs/PhotoInput';
+import { SignatureInput } from '@/components/checklist/SignatureInput';
+import { TimeResponseInput } from './response-types/TimeResponseInput';
+import { DateResponseInput } from './response-types/DateResponseInput';
 
 interface ResponseInputProps {
   question: any;
@@ -39,6 +44,22 @@ export function ResponseInput({
     }
   }, [onChange, responseObject]);
 
+  const handleSimpleValueChange = useCallback((value: string) => {
+    onChange({
+      ...responseObject,
+      value
+    });
+  }, [onChange, responseObject]);
+
+  const mediaUrls = responseObject.mediaUrls || [];
+
+  const handleMediaChange = useCallback((urls: string[]) => {
+    onChange({
+      ...responseObject,
+      mediaUrls: urls
+    });
+  }, [onChange, responseObject]);
+
   switch (responseType) {
     case "yes_no":
       return (
@@ -63,18 +84,116 @@ export function ResponseInput({
         />
       );
     case "number":
+    case "numeric":
       return (
-        <NumberResponseInput
-          question={question}
+        <div className="space-y-2">
+          <NumberResponseInput
+            question={question}
+            response={responseObject}
+            onResponseChange={handleValueChange}
+            onChange={handleSimpleValueChange}
+            inspectionId={inspectionId}
+            actionPlan={actionPlan}
+            onSaveActionPlan={onSaveActionPlan}
+          />
+          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
+            <PhotoInput
+              mediaUrls={mediaUrls}
+              onAddMedia={() => console.log("Adicionar mídia para questão numérica")}
+              onDeleteMedia={(url) => {
+                const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
+                handleMediaChange(updatedUrls);
+              }}
+              allowsPhoto={question.allowsPhoto}
+              allowsVideo={question.allowsVideo}
+              allowsAudio={question.allowsAudio}
+              allowsFiles={question.allowsFiles}
+            />
+          )}
+        </div>
+      );
+    case "multiple_choice":
+      return (
+        <div className="space-y-2">
+          <MultipleChoiceInput 
+            options={question.options || []}
+            value={responseObject.value}
+            onChange={handleSimpleValueChange}
+          />
+          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
+            <PhotoInput
+              mediaUrls={mediaUrls}
+              onAddMedia={() => console.log("Adicionar mídia para questão múltipla escolha")}
+              onDeleteMedia={(url) => {
+                const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
+                handleMediaChange(updatedUrls);
+              }}
+              allowsPhoto={question.allowsPhoto}
+              allowsVideo={question.allowsVideo}
+              allowsAudio={question.allowsAudio}
+              allowsFiles={question.allowsFiles}
+            />
+          )}
+        </div>
+      );
+    case "photo":
+      return (
+        <PhotoInput
+          mediaUrls={mediaUrls}
+          onAddMedia={() => console.log("Adicionar mídia para questão foto")}
+          onDeleteMedia={(url) => {
+            const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
+            handleMediaChange(updatedUrls);
+          }}
+          allowsPhoto={true}
+          allowsVideo={question.allowsVideo}
+          allowsAudio={question.allowsAudio}
+          allowsFiles={question.allowsFiles}
+        />
+      );
+    case "signature":
+      return (
+        <div className="space-y-2">
+          <SignatureInput 
+            value={responseObject.value || ""}
+            onChange={handleSimpleValueChange}
+          />
+          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
+            <PhotoInput
+              mediaUrls={mediaUrls}
+              onAddMedia={() => console.log("Adicionar mídia para questão assinatura")}
+              onDeleteMedia={(url) => {
+                const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
+                handleMediaChange(updatedUrls);
+              }}
+              allowsPhoto={question.allowsPhoto}
+              allowsVideo={question.allowsVideo}
+              allowsAudio={question.allowsAudio}
+              allowsFiles={question.allowsFiles}
+            />
+          )}
+        </div>
+      );
+    case "time":
+      return (
+        <TimeResponseInput
           response={responseObject}
-          onResponseChange={handleValueChange}
-          onChange={(numberValue) => handleValueChange({
-            ...responseObject,
-            value: numberValue
-          })}
-          inspectionId={inspectionId}
-          actionPlan={actionPlan}
-          onSaveActionPlan={onSaveActionPlan}
+          value={responseObject.value}
+          onChange={(value) => handleValueChange({...responseObject, value})}
+          onMediaChange={handleMediaChange}
+          allowsMedia={!!mediaUrls.length || question.allowsPhoto}
+          onMediaUpload={() => console.log("Media upload for time question")}
+        />
+      );
+    case "date":
+      return (
+        <DateResponseInput
+          response={responseObject}
+          value={responseObject.value}
+          onChange={(value) => handleValueChange({...responseObject, value})}
+          onMediaChange={handleMediaChange}
+          allowsMedia={!!mediaUrls.length || question.allowsPhoto}
+          onMediaUpload={() => console.log("Media upload for date question")}
         />
       );
     default:
