@@ -55,7 +55,7 @@ function getSafeActionPlan(result: MediaAnalysisResult): string {
 
   if (!isInvalid) return result.actionPlanSuggestion!;
   
-  // Procura seção "Ações Corretivas Sugeridas:" ou similar no texto da análise
+  // Procura seção "Ações? Corretivas Sugeridas:" ou similar no texto da análise
   if (result.analysis) {
     const regex = /Ações? [Cc]orretivas [Ss]ugeridas?:([\s\S]+?)(?:\n\S|\n\n|Conclusão:|$)/i;
     const match = result.analysis.match(regex);
@@ -101,8 +101,8 @@ export function MediaAnalysisDialog({
     } else {
       setAnalysisMap({});
     }
-  }, [open, allImages.join('-')]);
-
+  }, [open, allImages]);
+  
   useEffect(() => {
     if (!open) return;
     allImages.forEach(url => {
@@ -138,7 +138,8 @@ export function MediaAnalysisDialog({
       }
     });
     // eslint-disable-next-line
-  }, [open, analyze, mediaUrl, mediaType, questionText, userAnswer, allImages.join('-'), analysisMap]);
+  }, [open, analyze, mediaUrl, mediaType, questionText, userAnswer, allImages]);
+  // Removido analysisMap e .join('-') das dependências
 
   const handleRetry = (url: string) => {
     setAnalysisMap(prev => ({
