@@ -1,107 +1,118 @@
-import { useState, useCallback } from "react";
+
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
-export function useSaveInspection(inspectionId: string | undefined) {
-  const [savingResponses, setSavingResponses] = useState(false);
+// Função auxiliar para converter promessas do Supabase em Promises completas
+const wrapSupabaseCall = <T>(supabasePromise: any): Promise<T> => {
+  return new Promise((resolve, reject) => {
+    // Adiciona um método .then() para capturar o resultado de qualquer promessa/objeto do Supabase
+    supabasePromise
+      .then((result: any) => {
+        if (result && result.error) {
+          reject(result.error);
+        } else {
+          resolve(result && result.data as T);
+        }
+      })
+      .catch((error: any) => {
+        reject(error);
+      });
+  });
+};
 
-  // Função para salvar as respostas da inspeção
-  const handleSaveInspection = useCallback(async (currentResponses: Record<string, any>, inspection: any): Promise<any> => {
-    if (!inspectionId) return Promise.resolve({});
+export const useSaveInspection = () => {
+  const [isSaving, setIsSaving] = useState(false);
+  const navigate = useNavigate();
+  
+  // Função para salvar respostas da inspeção
+  const saveResponses = async (inspectionId: string, responses: any[]) => {
+    if (!responses || !responses.length) return true;
     
-    setSavingResponses(true);
+    let hasError = false;
+    setIsSaving(true);
+    
+    // Formatar os dados para inserção
+    const responsesData = responses.map(r => ({
+      inspection_id: inspectionId,
+      question_id: r.questionId,
+      answer: r.value,
+      action_plan: r.actionPlan,
+      comments: r.comments,
+      media_urls: r.mediaUrls || [],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }));
     
     try {
-      console.log("[useSaveInspection] Salvando respostas:", currentResponses);
+      // Usar nossa função helper para envolver a chamada Supabase
+      await wrapSupabaseCall(
+        supabase
+          .from("inspection_responses")
+          .upsert(responsesData, { onConflict: 'inspection_id,question_id' })
+      );
       
-      const savingPromises: Array<Promise<any>> = [];
-      
-      // Para cada resposta, precisamos salvar em um formato compatível com a tabela inspection_responses
-      for (const [questionId, responseData] of Object.entries(currentResponses)) {
-        // Preparar dados para salvar
-        const responseToSave = {
-          inspection_id: inspectionId,
-          question_id: questionId,
-          answer: responseData.value?.toString() || 'N/A',
-          notes: JSON.stringify(responseData),
-          media_urls: responseData.mediaUrls || [],
-          action_plan: responseData.actionPlan || '',
-          sub_checklist_responses: responseData.subChecklistResponses || null,
-          updated_at: new Date().toISOString()
-        };
-        
-        console.log(`[useSaveInspection] Salvando resposta para questão ${questionId}:`, responseToSave);
-        
-        // Criar uma Promise completa (não apenas PromiseLike) para garantir que catch() está disponível
-        const savePromise = new Promise<any>((resolve, reject) => {
-          supabase
-            .from('inspection_responses')
-            .upsert(responseToSave, {
-              onConflict: 'inspection_id,question_id'
-            })
-            .then(({ data, error }) => {
-              if (error) {
-                console.error(`[useSaveInspection] Erro ao salvar resposta para questão ${questionId}:`, error);
-                reject(error);
-              } else {
-                resolve(data);
-              }
-            })
-            .catch(err => {
-              console.error(`[useSaveInspection] Erro ao salvar resposta para questão ${questionId}:`, err);
-              reject(err);
-            });
-        });
-        
-        savingPromises.push(savePromise);
-      }
-      
-      // Aguardar todas as operações de salvamento
-      await Promise.all(savingPromises);
-      
-      // Atualizar status da inspeção para "Em Andamento" se estiver "Pendente"
-      if (inspection?.status === 'Pendente') {
-        // Usar nova Promise para garantir que catch() está disponível
-        return new Promise<any>((resolve, reject) => {
-          supabase
-            .from('inspections')
-            .update({ status: 'Em Andamento' })
-            .eq('id', inspectionId)
-            .then(({ data, error }) => {
-              if (error) {
-                console.error("Erro ao atualizar status da inspeção:", error);
-                // Não interrompemos o fluxo por causa disso, apenas logamos o erro
-                resolve({});
-              } else {
-                console.log("[useSaveInspection] Respostas salvas com sucesso");
-                toast.success("Respostas salvas com sucesso");
-                resolve(data);
-              }
-            })
-            .catch(err => {
-              console.error("Erro ao atualizar status da inspeção:", err);
-              // Não interrompemos o fluxo por causa disso
-              resolve({});
-            });
-        });
-      }
-      
-      console.log("[useSaveInspection] Respostas salvas com sucesso");
-      toast.success("Respostas salvas com sucesso");
-      
-      return Promise.resolve({});
-      
-    } catch (error: any) {
-      console.error("[useSaveInspection] Erro ao salvar inspeção:", error);
-      toast.error(`Erro ao salvar inspeção: ${error.message || "Erro desconhecido"}`);
-      return Promise.reject(error);
-    } finally {
-      setSavingResponses(false);
+      console.log(`Salvou ${responsesData.length} respostas`);
+    } catch (error) {
+      console.error("Erro ao salvar respostas:", error);
+      hasError = true;
     }
-  }, [inspectionId]);
-
-  return {
-    handleSaveInspection,
-    savingResponses
+    
+    setIsSaving(false);
+    return !hasError;
   };
-}
+  
+  // Função para salvar toda a inspeção com respostas
+  const saveInspection = async (inspection: any, responses: any[], navigateAfterSave = true) => {
+    let hasError = false;
+    setIsSaving(true);
+    
+    // Atualizar o status da inspeção
+    try {
+      await wrapSupabaseCall(
+        supabase
+          .from("inspections")
+          .update({
+            status: inspection.status,
+            updated_at: new Date().toISOString(),
+            inspector_name: inspection.inspectorName,
+            inspector_title: inspection.inspectorTitle,
+            company_name: inspection.companyName,
+            responsible_name: inspection.responsibleName,
+            location: inspection.location
+          })
+          .eq("id", inspection.id)
+      );
+      
+      console.log(`Atualizou status da inspeção para ${inspection.status}`);
+    } catch (error) {
+      console.error("Erro ao atualizar inspeção:", error);
+      hasError = true;
+    }
+    
+    if (!hasError) {
+      const responsesSaved = await saveResponses(inspection.id, responses);
+      if (!responsesSaved) hasError = true;
+    }
+    
+    setIsSaving(false);
+    
+    if (!hasError) {
+      toast.success("Inspeção salva com sucesso!");
+      if (navigateAfterSave) {
+        navigate("/inspections");
+      }
+      return true;
+    } else {
+      toast.error("Erro ao salvar inspeção. Verifique o console para mais detalhes.");
+      return false;
+    }
+  };
+  
+  return {
+    saveInspection,
+    saveResponses,
+    isSaving
+  };
+};

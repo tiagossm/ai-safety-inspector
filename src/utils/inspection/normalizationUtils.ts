@@ -3,7 +3,7 @@
  * Normalizes various input response types to a consistent set of values
  * This helps handle different response type formats across the application
  */
-export const normalizeResponseType = (responseType: string): "text" | "yes_no" | "multiple_choice" | "numeric" | "photo" | "signature" => {
+export const normalizeResponseType = (responseType: string): "text" | "yes_no" | "multiple_choice" | "numeric" | "photo" | "signature" | "date" | "time" => {
   if (!responseType) return "text";
   
   const type = responseType.toLowerCase();
@@ -60,6 +60,26 @@ export const normalizeResponseType = (responseType: string): "text" | "yes_no" |
     type.includes("sign")
   ) {
     return "signature";
+  }
+  
+  if (
+    type.includes("data") ||
+    type.includes("date") ||
+    type.includes("calendario") ||
+    type.includes("calendar")
+  ) {
+    return "date";
+  }
+  
+  if (
+    type.includes("hora") ||
+    type.includes("time") ||
+    type.includes("horário") ||
+    type.includes("horario") ||
+    type.includes("relógio") ||
+    type.includes("relogio")
+  ) {
+    return "time";
   }
   
   return "text"; // Default to text if no match is found

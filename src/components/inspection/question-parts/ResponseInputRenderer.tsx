@@ -2,6 +2,8 @@
 import React, { useCallback } from "react";
 import { YesNoResponseInput } from "./response-types/YesNoResponseInput";
 import { TextResponseInput } from "./response-types/TextResponseInput";
+import { DateResponseInput } from "./response-types/DateResponseInput";
+import { TimeResponseInput } from "./response-types/TimeResponseInput";
 
 interface ResponseInputRendererProps {
   question: any;
@@ -101,6 +103,34 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         onApplyAISuggestion={(suggestion: string) =>
           handleResponseWithAnalysis({ aiSuggestion: suggestion })
         }
+        readOnly={readOnly}
+      />
+    );
+  }
+
+  if (responseType === "date") {
+    return (
+      <DateResponseInput
+        response={safeResponse}
+        value={safeResponse.value}
+        onChange={(value) => onResponseChange({ ...safeResponse, value })}
+        onMediaChange={handleMediaChange}
+        allowsMedia={!!mediaUrls.length || question.permite_foto}
+        onMediaUpload={() => console.log("Media upload for date question")}
+        readOnly={readOnly}
+      />
+    );
+  }
+
+  if (responseType === "time") {
+    return (
+      <TimeResponseInput
+        response={safeResponse}
+        value={safeResponse.value}
+        onChange={(value) => onResponseChange({ ...safeResponse, value })}
+        onMediaChange={handleMediaChange}
+        allowsMedia={!!mediaUrls.length || question.permite_foto}
+        onMediaUpload={() => console.log("Media upload for time question")}
         readOnly={readOnly}
       />
     );

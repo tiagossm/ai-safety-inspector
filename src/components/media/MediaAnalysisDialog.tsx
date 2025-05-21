@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { useMediaAnalysis, MediaAnalysisResult } from '@/hooks/useMediaAnalysis';
 import { Loader2, Sparkles } from 'lucide-react';
 import ReactMarkdown from "react-markdown";
-import { parseAISuggestion, ParsedActionPlan } from '@/utils/aiSuggestionParser';
 
 interface MediaAnalysisDialogProps {
   open: boolean;
@@ -20,7 +19,7 @@ interface MediaAnalysisDialogProps {
   questionText?: string;
   userAnswer?: string;
   onAnalysisComplete?: (result: MediaAnalysisResult) => void;
-  onAddActionPlan?: (suggestion: string, structuredData?: ParsedActionPlan) => void;
+  onAddActionPlan?: (suggestion: string) => void;
   onAddComment?: (comment: string) => void;
   multimodalAnalysis?: boolean;
   mediaUrls?: string[];
@@ -52,23 +51,19 @@ function getSafeActionPlan(result: MediaAnalysisResult): string {
   console.log("[getSafeActionPlan] result recebido:", result);
   const isInvalid = !result.actionPlanSuggestion 
     || result.actionPlanSuggestion.trim() === "" 
-    || result.actionPlanSuggestion.trim().toLowerCase() === "sugeridas:**"
-    || result.actionPlanSuggestion.trim() === "**";
+    || result.actionPlanSuggestion.trim().toLowerCase() === "sugeridas:**";
 
   if (!isInvalid) return result.actionPlanSuggestion!;
   
-  // Regex melhorado para capturar variações e ignorar linhas vazias ou só "**"
+  // Procura seção "Ações? Corretivas Sugeridas:" ou similar no texto da análise
   if (result.analysis) {
-    const regex = /Ações? [Cc]orretivas [Ss]ugeridas?:\s*\n?([\s\S]+?)(?:\n\S|\n\n|Conclusão:|$)/i;
+    const regex = /Ações? [Cc]orretivas [Ss]ugeridas?:([\s\S]+?)(?:\n\S|\n\n|Conclusão:|$)/i;
     const match = result.analysis.match(regex);
     if (match && match[1]) {
-      const cleaned = match[1].replace(/^\s*\*\*\s*$/gm, '').trim();
-      if (cleaned && cleaned !== "**") {
-        return cleaned;
-      }
+      return match[1].trim();
     }
   }
-  return ""; // Retorna vazio para indicar ausência de ações corretivas
+  return ""; // Pode retornar "Sem ações corretivas identificadas." se preferir.
 }
 
 export function MediaAnalysisDialog({
@@ -153,17 +148,6 @@ export function MediaAnalysisDialog({
     }));
   };
 
-  const handleAddActionPlanClick = (actionSuggestion: string) => {
-    if (onAddActionPlan) {
-      // Analisar a sugestão e extrair dados estruturados
-      const parsedData = parseAISuggestion(actionSuggestion);
-      console.log("[MediaAnalysisDialog] Dados estruturados extraídos:", parsedData);
-      
-      // Passar tanto o texto bruto quanto os dados estruturados
-      onAddActionPlan(actionSuggestion, parsedData);
-    }
-  };
-
   const isLoading = Object.values(analysisMap).some(state => state?.status === 'processing');
 
   const renderMarkdown = (md: string) =>
@@ -217,8 +201,7 @@ export function MediaAnalysisDialog({
               const state = analysisMap[url];
               const result = state?.result;
               const actionSuggestion = result ? getSafeActionPlan(result) : "";
-              // Só considera sugestão válida se não for vazio ou só "**"
-              const hasActionSuggestion = !!actionSuggestion && actionSuggestion.trim() !== "" && actionSuggestion.trim() !== "**";
+              const hasActionSuggestion = !!actionSuggestion && actionSuggestion.trim().length > 0;
 
               return (
                 <div key={url} className="col-span-1 border rounded-lg shadow-sm p-2 bg-white flex flex-col items-center">
@@ -260,27 +243,30 @@ export function MediaAnalysisDialog({
                           {renderMarkdown(result.analysis ?? "")}
                         </div>
                       </div>
-                      <div className="w-full border rounded-md p-2 bg-amber-50 border-amber-200 mt-1">
-                        <div className="flex items-center mb-1">
-                          <Sparkles className="h-3 w-3 text-amber-500 mr-1" />
-                          <h3 className="text-xs font-medium text-amber-800">Ações Corretivas Sugeridas:</h3>
+                      {hasActionSuggestion && (
+                        <div className="w-full border rounded-md p-2 bg-amber-50 border-amber-200 mt-1">
+                          <div className="flex items-center mb-1">
+                            <Sparkles className="h-3 w-3 text-amber-500 mr-1" />
+                            <h3 className="text-xs font-medium text-amber-800">Ações Corretivas Sugeridas:</h3>
+                          </div>
+                          <div className="text-xs text-amber-700">
+                            {renderMarkdown(actionSuggestion)}
+                          </div>
+                          <Button
+  size="sm"
+  variant="destructive"
+  className="mt-2 w-full"
+  onClick={() => {
+    onAddActionPlan?.(actionSuggestion);
+  }}
+>
+  Adicionar ao Plano de Ação
+</Button>
+
+
+
                         </div>
-                        <div className="text-xs text-amber-700">
-                          {hasActionSuggestion
-                            ? renderMarkdown(actionSuggestion)
-                            : <span className="italic text-gray-400">Sem ações corretivas identificadas.</span>
-                          }
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="mt-2 w-full"
-                          onClick={() => hasActionSuggestion && handleAddActionPlanClick(actionSuggestion)}
-                          disabled={!hasActionSuggestion}
-                        >
-                          Adicionar ao Plano de Ação
-                        </Button>
-                      </div>
+                      )}
                       {!hasActionSuggestion && (
                         <Button
                           size="sm"
