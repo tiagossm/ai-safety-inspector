@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -100,12 +99,15 @@ export function SubChecklistEditor({
       'texto': 'text',
       'numérico': 'numeric',
       'foto': 'photo',
-      'assinatura': 'signature'
+      'assinatura': 'signature',
+      'hora': 'time',   // ajuste para aceitar 'hora' vindo do banco
+      'time': 'time',
+      'data': 'date',   // ajuste para aceitar 'data' vindo do banco
+      'date': 'date'
     };
-    
     return typeMap[dbType] || 'text';
   };
-  
+
   const mapUiTypeToDbType = (uiType: string): string => {
     const typeMap: Record<string, string> = {
       'yes_no': 'sim/não',
@@ -113,9 +115,10 @@ export function SubChecklistEditor({
       'text': 'texto',
       'numeric': 'numérico',
       'photo': 'foto',
-      'signature': 'assinatura'
+      'signature': 'assinatura',
+      'time': 'time',   // sempre salva como 'time'
+      'date': 'date'    // sempre salva como 'date'
     };
-    
     return typeMap[uiType] || 'texto';
   };
   
@@ -334,6 +337,8 @@ export function SubChecklistEditor({
                       <option value="text">Text</option>
                       <option value="numeric">Numeric</option>
                       <option value="multiple_choice">Multiple Choice</option>
+                      <option value="time">Time</option>
+                      <option value="date">Date</option>
                     </select>
                   </div>
                   

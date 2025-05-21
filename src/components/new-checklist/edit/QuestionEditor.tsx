@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Input } from "@/components/ui/input";
@@ -134,7 +133,7 @@ export function QuestionEditor({
             <label className="text-sm font-medium mb-1 block">Tipo de resposta</label>
             <Select
               value={frontendResponseType}
-              onValueChange={(value: "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature") => {
+              onValueChange={(value: "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature" | "time" | "date") => {
                 handleUpdate("responseType", value);
               }}
             >
@@ -148,6 +147,8 @@ export function QuestionEditor({
                 <SelectItem value="numeric">Numérico</SelectItem>
                 <SelectItem value="photo">Foto</SelectItem>
                 <SelectItem value="signature">Assinatura</SelectItem>
+                <SelectItem value="time">Hora</SelectItem>
+                <SelectItem value="date">Data</SelectItem>
               </SelectContent>
             </Select>
           </div>
