@@ -1,7 +1,6 @@
 import React, { useCallback, useState, useEffect } from "react";
 import { ResponseButtonGroup } from "./components/ResponseButtonGroup";
 import { ActionPlanButton } from "./components/ActionPlanButton";
-import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
 import { MediaAnalysisButton } from "./components/MediaAnalysisButton";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { MediaAttachments } from "@/components/inspection/question-inputs/MediaAttachments";
@@ -159,6 +158,7 @@ export function YesNoResponseInput({
         />
       )}
 
+      {/* Remova ou comente o bloco abaixo, se existir:
       <MediaUploadInput
         allowsPhoto={question.allowsPhoto || question.permite_foto || false}
         allowsVideo={question.allowsVideo || question.permite_video || false}
@@ -171,7 +171,7 @@ export function YesNoResponseInput({
         onSaveAnalysis={handleSaveAnalysis}
         analysisResults={mediaAnalysisResults}
         onApplyAISuggestion={onApplyAISuggestion}
-      />
+      /> */}
 
       <MediaAnalysisDialog
         open={isAnalysisOpen}
