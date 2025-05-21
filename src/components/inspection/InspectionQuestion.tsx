@@ -4,7 +4,6 @@ import { QuestionHeader } from "./question-parts/QuestionHeader";
 import { ResponseInput } from "./question-parts/ResponseInput";
 import { CommentsSection } from "./question-parts/CommentsSection";
 import { ActionPlanSection } from "./question-parts/ActionPlanSection";
-import { MediaUploadSection } from "./question-inputs/MediaUploadSection";
 import { ActionPlan } from '@/services/inspection/actionPlanService';
 import { ActionPlanFormData } from '@/components/action-plans/form/types';
 import { useMediaAnalysis, MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
@@ -285,21 +284,6 @@ export function InspectionQuestion({
               {multiModalLoading ? "Analisando..." : "Analisar com IA"}
             </Button>
           )}
-
-          {/* Adicionar mídia */}
-          <MediaUploadSection
-            mediaUrls={response.mediaUrls || []}
-            onMediaChange={handleMediaChange}
-            questionId={question.id}
-            inspectionId={inspectionId}
-            isReadOnly={false}
-            questionText={question.text}
-            onSaveAnalysis={handleSaveAnalysis}
-            onApplyAISuggestion={handleApplyAISuggestion}
-            analysisResults={mediaAnalysisResults}
-            onAnalyzeAll={handleAnalyzeAllMedia}
-            multiModalLoading={multiModalLoading}
-          />
         </div>
 
         {/* Comentários e implementação do plano de ação continuam abaixo */}

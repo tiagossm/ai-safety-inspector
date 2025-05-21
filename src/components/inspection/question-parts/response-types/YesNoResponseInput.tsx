@@ -2,6 +2,7 @@ import React, { useCallback, useState, useEffect } from "react";
 import { ResponseButtonGroup } from "./components/ResponseButtonGroup";
 import { ActionPlanButton } from "./components/ActionPlanButton";
 import { MediaAnalysisButton } from "./components/MediaAnalysisButton";
+import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { MediaAttachments } from "@/components/inspection/question-inputs/MediaAttachments";
 // ALTERE aqui conforme o nome do seu novo modal!
@@ -134,7 +135,6 @@ export function YesNoResponseInput({
       />
 
       <div className="flex flex-wrap gap-2">
-        {/* Agora o botão abre o modal 5W2H */}
         <ActionPlanButton
           onActionPlanClick={() => setIsActionPlanDialogOpen(true)}
           readOnly={readOnly}
@@ -143,6 +143,21 @@ export function YesNoResponseInput({
           <MediaAnalysisButton onOpenAnalysis={handleOpenAnalysis} />
         )}
       </div>
+
+      {/* Botão correto de mídia (ícone de câmera) */}
+      <MediaUploadInput
+        mediaUrls={mediaUrls}
+        onMediaChange={handleMediaChange}
+        allowsPhoto={question.allowsPhoto || question.permite_foto || false}
+        allowsVideo={question.allowsVideo || question.permite_video || false}
+        allowsAudio={question.allowsAudio || question.permite_audio || false}
+        allowsFiles={question.allowsFiles || question.permite_files || false}
+        readOnly={readOnly}
+        questionText={question.text || question.pergunta || ""}
+        onSaveAnalysis={handleSaveAnalysis}
+        analysisResults={mediaAnalysisResults}
+        onApplyAISuggestion={onApplyAISuggestion}
+      />
 
       {mediaUrls.length > 0 && (
         <MediaAttachments
