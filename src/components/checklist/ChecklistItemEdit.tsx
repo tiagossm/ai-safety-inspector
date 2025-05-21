@@ -1,17 +1,42 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { api } from '../../../services/api';
-import { ChecklistItem } from '../../../types/ChecklistItem';
-import { Container, Form, Button } from 'react-bootstrap';
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from 'sonner';
+
+// Definindo o tipo ChecklistItem localmente
+interface ChecklistItem {
+  id: string;
+  pergunta: string;
+  tipo_resposta: string;
+  obrigatorio: boolean;
+  checklist_id: string;
+  opcoes?: any;
+  ordem?: number;
+  weight?: number;
+  permite_foto?: boolean;
+  permite_video?: boolean;
+  permite_audio?: boolean;
+  permite_files?: boolean;
+  hint?: string;
+  condition_value?: string;
+  parent_item_id?: string;
+  has_subchecklist?: boolean;
+  sub_checklist_id?: string;
+}
 
 const ChecklistItemEdit: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [checklistItem, setChecklistItem] = useState<ChecklistItem | null>(null);
-  const [descricao, setDescricao] = useState('');
+  const [pergunta, setPergunta] = useState('');
   const [tipoResposta, setTipoResposta] = useState('');
   const [obrigatorio, setObrigatorio] = useState(false);
-  const [options, setOptions] = useState<string[]>([]);
-  const [newOption, setNewOption] = useState('');
 
   useEffect(() => {
     const fetchChecklistItem = async () => {
@@ -21,15 +46,11 @@ const ChecklistItemEdit: React.FC = () => {
         setDescricao(response.data.descricao);
         setTipoResposta(response.data.tipo_resposta);
         setObrigatorio(response.data.obrigatorio);
-        // Carregar opções se for múltipla escolha
-        if (
-          response.data.tipo_resposta === 'seleção múltipla' ||
-          response.data.tipo_resposta === 'multiple_choice'
-        ) {
-          setOptions(response.data.options || []);
-        }
       } catch (error) {
         console.error('Erro ao buscar item da checklist:', error);
+        toast.error('Erro ao carregar item da checklist');
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -38,18 +59,21 @@ const ChecklistItemEdit: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsLoading(true);
 
     try {
       await api.put(`/checklist-itens/${id}`, {
         descricao,
         tipo_resposta: tipoResposta,
         obrigatorio,
-        options: tipoResposta === 'seleção múltipla' || tipoResposta === 'multiple_choice' ? options : undefined,
       });
 
       // Redirecionar ou mostrar mensagem de sucesso
     } catch (error) {
       console.error('Erro ao editar item da checklist:', error);
+      toast.error('Erro ao atualizar item da checklist');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -62,40 +86,38 @@ const ChecklistItemEdit: React.FC = () => {
     'yes_no',
     'multiple_choice',
     'imagem',
-    'time',   // alterado de 'hora' para 'time'
-    'date'    // alterado de 'data' para 'date'
+    'time',
+    'date'
   ];
 
-  if (!checklistItem) {
-    return <div>Carregando...</div>;
+  if (isLoading && !checklistItem) {
+    return <div className="p-4 text-center">Carregando...</div>;
   }
 
   return (
-    <Container>
-      <h1>Editar Item da Checklist</h1>
-      <Form onSubmit={handleSubmit}>
-        <Form.Group controlId="descricao">
-          <Form.Label>Descrição</Form.Label>
-          <Form.Control
-            type="text"
-            value={descricao}
-            onChange={(e) => setDescricao(e.target.value)}
-            required
-          />
-        </Form.Group>
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle>Editar Item da Checklist</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="pergunta">Descrição</Label>
+            <Input
+              id="pergunta"
+              type="text"
+              value={pergunta}
+              onChange={(e) => setPergunta(e.target.value)}
+              required
+            />
+          </div>
 
         <Form.Group controlId="tipoResposta">
           <Form.Label>Tipo de Resposta</Form.Label>
           <Form.Control
             as="select"
             value={tipoResposta}
-            onChange={(e) => {
-              setTipoResposta(e.target.value);
-              // Limpa opções se mudar para outro tipo
-              if (e.target.value !== 'seleção múltipla' && e.target.value !== 'multiple_choice') {
-                setOptions([]);
-              }
-            }}
+            onChange={(e) => setTipoResposta(e.target.value)}
             required
           >
             <option value="">Selecione um tipo</option>
@@ -107,58 +129,6 @@ const ChecklistItemEdit: React.FC = () => {
           </Form.Control>
         </Form.Group>
 
-        {/* Campo de opções para múltipla escolha */}
-        {(tipoResposta === 'seleção múltipla' || tipoResposta === 'multiple_choice') && (
-          <Form.Group controlId="opcoesMultiplaEscolha" className="mt-3">
-            <Form.Label>Opções</Form.Label>
-            {options.map((opt, idx) => (
-              <div key={idx} className="d-flex align-items-center mb-2">
-                <Form.Control
-                  type="text"
-                  value={opt}
-                  onChange={e => {
-                    const newOpts = [...options];
-                    newOpts[idx] = e.target.value;
-                    setOptions(newOpts);
-                  }}
-                  className="me-2"
-                  required
-                />
-                <Button
-                  variant="outline-danger"
-                  size="sm"
-                  onClick={() => setOptions(options.filter((_, i) => i !== idx))}
-                  tabIndex={-1}
-                >
-                  Remover
-                </Button>
-              </div>
-            ))}
-            <div className="d-flex align-items-center">
-              <Form.Control
-                type="text"
-                placeholder="Adicionar opção"
-                value={newOption}
-                onChange={e => setNewOption(e.target.value)}
-                className="me-2"
-              />
-              <Button
-                variant="outline-primary"
-                size="sm"
-                onClick={e => {
-                  e.preventDefault();
-                  if (newOption.trim()) {
-                    setOptions([...options, newOption.trim()]);
-                    setNewOption('');
-                  }
-                }}
-              >
-                Adicionar
-              </Button>
-            </div>
-          </Form.Group>
-        )}
-
         <Form.Group controlId="obrigatorio">
           <Form.Check
             type="checkbox"
@@ -168,11 +138,12 @@ const ChecklistItemEdit: React.FC = () => {
           />
         </Form.Group>
 
-        <Button variant="primary" type="submit">
-          Salvar
-        </Button>
-      </Form>
-    </Container>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? 'Salvando...' : 'Salvar'}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 

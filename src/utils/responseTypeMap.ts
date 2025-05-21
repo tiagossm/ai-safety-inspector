@@ -1,28 +1,32 @@
 
-export const frontendToDatabaseResponseType = (type: string): string => {
-  switch (type) {
-    case "yes_no": return "sim/não";
-    case "text": return "texto";
-    case "numeric": return "numérico";
-    case "photo": return "foto";
-    case "signature": return "assinatura";
-    case "multiple_choice": return "seleção múltipla";
-    case "date": return "data";
-    case "time": return "hora";
-    default: return type;
-  }
-};
+// Este arquivo mapeia os tipos de resposta entre o frontend e o banco de dados
 
-export const databaseToFrontendResponseType = (type: string): string => {
-  switch (type) {
-    case "sim/não": return "yes_no";
-    case "texto": return "text";
-    case "numérico": return "numeric";
-    case "foto": return "photo";
-    case "assinatura": return "signature";
-    case "seleção múltipla": return "multiple_choice";
-    case "data": return "date";
-    case "hora": return "time";
-    default: return type;
-  }
-};
+export function frontendToDatabaseResponseType(frontendType: string): string {
+  const typeMap: Record<string, string> = {
+    'yes_no': 'sim/não',
+    'text': 'texto',
+    'numeric': 'numérico',
+    'multiple_choice': 'seleção múltipla',
+    'photo': 'foto',
+    'signature': 'assinatura',
+    'time': 'time',
+    'date': 'date'
+  };
+
+  return typeMap[frontendType] || 'texto';
+}
+
+export function databaseToFrontendResponseType(dbType: string): string {
+  const typeMap: Record<string, string> = {
+    'sim/não': 'yes_no',
+    'texto': 'text',
+    'numérico': 'numeric',
+    'seleção múltipla': 'multiple_choice',
+    'foto': 'photo',
+    'assinatura': 'signature',
+    'time': 'time',
+    'date': 'date'
+  };
+
+  return typeMap[dbType] || 'text';
+}

@@ -1,3 +1,4 @@
+
 export interface CollaboratorType {
   id: string;
   name: string;
@@ -43,12 +44,15 @@ export interface ChecklistItem {
   permite_audio?: boolean;
   permite_video?: boolean;
   permite_foto?: boolean;
+  permite_files?: boolean;
   created_at?: string;
   updated_at?: string;
   hint?: string;
   weight?: number;
   parent_item_id?: string | null;
   condition_value?: string | null;
+  has_subchecklist?: boolean;
+  sub_checklist_id?: string;
 }
 
 export interface NewChecklist {
