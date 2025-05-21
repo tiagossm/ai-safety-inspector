@@ -66,10 +66,18 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
       if (checklist.questions && Array.isArray(checklist.questions) && checklist.questions.length > 0) {
         console.log(`Checklist has ${checklist.questions.length} questions`);
         
-        // Adicione este mapeamento para corrigir tipos antigos
+        // Adicione este mapeamento para corrigir tipos antigos e traduzidos
         const normalizeResponseType = (type: string) => {
+          if (!type) return "yes_no";
           if (type === "hora") return "time";
           if (type === "data") return "date";
+          if (type === "texto") return "text";
+          if (type === "sim/não") return "yes_no";
+          if (type === "numérico") return "numeric";
+          if (type === "assinatura") return "signature";
+          if (type === "seleção múltipla") return "multiple_choice";
+          if (type === "imagem") return "photo";
+          // já aceita os tipos em inglês também
           return type;
         };
 

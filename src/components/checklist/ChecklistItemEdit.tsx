@@ -10,6 +10,8 @@ const ChecklistItemEdit: React.FC = () => {
   const [descricao, setDescricao] = useState('');
   const [tipoResposta, setTipoResposta] = useState('');
   const [obrigatorio, setObrigatorio] = useState(false);
+  const [options, setOptions] = useState<string[]>([]);
+  const [newOption, setNewOption] = useState('');
 
   useEffect(() => {
     const fetchChecklistItem = async () => {
@@ -19,6 +21,13 @@ const ChecklistItemEdit: React.FC = () => {
         setDescricao(response.data.descricao);
         setTipoResposta(response.data.tipo_resposta);
         setObrigatorio(response.data.obrigatorio);
+        // Carregar opções se for múltipla escolha
+        if (
+          response.data.tipo_resposta === 'seleção múltipla' ||
+          response.data.tipo_resposta === 'multiple_choice'
+        ) {
+          setOptions(response.data.options || []);
+        }
       } catch (error) {
         console.error('Erro ao buscar item da checklist:', error);
       }
@@ -35,6 +44,7 @@ const ChecklistItemEdit: React.FC = () => {
         descricao,
         tipo_resposta: tipoResposta,
         obrigatorio,
+        options: tipoResposta === 'seleção múltipla' || tipoResposta === 'multiple_choice' ? options : undefined,
       });
 
       // Redirecionar ou mostrar mensagem de sucesso
@@ -79,7 +89,13 @@ const ChecklistItemEdit: React.FC = () => {
           <Form.Control
             as="select"
             value={tipoResposta}
-            onChange={(e) => setTipoResposta(e.target.value)}
+            onChange={(e) => {
+              setTipoResposta(e.target.value);
+              // Limpa opções se mudar para outro tipo
+              if (e.target.value !== 'seleção múltipla' && e.target.value !== 'multiple_choice') {
+                setOptions([]);
+              }
+            }}
             required
           >
             <option value="">Selecione um tipo</option>
@@ -90,6 +106,58 @@ const ChecklistItemEdit: React.FC = () => {
             ))}
           </Form.Control>
         </Form.Group>
+
+        {/* Campo de opções para múltipla escolha */}
+        {(tipoResposta === 'seleção múltipla' || tipoResposta === 'multiple_choice') && (
+          <Form.Group controlId="opcoesMultiplaEscolha" className="mt-3">
+            <Form.Label>Opções</Form.Label>
+            {options.map((opt, idx) => (
+              <div key={idx} className="d-flex align-items-center mb-2">
+                <Form.Control
+                  type="text"
+                  value={opt}
+                  onChange={e => {
+                    const newOpts = [...options];
+                    newOpts[idx] = e.target.value;
+                    setOptions(newOpts);
+                  }}
+                  className="me-2"
+                  required
+                />
+                <Button
+                  variant="outline-danger"
+                  size="sm"
+                  onClick={() => setOptions(options.filter((_, i) => i !== idx))}
+                  tabIndex={-1}
+                >
+                  Remover
+                </Button>
+              </div>
+            ))}
+            <div className="d-flex align-items-center">
+              <Form.Control
+                type="text"
+                placeholder="Adicionar opção"
+                value={newOption}
+                onChange={e => setNewOption(e.target.value)}
+                className="me-2"
+              />
+              <Button
+                variant="outline-primary"
+                size="sm"
+                onClick={e => {
+                  e.preventDefault();
+                  if (newOption.trim()) {
+                    setOptions([...options, newOption.trim()]);
+                    setNewOption('');
+                  }
+                }}
+              >
+                Adicionar
+              </Button>
+            </div>
+          </Form.Group>
+        )}
 
         <Form.Group controlId="obrigatorio">
           <Form.Check

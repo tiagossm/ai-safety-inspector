@@ -54,16 +54,18 @@ export function ChecklistEditorContainer() {
     id: editorContext.id,
   };
   
+  // Remova o auto-save ao navegar de etapa (deixe apenas o save manual)
+  // Remova qualquer chamada automática de handleSave em useEffect ou navegação de etapas
+
   // Enhanced save handler to provide feedback and navigate after success
   const handleSave = async (): Promise<void> => {
     try {
       toast.info("Salvando checklist...", { duration: 2000 });
-      
       if (editorContext.handleSave) {
         const success = await editorContext.handleSave();
         if (success) {
           toast.success("Checklist salvo com sucesso!", { duration: 5000 });
-          navigate("/new-checklists"); // Navigate back to checklist list after successful save
+          navigate("/new-checklists");
         } else {
           toast.error("Erro ao salvar checklist", { duration: 5000 });
         }
@@ -73,30 +75,27 @@ export function ChecklistEditorContainer() {
       toast.error(`Erro ao salvar checklist: ${error instanceof Error ? error.message : "Erro desconhecido"}`, { duration: 5000 });
     }
   };
-  
+
   // Enhanced start inspection handler with proper error handling
   const handleStartInspection = async (): Promise<void> => {
     if (!editorContext.id) {
       toast.error("É necessário salvar o checklist antes de iniciar a inspeção", { duration: 5000 });
       return;
     }
-    
     try {
       toast.info("Preparando inspeção...", { duration: 2000 });
-      
-      // Save first and only proceed if save was successful
-      if (editorContext.handleSave) {
-        const saveSuccess = await editorContext.handleSave();
-        if (!saveSuccess) {
-          toast.error("Não foi possível salvar o checklist antes de iniciar a inspeção", { duration: 5000 });
-          return;
-        }
-        
-        // Navigate with checklist ID as query parameter
-        console.log(`Redirecionando para inspeção com checklistId=${editorContext.id}`);
-        toast.success("Redirecionando para a inspeção...", { duration: 2000 });
-        navigate(`/inspections/new?checklistId=${editorContext.id}`);
-      }
+      // Remova o save automático antes de iniciar inspeção
+      // if (editorContext.handleSave) {
+      //   const saveSuccess = await editorContext.handleSave();
+      //   if (!saveSuccess) {
+      //     toast.error("Não foi possível salvar o checklist antes de iniciar a inspeção", { duration: 5000 });
+      //     return;
+      //   }
+      // }
+      // Navegue diretamente para inspeção
+      console.log(`Redirecionando para inspeção com checklistId=${editorContext.id}`);
+      toast.success("Redirecionando para a inspeção...", { duration: 2000 });
+      navigate(`/inspections/new?checklistId=${editorContext.id}`);
     } catch (error) {
       console.error("Error starting inspection:", error);
       toast.error(`Erro ao iniciar inspeção: ${error instanceof Error ? error.message : "Erro desconhecido"}`, { duration: 5000 });
@@ -120,7 +119,6 @@ export function ChecklistEditorContainer() {
           onStartInspection={handleStartInspection}
           onSave={handleSave}
         />
-        
         {/* Form section */}
         <form onSubmit={(e) => {
           e.preventDefault();
@@ -151,7 +149,6 @@ export function ChecklistEditorContainer() {
             onSave={handleSave}
           />
         </form>
-        
         <FloatingNavigation threshold={400} />
       </div>
     </ChecklistEditorProvider>
