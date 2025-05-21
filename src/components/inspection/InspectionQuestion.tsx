@@ -287,23 +287,19 @@ export function InspectionQuestion({
           )}
 
           {/* Adicionar mídia */}
-          {response?.mediaUrls && (
-            <div className="ml-2">
-              <MediaUploadSection
-                mediaUrls={response.mediaUrls || []}
-                onMediaChange={handleMediaChange}
-                questionId={question.id}
-                inspectionId={inspectionId}
-                isReadOnly={false}
-                questionText={question.text}
-                onSaveAnalysis={handleSaveAnalysis}
-                onApplyAISuggestion={handleApplyAISuggestion}
-                analysisResults={mediaAnalysisResults}
-                onAnalyzeAll={handleAnalyzeAllMedia}
-                multiModalLoading={multiModalLoading}
-              />
-            </div>
-          )}
+          <MediaUploadSection
+            mediaUrls={response.mediaUrls || []}
+            onMediaChange={handleMediaChange}
+            questionId={question.id}
+            inspectionId={inspectionId}
+            isReadOnly={false}
+            questionText={question.text}
+            onSaveAnalysis={handleSaveAnalysis}
+            onApplyAISuggestion={handleApplyAISuggestion}
+            analysisResults={mediaAnalysisResults}
+            onAnalyzeAll={handleAnalyzeAllMedia}
+            multiModalLoading={multiModalLoading}
+          />
         </div>
 
         {/* Comentários e implementação do plano de ação continuam abaixo */}

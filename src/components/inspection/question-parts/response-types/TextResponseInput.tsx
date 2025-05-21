@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { MediaUploadInput } from "../../question-inputs/MediaUploadInput";
+// import { MediaUploadInput } from "../../question-inputs/MediaUploadInput";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Sparkles } from "lucide-react";
