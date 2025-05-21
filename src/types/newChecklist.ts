@@ -1,4 +1,3 @@
-
 export interface ChecklistWithStats {
   id: string;
   title: string;
@@ -106,22 +105,22 @@ export interface BatchUpdateResult {
 export interface ChecklistQuestion {
   id: string;
   text: string;
-  responseType: "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature";
+  responseType: "yes_no" | "text" | "numeric" | "multiple_choice" | "photo" | "signature" | "time" | "date";
   isRequired: boolean;
+  options?: string[];
   weight: number;
   allowsPhoto: boolean;
   allowsVideo: boolean;
   allowsAudio: boolean;
-  allowsFiles: boolean;
+  allowsFiles?: boolean;
   order: number;
-  options?: string[];
-  hint?: string | null;
-  groupId?: string | null;
-  parentQuestionId?: string | null;
+  groupId?: string;
+  condition?: string;
+  conditionValue?: string;
+  parentQuestionId?: string;
   hasSubChecklist?: boolean;
-  subChecklistId?: string | null;
-  displayNumber?: string;
-  conditionValue?: string | null;
+  subChecklistId?: string;
+  hint?: string;
 }
 
 // Extended InspectionDetails interface with all required properties

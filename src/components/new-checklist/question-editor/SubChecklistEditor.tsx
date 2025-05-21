@@ -332,8 +332,8 @@ export function SubChecklistEditor({
                       id={`response-type-${index}`}
                       value={question.responseType || "yes_no"}
                       onChange={(e) => {
-                        // @ts-ignore - Aqui permitimos time e date como tipos válidos
-                        handleQuestionChange(index, "responseType", e.target.value);
+                        const value = e.target.value as ChecklistQuestion['responseType'];
+                        handleQuestionChange(index, "responseType", value);
                       }}
                       className="text-xs p-1 border rounded"
                     >
