@@ -5,17 +5,18 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
 // Função auxiliar para converter promessas do Supabase em Promises completas
-const wrapSupabaseCall = <T>(supabasePromise: Promise<any>): Promise<T> => {
+const wrapSupabaseCall = <T>(supabasePromise: any): Promise<T> => {
   return new Promise((resolve, reject) => {
+    // Adiciona um método .then() para capturar o resultado de qualquer promessa/objeto do Supabase
     supabasePromise
-      .then(result => {
-        if (result.error) {
+      .then((result: any) => {
+        if (result && result.error) {
           reject(result.error);
         } else {
-          resolve(result.data as T);
+          resolve(result && result.data as T);
         }
       })
-      .catch(error => {
+      .catch((error: any) => {
         reject(error);
       });
   });
@@ -52,9 +53,9 @@ export const useSaveInspection = () => {
           .upsert(responsesData, { onConflict: 'inspection_id,question_id' })
       );
       
-      console.log(`Saved ${responsesData.length} responses`);
+      console.log(`Salvou ${responsesData.length} respostas`);
     } catch (error) {
-      console.error("Error saving responses:", error);
+      console.error("Erro ao salvar respostas:", error);
       hasError = true;
     }
     
@@ -84,9 +85,9 @@ export const useSaveInspection = () => {
           .eq("id", inspection.id)
       );
       
-      console.log(`Updated inspection status to ${inspection.status}`);
+      console.log(`Atualizou status da inspeção para ${inspection.status}`);
     } catch (error) {
-      console.error("Error updating inspection:", error);
+      console.error("Erro ao atualizar inspeção:", error);
       hasError = true;
     }
     
