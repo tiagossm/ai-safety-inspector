@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
@@ -67,12 +66,20 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
       if (checklist.questions && Array.isArray(checklist.questions) && checklist.questions.length > 0) {
         console.log(`Checklist has ${checklist.questions.length} questions`);
         
+        // Adicione este mapeamento para corrigir tipos antigos
+        const normalizeResponseType = (type: string) => {
+          if (type === "hora") return "time";
+          if (type === "data") return "date";
+          return type;
+        };
+
         if (checklist.groups && Array.isArray(checklist.groups) && checklist.groups.length > 0) {
           console.log(`Checklist has ${checklist.groups.length} groups`);
           state.setGroups(checklist.groups);
           const questionsWithValidGroups = checklist.questions.map((q: any) => ({
             ...q,
-            groupId: q.groupId || checklist.groups[0].id
+            groupId: q.groupId || checklist.groups[0].id,
+            responseType: normalizeResponseType(q.responseType || q.tipo_resposta)
           }));
           state.setQuestions(questionsWithValidGroups);
         } else {
@@ -83,7 +90,8 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
           };
           const questionsWithDefaultGroup = checklist.questions.map((q: any) => ({
             ...q,
-            groupId: "default"
+            groupId: "default",
+            responseType: normalizeResponseType(q.responseType || q.tipo_resposta)
           }));
           state.setGroups([defaultGroup]);
           state.setQuestions(questionsWithDefaultGroup);
@@ -215,7 +223,8 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
     handleSubmit,
     handleSave,
     handleStartInspection,
-    isSubmitting
+    isSubmitting,
+    toggleAllMediaOptions
   };
 }
 

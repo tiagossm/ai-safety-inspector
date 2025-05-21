@@ -1,16 +1,15 @@
-
-import React, { useState } from "react";
+import React from "react";
 import { useChecklistEditor } from "@/contexts/ChecklistEditorContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { QuestionCard } from "../question-editor/QuestionCard";
+import { Switch } from "@/components/ui/switch";
 
 export function ChecklistQuestionList() {
-  const { 
-    questions, 
-    handleAddQuestion, 
-    handleUpdateQuestion, 
+  const {
+    questions,
+    handleAddQuestion,
+    handleUpdateQuestion,
     handleDeleteQuestion,
     viewMode,
     questionsByGroup,
@@ -19,29 +18,25 @@ export function ChecklistQuestionList() {
     toggleAllMediaOptions
   } = useChecklistEditor();
 
-  const handleMediaToggle = (checked: boolean) => {
-    toggleAllMediaOptions(checked);
-  };
+  // Botão toggle igual ao da imagem (Switch + Label)
+  const MediaToggle = () => (
+    <div className="flex items-center space-x-2">
+      <Switch
+        id="enable-all-media"
+        checked={enableAllMedia}
+        onCheckedChange={toggleAllMediaOptions}
+      />
+      <Label htmlFor="enable-all-media">Habilitar todas mídias</Label>
+    </div>
+  );
 
   if (viewMode === "flat") {
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium">Perguntas</h3>
-          
-          <div className="flex items-center space-x-2">
-            <Switch 
-              id="enable-all-media"
-              checked={enableAllMedia}
-              onCheckedChange={handleMediaToggle}
-              className={enableAllMedia ? "data-[state=checked]:bg-green-500" : ""}
-            />
-            <Label htmlFor="enable-all-media" className="text-sm">
-              Habilitar todas mídias
-            </Label>
-          </div>
+          <MediaToggle />
         </div>
-
         {questions.length === 0 ? (
           <Card>
             <CardContent className="pt-6 text-center text-muted-foreground">
@@ -63,7 +58,6 @@ export function ChecklistQuestionList() {
               ))}
           </div>
         )}
-
         <div className="flex justify-end mt-6">
           <button
             type="button"
@@ -82,20 +76,8 @@ export function ChecklistQuestionList() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium">Grupos de Perguntas</h3>
-        
-        <div className="flex items-center space-x-2">
-          <Switch 
-            id="enable-all-media" 
-            checked={enableAllMedia}
-            onCheckedChange={handleMediaToggle}
-            className={enableAllMedia ? "data-[state=checked]:bg-green-500" : ""}
-          />
-          <Label htmlFor="enable-all-media" className="text-sm">
-            Habilitar todas mídias
-          </Label>
-        </div>
+        <MediaToggle />
       </div>
-
       {nonEmptyGroups.length === 0 ? (
         <Card>
           <CardContent className="pt-6 text-center text-muted-foreground">
@@ -132,7 +114,6 @@ export function ChecklistQuestionList() {
           );
         })
       )}
-
       <div className="flex justify-end mt-6">
         <button
           type="button"

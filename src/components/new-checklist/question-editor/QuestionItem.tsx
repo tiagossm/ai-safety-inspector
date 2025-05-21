@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -60,6 +59,27 @@ export function QuestionItem({
       });
     }
   }, [enableAllMedia, question, onUpdate]);
+
+  // Sincroniza as opções de mídia com enableAllMedia
+  useEffect(() => {
+    if (onUpdate) {
+      if (
+        question.allowsPhoto !== enableAllMedia ||
+        question.allowsVideo !== enableAllMedia ||
+        question.allowsAudio !== enableAllMedia ||
+        question.allowsFiles !== enableAllMedia
+      ) {
+        onUpdate({
+          ...question,
+          allowsPhoto: enableAllMedia,
+          allowsVideo: enableAllMedia,
+          allowsAudio: enableAllMedia,
+          allowsFiles: enableAllMedia,
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enableAllMedia]);
 
   // Handler to update a question field
   const handleChange = (field: keyof ChecklistQuestion, value: any) => {
@@ -430,7 +450,7 @@ export function QuestionItem({
                       parentId={question.id}
                     />
                   ))
-                )}
+                }
               </div>
             </div>
           </CollapsibleContent>

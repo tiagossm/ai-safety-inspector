@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
-// import { MediaUploadInput } from "../../question-inputs/MediaUploadInput";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { MediaAttachments } from "@/components/inspection/question-inputs/MediaAttachments";
+import { ActionPlanButton } from "./components/ActionPlanButton";
+import { MediaAnalysisButton } from "./components/MediaAnalysisButton";
+import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
 
 interface TextResponseInputProps {
   question: any;
@@ -230,6 +232,27 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
           </div>
         </div>
       )}
+
+      <div className="flex flex-wrap gap-2">
+        <ActionPlanButton
+          onActionPlanClick={() => {/* ... */}}
+          readOnly={readOnly}
+        />
+        {(question.allowsPhoto || question.allowsVideo) && (
+          <MediaAnalysisButton onOpenAnalysis={() => {/* ... */}} />
+        )}
+      </div>
+      <MediaUploadInput
+        mediaUrls={response?.mediaUrls || []}
+        onMediaChange={(urls) => {/* ... */}}
+        allowsPhoto={question.allowsPhoto}
+        allowsVideo={question.allowsVideo}
+        allowsAudio={question.allowsAudio}
+        allowsFiles={question.allowsFiles}
+        readOnly={readOnly}
+        questionText={question.text}
+        // ...outros props...
+      />
     </div>
   );
 };

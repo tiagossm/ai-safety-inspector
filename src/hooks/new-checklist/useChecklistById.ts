@@ -140,6 +140,9 @@ export function useChecklistById(checklistId: string | undefined) {
           throw new Error(`Erro ao buscar perguntas: ${questionsError.message}`);
         }
 
+        console.log("Checklist carregado:", checklistData);
+        console.log("Perguntas carregadas:", questionsData);
+
         // Extract group information from questions or create default group
         const groupsMap = new Map();
         const defaultGroup = { id: "default", title: "Geral", order: 0 };
@@ -208,6 +211,10 @@ export function useChecklistById(checklistId: string | undefined) {
           checklist.groups = processedGroups;
           checklist.totalQuestions = processedQuestions.length;
         }
+
+        // Adicione logs para depuração
+        console.log("Checklist normalizado:", checklist);
+        console.log("Groups normalizados:", processedGroups);
 
         return {
           checklist,

@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Trash2, ChevronDown, ChevronUp, Edit } from "lucide-react";
@@ -84,6 +83,27 @@ export function QuestionCard({ question, onUpdate, onDelete, enableAllMedia = fa
       hint: e.target.value,
     });
   };
+
+  // Sincroniza as opções de mídia com enableAllMedia
+  useEffect(() => {
+    if (onUpdate) {
+      if (
+        question.allowsPhoto !== enableAllMedia ||
+        question.allowsVideo !== enableAllMedia ||
+        question.allowsAudio !== enableAllMedia ||
+        question.allowsFiles !== enableAllMedia
+      ) {
+        onUpdate({
+          ...question,
+          allowsPhoto: enableAllMedia,
+          allowsVideo: enableAllMedia,
+          allowsAudio: enableAllMedia,
+          allowsFiles: enableAllMedia,
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enableAllMedia]);
 
   return (
     <Card className={`border ${isEditing ? "border-primary" : "border-border"}`}>

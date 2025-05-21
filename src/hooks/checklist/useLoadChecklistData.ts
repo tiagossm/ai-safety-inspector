@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
@@ -116,6 +115,10 @@ export function useLoadChecklistData() {
                   groupId: groupIdBase
                 }))
               }];
+
+          // Adicione logs para depuração
+          console.log("Checklist para edição:", checklist);
+          console.log("Groups para edição:", groups);
 
           setEditorData({
             checklistData: checklist,
