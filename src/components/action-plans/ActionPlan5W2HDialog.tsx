@@ -15,7 +15,6 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
-import { ParsedActionPlan, extractDateFromText } from '@/utils/aiSuggestionParser';
 
 const actionPlanSchema = z.object({
   what: z.string().min(5, { message: "Descreva o que será feito" }),
@@ -39,8 +38,6 @@ export interface ActionPlan5W2HDialogProps {
   existingPlan?: any;
   onSave: (data: any) => Promise<void>;
   iaSuggestions?: Record<string, any>;
-  aiSuggestion?: string;
-  parsedAiSuggestion?: ParsedActionPlan;
 }
 
 export function ActionPlan5W2HDialog({
@@ -50,9 +47,7 @@ export function ActionPlan5W2HDialog({
   inspectionId,
   existingPlan,
   onSave,
-  iaSuggestions,
-  aiSuggestion,
-  parsedAiSuggestion
+  iaSuggestions
 }: ActionPlan5W2HDialogProps) {
   const [saving, setSaving] = useState(false);
   
@@ -84,39 +79,8 @@ export function ActionPlan5W2HDialog({
         priority: existingPlan.priority || "média",
         status: existingPlan.status || "pendente",
       });
-    } else if (parsedAiSuggestion) {
-      // Se temos dados estruturados da IA, usamos eles
-      console.log("Usando dados estruturados da IA:", parsedAiSuggestion);
-      
-      // Processar data se for uma string
-      let whenDate: Date = new Date();
-      if (parsedAiSuggestion.when) {
-        if (typeof parsedAiSuggestion.when === 'string') {
-          const extractedDate = extractDateFromText(parsedAiSuggestion.when);
-          if (extractedDate) {
-            whenDate = extractedDate;
-          }
-        } else {
-          whenDate = new Date(parsedAiSuggestion.when);
-        }
-      }
-
-      form.reset({
-        what: parsedAiSuggestion.what || "",
-        why: parsedAiSuggestion.why || "",
-        how: parsedAiSuggestion.how || "",
-        who: parsedAiSuggestion.who || "",
-        where: parsedAiSuggestion.where || "",
-        when: whenDate,
-        howMuch: parsedAiSuggestion.howMuch || "",
-        priority: parsedAiSuggestion.priority || "média",
-        status: "pendente", // Status sempre começa como pendente
-      });
-    } else if (aiSuggestion) {
-      // Se temos apenas a string de sugestão, colocamos no campo "what"
-      form.setValue("what", aiSuggestion);
     } else if (iaSuggestions) {
-      // Caso legado - Encontrar a primeira sugestão de plano de ação nas análises
+      // Encontrar a primeira sugestão de plano de ação nas análises
       const suggestion = Object.values(iaSuggestions).find(
         (item) => item && typeof item === 'object' && 'actionPlanSuggestion' in item
       );
@@ -125,7 +89,7 @@ export function ActionPlan5W2HDialog({
         form.setValue("what", suggestion.actionPlanSuggestion);
       }
     }
-  }, [existingPlan, iaSuggestions, aiSuggestion, parsedAiSuggestion, form]);
+  }, [existingPlan, iaSuggestions, form]);
   
   const onSubmit = async (data: ActionPlanFormValues) => {
     setSaving(true);
