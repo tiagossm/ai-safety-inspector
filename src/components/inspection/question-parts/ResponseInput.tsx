@@ -92,21 +92,13 @@ export function ResponseInput({
       );
     case "date":
       return (
-        <DateResponseInput
+        <input
+          type="date"
           value={responseObject.value}
-          onChange={(dateValue) => handleValueChange({
+          onChange={e => handleValueChange({
             ...responseObject,
-            value: dateValue
-          })}          const handleAddOption = () => {
-            // ...existing code...
-            console.log("Adicionando opção:", newOption, "Novo array:", [...currentOptions, newOption.trim()]);
-          };
-          const handleRemoveOption = (index: number) => {
-            // ...existing code...
-            console.log("Removendo opção índice:", index, "Novo array:", currentOptions);
-          };          console.log("QuestionEditor: question", question);
-          console.log("Tipo de resposta:", frontendResponseType);
-          console.log("Opções:", question.options);
+            value: e.target.value
+          })}
         />
       );
     case "time":
@@ -124,7 +116,7 @@ export function ResponseInput({
         <div className="p-4 border border-red-300 bg-red-50 rounded-md">
           <p className="text-red-700">
             Tipo de resposta não suportado: {responseType}
-          </p>
+          </p>>
         </div>
       );
   }
