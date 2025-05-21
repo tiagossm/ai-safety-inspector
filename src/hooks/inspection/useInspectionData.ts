@@ -69,9 +69,11 @@ export function useInspectionData(inspectionId: string | undefined): InspectionD
   } = useResponseHandling(inspectionId, setResponses);
 
   // Wrap the save inspection function to provide the current responses and inspection
-  const handleSaveInspection = useCallback(async () => {
-    if (!inspection) return Promise.resolve();
-    return saveInspection(responses, inspection);
+  // Modificamos para retornar Promise<void> em vez de Promise<boolean | void>
+  const handleSaveInspection = useCallback(async (): Promise<void> => {
+    if (!inspection) return;
+    await saveInspection(responses, inspection);
+    // Removemos o retorno explícito para garantir tipo void
   }, [saveInspection, responses, inspection]);
 
   return {
