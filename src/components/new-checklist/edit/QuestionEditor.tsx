@@ -45,7 +45,7 @@ export function QuestionEditor({
 
   // Convert database response type to frontend type for proper display
   const frontendResponseType = question.responseType 
-    ? databaseToFrontendResponseType(question.responseType) as "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature"
+    ? databaseToFrontendResponseType(question.responseType) as "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature" | "time" | "date"
     : "yes_no";
 
   const handleUpdate = (field: keyof ChecklistQuestion, value: any) => {

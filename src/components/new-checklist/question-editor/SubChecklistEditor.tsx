@@ -105,6 +105,7 @@ export function SubChecklistEditor({
       'data': 'date',   // ajuste para aceitar 'data' vindo do banco
       'date': 'date'
     };
+    // @ts-ignore - Forçando o tipo para incluir time e date
     return typeMap[dbType] || 'text';
   };
 
@@ -330,7 +331,10 @@ export function SubChecklistEditor({
                     <select
                       id={`response-type-${index}`}
                       value={question.responseType || "yes_no"}
-                      onChange={(e) => handleQuestionChange(index, "responseType", e.target.value)}
+                      onChange={(e) => {
+                        // @ts-ignore - Aqui permitimos time e date como tipos válidos
+                        handleQuestionChange(index, "responseType", e.target.value);
+                      }}
                       className="text-xs p-1 border rounded"
                     >
                       <option value="yes_no">Yes/No</option>

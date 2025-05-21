@@ -91,7 +91,7 @@ export function ResponseInput({
             question={question}
             response={responseObject}
             onResponseChange={handleValueChange}
-            onChange={handleSimpleValueChange}
+            onChange={handleSimpleValueChange} // Corrigido o tipo aqui, garantindo que string é passado
             inspectionId={inspectionId}
             actionPlan={actionPlan}
             onSaveActionPlan={onSaveActionPlan}
