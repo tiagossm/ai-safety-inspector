@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { QuestionHeader } from "./question-parts/QuestionHeader";
@@ -10,6 +11,7 @@ import { ActionPlanFormData } from '@/components/action-plans/form/types';
 import { useMediaAnalysis, MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 import { ActionPlanImplementation } from "./ActionPlanImplementation";
 import { ActionPlanDialog } from "@/components/action-plans/ActionPlanDialog";
+import { ParsedActionPlan, parseAISuggestion } from "@/utils/aiSuggestionParser";
 
 interface InspectionQuestionProps {
   question: any;
@@ -49,6 +51,7 @@ export function InspectionQuestion({
   const { analyze, analyzing } = useMediaAnalysis();
 
   const [aiSuggestion, setAiSuggestion] = useState<string | undefined>();
+  const [parsedAiSuggestion, setParsedAiSuggestion] = useState<ParsedActionPlan | undefined>();
 
   const handleCommentChange = (comment: string) => {
     onResponseChange({
@@ -103,10 +106,23 @@ export function InspectionQuestion({
   };
 
   // Chamada da IA para abrir o modal estruturado
-  const handleApplyAISuggestion = (suggestion: string) => {
+  const handleApplyAISuggestion = (suggestion: string, parsedSuggestion?: ParsedActionPlan) => {
     console.log("handleApplyAISuggestion foi chamado com:", suggestion);
     if (!suggestion) return;
+
     setAiSuggestion(suggestion);
+    
+    // Se recebemos dados já estruturados, usamos eles
+    if (parsedSuggestion) {
+      setParsedAiSuggestion(parsedSuggestion);
+      console.log("Dados estruturados recebidos:", parsedSuggestion);
+    } else {
+      // Caso contrário, tentamos fazer o parsing aqui
+      const parsed = parseAISuggestion(suggestion);
+      setParsedAiSuggestion(parsed);
+      console.log("Dados estruturados extraídos:", parsed);
+    }
+    
     setShowActionPlanDialog(true);
   };
 
@@ -284,6 +300,7 @@ export function InspectionQuestion({
             existingPlan={actionPlan}
             onSave={handleSaveStructuredActionPlan}
             aiSuggestion={aiSuggestion}
+            parsedAiSuggestion={parsedAiSuggestion}
           />
         )}
         {showActionPlanImplementation && inspectionId && question.id && onSaveActionPlan && actionPlan && (

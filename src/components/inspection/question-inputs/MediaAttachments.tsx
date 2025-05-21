@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { X, ZoomIn, Download, Sparkles, Heart } from "lucide-react";
 import { MediaPreviewDialog } from "@/components/media/MediaPreviewDialog";
@@ -6,6 +7,7 @@ import { MediaAttachmentRenderer } from "@/components/media/renderers/MediaAttac
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ParsedActionPlan } from "@/utils/aiSuggestionParser";
 
 interface MediaAttachmentsProps {
   mediaUrls: string[];
@@ -15,7 +17,7 @@ interface MediaAttachmentsProps {
   readOnly?: boolean;
   questionText?: string;
   onSaveAnalysis?: (url: string, result: MediaAnalysisResult) => void;
-  onApplyAISuggestion?: (suggestion: string) => void; // Função que abre modal 5W2H!
+  onApplyAISuggestion?: (suggestion: string, parsedSuggestion?: ParsedActionPlan) => void;
   analysisResults?: Record<string, MediaAnalysisResult>;
 }
 
@@ -73,10 +75,9 @@ export function MediaAttachments({
     }
   };
 
-  const handleApplySuggestion = (url: string) => {
-    const analysis = analysisResults[url];
-    if (onApplyAISuggestion && analysis?.actionPlanSuggestion) {
-      onApplyAISuggestion(analysis.actionPlanSuggestion);
+  const handleApplySuggestion = (suggestion: string, parsedSuggestion?: ParsedActionPlan) => {
+    if (onApplyAISuggestion) {
+      onApplyAISuggestion(suggestion, parsedSuggestion);
     }
   };
 
@@ -134,7 +135,7 @@ export function MediaAttachments({
         questionText={questionText}
         onAnalysisComplete={handleAnalysisComplete}
         additionalMediaUrls={mediaUrls}
-        onAddActionPlan={onApplyAISuggestion}  // <-- ESSA LINHA É O PULO DO GATO!
+        onAddActionPlan={handleApplySuggestion}
       />
     </>
   );

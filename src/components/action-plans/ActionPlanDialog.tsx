@@ -22,6 +22,7 @@ import {
 import { Sparkles, AlertCircle } from "lucide-react";
 import { ActionPlanFormData } from "./form/types";
 import { ActionPlan } from "@/services/inspection/actionPlanService";
+import { ParsedActionPlan } from "@/utils/aiSuggestionParser";
 
 interface ActionPlanDialogProps {
   open: boolean;
@@ -31,6 +32,7 @@ interface ActionPlanDialogProps {
   existingPlan?: ActionPlan;
   onSave: (data: ActionPlanFormData) => Promise<ActionPlan | void>;
   aiSuggestion?: string | null;
+  parsedAiSuggestion?: ParsedActionPlan;
 }
 
 type PriorityType = 'low' | 'medium' | 'high' | 'critical';
