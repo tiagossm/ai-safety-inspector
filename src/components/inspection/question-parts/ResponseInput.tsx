@@ -1,3 +1,4 @@
+
 import React, { useCallback } from 'react';
 import { YesNoResponseInput } from './response-types/YesNoResponseInput';
 import { TextResponseInput } from './response-types/TextResponseInput';
@@ -226,7 +227,7 @@ export function ResponseInput({
         <div className="p-4 border border-red-300 bg-red-50 rounded-md">
           <p className="text-red-700">
             Tipo de resposta não suportado: {responseType}
-          </p>>
+          </p>
         </div>
       );
   }

@@ -450,7 +450,7 @@ export function QuestionItem({
                       parentId={question.id}
                     />
                   ))
-                }
+                )}
               </div>
             </div>
           </CollapsibleContent>
