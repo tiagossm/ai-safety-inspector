@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -48,14 +48,12 @@ function forceListMarkdown(text: string): string {
 
 // Fallback para extrair ações corretivas do texto da análise
 function getSafeActionPlan(result: MediaAnalysisResult): string {
-  console.log("[getSafeActionPlan] result recebido:", result);
   const isInvalid = !result.actionPlanSuggestion 
     || result.actionPlanSuggestion.trim() === "" 
     || result.actionPlanSuggestion.trim().toLowerCase() === "sugeridas:**";
 
   if (!isInvalid) return result.actionPlanSuggestion!;
   
-  // Procura seção "Ações? Corretivas Sugeridas:" ou similar no texto da análise
   if (result.analysis) {
     const regex = /Ações? [Cc]orretivas [Ss]ugeridas?:([\s\S]+?)(?:\n\S|\n\n|Conclusão:|$)/i;
     const match = result.analysis.match(regex);
@@ -63,7 +61,7 @@ function getSafeActionPlan(result: MediaAnalysisResult): string {
       return match[1].trim();
     }
   }
-  return ""; // Pode retornar "Sem ações corretivas identificadas." se preferir.
+  return "";
 }
 
 export function MediaAnalysisDialog({
@@ -91,6 +89,9 @@ export function MediaAnalysisDialog({
   const [analysisMap, setAnalysisMap] = useState<Record<string, AnalysisState>>({});
   const { analyze } = useMediaAnalysis();
 
+  // Ref para controlar urls já em análise e evitar loop
+  const analyzedUrlsRef = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     if (open) {
       let map: Record<string, AnalysisState> = {};
@@ -98,22 +99,32 @@ export function MediaAnalysisDialog({
         map[url] = { status: 'pending' };
       });
       setAnalysisMap(map);
+      analyzedUrlsRef.current.clear();
     } else {
       setAnalysisMap({});
+      analyzedUrlsRef.current.clear();
     }
   }, [open, allImages]);
-  
+
   useEffect(() => {
     if (!open) return;
+
     allImages.forEach(url => {
       const state = analysisMap[url];
+
+      // Evita re-analisar urls já em processamento ou finalizadas
+      if (analyzedUrlsRef.current.has(url)) return;
+
       if (!state || state.status === 'pending' || state.status === 'retry') {
         setAnalysisMap(prev => ({
           ...prev,
           [url]: { ...prev[url], status: 'processing' }
         }));
 
+        analyzedUrlsRef.current.add(url);
+
         const contextImages = allImages.filter(u => u !== url);
+
         analyze({
           mediaUrl: url,
           mediaType,
@@ -122,26 +133,26 @@ export function MediaAnalysisDialog({
           multimodalAnalysis: false,
           additionalMediaUrls: contextImages
         })
-        .then((result) => {
+        .then(result => {
           setAnalysisMap(prev => ({
             ...prev,
             [url]: { status: 'done', result }
           }));
           if (onAnalysisComplete) onAnalysisComplete(result);
         })
-        .catch((err: any) => {
+        .catch(err => {
           setAnalysisMap(prev => ({
             ...prev,
             [url]: { status: 'error', errorMessage: `Erro ao analisar imagem: ${err.message}` }
           }));
+          analyzedUrlsRef.current.delete(url); // Permite retry depois de erro
         });
       }
     });
-    // eslint-disable-next-line
-  }, [open, analyze, mediaUrl, mediaType, questionText, userAnswer, allImages]);
-  // Removido analysisMap e .join('-') das dependências
+  }, [open, analyze, mediaUrl, mediaType, questionText, userAnswer, allImages, onAnalysisComplete]);
 
   const handleRetry = (url: string) => {
+    analyzedUrlsRef.current.delete(url);
     setAnalysisMap(prev => ({
       ...prev,
       [url]: { status: 'retry' }
@@ -253,18 +264,15 @@ export function MediaAnalysisDialog({
                             {renderMarkdown(actionSuggestion)}
                           </div>
                           <Button
-  size="sm"
-  variant="destructive"
-  className="mt-2 w-full"
-  onClick={() => {
-    onAddActionPlan?.(actionSuggestion);
-  }}
->
-  Adicionar ao Plano de Ação
-</Button>
-
-
-
+                            size="sm"
+                            variant="destructive"
+                            className="mt-2 w-full"
+                            onClick={() => {
+                              onAddActionPlan?.(actionSuggestion);
+                            }}
+                          >
+                            Adicionar ao Plano de Ação
+                          </Button>
                         </div>
                       )}
                       {!hasActionSuggestion && (
