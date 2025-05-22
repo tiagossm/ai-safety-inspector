@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { MediaRenderer } from "@/components/media/MediaRenderer";
@@ -6,6 +5,24 @@ import { MediaRenderer } from "@/components/media/MediaRenderer";
 interface InspectionAnswersSummaryProps {
   questions: any[];
   responses: Record<string, any>;
+}
+
+function formatAnswer(rawAnswer: any): string {
+  if (!rawAnswer) return "Não respondido";
+
+  if (typeof rawAnswer === "string") {
+    try {
+      const parsed = JSON.parse(rawAnswer);
+      if (parsed && typeof parsed === "object" && "value" in parsed) {
+        return parsed.value ?? "Não respondido";
+      }
+      return rawAnswer;
+    } catch {
+      return rawAnswer;
+    }
+  }
+
+  return String(rawAnswer);
 }
 
 export function InspectionAnswersSummary({ questions, responses }: InspectionAnswersSummaryProps) {
@@ -21,7 +38,7 @@ export function InspectionAnswersSummary({ questions, responses }: InspectionAns
     <div className="space-y-6">
       {questions.map((question) => {
         const response = responses?.[question.id] || {};
-        const answer = response.value ?? "Não respondido";
+        const answer = formatAnswer(response.value);
         const notes = response.comment ?? "";
         const mediaUrls: string[] = response.mediaUrls || [];
 
