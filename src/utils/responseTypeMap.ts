@@ -1,3 +1,4 @@
+
 // src/utils/responseTypeMap.ts
 // Este arquivo mapeia os tipos de resposta entre o frontend e o banco de dados
 // Cobertura total para todos os valores aceitos pela constraint do banco
@@ -12,6 +13,8 @@ export function frontendToDatabaseResponseType(frontendType: string): string {
     'photo': 'foto',
     'signature': 'assinatura',
     'image': 'imagem',
+    'time': 'time',
+    'date': 'date',
     // Também cobre se por algum motivo chegar o valor já no padrão banco
     'sim/não': 'sim/não',
     'texto': 'texto',
@@ -19,12 +22,7 @@ export function frontendToDatabaseResponseType(frontendType: string): string {
     'seleção múltipla': 'seleção múltipla',
     'assinatura': 'assinatura',
     'foto': 'foto',
-    'imagem': 'imagem',
-    // Possíveis valores aceitos pelo banco mas raramente usados no front
-    'multiple_choice': 'multiple_choice',
-    'yes_no': 'yes_no',
-    'time': 'time',
-    'date': 'date'
+    'imagem': 'imagem'
   };
   return typeMap[frontendType] || 'texto'; // fallback seguro
 }
@@ -39,7 +37,7 @@ export function databaseToFrontendResponseType(dbType: string): string {
     'foto': 'photo',
     'assinatura': 'signature',
     'imagem': 'image',
-    // Se vier o valor "alternativo", também cobre:
+    // Se vier o valor "alternativo", também mapeia:
     'multiple_choice': 'multiple_choice',
     'yes_no': 'yes_no',
     'time': 'time',
