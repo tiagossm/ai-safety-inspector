@@ -1,8 +1,12 @@
-
 import React, { useCallback } from 'react';
 import { YesNoResponseInput } from './response-types/YesNoResponseInput';
 import { TextResponseInput } from './response-types/TextResponseInput';
 import { NumberResponseInput } from './response-types/NumberResponseInput';
+import { MultipleChoiceInput } from "@/components/inspection/question-inputs/MultipleChoiceInput";
+import { PhotoInput } from "@/components/inspection/question-inputs/PhotoInput";
+import { TimeResponseInput } from "@/components/inspection/question-inputs/TimeResponseInput";
+import { DateResponseInput } from "@/components/inspection/question-inputs/DateResponseInput";
+import { SignatureInput } from "@/components/inspection/question-inputs/SignatureInput";
 
 interface ResponseInputProps {
   question: any;
