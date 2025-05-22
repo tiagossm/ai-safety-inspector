@@ -65,6 +65,8 @@ export function DateResponseInput({
           />
         </PopoverContent>
       </Popover>
+      {/* Campo oculto para garantir formato yyyy-MM-dd se necessário */}
+      <input type="hidden" value={dateValue} />
     </ResponseWrapper>
   );
 }

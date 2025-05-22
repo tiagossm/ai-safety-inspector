@@ -121,7 +121,11 @@ export function QuestionEditor({
         <div>
           <Textarea
             placeholder="Texto da pergunta"
-            value={question.text}
+            value={
+              typeof question.text === "object"
+                ? (typeof question.text.value === "string" ? question.text.value : "")
+                : (typeof question.text === "string" ? question.text : "")
+            }
             onChange={(e) => handleUpdate("text", e.target.value)}
             className="w-full"
             rows={2}
@@ -132,7 +136,7 @@ export function QuestionEditor({
           <div>
             <label className="text-sm font-medium mb-1 block">Tipo de resposta</label>
             <Select
-              value={frontendResponseType}
+              value={typeof frontendResponseType === "object" ? frontendResponseType.value : frontendResponseType}
               onValueChange={(value: "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature" | "time" | "date") => {
                 handleUpdate("responseType", value);
               }}
@@ -159,7 +163,7 @@ export function QuestionEditor({
               type="number"
               min="0"
               max="100"
-              value={question.weight}
+              value={typeof question.weight === "object" ? question.weight.value : question.weight}
               onChange={(e) => handleUpdate("weight", Number(e.target.value))}
             />
           </div>
@@ -241,7 +245,7 @@ export function QuestionEditor({
           <label className="text-sm font-medium mb-1 block">Dica para o inspetor</label>
           <Textarea
             placeholder="Digite uma dica..."
-            value={userHint}
+            value={typeof userHint === "object" ? userHint.value : userHint}
             onChange={(e) => handleUpdate("hint", e.target.value)}
             className="w-full"
             rows={2}

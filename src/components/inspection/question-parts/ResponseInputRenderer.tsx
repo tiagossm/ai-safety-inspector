@@ -124,7 +124,11 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
       <div className="space-y-2">
         <MultipleChoiceInput 
           options={question.options || []}
-          value={safeResponse.value}
+          value={
+            typeof safeResponse.value === "string"
+              ? safeResponse.value
+              : safeResponse.value?.value || ""
+          }
           onChange={handleSimpleValueChange}
         />
         {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
@@ -149,7 +153,15 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     return (
       <div className="space-y-2">
         <NumberInput
-          value={safeResponse.value}
+          value={
+            typeof safeResponse.value === "number"
+              ? safeResponse.value
+              : typeof safeResponse.value?.value === "number"
+                ? safeResponse.value.value
+                : safeResponse.value?.value !== undefined
+                  ? Number(safeResponse.value.value)
+                  : undefined
+          }
           onChange={handleSimpleValueChange}
         />
         {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
@@ -191,7 +203,11 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     return (
       <div className="space-y-2">
         <SignatureInput 
-          value={safeResponse.value || ""}
+          value={
+            typeof safeResponse.value === "string"
+              ? safeResponse.value
+              : safeResponse.value?.value || ""
+          }
           onChange={handleSimpleValueChange}
         />
         {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (

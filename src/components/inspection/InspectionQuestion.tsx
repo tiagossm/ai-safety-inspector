@@ -238,7 +238,7 @@ export function InspectionQuestion({
         {/* Input de resposta no topo */}
         <ResponseInput
           question={question}
-          value={response?.value}
+          value={response || {}} // Passe o objeto inteiro, nunca só o .value
           onChange={handleResponseValueChange}
         />
 

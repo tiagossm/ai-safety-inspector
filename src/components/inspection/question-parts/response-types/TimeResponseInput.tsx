@@ -2,7 +2,7 @@ import React from "react";
 import { ResponseWrapper } from "./components/ResponseWrapper";
 
 interface TimeResponseInputProps {
-  value?: string; // Formato esperado: "HH:mm" ou "HH:mm:ss"
+  value?: string | { value: string }; // Permite string ou objeto
   onChange: (value: string) => void;
   disabled?: boolean;
   readOnly?: boolean;
@@ -18,6 +18,14 @@ export function TimeResponseInput({
   disabled = false,
   readOnly = false,
 }: TimeResponseInputProps) {
+  // Garante que value seja sempre string
+  const timeValue =
+    typeof value === "string"
+      ? value
+      : value && typeof value.value === "string"
+      ? value.value
+      : "";
+
   // Garante que só a string no formato "HH:mm" será passada para o onChange
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onChange(event.target.value);
@@ -27,7 +35,7 @@ export function TimeResponseInput({
     <ResponseWrapper>
       <input
         type="time"
-        value={value}
+        value={timeValue}
         onChange={handleChange}
         disabled={disabled || readOnly}
         className="w-full rounded border px-2 py-1"
