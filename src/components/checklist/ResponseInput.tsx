@@ -46,7 +46,7 @@ export function QuestionEditor({
 
   // Garantir tipos seguros para o texto da questão e fornecer valores padrão
   const questionText = typeof question.text === "object" 
-    ? (question.text?.value ?? "") 
+    ? (question.text && 'value' in question.text ? question.text.value ?? "" : "") 
     : (question.text ?? "");
 
   // Convert database response type to frontend type for proper display
@@ -83,7 +83,7 @@ export function QuestionEditor({
 
   // Garantir tipo seguro para o peso da questão e fornecer valor padrão
   const questionWeight = typeof question.weight === "object" 
-    ? (question.weight?.value ?? 1) 
+    ? (question.weight && 'value' in question.weight ? question.weight.value ?? 1 : 1) 
     : (question.weight ?? 1);
 
   const handleAddOption = () => {
@@ -127,7 +127,7 @@ export function QuestionEditor({
   const userHint = parseHint(question.hint);
   // Garantir tipo seguro para a dica e fornecer valor padrão
   const safeUserHint = typeof userHint === "object" 
-    ? (userHint?.value ?? "") 
+    ? (userHint && 'value' in userHint ? userHint.value ?? "" : "") 
     : (userHint ?? "");
 
   return (
