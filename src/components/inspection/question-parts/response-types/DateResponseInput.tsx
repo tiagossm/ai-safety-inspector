@@ -1,4 +1,3 @@
-// src/components/inputs/DateResponseInput.tsx
 import React, { useState } from "react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -9,33 +8,32 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { ResponseWrapper } from "./components/ResponseWrapper";
 
 interface DateResponseInputProps {
-  value?: string;
+  value?: string | { value: string; mediaUrls?: string[] }; // permite objeto ou string
   onChange: (value: string) => void;
   disabled?: boolean;
   readOnly?: boolean;
 }
 
-/**
- * Componente de input para resposta do tipo "data".
- * Utiliza popover com calendário, formato ISO, UX moderno, plug & play.
- */
 export function DateResponseInput({
   value,
   onChange,
   disabled = false,
   readOnly = false,
 }: DateResponseInputProps) {
-  const [open, setOpen] = useState(false);
-  const selectedDate = value ? parseISO(value) : undefined;
+  // Extrair string de data se o valor vier como objeto
+  const dateValue = typeof value === "string" ? value : value?.value ?? "";
+
+  const selectedDate = dateValue ? parseISO(dateValue) : undefined;
 
   const handleDateChange = (date: Date | undefined) => {
-    setOpen(false);
     if (date) {
       onChange(format(date, "yyyy-MM-dd"));
     } else {
       onChange("");
     }
   };
+
+  const [open, setOpen] = useState(false);
 
   return (
     <ResponseWrapper>
@@ -57,7 +55,10 @@ export function DateResponseInput({
           <Calendar
             mode="single"
             selected={selectedDate}
-            onSelect={handleDateChange}
+            onSelect={(date) => {
+              setOpen(false);
+              handleDateChange(date);
+            }}
             disabled={disabled || readOnly}
             locale={ptBR}
             initialFocus

@@ -2,48 +2,37 @@ import React from "react";
 import { ResponseWrapper } from "./components/ResponseWrapper";
 
 interface TimeResponseInputProps {
-  value?: string;
+  value?: string; // Formato esperado: "HH:mm" ou "HH:mm:ss"
   onChange: (value: string) => void;
   disabled?: boolean;
   readOnly?: boolean;
 }
 
 /**
- * Componente de input para resposta do tipo "hora" (HH:mm).
- * Suporta modo readOnly, integração fácil com form handlers e estilização plug and play.
+ * Componente para input do tipo "hora" no formato HH:mm.
+ * Fácil integração, suporte a disabled e readOnly.
  */
 export function TimeResponseInput({
-  value,
+  value = "",
   onChange,
   disabled = false,
-  readOnly = false
+  readOnly = false,
 }: TimeResponseInputProps) {
-  // Use o value direto se fornecido, ou tente pegar de response.value se existir
-  const currentValue = value || (response?.value || "");
-
-  const handleMediaDelete = (urlToDelete: string) => {
-    if (onMediaChange) {
-      const updatedUrls = mediaUrls.filter((url: string) => url !== urlToDelete);
-      onMediaChange(updatedUrls);
-    }
+  // Garante que só a string no formato "HH:mm" será passada para o onChange
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    onChange(event.target.value);
   };
 
   return (
     <ResponseWrapper>
-      <TimeInput
-        value={value || ""}
-        onChange={onChange}
+      <input
+        type="time"
+        value={value}
+        onChange={handleChange}
+        disabled={disabled || readOnly}
+        className="w-full rounded border px-2 py-1"
+        step={1} // permite segundos, opcional
       />
-      
-      {allowsMedia && onMediaUpload && !readOnly && (
-        <div className="flex justify-start mt-2">
-          <MediaUploadButton
-            type="photo"
-            onClick={onMediaUpload}
-            disabled={disabled || readOnly}
-          />
-        </div>
-      )}
     </ResponseWrapper>
   );
 }
