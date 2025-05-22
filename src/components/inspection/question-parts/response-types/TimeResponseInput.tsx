@@ -1,10 +1,10 @@
+
 import React from "react";
 import { Input } from "@/components/ui/input";
 import { MediaUploadButton } from "@/components/inspection/question-inputs/MediaUploadButton";
 import { ResponseWrapper } from "./components/ResponseWrapper";
 
 interface TimeResponseInputProps {
-  response: any;
   value?: string;
   onChange: (value: string) => void;
   onMediaUpload?: () => void;
@@ -18,7 +18,6 @@ interface TimeResponseInputProps {
 }
 
 export function TimeResponseInput({
-  response,
   value,
   onChange,
   onMediaUpload,
@@ -31,6 +30,9 @@ export function TimeResponseInput({
 }: TimeResponseInputProps) {
   // Use o value direto se fornecido, ou tente pegar de response.value se existir
   const currentValue = value || (response?.value || "");
+  
+  // Ensure mediaUrls is always defined
+  const mediaUrls = response?.mediaUrls || [];
 
   const handleMediaDelete = (urlToDelete: string) => {
     if (onMediaChange) {
@@ -41,9 +43,11 @@ export function TimeResponseInput({
 
   return (
     <ResponseWrapper>
-      <TimeInput
-        value={value || ""}
-        onChange={onChange}
+      <Input
+        type="time"
+        value={currentValue}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled || readOnly}
       />
       
       {allowsMedia && onMediaUpload && !readOnly && (

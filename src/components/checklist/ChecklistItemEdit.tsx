@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { getErrorMessage } from '@/utils/errors';
 
 // Definindo o tipo ChecklistItem localmente
 interface ChecklistItem {
@@ -37,15 +38,25 @@ const ChecklistItemEdit: React.FC = () => {
   const [pergunta, setPergunta] = useState('');
   const [tipoResposta, setTipoResposta] = useState('');
   const [obrigatorio, setObrigatorio] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchChecklistItem = async () => {
       try {
-        const response = await api.get(`/checklist-itens/${id}`);
-        setChecklistItem(response.data);
-        setDescricao(response.data.descricao);
-        setTipoResposta(response.data.tipo_resposta);
-        setObrigatorio(response.data.obrigatorio);
+        const { data, error } = await supabase
+          .from('checklist_itens')
+          .select('*')
+          .eq('id', id)
+          .single();
+          
+        if (error) throw error;
+        
+        if (data) {
+          setChecklistItem(data);
+          setPergunta(data.pergunta);
+          setTipoResposta(data.tipo_resposta);
+          setObrigatorio(data.obrigatorio);
+        }
       } catch (error) {
         console.error('Erro ao buscar item da checklist:', error);
         toast.error('Erro ao carregar item da checklist');
@@ -62,13 +73,17 @@ const ChecklistItemEdit: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await api.put(`/checklist-itens/${id}`, {
-        descricao,
-        tipo_resposta: tipoResposta,
-        obrigatorio,
-      });
+      const { error } = await supabase
+        .from('checklist_itens')
+        .update({
+          pergunta,
+          tipo_resposta: tipoResposta,
+          obrigatorio
+        })
+        .eq('id', id);
 
-      // Redirecionar ou mostrar mensagem de sucesso
+      if (error) throw error;
+      toast.success('Item da checklist atualizado com sucesso');
     } catch (error) {
       console.error('Erro ao editar item da checklist:', error);
       toast.error('Erro ao atualizar item da checklist');
@@ -112,31 +127,33 @@ const ChecklistItemEdit: React.FC = () => {
             />
           </div>
 
-        <Form.Group controlId="tipoResposta">
-          <Form.Label>Tipo de Resposta</Form.Label>
-          <Form.Control
-            as="select"
-            value={tipoResposta}
-            onChange={(e) => setTipoResposta(e.target.value)}
-            required
-          >
-            <option value="">Selecione um tipo</option>
-            {tiposResposta.map((tipo) => (
-              <option key={tipo} value={tipo}>
-                {tipo}
-              </option>
-            ))}
-          </Form.Control>
-        </Form.Group>
+          <div className="space-y-2">
+            <Label htmlFor="tipoResposta">Tipo de Resposta</Label>
+            <Select
+              value={tipoResposta}
+              onValueChange={setTipoResposta}
+            >
+              <SelectTrigger id="tipoResposta">
+                <SelectValue placeholder="Selecione um tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                {tiposResposta.map((tipo) => (
+                  <SelectItem key={tipo} value={tipo}>
+                    {tipo}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        <Form.Group controlId="obrigatorio">
-          <Form.Check
-            type="checkbox"
-            label="Obrigatório"
-            checked={obrigatorio}
-            onChange={(e) => setObrigatorio(e.target.checked)}
-          />
-        </Form.Group>
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="obrigatorio" 
+              checked={obrigatorio} 
+              onCheckedChange={(checked) => setObrigatorio(checked === true)}
+            />
+            <Label htmlFor="obrigatorio">Obrigatório</Label>
+          </div>
 
           <Button type="submit" disabled={isLoading}>
             {isLoading ? 'Salvando...' : 'Salvar'}

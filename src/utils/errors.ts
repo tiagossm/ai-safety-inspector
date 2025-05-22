@@ -34,3 +34,12 @@ export function getErrorMessage(error: unknown): string {
   
   return 'Ocorreu um erro desconhecido';
 }
+
+/**
+ * Handles API errors in a standardized way
+ */
+export function handleApiError(error: unknown): string {
+  const message = getErrorMessage(error);
+  console.error('API error:', error);
+  return message;
+}

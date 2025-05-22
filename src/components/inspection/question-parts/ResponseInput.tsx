@@ -3,6 +3,11 @@ import React, { useCallback } from 'react';
 import { YesNoResponseInput } from './response-types/YesNoResponseInput';
 import { TextResponseInput } from './response-types/TextResponseInput';
 import { NumberResponseInput } from './response-types/NumberResponseInput';
+import { PhotoInput } from '../question-inputs/PhotoInput';
+import { MultipleChoiceInput } from '../question-inputs/MultipleChoiceInput';
+import { SignatureInput } from '@/components/checklist/SignatureInput';
+import { TimeResponseInput } from './response-types/TimeResponseInput';
+import { DateResponseInput } from './response-types/DateResponseInput';
 
 interface ResponseInputProps {
   question: any;
@@ -171,55 +176,15 @@ export function ResponseInput({
     case "time":
       return (
         <TimeResponseInput
-          response={responseObject}
           value={responseObject.value}
           onChange={(value) => handleValueChange({...responseObject, value})}
-          onMediaChange={handleMediaChange}
-          allowsMedia={!!mediaUrls.length || question.allowsPhoto}
-          onMediaUpload={() => console.log("Media upload for time question")}
         />
       );
     case "date":
       return (
         <DateResponseInput
-          response={responseObject}
           value={responseObject.value}
           onChange={(value) => handleValueChange({...responseObject, value})}
-          onMediaChange={handleMediaChange}
-          allowsMedia={!!mediaUrls.length || question.allowsPhoto}
-          onMediaUpload={() => console.log("Media upload for date question")}
-        />
-      );
-    case "multiple_choice":
-      return (
-        <MultipleChoiceInput
-          options={question.options || []}
-          value={responseObject.value}
-          onChange={(option) => handleValueChange({
-            ...responseObject,
-            value: option
-          })}
-        />
-      );
-    case "date":
-      return (
-        <input
-          type="date"
-          value={responseObject.value}
-          onChange={e => handleValueChange({
-            ...responseObject,
-            value: e.target.value
-          })}
-        />
-      );
-    case "time":
-      return (
-        <TimeResponseInput
-          value={responseObject.value}
-          onChange={(timeValue) => handleValueChange({
-            ...responseObject,
-            value: timeValue
-          })}
         />
       );
     default:
