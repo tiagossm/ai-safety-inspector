@@ -86,20 +86,25 @@ export function MediaAnalysisDialog({
   // Ref para controlar URLs já analisadas e evitar loops
   const analyzedUrlsRef = useRef<Set<string>>(new Set());
 
+  // Helper to create a stable key for allImages
+  const allImagesKey = allImages.join('|');
+
   // Inicializa o mapa de análises quando abrir ou mudar imagens
   useEffect(() => {
-    if (open) {
-      let map: Record<string, AnalysisState> = {};
-      allImages.forEach(url => {
-        map[url] = { status: 'pending' };
-      });
-      setAnalysisMap(map);
-      analyzedUrlsRef.current.clear();
-    } else {
+    if (!open) {
       setAnalysisMap({});
       analyzedUrlsRef.current.clear();
+      return;
     }
-  }, [open, allImages]);
+    // Only reset if the images actually changed
+    let map: Record<string, AnalysisState> = {};
+    allImages.forEach(url => {
+      map[url] = { status: 'pending' };
+    });
+    setAnalysisMap(map);
+    analyzedUrlsRef.current.clear();
+    // eslint-disable-next-line
+  }, [open, allImagesKey]);
 
   // Executa a análise das imagens pendentes
   useEffect(() => {
@@ -297,4 +302,3 @@ export function MediaAnalysisDialog({
     </Dialog>
   );
 }
-// Compare this snippet from src/components/inspection/question-parts/response-types/TextResponseInput.tsx:
