@@ -1,48 +1,36 @@
 
-import { toast } from "sonner";
-
 /**
- * Formats and handles API errors consistently
+ * Extracts a readable error message from different types of errors
  */
-export function handleApiError(error: any, defaultMessage = "Ocorreu um erro inesperado"): string {
-  console.error("API Error:", error);
-  
-  // Get error details
-  const errorInfo = {
-    message: getErrorMessage(error),
-    code: error?.code || 'unknown',
-    status: error?.status || null,
-    timestamp: new Date().toISOString(),
-  };
-  
-  console.error("Error details:", errorInfo);
-  
-  // Show toast with error message
-  toast.error(errorInfo.message);
-  
-  return errorInfo.message;
-}
-
-/**
- * Extracts error message from different error formats
- */
-export function getErrorMessage(error: any): string {
+export function getErrorMessage(error: unknown): string {
   if (typeof error === 'string') {
     return error;
   }
   
-  if (error?.message) {
+  if (error instanceof Error) {
     return error.message;
   }
   
-  if (error?.error?.message) {
-    return error.error.message;
+  if (typeof error === 'object' && error !== null) {
+    // Handle Supabase errors
+    if ('message' in error) {
+      return String(error.message);
+    }
+    
+    if ('error' in error && typeof error.error === 'object' && error.error !== null) {
+      if ('message' in error.error) {
+        return String(error.error.message);
+      }
+    }
+    
+    // Try to convert to JSON string
+    try {
+      return JSON.stringify(error);
+    } catch (e) {
+      // If we can't stringify, return generic error
+      return 'Ocorreu um erro desconhecido';
+    }
   }
   
-  // Check for Supabase specific error formats
-  if (error?.error?.details) {
-    return error.error.details;
-  }
-  
-  return "Ocorreu um erro inesperado";
+  return 'Ocorreu um erro desconhecido';
 }

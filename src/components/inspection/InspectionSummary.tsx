@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { SignatureSection } from "./SignatureSection";
 import {
   Building,
   CalendarIcon,
@@ -36,25 +35,25 @@ export function InspectionSummary({
       case "Concluído":
       case "Concluido":
       case "Completed":
-        return <Badge className="bg-green-500">Completed</Badge>;
+        return <Badge className="bg-green-500">Concluído</Badge>;
       case "Em Andamento":
       case "In Progress":
-        return <Badge className="bg-blue-500">In Progress</Badge>;
+        return <Badge className="bg-blue-500">Em Andamento</Badge>;
       case "Pendente":
       case "Pending":
       default:
-        return <Badge className="bg-yellow-500">Pending</Badge>;
+        return <Badge className="bg-yellow-500">Pendente</Badge>;
     }
   };
   
   const getPriorityBadge = (priority: string) => {
     switch (priority?.toLowerCase()) {
       case "high":
-        return <Badge className="bg-red-500">High</Badge>;
+        return <Badge className="bg-red-500">Alta</Badge>;
       case "medium":
-        return <Badge className="bg-orange-500">Medium</Badge>;
+        return <Badge className="bg-orange-500">Média</Badge>;
       case "low":
-        return <Badge className="bg-green-500">Low</Badge>;
+        return <Badge className="bg-green-500">Baixa</Badge>;
       default:
         return <Badge className="bg-slate-500">Normal</Badge>;
     }
@@ -66,7 +65,7 @@ export function InspectionSummary({
         <CardHeader>
           <CardTitle className="flex items-center text-xl">
             <ClipboardList className="h-5 w-5 mr-2" />
-            Inspection Summary
+            Resumo da Inspeção
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -91,7 +90,7 @@ export function InspectionSummary({
             <div>
               <h3 className="font-medium text-sm flex items-center">
                 <Building className="h-4 w-4 mr-1 text-muted-foreground" />
-                Company
+                Empresa
               </h3>
               <p className="text-sm mt-1">{companyName || inspection.companyName || "N/A"}</p>
             </div>
@@ -99,7 +98,7 @@ export function InspectionSummary({
             <div>
               <h3 className="font-medium text-sm flex items-center">
                 <User className="h-4 w-4 mr-1 text-muted-foreground" />
-                Responsible
+                Responsável
               </h3>
               <p className="text-sm mt-1">{responsibleName || inspection.responsibleName || "N/A"}</p>
             </div>
@@ -108,7 +107,7 @@ export function InspectionSummary({
               <div>
                 <h3 className="font-medium text-sm flex items-center">
                   <CalendarIcon className="h-4 w-4 mr-1 text-muted-foreground" />
-                  Scheduled Date
+                  Data Agendada
                 </h3>
                 <p className="text-sm mt-1">{format(new Date(inspection.scheduled_date), 'PPP')}</p>
               </div>
@@ -118,7 +117,7 @@ export function InspectionSummary({
               <div>
                 <h3 className="font-medium text-sm flex items-center">
                   <MapPin className="h-4 w-4 mr-1 text-muted-foreground" />
-                  Location
+                  Localização
                 </h3>
                 <p className="text-sm mt-1">{inspection.location}</p>
               </div>
@@ -127,7 +126,7 @@ export function InspectionSummary({
             <div>
               <h3 className="font-medium text-sm flex items-center">
                 <Clock className="h-4 w-4 mr-1 text-muted-foreground" />
-                Created At
+                Criado em
               </h3>
               <p className="text-sm mt-1">
                 {inspection.created_at ? format(new Date(inspection.created_at), 'PPP') : "N/A"}
@@ -138,7 +137,7 @@ export function InspectionSummary({
               <div>
                 <h3 className="font-medium text-sm flex items-center">
                   <CheckCircle2 className="h-4 w-4 mr-1 text-muted-foreground" />
-                  Completed At
+                  Concluído em
                 </h3>
                 <p className="text-sm mt-1">{format(new Date(inspection.updated_at), 'PPP')}</p>
               </div>
@@ -146,13 +145,6 @@ export function InspectionSummary({
           </div>
         </CardContent>
       </Card>
-      
-      {inspection.id && (
-        <SignatureSection 
-          inspectionId={inspection.id}
-          isCompleted={inspection.status === "Concluído" || inspection.status === "Completed"}
-        />
-      )}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 
+
 import { supabase } from "@/integrations/supabase/client";
 import { getErrorMessage } from "@/utils/errors";
 
@@ -16,6 +17,12 @@ export interface SignatureData {
  */
 export async function getInspectionSignatures(inspectionId: string): Promise<SignatureData[]> {
   try {
+    if (!inspectionId) {
+      throw new Error("ID de inspeção não fornecido");
+    }
+    
+    console.log("Buscando assinaturas para inspeção:", inspectionId);
+    
     const { data, error } = await supabase
       .from("inspection_signatures")
       .select(`
@@ -24,14 +31,19 @@ export async function getInspectionSignatures(inspectionId: string): Promise<Sig
       `)
       .eq("inspection_id", inspectionId);
 
-    if (error) throw error;
+    if (error) {
+      console.error("Erro ao buscar assinaturas:", error);
+      throw error;
+    }
 
+    console.log("Assinaturas encontradas:", data?.length || 0);
+    
     return data.map((sig: any) => ({
       ...sig,
       signer_name: sig.signer_name || sig.users?.name
     }));
   } catch (error) {
-    console.error("Error getting signatures:", error);
+    console.error("Erro ao buscar assinaturas:", error);
     throw new Error(getErrorMessage(error));
   }
 }
@@ -41,6 +53,18 @@ export async function getInspectionSignatures(inspectionId: string): Promise<Sig
  */
 export async function addSignatureToInspection(signatureData: SignatureData): Promise<SignatureData> {
   try {
+    if (!signatureData.inspection_id) {
+      throw new Error("ID de inspeção não fornecido");
+    }
+    
+    if (!signatureData.signer_id) {
+      throw new Error("ID do assinante não fornecido");
+    }
+    
+    if (!signatureData.signature_data) {
+      throw new Error("Dados da assinatura não fornecidos");
+    }
+    
     const { data, error } = await supabase
       .from("inspection_signatures")
       .insert({
@@ -52,10 +76,14 @@ export async function addSignatureToInspection(signatureData: SignatureData): Pr
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("Erro ao adicionar assinatura:", error);
+      throw error;
+    }
+    
     return data;
   } catch (error) {
-    console.error("Error adding signature:", error);
+    console.error("Erro ao adicionar assinatura:", error);
     throw new Error(getErrorMessage(error));
   }
 }
@@ -65,16 +93,24 @@ export async function addSignatureToInspection(signatureData: SignatureData): Pr
  */
 export async function hasUserSignedInspection(inspectionId: string, userId: string): Promise<boolean> {
   try {
+    if (!inspectionId || !userId) {
+      throw new Error("ID de inspeção ou ID do usuário não fornecido");
+    }
+    
     const { data, error, count } = await supabase
       .from("inspection_signatures")
       .select("*", { count: "exact" })
       .eq("inspection_id", inspectionId)
       .eq("signer_id", userId);
 
-    if (error) throw error;
+    if (error) {
+      console.error("Erro ao verificar se o usuário assinou:", error);
+      throw error;
+    }
+    
     return count !== null && count > 0;
   } catch (error) {
-    console.error("Error checking if user signed:", error);
+    console.error("Erro ao verificar se usuário assinou:", error);
     throw new Error(getErrorMessage(error));
   }
 }
@@ -84,15 +120,22 @@ export async function hasUserSignedInspection(inspectionId: string, userId: stri
  */
 export async function removeSignature(inspectionId: string, signerId: string): Promise<void> {
   try {
+    if (!inspectionId || !signerId) {
+      throw new Error("ID de inspeção ou ID do assinante não fornecido");
+    }
+    
     const { error } = await supabase
       .from("inspection_signatures")
       .delete()
       .eq("inspection_id", inspectionId)
       .eq("signer_id", signerId);
 
-    if (error) throw error;
+    if (error) {
+      console.error("Erro ao remover assinatura:", error);
+      throw error;
+    }
   } catch (error) {
-    console.error("Error removing signature:", error);
+    console.error("Erro ao remover assinatura:", error);
     throw new Error(getErrorMessage(error));
   }
 }

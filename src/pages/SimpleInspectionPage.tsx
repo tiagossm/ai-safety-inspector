@@ -79,15 +79,18 @@ export default function SimpleInspectionPage() {
           companyName={companyName}
           checklistTitle={checklistTitle}
         />
-        <div className="mt-6">
-          <SignatureSection
-            inspectionId={inspection.id}
-            isCompleted={!!inspection?.assinatura_tecnico && !!inspection?.assinatura_responsavel}
-          />
-        </div>
+        
+        {inspection.id && (
+          <div className="mt-6">
+            <SignatureSection
+              inspectionId={inspection.id}
+              isCompleted={inspection.status === "Concluído" || inspection.status === "Completed"}
+            />
+          </div>
+        )}
       </div>
 
-      {/* --- NOVO: Resumo das Respostas --- */}
+      {/* --- Resumo das Respostas --- */}
       <InspectionAnswersSummary
         questions={questions}
         responses={responses}

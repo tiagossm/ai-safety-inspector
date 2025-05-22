@@ -4,9 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useInspectionSignatures, Signature } from "@/hooks/inspection/useInspectionSignatures";
 import { SignatureDialog } from "./SignatureDialog";
 import { SignatureDisplay } from "./SignatureDisplay";
-import { FileSignature, Loader2 } from "lucide-react";
+import { FileSignature, Loader2, RefreshCw, AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "sonner";
 
 interface SignatureSectionProps {
   inspectionId: string;
@@ -18,19 +20,28 @@ export function SignatureSection({ inspectionId, isCompleted = false }: Signatur
     inspectionId,
   });
   const [currentUser, setCurrentUser] = useState<{ id: string; name?: string } | null>(null);
+  const [isRetrying, setIsRetrying] = useState(false);
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        // Get user details from the users table
-        const { data } = await supabase
-          .from('users')
-          .select('id, name')
-          .eq('id', user.id)
-          .single();
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // Get user details from the users table
+          const { data, error } = await supabase
+            .from('users')
+            .select('id, name')
+            .eq('id', user.id)
+            .single();
           
-        setCurrentUser(data || { id: user.id });
+          if (error) {
+            console.error("Erro ao buscar detalhes do usuário:", error);
+          }
+            
+          setCurrentUser(data || { id: user.id });
+        }
+      } catch (err) {
+        console.error("Erro ao buscar usuário atual:", err);
       }
     };
     
@@ -39,13 +50,26 @@ export function SignatureSection({ inspectionId, isCompleted = false }: Signatur
 
   const userHasSigned = currentUser && signatures.some(sig => sig.signer_id === currentUser.id);
 
+  const handleRetry = async () => {
+    setIsRetrying(true);
+    try {
+      await refreshSignatures();
+      toast.success("Informações de assinaturas atualizadas");
+    } catch (err) {
+      console.error("Erro ao tentar novamente:", err);
+      toast.error("Não foi possível carregar as assinaturas");
+    } finally {
+      setIsRetrying(false);
+    }
+  };
+
   if (loading) {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
             <FileSignature className="mr-2 h-5 w-5" /> 
-            Signatures
+            Assinaturas
           </CardTitle>
         </CardHeader>
         <CardContent className="flex justify-center py-8">
@@ -57,17 +81,35 @@ export function SignatureSection({ inspectionId, isCompleted = false }: Signatur
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="flex items-center">
           <FileSignature className="mr-2 h-5 w-5" /> 
-          Signatures
+          Assinaturas
         </CardTitle>
+        {error && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleRetry} 
+            disabled={isRetrying}
+          >
+            {isRetrying ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-1" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-1" />
+            )}
+            Recarregar
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         {error && (
-          <div className="text-destructive mb-4">
-            Failed to load signatures: {error.message}
-          </div>
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Falha ao carregar assinaturas. {error.message}
+            </AlertDescription>
+          </Alert>
         )}
 
         {signatures.length > 0 ? (
@@ -78,7 +120,7 @@ export function SignatureSection({ inspectionId, isCompleted = false }: Signatur
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
-            No signatures have been added to this inspection yet.
+            {!error && "Nenhuma assinatura foi adicionada a esta inspeção ainda."}
           </div>
         )}
 
@@ -92,7 +134,7 @@ export function SignatureSection({ inspectionId, isCompleted = false }: Signatur
               trigger={
                 <Button>
                   <FileSignature className="mr-2 h-4 w-4" />
-                  Sign Document
+                  Assinar Documento
                 </Button>
               }
             />

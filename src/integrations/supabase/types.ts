@@ -875,6 +875,7 @@ export type Database = {
         Row: {
           action_plan: string | null
           answer: string
+          comments: string | null
           completed_at: string | null
           created_at: string | null
           id: string
@@ -888,6 +889,7 @@ export type Database = {
         Insert: {
           action_plan?: string | null
           answer: string
+          comments?: string | null
           completed_at?: string | null
           created_at?: string | null
           id?: string
@@ -901,6 +903,7 @@ export type Database = {
         Update: {
           action_plan?: string | null
           answer?: string
+          comments?: string | null
           completed_at?: string | null
           created_at?: string | null
           id?: string

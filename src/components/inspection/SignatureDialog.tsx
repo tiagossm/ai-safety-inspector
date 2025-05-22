@@ -46,10 +46,11 @@ export function SignatureDialog({
         });
         
       if (error) {
+        console.error("Erro ao salvar assinatura:", error);
         throw error;
       }
       
-      toast.success("Signature saved successfully");
+      toast.success("Assinatura salva com sucesso");
       
       if (onSignatureAdded) {
         onSignatureAdded();
@@ -57,8 +58,8 @@ export function SignatureDialog({
       
       setOpen(false);
     } catch (error) {
-      console.error("Error saving signature:", error);
-      toast.error("Failed to save signature");
+      console.error("Erro ao salvar assinatura:", error);
+      toast.error("Falha ao salvar assinatura. Tente novamente.");
     } finally {
       setSaving(false);
     }
@@ -70,15 +71,15 @@ export function SignatureDialog({
         {trigger || (
           <Button variant="outline" size="sm">
             <FileSignature className="mr-2 h-4 w-4" />
-            Add Signature
+            Adicionar Assinatura
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Add Your Signature</DialogTitle>
+          <DialogTitle>Adicionar sua Assinatura</DialogTitle>
           <DialogDescription>
-            Sign the inspection document using your mouse or touch screen.
+            Assine o documento de inspeção usando seu mouse ou tela sensível ao toque.
           </DialogDescription>
         </DialogHeader>
         
