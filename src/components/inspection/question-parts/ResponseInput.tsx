@@ -4,6 +4,11 @@ import { TextResponseInput } from './response-types/TextResponseInput';
 import { NumberResponseInput } from './response-types/NumberResponseInput';
 import { MultipleChoiceInput } from "@/components/inspection/question-inputs/MultipleChoiceInput";
 
+// **IMPORTS dos novos tipos**
+import { TimeResponseInput } from "@/components/inspection/question-inputs/TimeResponseInput";
+
+// ...demais imports
+
 interface ResponseInputProps {
   question: any;
   value?: any;
@@ -181,13 +186,13 @@ export function ResponseInput({
       );
     case "date":
       return (
-        <DateResponseInput
-          response={responseObject}
+        <input
+          type="date"
           value={responseObject.value}
-          onChange={(value) => handleValueChange({...responseObject, value})}
-          onMediaChange={handleMediaChange}
-          allowsMedia={!!mediaUrls.length || question.allowsPhoto}
-          onMediaUpload={() => console.log("Media upload for date question")}
+          onChange={e => handleValueChange({
+            ...responseObject,
+            value: e.target.value
+          })}
         />
       );
     case "multiple_choice":

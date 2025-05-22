@@ -1,10 +1,11 @@
+// src/components/inputs/DateResponseInput.tsx
 import React, { useState } from "react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { ResponseWrapper } from "./components/ResponseWrapper";
 
 interface DateResponseInputProps {
@@ -14,14 +15,18 @@ interface DateResponseInputProps {
   readOnly?: boolean;
 }
 
+/**
+ * Componente de input para resposta do tipo "data".
+ * Utiliza popover com calendário, formato ISO, UX moderno, plug & play.
+ */
 export function DateResponseInput({
   value,
   onChange,
   disabled = false,
-  readOnly = false
+  readOnly = false,
 }: DateResponseInputProps) {
   const [open, setOpen] = useState(false);
-  const selectedDate = value ? new Date(value) : undefined;
+  const selectedDate = value ? parseISO(value) : undefined;
 
   const handleDateChange = (date: Date | undefined) => {
     setOpen(false);
@@ -40,6 +45,7 @@ export function DateResponseInput({
             variant="outline"
             className="w-full justify-start text-left font-normal"
             disabled={disabled || readOnly}
+            tabIndex={0}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {selectedDate
