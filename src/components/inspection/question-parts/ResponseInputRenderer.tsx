@@ -1,4 +1,3 @@
-
 import React, { useCallback } from "react";
 import { YesNoResponseInput } from "./response-types/YesNoResponseInput";
 import { TextResponseInput } from "./response-types/TextResponseInput";
@@ -216,7 +215,11 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   if (responseType === "date") {
     return (
       <DateResponseInput
-        value={safeResponse.value}
+        value={
+          typeof safeResponse.value === "string"
+            ? safeResponse.value
+            : safeResponse.value?.value || ""
+        }
         onChange={(value) => handleSimpleValueChange(value)}
         readOnly={readOnly}
       />
@@ -226,7 +229,11 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   if (responseType === "time") {
     return (
       <TimeResponseInput
-        value={safeResponse.value}
+        value={
+          typeof safeResponse.value === "string"
+            ? safeResponse.value
+            : safeResponse.value?.value || ""
+        }
         onChange={(value) => handleSimpleValueChange(value)}
         readOnly={readOnly}
       />
