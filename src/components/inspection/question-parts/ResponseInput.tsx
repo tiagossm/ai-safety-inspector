@@ -1,13 +1,8 @@
+
 import React, { useCallback } from 'react';
 import { YesNoResponseInput } from './response-types/YesNoResponseInput';
 import { TextResponseInput } from './response-types/TextResponseInput';
 import { NumberResponseInput } from './response-types/NumberResponseInput';
-import { MultipleChoiceInput } from "@/components/inspection/question-inputs/MultipleChoiceInput";
-
-// **IMPORTS dos novos tipos**
-import { TimeResponseInput } from "@/components/inspection/question-inputs/TimeResponseInput";
-
-// ...demais imports
 
 interface ResponseInputProps {
   question: any;
@@ -176,23 +171,19 @@ export function ResponseInput({
     case "time":
       return (
         <TimeResponseInput
+          value={responseObject.value}
+          onChange={(value) => handleValueChange({...responseObject, value})}
+        />
+      );
+    case "date":
+      return (
+        <DateResponseInput
           response={responseObject}
           value={responseObject.value}
           onChange={(value) => handleValueChange({...responseObject, value})}
           onMediaChange={handleMediaChange}
           allowsMedia={!!mediaUrls.length || question.allowsPhoto}
-          onMediaUpload={() => console.log("Media upload for time question")}
-        />
-      );
-    case "date":
-      return (
-        <input
-          type="date"
-          value={responseObject.value}
-          onChange={e => handleValueChange({
-            ...responseObject,
-            value: e.target.value
-          })}
+          onMediaUpload={() => console.log("Media upload for date question")}
         />
       );
     case "multiple_choice":
@@ -232,7 +223,7 @@ export function ResponseInput({
         <div className="p-4 border border-red-300 bg-red-50 rounded-md">
           <p className="text-red-700">
             Tipo de resposta não suportado: {responseType}
-          </p>>
+          </p>
         </div>
       );
   }

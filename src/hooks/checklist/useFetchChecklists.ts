@@ -104,7 +104,8 @@ export function useFetchChecklists() {
 
         return checklists;
       } catch (err) {
-        return handleApiError(err, "Erro ao buscar lista de checklists.");
+        // Usando o handleApiError de forma consistente
+        throw new Error(handleApiError(err, "Erro ao buscar lista de checklists."));
       }
     },
     staleTime: 5 * 60 * 1000,

@@ -1,4 +1,3 @@
-// src/components/inputs/TimeResponseInput.tsx
 import React from "react";
 import { ResponseWrapper } from "./components/ResponseWrapper";
 
@@ -19,16 +18,32 @@ export function TimeResponseInput({
   disabled = false,
   readOnly = false
 }: TimeResponseInputProps) {
+  // Use o value direto se fornecido, ou tente pegar de response.value se existir
+  const currentValue = value || (response?.value || "");
+
+  const handleMediaDelete = (urlToDelete: string) => {
+    if (onMediaChange) {
+      const updatedUrls = mediaUrls.filter((url: string) => url !== urlToDelete);
+      onMediaChange(updatedUrls);
+    }
+  };
+
   return (
     <ResponseWrapper>
-      <input
-        type="time"
-        className="w-full border rounded p-2"
+      <TimeInput
         value={value || ""}
-        onChange={e => onChange(e.target.value)}
-        disabled={disabled || readOnly}
-        readOnly={readOnly}
+        onChange={onChange}
       />
+      
+      {allowsMedia && onMediaUpload && !readOnly && (
+        <div className="flex justify-start mt-2">
+          <MediaUploadButton
+            type="photo"
+            onClick={onMediaUpload}
+            disabled={disabled || readOnly}
+          />
+        </div>
+      )}
     </ResponseWrapper>
   );
 }

@@ -2,6 +2,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/utils/errors";
 
 export interface Signature {
   inspection_id: string;
@@ -23,6 +24,7 @@ export function useInspectionSignatures({ inspectionId, refresh = false }: UseIn
 
   const fetchSignatures = useCallback(async () => {
     if (!inspectionId) {
+      console.error("ID de inspeção não fornecido");
       setSignatures([]);
       setLoading(false);
       return;
@@ -31,6 +33,7 @@ export function useInspectionSignatures({ inspectionId, refresh = false }: UseIn
     try {
       setLoading(true);
       setError(null);
+      console.log("Buscando assinaturas para inspeção:", inspectionId);
 
       const { data, error } = await supabase
         .from("inspection_signatures")
@@ -45,20 +48,23 @@ export function useInspectionSignatures({ inspectionId, refresh = false }: UseIn
         .eq("inspection_id", inspectionId);
 
       if (error) {
+        console.error("Erro na consulta Supabase:", error);
         throw error;
       }
+
+      console.log("Assinaturas recebidas:", data);
 
       // Transform data to include user name if available
       const formattedSignatures = data.map((sig: any) => ({
         ...sig,
-        signer_name: sig.signer_name || sig.users?.name || "Unknown User"
+        signer_name: sig.signer_name || sig.users?.name || "Usuário Desconhecido"
       }));
 
       setSignatures(formattedSignatures);
     } catch (err) {
-      console.error("Error fetching signatures:", err);
-      setError(err instanceof Error ? err : new Error("Failed to fetch signatures"));
-      toast.error("Failed to load signatures");
+      console.error("Erro ao buscar assinaturas:", err);
+      setError(err instanceof Error ? err : new Error("Falha ao carregar assinaturas"));
+      toast.error("Falha ao carregar assinaturas");
     } finally {
       setLoading(false);
     }
@@ -66,6 +72,11 @@ export function useInspectionSignatures({ inspectionId, refresh = false }: UseIn
 
   const addSignature = useCallback(
     async (signatureData: string, signerId: string, signerName?: string) => {
+      if (!inspectionId) {
+        console.error("ID de inspeção não fornecido");
+        return { success: false, error: new Error("ID de inspeção não fornecido") };
+      }
+      
       try {
         const { error } = await supabase.from("inspection_signatures").insert({
           inspection_id: inspectionId,
@@ -75,13 +86,14 @@ export function useInspectionSignatures({ inspectionId, refresh = false }: UseIn
         });
 
         if (error) {
+          console.error("Erro ao adicionar assinatura:", error);
           throw error;
         }
 
         await fetchSignatures();
         return { success: true };
       } catch (err) {
-        console.error("Error adding signature:", err);
+        console.error("Erro ao adicionar assinatura:", err);
         return { success: false, error: err };
       }
     },
@@ -90,6 +102,11 @@ export function useInspectionSignatures({ inspectionId, refresh = false }: UseIn
 
   const removeSignature = useCallback(
     async (signerId: string) => {
+      if (!inspectionId) {
+        console.error("ID de inspeção não fornecido");
+        return { success: false, error: new Error("ID de inspeção não fornecido") };
+      }
+      
       try {
         const { error } = await supabase
           .from("inspection_signatures")
@@ -98,13 +115,14 @@ export function useInspectionSignatures({ inspectionId, refresh = false }: UseIn
           .eq("signer_id", signerId);
 
         if (error) {
+          console.error("Erro ao remover assinatura:", error);
           throw error;
         }
 
         await fetchSignatures();
         return { success: true };
       } catch (err) {
-        console.error("Error removing signature:", err);
+        console.error("Erro ao remover assinatura:", err);
         return { success: false, error: err };
       }
     },

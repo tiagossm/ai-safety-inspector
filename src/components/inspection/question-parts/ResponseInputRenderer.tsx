@@ -216,12 +216,8 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   if (responseType === "date") {
     return (
       <DateResponseInput
-        response={safeResponse}
         value={safeResponse.value}
-        onChange={(value) => onResponseChange({ ...safeResponse, value })}
-        onMediaChange={handleMediaChange}
-        allowsMedia={!!mediaUrls.length || question.permite_foto}
-        onMediaUpload={() => console.log("Media upload for date question")}
+        onChange={(value) => handleSimpleValueChange(value)}
         readOnly={readOnly}
       />
     );
@@ -230,12 +226,8 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   if (responseType === "time") {
     return (
       <TimeResponseInput
-        response={safeResponse}
         value={safeResponse.value}
-        onChange={(value) => onResponseChange({ ...safeResponse, value })}
-        onMediaChange={handleMediaChange}
-        allowsMedia={!!mediaUrls.length || question.permite_foto}
-        onMediaUpload={() => console.log("Media upload for time question")}
+        onChange={(value) => handleSimpleValueChange(value)}
         readOnly={readOnly}
       />
     );
