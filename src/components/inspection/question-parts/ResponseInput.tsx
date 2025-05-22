@@ -4,9 +4,6 @@ import { TextResponseInput } from './response-types/TextResponseInput';
 import { NumberResponseInput } from './response-types/NumberResponseInput';
 import { MultipleChoiceInput } from "@/components/inspection/question-inputs/MultipleChoiceInput";
 import { PhotoInput } from "@/components/inspection/question-inputs/PhotoInput";
-import { TimeResponseInput } from "@/components/inspection/question-inputs/TimeResponseInput";
-import { DateResponseInput } from "@/components/inspection/question-inputs/DateResponseInput";
-import { SignatureInput } from "@/components/inspection/question-inputs/SignatureInput";
 
 interface ResponseInputProps {
   question: any;
@@ -152,9 +149,13 @@ export function ResponseInput({
     case "signature":
       return (
         <div className="space-y-2">
-          <SignatureInput 
+          {/* Input simples para assinatura */}
+          <input
+            type="text"
+            placeholder="Assinatura (nome)"
             value={responseObject.value || ""}
-            onChange={handleSimpleValueChange}
+            onChange={e => handleSimpleValueChange(e.target.value)}
+            className="border rounded px-2 py-1 w-full"
           />
           {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
             <PhotoInput
@@ -174,52 +175,20 @@ export function ResponseInput({
       );
     case "time":
       return (
-        <TimeResponseInput
-          value={responseObject.value}
-          onChange={(value) => handleValueChange({...responseObject, value})}
-        />
-      );
-    case "date":
-      return (
-        <DateResponseInput
-          response={responseObject}
-          value={responseObject.value}
-          onChange={(value) => handleValueChange({...responseObject, value})}
-          onMediaChange={handleMediaChange}
-          allowsMedia={!!mediaUrls.length || question.allowsPhoto}
-          onMediaUpload={() => console.log("Media upload for date question")}
-        />
-      );
-    case "multiple_choice":
-      return (
-        <MultipleChoiceInput
-          options={question.options || []}
-          value={responseObject.value}
-          onChange={(option) => handleValueChange({
-            ...responseObject,
-            value: option
-          })}
+        <input
+          type="time"
+          value={responseObject.value || ""}
+          onChange={e => handleSimpleValueChange(e.target.value)}
+          className="border rounded px-2 py-1 w-full"
         />
       );
     case "date":
       return (
         <input
           type="date"
-          value={responseObject.value}
-          onChange={e => handleValueChange({
-            ...responseObject,
-            value: e.target.value
-          })}
-        />
-      );
-    case "time":
-      return (
-        <TimeResponseInput
-          value={responseObject.value}
-          onChange={(timeValue) => handleValueChange({
-            ...responseObject,
-            value: timeValue
-          })}
+          value={responseObject.value || ""}
+          onChange={e => handleSimpleValueChange(e.target.value)}
+          className="border rounded px-2 py-1 w-full"
         />
       );
     default:
