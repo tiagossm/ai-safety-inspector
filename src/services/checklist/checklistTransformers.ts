@@ -1,8 +1,9 @@
+
 import { ChecklistWithStats } from "@/types/newChecklist";
 import { handleApiError } from "@/utils/errors";
 
 /**
- * Transforms database checklist data to ChecklistWithStats type
+ * Transforma dados do checklist do banco de dados para o tipo ChecklistWithStats
  */
 export function transformChecklistData(data: any[]): ChecklistWithStats[] {
   if (!data || !Array.isArray(data)) {
@@ -44,7 +45,7 @@ export function transformChecklistData(data: any[]): ChecklistWithStats[] {
 }
 
 /**
- * Transforms basic checklist data for client-side filtering
+ * Transforma dados básicos do checklist para filtragem do lado do cliente
  */
 export function transformBasicChecklistData(data: any[]): ChecklistWithStats[] {
   if (!data || !Array.isArray(data)) {

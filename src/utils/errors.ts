@@ -1,6 +1,6 @@
 
 /**
- * Extracts a readable error message from different types of errors
+ * Extrai uma mensagem de erro legível a partir de diferentes tipos de erros
  */
 export function getErrorMessage(error: unknown): string {
   if (typeof error === 'string') {
