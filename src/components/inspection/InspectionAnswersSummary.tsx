@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { MediaRenderer } from "@/components/media/MediaRenderer";
@@ -8,21 +9,61 @@ interface InspectionAnswersSummaryProps {
 }
 
 function formatAnswer(rawAnswer: any): string {
-  if (!rawAnswer) return "Não respondido";
+  if (rawAnswer === null || rawAnswer === undefined) return "Não respondido";
 
+  // Caso seja string simples
   if (typeof rawAnswer === "string") {
-    try {
-      const parsed = JSON.parse(rawAnswer);
-      if (parsed && typeof parsed === "object" && "value" in parsed) {
-        return parsed.value ?? "Não respondido";
+    // Verificamos se é uma data no formato ISO
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(rawAnswer)) {
+      try {
+        const date = new Date(rawAnswer);
+        return date.toLocaleDateString('pt-BR');
+      } catch {
+        return rawAnswer;
       }
+    }
+    // Verificamos se é uma hora no formato HH:mm
+    if (/^\d{2}:\d{2}(:\d{2})?$/.test(rawAnswer)) {
       return rawAnswer;
-    } catch {
-      return rawAnswer;
+    }
+    return rawAnswer;
+  }
+  
+  // Caso seja um boolean
+  if (typeof rawAnswer === "boolean") {
+    return rawAnswer ? "Sim" : "Não";
+  }
+  
+  // Caso seja um número
+  if (typeof rawAnswer === "number") {
+    return rawAnswer.toString();
+  }
+
+  // Caso seja um objeto com propriedade value
+  if (rawAnswer && typeof rawAnswer === "object") {
+    if ("value" in rawAnswer) {
+      const value = rawAnswer.value;
+      // Tratamos diferentes tipos de valores dentro do objeto
+      if (typeof value === "string") {
+        return value;
+      } else if (typeof value === "boolean") {
+        return value ? "Sim" : "Não";
+      } else if (typeof value === "number") {
+        return value.toString();
+      } else if (value === null || value === undefined) {
+        return "Não respondido";
+      } else {
+        return String(value);
+      }
     }
   }
 
-  return String(rawAnswer);
+  // Caso não consiga extrair, tenta converter para string
+  try {
+    return String(rawAnswer);
+  } catch {
+    return "Não respondido";
+  }
 }
 
 export function InspectionAnswersSummary({ questions, responses }: InspectionAnswersSummaryProps) {
