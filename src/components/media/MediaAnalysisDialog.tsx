@@ -34,26 +34,13 @@ type AnalysisState = {
   errorMessage?: string;
 };
 
-// Função para garantir que cada linha vira um item de lista markdown
-function forceListMarkdown(text: string): string {
-  return text
-    .split('\n')
-    .map(line => {
-      if (/^(\s*-|\s*\d+\.)/.test(line) || line.trim() === "") return line;
-      if (/sugeridas?:/i.test(line)) return `**${line.trim()}**`;
-      return `- ${line.trim()}`;
-    })
-    .join('\n');
-}
-
-// Fallback para extrair ações corretivas do texto da análise
 function getSafeActionPlan(result: MediaAnalysisResult): string {
   const isInvalid = !result.actionPlanSuggestion 
     || result.actionPlanSuggestion.trim() === "" 
     || result.actionPlanSuggestion.trim().toLowerCase() === "sugeridas:**";
 
   if (!isInvalid) return result.actionPlanSuggestion!;
-  
+
   if (result.analysis) {
     const regex = /Ações? [Cc]orretivas [Ss]ugeridas?:([\s\S]+?)(?:\n\S|\n\n|Conclusão:|$)/i;
     const match = result.analysis.match(regex);
@@ -87,11 +74,19 @@ export function MediaAnalysisDialog({
   }, [mediaUrl, mediaUrls, additionalMediaUrls]);
 
   const [analysisMap, setAnalysisMap] = useState<Record<string, AnalysisState>>({});
+
+  // Ref para manter a versão atual do estado analysisMap
+  const analysisMapRef = useRef(analysisMap);
+  useEffect(() => {
+    analysisMapRef.current = analysisMap;
+  }, [analysisMap]);
+
   const { analyze } = useMediaAnalysis();
 
-  // Ref para controlar urls já em análise e evitar loop
+  // Ref para controlar URLs já analisadas e evitar loops
   const analyzedUrlsRef = useRef<Set<string>>(new Set());
 
+  // Inicializa o mapa de análises quando abrir ou mudar imagens
   useEffect(() => {
     if (open) {
       let map: Record<string, AnalysisState> = {};
@@ -106,13 +101,13 @@ export function MediaAnalysisDialog({
     }
   }, [open, allImages]);
 
+  // Executa a análise das imagens pendentes
   useEffect(() => {
     if (!open) return;
 
     allImages.forEach(url => {
-      const state = analysisMap[url];
+      const state = analysisMapRef.current[url];
 
-      // Evita re-analisar urls já em processamento ou finalizadas
       if (analyzedUrlsRef.current.has(url)) return;
 
       if (!state || state.status === 'pending' || state.status === 'retry') {
@@ -133,20 +128,20 @@ export function MediaAnalysisDialog({
           multimodalAnalysis: false,
           additionalMediaUrls: contextImages
         })
-        .then(result => {
-          setAnalysisMap(prev => ({
-            ...prev,
-            [url]: { status: 'done', result }
-          }));
-          if (onAnalysisComplete) onAnalysisComplete(result);
-        })
-        .catch(err => {
-          setAnalysisMap(prev => ({
-            ...prev,
-            [url]: { status: 'error', errorMessage: `Erro ao analisar imagem: ${err.message}` }
-          }));
-          analyzedUrlsRef.current.delete(url); // Permite retry depois de erro
-        });
+          .then(result => {
+            setAnalysisMap(prev => ({
+              ...prev,
+              [url]: { status: 'done', result }
+            }));
+            if (onAnalysisComplete) onAnalysisComplete(result);
+          })
+          .catch(err => {
+            setAnalysisMap(prev => ({
+              ...prev,
+              [url]: { status: 'error', errorMessage: `Erro ao analisar imagem: ${err.message}` }
+            }));
+            analyzedUrlsRef.current.delete(url); // permite retry depois do erro
+          });
       }
     });
   }, [open, analyze, mediaUrl, mediaType, questionText, userAnswer, allImages, onAnalysisComplete]);
@@ -302,3 +297,4 @@ export function MediaAnalysisDialog({
     </Dialog>
   );
 }
+// Compare this snippet from src/components/inspection/question-parts/response-types/TextResponseInput.tsx:
