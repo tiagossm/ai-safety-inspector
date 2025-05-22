@@ -3,45 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { ChecklistWithStats, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
+import { databaseToFrontendResponseType } from "@/utils/responseTypeMap"; // <- IMPORTAÇÃO CENTRAL
 
 // Function to validate UUID format
 const isValidUUID = (id: string): boolean => {
   if (!id) return false;
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(id);
-};
-
-// Helper function to normalize response type
-const normalizeResponseType = (responseType: string): "text" | "yes_no" | "multiple_choice" | "numeric" | "photo" | "signature" => {
-  if (!responseType) return "text";
-  
-  const type = responseType.toLowerCase();
-  
-  if (type.includes("sim") || type.includes("não") || type.includes("nao") || type.includes("yes") || type.includes("no")) {
-    return "yes_no";
-  }
-  
-  if (type.includes("múltipla") || type.includes("multipla") || type.includes("multiple") || type.includes("choice")) {
-    return "multiple_choice";
-  }
-  
-  if (type.includes("número") || type.includes("numero") || type.includes("numeric")) {
-    return "numeric";
-  }
-  
-  if (type.includes("texto") || type.includes("text")) {
-    return "text";
-  }
-  
-  if (type.includes("foto") || type.includes("photo") || type.includes("imagem") || type.includes("image")) {
-    return "photo";
-  }
-  
-  if (type.includes("assinatura") || type.includes("signature")) {
-    return "signature";
-  }
-  
-  return "text"; // Default to text if no match is found
 };
 
 // Helper function to transform raw checklist data
@@ -150,9 +118,9 @@ export function useChecklistById(checklistId: string | undefined) {
 
         // Process questions to normalize formats
         const processedQuestions: ChecklistQuestion[] = questionsData.map((question) => {
-          // Normalize response type
-          const normalizedType = normalizeResponseType(question.tipo_resposta);
-          
+          // **AQUI** usa o mapeamento oficial, cobre todos os tipos (date, time etc.)
+          const normalizedType = databaseToFrontendResponseType(question.tipo_resposta);
+
           // Parse options if they exist and ensure they're in the expected format
           let normalizedOptions = normalizeOptions(question.opcoes);
           
@@ -179,14 +147,13 @@ export function useChecklistById(checklistId: string | undefined) {
           return {
             id: question.id,
             text: question.pergunta,
-            // Changed from question.description to question.pergunta as description doesn't exist
             description: "", 
             responseType: normalizedType,
             isRequired: question.obrigatorio,
             order: question.ordem,
             groupId: groupId,
-            options: normalizedOptions, // Using normalized options that are guaranteed to be string[]
-            metadata: {}, // Default empty metadata
+            options: normalizedOptions,
+            metadata: {},
             allowsPhoto: question.permite_foto || false,
             allowsVideo: question.permite_video || false,
             allowsAudio: question.permite_audio || false,
