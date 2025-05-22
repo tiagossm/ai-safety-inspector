@@ -44,10 +44,10 @@ export function QuestionEditor({
   const [showOptionsEditor, setShowOptionsEditor] = useState(false);
   const [newOption, setNewOption] = useState("");
 
-  // Garantir tipos seguros para o texto da questão
+  // Garantir tipos seguros para o texto da questão e fornecer valores padrão
   const questionText = typeof question.text === "object" 
-    ? (typeof question.text.value === "string" ? question.text.value : "") 
-    : (typeof question.text === "string" ? question.text : "");
+    ? (question.text?.value ?? "") 
+    : (question.text ?? "");
 
   // Convert database response type to frontend type for proper display
   const frontendResponseType = question.responseType 
@@ -81,10 +81,10 @@ export function QuestionEditor({
     }
   };
 
-  // Garantir tipo seguro para o peso da questão
+  // Garantir tipo seguro para o peso da questão e fornecer valor padrão
   const questionWeight = typeof question.weight === "object" 
-    ? (question.weight.value || 1) 
-    : (question.weight || 1);
+    ? (question.weight?.value ?? 1) 
+    : (question.weight ?? 1);
 
   const handleAddOption = () => {
     if (newOption.trim() && onUpdate) {
@@ -125,10 +125,10 @@ export function QuestionEditor({
   };
 
   const userHint = parseHint(question.hint);
-  // Garantir tipo seguro para a dica
+  // Garantir tipo seguro para a dica e fornecer valor padrão
   const safeUserHint = typeof userHint === "object" 
-    ? (userHint.value || "") 
-    : (userHint || "");
+    ? (userHint?.value ?? "") 
+    : (userHint ?? "");
 
   return (
     <div className={`border rounded-md p-4 ${isSubQuestion ? 'bg-gray-50' : 'bg-white'}`}>

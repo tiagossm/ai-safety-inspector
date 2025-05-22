@@ -14,16 +14,20 @@ export function frontendToDatabaseResponseType(frontendType: string): string {
     'signature': 'assinatura',
     'image': 'imagem',
     'time': 'time',
-    'date': 'date',
-    // Também cobre se por algum motivo chegar o valor já no padrão banco
-    'sim/não': 'sim/não',
-    'texto': 'texto',
-    'numérico': 'numérico',
-    'seleção múltipla': 'seleção múltipla',
-    'assinatura': 'assinatura',
-    'foto': 'foto',
-    'imagem': 'imagem'
+    'date': 'date'
   };
+  
+  // Verificar se o tipo já está no formato do banco
+  if (frontendType === 'sim/não' || 
+      frontendType === 'texto' || 
+      frontendType === 'numérico' ||
+      frontendType === 'seleção múltipla' ||
+      frontendType === 'assinatura' ||
+      frontendType === 'foto' ||
+      frontendType === 'imagem') {
+    return frontendType;
+  }
+  
   return typeMap[frontendType] || 'texto'; // fallback seguro
 }
 
@@ -37,11 +41,22 @@ export function databaseToFrontendResponseType(dbType: string): string {
     'foto': 'photo',
     'assinatura': 'signature',
     'imagem': 'image',
-    // Se vier o valor "alternativo", também mapeia:
-    'multiple_choice': 'multiple_choice',
-    'yes_no': 'yes_no',
     'time': 'time',
     'date': 'date'
   };
+  
+  // Verificar se o tipo já está no formato do frontend
+  if (dbType === 'yes_no' || 
+      dbType === 'text' || 
+      dbType === 'multiple_choice' ||
+      dbType === 'numeric' ||
+      dbType === 'photo' ||
+      dbType === 'signature' ||
+      dbType === 'image' ||
+      dbType === 'time' ||
+      dbType === 'date') {
+    return dbType;
+  }
+  
   return typeMap[dbType] || 'text'; // fallback seguro
 }

@@ -122,8 +122,9 @@ export function useChecklistById(checklistId: string | undefined) {
           // **AQUI** usa o mapeamento oficial, cobre todos os tipos (date, time etc.)
           // Converte para um dos tipos aceitáveis para ChecklistQuestion.responseType
           const rawType = databaseToFrontendResponseType(question.tipo_resposta);
-          // Garante que o tipo retornado é apenas um dos permitidos na interface ChecklistQuestion
-          const normalizedType = (rawType as "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature" | "time" | "date");
+          
+          // Garantindo que o tipo retornado é um dos permitidos explicitamente
+          const normalizedType = rawType as "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature" | "time" | "date";
 
           // Parse options if they exist and ensure they're in the expected format
           let normalizedOptions = normalizeOptions(question.opcoes);
