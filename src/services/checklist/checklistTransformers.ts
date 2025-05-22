@@ -1,4 +1,3 @@
-
 import { ChecklistWithStats } from "@/types/newChecklist";
 import { handleApiError } from "@/utils/errors";
 
@@ -39,7 +38,7 @@ export function transformChecklistData(data: any[]): ChecklistWithStats[] {
       };
     });
   } catch (error) {
-    handleApiError(error, "Erro ao transformar dados do checklist");
+    console.error(handleApiError(error, "Erro ao transformar dados do checklist"));
     return [];
   }
 }
@@ -70,7 +69,7 @@ export function transformBasicChecklistData(data: any[]): ChecklistWithStats[] {
       completedQuestions: 0 // Would be populated later if needed
     }));
   } catch (error) {
-    handleApiError(error, "Erro ao transformar dados básicos do checklist");
+    console.error(handleApiError(error, "Erro ao transformar dados básicos do checklist"));
     return [];
   }
 }

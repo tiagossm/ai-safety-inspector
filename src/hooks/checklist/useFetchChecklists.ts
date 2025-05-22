@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Checklist } from "@/types/checklist";
@@ -104,7 +103,8 @@ export function useFetchChecklists() {
 
         return checklists;
       } catch (err) {
-        return handleApiError(err, "Erro ao buscar lista de checklists.");
+        // Corrigido para usar o handleApiError que agora aceita um segundo parâmetro opcional
+        throw new Error(handleApiError(err, "Erro ao buscar lista de checklists."));
       }
     },
     staleTime: 5 * 60 * 1000,

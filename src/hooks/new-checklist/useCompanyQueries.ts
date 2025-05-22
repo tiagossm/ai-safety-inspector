@@ -18,7 +18,8 @@ export function useCompanyQueries() {
       try {
         return await fetchCompanies();
       } catch (error) {
-        handleApiError(error, "Erro ao carregar empresas");
+        // Corrigido para usar corretamente handleApiError com o segundo parâmetro opcional
+        console.error(handleApiError(error, "Erro ao carregar empresas"));
         return [];
       }
     },

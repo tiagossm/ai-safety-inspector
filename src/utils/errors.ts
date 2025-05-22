@@ -37,9 +37,12 @@ export function getErrorMessage(error: unknown): string {
 
 /**
  * Handles API errors in a standardized way
+ * @param error The error object
+ * @param defaultMessage Optional default message to show instead of the technical error
+ * @returns Formatted error message
  */
-export function handleApiError(error: unknown): string {
-  const message = getErrorMessage(error);
+export function handleApiError(error: unknown, defaultMessage?: string): string {
+  const message = defaultMessage || getErrorMessage(error);
   console.error('API error:', error);
   return message;
 }
