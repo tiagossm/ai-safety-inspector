@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Input } from "@/components/ui/input";
@@ -43,12 +44,23 @@ export function QuestionEditor({
   const [showOptionsEditor, setShowOptionsEditor] = useState(false);
   const [newOption, setNewOption] = useState("");
 
-  // Garantir tipos seguros para o texto da questão e fornecer valores padrão
-  const questionText = typeof question.text === "object" 
-    ? (question.text && typeof question.text === 'object' && 'value' in question.text 
-        ? (question.text.value as string) || "" 
-        : "") 
-    : (question.text || "");
+  // Extrair o texto da questão de forma segura
+  const questionText = React.useMemo(() => {
+    if (!question.text) return "";
+    
+    if (typeof question.text === "string") {
+      return question.text;
+    }
+    
+    if (typeof question.text === "object" && question.text !== null) {
+      // Verificar se é um objeto com propriedade value
+      if ('value' in question.text && question.text.value !== undefined) {
+        return String(question.text.value);
+      }
+    }
+    
+    return "";
+  }, [question.text]);
 
   // Convert database response type to frontend type for proper display
   const frontendResponseType = question.responseType 
@@ -82,12 +94,24 @@ export function QuestionEditor({
     }
   };
 
-  // Garantir tipo seguro para o peso da questão e fornecer valor padrão
-  const questionWeight = typeof question.weight === "object" 
-    ? (question.weight && typeof question.weight === 'object' && 'value' in question.weight 
-        ? (question.weight.value as number) || 1 
-        : 1) 
-    : (question.weight || 1);
+  // Extrair o peso da questão de forma segura
+  const questionWeight = React.useMemo(() => {
+    if (!question.weight) return 1;
+    
+    if (typeof question.weight === "number") {
+      return question.weight;
+    }
+    
+    if (typeof question.weight === "object" && question.weight !== null) {
+      // Verificar se é um objeto com propriedade value
+      if ('value' in question.weight && question.weight.value !== undefined) {
+        const val = Number(question.weight.value);
+        return isNaN(val) ? 1 : val;
+      }
+    }
+    
+    return 1;
+  }, [question.weight]);
 
   const handleAddOption = () => {
     if (newOption.trim() && onUpdate) {
@@ -127,13 +151,24 @@ export function QuestionEditor({
     return hint;
   };
 
+  // Extrair a dica de forma segura
   const userHint = parseHint(question.hint);
-  // Garantir tipo seguro para a dica e fornecer valor padrão
-  const safeUserHint = typeof userHint === "object" 
-    ? (userHint && typeof userHint === 'object' && 'value' in userHint 
-        ? (userHint.value as string) || "" 
-        : "") 
-    : (userHint || "");
+  const safeUserHint = React.useMemo(() => {
+    if (!userHint) return "";
+    
+    if (typeof userHint === "string") {
+      return userHint;
+    }
+    
+    if (typeof userHint === "object" && userHint !== null) {
+      // Verificar se é um objeto com propriedade value
+      if ('value' in userHint && userHint.value !== undefined) {
+        return String(userHint.value);
+      }
+    }
+    
+    return "";
+  }, [userHint]);
 
   return (
     <div className={`border rounded-md p-4 ${isSubQuestion ? 'bg-gray-50' : 'bg-white'}`}>
