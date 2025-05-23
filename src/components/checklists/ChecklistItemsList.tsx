@@ -1,4 +1,3 @@
-
 import { ChecklistItem } from "@/types/checklist";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -10,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { QUESTION_TYPES, QuestionType } from "@/lib/constants";
 
 interface ChecklistItemsListProps {
   items: ChecklistItem[];
@@ -97,7 +97,7 @@ export default function ChecklistItemsList({
                           <Label>Tipo de Resposta</Label>
                           <Select 
                             value={item.tipo_resposta} 
-                            onValueChange={(value: "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla") => 
+                            onValueChange={(value: QuestionType) => 
                               onItemChange({
                                 ...item,
                                 tipo_resposta: value

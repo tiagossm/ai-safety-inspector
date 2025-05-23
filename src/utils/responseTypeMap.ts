@@ -4,46 +4,37 @@
 
 export function frontendToDatabaseResponseType(frontendType: string): string {
   const typeMap: Record<string, string> = {
-    // Frontend -> Banco
+    'sim/não': 'sim/não',
+    'texto': 'texto',
+    'numérico': 'numérico',
+    'seleção múltipla': 'seleção múltipla',
+    'foto': 'foto',
+    'assinatura': 'assinatura',
+    'hora': 'hora',
+    'data': 'data',
+    // Mapeamentos legados para compatibilidade
     'yes_no': 'sim/não',
     'text': 'texto',
     'numeric': 'numérico',
     'multiple_choice': 'seleção múltipla',
     'photo': 'foto',
     'signature': 'assinatura',
-    'image': 'imagem',
-    // Também cobre se por algum motivo chegar o valor já no padrão banco
-    'sim/não': 'sim/não',
-    'texto': 'texto',
-    'numérico': 'numérico',
-    'seleção múltipla': 'seleção múltipla',
-    'assinatura': 'assinatura',
-    'foto': 'foto',
-    'imagem': 'imagem',
-    // Possíveis valores aceitos pelo banco mas raramente usados no front
-    'multiple_choice': 'multiple_choice',
-    'yes_no': 'yes_no',
-    'time': 'time',
-    'date': 'date'
+    'time': 'hora',
+    'date': 'data'
   };
-  return typeMap[frontendType] || 'texto'; // fallback seguro
+  return typeMap[frontendType] || 'texto';
 }
 
 export function databaseToFrontendResponseType(dbType: string): string {
   const typeMap: Record<string, string> = {
-    // Banco -> Frontend
-    'sim/não': 'yes_no',
-    'texto': 'text',
-    'numérico': 'numeric',
-    'seleção múltipla': 'multiple_choice',
-    'foto': 'photo',
-    'assinatura': 'signature',
-    'imagem': 'image',
-    // Se vier o valor "alternativo", também cobre:
-    'multiple_choice': 'multiple_choice',
-    'yes_no': 'yes_no',
-    'time': 'time',
-    'date': 'date'
+    'sim/não': 'sim/não',
+    'texto': 'texto',
+    'numérico': 'numérico',
+    'seleção múltipla': 'seleção múltipla',
+    'foto': 'foto',
+    'assinatura': 'assinatura',
+    'hora': 'hora',
+    'data': 'data'
   };
-  return typeMap[dbType] || 'text'; // fallback seguro
+  return typeMap[dbType] || 'texto';
 }

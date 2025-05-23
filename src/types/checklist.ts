@@ -1,4 +1,3 @@
-
 export interface CollaboratorType {
   id: string;
   name: string;
@@ -36,7 +35,7 @@ export interface ChecklistItem {
   id: string;
   checklist_id: string;
   pergunta: string;
-  tipo_resposta: "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla" | string;
+  tipo_resposta: "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla" | "data" | "hora" | string;
   obrigatorio: boolean;
   opcoes?: string[] | null;
   ordem: number;

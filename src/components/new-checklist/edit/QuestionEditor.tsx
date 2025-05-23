@@ -33,6 +33,17 @@ interface QuestionEditorProps {
   enableAllMedia?: boolean;
 }
 
+const QUESTION_TYPES = [
+  { value: 'sim/não', label: 'Sim/Não' },
+  { value: 'texto', label: 'Texto' },
+  { value: 'seleção múltipla', label: 'Múltipla Escolha' },
+  { value: 'numérico', label: 'Numérico' },
+  { value: 'foto', label: 'Foto' },
+  { value: 'assinatura', label: 'Assinatura' },
+  { value: 'hora', label: 'Hora' },
+  { value: 'data', label: 'Data' }
+];
+
 export function QuestionEditor({
   question,
   onUpdate,

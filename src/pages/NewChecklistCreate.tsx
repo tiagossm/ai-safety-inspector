@@ -1,4 +1,3 @@
-
 import {
   Select,
   SelectContent,
@@ -25,6 +24,7 @@ import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/
 import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 import { useChecklistCompanies } from "@/hooks/checklist/form/useChecklistCompanies";
 import { NewChecklist } from "@/types/checklist";
+import { TIPOS_QUESTAO } from "@/lib/constants";
 
 export default function NewChecklistCreate() {
   const navigate = useNavigate();
@@ -241,15 +241,17 @@ export default function NewChecklistCreate() {
     try {
       const importedQuestions: ChecklistQuestion[] = data.map((row, index) => {
         const responseTypeMap: Record<string, ChecklistQuestion["responseType"]> = {
-          'sim/não': 'yes_no',
-          'múltipla escolha': 'multiple_choice',
-          'texto': 'text',
-          'numérico': 'numeric',
-          'foto': 'photo',
-          'assinatura': 'signature'
+          'sim/não': 'sim/não',
+          'texto': 'texto',
+          'numérico': 'numérico',
+          'seleção múltipla': 'seleção múltipla',
+          'foto': 'foto',
+          'assinatura': 'assinatura',
+          'hora': 'hora',
+          'data': 'data'
         };
         
-        let responseType: ChecklistQuestion["responseType"] = 'yes_no';
+        let responseType: ChecklistQuestion["responseType"] = 'sim/não';
         const rawType = (row.tipo_resposta || row.type || '').toLowerCase();
         
         if (responseTypeMap[rawType]) {
@@ -442,12 +444,11 @@ export default function NewChecklistCreate() {
                                 })}
                                 className="w-full border rounded p-2"
                               >
-                                <option value="yes_no">Sim/Não</option>
-                                <option value="multiple_choice">Múltipla escolha</option>
-                                <option value="text">Texto</option>
-                                <option value="numeric">Numérico</option>
-                                <option value="photo">Foto</option>
-                                <option value="signature">Assinatura</option>
+                                {TIPOS_QUESTAO.map(tipo => (
+                                  <option key={tipo.value} value={tipo.value}>
+                                    {tipo.label}
+                                  </option>
+                                ))}
                               </select>
                             </div>
                             

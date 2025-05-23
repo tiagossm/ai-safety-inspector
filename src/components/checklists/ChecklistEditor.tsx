@@ -12,7 +12,16 @@ import { useCreateChecklist } from "@/hooks/checklist/useCreateChecklist";
 import { GroupedQuestionsSection } from "./create-forms/GroupedQuestionsSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const ALLOWED_RESPONSE_TYPES = ['sim/não', 'texto', 'seleção múltipla', 'numérico', 'foto', 'assinatura'];
+const ALLOWED_RESPONSE_TYPES = [
+  'sim/não',
+  'texto',
+  'seleção múltipla',
+  'numérico',
+  'foto',
+  'assinatura',
+  'hora',
+  'data'
+];
 
 const normalizeResponseType = (type: string): string => {
   const typeMap: Record<string, string> = {
@@ -27,10 +36,13 @@ const normalizeResponseType = (type: string): string => {
     'numeric': 'numérico',
     'text': 'texto',
     'photo': 'foto',
-    'signature': 'assinatura'
+    'signature': 'assinatura',
+    'hora': 'hora',
+    'time': 'hora',
+    'data': 'data',
+    'date': 'data'
   };
 
-  console.log(`Normalizing response type from "${type}" to "${typeMap[type] || 'texto'}"`);
   return typeMap[type] || 'texto';
 };
 
