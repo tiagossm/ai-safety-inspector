@@ -13,8 +13,8 @@ export function frontendToDatabaseResponseType(frontendType: string): string {
     'photo': 'foto',
     'signature': 'assinatura',
     'image': 'imagem',
-    'time': 'time',
-    'date': 'date'
+    'time': 'hora',
+    'date': 'data'
   };
   
   // Verificar se o tipo já está no formato do banco
@@ -24,7 +24,9 @@ export function frontendToDatabaseResponseType(frontendType: string): string {
       frontendType === 'seleção múltipla' ||
       frontendType === 'assinatura' ||
       frontendType === 'foto' ||
-      frontendType === 'imagem') {
+      frontendType === 'imagem' ||
+      frontendType === 'hora' ||
+      frontendType === 'data') {
     return frontendType;
   }
   
@@ -41,8 +43,8 @@ export function databaseToFrontendResponseType(dbType: string): string {
     'foto': 'photo',
     'assinatura': 'signature',
     'imagem': 'image',
-    'time': 'time',
-    'date': 'date'
+    'hora': 'time',
+    'data': 'date'
   };
   
   // Verificar se o tipo já está no formato do frontend
