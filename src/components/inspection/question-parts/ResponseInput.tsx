@@ -1,9 +1,6 @@
+
 import React, { useCallback } from 'react';
-import { YesNoResponseInput } from './response-types/YesNoResponseInput';
-import { TextResponseInput } from './response-types/TextResponseInput';
-import { NumberResponseInput } from './response-types/NumberResponseInput';
-import { MultipleChoiceInput } from "@/components/inspection/question-inputs/MultipleChoiceInput";
-import { PhotoInput } from "@/components/inspection/question-inputs/PhotoInput";
+import { ResponseInputRenderer } from './ResponseInputRenderer';
 
 interface ResponseInputProps {
   question: any;
@@ -22,7 +19,8 @@ export function ResponseInput({
   actionPlan,
   onSaveActionPlan
 }: ResponseInputProps) {
-  const responseType = question.responseType || 'yes_no';
+  console.log('[ResponseInput] Rendering with question:', question);
+  console.log('[ResponseInput] Question response type:', question.responseType || question.tipo_resposta);
 
   // Se não vier objeto, constrói o padrão
   const responseObject = typeof value === 'object'
@@ -30,174 +28,28 @@ export function ResponseInput({
     : { value: value, mediaUrls: [] };
 
   const handleValueChange = useCallback((newValue: any) => {
-    if (typeof newValue === 'object' && newValue !== null) {
-      onChange(newValue);
-    } else {
-      onChange({
-        ...responseObject,
-        value: newValue
-      });
-    }
-  }, [onChange, responseObject]);
-
-  const handleSimpleValueChange = useCallback((value: any) => {
-    onChange({
-      ...responseObject,
-      value
-    });
-  }, [onChange, responseObject]);
-
-  const mediaUrls = responseObject.mediaUrls || [];
+    console.log('[ResponseInput] Value changed:', newValue);
+    onChange(newValue);
+  }, [onChange]);
 
   const handleMediaChange = useCallback((urls: string[]) => {
+    console.log('[ResponseInput] Media changed:', urls);
     onChange({
       ...responseObject,
       mediaUrls: urls
     });
   }, [onChange, responseObject]);
 
-  switch (responseType) {
-    case "yes_no":
-      return (
-        <YesNoResponseInput
-          question={question}
-          response={responseObject}
-          onResponseChange={handleValueChange}
-          inspectionId={inspectionId}
-          actionPlan={actionPlan}
-          onSaveActionPlan={onSaveActionPlan}
-        />
-      );
-    case "text":
-      return (
-        <TextResponseInput
-          question={question}
-          response={responseObject}
-          onResponseChange={handleValueChange}
-          inspectionId={inspectionId}
-          actionPlan={actionPlan}
-          onSaveActionPlan={onSaveActionPlan}
-        />
-      );
-    case "number":
-      return (
-        <div className="space-y-2">
-          <NumberResponseInput
-            question={question}
-            response={responseObject}
-            onResponseChange={handleValueChange}
-            onChange={handleSimpleValueChange}
-            inspectionId={inspectionId}
-            actionPlan={actionPlan}
-            onSaveActionPlan={onSaveActionPlan}
-          />
-          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
-            <PhotoInput
-              mediaUrls={mediaUrls}
-              onAddMedia={() => console.log("Adicionar mídia para questão numérica")}
-              onDeleteMedia={(url) => {
-                const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-                handleMediaChange(updatedUrls);
-              }}
-              allowsPhoto={question.allowsPhoto}
-              allowsVideo={question.allowsVideo}
-              allowsAudio={question.allowsAudio}
-              allowsFiles={question.allowsFiles}
-            />
-          )}
-        </div>
-      );
-    case "multiple_choice":
-      return (
-        <div className="space-y-2">
-          <MultipleChoiceInput 
-            options={question.options || []}
-            value={responseObject.value}
-            onChange={handleSimpleValueChange}
-          />
-          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
-            <PhotoInput
-              mediaUrls={mediaUrls}
-              onAddMedia={() => console.log("Adicionar mídia para questão múltipla escolha")}
-              onDeleteMedia={(url) => {
-                const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-                handleMediaChange(updatedUrls);
-              }}
-              allowsPhoto={question.allowsPhoto}
-              allowsVideo={question.allowsVideo}
-              allowsAudio={question.allowsAudio}
-              allowsFiles={question.allowsFiles}
-            />
-          )}
-        </div>
-      );
-    case "photo":
-      return (
-        <PhotoInput
-          mediaUrls={mediaUrls}
-          onAddMedia={() => console.log("Adicionar mídia para questão foto")}
-          onDeleteMedia={(url) => {
-            const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-            handleMediaChange(updatedUrls);
-          }}
-          allowsPhoto={true}
-          allowsVideo={question.allowsVideo}
-          allowsAudio={question.allowsAudio}
-          allowsFiles={question.allowsFiles}
-        />
-      );
-    case "signature":
-      return (
-        <div className="space-y-2">
-          {/* Input simples para assinatura */}
-          <input
-            type="text"
-            placeholder="Assinatura (nome)"
-            value={responseObject.value || ""}
-            onChange={e => handleSimpleValueChange(e.target.value)}
-            className="border rounded px-2 py-1 w-full"
-          />
-          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
-            <PhotoInput
-              mediaUrls={mediaUrls}
-              onAddMedia={() => console.log("Adicionar mídia para questão assinatura")}
-              onDeleteMedia={(url) => {
-                const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-                handleMediaChange(updatedUrls);
-              }}
-              allowsPhoto={question.allowsPhoto}
-              allowsVideo={question.allowsVideo}
-              allowsAudio={question.allowsAudio}
-              allowsFiles={question.allowsFiles}
-            />
-          )}
-        </div>
-      );
-    case "time":
-      return (
-        <input
-          type="time"
-          value={responseObject.value || ""}
-          onChange={e => handleSimpleValueChange(e.target.value)}
-          className="border rounded px-2 py-1 w-full"
-        />
-      );
-    case "date":
-      return (
-        <input
-          type="date"
-          value={responseObject.value || ""}
-          onChange={e => handleSimpleValueChange(e.target.value)}
-          className="border rounded px-2 py-1 w-full"
-        />
-      );
-    default:
-      return (
-        <div className="p-4 border border-red-300 bg-red-50 rounded-md">
-          <p className="text-red-700">
-            Tipo de resposta não suportado: {responseType}
-          </p>
-        </div>
-      );
-  }
+  // Delegar tudo para o ResponseInputRenderer que tem a lógica mais robusta
+  return (
+    <ResponseInputRenderer
+      question={question}
+      response={responseObject}
+      inspectionId={inspectionId}
+      onResponseChange={handleValueChange}
+      onMediaChange={handleMediaChange}
+      actionPlan={actionPlan}
+      onSaveActionPlan={onSaveActionPlan}
+    />
+  );
 }
