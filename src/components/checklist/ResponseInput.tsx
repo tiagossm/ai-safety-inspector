@@ -55,9 +55,8 @@ export function QuestionEditor({
     if (typeof question.text === "object" && question.text !== null) {
       // Usa type guard para verificar se 'value' existe no objeto
       if ('value' in question.text) {
-        const textValue = question.text.value;
         // Converter para string de forma segura
-        return textValue !== undefined ? String(textValue) : "";
+        return question.text.value !== undefined ? String(question.text.value) : "";
       }
     }
     
@@ -107,9 +106,9 @@ export function QuestionEditor({
     if (typeof question.weight === "object" && question.weight !== null) {
       // Usa type guard para verificar se 'value' existe no objeto
       if ('value' in question.weight) {
-        const weightValue = question.weight.value;
         // Converter para número de forma segura
-        if (weightValue !== undefined) {
+        const weightValue = question.weight.value;
+        if (weightValue !== null && weightValue !== undefined) {
           const val = Number(weightValue);
           return isNaN(val) ? 1 : val;
         }
@@ -169,9 +168,8 @@ export function QuestionEditor({
     if (typeof userHint === "object" && userHint !== null) {
       // Usa type guard para verificar se 'value' existe no objeto
       if ('value' in userHint) {
-        const hintValue = userHint.value;
         // Converter para string de forma segura
-        return hintValue !== undefined ? String(hintValue) : "";
+        return userHint.value !== null && userHint.value !== undefined ? String(userHint.value) : "";
       }
     }
     
