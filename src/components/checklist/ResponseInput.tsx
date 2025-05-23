@@ -44,7 +44,7 @@ export function QuestionEditor({
   const [showOptionsEditor, setShowOptionsEditor] = useState(false);
   const [newOption, setNewOption] = useState("");
 
-  // Extrair o texto da questão de forma segura
+  // Extrai o texto da questão de forma segura
   const questionText = React.useMemo(() => {
     if (!question.text) return "";
     
@@ -53,11 +53,11 @@ export function QuestionEditor({
     }
     
     if (typeof question.text === "object" && question.text !== null) {
-      // Verificação de tipo mais explícita com tipagem na verificação
-      if ('value' in question.text && 
-          question.text.value !== undefined) {
+      // Usa type guard para verificar se 'value' existe no objeto
+      if ('value' in question.text) {
+        const textValue = question.text.value;
         // Converter para string de forma segura
-        return String(question.text.value);
+        return textValue !== undefined ? String(textValue) : "";
       }
     }
     
@@ -105,12 +105,14 @@ export function QuestionEditor({
     }
     
     if (typeof question.weight === "object" && question.weight !== null) {
-      // Verificação de tipo mais explícita com type guard
-      if ('value' in question.weight && 
-          question.weight.value !== undefined) {
+      // Usa type guard para verificar se 'value' existe no objeto
+      if ('value' in question.weight) {
+        const weightValue = question.weight.value;
         // Converter para número de forma segura
-        const val = Number(question.weight.value);
-        return isNaN(val) ? 1 : val;
+        if (weightValue !== undefined) {
+          const val = Number(weightValue);
+          return isNaN(val) ? 1 : val;
+        }
       }
     }
     
@@ -165,11 +167,11 @@ export function QuestionEditor({
     }
     
     if (typeof userHint === "object" && userHint !== null) {
-      // Verificação de tipo mais explícita
-      if ('value' in userHint && 
-          userHint.value !== undefined) {
+      // Usa type guard para verificar se 'value' existe no objeto
+      if ('value' in userHint) {
+        const hintValue = userHint.value;
         // Converter para string de forma segura
-        return String(userHint.value);
+        return hintValue !== undefined ? String(hintValue) : "";
       }
     }
     
