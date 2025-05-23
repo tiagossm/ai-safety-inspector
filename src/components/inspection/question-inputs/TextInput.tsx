@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -8,7 +9,16 @@ interface TextInputProps {
 }
 
 export function TextInput({ value, onChange, multiline = false }: TextInputProps) {
-  const textValue = typeof value === "string" ? value : value?.value || "";
+  // Extração segura do valor de texto
+  const textValue = React.useMemo(() => {
+    if (typeof value === "string") {
+      return value;
+    } else if (value && typeof value === "object" && "value" in value) {
+      return typeof value.value === "string" ? value.value : "";
+    }
+    return "";
+  }, [value]);
+
   return (
     <div className="mt-2">
       <Textarea

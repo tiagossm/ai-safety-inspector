@@ -3,7 +3,7 @@ import { useState } from "react";
 
 interface ChecklistQuestion {
   text: string;
-  type: "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla" | "data";
+  type: "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla" | "hora" | "data";
   required: boolean;
   allowPhoto: boolean;
   allowVideo: boolean;

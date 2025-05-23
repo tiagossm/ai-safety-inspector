@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -20,8 +21,15 @@ export function DateResponseInput({
   disabled = false,
   readOnly = false,
 }: DateResponseInputProps) {
-  // Extrair string de data se o valor vier como objeto
-  const dateValue = typeof value === "string" ? value : value?.value ?? "";
+  // Extrair string de data de maneira segura
+  const dateValue = React.useMemo(() => {
+    if (typeof value === "string") {
+      return value;
+    } else if (value && typeof value === "object" && "value" in value) {
+      return typeof value.value === "string" ? value.value : "";
+    }
+    return "";
+  }, [value]);
 
   const selectedDate = dateValue ? parseISO(dateValue) : undefined;
 
@@ -62,6 +70,7 @@ export function DateResponseInput({
             disabled={disabled || readOnly}
             locale={ptBR}
             initialFocus
+            className="pointer-events-auto"
           />
         </PopoverContent>
       </Popover>

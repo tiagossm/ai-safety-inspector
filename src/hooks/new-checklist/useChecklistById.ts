@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -119,7 +120,11 @@ export function useChecklistById(checklistId: string | undefined) {
         // Process questions to normalize formats
         const processedQuestions: ChecklistQuestion[] = questionsData.map((question) => {
           // **AQUI** usa o mapeamento oficial, cobre todos os tipos (date, time etc.)
-          const normalizedType = databaseToFrontendResponseType(question.tipo_resposta);
+          // Converte para um dos tipos aceitáveis para ChecklistQuestion.responseType
+          const rawType = databaseToFrontendResponseType(question.tipo_resposta);
+          
+          // Garantindo que o tipo retornado é um dos permitidos explicitamente
+          const normalizedType = rawType as "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature" | "time" | "date";
 
           // Parse options if they exist and ensure they're in the expected format
           let normalizedOptions = normalizeOptions(question.opcoes);

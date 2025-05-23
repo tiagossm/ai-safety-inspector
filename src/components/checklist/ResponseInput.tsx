@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Input } from "@/components/ui/input";
@@ -43,16 +44,35 @@ export function QuestionEditor({
   const [showOptionsEditor, setShowOptionsEditor] = useState(false);
   const [newOption, setNewOption] = useState("");
 
+  // Extrair o texto da questão de forma segura
+  const questionText = React.useMemo(() => {
+    if (!question.text) return "";
+    
+    if (typeof question.text === "string") {
+      return question.text;
+    }
+    
+    if (typeof question.text === "object" && question.text !== null) {
+      if ('value' in question.text) {
+        const textObj = question.text as { value?: string | number | null | undefined };
+        return textObj.value !== undefined && textObj.value !== null 
+          ? String(textObj.value) 
+          : "";
+      }
+    }
+    
+    return "";
+  }, [question.text]);
+
   // Convert database response type to frontend type for proper display
   const frontendResponseType = question.responseType 
-    ? databaseToFrontendResponseType(question.responseType) as "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature" | "time" | "date"
+    ? databaseToFrontendResponseType(question.responseType) 
     : "yes_no";
 
   const handleUpdate = (field: keyof ChecklistQuestion, value: any) => {
     if (onUpdate) {
       let patch = { ...question, [field]: value };
       if (field === "responseType") {
-        // Convert the UI value to database format
         patch.responseType = value;
       }
       onUpdate(patch);
@@ -74,6 +94,28 @@ export function QuestionEditor({
       default: return "mídia";
     }
   };
+
+  // Extrair o peso da questão de forma segura
+  const questionWeight = React.useMemo(() => {
+    if (!question.weight) return 1;
+    
+    if (typeof question.weight === "number") {
+      return question.weight;
+    }
+    
+    if (typeof question.weight === "object" && question.weight !== null) {
+      if ('value' in question.weight) {
+        const weightObj = question.weight as { value?: number | string | null | undefined };
+        
+        if (weightObj.value !== null && weightObj.value !== undefined) {
+          const val = Number(weightObj.value);
+          return isNaN(val) ? 1 : val;
+        }
+      }
+    }
+    
+    return 1;
+  }, [question.weight]);
 
   const handleAddOption = () => {
     if (newOption.trim() && onUpdate) {
@@ -113,7 +155,26 @@ export function QuestionEditor({
     return hint;
   };
 
+  // Extrair a dica de forma segura
   const userHint = parseHint(question.hint);
+  const safeUserHint = React.useMemo(() => {
+    if (!userHint) return "";
+    
+    if (typeof userHint === "string") {
+      return userHint;
+    }
+    
+    if (typeof userHint === "object" && userHint !== null) {
+      if ('value' in userHint) {
+        const hintObj = userHint as { value?: string | number | null | undefined };
+        return hintObj.value !== null && hintObj.value !== undefined 
+          ? String(hintObj.value) 
+          : "";
+      }
+    }
+    
+    return "";
+  }, [userHint]);
 
   return (
     <div className={`border rounded-md p-4 ${isSubQuestion ? 'bg-gray-50' : 'bg-white'}`}>
@@ -121,11 +182,7 @@ export function QuestionEditor({
         <div>
           <Textarea
             placeholder="Texto da pergunta"
-            value={
-              typeof question.text === "object"
-                ? (typeof question.text.value === "string" ? question.text.value : "")
-                : (typeof question.text === "string" ? question.text : "")
-            }
+            value={questionText}
             onChange={(e) => handleUpdate("text", e.target.value)}
             className="w-full"
             rows={2}
@@ -136,7 +193,7 @@ export function QuestionEditor({
           <div>
             <label className="text-sm font-medium mb-1 block">Tipo de resposta</label>
             <Select
-              value={typeof frontendResponseType === "object" ? frontendResponseType.value : frontendResponseType}
+              value={frontendResponseType}
               onValueChange={(value: "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature" | "time" | "date") => {
                 handleUpdate("responseType", value);
               }}
@@ -163,7 +220,7 @@ export function QuestionEditor({
               type="number"
               min="0"
               max="100"
-              value={typeof question.weight === "object" ? question.weight.value : question.weight}
+              value={questionWeight}
               onChange={(e) => handleUpdate("weight", Number(e.target.value))}
             />
           </div>
@@ -245,7 +302,7 @@ export function QuestionEditor({
           <label className="text-sm font-medium mb-1 block">Dica para o inspetor</label>
           <Textarea
             placeholder="Digite uma dica..."
-            value={typeof userHint === "object" ? userHint.value : userHint}
+            value={safeUserHint}
             onChange={(e) => handleUpdate("hint", e.target.value)}
             className="w-full"
             rows={2}

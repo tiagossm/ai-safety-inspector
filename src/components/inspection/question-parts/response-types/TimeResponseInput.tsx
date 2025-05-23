@@ -1,3 +1,4 @@
+
 import React from "react";
 import { ResponseWrapper } from "./components/ResponseWrapper";
 
@@ -18,13 +19,15 @@ export function TimeResponseInput({
   disabled = false,
   readOnly = false,
 }: TimeResponseInputProps) {
-  // Garante que value seja sempre string
-  const timeValue =
-    typeof value === "string"
-      ? value
-      : value && typeof value.value === "string"
-      ? value.value
-      : "";
+  // Extrai valor de string ou objeto de maneira segura
+  const timeValue = React.useMemo(() => {
+    if (typeof value === "string") {
+      return value;
+    } else if (value && typeof value === "object" && "value" in value) {
+      return typeof value.value === "string" ? value.value : "";
+    }
+    return "";
+  }, [value]);
 
   // Garante que só a string no formato "HH:mm" será passada para o onChange
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
