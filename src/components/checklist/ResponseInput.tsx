@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Input } from "@/components/ui/input";
@@ -46,8 +45,10 @@ export function QuestionEditor({
 
   // Garantir tipos seguros para o texto da questão e fornecer valores padrão
   const questionText = typeof question.text === "object" 
-    ? (question.text && 'value' in question.text ? question.text.value ?? "" : "") 
-    : (question.text ?? "");
+    ? (question.text && typeof question.text === 'object' && 'value' in question.text 
+        ? (question.text.value as string) || "" 
+        : "") 
+    : (question.text || "");
 
   // Convert database response type to frontend type for proper display
   const frontendResponseType = question.responseType 
@@ -83,8 +84,10 @@ export function QuestionEditor({
 
   // Garantir tipo seguro para o peso da questão e fornecer valor padrão
   const questionWeight = typeof question.weight === "object" 
-    ? (question.weight && 'value' in question.weight ? question.weight.value ?? 1 : 1) 
-    : (question.weight ?? 1);
+    ? (question.weight && typeof question.weight === 'object' && 'value' in question.weight 
+        ? (question.weight.value as number) || 1 
+        : 1) 
+    : (question.weight || 1);
 
   const handleAddOption = () => {
     if (newOption.trim() && onUpdate) {
@@ -127,8 +130,10 @@ export function QuestionEditor({
   const userHint = parseHint(question.hint);
   // Garantir tipo seguro para a dica e fornecer valor padrão
   const safeUserHint = typeof userHint === "object" 
-    ? (userHint && 'value' in userHint ? userHint.value ?? "" : "") 
-    : (userHint ?? "");
+    ? (userHint && typeof userHint === 'object' && 'value' in userHint 
+        ? (userHint.value as string) || "" 
+        : "") 
+    : (userHint || "");
 
   return (
     <div className={`border rounded-md p-4 ${isSubQuestion ? 'bg-gray-50' : 'bg-white'}`}>
