@@ -53,7 +53,6 @@ export function QuestionEditor({
     if (onUpdate) {
       let patch = { ...question, [field]: value };
       if (field === "responseType") {
-        // Convert the UI value to database format
         patch.responseType = value;
       }
       onUpdate(patch);
