@@ -53,8 +53,10 @@ export function QuestionEditor({
     }
     
     if (typeof question.text === "object" && question.text !== null) {
-      // Verificar se é um objeto com propriedade value
-      if ('value' in question.text && question.text.value !== undefined) {
+      // Verificação de tipo mais explícita com tipagem na verificação
+      if ('value' in question.text && 
+          question.text.value !== undefined) {
+        // Converter para string de forma segura
         return String(question.text.value);
       }
     }
@@ -103,8 +105,10 @@ export function QuestionEditor({
     }
     
     if (typeof question.weight === "object" && question.weight !== null) {
-      // Verificar se é um objeto com propriedade value
-      if ('value' in question.weight && question.weight.value !== undefined) {
+      // Verificação de tipo mais explícita com type guard
+      if ('value' in question.weight && 
+          question.weight.value !== undefined) {
+        // Converter para número de forma segura
         const val = Number(question.weight.value);
         return isNaN(val) ? 1 : val;
       }
@@ -161,8 +165,10 @@ export function QuestionEditor({
     }
     
     if (typeof userHint === "object" && userHint !== null) {
-      // Verificar se é um objeto com propriedade value
-      if ('value' in userHint && userHint.value !== undefined) {
+      // Verificação de tipo mais explícita
+      if ('value' in userHint && 
+          userHint.value !== undefined) {
+        // Converter para string de forma segura
         return String(userHint.value);
       }
     }
