@@ -44,7 +44,7 @@ export function QuestionEditor({
   const [showOptionsEditor, setShowOptionsEditor] = useState(false);
   const [newOption, setNewOption] = useState("");
 
-  // Extrai o texto da questão de forma segura
+  // Extrair o texto da questão de forma segura
   const questionText = React.useMemo(() => {
     if (!question.text) return "";
     
@@ -53,10 +53,13 @@ export function QuestionEditor({
     }
     
     if (typeof question.text === "object" && question.text !== null) {
-      // Usa type guard para verificar se 'value' existe no objeto
+      // Type guard para verificar se 'value' existe no objeto
       if ('value' in question.text) {
-        // Converter para string de forma segura
-        return question.text.value !== undefined ? String(question.text.value) : "";
+        // Usamos as casting para indicar ao TypeScript o tipo correto
+        const textObj = question.text as { value?: string | number | null | undefined };
+        return textObj.value !== undefined && textObj.value !== null 
+          ? String(textObj.value) 
+          : "";
       }
     }
     
@@ -104,12 +107,13 @@ export function QuestionEditor({
     }
     
     if (typeof question.weight === "object" && question.weight !== null) {
-      // Usa type guard para verificar se 'value' existe no objeto
+      // Type guard para verificar se 'value' existe no objeto
       if ('value' in question.weight) {
-        // Converter para número de forma segura
-        const weightValue = question.weight.value;
-        if (weightValue !== null && weightValue !== undefined) {
-          const val = Number(weightValue);
+        // Usamos as casting para indicar ao TypeScript o tipo correto
+        const weightObj = question.weight as { value?: number | string | null | undefined };
+        
+        if (weightObj.value !== null && weightObj.value !== undefined) {
+          const val = Number(weightObj.value);
           return isNaN(val) ? 1 : val;
         }
       }
@@ -166,10 +170,13 @@ export function QuestionEditor({
     }
     
     if (typeof userHint === "object" && userHint !== null) {
-      // Usa type guard para verificar se 'value' existe no objeto
+      // Type guard para verificar se 'value' existe no objeto
       if ('value' in userHint) {
-        // Converter para string de forma segura
-        return userHint.value !== null && userHint.value !== undefined ? String(userHint.value) : "";
+        // Usamos as casting para indicar ao TypeScript o tipo correto
+        const hintObj = userHint as { value?: string | number | null | undefined };
+        return hintObj.value !== null && hintObj.value !== undefined 
+          ? String(hintObj.value) 
+          : "";
       }
     }
     
