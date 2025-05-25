@@ -20,14 +20,14 @@ export default function NewChecklistEdit() {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
   
-  const { checklist, isLoading, error, refetch } = useChecklistById(id || "");
+  const { checklist, loading, error, refetch } = useChecklistById(id || "");
   const editorContext = useChecklistEditorContext();
   
   const handleSave = async (): Promise<void> => {
     if (editorMode === "standard" && editorContext) {
       try {
         toast.info("Salvando checklist...");
-        const success = await editorContext.handleSave();
+        const success = await editorContext.handleSubmit();
         if (success) {
           toast.success("Checklist salvo com sucesso!");
         } else {
@@ -53,7 +53,7 @@ export default function NewChecklistEdit() {
   if (error) {
     return (
       <ChecklistErrorState 
-        error={error instanceof Error ? error : new Error(String(error))} 
+        error={new Error(typeof error === 'string' ? error : 'Erro desconhecido')} 
         onRetry={() => refetch()} 
       />
     );
@@ -64,7 +64,7 @@ export default function NewChecklistEdit() {
     description: checklist?.description || "",
     category: checklist?.category || "",
     isTemplate: checklist?.isTemplate || false,
-    status: checklist?.status === "inactive" ? "inactive" : "active",
+    status: (checklist?.status === "inactive" ? "inactive" : "active") as "active" | "inactive",
     questions: [],
     groups: [],
     viewMode: "flat" as "flat" | "grouped",

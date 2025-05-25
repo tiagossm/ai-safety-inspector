@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ChecklistQuestion } from "@/types/newChecklist";
+import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { databaseToFrontendResponseType } from "@/utils/responseTypeMap";
 
 export interface ChecklistWithQuestions {
@@ -10,9 +10,11 @@ export interface ChecklistWithQuestions {
   description: string;
   category: string;
   isTemplate: boolean;
+  status?: string;
   companyId?: string;
   responsibleId?: string;
   questions: ChecklistQuestion[];
+  groups?: ChecklistGroup[];
 }
 
 export function useChecklistById(checklistId: string | undefined) {
@@ -72,7 +74,6 @@ export function useChecklistById(checklistId: string | undefined) {
         const questions: ChecklistQuestion[] = (questionsData || []).map((item, index) => ({
           id: item.id,
           text: item.pergunta || "",
-          description: "", // Add if needed
           responseType: mapDbTypeToFrontendType(item.tipo_resposta),
           isRequired: item.obrigatorio || false,
           order: item.ordem || index,
@@ -83,8 +84,8 @@ export function useChecklistById(checklistId: string | undefined) {
           allowsFiles: item.permite_files || false,
           weight: item.weight || 1,
           hint: item.hint || "",
-          groupId: item.group_id || undefined,
-          condition: item.condition || undefined,
+          groupId: undefined, // Database doesn't have group_id column
+          condition: undefined, // Database doesn't have condition column
           conditionValue: item.condition_value || undefined,
           parentQuestionId: item.parent_item_id || undefined,
           hasSubChecklist: item.has_subchecklist || false,
@@ -97,9 +98,11 @@ export function useChecklistById(checklistId: string | undefined) {
           description: checklistData.description || "",
           category: checklistData.category || "",
           isTemplate: checklistData.is_template || false,
+          status: checklistData.status || "ativo",
           companyId: checklistData.company_id || undefined,
           responsibleId: checklistData.responsible_id || undefined,
-          questions
+          questions,
+          groups: []
         };
 
         setChecklist(mappedChecklist);
@@ -114,5 +117,18 @@ export function useChecklistById(checklistId: string | undefined) {
     fetchChecklist();
   }, [checklistId]);
 
-  return { checklist, loading, error };
+  return { 
+    checklist, 
+    loading, 
+    error,
+    isLoading: loading,
+    refetch: () => {
+      if (checklistId) {
+        setLoading(true);
+        setError(null);
+        // Re-trigger the effect
+        setChecklist(null);
+      }
+    }
+  };
 }

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
@@ -35,7 +36,7 @@ export function useLoadChecklistData() {
 
           const groupIdBase = `group-default-${Date.now()}`;
           const questionGroups = groups.length > 0
-            ? groups.map(group => ({
+            ? groups.map((group: any) => ({
                 ...group,
                 questions: (group.questions || []).map((q: any) => ({
                   ...q,
@@ -75,7 +76,10 @@ export function useLoadChecklistData() {
         }
 
         if (checklistQuery.error) {
-          setError(`Erro ao carregar checklist: ${checklistQuery.error instanceof Error ? checklistQuery.error.message : String(checklistQuery.error)}`);
+          const errorMessage = typeof checklistQuery.error === 'string' 
+            ? checklistQuery.error 
+            : 'Erro desconhecido';
+          setError(`Erro ao carregar checklist: ${errorMessage}`);
           setLoading(false);
           return;
         }
@@ -85,10 +89,10 @@ export function useLoadChecklistData() {
           const groupIdBase = `group-default-${Date.now()}`;
           
           // Process groups and questions from the normalized checklist data
-          const groups = checklistQuery.groups?.length
-            ? checklistQuery.groups.map(group => ({
+          const groups = checklist.groups?.length
+            ? checklist.groups.map(group => ({
                 ...group,
-                questions: checklistQuery.questions
+                questions: checklist.questions
                   .filter(q => q.groupId === group.id)
                   .map(q => ({
                     ...q,
@@ -104,7 +108,7 @@ export function useLoadChecklistData() {
             : [{
                 id: groupIdBase,
                 title: "Geral",
-                questions: (checklistQuery.questions || []).map(q => ({
+                questions: (checklist.questions || []).map(q => ({
                   ...q,
                   type: q.responseType,
                   required: q.isRequired,
@@ -122,7 +126,7 @@ export function useLoadChecklistData() {
 
           setEditorData({
             checklistData: checklist,
-            questions: checklistQuery.questions || [],
+            questions: checklist.questions || [],
             groups,
             mode: "edit"
           });

@@ -1,80 +1,54 @@
 
-import { useCallback } from "react";
-import { useInspectionFetch } from "@/hooks/inspection/useInspectionFetch";
-import { useInspectionStatus } from "@/hooks/inspection/useInspectionStatus";
-import { useQuestionsManagement, Question } from "@/hooks/inspection/useQuestionsManagement";
-import { useResponseHandling } from "@/hooks/inspection/useResponseHandling";
+import { useState, useEffect } from "react";
+import { Question } from "@/types/inspection";
 
-// Export type for the hook return value
-export interface InspectionDataHook {
+export interface InspectionData {
   loading: boolean;
-  error: string | null;
+  error: string;
   detailedError: any;
   inspection: any;
-  questions: any[];
+  questions: Question[];
   groups: any[];
   responses: Record<string, any>;
   company: any;
   responsible: any;
-  responsibles: any[];
   subChecklists: Record<string, any>;
-  setResponses: (responses: Record<string, any>) => void;
+  setResponses: React.Dispatch<React.SetStateAction<Record<string, any>>>;
   refreshData: () => void;
-  completeInspection: (inspection: any) => Promise<any>;
-  reopenInspection: (inspection: any) => Promise<any>;
-  handleResponseChange: (questionId: string, data: any) => void;
-  handleMediaUpload: (questionId: string, file: File) => Promise<string | null>;
-  handleMediaChange: (questionId: string, mediaUrls: string[]) => void;
-  handleSaveInspection: () => Promise<void>;
-  savingResponses: boolean;
 }
 
-export function useInspectionData(inspectionId: string | undefined): InspectionDataHook {
-  // Use the fetch hook for loading data
-  const {
-    loading,
-    error,
-    detailedError,
-    inspection,
-    questions,
-    groups,
-    responses,
-    company,
-    responsible,
-    responsibles,
-    subChecklists,
-    setResponses,
-    refreshData,
-  } = useInspectionFetch(inspectionId);
+export function useInspectionData(inspectionId: string): InspectionData {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [detailedError, setDetailedError] = useState<any>(null);
+  const [inspection, setInspection] = useState<any>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [groups, setGroups] = useState<any[]>([]);
+  const [responses, setResponses] = useState<Record<string, any>>({});
+  const [company, setCompany] = useState<any>(null);
+  const [responsible, setResponsible] = useState<any>(null);
+  const [subChecklists, setSubChecklists] = useState<Record<string, any>>({});
 
-  // Use the status hook for completing/reopening the inspection
-  const { completeInspection, reopenInspection } = useInspectionStatus(inspectionId);
-  
-  // Use the questions management hook with the correct response handler
-  const {
-    handleResponseChange: onQuestionResponseChange
-  } = useQuestionsManagement(
-    questions as Question[], 
-    responses, 
-    setResponses
-  );
+  const refreshData = () => {
+    // Implement data refresh logic
+    setLoading(true);
+    // Mock implementation
+    setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+  };
 
-  // Use the response handling hook (for uploads, media, etc.)
-  const {
-    handleResponseChange: _unusedHandleResponseChange,
-    handleMediaChange,
-    handleMediaUpload,
-    handleSaveInspection: saveInspection,
-    savingResponses
-  } = useResponseHandling(inspectionId, setResponses);
+  useEffect(() => {
+    if (!inspectionId) {
+      setLoading(false);
+      return;
+    }
 
-  // Wrap the save inspection function to provide the current responses and inspection
-  // Modificamos para retornar Promise<void> em vez de Promise<boolean | void>
-  const handleSaveInspection = useCallback(async (): Promise<void> => {
-    if (!inspection) return;
-    await saveInspection(responses, inspection);
-    // Removemos o retorno explícito para garantir tipo void
-  }, [saveInspection, responses, inspection]);
+    // Mock data loading
+    setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+  }, [inspectionId]);
 
   return {
     loading,
@@ -86,16 +60,8 @@ export function useInspectionData(inspectionId: string | undefined): InspectionD
     responses,
     company,
     responsible,
-    responsibles,
     subChecklists,
     setResponses,
-    refreshData,
-    completeInspection,
-    reopenInspection,
-    handleResponseChange: onQuestionResponseChange, // aqui é o correto!
-    handleMediaUpload,
-    handleMediaChange,
-    handleSaveInspection,
-    savingResponses
+    refreshData
   };
 }

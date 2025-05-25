@@ -104,7 +104,7 @@ export function QuestionItem({
     const newSubitem: ChecklistQuestion = {
       id: `new-${Date.now()}`,
       text: "",
-      responseType: "yes_no",
+      responseType: "sim/não",
       isRequired: true,
       weight: 1,
       allowsPhoto: false,
@@ -175,12 +175,14 @@ export function QuestionItem({
   };
 
   const responseTypeOptions = [
-    { value: "yes_no", label: "Sim/Não" },
-    { value: "text", label: "Texto" },
-    { value: "multiple_choice", label: "Múltipla Escolha" },
-    { value: "numeric", label: "Numérico" },
-    { value: "photo", label: "Foto" },
-    { value: "signature", label: "Assinatura" }
+    { value: "sim/não", label: "Sim/Não" },
+    { value: "texto", label: "Texto" },
+    { value: "seleção múltipla", label: "Múltipla Escolha" },
+    { value: "numérico", label: "Numérico" },
+    { value: "foto", label: "Foto" },
+    { value: "assinatura", label: "Assinatura" },
+    { value: "hora", label: "Hora" },
+    { value: "data", label: "Data" }
   ];
 
   return (
@@ -258,7 +260,7 @@ export function QuestionItem({
               </div>
             </div>
 
-            {question.responseType === "multiple_choice" && (
+            {question.responseType === "seleção múltipla" && (
               <div className="space-y-2">
                 <Label>Opções</Label>
                 <div className="space-y-2">

@@ -21,7 +21,7 @@ export function useChecklistQuestions(
     const newQuestion: ChecklistQuestion = {
       id: newId,
       text: "",
-      responseType: "yes_no",
+      responseType: "sim/não",
       isRequired: true,
       order,
       weight: 1,
@@ -46,47 +46,44 @@ export function useChecklistQuestions(
   }, [setQuestions]);
 
   const handleDeleteQuestion = useCallback((questionId: string) => {
-    // If it's a new question (not yet saved to DB), just remove it
-    if (questionId.startsWith('new-')) {
-      setQuestions(prevQuestions => prevQuestions.filter(q => q.id !== questionId));
-      toast.success("Pergunta removida", { duration: 5000 });
-      return;
+    setQuestions(prevQuestions => 
+      prevQuestions.filter(q => q.id !== questionId)
+    );
+    
+    if (!questionId.startsWith('new-')) {
+      setDeletedQuestionIds(prev => [...prev, questionId]);
     }
     
-    // For existing questions, mark for deletion
-    setDeletedQuestionIds(prev => [...prev, questionId]);
-    setQuestions(prevQuestions => prevQuestions.filter(q => q.id !== questionId));
-    toast.success("Pergunta removida", { duration: 5000 });
+    toast.success("Pergunta excluída", { duration: 5000 });
   }, [setQuestions, setDeletedQuestionIds]);
 
-  // Updated toggle all media options function to include allowsFiles
-  const toggleAllMediaOptions = useCallback((enabled: boolean) => {
-    setEnableAllMedia(enabled);
+  const toggleAllMediaOptions = useCallback(() => {
+    const newValue = !enableAllMedia;
+    setEnableAllMedia(newValue);
     
-    // Update all questions to enable/disable media options
     setQuestions(prevQuestions => 
-      prevQuestions.map(question => ({
-        ...question,
-        allowsPhoto: enabled,
-        allowsVideo: enabled,
-        allowsAudio: enabled,
-        allowsFiles: enabled
+      prevQuestions.map(q => ({
+        ...q,
+        allowsPhoto: newValue,
+        allowsVideo: newValue,
+        allowsAudio: newValue,
+        allowsFiles: newValue
       }))
     );
     
-    // Add toast notification
-    if (enabled) {
-      toast.success("Todos os recursos de mídia ativados", { duration: 5000 });
-    } else {
-      toast.success("Todos os recursos de mídia desativados", { duration: 5000 });
-    }
-  }, [setQuestions]);
+    toast.success(
+      newValue 
+        ? "Todas as opções de mídia foram ativadas" 
+        : "Todas as opções de mídia foram desativadas",
+      { duration: 5000 }
+    );
+  }, [enableAllMedia, setQuestions]);
 
   return {
+    enableAllMedia,
     handleAddQuestion,
     handleUpdateQuestion,
     handleDeleteQuestion,
-    toggleAllMediaOptions,
-    enableAllMedia
+    toggleAllMediaOptions
   };
 }
