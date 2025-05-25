@@ -7,7 +7,7 @@ import { useChecklistQuestions } from "./useChecklistQuestions";
 
 export function useChecklistEditorContext() {
   const { id } = useParams<{ id?: string }>();
-  const { checklist, loading, error } = useChecklistById(id || "");
+  const { checklist, loading, error, refetch } = useChecklistById(id || "");
   
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -111,6 +111,10 @@ export function useChecklistEditorContext() {
     }
   };
 
+  const handleSave = async (): Promise<boolean> => {
+    return handleSubmit();
+  };
+
   const questionsHook = useChecklistQuestions(
     questions,
     setQuestions,
@@ -120,6 +124,7 @@ export function useChecklistEditorContext() {
   );
 
   return {
+    id,
     title,
     description,
     category,
@@ -131,6 +136,7 @@ export function useChecklistEditorContext() {
     questionsByGroup,
     nonEmptyGroups,
     isSubmitting,
+    isLoading: loading,
     enableAllMedia: questionsHook.enableAllMedia,
     setTitle,
     setDescription,
@@ -146,6 +152,8 @@ export function useChecklistEditorContext() {
     handleDeleteQuestion: questionsHook.handleDeleteQuestion,
     handleDragEnd,
     handleSubmit,
-    toggleAllMediaOptions: questionsHook.toggleAllMediaOptions
+    handleSave,
+    toggleAllMediaOptions: questionsHook.toggleAllMediaOptions,
+    refetch
   };
 }

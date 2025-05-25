@@ -1,6 +1,27 @@
 
 import { useState, useEffect } from "react";
-import { Question } from "@/types/inspection";
+
+// Define Question interface locally since it's not exported from types/inspection
+interface Question {
+  id: string;
+  text: string;
+  responseType: string;
+  isRequired: boolean;
+  order: number;
+  weight?: number;
+  allowsPhoto?: boolean;
+  allowsVideo?: boolean;
+  allowsAudio?: boolean;
+  allowsFiles?: boolean;
+  groupId?: string;
+  hint?: string;
+  options?: string[];
+  condition?: string;
+  conditionValue?: string;
+  parentQuestionId?: string;
+  hasSubChecklist?: boolean;
+  subChecklistId?: string;
+}
 
 export interface InspectionData {
   loading: boolean;

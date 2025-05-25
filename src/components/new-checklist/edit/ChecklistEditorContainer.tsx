@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ChecklistEditActions } from "@/components/new-checklist/edit/ChecklistEditActions";
@@ -51,12 +52,8 @@ export function ChecklistEditorContainer() {
     handleDragEnd: editorContext.handleDragEnd,
     handleSubmit: editorContext.handleSubmit,
     toggleAllMediaOptions: editorContext.toggleAllMediaOptions,
-    id: editorContext.id,
   };
   
-  // Remova o auto-save ao navegar de etapa (deixe apenas o save manual)
-  // Remova qualquer chamada automática de handleSave em useEffect ou navegação de etapas
-
   // Enhanced save handler to provide feedback and navigate after success
   const handleSave = async (): Promise<void> => {
     try {
@@ -84,15 +81,6 @@ export function ChecklistEditorContainer() {
     }
     try {
       toast.info("Preparando inspeção...", { duration: 2000 });
-      // Remova o save automático antes de iniciar inspeção
-      // if (editorContext.handleSave) {
-      //   const saveSuccess = await editorContext.handleSave();
-      //   if (!saveSuccess) {
-      //     toast.error("Não foi possível salvar o checklist antes de iniciar a inspeção", { duration: 5000 });
-      //     return;
-      //   }
-      // }
-      // Navegue diretamente para inspeção
       console.log(`Redirecionando para inspeção com checklistId=${editorContext.id}`);
       toast.success("Redirecionando para a inspeção...", { duration: 2000 });
       navigate(`/inspections/new?checklistId=${editorContext.id}`);

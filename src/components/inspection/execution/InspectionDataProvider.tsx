@@ -1,9 +1,9 @@
 
 import React, { createContext, useContext } from "react";
-import { useInspectionData, InspectionDataHook } from "@/hooks/inspection/useInspectionData";
+import { useInspectionData, InspectionData } from "@/hooks/inspection/useInspectionData";
 
 // Criar contexto para dados de inspeção
-const InspectionDataContext = createContext<InspectionDataHook | null>(null);
+const InspectionDataContext = createContext<InspectionData | null>(null);
 
 export interface InspectionDataProviderProps {
   inspectionId: string | undefined;
@@ -24,7 +24,7 @@ export const InspectionDataProvider: React.FC<InspectionDataProviderProps> = ({
 };
 
 // Hook para usar o contexto de dados da inspeção
-export const useInspectionDataContext = (): InspectionDataHook => {
+export const useInspectionDataContext = (): InspectionData => {
   const context = useContext(InspectionDataContext);
   
   if (!context) {
