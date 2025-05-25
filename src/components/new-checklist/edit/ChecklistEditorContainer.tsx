@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ChecklistEditActions } from "@/components/new-checklist/edit/ChecklistEditActions";
@@ -25,6 +24,7 @@ export function ChecklistEditorContainer() {
   
   // Context value with all state and actions
   const contextValue = {
+    id: editorContext.id,
     title: editorContext.title,
     description: editorContext.description,
     category: editorContext.category,
@@ -36,6 +36,7 @@ export function ChecklistEditorContainer() {
     questionsByGroup: editorContext.questionsByGroup,
     nonEmptyGroups: editorContext.nonEmptyGroups,
     isSubmitting: editorContext.isSubmitting,
+    isLoading: editorContext.isLoading,
     enableAllMedia: editorContext.enableAllMedia,
     setTitle: editorContext.setTitle,
     setDescription: editorContext.setDescription,
@@ -51,7 +52,9 @@ export function ChecklistEditorContainer() {
     handleDeleteQuestion: editorContext.handleDeleteQuestion,
     handleDragEnd: editorContext.handleDragEnd,
     handleSubmit: editorContext.handleSubmit,
+    handleSave: editorContext.handleSave,
     toggleAllMediaOptions: editorContext.toggleAllMediaOptions,
+    refetch: editorContext.refetch,
   };
   
   // Enhanced save handler to provide feedback and navigate after success

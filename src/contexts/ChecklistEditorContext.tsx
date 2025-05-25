@@ -1,9 +1,9 @@
-
 import React, { createContext, useContext, ReactNode } from "react";
 import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 
 export interface ChecklistEditorContextType {
   // State
+  id?: string;
   title: string;
   description: string;
   category: string;
@@ -15,6 +15,7 @@ export interface ChecklistEditorContextType {
   questionsByGroup: Map<string, ChecklistQuestion[]>;
   nonEmptyGroups: ChecklistGroup[];
   isSubmitting: boolean;
+  isLoading: boolean;
   enableAllMedia: boolean;
   
   // Actions
@@ -32,7 +33,9 @@ export interface ChecklistEditorContextType {
   handleDeleteQuestion: (questionId: string) => void;
   handleDragEnd: (result: any) => void;
   handleSubmit: () => Promise<boolean>;
+  handleSave?: () => Promise<boolean>;
   toggleAllMediaOptions: (enabled: boolean) => void;
+  refetch?: () => void;
 }
 
 const ChecklistEditorContext = createContext<ChecklistEditorContextType | undefined>(undefined);

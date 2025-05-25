@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
@@ -111,6 +110,7 @@ export function useChecklistEditorContext() {
     }
   };
 
+  // Enhanced save handler
   const handleSave = async (): Promise<boolean> => {
     return handleSubmit();
   };
