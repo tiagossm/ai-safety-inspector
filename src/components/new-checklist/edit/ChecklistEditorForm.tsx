@@ -5,6 +5,7 @@ import { ChecklistBasicInfo } from "@/components/new-checklist/edit/ChecklistBas
 import { ChecklistQuestionList } from "@/components/new-checklist/edit/ChecklistQuestionList";
 import { ChecklistEditActions } from "@/components/new-checklist/edit/ChecklistEditActions";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export function ChecklistEditorForm() {
   const {
@@ -19,16 +20,38 @@ export function ChecklistEditorForm() {
     setCategory,
     setIsTemplate,
     setStatus,
-    handleSubmit
+    handleSubmit,
+    id
   } = useChecklistEditor();
   
   const navigate = useNavigate();
+  
+  const handleSave = async () => {
+    try {
+      const success = await handleSubmit();
+      if (success) {
+        toast.success("Checklist salvo com sucesso!");
+        navigate("/new-checklists");
+      }
+    } catch (error) {
+      console.error("Erro ao salvar checklist:", error);
+      toast.error("Erro ao salvar checklist");
+    }
+  };
+
+  const handleStartInspection = () => {
+    if (!id) {
+      toast.error("É necessário salvar o checklist antes de iniciar a inspeção");
+      return;
+    }
+    navigate(`/inspections/new?checklistId=${id}`);
+  };
   
   return (
     <form 
       onSubmit={(e) => {
         e.preventDefault();
-        handleSubmit();
+        handleSave();
       }} 
       className="space-y-6"
     >
@@ -49,10 +72,12 @@ export function ChecklistEditorForm() {
       {/* Questions section */}
       <ChecklistQuestionList />
       
-      {/* Bottom actions - Get other handlers from context */}
+      {/* Bottom actions */}
       <ChecklistEditActions
         isSubmitting={isSubmitting}
         onCancel={() => navigate("/new-checklists")}
+        onStartInspection={handleStartInspection}
+        onSave={handleSave}
       />
     </form>
   );
