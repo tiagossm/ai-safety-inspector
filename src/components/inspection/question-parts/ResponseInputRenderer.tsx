@@ -31,17 +31,13 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   onSaveActionPlan,
   readOnly = false
 }) => {
-  // Normalizar o tipo de resposta para garantir consistência
   const rawResponseType = question.responseType || question.tipo_resposta || "texto";
   const responseType = normalizeResponseType(rawResponseType);
   
   console.log("ResponseInputRenderer: raw type:", rawResponseType, "normalized:", responseType);
   console.log("ResponseInputRenderer: current response:", response);
 
-  // Ensure response is always an object (even if empty)
   const safeResponse = response || {};
-  
-  // Make sure mediaUrls is always an array
   const mediaUrls = safeResponse.mediaUrls || [];
 
   const handleMediaChange = useCallback((urls: string[]) => {
@@ -81,7 +77,6 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     [onSaveActionPlan]
   );
 
-  // Função para lidar com mudanças em componentes simples
   const handleSimpleValueChange = useCallback((value: any) => {
     console.log("ResponseInputRenderer: Simple value change:", value);
     onResponseChange({
@@ -89,6 +84,20 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
       value
     });
   }, [safeResponse, onResponseChange]);
+
+  const renderPhotoInput = () => (
+    <PhotoInput
+      mediaUrls={mediaUrls}
+      onMediaChange={handleMediaChange}
+      allowsPhoto={question.allowsPhoto}
+      allowsVideo={question.allowsVideo}
+      allowsAudio={question.allowsAudio}
+      allowsFiles={question.allowsFiles}
+      inspectionId={inspectionId}
+      questionId={question.id}
+      disabled={readOnly}
+    />
+  );
 
   // Renderizar com base no tipo normalizado
   switch (responseType) {
@@ -111,16 +120,19 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
 
     case "texto":
       return (
-        <TextResponseInput
-          question={question}
-          response={safeResponse}
-          onResponseChange={onResponseChange}
-          onMediaChange={handleMediaChange}
-          onApplyAISuggestion={(suggestion: string) =>
-            handleResponseWithAnalysis({ aiSuggestion: suggestion })
-          }
-          readOnly={readOnly}
-        />
+        <div className="space-y-2">
+          <TextResponseInput
+            question={question}
+            response={safeResponse}
+            onResponseChange={onResponseChange}
+            onMediaChange={handleMediaChange}
+            onApplyAISuggestion={(suggestion: string) =>
+              handleResponseWithAnalysis({ aiSuggestion: suggestion })
+            }
+            readOnly={readOnly}
+          />
+          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && renderPhotoInput()}
+        </div>
       );
 
     case "seleção múltipla":
@@ -135,20 +147,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             }
             onChange={handleSimpleValueChange}
           />
-          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
-            <PhotoInput
-              mediaUrls={mediaUrls}
-              onAddMedia={() => console.log("Adicionar mídia para questão seleção múltipla")}
-              onDeleteMedia={(url) => {
-                const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-                handleMediaChange(updatedUrls);
-              }}
-              allowsPhoto={question.allowsPhoto}
-              allowsVideo={question.allowsVideo}
-              allowsAudio={question.allowsAudio}
-              allowsFiles={question.allowsFiles}
-            />
-          )}
+          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && renderPhotoInput()}
         </div>
       );
 
@@ -167,38 +166,12 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             }
             onChange={handleSimpleValueChange}
           />
-          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
-            <PhotoInput
-              mediaUrls={mediaUrls}
-              onAddMedia={() => console.log("Adicionar mídia para questão numérico")}
-              onDeleteMedia={(url) => {
-                const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-                handleMediaChange(updatedUrls);
-              }}
-              allowsPhoto={question.allowsPhoto}
-              allowsVideo={question.allowsVideo}
-              allowsAudio={question.allowsAudio}
-              allowsFiles={question.allowsFiles}
-            />
-          )}
+          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && renderPhotoInput()}
         </div>
       );
 
     case "foto":
-      return (
-        <PhotoInput
-          mediaUrls={mediaUrls}
-          onAddMedia={() => console.log("Adicionar mídia para questão foto")}
-          onDeleteMedia={(url) => {
-            const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-            handleMediaChange(updatedUrls);
-          }}
-          allowsPhoto={true}
-          allowsVideo={question.allowsVideo}
-          allowsAudio={question.allowsAudio}
-          allowsFiles={question.allowsFiles}
-        />
-      );
+      return renderPhotoInput();
 
     case "assinatura":
       return (
@@ -211,20 +184,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             }
             onChange={handleSimpleValueChange}
           />
-          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
-            <PhotoInput
-              mediaUrls={mediaUrls}
-              onAddMedia={() => console.log("Adicionar mídia para questão assinatura")}
-              onDeleteMedia={(url) => {
-                const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-                handleMediaChange(updatedUrls);
-              }}
-              allowsPhoto={question.allowsPhoto}
-              allowsVideo={question.allowsVideo}
-              allowsAudio={question.allowsAudio}
-              allowsFiles={question.allowsFiles}
-            />
-          )}
+          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && renderPhotoInput()}
         </div>
       );
 
@@ -240,20 +200,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             onChange={handleSimpleValueChange}
             readOnly={readOnly}
           />
-          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
-            <PhotoInput
-              mediaUrls={mediaUrls}
-              onAddMedia={() => console.log("Adicionar mídia para questão data")}
-              onDeleteMedia={(url) => {
-                const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-                handleMediaChange(updatedUrls);
-              }}
-              allowsPhoto={question.allowsPhoto}
-              allowsVideo={question.allowsVideo}
-              allowsAudio={question.allowsAudio}
-              allowsFiles={question.allowsFiles}
-            />
-          )}
+          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && renderPhotoInput()}
         </div>
       );
 
@@ -269,20 +216,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             onChange={handleSimpleValueChange}
             readOnly={readOnly}
           />
-          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
-            <PhotoInput
-              mediaUrls={mediaUrls}
-              onAddMedia={() => console.log("Adicionar mídia para questão hora")}
-              onDeleteMedia={(url) => {
-                const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-                handleMediaChange(updatedUrls);
-              }}
-              allowsPhoto={question.allowsPhoto}
-              allowsVideo={question.allowsVideo}
-              allowsAudio={question.allowsAudio}
-              allowsFiles={question.allowsFiles}
-            />
-          )}
+          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && renderPhotoInput()}
         </div>
       );
 

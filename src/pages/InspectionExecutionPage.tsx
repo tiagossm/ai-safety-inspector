@@ -1,15 +1,14 @@
-
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, RefreshCw, ArrowLeft, ClipboardList } from "lucide-react";
 import { InspectionLayout } from "@/components/inspection/execution/InspectionLayout";
 import { InspectionError } from "@/components/inspection/execution/InspectionError";
 import { InspectionHeaderForm } from "@/components/inspection/execution/InspectionHeaderForm";
+import { LoadingInspectionState } from "@/components/inspection/execution/LoadingInspectionState";
 import { useInspectionFetch } from "@/hooks/inspection/useInspectionFetch";
 import { useInspectionStatus } from "@/hooks/inspection/useInspectionStatus";
 import { useResponseHandling } from "@/hooks/inspection/useResponseHandling";
@@ -83,7 +82,7 @@ export default function InspectionExecutionPage() {
     }
   }, [loading, groups, currentGroupId]);
 
-  // Calculate if the inspection is editable (only when status is 'Pendente' or 'Em Andamento')
+  // Calculate if the inspection is editable
   const isInspectionEditable = () => {
     return inspection && [INSPECTION_STATUSES.PENDING, INSPECTION_STATUSES.IN_PROGRESS].includes(inspection.status);
   };
@@ -290,6 +289,11 @@ export default function InspectionExecutionPage() {
         </Alert>
       </div>
     );
+  }
+
+  // Show loading state
+  if (loading) {
+    return <LoadingInspectionState />;
   }
 
   // If there's an error fetching the data

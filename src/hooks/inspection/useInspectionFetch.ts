@@ -38,28 +38,28 @@ interface Question {
   hint?: string;
 }
 
+interface Group {
+  id: string;
+  title: string;
+  order: number;
+}
+
 export function useInspectionFetch(inspectionId: string | undefined) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [detailedError, setDetailedError] = useState<any>(null);
   const [inspection, setInspection] = useState<any>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [groups, setGroups] = useState<any[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [responses, setResponses] = useState<Record<string, any>>({});
   const [company, setCompany] = useState<any>(null);
   const [responsible, setResponsible] = useState<any>(null);
   const [subChecklists, setSubChecklists] = useState<Record<string, any>>({});
 
   const normalizeQuestion = useCallback((item: any): Question => {
-    // Normalizar o tipo de resposta para garantir consistência
     const rawResponseType = item.responseType || item.tipo_resposta || 'text';
     const normalizedResponseType = normalizeResponseType(rawResponseType);
     
-    console.log(`[useInspectionFetch] Normalizing question ${item.id}:`, {
-      rawType: rawResponseType,
-      normalizedType: normalizedResponseType
-    });
-
     return {
       id: item.id,
       text: item.text || item.pergunta,
@@ -81,7 +81,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
       permite_files: item.permite_files ?? item.allowsFiles ?? false,
       order: item.order ?? item.ordem ?? 0,
       ordem: item.ordem ?? item.order ?? 0,
-      groupId: item.groupId || item.group_id,
+      groupId: item.groupId || item.group_id || "default-group",
       condition: item.condition,
       conditionValue: item.conditionValue || item.condition_value,
       condition_value: item.condition_value || item.conditionValue,
@@ -93,6 +93,46 @@ export function useInspectionFetch(inspectionId: string | undefined) {
       sub_checklist_id: item.sub_checklist_id || item.subChecklistId,
       hint: item.hint
     };
+  }, []);
+
+  const processGroups = useCallback((questions: Question[]): Group[] => {
+    const groupsMap = new Map<string, Group>();
+    
+    // Grupo padrão sempre existe
+    groupsMap.set("default-group", {
+      id: "default-group",
+      title: "Perguntas Gerais",
+      order: 0
+    });
+
+    // Processar grupos das perguntas
+    questions.forEach((question) => {
+      const groupId = question.groupId || "default-group";
+      
+      if (groupId !== "default-group" && !groupsMap.has(groupId)) {
+        // Tentar extrair nome do grupo do hint se existir
+        let groupTitle = `Grupo ${groupsMap.size}`;
+        
+        if (question.hint) {
+          try {
+            const hintObj = JSON.parse(question.hint);
+            if (hintObj.groupTitle) {
+              groupTitle = hintObj.groupTitle;
+            }
+          } catch (e) {
+            // Ignore parsing errors
+          }
+        }
+        
+        groupsMap.set(groupId, {
+          id: groupId,
+          title: groupTitle,
+          order: groupsMap.size
+        });
+      }
+    });
+
+    return Array.from(groupsMap.values()).sort((a, b) => a.order - b.order);
   }, []);
 
   const fetchInspectionData = useCallback(async () => {
@@ -121,7 +161,6 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         throw inspectionError;
       }
 
-      console.log("[useInspectionFetch] Inspection data:", inspectionData);
       setInspection(inspectionData);
 
       // Buscar dados da empresa
@@ -135,7 +174,6 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         if (companyError) {
           console.error("[useInspectionFetch] Error fetching company:", companyError);
         } else {
-          console.log("[useInspectionFetch] Company data:", companyData);
           setCompany(companyData);
         }
       }
@@ -151,7 +189,6 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         if (responsibleError) {
           console.error("[useInspectionFetch] Error fetching responsible:", responsibleError);
         } else {
-          console.log("[useInspectionFetch] Responsible data:", responsibleData);
           setResponsible(responsibleData);
         }
       }
@@ -169,12 +206,12 @@ export function useInspectionFetch(inspectionId: string | undefined) {
           throw questionsError;
         }
 
-        console.log("[useInspectionFetch] Raw questions data:", questionsData);
-        
-        // Normalizar as perguntas
         const normalizedQuestions = questionsData.map(normalizeQuestion);
-        console.log("[useInspectionFetch] Normalized questions:", normalizedQuestions);
         setQuestions(normalizedQuestions);
+        
+        // Processar grupos
+        const processedGroups = processGroups(normalizedQuestions);
+        setGroups(processedGroups);
       }
 
       // Buscar respostas existentes
@@ -186,8 +223,6 @@ export function useInspectionFetch(inspectionId: string | undefined) {
       if (responsesError) {
         console.error("[useInspectionFetch] Error fetching responses:", responsesError);
       } else {
-        console.log("[useInspectionFetch] Responses data:", responsesData);
-        
         const responsesMap: Record<string, any> = {};
         responsesData.forEach((response) => {
           responsesMap[response.question_id] = {
@@ -202,7 +237,6 @@ export function useInspectionFetch(inspectionId: string | undefined) {
           };
         });
         
-        console.log("[useInspectionFetch] Processed responses map:", responsesMap);
         setResponses(responsesMap);
       }
 
@@ -214,7 +248,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
     } finally {
       setLoading(false);
     }
-  }, [inspectionId, normalizeQuestion]);
+  }, [inspectionId, normalizeQuestion, processGroups]);
 
   const refreshData = useCallback(() => {
     console.log("[useInspectionFetch] Refreshing data...");
