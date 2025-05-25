@@ -71,6 +71,7 @@ export default function NewChecklistEdit() {
     questionsByGroup: new Map(),
     nonEmptyGroups: [],
     isSubmitting: false,
+    isLoading: loading,
     enableAllMedia: false,
     setTitle: () => {},
     setDescription: () => {},
