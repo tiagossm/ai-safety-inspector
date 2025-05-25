@@ -1,8 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { useChecklistById } from "./useChecklistById";
 import { useChecklistQuestions } from "./useChecklistQuestions";
+import { useChecklistSubmit } from "./useChecklistSubmit";
 
 export function useChecklistEditorContext() {
   const { id } = useParams<{ id?: string }>();
@@ -16,7 +18,6 @@ export function useChecklistEditorContext() {
   const [questions, setQuestions] = useState<ChecklistQuestion[]>([]);
   const [groups, setGroups] = useState<ChecklistGroup[]>([]);
   const [viewMode, setViewMode] = useState<"flat" | "grouped">("flat");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletedQuestionIds, setDeletedQuestionIds] = useState<string[]>([]);
 
   // Load data when checklist is available
@@ -60,59 +61,9 @@ export function useChecklistEditorContext() {
     );
   };
 
-  const handleAddQuestion = (groupId: string) => {
-    const newQuestion: ChecklistQuestion = {
-      id: `new-${Date.now()}`,
-      text: "",
-      responseType: "sim/não",
-      isRequired: true,
-      order: questions.length,
-      weight: 1,
-      allowsPhoto: false,
-      allowsVideo: false,
-      allowsAudio: false,
-      allowsFiles: false,
-      groupId
-    };
-    
-    setQuestions(prev => [...prev, newQuestion]);
-  };
-
-  const handleUpdateQuestion = (updatedQuestion: ChecklistQuestion) => {
-    setQuestions(prev => 
-      prev.map(q => q.id === updatedQuestion.id ? updatedQuestion : q)
-    );
-  };
-
-  const handleDeleteQuestion = (questionId: string) => {
-    setQuestions(prev => prev.filter(q => q.id !== questionId));
-    
-    if (!questionId.startsWith('new-')) {
-      setDeletedQuestionIds(prev => [...prev, questionId]);
-    }
-  };
-
   const handleDragEnd = (result: any) => {
     // Implement drag and drop logic here
     console.log("Drag end:", result);
-  };
-
-  const handleSubmit = async (): Promise<boolean> => {
-    try {
-      setIsSubmitting(true);
-      // Implement submit logic
-      return true;
-    } catch (error) {
-      console.error("Submit error:", error);
-      return false;
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Enhanced save handler
-  const handleSave = async (): Promise<boolean> => {
-    return handleSubmit();
   };
 
   const questionsHook = useChecklistQuestions(
@@ -122,6 +73,23 @@ export function useChecklistEditorContext() {
     deletedQuestionIds,
     setDeletedQuestionIds
   );
+
+  const { isSubmitting, handleSubmit } = useChecklistSubmit(
+    id,
+    title,
+    description,
+    category,
+    isTemplate,
+    status,
+    questions,
+    groups,
+    deletedQuestionIds
+  );
+
+  // Enhanced save handler
+  const handleSave = async (): Promise<boolean> => {
+    return handleSubmit();
+  };
 
   return {
     id,

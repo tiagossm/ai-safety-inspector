@@ -1,55 +1,56 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Save, PlayCircle } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Save, Play, X } from "lucide-react";
 
 interface ChecklistEditActionsProps {
   isSubmitting: boolean;
   onCancel: () => void;
-  onStartInspection?: () => void;
-  onSave?: () => void;
+  onStartInspection: () => void;
+  onSave: () => void;
 }
 
-export function ChecklistEditActions({ 
-  isSubmitting, 
+export function ChecklistEditActions({
+  isSubmitting,
   onCancel,
   onStartInspection,
   onSave
 }: ChecklistEditActionsProps) {
   return (
-    <div className="flex justify-end gap-4">
-      <Button 
-        variant="outline" 
-        type="button" 
-        onClick={onCancel}
-        disabled={isSubmitting}
-      >
-        Cancelar
-      </Button>
-      
-      {onSave && (
-        <Button 
-          type="button"
-          onClick={onSave}
-          disabled={isSubmitting}
-          className="flex items-center"
-        >
-          <Save className="mr-2 h-4 w-4" />
-          {isSubmitting ? "Salvando..." : "Salvar Checklist"}
-        </Button>
-      )}
-      
-      {onStartInspection && (
-        <Button 
-          type="button"
-          onClick={onStartInspection}
-          disabled={isSubmitting}
-          className="flex items-center"
-        >
-          <PlayCircle className="mr-2 h-4 w-4" />
-          Iniciar Inspeção
-        </Button>
-      )}
-    </div>
+    <Card>
+      <CardContent className="pt-6">
+        <div className="flex justify-end gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={isSubmitting}
+          >
+            <X className="h-4 w-4 mr-2" />
+            Cancelar
+          </Button>
+          
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onStartInspection}
+            disabled={isSubmitting}
+          >
+            <Play className="h-4 w-4 mr-2" />
+            Iniciar Inspeção
+          </Button>
+          
+          <Button
+            type="submit"
+            onClick={onSave}
+            disabled={isSubmitting}
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {isSubmitting ? "Salvando..." : "Salvar Checklist"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
