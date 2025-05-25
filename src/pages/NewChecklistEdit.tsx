@@ -60,6 +60,7 @@ export default function NewChecklistEdit() {
   }
 
   const wizardContextValue: ChecklistEditorContextType = {
+    id: id,
     title: checklist?.title || "",
     description: checklist?.description || "",
     category: checklist?.category || "",
@@ -87,7 +88,9 @@ export default function NewChecklistEdit() {
     handleDeleteQuestion: () => {},
     handleDragEnd: () => {},
     handleSubmit: async () => false,
-    toggleAllMediaOptions: () => {}
+    handleSave: async () => false,
+    toggleAllMediaOptions: () => {},
+    refetch: refetch
   };
 
   return (
