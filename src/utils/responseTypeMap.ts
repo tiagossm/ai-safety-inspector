@@ -6,7 +6,7 @@
 export function frontendToDatabaseResponseType(frontendType: string): string {
   const typeMap: Record<string, string> = {
     'sim/não': 'sim/não',
-    'texto': 'texto',
+    'texto': 'texto', 
     'numérico': 'numérico',
     'seleção múltipla': 'seleção múltipla',
     'foto': 'foto',
@@ -16,23 +16,14 @@ export function frontendToDatabaseResponseType(frontendType: string): string {
     // Mapeamentos legados para compatibilidade
     'yes_no': 'sim/não',
     'text': 'texto',
-    'numeric': 'numérico',
+    'numeric': 'numérico', 
     'multiple_choice': 'seleção múltipla',
     'photo': 'foto',
     'signature': 'assinatura',
     'time': 'hora',
     'date': 'data',
     'image': 'foto',
-    // Garantir que valores do banco sejam preservados
-    'sim/não': 'sim/não',
-    'texto': 'texto',
-    'numérico': 'numérico',
-    'seleção múltipla': 'seleção múltipla',
-    'assinatura': 'assinatura',
-    'foto': 'foto',
-    'imagem': 'foto',
-    'hora': 'hora',
-    'data': 'data'
+    'imagem': 'foto'
   };
   
   console.log(`[responseTypeMap] Converting frontend type "${frontendType}" to database type "${typeMap[frontendType] || 'texto'}"`);
@@ -42,35 +33,35 @@ export function frontendToDatabaseResponseType(frontendType: string): string {
 export function databaseToFrontendResponseType(dbType: string): string {
   const typeMap: Record<string, string> = {
     // Banco -> Frontend
-    'sim/não': 'yes_no',
-    'texto': 'text',
-    'numérico': 'numeric',
-    'seleção múltipla': 'multiple_choice',
-    'foto': 'photo',
-    'assinatura': 'signature',
-    'imagem': 'photo',
-    'hora': 'time',
-    'data': 'date',
+    'sim/não': 'sim/não',
+    'texto': 'texto',
+    'numérico': 'numérico', 
+    'seleção múltipla': 'seleção múltipla',
+    'foto': 'foto',
+    'assinatura': 'assinatura',
+    'imagem': 'foto',
+    'hora': 'hora',
+    'data': 'data',
     // Se vier o valor "alternativo", também cobre:
-    'multiple_choice': 'multiple_choice',
-    'yes_no': 'yes_no',
-    'time': 'time',
-    'date': 'date',
-    'photo': 'photo',
-    'signature': 'signature',
-    'text': 'text',
-    'numeric': 'numeric'
+    'multiple_choice': 'seleção múltipla',
+    'yes_no': 'sim/não',
+    'time': 'hora',
+    'date': 'data',
+    'photo': 'foto',
+    'signature': 'assinatura',
+    'text': 'texto',
+    'numeric': 'numérico'
   };
   
-  console.log(`[responseTypeMap] Converting database type "${dbType}" to frontend type "${typeMap[dbType] || 'text'}"`);
-  return typeMap[dbType] || 'text'; // fallback seguro
+  console.log(`[responseTypeMap] Converting database type "${dbType}" to frontend type "${typeMap[dbType] || 'texto'}"`);
+  return typeMap[dbType] || 'texto'; // fallback seguro
 }
 
 // Função para normalizar tipos de resposta para o padrão interno
-export function normalizeResponseType(responseType: string): "text" | "yes_no" | "multiple_choice" | "numeric" | "photo" | "signature" | "date" | "time" {
+export function normalizeResponseType(responseType: string): "sim/não" | "texto" | "numérico" | "seleção múltipla" | "foto" | "assinatura" | "data" | "hora" {
   if (!responseType) {
-    console.log('[responseTypeMap] Empty response type, defaulting to text');
-    return "text";
+    console.log('[responseTypeMap] Empty response type, defaulting to texto');
+    return "texto";
   }
   
   const type = responseType.toLowerCase();
@@ -85,7 +76,7 @@ export function normalizeResponseType(responseType: string): "text" | "yes_no" |
     type === "boolean" ||
     type === "yes_no"
   ) {
-    return "yes_no";
+    return "sim/não";
   }
   
   if (
@@ -99,7 +90,7 @@ export function normalizeResponseType(responseType: string): "text" | "yes_no" |
     type.includes("options") ||
     type === "multiple_choice"
   ) {
-    return "multiple_choice";
+    return "seleção múltipla";
   }
   
   if (
@@ -113,7 +104,7 @@ export function normalizeResponseType(responseType: string): "text" | "yes_no" |
     type === "decimal" ||
     type === "numérico"
   ) {
-    return "numeric";
+    return "numérico";
   }
   
   if (
@@ -122,7 +113,7 @@ export function normalizeResponseType(responseType: string): "text" | "yes_no" |
     type.includes("imagem") || 
     type.includes("image")
   ) {
-    return "photo";
+    return "foto";
   }
   
   if (
@@ -130,7 +121,7 @@ export function normalizeResponseType(responseType: string): "text" | "yes_no" |
     type.includes("signature") ||
     type.includes("sign")
   ) {
-    return "signature";
+    return "assinatura";
   }
   
   if (
@@ -140,7 +131,7 @@ export function normalizeResponseType(responseType: string): "text" | "yes_no" |
     type.includes("calendar") ||
     type === "data"
   ) {
-    return "date";
+    return "data";
   }
   
   if (
@@ -152,9 +143,9 @@ export function normalizeResponseType(responseType: string): "text" | "yes_no" |
     type.includes("relogio") ||
     type === "hora"
   ) {
-    return "time";
+    return "hora";
   }
   
-  console.log(`[responseTypeMap] Type "${responseType}" normalized to "text" (fallback)`);
-  return "text";
+  console.log(`[responseTypeMap] Type "${responseType}" normalized to "texto" (fallback)`);
+  return "texto";
 }

@@ -1,4 +1,3 @@
-
 import React, { useCallback } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +19,7 @@ interface InspectionQuestionProps {
   inspectionId?: string;
   actionPlan?: ActionPlan;
   onSaveActionPlan?: (data: ActionPlanFormData) => Promise<ActionPlan | void>;
+  isSubQuestion?: boolean; // Adicionando a propriedade faltante
 }
 
 export function InspectionQuestion({
@@ -32,7 +32,8 @@ export function InspectionQuestion({
   numberLabel,
   inspectionId,
   actionPlan,
-  onSaveActionPlan
+  onSaveActionPlan,
+  isSubQuestion = false
 }: InspectionQuestionProps) {
   // Normalizar o tipo de resposta
   const rawResponseType = question.responseType || question.tipo_resposta;
@@ -61,6 +62,16 @@ export function InspectionQuestion({
       });
     },
     [question.id, response, onResponseChange]
+  );
+
+  // Ajustar o tipo de retorno para resolver o erro de tipo
+  const handleSaveActionPlan = useCallback(
+    async (data: ActionPlanFormData): Promise<void> => {
+      if (onSaveActionPlan) {
+        await onSaveActionPlan(data);
+      }
+    },
+    [onSaveActionPlan]
   );
 
   const parseHint = (hint?: string | null): string => {
@@ -127,7 +138,7 @@ export function InspectionQuestion({
             onResponseChange={handleResponseChange}
             onMediaChange={handleMediaChange}
             actionPlan={actionPlan}
-            onSaveActionPlan={onSaveActionPlan}
+            onSaveActionPlan={handleSaveActionPlan}
           />
 
           {question.hasSubChecklist && onOpenSubChecklist && (

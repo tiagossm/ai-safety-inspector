@@ -32,7 +32,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   readOnly = false
 }) => {
   // Normalizar o tipo de resposta para garantir consistência
-  const rawResponseType = question.responseType || question.tipo_resposta || "text";
+  const rawResponseType = question.responseType || question.tipo_resposta || "texto";
   const responseType = normalizeResponseType(rawResponseType);
   
   console.log("ResponseInputRenderer: raw type:", rawResponseType, "normalized:", responseType);
@@ -92,7 +92,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
 
   // Renderizar com base no tipo normalizado
   switch (responseType) {
-    case "yes_no":
+    case "sim/não":
       return (
         <YesNoResponseInput
           question={question}
@@ -109,7 +109,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         />
       );
 
-    case "text":
+    case "texto":
       return (
         <TextResponseInput
           question={question}
@@ -123,7 +123,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         />
       );
 
-    case "multiple_choice":
+    case "seleção múltipla":
       return (
         <div className="space-y-2">
           <MultipleChoiceInput 
@@ -138,7 +138,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
             <PhotoInput
               mediaUrls={mediaUrls}
-              onAddMedia={() => console.log("Adicionar mídia para questão multiple_choice")}
+              onAddMedia={() => console.log("Adicionar mídia para questão seleção múltipla")}
               onDeleteMedia={(url) => {
                 const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
                 handleMediaChange(updatedUrls);
@@ -152,7 +152,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         </div>
       );
 
-    case "numeric":
+    case "numérico":
       return (
         <div className="space-y-2">
           <NumberInput
@@ -170,7 +170,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
             <PhotoInput
               mediaUrls={mediaUrls}
-              onAddMedia={() => console.log("Adicionar mídia para questão numeric")}
+              onAddMedia={() => console.log("Adicionar mídia para questão numérico")}
               onDeleteMedia={(url) => {
                 const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
                 handleMediaChange(updatedUrls);
@@ -184,11 +184,11 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         </div>
       );
 
-    case "photo":
+    case "foto":
       return (
         <PhotoInput
           mediaUrls={mediaUrls}
-          onAddMedia={() => console.log("Adicionar mídia para questão photo")}
+          onAddMedia={() => console.log("Adicionar mídia para questão foto")}
           onDeleteMedia={(url) => {
             const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
             handleMediaChange(updatedUrls);
@@ -200,7 +200,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         />
       );
 
-    case "signature":
+    case "assinatura":
       return (
         <div className="space-y-2">
           <SignatureInput 
@@ -214,7 +214,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
             <PhotoInput
               mediaUrls={mediaUrls}
-              onAddMedia={() => console.log("Adicionar mídia para questão signature")}
+              onAddMedia={() => console.log("Adicionar mídia para questão assinatura")}
               onDeleteMedia={(url) => {
                 const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
                 handleMediaChange(updatedUrls);
@@ -228,7 +228,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         </div>
       );
 
-    case "date":
+    case "data":
       return (
         <div className="space-y-2">
           <DateResponseInput
@@ -243,7 +243,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
             <PhotoInput
               mediaUrls={mediaUrls}
-              onAddMedia={() => console.log("Adicionar mídia para questão date")}
+              onAddMedia={() => console.log("Adicionar mídia para questão data")}
               onDeleteMedia={(url) => {
                 const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
                 handleMediaChange(updatedUrls);
@@ -257,7 +257,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         </div>
       );
 
-    case "time":
+    case "hora":
       return (
         <div className="space-y-2">
           <TimeResponseInput
@@ -272,7 +272,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
             <PhotoInput
               mediaUrls={mediaUrls}
-              onAddMedia={() => console.log("Adicionar mídia para questão time")}
+              onAddMedia={() => console.log("Adicionar mídia para questão hora")}
               onDeleteMedia={(url) => {
                 const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
                 handleMediaChange(updatedUrls);

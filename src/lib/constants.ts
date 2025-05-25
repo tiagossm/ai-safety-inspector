@@ -1,3 +1,4 @@
+
 export const TIPOS_QUESTAO = [
   { value: "sim/não", label: "Sim/Não" },
   { value: "texto", label: "Texto" },
@@ -10,3 +11,7 @@ export const TIPOS_QUESTAO = [
 ] as const;
 
 export type TipoQuestao = typeof TIPOS_QUESTAO[number]["value"];
+
+// Adicionar exports compatíveis
+export const QUESTION_TYPES = TIPOS_QUESTAO;
+export type QuestionType = TipoQuestao;
