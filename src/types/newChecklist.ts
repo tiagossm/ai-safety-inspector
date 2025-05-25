@@ -1,9 +1,10 @@
+
 export interface CollaboratorType {
   id: string;
   name: string;
   avatar: string;
   email: string;
-  initials?: string; // Adding the initials property as optional
+  initials?: string;
 }
 
 export interface Checklist {
@@ -29,6 +30,10 @@ export interface Checklist {
   comments?: ChecklistComment[];
   attachments?: ChecklistAttachment[];
   history?: ChecklistHistory[];
+  questions?: ChecklistItem[];
+  groups?: ChecklistGroup[];
+  responsibleName?: string;
+  origin?: 'manual' | 'ia' | 'csv';
 }
 
 export interface ChecklistItem {
@@ -52,6 +57,21 @@ export interface ChecklistItem {
   condition_value?: string | null;
   has_subchecklist?: boolean;
   sub_checklist_id?: string;
+  text?: string;
+  responseType?: "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla" | "data" | "hora";
+  isRequired?: boolean;
+  options?: string[];
+  allowsPhoto?: boolean;
+  allowsVideo?: boolean;
+  allowsAudio?: boolean;
+  allowsFiles?: boolean;
+  order?: number;
+  groupId?: string;
+  condition?: string;
+  conditionValue?: string;
+  parentQuestionId?: string;
+  hasSubChecklist?: boolean;
+  subChecklistId?: string;
 }
 
 export interface NewChecklist {
@@ -134,44 +154,6 @@ export interface NewChecklistPayload {
   due_date?: string | null;
 }
 
-export interface Checklist {
-  id: string;
-  title: string;
-  description?: string;
-  created_at?: string;
-  updated_at?: string;
-  status: string;
-  status_checklist?: string;
-  is_template: boolean;
-  user_id?: string;
-  company_id?: string;
-  responsible_id?: string;
-  category?: string;
-  questions?: ChecklistItem[];
-  groups?: ChecklistGroup[];
-  responsibleName?: string;
-  origin?: 'manual' | 'ia' | 'csv';
-}
-
-export interface ChecklistItem {
-  id: string;
-  ordem: number;
-  pergunta: string;
-  tipo_resposta: string;
-  opcoes?: string[] | null;
-  obrigatorio: boolean;
-  permite_foto?: boolean;
-  permite_video?: boolean;
-  permite_audio?: boolean;
-  weight?: number;
-  hint?: string;
-  groupId?: string | null;
-  parent_item_id?: string | null;
-  condition_value?: string | null;
-  sub_checklist_id?: string | null;
-  hasSubChecklist?: boolean;
-}
-
 export interface ChecklistGroup {
   id: string;
   title: string;
@@ -181,19 +163,6 @@ export interface ChecklistGroup {
 export interface ChecklistSortOption {
   label: string;
   value: string;
-}
-
-export interface NewChecklist {
-  title?: string;
-  description?: string;
-  is_template?: boolean;
-  status_checklist?: "ativo" | "inativo";
-  category?: string;
-  company_id?: string | null;
-  responsible_id?: string | null;
-  status?: string;
-  due_date?: string | null;
-  origin?: 'manual' | 'ia' | 'csv';
 }
 
 export interface BatchUpdateResult {
@@ -222,7 +191,6 @@ export interface ChecklistQuestion {
   hint?: string;
 }
 
-// Extended InspectionDetails interface with all required properties
 export interface InspectionDetails {
   id: string;
   status: string;
@@ -235,7 +203,7 @@ export interface InspectionDetails {
   responsibleId?: string;
   responsibleName?: string;
   scheduledDate?: string;
-  location?: string; // Field for location
+  location?: string;
   syncStatus?: string;
   metadata?: any;
   title?: string;
@@ -252,7 +220,6 @@ export interface InspectionDetails {
   description?: string;
 }
 
-// Extended InspectionFilters interface with necessary properties
 export interface InspectionFilters {
   status?: string;
   companyId?: string;

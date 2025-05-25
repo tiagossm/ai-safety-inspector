@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,31 +95,37 @@ export function SubChecklistEditor({
   
   const mapDbTypeToUiType = (dbType: string): ChecklistQuestion["responseType"] => {
     const typeMap: Record<string, ChecklistQuestion["responseType"]> = {
-      'sim/não': 'yes_no',
-      'seleção múltipla': 'multiple_choice',
-      'texto': 'text',
-      'numérico': 'numeric',
-      'foto': 'photo',
-      'assinatura': 'signature',
-      'hora': 'time',   // ajuste para aceitar 'hora' vindo do banco
-      'time': 'time',
-      'data': 'date',   // ajuste para aceitar 'data' vindo do banco
-      'date': 'date'
-    };
-    // @ts-ignore - Forçando o tipo para incluir time e date
-    return typeMap[dbType] || 'text';
-  };
-
-  const mapUiTypeToDbType = (uiType: string): string => {
-    const typeMap: Record<string, string> = {
+      'sim/não': 'sim/não',
+      'seleção múltipla': 'seleção múltipla',
+      'texto': 'texto',
+      'numérico': 'numérico',
+      'foto': 'foto',
+      'assinatura': 'assinatura',
+      'hora': 'hora',
+      'data': 'data',
+      // Legacy mappings
       'yes_no': 'sim/não',
       'multiple_choice': 'seleção múltipla',
       'text': 'texto',
       'numeric': 'numérico',
       'photo': 'foto',
       'signature': 'assinatura',
-      'time': 'time',   // sempre salva como 'time'
-      'date': 'date'    // sempre salva como 'date'
+      'time': 'hora',
+      'date': 'data'
+    };
+    return typeMap[dbType] || 'texto';
+  };
+
+  const mapUiTypeToDbType = (uiType: string): string => {
+    const typeMap: Record<string, string> = {
+      'sim/não': 'sim/não',
+      'seleção múltipla': 'seleção múltipla',
+      'texto': 'texto',
+      'numérico': 'numérico',
+      'foto': 'foto',
+      'assinatura': 'assinatura',
+      'hora': 'hora',
+      'data': 'data'
     };
     return typeMap[uiType] || 'texto';
   };
@@ -126,7 +133,7 @@ export function SubChecklistEditor({
   const createEmptyQuestion = (): Partial<ChecklistQuestion> => ({
     id: uuidv4(),
     text: "",
-    responseType: "yes_no",
+    responseType: "sim/não",
     isRequired: true,
     weight: 1,
     allowsPhoto: false,
@@ -176,8 +183,8 @@ export function SubChecklistEditor({
             description,
             is_template: false,
             status_checklist: "ativo",
-            is_sub_checklist: true, // Mark as sub-checklist
-            parent_question_id: parentQuestionId // Link to parent question
+            is_sub_checklist: true,
+            parent_question_id: parentQuestionId
           })
           .select("id")
           .single();
@@ -205,8 +212,8 @@ export function SubChecklistEditor({
             title,
             description,
             updated_at: new Date().toISOString(),
-            is_sub_checklist: true, // Ensure it's marked as sub-checklist
-            parent_question_id: parentQuestionId // Ensure link to parent question
+            is_sub_checklist: true,
+            parent_question_id: parentQuestionId
           })
           .eq("id", checklistId);
         
@@ -227,9 +234,9 @@ export function SubChecklistEditor({
         .map((q, index) => ({
           checklist_id: checklistId,
           pergunta: q.text || "",
-          tipo_resposta: mapUiTypeToDbType(q.responseType || "yes_no"),
+          tipo_resposta: mapUiTypeToDbType(q.responseType || "sim/não"),
           obrigatorio: q.isRequired !== false,
-          opcoes: q.responseType === "multiple_choice" ? q.options : null,
+          opcoes: q.responseType === "seleção múltipla" ? q.options : null,
           ordem: index,
           weight: q.weight || 1,
           permite_foto: q.allowsPhoto || false,
@@ -330,19 +337,19 @@ export function SubChecklistEditor({
                     <Label htmlFor={`response-type-${index}`} className="text-xs">Type</Label>
                     <select
                       id={`response-type-${index}`}
-                      value={question.responseType || "yes_no"}
+                      value={question.responseType || "sim/não"}
                       onChange={(e) => {
                         const value = e.target.value as ChecklistQuestion['responseType'];
                         handleQuestionChange(index, "responseType", value);
                       }}
                       className="text-xs p-1 border rounded"
                     >
-                      <option value="yes_no">Yes/No</option>
-                      <option value="text">Text</option>
-                      <option value="numeric">Numeric</option>
-                      <option value="multiple_choice">Multiple Choice</option>
-                      <option value="time">Time</option>
-                      <option value="date">Date</option>
+                      <option value="sim/não">Sim/Não</option>
+                      <option value="texto">Texto</option>
+                      <option value="numérico">Numérico</option>
+                      <option value="seleção múltipla">Múltipla Escolha</option>
+                      <option value="hora">Hora</option>
+                      <option value="data">Data</option>
                     </select>
                   </div>
                   

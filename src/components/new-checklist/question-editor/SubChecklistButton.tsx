@@ -81,7 +81,7 @@ export function SubChecklistButton({
                 parentQuestion={{
                   id: parentQuestionId,
                   text: "Pergunta principal",
-                  responseType: "yes_no",
+                  responseType: "sim/não",
                   isRequired: true,
                   weight: 1,
                   order: 0,
