@@ -178,8 +178,22 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         }
       }
 
-      // Buscar dados do responsável
-      if (inspectionData.responsible_id) {
+      // CORRIGIDO: Melhor tratamento de responsáveis (array vs single)
+      if (inspectionData.responsible_ids && inspectionData.responsible_ids.length > 0) {
+        // Se tem array de responsáveis, pegar o primeiro
+        const { data: responsibleData, error: responsibleError } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", inspectionData.responsible_ids[0])
+          .single();
+
+        if (responsibleError) {
+          console.error("[useInspectionFetch] Error fetching responsible from array:", responsibleError);
+        } else {
+          setResponsible(responsibleData);
+        }
+      } else if (inspectionData.responsible_id) {
+        // Se tem ID único de responsável
         const { data: responsibleData, error: responsibleError } = await supabase
           .from("users")
           .select("*")
@@ -239,6 +253,13 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         
         setResponses(responsesMap);
       }
+
+      console.log("[useInspectionFetch] Dados carregados com sucesso:", {
+        inspection: !!inspectionData,
+        company: !!company,
+        responsible: !!responsible,
+        questions: normalizedQuestions?.length || 0
+      });
 
     } catch (err: any) {
       console.error("[useInspectionFetch] Error in fetchInspectionData:", err);

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -224,6 +225,7 @@ export default function InspectionExecutionPage() {
 
   // Handle inspection form save
   const handleInspectionDataSave = () => {
+    console.log("[InspectionExecutionPage] Dados da inspeção salvos, atualizando dados...");
     refreshData();
   };
 
@@ -313,8 +315,15 @@ export default function InspectionExecutionPage() {
   // Calculate stats
   const stats = calculateStats();
 
-  // Check if the minimum required data is available to show the checklist
-  const hasRequiredData = inspection && company?.id && responsible?.id;
+  // CORRIGIDO: Verificação mais específica de dados obrigatórios
+  const hasRequiredData = inspection && company && responsible;
+  
+  console.log("[InspectionExecutionPage] Status dos dados obrigatórios:", {
+    inspection: !!inspection,
+    company: !!company,
+    responsible: !!responsible,
+    hasRequiredData
+  });
 
   // Calculate action plan stats - significant non-conformities
   const hasActionPlans = Object.keys(plansByQuestion).length > 0;
@@ -424,6 +433,26 @@ export default function InspectionExecutionPage() {
             <p className="text-muted-foreground mb-4">
               Por favor, preencha os dados obrigatórios da inspeção acima para visualizar o checklist.
             </p>
+            <div className="mt-4 space-y-2 text-sm text-left max-w-md mx-auto">
+              <div className="flex items-center justify-between">
+                <span>Inspeção:</span>
+                <span className={inspection ? "text-green-600" : "text-red-600"}>
+                  {inspection ? "✓ OK" : "✗ Pendente"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Empresa:</span>
+                <span className={company ? "text-green-600" : "text-red-600"}>
+                  {company ? "✓ OK" : "✗ Pendente"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Responsável:</span>
+                <span className={responsible ? "text-green-600" : "text-red-600"}>
+                  {responsible ? "✓ OK" : "✗ Pendente"}
+                </span>
+              </div>
+            </div>
           </Card>
         )
       )}
