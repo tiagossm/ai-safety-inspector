@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Input } from "@/components/ui/input";
@@ -25,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { SubChecklistButton } from "@/components/new-checklist/question-editor/SubChecklistButton";
 import { toast } from "sonner";
 import { frontendToDatabaseResponseType, databaseToFrontendResponseType } from "@/utils/responseTypeMap";
+import { QUESTION_TYPES } from "@/lib/constants";
 
 interface QuestionEditorProps {
   question: ChecklistQuestion;
@@ -35,15 +35,15 @@ interface QuestionEditorProps {
 }
 
 const QUESTION_TYPES = [
-  { value: 'sim/não', label: 'Sim/Não' },
-  { value: 'texto', label: 'Texto' },
-  { value: 'seleção múltipla', label: 'Múltipla Escolha' },
-  { value: 'numérico', label: 'Numérico' },
-  { value: 'foto', label: 'Foto' },
-  { value: 'assinatura', label: 'Assinatura' },
-  { value: 'hora', label: 'Hora' },
-  { value: 'data', label: 'Data' }
-];
+  { value: 'yes_no', label: 'Sim/Não' },
+  { value: 'text', label: 'Texto' },
+  { value: 'multiple_choice', label: 'Múltipla Escolha' },
+  { value: 'numeric', label: 'Numérico' },
+  { value: 'photo', label: 'Foto' },
+  { value: 'signature', label: 'Assinatura' },
+  { value: 'time', label: 'Hora' },
+  { value: 'date', label: 'Data' }
+] as const;
 
 export function QuestionEditor({
   question,
@@ -56,9 +56,7 @@ export function QuestionEditor({
   const [newOption, setNewOption] = useState("");
 
   // Convert database response type to frontend type for proper display
-  const frontendResponseType = question.responseType 
-    ? databaseToFrontendResponseType(question.responseType) as "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature" | "time" | "date"
-    : "yes_no";
+  const frontendResponseType = question.responseType || "yes_no";
 
   const handleUpdate = (field: keyof ChecklistQuestion, value: any) => {
     if (onUpdate) {
@@ -165,22 +163,17 @@ export function QuestionEditor({
             <label className="text-sm font-medium mb-1 block">Tipo de resposta</label>
             <Select
               value={frontendResponseType}
-              onValueChange={(value: "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature" | "time" | "date") => {
-                handleUpdate("responseType", value);
-              }}
+              onValueChange={(value) => handleUpdate("responseType", value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="yes_no">Sim/Não</SelectItem>
-                <SelectItem value="text">Texto</SelectItem>
-                <SelectItem value="multiple_choice">Múltipla escolha</SelectItem>
-                <SelectItem value="numeric">Numérico</SelectItem>
-                <SelectItem value="photo">Foto</SelectItem>
-                <SelectItem value="signature">Assinatura</SelectItem>
-                <SelectItem value="time">Hora</SelectItem>
-                <SelectItem value="date">Data</SelectItem>
+                {QUESTION_TYPES.map(type => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

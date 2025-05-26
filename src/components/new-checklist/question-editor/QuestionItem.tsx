@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { SubitemGenerator } from "./SubitemGenerator";
+import { QUESTION_TYPES } from "@/lib/constants";
 
 interface QuestionItemProps {
   question: ChecklistQuestion;
@@ -174,17 +175,6 @@ export function QuestionItem({
     toast.success(`${subitemsToAdd.length} subitens gerados com sucesso`);
   };
 
-  const responseTypeOptions = [
-    { value: "sim/não", label: "Sim/Não" },
-    { value: "texto", label: "Texto" },
-    { value: "seleção múltipla", label: "Múltipla Escolha" },
-    { value: "numérico", label: "Numérico" },
-    { value: "foto", label: "Foto" },
-    { value: "assinatura", label: "Assinatura" },
-    { value: "hora", label: "Hora" },
-    { value: "data", label: "Data" }
-  ];
-
   return (
     <Card className="border shadow-sm">
       <CardHeader className="px-4 py-3 bg-gray-50">
@@ -238,7 +228,7 @@ export function QuestionItem({
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
                   <SelectContent>
-                    {responseTypeOptions.map((option) => (
+                    {QUESTION_TYPES.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>
@@ -452,7 +442,7 @@ export function QuestionItem({
                       parentId={question.id}
                     />
                   ))
-                )}
+                }
               </div>
             </div>
           </CollapsibleContent>

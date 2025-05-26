@@ -1,60 +1,15 @@
-
 // src/utils/responseTypeMap.ts
 // Este arquivo mapeia os tipos de resposta entre o frontend e o banco de dados
 // Cobertura total para todos os valores aceitos pela constraint do banco
 
 export function frontendToDatabaseResponseType(frontendType: string): string {
-  const typeMap: Record<string, string> = {
-    'sim/não': 'sim/não',
-    'texto': 'texto', 
-    'numérico': 'numérico',
-    'seleção múltipla': 'seleção múltipla',
-    'foto': 'foto',
-    'assinatura': 'assinatura',
-    'hora': 'hora',
-    'data': 'data',
-    // Mapeamentos legados para compatibilidade
-    'yes_no': 'sim/não',
-    'text': 'texto',
-    'numeric': 'numérico', 
-    'multiple_choice': 'seleção múltipla',
-    'photo': 'foto',
-    'signature': 'assinatura',
-    'time': 'hora',
-    'date': 'data',
-    'image': 'foto',
-    'imagem': 'foto'
-  };
-  
-  console.log(`[responseTypeMap] Converting frontend type "${frontendType}" to database type "${typeMap[frontendType] || 'texto'}"`);
-  return typeMap[frontendType] || 'texto'; // fallback seguro
+  // O frontend já usa os valores em inglês, então retornamos direto
+  return frontendType;
 }
 
 export function databaseToFrontendResponseType(dbType: string): string {
-  const typeMap: Record<string, string> = {
-    // Banco -> Frontend
-    'sim/não': 'sim/não',
-    'texto': 'texto',
-    'numérico': 'numérico', 
-    'seleção múltipla': 'seleção múltipla',
-    'foto': 'foto',
-    'assinatura': 'assinatura',
-    'imagem': 'foto',
-    'hora': 'hora',
-    'data': 'data',
-    // Se vier o valor "alternativo", também cobre:
-    'multiple_choice': 'seleção múltipla',
-    'yes_no': 'sim/não',
-    'time': 'hora',
-    'date': 'data',
-    'photo': 'foto',
-    'signature': 'assinatura',
-    'text': 'texto',
-    'numeric': 'numérico'
-  };
-  
-  console.log(`[responseTypeMap] Converting database type "${dbType}" to frontend type "${typeMap[dbType] || 'texto'}"`);
-  return typeMap[dbType] || 'texto'; // fallback seguro
+  // O banco também usa os mesmos valores, então retornamos direto
+  return dbType;
 }
 
 // Função para normalizar tipos de resposta para o padrão interno

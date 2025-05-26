@@ -1,17 +1,12 @@
-
-export const TIPOS_QUESTAO = [
-  { value: "sim/não", label: "Sim/Não" },
-  { value: "texto", label: "Texto" },
-  { value: "numérico", label: "Numérico" },
-  { value: "seleção múltipla", label: "Seleção Múltipla" },
-  { value: "foto", label: "Foto" },
-  { value: "assinatura", label: "Assinatura" },
-  { value: "hora", label: "Hora" },
-  { value: "data", label: "Data" }
+export const QUESTION_TYPES = [
+  { value: "yes_no", label: "Sim/Não" },
+  { value: "text", label: "Texto" },
+  { value: "multiple_choice", label: "Múltipla Escolha" },
+  { value: "numeric", label: "Numérico" },
+  { value: "photo", label: "Foto" },
+  { value: "signature", label: "Assinatura" },
+  { value: "time", label: "Hora" },
+  { value: "date", label: "Data" }
 ] as const;
 
-export type TipoQuestao = typeof TIPOS_QUESTAO[number]["value"];
-
-// Adicionar exports compatíveis
-export const QUESTION_TYPES = TIPOS_QUESTAO;
-export type QuestionType = TipoQuestao;
+export type QuestionType = typeof QUESTION_TYPES[number]["value"];
