@@ -208,6 +208,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
       }
 
       // Buscar perguntas do checklist
+      let questionsProcessed: Question[] = [];
       if (inspectionData.checklist_id) {
         const { data: questionsData, error: questionsError } = await supabase
           .from("checklist_itens")
@@ -220,11 +221,11 @@ export function useInspectionFetch(inspectionId: string | undefined) {
           throw questionsError;
         }
 
-        const normalizedQuestions = questionsData.map(normalizeQuestion);
-        setQuestions(normalizedQuestions);
+        questionsProcessed = questionsData.map(normalizeQuestion);
+        setQuestions(questionsProcessed);
         
         // Processar grupos
-        const processedGroups = processGroups(normalizedQuestions);
+        const processedGroups = processGroups(questionsProcessed);
         setGroups(processedGroups);
       }
 
@@ -258,7 +259,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         inspection: !!inspectionData,
         company: !!company,
         responsible: !!responsible,
-        questions: normalizedQuestions?.length || 0
+        questions: questionsProcessed?.length || 0
       });
 
     } catch (err: any) {
