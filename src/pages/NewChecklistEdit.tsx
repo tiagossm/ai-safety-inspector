@@ -1,50 +1,19 @@
 
-import React, { useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
-import { ChecklistEditorContainer } from "@/components/new-checklist/edit/ChecklistEditorContainer";
-import { ChecklistWizard } from "@/components/new-checklist/edit/ChecklistWizard";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AccessibleEditor } from "@/components/new-checklist/edit/AccessibleEditor";
+import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { ChecklistEditorContainer } from "@/components/new-checklist/edit/ChecklistEditorContainer";
 import { ChecklistErrorState } from "@/components/new-checklist/details/ChecklistErrorState";
 import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
 import { useChecklistEditorContext } from "@/hooks/new-checklist/useChecklistEditorContext"; 
 import { ChecklistEditorProvider } from "@/contexts/ChecklistEditorContext";
-import { ChecklistEditorContextType } from "@/contexts/ChecklistEditorContext";
 import { toast } from "sonner";
 
 export default function NewChecklistEdit() {
-  const [searchParams] = useSearchParams();
-  const mode = searchParams.get("mode") || "standard";
-  const [editorMode, setEditorMode] = React.useState<"standard" | "wizard">("standard");
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
   
   const { checklist, loading, error, refetch } = useChecklistById(id || "");
   const editorContext = useChecklistEditorContext();
-  
-  const handleSave = async (): Promise<void> => {
-    if (editorMode === "standard" && editorContext) {
-      try {
-        toast.info("Salvando checklist...");
-        const success = await editorContext.handleSubmit();
-        if (success) {
-          toast.success("Checklist salvo com sucesso!");
-        } else {
-          toast.error("Erro ao salvar checklist");
-        }
-      } catch (error) {
-        console.error("Error saving checklist:", error);
-        toast.error(`Erro ao salvar checklist: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
-      }
-    }
-  };
-  
-  const handleAddQuestion = () => {
-    if (editorMode === "standard" && editorContext) {
-      editorContext.handleAddQuestion("default");
-    }
-  };
   
   const handleCancel = () => {
     navigate("/new-checklists");
@@ -59,39 +28,10 @@ export default function NewChecklistEdit() {
     );
   }
 
-  const wizardContextValue: ChecklistEditorContextType = {
-    id: id,
-    title: checklist?.title || "",
-    description: checklist?.description || "",
-    category: checklist?.category || "",
-    isTemplate: checklist?.isTemplate || false,
-    status: (checklist?.status === "inactive" ? "inactive" : "active") as "active" | "inactive",
-    questions: [],
-    groups: [],
-    viewMode: "flat" as "flat" | "grouped",
-    questionsByGroup: new Map(),
-    nonEmptyGroups: [],
-    isSubmitting: false,
-    isLoading: loading,
-    enableAllMedia: false,
-    setTitle: () => {},
-    setDescription: () => {},
-    setCategory: () => {},
-    setIsTemplate: () => {},
-    setStatus: () => {},
-    setViewMode: () => {},
-    handleAddGroup: () => {},
-    handleUpdateGroup: () => {},
-    handleDeleteGroup: () => {},
-    handleAddQuestion: () => {},
-    handleUpdateQuestion: () => {},
-    handleDeleteQuestion: () => {},
-    handleDragEnd: () => {},
-    handleSubmit: async () => false,
-    handleSave: async () => false,
-    toggleAllMediaOptions: () => {},
-    refetch: refetch
-  };
+  // Se não há contexto disponível, renderize o container diretamente
+  if (!editorContext) {
+    return <ChecklistEditorContainer />;
+  }
 
   return (
     <div>
@@ -101,14 +41,7 @@ export default function NewChecklistEdit() {
         </h1>
       </div>
       
-      <AccessibleEditor 
-        onSave={handleSave}
-        onAddQuestion={handleAddQuestion}
-        onCancel={handleCancel}
-        isSubmitting={false}
-      >
-        <ChecklistEditorContainer />
-      </AccessibleEditor>
+      <ChecklistEditorContainer />
     </div>
   );
 }

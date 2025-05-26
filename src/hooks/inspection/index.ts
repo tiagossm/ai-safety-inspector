@@ -7,3 +7,4 @@ export * from "./useInspectionStatus";
 export * from "./useQuestionsManagement";
 export * from "./useQuestionResponse";
 export * from "./useInspectionData";
+export * from "./useInspectionAuditLogs";

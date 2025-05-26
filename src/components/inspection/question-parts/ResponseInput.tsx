@@ -19,11 +19,12 @@ export function ResponseInput({
   actionPlan,
   onSaveActionPlan
 }: ResponseInputProps) {
-  console.log('[ResponseInput] Rendering with question:', question);
+  console.log('[ResponseInput] Rendering with question:', question.id);
   console.log('[ResponseInput] Question response type:', question.responseType || question.tipo_resposta);
+  console.log('[ResponseInput] Current value:', value);
 
-  // Se não vier objeto, constrói o padrão
-  const responseObject = typeof value === 'object'
+  // Garantir que temos sempre um objeto de resposta válido
+  const responseObject = typeof value === 'object' && value !== null
     ? value
     : { value: value, mediaUrls: [] };
 
@@ -40,7 +41,6 @@ export function ResponseInput({
     });
   }, [onChange, responseObject]);
 
-  // Delegar tudo para o ResponseInputRenderer que tem a lógica mais robusta
   return (
     <ResponseInputRenderer
       question={question}

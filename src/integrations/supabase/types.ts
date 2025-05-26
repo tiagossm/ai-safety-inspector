@@ -836,6 +836,66 @@ export type Database = {
           },
         ]
       }
+      inspection_audit_logs: {
+        Row: {
+          access_source: string | null
+          action_type: string
+          changed_field: string | null
+          created_at: string
+          id: string
+          inspection_id: string
+          metadata: Json | null
+          new_value: Json | null
+          previous_value: Json | null
+          question_id: string | null
+          timestamp: string
+          user_id: string
+        }
+        Insert: {
+          access_source?: string | null
+          action_type: string
+          changed_field?: string | null
+          created_at?: string
+          id?: string
+          inspection_id: string
+          metadata?: Json | null
+          new_value?: Json | null
+          previous_value?: Json | null
+          question_id?: string | null
+          timestamp?: string
+          user_id: string
+        }
+        Update: {
+          access_source?: string | null
+          action_type?: string
+          changed_field?: string | null
+          created_at?: string
+          id?: string
+          inspection_id?: string
+          metadata?: Json | null
+          new_value?: Json | null
+          previous_value?: Json | null
+          question_id?: string | null
+          timestamp?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_audit_logs_inspection_id_fkey"
+            columns: ["inspection_id"]
+            isOneToOne: false
+            referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspection_audit_logs_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_itens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inspection_files: {
         Row: {
           created_at: string
@@ -1990,6 +2050,20 @@ export type Database = {
       }
       l2_normalize: {
         Args: { "": string } | { "": unknown } | { "": unknown }
+        Returns: string
+      }
+      log_inspection_audit: {
+        Args: {
+          p_inspection_id: string
+          p_question_id?: string
+          p_user_id?: string
+          p_action_type?: string
+          p_changed_field?: string
+          p_previous_value?: Json
+          p_new_value?: Json
+          p_access_source?: string
+          p_metadata?: Json
+        }
         Returns: string
       }
       match_documents: {
