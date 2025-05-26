@@ -10,6 +10,7 @@ import { InspectionLayout } from "@/components/inspection/execution/InspectionLa
 import { InspectionError } from "@/components/inspection/execution/InspectionError";
 import { InspectionHeaderForm } from "@/components/inspection/execution/InspectionHeaderForm";
 import { LoadingInspectionState } from "@/components/inspection/execution/LoadingInspectionState";
+import { InspectionAuditLogViewer } from "@/components/inspection/audit/InspectionAuditLogViewer";
 import { useInspectionFetch } from "@/hooks/inspection/useInspectionFetch";
 import { useInspectionStatus } from "@/hooks/inspection/useInspectionStatus";
 import { useResponseHandling } from "@/hooks/inspection/useResponseHandling";
@@ -26,6 +27,7 @@ export default function InspectionExecutionPage() {
   const [autoSave, setAutoSave] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [saving, setSaving] = useState(false);
+  const [showAuditLogs, setShowAuditLogs] = useState(false);
   
   // Use the direct inspection fetch hook
   const {
@@ -52,7 +54,8 @@ export default function InspectionExecutionPage() {
     handleSaveInspection,
     handleSaveSubChecklistResponses,
     handleMediaUpload,
-    handleMediaChange
+    handleMediaChange,
+    logAuditAction
   } = useResponseHandling(id, setResponses);
 
   // Get action plans functions
@@ -168,6 +171,16 @@ export default function InspectionExecutionPage() {
       // Complete the inspection
       await completeInspection(inspection);
       
+      // Log completion
+      await logAuditAction(
+        null,
+        'complete_inspection',
+        'status',
+        inspection.status,
+        'Concluído',
+        { completed_at: new Date().toISOString() }
+      );
+      
       // Generate PDF report
       try {
         toast.info("Gerando relatório PDF...");
@@ -213,6 +226,17 @@ export default function InspectionExecutionPage() {
     try {
       setSaving(true);
       const updatedInspection = await reopenInspection(inspection);
+      
+      // Log reopening
+      await logAuditAction(
+        null,
+        'reopen_inspection',
+        'status',
+        inspection.status,
+        'Em Andamento',
+        { reopened_at: new Date().toISOString() }
+      );
+      
       toast.success("Inspeção reaberta com sucesso");
       refreshData();
     } catch (error: any) {
@@ -388,6 +412,23 @@ export default function InspectionExecutionPage() {
               </div>
             </div>
           )}
+
+          {/* Audit Log Viewer */}
+          <div className="mt-4">
+            <div className="flex justify-between items-center mb-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowAuditLogs(!showAuditLogs)}
+                className="text-sm"
+              >
+                {showAuditLogs ? "Ocultar" : "Mostrar"} Histórico de Auditoria
+              </Button>
+            </div>
+            
+            {showAuditLogs && (
+              <InspectionAuditLogViewer inspectionId={id} />
+            )}
+          </div>
         </div>
       )}
 
