@@ -250,7 +250,7 @@ export function QuestionItem({
               </div>
             </div>
 
-            {question.responseType === "seleção múltipla" && (
+            {question.responseType === "multiple_choice" && (
               <div className="space-y-2">
                 <Label>Opções</Label>
                 <div className="space-y-2">
