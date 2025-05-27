@@ -62,7 +62,28 @@ export function useChecklistDetails(id: string) {
   useEffect(() => {
     if (checklistData && (!checklist || checklist.id !== checklistData.id)) {
       console.log("Setting checklist data:", checklistData);
-      setChecklist(checklistData as Checklist);
+      
+      // Ensure the data has the required properties for the Checklist type
+      const processedChecklist: Checklist = {
+        id: checklistData.id,
+        title: checklistData.title,
+        description: checklistData.description,
+        is_template: checklistData.is_template,
+        status_checklist: checklistData.status_checklist as "ativo" | "inativo",
+        category: checklistData.category || "",
+        company_id: checklistData.company_id || null,
+        user_id: checklistData.user_id || null,
+        created_at: checklistData.created_at,
+        updated_at: checklistData.updated_at,
+        status: checklistData.status,
+        // Handle responsible_id safely - it might not exist in the data
+        responsible_id: (checklistData as any).responsible_id || null,
+        responsible_name: (checklistData as any).responsible_name || (checklistData as any).responsibleName,
+        company_name: (checklistData as any).company_name,
+        due_date: (checklistData as any).due_date || null
+      };
+      
+      setChecklist(processedChecklist);
     }
   }, [checklistData, checklist]);
 
