@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -105,7 +106,7 @@ export function QuestionItem({
     const newSubitem: ChecklistQuestion = {
       id: `new-${Date.now()}`,
       text: "",
-      responseType: "sim/não",
+      responseType: "yes_no",
       isRequired: true,
       weight: 1,
       allowsPhoto: false,
@@ -442,7 +443,7 @@ export function QuestionItem({
                       parentId={question.id}
                     />
                   ))
-                }
+                )}
               </div>
             </div>
           </CollapsibleContent>
