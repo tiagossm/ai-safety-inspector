@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileText, Upload, Bot, Plus, ArrowLeft, Sparkles, Copy } from "lucide-react";
 import { ChecklistQuestion } from "@/types/newChecklist";
-import { createDefaultQuestion } from "@/utils/typeConsistency";
+import { createDefaultQuestion, normalizeResponseType } from "@/utils/typeConsistency";
 import { QuestionEditor } from "@/components/new-checklist/edit/QuestionEditor";
 import { AIChecklistCreator } from "@/components/checklists/create-forms/AIChecklistCreator";
 import { CSVImportSection } from "@/components/checklists/create-forms/CSVImportSection";
@@ -81,7 +81,7 @@ export default function NewChecklistCreate() {
     const newQuestions: ChecklistQuestion[] = data.map((row, index) => ({
       id: `csv-${Date.now()}-${index}`,
       text: row.pergunta || row.question || row.text || "",
-      responseType: mapImportedResponseType(row.tipo_resposta || row.response_type || row.type || "sim/não"),
+      responseType: normalizeResponseType(row.tipo_resposta || row.response_type || row.type || "sim/não"),
       isRequired: parseBoolean(row.obrigatorio || row.required || true),
       order: questions.length + index,
       weight: parseInt(row.weight || row.peso || "1"),
@@ -96,18 +96,6 @@ export default function NewChecklistCreate() {
     setQuestions(prev => [...prev, ...newQuestions]);
     setUploadedQuestions(newQuestions);
     toast.success(`${newQuestions.length} perguntas importadas com sucesso`);
-  };
-
-  const mapImportedResponseType = (type: string): ChecklistQuestion["responseType"] => {
-    const normalizedType = type.toLowerCase();
-    if (normalizedType.includes("sim") || normalizedType.includes("yes") || normalizedType.includes("boolean")) return "sim/não";
-    if (normalizedType.includes("multiple") || normalizedType.includes("multipla") || normalizedType.includes("choice")) return "seleção múltipla";
-    if (normalizedType.includes("numeric") || normalizedType.includes("numero")) return "numérico";
-    if (normalizedType.includes("photo") || normalizedType.includes("foto")) return "foto";
-    if (normalizedType.includes("signature") || normalizedType.includes("assinatura")) return "assinatura";
-    if (normalizedType.includes("time") || normalizedType.includes("hora")) return "hora";
-    if (normalizedType.includes("date") || normalizedType.includes("data")) return "data";
-    return "texto";
   };
 
   const parseBoolean = (value: any): boolean => {
@@ -146,7 +134,7 @@ export default function NewChecklistCreate() {
         const aiQuestions: ChecklistQuestion[] = data.questions.map((q: any, index: number) => ({
           id: `ai-${Date.now()}-${index}`,
           text: q.text,
-          responseType: q.responseType || "sim/não",
+          responseType: normalizeResponseType(q.responseType || "sim/não"),
           isRequired: q.isRequired !== false,
           order: questions.length + index,
           weight: q.weight || 1,
