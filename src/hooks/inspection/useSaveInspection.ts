@@ -42,7 +42,7 @@ export const useSaveInspection = () => {
 
         const responseData = {
           inspection_id: inspection.id,
-          inspection_item_id: response.questionId, // Usar inspection_item_id
+          inspection_item_id: response.questionId,
           answer: response.value || "",
           media_urls: response.mediaUrls || [],
           comments: response.comments || null,
@@ -57,7 +57,7 @@ export const useSaveInspection = () => {
           .from("inspection_responses")
           .select("id")
           .eq("inspection_id", inspection.id)
-          .eq("inspection_item_id", response.questionId) // Usar inspection_item_id
+          .eq("inspection_item_id", response.questionId)
           .single();
 
         if (existingResponse) {

@@ -44,17 +44,17 @@ interface Group {
   order: number;
 }
 
-interface InspectionResponse {
+interface SimpleInspectionResponse {
   id: string;
   inspection_id: string;
   inspection_item_id: string;
   answer: string;
-  comments: string | null;
-  notes: string | null;
-  action_plan: string | null;
-  media_urls: string[] | null;
-  sub_checklist_responses: any;
-  completed_at: string | null;
+  comments?: string;
+  notes?: string;
+  action_plan?: string;
+  media_urls?: string[];
+  sub_checklist_responses?: any;
+  completed_at?: string;
   updated_at: string;
   created_at: string;
 }
@@ -242,7 +242,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         setGroups(processedGroups);
       }
 
-      // Buscar respostas existentes - usando inspection_item_id ao invés de question_id
+      // Buscar respostas existentes - usando inspection_item_id
       const { data: responsesData, error: responsesError } = await supabase
         .from("inspection_responses")
         .select("*")
@@ -252,8 +252,8 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         console.error("[useInspectionFetch] Error fetching responses:", responsesError);
       } else {
         const responsesMap: Record<string, any> = {};
-        responsesData.forEach((response: InspectionResponse) => {
-          // Usar inspection_item_id como chave ao invés de question_id
+        responsesData.forEach((response: SimpleInspectionResponse) => {
+          // Usar inspection_item_id como chave
           const questionId = response.inspection_item_id;
           responsesMap[questionId] = {
             value: response.answer,
