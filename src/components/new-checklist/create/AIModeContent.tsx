@@ -10,7 +10,7 @@ import { ChecklistQuestion } from "@/types/newChecklist";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { normalizeResponseType } from "@/utils/typeConsistency";
-import { useOpenAIAssistants } from "@/hooks/new-checklist/useOpenAIAssistants"; // <-- Adicionado aqui
+import { useOpenAIAssistants } from "@/hooks/new-checklist/useOpenAIAssistants";
 
 interface AIModeContentProps {
   aiPrompt: string;
@@ -54,10 +54,9 @@ export function AIModeContent({
   const [companyData, setCompanyData] = useState<any>(null);
   const [formattedPrompt, setFormattedPrompt] = useState<string>("");
 
-  // Importa assistants dinamicamente do hook
+  // Hook dinâmico dos assistants
   const { assistants, loading: assistantsLoading, error: assistantsError } = useOpenAIAssistants();
 
-  // Buscar dados da empresa quando companyId mudar
   useEffect(() => {
     if (companyId) {
       fetchCompanyData(companyId);
@@ -75,7 +74,7 @@ export function AIModeContent({
         .select('*')
         .eq('id', id)
         .single();
-      
+
       if (error) throw error;
       setCompanyData(data);
       updateFormattedPrompt(data);
@@ -118,7 +117,7 @@ Gere ${numQuestions} perguntas específicas para este checklist.`;
             description: description,
             category: category,
             company_id: companyId,
-            assistant_id: selectedAssistant // Agora envia o ID do assistant selecionado!
+            assistant_id: selectedAssistant // ID do assistant selecionado
           },
           questionCount: numQuestions
         }
@@ -165,40 +164,40 @@ Gere ${numQuestions} perguntas específicas para este checklist.`;
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="assistant">Assistente de IA</Label>
-              <Select 
-                value={selectedAssistant} 
+              <Select
+                value={selectedAssistant}
                 onValueChange={setSelectedAssistant}
                 disabled={assistantsLoading || !!assistantsError}
               >
                 <SelectTrigger id="assistant">
-                  <SelectValue placeholder={
-                    assistantsLoading 
-                      ? "Carregando assistentes..." 
-                      : (assistantsError 
-                        ? "Erro ao carregar assistentes" 
-                        : "Selecione um assistente da OpenAI")
-                  } />
+                  <SelectValue
+                    placeholder={
+                      assistantsLoading
+                        ? "Carregando assistentes..."
+                        : assistantsError
+                        ? "Erro ao carregar assistentes"
+                        : "Selecione um assistente da OpenAI"
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   {assistantsLoading ? (
-                    <SelectItem value="" disabled>Carregando assistentes...</SelectItem>
+                    <div className="p-2 text-muted-foreground">Carregando assistentes...</div>
                   ) : assistantsError ? (
-                    <SelectItem value="" disabled>Erro ao carregar assistentes</SelectItem>
+                    <div className="p-2 text-red-500">Erro ao carregar assistentes</div>
+                  ) : assistants.length === 0 ? (
+                    <div className="p-2 text-muted-foreground">Nenhum assistente disponível</div>
                   ) : (
-                    assistants.length === 0 ? (
-                      <SelectItem value="" disabled>Nenhum assistente disponível</SelectItem>
-                    ) : (
-                      assistants.map((assistant) => (
-                        <SelectItem key={assistant.id} value={assistant.id}>
-                          {assistant.name}
-                          {assistant.model ? (
-                            <span style={{fontSize: '0.8em', color: '#888', marginLeft: 8}}>
-                              ({assistant.model})
-                            </span>
-                          ) : null}
-                        </SelectItem>
-                      ))
-                    )
+                    assistants.map((assistant) => (
+                      <SelectItem key={assistant.id} value={assistant.id}>
+                        {assistant.name}
+                        {assistant.model ? (
+                          <span style={{ fontSize: '0.8em', color: '#888', marginLeft: 8 }}>
+                            ({assistant.model})
+                          </span>
+                        ) : null}
+                      </SelectItem>
+                    ))
                   )}
                 </SelectContent>
               </Select>
@@ -267,7 +266,7 @@ Gere ${numQuestions} perguntas específicas para este checklist.`;
             className="font-mono text-sm"
             placeholder="O prompt será gerado automaticamente com base nos campos preenchidos"
           />
-          
+
           <Button
             onClick={handleGenerateAI}
             disabled={aiLoading || !canGenerate}
