@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -17,19 +16,19 @@ export function useOpenAIAssistants() {
   const fetchAssistants = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       console.log('Fetching OpenAI assistants...');
       const { data, error } = await supabase.functions.invoke('list-assistants');
-      
+
       if (error) {
         console.error('Error fetching assistants:', error);
         setError(`Error fetching assistants: ${error.message}`);
         return;
       }
-      
+
       console.log('Response from list-assistants:', data);
-      
+
       if (data && data.assistants) {
         console.log(`Retrieved ${data.assistants.length} OpenAI assistants`);
         setAssistants(data.assistants);
@@ -49,11 +48,11 @@ export function useOpenAIAssistants() {
     fetchAssistants();
   }, []);
 
-  return { 
-    assistants, 
-    loading, 
+  return {
+    assistants,
+    loading,
     error,
-    refetch: fetchAssistants 
+    refetch: fetchAssistants,
   };
 }
 
