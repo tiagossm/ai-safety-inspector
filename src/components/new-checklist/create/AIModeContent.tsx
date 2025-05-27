@@ -107,6 +107,20 @@ Gere ${numQuestions} perguntas específicas para este checklist.`;
     }
 
     setAiLoading(true);
+
+    // LOG do body enviado ao backend!
+    console.log("Enviando para generate-checklist:", {
+      prompt: formattedPrompt,
+      checklistData: {
+        title: `Checklist: ${category}`,
+        description: description,
+        category: category,
+        company_id: companyId
+      },
+      assistantId: selectedAssistant,
+      questionCount: numQuestions
+    });
+
     try {
       const { data, error } = await supabase.functions.invoke('generate-checklist', {
         body: {
@@ -117,12 +131,19 @@ Gere ${numQuestions} perguntas específicas para este checklist.`;
             category: category,
             company_id: companyId
           },
-          assistantId: selectedAssistant, // <-- camelCase, na raiz do body!
+          assistantId: selectedAssistant,
           questionCount: numQuestions
         }
       });
 
-      if (error) throw error;
+      // LOG da resposta do backend
+      console.log("Resposta do generate-checklist:", data, error);
+
+      if (error || (data && data.success === false)) {
+        const errorMsg = (error && error.message) || (data && data.error) || "Erro ao gerar checklist com IA";
+        toast.error(errorMsg);
+        return;
+      }
 
       if (data?.questions && Array.isArray(data.questions)) {
         const aiQuestions: ChecklistQuestion[] = data.questions.map((q: any, index: number) => ({
@@ -229,7 +250,7 @@ Gere ${numQuestions} perguntas específicas para este checklist.`;
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <Label htmlFor="contextValue">Valor</Label>
               <Input
