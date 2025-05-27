@@ -54,7 +54,6 @@ export function AIModeContent({
   const [companyData, setCompanyData] = useState<any>(null);
   const [formattedPrompt, setFormattedPrompt] = useState<string>("");
 
-  // Hook dinâmico dos assistants
   const { assistants, loading: assistantsLoading, error: assistantsError } = useOpenAIAssistants();
 
   useEffect(() => {
@@ -116,9 +115,9 @@ Gere ${numQuestions} perguntas específicas para este checklist.`;
             title: `Checklist: ${category}`,
             description: description,
             category: category,
-            company_id: companyId,
-            assistant_id: selectedAssistant // ID do assistant selecionado
+            company_id: companyId
           },
+          assistantId: selectedAssistant, // <-- camelCase, na raiz do body!
           questionCount: numQuestions
         }
       });
