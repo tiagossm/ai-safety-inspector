@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -63,7 +62,7 @@ export default function NewChecklistCreate() {
     const newQuestions: ChecklistQuestion[] = lines.map((line, index) => ({
       id: `bulk-${Date.now()}-${index}`,
       text: line.trim(),
-      responseType: "yes_no",
+      responseType: "sim/não",
       isRequired: true,
       order: questions.length + index,
       weight: 1,
@@ -82,7 +81,7 @@ export default function NewChecklistCreate() {
     const newQuestions: ChecklistQuestion[] = data.map((row, index) => ({
       id: `csv-${Date.now()}-${index}`,
       text: row.pergunta || row.question || row.text || "",
-      responseType: mapImportedResponseType(row.tipo_resposta || row.response_type || row.type || "yes_no"),
+      responseType: mapImportedResponseType(row.tipo_resposta || row.response_type || row.type || "sim/não"),
       isRequired: parseBoolean(row.obrigatorio || row.required || true),
       order: questions.length + index,
       weight: parseInt(row.weight || row.peso || "1"),
@@ -101,14 +100,14 @@ export default function NewChecklistCreate() {
 
   const mapImportedResponseType = (type: string): ChecklistQuestion["responseType"] => {
     const normalizedType = type.toLowerCase();
-    if (normalizedType.includes("sim") || normalizedType.includes("yes") || normalizedType.includes("boolean")) return "yes_no";
-    if (normalizedType.includes("multiple") || normalizedType.includes("multipla") || normalizedType.includes("choice")) return "multiple_choice";
-    if (normalizedType.includes("numeric") || normalizedType.includes("numero")) return "numeric";
-    if (normalizedType.includes("photo") || normalizedType.includes("foto")) return "photo";
-    if (normalizedType.includes("signature") || normalizedType.includes("assinatura")) return "signature";
-    if (normalizedType.includes("time") || normalizedType.includes("hora")) return "time";
-    if (normalizedType.includes("date") || normalizedType.includes("data")) return "date";
-    return "text";
+    if (normalizedType.includes("sim") || normalizedType.includes("yes") || normalizedType.includes("boolean")) return "sim/não";
+    if (normalizedType.includes("multiple") || normalizedType.includes("multipla") || normalizedType.includes("choice")) return "seleção múltipla";
+    if (normalizedType.includes("numeric") || normalizedType.includes("numero")) return "numérico";
+    if (normalizedType.includes("photo") || normalizedType.includes("foto")) return "foto";
+    if (normalizedType.includes("signature") || normalizedType.includes("assinatura")) return "assinatura";
+    if (normalizedType.includes("time") || normalizedType.includes("hora")) return "hora";
+    if (normalizedType.includes("date") || normalizedType.includes("data")) return "data";
+    return "texto";
   };
 
   const parseBoolean = (value: any): boolean => {
@@ -147,7 +146,7 @@ export default function NewChecklistCreate() {
         const aiQuestions: ChecklistQuestion[] = data.questions.map((q: any, index: number) => ({
           id: `ai-${Date.now()}-${index}`,
           text: q.text,
-          responseType: q.responseType || "yes_no",
+          responseType: q.responseType || "sim/não",
           isRequired: q.isRequired !== false,
           order: questions.length + index,
           weight: q.weight || 1,

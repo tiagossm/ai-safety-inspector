@@ -1,37 +1,37 @@
 
 export const QUESTION_TYPES = [
-  { value: "yes_no", label: "Sim/Não" },
-  { value: "text", label: "Texto" },
-  { value: "multiple_choice", label: "Múltipla Escolha" },
-  { value: "numeric", label: "Numérico" },
-  { value: "photo", label: "Foto" },
-  { value: "signature", label: "Assinatura" },
-  { value: "time", label: "Hora" },
-  { value: "date", label: "Data" }
+  { value: "sim/não", label: "Sim/Não" },
+  { value: "texto", label: "Texto" },
+  { value: "seleção múltipla", label: "Múltipla Escolha" },
+  { value: "numérico", label: "Numérico" },
+  { value: "foto", label: "Foto" },
+  { value: "assinatura", label: "Assinatura" },
+  { value: "hora", label: "Hora" },
+  { value: "data", label: "Data" }
 ] as const;
 
 export type QuestionType = typeof QUESTION_TYPES[number]["value"];
 
 export const RESPONSE_TYPE_MAP = {
   frontend: {
-    "yes_no": "Sim/Não",
-    "text": "Texto",
-    "multiple_choice": "Múltipla Escolha",
-    "numeric": "Numérico",
-    "photo": "Foto", 
-    "signature": "Assinatura",
-    "time": "Hora",
-    "date": "Data"
+    "sim/não": "Sim/Não",
+    "texto": "Texto",
+    "seleção múltipla": "Múltipla Escolha",
+    "numérico": "Numérico",
+    "foto": "Foto", 
+    "assinatura": "Assinatura",
+    "hora": "Hora",
+    "data": "Data"
   },
   database: {
-    "yes_no": "sim/não",
-    "text": "texto",
-    "multiple_choice": "seleção múltipla",
-    "numeric": "numérico",
-    "photo": "foto",
-    "signature": "assinatura", 
-    "time": "hora",
-    "date": "data"
+    "sim/não": "sim/não",
+    "texto": "texto",
+    "seleção múltipla": "seleção múltipla",
+    "numérico": "numérico",
+    "foto": "foto",
+    "assinatura": "assinatura", 
+    "hora": "hora",
+    "data": "data"
   }
 } as const;
 

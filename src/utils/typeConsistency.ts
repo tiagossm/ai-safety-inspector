@@ -5,7 +5,7 @@ export function createDefaultQuestion(): ChecklistQuestion {
   return {
     id: `temp-${Date.now()}`,
     text: "",
-    responseType: "yes_no",
+    responseType: "sim/não",
     isRequired: true,
     order: 0,
     weight: 1,
@@ -21,46 +21,46 @@ export function normalizeResponseType(responseType: string): ChecklistQuestion["
   const type = responseType.toLowerCase();
   
   if (type.includes("sim") || type.includes("não") || type.includes("yes") || type.includes("no") || type === "boolean") {
-    return "yes_no";
+    return "sim/não";
   }
   
   if (type.includes("múltipla") || type.includes("multiple") || type.includes("choice") || type.includes("select")) {
-    return "multiple_choice";
+    return "seleção múltipla";
   }
   
   if (type.includes("número") || type.includes("numeric") || type.includes("number")) {
-    return "numeric";
+    return "numérico";
   }
   
   if (type.includes("foto") || type.includes("photo") || type.includes("imagem")) {
-    return "photo";
+    return "foto";
   }
   
   if (type.includes("assinatura") || type.includes("signature")) {
-    return "signature";
+    return "assinatura";
   }
   
   if (type.includes("hora") || type.includes("time")) {
-    return "time";
+    return "hora";
   }
   
   if (type.includes("data") || type.includes("date")) {
-    return "date";
+    return "data";
   }
   
-  return "text";
+  return "texto";
 }
 
 export function responseTypeToDatabase(responseType: ChecklistQuestion["responseType"]): string {
   const typeMap: Record<ChecklistQuestion["responseType"], string> = {
-    "yes_no": "sim/não",
-    "text": "texto",
-    "multiple_choice": "seleção múltipla",
-    "numeric": "numérico",
-    "photo": "foto",
-    "signature": "assinatura",
-    "time": "hora",
-    "date": "data"
+    "sim/não": "sim/não",
+    "texto": "texto",
+    "seleção múltipla": "seleção múltipla",
+    "numérico": "numérico",
+    "foto": "foto",
+    "assinatura": "assinatura",
+    "hora": "hora",
+    "data": "data"
   };
   
   return typeMap[responseType] || "texto";
@@ -68,15 +68,15 @@ export function responseTypeToDatabase(responseType: ChecklistQuestion["response
 
 export function databaseToResponseType(dbType: string): ChecklistQuestion["responseType"] {
   const typeMap: Record<string, ChecklistQuestion["responseType"]> = {
-    "sim/não": "yes_no",
-    "texto": "text",
-    "seleção múltipla": "multiple_choice",
-    "numérico": "numeric",
-    "foto": "photo",
-    "assinatura": "signature",
-    "hora": "time",
-    "data": "date"
+    "sim/não": "sim/não",
+    "texto": "texto",
+    "seleção múltipla": "seleção múltipla",
+    "numérico": "numérico",
+    "foto": "foto",
+    "assinatura": "assinatura",
+    "hora": "hora",
+    "data": "data"
   };
   
-  return typeMap[dbType] || "text";
+  return typeMap[dbType] || "texto";
 }

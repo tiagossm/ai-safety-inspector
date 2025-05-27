@@ -24,7 +24,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { SubChecklistButton } from "@/components/new-checklist/question-editor/SubChecklistButton";
 import { toast } from "sonner";
-import { frontendToDatabaseResponseType, databaseToFrontendResponseType } from "@/utils/responseTypeMap";
 import { QUESTION_TYPES } from "@/lib/constants";
 
 interface QuestionEditorProps {
@@ -46,7 +45,7 @@ export function QuestionEditor({
   const [newOption, setNewOption] = useState("");
 
   // Convert database response type to frontend type for proper display
-  const frontendResponseType = question.responseType || "yes_no";
+  const frontendResponseType = question.responseType || "sim/não";
 
   const handleUpdate = (field: keyof ChecklistQuestion, value: any) => {
     if (onUpdate) {
@@ -188,7 +187,7 @@ export function QuestionEditor({
           </div>
         </div>
 
-        {frontendResponseType === "multiple_choice" && (
+        {frontendResponseType === "seleção múltipla" && (
           <div className="mt-4 space-y-2">
             <label className="text-sm font-medium mb-1 block">Opções</label>
             <div className="space-y-2">

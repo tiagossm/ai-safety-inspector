@@ -106,7 +106,7 @@ export function QuestionItem({
     const newSubitem: ChecklistQuestion = {
       id: `new-${Date.now()}`,
       text: "",
-      responseType: "yes_no",
+      responseType: "sim/não",
       isRequired: true,
       weight: 1,
       allowsPhoto: false,
@@ -251,7 +251,7 @@ export function QuestionItem({
               </div>
             </div>
 
-            {question.responseType === "multiple_choice" && (
+            {question.responseType === "seleção múltipla" && (
               <div className="space-y-2">
                 <Label>Opções</Label>
                 <div className="space-y-2">
