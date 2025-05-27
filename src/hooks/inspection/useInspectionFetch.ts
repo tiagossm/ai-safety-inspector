@@ -44,6 +44,21 @@ interface Group {
   order: number;
 }
 
+interface InspectionResponse {
+  id: string;
+  inspection_id: string;
+  inspection_item_id: string;
+  answer: string;
+  comments: string | null;
+  notes: string | null;
+  action_plan: string | null;
+  media_urls: string[] | null;
+  sub_checklist_responses: any;
+  completed_at: string | null;
+  updated_at: string;
+  created_at: string;
+}
+
 export function useInspectionFetch(inspectionId: string | undefined) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -178,9 +193,8 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         }
       }
 
-      // CORRIGIDO: Melhor tratamento de responsáveis (array vs single)
+      // Buscar responsáveis
       if (inspectionData.responsible_ids && inspectionData.responsible_ids.length > 0) {
-        // Se tem array de responsáveis, pegar o primeiro
         const { data: responsibleData, error: responsibleError } = await supabase
           .from("users")
           .select("*")
@@ -193,7 +207,6 @@ export function useInspectionFetch(inspectionId: string | undefined) {
           setResponsible(responsibleData);
         }
       } else if (inspectionData.responsible_id) {
-        // Se tem ID único de responsável
         const { data: responsibleData, error: responsibleError } = await supabase
           .from("users")
           .select("*")
@@ -229,7 +242,7 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         setGroups(processedGroups);
       }
 
-      // Buscar respostas existentes
+      // Buscar respostas existentes - usando inspection_item_id ao invés de question_id
       const { data: responsesData, error: responsesError } = await supabase
         .from("inspection_responses")
         .select("*")
@@ -239,8 +252,10 @@ export function useInspectionFetch(inspectionId: string | undefined) {
         console.error("[useInspectionFetch] Error fetching responses:", responsesError);
       } else {
         const responsesMap: Record<string, any> = {};
-        responsesData.forEach((response) => {
-          responsesMap[response.question_id] = {
+        responsesData.forEach((response: InspectionResponse) => {
+          // Usar inspection_item_id como chave ao invés de question_id
+          const questionId = response.inspection_item_id;
+          responsesMap[questionId] = {
             value: response.answer,
             mediaUrls: response.media_urls || [],
             comments: response.comments,

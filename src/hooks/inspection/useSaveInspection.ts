@@ -3,10 +3,20 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+interface SaveInspectionResponse {
+  questionId: string;
+  value: any;
+  mediaUrls?: string[];
+  comments?: string;
+  notes?: string;
+  actionPlan?: string;
+  subChecklistResponses?: Record<string, any>;
+}
+
 export const useSaveInspection = () => {
   const [isSaving, setIsSaving] = useState(false);
 
-  const saveInspection = async (inspection: any, responses: any[]) => {
+  const saveInspection = async (inspection: any, responses: SaveInspectionResponse[]) => {
     setIsSaving(true);
     
     try {
@@ -32,7 +42,7 @@ export const useSaveInspection = () => {
 
         const responseData = {
           inspection_id: inspection.id,
-          question_id: response.questionId,
+          inspection_item_id: response.questionId, // Usar inspection_item_id
           answer: response.value || "",
           media_urls: response.mediaUrls || [],
           comments: response.comments || null,
@@ -47,7 +57,7 @@ export const useSaveInspection = () => {
           .from("inspection_responses")
           .select("id")
           .eq("inspection_id", inspection.id)
-          .eq("question_id", response.questionId)
+          .eq("inspection_item_id", response.questionId) // Usar inspection_item_id
           .single();
 
         if (existingResponse) {
