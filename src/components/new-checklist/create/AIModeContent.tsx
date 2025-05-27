@@ -101,26 +101,12 @@ Gere ${numQuestions} perguntas específicas para este checklist.`;
   };
 
   const handleGenerateAI = async () => {
-    if (!category.trim() || !companyId || !description.trim()) {
-      toast.error("Preencha todos os campos obrigatórios antes de gerar");
+    if (!category.trim() || !companyId || !description.trim() || !selectedAssistant) {
+      toast.error("Preencha todos os campos obrigatórios e selecione um assistente antes de gerar");
       return;
     }
 
     setAiLoading(true);
-
-    // LOG do body enviado ao backend!
-    console.log("Enviando para generate-checklist:", {
-      prompt: formattedPrompt,
-      checklistData: {
-        title: `Checklist: ${category}`,
-        description: description,
-        category: category,
-        company_id: companyId
-      },
-      assistantId: selectedAssistant,
-      questionCount: numQuestions
-    });
-
     try {
       const { data, error } = await supabase.functions.invoke('generate-checklist', {
         body: {
@@ -136,14 +122,7 @@ Gere ${numQuestions} perguntas específicas para este checklist.`;
         }
       });
 
-      // LOG da resposta do backend
-      console.log("Resposta do generate-checklist:", data, error);
-
-      if (error || (data && data.success === false)) {
-        const errorMsg = (error && error.message) || (data && data.error) || "Erro ao gerar checklist com IA";
-        toast.error(errorMsg);
-        return;
-      }
+      if (error) throw error;
 
       if (data?.questions && Array.isArray(data.questions)) {
         const aiQuestions: ChecklistQuestion[] = data.questions.map((q: any, index: number) => ({
@@ -163,16 +142,20 @@ Gere ${numQuestions} perguntas específicas para este checklist.`;
 
         setQuestions([...questions, ...aiQuestions]);
         toast.success(`${aiQuestions.length} perguntas geradas pela IA`);
+      } else if (data && data.error) {
+        throw new Error(data.error);
+      } else {
+        throw new Error("Resposta inesperada da função generate-checklist.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro na geração por IA:", error);
-      toast.error("Erro ao gerar checklist com IA");
+      toast.error(error.message || "Erro ao gerar checklist com IA");
     } finally {
       setAiLoading(false);
     }
   };
 
-  const canGenerate = category.trim() && companyId && description.trim();
+  const canGenerate = category.trim() && companyId && description.trim() && selectedAssistant;
 
   return (
     <div className="space-y-6">
@@ -250,7 +233,7 @@ Gere ${numQuestions} perguntas específicas para este checklist.`;
                 </SelectContent>
               </Select>
             </div>
-
+            
             <div>
               <Label htmlFor="contextValue">Valor</Label>
               <Input
