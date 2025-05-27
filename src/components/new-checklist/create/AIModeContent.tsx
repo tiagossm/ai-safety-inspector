@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import { ChecklistQuestion } from "@/types/newChecklist";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { normalizeResponseType } from "@/utils/typeConsistency";
+import { useOpenAIAssistants } from "@/hooks/new-checklist/useOpenAIAssistants"; // <-- Adicionado aqui
 
 interface AIModeContentProps {
   aiPrompt: string;
@@ -54,6 +54,9 @@ export function AIModeContent({
   const [companyData, setCompanyData] = useState<any>(null);
   const [formattedPrompt, setFormattedPrompt] = useState<string>("");
 
+  // Importa assistants dinamicamente do hook
+  const { assistants, loading: assistantsLoading, error: assistantsError } = useOpenAIAssistants();
+
   // Buscar dados da empresa quando companyId mudar
   useEffect(() => {
     if (companyId) {
@@ -62,6 +65,7 @@ export function AIModeContent({
       setCompanyData(null);
       updateFormattedPrompt(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId, category, description, contextType, contextValue]);
 
   const fetchCompanyData = async (id: string) => {
@@ -113,7 +117,8 @@ Gere ${numQuestions} perguntas específicas para este checklist.`;
             title: `Checklist: ${category}`,
             description: description,
             category: category,
-            company_id: companyId
+            company_id: companyId,
+            assistant_id: selectedAssistant // Agora envia o ID do assistant selecionado!
           },
           questionCount: numQuestions
         }
@@ -160,13 +165,41 @@ Gere ${numQuestions} perguntas específicas para este checklist.`;
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="assistant">Assistente de IA</Label>
-              <Select value={selectedAssistant} onValueChange={setSelectedAssistant}>
+              <Select 
+                value={selectedAssistant} 
+                onValueChange={setSelectedAssistant}
+                disabled={assistantsLoading || !!assistantsError}
+              >
                 <SelectTrigger id="assistant">
-                  <SelectValue placeholder="Selecione um assistente da OpenAI" />
+                  <SelectValue placeholder={
+                    assistantsLoading 
+                      ? "Carregando assistentes..." 
+                      : (assistantsError 
+                        ? "Erro ao carregar assistentes" 
+                        : "Selecione um assistente da OpenAI")
+                  } />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="gpt-4o">GPT-4o (Recomendado)</SelectItem>
-                  <SelectItem value="gpt-4o-mini">GPT-4o Mini (Rápido)</SelectItem>
+                  {assistantsLoading ? (
+                    <SelectItem value="" disabled>Carregando assistentes...</SelectItem>
+                  ) : assistantsError ? (
+                    <SelectItem value="" disabled>Erro ao carregar assistentes</SelectItem>
+                  ) : (
+                    assistants.length === 0 ? (
+                      <SelectItem value="" disabled>Nenhum assistente disponível</SelectItem>
+                    ) : (
+                      assistants.map((assistant) => (
+                        <SelectItem key={assistant.id} value={assistant.id}>
+                          {assistant.name}
+                          {assistant.model ? (
+                            <span style={{fontSize: '0.8em', color: '#888', marginLeft: 8}}>
+                              ({assistant.model})
+                            </span>
+                          ) : null}
+                        </SelectItem>
+                      ))
+                    )
+                  )}
                 </SelectContent>
               </Select>
             </div>
