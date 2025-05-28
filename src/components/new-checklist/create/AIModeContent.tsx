@@ -9,8 +9,9 @@ import { Bot, Sparkles, RefreshCw } from "lucide-react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { normalizeResponseType } from "@/utils/typeConsistency";
+import { normalizeResponseType } from "@/utils/inspection/normalizationUtils";
 import { useOpenAIAssistants } from "@/hooks/new-checklist/useOpenAIAssistants";
+import { generateChecklist } from "@/utils/checklist/openaiUtils";
 
 interface AIModeContentProps {
   aiPrompt: string;
@@ -108,21 +109,17 @@ Gere ${numQuestions} perguntas específicas para este checklist.`;
 
     setAiLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-checklist', {
-        body: {
-          prompt: formattedPrompt,
-          checklistData: {
-            title: `Checklist: ${category}`,
-            description: description,
-            category: category,
-            company_id: companyId
-          },
-          assistantId: selectedAssistant,
-          questionCount: numQuestions
-        }
+      const data = await generateChecklist({
+        prompt: formattedPrompt,
+        checklistData: {
+          title: `Checklist: ${category}`,
+          description: description,
+          category: category,
+          company_id: companyId
+        },
+        assistantId: selectedAssistant,
+        questionCount: numQuestions
       });
-
-      if (error) throw error;
 
       if (data?.questions && Array.isArray(data.questions)) {
         const aiQuestions: ChecklistQuestion[] = data.questions.map((q: any, index: number) => ({
@@ -141,15 +138,10 @@ Gere ${numQuestions} perguntas específicas para este checklist.`;
         }));
 
         setQuestions([...questions, ...aiQuestions]);
-        toast.success(`${aiQuestions.length} perguntas geradas pela IA`);
-      } else if (data && data.error) {
-        throw new Error(data.error);
-      } else {
-        throw new Error("Resposta inesperada da função generate-checklist.");
       }
     } catch (error: any) {
       console.error("Erro na geração por IA:", error);
-      toast.error(error.message || "Erro ao gerar checklist com IA");
+      // O erro já é tratado pela função generateChecklist
     } finally {
       setAiLoading(false);
     }
@@ -189,7 +181,7 @@ Gere ${numQuestions} perguntas específicas para este checklist.`;
                   ) : assistantsError ? (
                     <div className="p-2 text-red-500">Erro ao carregar assistentes</div>
                   ) : assistants.length === 0 ? (
-                    <div className="p-2 text-muted-foreground">Nenhum assistente disponível</div>
+                    <div className="p-2 text-muted-foreground">Nenhum assistente dispon��vel</div>
                   ) : (
                     assistants.map((assistant) => (
                       <SelectItem key={assistant.id} value={assistant.id}>
