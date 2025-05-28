@@ -1,16 +1,38 @@
 
-import { ActionPlan } from "@/types/inspection";
-
-export interface ActionPlanWithRelations extends Omit<ActionPlan, 'status' | 'priority'> {
+export interface ActionPlanWithRelations {
+  id: string;
+  title: string;
+  description: string;
   status: string;
   priority: string;
+  due_date: string | null;
+  assignee?: string | null;
+  created_at: string;
+  updated_at: string;
+  inspection_id: string;
+  question_id: string;
+  question?: {
+    pergunta: string;
+  } | null;
   inspection?: {
     id: string;
     company?: {
-      fantasy_name: string;
+      id: string;
+      fantasy_name?: string;
     };
   };
-  question?: {
-    pergunta?: string;
-  } | null;
+}
+
+export interface ActionPlan {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  due_date?: string | null;
+  assignee?: string | null;
+  created_at: string;
+  updated_at: string;
+  inspection_id: string;
+  question_id: string;
 }

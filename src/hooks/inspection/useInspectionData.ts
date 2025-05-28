@@ -8,8 +8,11 @@ export function useInspectionData(inspectionId?: string) {
   const [inspection, setInspection] = useState<any>(null);
   const [responses, setResponses] = useState<Record<string, any>>({});
   const [actionPlans, setActionPlans] = useState<ActionPlan[]>([]);
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [company, setCompany] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch inspection data
   useEffect(() => {
@@ -23,6 +26,7 @@ export function useInspectionData(inspectionId?: string) {
 
     try {
       setIsLoading(true);
+      setError(null);
       
       // Fetch inspection details with related data
       const { data: inspectionData, error: inspectionError } = await supabase
@@ -45,6 +49,22 @@ export function useInspectionData(inspectionId?: string) {
       if (inspectionError) throw inspectionError;
 
       setInspection(inspectionData);
+      setCompany(inspectionData?.companies);
+
+      // Fetch checklist questions if available
+      if (inspectionData?.checklist_id) {
+        const { data: questionsData, error: questionsError } = await supabase
+          .from('checklist_itens')
+          .select('*')
+          .eq('checklist_id', inspectionData.checklist_id)
+          .order('ordem');
+
+        if (questionsError) {
+          console.error('Error fetching questions:', questionsError);
+        } else {
+          setQuestions(questionsData || []);
+        }
+      }
 
       // Fetch existing responses
       const { data: responsesData, error: responsesError } = await supabase
@@ -64,6 +84,7 @@ export function useInspectionData(inspectionId?: string) {
 
     } catch (error: any) {
       console.error('Error fetching inspection data:', error);
+      setError(error.message || 'Erro ao carregar dados da inspeção');
       toast.error('Erro ao carregar dados da inspeção');
     } finally {
       setIsLoading(false);
@@ -145,7 +166,11 @@ export function useInspectionData(inspectionId?: string) {
     inspection,
     responses,
     actionPlans: actionPlans as any[], // Temporary type assertion to resolve conflict
+    questions,
+    company,
+    loading: isLoading, // Alias for compatibility
     isLoading,
+    error,
     isSubmitting,
     handleResponseChange,
     handleMediaChange,

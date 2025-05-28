@@ -12,7 +12,7 @@ export function useActionPlanFilters(actionPlans: ActionPlanWithRelations[]) {
       // Apply search filter
       const searchMatch = search === "" || 
         plan.description.toLowerCase().includes(search.toLowerCase()) ||
-        (plan.assignee?.toLowerCase().includes(search.toLowerCase()) || false) ||
+        (plan.title?.toLowerCase().includes(search.toLowerCase()) || false) ||
         (plan.inspection?.company?.fantasy_name.toLowerCase().includes(search.toLowerCase()) || false) ||
         (plan.question !== null && 
          typeof plan.question === 'object' && 
