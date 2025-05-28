@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   deleteChecklistById, 
@@ -7,14 +6,18 @@ import {
   deleteBulkChecklistsById
 } from "@/services/checklist/checklistMutationService";
 import { toast } from "sonner";
+import { handleApiError } from "@/utils/errorHandling";
 
 /**
- * Hook for checklist mutations (delete, update)
+ * Hook para mutações de checklist (exclusão, atualização)
+ * Usa o sistema centralizado de tratamento de erros
  */
 export function useChecklistMutations() {
   const queryClient = useQueryClient();
 
-  // Delete checklist mutation
+  /**
+   * Mutação para excluir um checklist
+   */
   const deleteChecklist = useMutation({
     mutationFn: async (checklistId: string) => {
       const toastId = toast.loading("Excluindo checklist...");
@@ -25,18 +28,20 @@ export function useChecklistMutations() {
         return result;
       } catch (error) {
         toast.dismiss(toastId);
-        console.error("Error deleting checklist:", error);
-        toast.error(`Erro ao excluir checklist: ${error.message || "Falha na operação"}`);
+        handleApiError(error, "Erro ao excluir checklist");
         throw error;
       }
     },
     onSuccess: () => {
+      // Invalida as consultas para forçar uma nova busca
       queryClient.invalidateQueries({ queryKey: ["new-checklists"] });
-      queryClient.invalidateQueries({ queryKey: ["all-checklists-data"] });
+      queryClient.invalidateQueries({ queryKey: ["all-new-checklists"] });
     }
   });
   
-  // Update checklist status mutation
+  /**
+   * Mutação para atualizar o status de um checklist
+   */
   const updateStatus = useMutation({
     mutationFn: async ({ checklistId, newStatus }: { checklistId: string, newStatus: 'active' | 'inactive' }) => {
       const toastId = toast.loading("Atualizando status...");
@@ -47,18 +52,20 @@ export function useChecklistMutations() {
         return result;
       } catch (error) {
         toast.dismiss(toastId);
-        console.error("Error updating checklist status:", error);
-        toast.error(`Erro ao atualizar status: ${error.message || "Falha na operação"}`);
+        handleApiError(error, "Erro ao atualizar status");
         throw error;
       }
     },
     onSuccess: () => {
+      // Invalida as consultas para forçar uma nova busca
       queryClient.invalidateQueries({ queryKey: ["new-checklists"] });
-      queryClient.invalidateQueries({ queryKey: ["all-checklists-data"] });
+      queryClient.invalidateQueries({ queryKey: ["all-new-checklists"] });
     }
   });
 
-  // Update multiple checklists status mutation
+  /**
+   * Mutação para atualizar o status de múltiplos checklists
+   */
   const updateBulkStatus = useMutation({
     mutationFn: async ({ checklistIds, newStatus }: { checklistIds: string[], newStatus: 'active' | 'inactive' }) => {
       if (checklistIds.length === 0) {
@@ -74,18 +81,20 @@ export function useChecklistMutations() {
         return result;
       } catch (error) {
         toast.dismiss(toastId);
-        console.error("Error updating multiple checklists status:", error);
-        toast.error(`Erro ao atualizar status em massa: ${error.message || "Falha na operação"}`);
+        handleApiError(error, "Erro ao atualizar status em massa");
         throw error;
       }
     },
     onSuccess: () => {
+      // Invalida as consultas para forçar uma nova busca
       queryClient.invalidateQueries({ queryKey: ["new-checklists"] });
-      queryClient.invalidateQueries({ queryKey: ["all-checklists-data"] });
+      queryClient.invalidateQueries({ queryKey: ["all-new-checklists"] });
     }
   });
 
-  // Bulk delete mutation
+  /**
+   * Mutação para excluir múltiplos checklists
+   */
   const deleteBulkChecklists = useMutation({
     mutationFn: async (checklistIds: string[]): Promise<{ success: boolean, count: number, failed?: number }> => {
       if (!checklistIds.length) return { success: true, count: 0 };
@@ -102,28 +111,31 @@ export function useChecklistMutations() {
         return result;
       } catch (error) {
         toast.dismiss(toastId);
-        console.error("Error in bulk delete operation:", error);
-        toast.error(`Erro ao excluir checklists: ${error.message || "Falha na operação"}`);
+        handleApiError(error, "Erro ao excluir checklists em massa");
         throw error;
       }
     },
     onSuccess: () => {
+      // Invalida as consultas para forçar uma nova busca
       queryClient.invalidateQueries({ queryKey: ["new-checklists"] });
-      queryClient.invalidateQueries({ queryKey: ["all-checklists-data"] });
+      queryClient.invalidateQueries({ queryKey: ["all-new-checklists"] });
     }
   });
 
-  // Refetch function with loading toast
+  /**
+   * Função para forçar atualização dos dados
+   */
   const refetch = async () => {
     const toastId = toast.loading("Atualizando dados...");
     try {
+      // Invalida as consultas para forçar uma nova busca
       await queryClient.invalidateQueries({ queryKey: ["new-checklists"] });
-      await queryClient.invalidateQueries({ queryKey: ["all-checklists-data"] });
+      await queryClient.invalidateQueries({ queryKey: ["all-new-checklists"] });
       toast.dismiss(toastId);
       toast.success("Dados atualizados");
     } catch (error) {
       toast.dismiss(toastId);
-      toast.error("Erro ao atualizar dados");
+      handleApiError(error, "Erro ao atualizar dados");
     }
   };
 
