@@ -83,7 +83,16 @@ export default function NewChecklistCreate() {
       return;
     }
 
-    const success = await handleSave();
+    // Passa os parâmetros corretos para o hook
+    const params = {
+      title,
+      description,
+      category,
+      isTemplate,
+      companyId: companyId || undefined
+    };
+
+    const success = await handleSave(params);
     if (success) {
       navigate("/new-checklists");
     }

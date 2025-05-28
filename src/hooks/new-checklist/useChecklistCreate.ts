@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,17 +8,21 @@ import { handleApiError } from "@/utils/errorHandling";
 import { validateBasicChecklist } from "@/validation/checklistValidation";
 import { toast } from "sonner";
 
+interface ChecklistCreateParams {
+  title: string;
+  description: string;
+  category: string;
+  isTemplate: boolean;
+  companyId?: string;
+}
+
 /**
  * Hook para criação de checklist
- * Usa o sistema centralizado de mapeamento de tipos e validação
+ * Aceita parâmetros externos para evitar duplicação de estado
  */
 export function useChecklistCreate() {
   const navigate = useNavigate();
   
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("");
-  const [isTemplate, setIsTemplate] = useState(false);
   const [questions, setQuestions] = useState<ChecklistQuestion[]>([]);
   const [groups, setGroups] = useState<ChecklistGroup[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,10 +71,13 @@ export function useChecklistCreate() {
 
   /**
    * Salva o checklist no banco de dados
+   * @param params Parâmetros do checklist (título, descrição, etc.)
    * @returns Promise<boolean> Indica se o salvamento foi bem-sucedido
    */
-  const handleSave = async (): Promise<boolean> => {
-    // Valida os dados básicos
+  const handleSave = async (params: ChecklistCreateParams): Promise<boolean> => {
+    const { title, description, category, isTemplate, companyId } = params;
+    
+    // Valida os dados básicos usando os parâmetros passados
     if (!validateBasicChecklist(title, category, questions)) {
       return false;
     }
@@ -85,7 +93,8 @@ export function useChecklistCreate() {
           category: category.trim(),
           is_template: isTemplate,
           status_checklist: "ativo",
-          origin: "manual"
+          origin: "manual",
+          company_id: companyId || null
         })
         .select("id")
         .single();
@@ -139,14 +148,6 @@ export function useChecklistCreate() {
   };
 
   return {
-    title,
-    setTitle,
-    description,
-    setDescription,
-    category,
-    setCategory,
-    isTemplate,
-    setIsTemplate,
     questions,
     setQuestions,
     groups,
