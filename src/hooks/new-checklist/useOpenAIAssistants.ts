@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { listAssistants } from '@/utils/checklist/openaiUtils';
+import { handleOpenAIError } from '@/utils/inspection/errorHandling';
 
 interface Assistant {
   id: string;
@@ -25,12 +26,22 @@ export function useOpenAIAssistants() {
         console.log(`Retrieved ${assistantsData.length} OpenAI assistants`);
         setAssistants(assistantsData);
       } else {
-        setError('No assistants available');
-        console.error('No assistants data returned');
+        console.warn('No assistants data returned or empty array');
+        setAssistants([]);
+        // Não definimos um erro aqui, apenas um array vazio
+        // Isso evita mostrar uma mensagem de erro quando não há assistentes
       }
     } catch (err: any) {
-      console.error('Unexpected error fetching assistants:', err);
-      setError(`Unexpected error: ${err.message || 'Unknown error'}`);
+      console.error('Error fetching assistants:', err);
+      
+      // Usar o handler de erros da OpenAI para tratar o erro de forma consistente
+      handleOpenAIError(err, 'useOpenAIAssistants');
+      
+      // Definir a mensagem de erro para exibição na UI
+      setError(err.message || 'Erro ao carregar assistentes');
+      
+      // Garantir que assistants seja um array vazio em caso de erro
+      setAssistants([]);
     } finally {
       setLoading(false);
     }
@@ -49,3 +60,4 @@ export function useOpenAIAssistants() {
 }
 
 export default useOpenAIAssistants;
+
