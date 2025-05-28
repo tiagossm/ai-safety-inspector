@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { listAssistants } from '@/utils/checklist/openaiUtils';
 
 interface Assistant {
   id: string;
@@ -19,22 +19,14 @@ export function useOpenAIAssistants() {
 
     try {
       console.log('Fetching OpenAI assistants...');
-      const { data, error } = await supabase.functions.invoke('list-assistants');
-
-      if (error) {
-        console.error('Error fetching assistants:', error);
-        setError(`Error fetching assistants: ${error.message}`);
-        return;
-      }
-
-      console.log('Response from list-assistants:', data);
-
-      if (data && data.assistants) {
-        console.log(`Retrieved ${data.assistants.length} OpenAI assistants`);
-        setAssistants(data.assistants);
+      const assistantsData = await listAssistants();
+      
+      if (assistantsData && assistantsData.length > 0) {
+        console.log(`Retrieved ${assistantsData.length} OpenAI assistants`);
+        setAssistants(assistantsData);
       } else {
-        setError('No assistants data returned');
-        console.error('No assistants data in response:', data);
+        setError('No assistants available');
+        console.error('No assistants data returned');
       }
     } catch (err: any) {
       console.error('Unexpected error fetching assistants:', err);

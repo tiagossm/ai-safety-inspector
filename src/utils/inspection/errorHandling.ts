@@ -1,17 +1,7 @@
 import { toast } from "sonner";
 
 /**
- * Interface para erros do Supabase
- */
-interface SupabaseError {
-  code?: string;
-  message?: string;
-  details?: string;
-  hint?: string;
-}
-
-/**
- * Tipos de erros conhecidos
+ * Tipos de erro para o módulo de inspeções
  */
 export enum InspectionErrorType {
   VALIDATION = "validation",
@@ -23,11 +13,12 @@ export enum InspectionErrorType {
   NETWORK = "network",
   MEDIA_UPLOAD = "media_upload",
   REPORT_GENERATION = "report_generation",
-  UNKNOWN = "unknown",
+  OPENAI_ERROR = "openai_error",
+  UNKNOWN = "unknown"
 }
 
 /**
- * Classe para erros de inspeção
+ * Classe de erro para o módulo de inspeções
  */
 export class InspectionError extends Error {
   type: InspectionErrorType;
@@ -49,232 +40,232 @@ export class InspectionError extends Error {
 }
 
 /**
- * Função para validar campos obrigatórios
- * @param fields Objeto com campos a serem validados
- * @returns true se todos os campos são válidos, false caso contrário
- */
-export function validateRequiredFields(fields: Record<string, any>): boolean {
-  const missingFields: string[] = [];
-
-  Object.entries(fields).forEach(([key, value]) => {
-    if (value === undefined || value === null || value === "") {
-      missingFields.push(key);
-    }
-  });
-
-  if (missingFields.length > 0) {
-    const fieldList = missingFields.join(", ");
-    toast.error(`Campos obrigatórios não preenchidos: ${fieldList}`);
-    return false;
-  }
-
-  return true;
-}
-
-/**
- * Função para identificar o tipo de erro
- * @param error Erro a ser identificado
- * @returns Tipo de erro
- */
-function identifyErrorType(error: any): InspectionErrorType {
-  if (!error) return InspectionErrorType.UNKNOWN;
-
-  // Se já é um InspectionError, retorna o tipo dele
-  if (error instanceof InspectionError) {
-    return error.type;
-  }
-
-  // Erros do Supabase
-  if (error.code) {
-    const code = error.code.toString();
-    
-    // Códigos de erro PostgreSQL
-    if (code === "23505") return InspectionErrorType.CONFLICT; // unique_violation
-    if (code === "23503") return InspectionErrorType.CONFLICT; // foreign_key_violation
-    if (code === "23502") return InspectionErrorType.VALIDATION; // not_null_violation
-    if (code === "22P02") return InspectionErrorType.VALIDATION; // invalid_text_representation
-    if (code === "42P01") return InspectionErrorType.NOT_FOUND; // undefined_table
-    
-    // Códigos de erro HTTP
-    if (code === "401" || code === "403") return InspectionErrorType.AUTHORIZATION;
-    if (code === "404") return InspectionErrorType.NOT_FOUND;
-    if (code === "409") return InspectionErrorType.CONFLICT;
-    if (code === "422") return InspectionErrorType.VALIDATION;
-    if (code.startsWith("5")) return InspectionErrorType.SERVER;
-  }
-
-  // Erros de rede
-  if (error.message && (
-    error.message.includes("network") ||
-    error.message.includes("connection") ||
-    error.message.includes("offline")
-  )) {
-    return InspectionErrorType.NETWORK;
-  }
-
-  // Erros de validação
-  if (error.message && (
-    error.message.includes("validation") ||
-    error.message.includes("required") ||
-    error.message.includes("invalid")
-  )) {
-    return InspectionErrorType.VALIDATION;
-  }
-
-  // Erros de upload de mídia
-  if (error.message && (
-    error.message.includes("upload") ||
-    error.message.includes("file") ||
-    error.message.includes("media")
-  )) {
-    return InspectionErrorType.MEDIA_UPLOAD;
-  }
-
-  // Erros de geração de relatório
-  if (error.message && (
-    error.message.includes("report") ||
-    error.message.includes("pdf") ||
-    error.message.includes("excel") ||
-    error.message.includes("csv")
-  )) {
-    return InspectionErrorType.REPORT_GENERATION;
-  }
-
-  return InspectionErrorType.UNKNOWN;
-}
-
-/**
- * Função para obter mensagem de erro amigável
- * @param error Erro original
- * @param errorType Tipo de erro
- * @returns Mensagem de erro amigável
- */
-function getFriendlyErrorMessage(error: any, errorType: InspectionErrorType): string {
-  // Mensagens padrão por tipo de erro
-  const defaultMessages: Record<InspectionErrorType, string> = {
-    [InspectionErrorType.VALIDATION]: "Dados inválidos. Verifique os campos e tente novamente.",
-    [InspectionErrorType.AUTHENTICATION]: "Erro de autenticação. Faça login novamente.",
-    [InspectionErrorType.AUTHORIZATION]: "Você não tem permissão para realizar esta ação.",
-    [InspectionErrorType.NOT_FOUND]: "O recurso solicitado não foi encontrado.",
-    [InspectionErrorType.CONFLICT]: "Conflito de dados. Este item pode já existir ou estar sendo usado.",
-    [InspectionErrorType.SERVER]: "Erro no servidor. Tente novamente mais tarde.",
-    [InspectionErrorType.NETWORK]: "Erro de conexão. Verifique sua internet e tente novamente.",
-    [InspectionErrorType.MEDIA_UPLOAD]: "Erro ao fazer upload de mídia. Verifique o formato e tamanho do arquivo.",
-    [InspectionErrorType.REPORT_GENERATION]: "Erro ao gerar relatório. Tente novamente mais tarde.",
-    [InspectionErrorType.UNKNOWN]: "Ocorreu um erro inesperado. Tente novamente.",
-  };
-
-  // Tenta extrair mensagem do erro
-  let errorMessage = "";
-  
-  if (error) {
-    if (error instanceof InspectionError) {
-      return error.message;
-    } else if (typeof error === "string") {
-      errorMessage = error;
-    } else if (error.message) {
-      errorMessage = error.message;
-    } else if (error.details) {
-      errorMessage = error.details;
-    }
-  }
-
-  // Se tiver uma mensagem específica, usa ela, senão usa a mensagem padrão
-  return errorMessage || defaultMessages[errorType];
-}
-
-/**
- * Função principal para tratamento de erros
+ * Função para tratar erros do módulo de inspeções
  * @param error Erro a ser tratado
  * @param context Contexto onde o erro ocorreu
- * @param showToast Se deve mostrar toast com mensagem de erro
- * @returns InspectionError padronizado
+ * @returns Erro tratado
  */
-export function handleInspectionError(
-  error: any, 
-  context: string = "", 
-  showToast: boolean = true
-): InspectionError {
-  // Registra o erro no console
-  console.error(`[Inspection][${context}] Erro:`, error);
-
-  // Se já é um InspectionError, apenas atualiza o contexto se necessário
+export function handleInspectionError(error: any, context?: string): InspectionError {
+  console.error(`[${context || "inspection"}] Error:`, error);
+  
+  let errorType = InspectionErrorType.UNKNOWN;
+  let errorMessage = "Ocorreu um erro desconhecido";
+  let errorDetails = undefined;
+  
+  // Verificar se já é um InspectionError
   if (error instanceof InspectionError) {
-    if (showToast) {
+    // Mostrar toast se não for erro de validação (que já mostra toast)
+    if (error.type !== InspectionErrorType.VALIDATION) {
       toast.error(error.message);
     }
     return error;
   }
-
-  // Identifica o tipo de erro
-  const errorType = identifyErrorType(error);
   
-  // Obtém mensagem amigável
-  const friendlyMessage = getFriendlyErrorMessage(error, errorType);
-
-  // Mostra toast se necessário
-  if (showToast) {
-    toast.error(friendlyMessage);
+  // Tratar erros do Supabase
+  if (error?.code) {
+    switch (error.code) {
+      case "PGRST116":
+      case "42501":
+        errorType = InspectionErrorType.AUTHORIZATION;
+        errorMessage = "Você não tem permissão para realizar esta ação";
+        break;
+      case "42P01":
+      case "PGRST301":
+        errorType = InspectionErrorType.NOT_FOUND;
+        errorMessage = "Recurso não encontrado";
+        break;
+      case "23505":
+        errorType = InspectionErrorType.CONFLICT;
+        errorMessage = "Conflito de dados. Este registro já existe";
+        break;
+      case "23503":
+        errorType = InspectionErrorType.VALIDATION;
+        errorMessage = "Dados inválidos ou referência inexistente";
+        break;
+      case "PGRST401":
+      case "401":
+        errorType = InspectionErrorType.AUTHENTICATION;
+        errorMessage = "Autenticação necessária";
+        break;
+      default:
+        if (error.code.startsWith("PGRST") || error.code.startsWith("42")) {
+          errorType = InspectionErrorType.SERVER;
+          errorMessage = "Erro no servidor de banco de dados";
+        }
+    }
+    errorDetails = { code: error.code, details: error.details, hint: error.hint };
+  } 
+  // Tratar erros de rede
+  else if (error instanceof TypeError && error.message.includes("fetch")) {
+    errorType = InspectionErrorType.NETWORK;
+    errorMessage = "Erro de conexão. Verifique sua internet";
   }
-
-  // Cria e retorna um InspectionError padronizado
-  return new InspectionError(
-    friendlyMessage,
+  // Tratar erros de upload de mídia
+  else if (error.message && error.message.includes("upload")) {
+    errorType = InspectionErrorType.MEDIA_UPLOAD;
+    errorMessage = "Erro ao fazer upload do arquivo";
+  }
+  // Tratar erros de geração de relatório
+  else if (error.message && error.message.includes("report")) {
+    errorType = InspectionErrorType.REPORT_GENERATION;
+    errorMessage = "Erro ao gerar relatório";
+  }
+  // Tratar erros da OpenAI
+  else if (error.message && (
+    error.message.includes("OpenAI") || 
+    error.message.includes("API key") ||
+    error.message.includes("assistant") ||
+    error.message.includes("generate-checklist")
+  )) {
+    errorType = InspectionErrorType.OPENAI_ERROR;
+    errorMessage = "Erro ao comunicar com a IA. Tente novamente mais tarde.";
+  }
+  // Usar mensagem do erro original se disponível
+  else if (error.message) {
+    errorMessage = error.message;
+  }
+  
+  // Criar novo InspectionError
+  const inspectionError = new InspectionError(
+    errorMessage,
     errorType,
-    error.details || error.hint || null,
+    errorDetails,
+    error
+  );
+  
+  // Mostrar toast com a mensagem de erro
+  toast.error(errorMessage);
+  
+  return inspectionError;
+}
+
+/**
+ * Função para tratar erros de validação
+ * @param error Erro a ser tratado
+ * @param context Contexto onde o erro ocorreu
+ * @returns Erro tratado
+ */
+export function handleValidationError(error: any, context?: string): InspectionError {
+  console.error(`[${context || "validation"}] Error:`, error);
+  
+  let errorMessage = "Dados inválidos";
+  let errorDetails = undefined;
+  
+  if (error.errors && Array.isArray(error.errors)) {
+    // Extrair mensagens de erro
+    const messages = error.errors.map((err: any) => err.message || String(err));
+    errorMessage = messages.join(". ");
+    errorDetails = error.errors;
+    
+    // Mostrar toast para cada erro
+    messages.forEach((msg: string) => toast.error(msg));
+  } else if (error.message) {
+    errorMessage = error.message;
+    toast.error(errorMessage);
+  } else {
+    toast.error(errorMessage);
+  }
+  
+  return new InspectionError(
+    errorMessage,
+    InspectionErrorType.VALIDATION,
+    errorDetails,
     error
   );
 }
 
 /**
- * Função para tratamento de erros de API
+ * Função para tratar erros de upload de mídia
  * @param error Erro a ser tratado
  * @param context Contexto onde o erro ocorreu
- * @returns InspectionError padronizado
+ * @returns Erro tratado
  */
-export function handleApiError(error: any, context: string = ""): InspectionError {
-  return handleInspectionError(error, `API ${context}`, true);
-}
-
-/**
- * Função para tratamento de erros de validação
- * @param error Erro a ser tratado
- * @param context Contexto onde o erro ocorreu
- * @returns InspectionError padronizado
- */
-export function handleValidationError(error: any, context: string = ""): InspectionError {
-  return handleInspectionError(
-    error, 
-    `Validação ${context}`, 
-    true
+export function handleMediaUploadError(error: any, context?: string): InspectionError {
+  console.error(`[${context || "media-upload"}] Error:`, error);
+  
+  let errorMessage = "Erro ao fazer upload do arquivo";
+  
+  if (error.message) {
+    if (error.message.includes("size")) {
+      errorMessage = "Arquivo muito grande";
+    } else if (error.message.includes("type")) {
+      errorMessage = "Tipo de arquivo não suportado";
+    } else {
+      errorMessage = error.message;
+    }
+  }
+  
+  toast.error(errorMessage);
+  
+  return new InspectionError(
+    errorMessage,
+    InspectionErrorType.MEDIA_UPLOAD,
+    undefined,
+    error
   );
 }
 
 /**
- * Função para tratamento de erros de upload de mídia
+ * Função para tratar erros de geração de relatório
  * @param error Erro a ser tratado
  * @param context Contexto onde o erro ocorreu
- * @returns InspectionError padronizado
+ * @returns Erro tratado
  */
-export function handleMediaUploadError(error: any, context: string = ""): InspectionError {
-  return handleInspectionError(
-    error,
-    `Upload de mídia ${context}`,
-    true
+export function handleReportGenerationError(error: any, context?: string): InspectionError {
+  console.error(`[${context || "report-generation"}] Error:`, error);
+  
+  let errorMessage = "Erro ao gerar relatório";
+  
+  if (error.message) {
+    errorMessage = error.message;
+  }
+  
+  toast.error(errorMessage);
+  
+  return new InspectionError(
+    errorMessage,
+    InspectionErrorType.REPORT_GENERATION,
+    undefined,
+    error
   );
 }
 
 /**
- * Função para tratamento de erros de geração de relatório
+ * Função para tratar erros da OpenAI
  * @param error Erro a ser tratado
  * @param context Contexto onde o erro ocorreu
- * @returns InspectionError padronizado
+ * @returns Erro tratado
  */
-export function handleReportGenerationError(error: any, context: string = ""): InspectionError {
-  return handleInspectionError(
-    error,
-    `Geração de relatório ${context}`,
-    true
+export function handleOpenAIError(error: any, context?: string): InspectionError {
+  console.error(`[${context || "openai"}] Error:`, error);
+  
+  let errorMessage = "Erro ao comunicar com a IA";
+  let errorDetails = undefined;
+  
+  if (error.response?.data?.error) {
+    const openAIError = error.response.data.error;
+    errorMessage = openAIError.message || errorMessage;
+    errorDetails = openAIError;
+  } else if (error.message) {
+    errorMessage = error.message;
+  }
+  
+  // Mensagens mais amigáveis para erros comuns
+  if (errorMessage.includes("API key")) {
+    errorMessage = "Erro de autenticação com a OpenAI. Verifique sua chave de API.";
+  } else if (errorMessage.includes("rate limit")) {
+    errorMessage = "Limite de requisições excedido. Tente novamente mais tarde.";
+  } else if (errorMessage.includes("assistant")) {
+    errorMessage = "Erro ao comunicar com o assistente. Verifique se o assistente existe.";
+  }
+  
+  toast.error(errorMessage);
+  
+  return new InspectionError(
+    errorMessage,
+    InspectionErrorType.OPENAI_ERROR,
+    errorDetails,
+    error
   );
 }
 
