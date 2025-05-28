@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useChecklistQueries } from './useChecklistQueries';
 import { useCompanyQueries } from './useCompanyQueries';
@@ -6,27 +5,29 @@ import { useChecklistMutations } from './useChecklistMutations';
 import { useChecklistFilters } from './useChecklistFilters';
 
 /**
- * Main hook that composes all checklist functionality
+ * Hook principal que compõe toda a funcionalidade de checklists
+ * Centraliza o acesso a consultas, mutações e filtros
  */
 export function useNewChecklists() {
-  // Filter state
+  // Estado dos filtros
   const [filterType, setFilterType] = useState("all");
   const [selectedCompanyId, setSelectedCompanyId] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedOrigin, setSelectedOrigin] = useState("all");
   const [sortOrder, setSortOrder] = useState("created_at_desc");
   
-  // Get checklist data
+  // Obtém dados de checklists
   const { 
     checklists, 
     allChecklists, 
-    isLoading 
+    isLoading,
+    forceRefresh 
   } = useChecklistQueries(filterType, selectedCompanyId, selectedCategory, selectedOrigin, sortOrder);
   
-  // Get company data
+  // Obtém dados de empresas
   const { companies, isLoadingCompanies } = useCompanyQueries();
   
-  // Get mutations
+  // Obtém mutações
   const { 
     deleteChecklist, 
     updateStatus, 
@@ -35,7 +36,7 @@ export function useNewChecklists() {
     refetch 
   } = useChecklistMutations();
   
-  // Apply filters
+  // Aplica filtros
   const {
     searchTerm,
     setSearchTerm,
@@ -43,7 +44,7 @@ export function useNewChecklists() {
     filteredChecklists
   } = useChecklistFilters(checklists, allChecklists);
 
-  // Passando estados diretamente, sem usar useEffect redundantes
+  // Retorna todos os estados e funções necessários
   return {
     checklists: filteredChecklists,
     allChecklists,
@@ -67,6 +68,7 @@ export function useNewChecklists() {
     updateStatus,
     updateBulkStatus,
     deleteBulkChecklists,
-    refetch
+    refetch,
+    forceRefresh
   };
 }

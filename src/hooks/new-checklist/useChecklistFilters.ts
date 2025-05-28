@@ -1,12 +1,13 @@
-
 import { useState, useMemo, useCallback } from 'react';
-import { ChecklistWithStats } from "@/types/newChecklist";
+import { ChecklistWithStats } from "@/types/checklist";
 
 /**
- * Hook for managing checklist filters and search
+ * Hook para gerenciar filtros e busca de checklists
+ * @param checklists Lista de checklists já filtrados pelo servidor
+ * @param allChecklists Lista completa de checklists para extração de categorias
  */
 export function useChecklistFilters(checklists: ChecklistWithStats[], allChecklists: ChecklistWithStats[]) {
-  // Filter state
+  // Estado dos filtros
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [selectedCompanyId, setSelectedCompanyId] = useState("all");
@@ -14,7 +15,7 @@ export function useChecklistFilters(checklists: ChecklistWithStats[], allCheckli
   const [selectedOrigin, setSelectedOrigin] = useState("all");
   const [sortOrder, setSortOrder] = useState("created_at_desc");
 
-  // Extract unique categories from checklists
+  // Extrai categorias únicas dos checklists
   const categories = useMemo(() => {
     const uniqueCategories = new Set<string>();
     
@@ -27,13 +28,13 @@ export function useChecklistFilters(checklists: ChecklistWithStats[], allCheckli
     return Array.from(uniqueCategories).sort();
   }, [allChecklists]);
 
-  // Normalize search term for efficient search
+  // Normaliza o termo de busca para pesquisa eficiente
   const normalizedSearchTerm = useMemo(() => 
     searchTerm.trim().toLowerCase(),
     [searchTerm]
   );
 
-  // Memoized callback for filtering individual checklist
+  // Função para verificar se um checklist corresponde ao termo de busca
   const checklistMatchesSearch = useCallback((checklist: ChecklistWithStats, term: string) => {
     if (!term) return true;
     
@@ -41,11 +42,12 @@ export function useChecklistFilters(checklists: ChecklistWithStats[], allCheckli
       (checklist.title?.toLowerCase().includes(term)) ||
       (checklist.description?.toLowerCase().includes(term)) ||
       (checklist.category?.toLowerCase().includes(term)) ||
-      (checklist.companyName?.toLowerCase().includes(term))
+      (checklist.companyName?.toLowerCase().includes(term)) ||
+      (checklist.responsibleName?.toLowerCase().includes(term))
     );
   }, []);
 
-  // Apply search filter on top of API filters
+  // Aplica o filtro de busca sobre os filtros do servidor
   const filteredChecklists = useMemo(() => {
     if (!normalizedSearchTerm) {
       return checklists;

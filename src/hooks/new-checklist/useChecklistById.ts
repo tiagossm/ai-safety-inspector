@@ -1,42 +1,21 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
-import { databaseToFrontendResponseType } from "@/utils/responseTypeMap";
+import { ChecklistQuestion, ChecklistGroup, ChecklistWithQuestions } from "@/types/checklist";
+import { mapResponseType } from "@/utils/typeMapping";
+import { handleApiError } from "@/utils/errorHandling";
 
-export interface ChecklistWithQuestions {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  isTemplate: boolean;
-  status?: string;
-  companyId?: string;
-  responsibleId?: string;
-  questions: ChecklistQuestion[];
-  groups?: ChecklistGroup[];
-}
-
+/**
+ * Hook para buscar um checklist pelo ID
+ * @param checklistId ID do checklist a ser buscado
+ */
 export function useChecklistById(checklistId: string | undefined) {
   const [checklist, setChecklist] = useState<ChecklistWithQuestions | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const mapDbTypeToFrontendType = (dbType: string): ChecklistQuestion["responseType"] => {
-    const mappedType = databaseToFrontendResponseType(dbType);
-    const typeMap: Record<string, ChecklistQuestion["responseType"]> = {
-      'sim/não': 'sim/não',
-      'seleção múltipla': 'seleção múltipla',
-      'texto': 'texto',
-      'numérico': 'numérico',
-      'foto': 'foto',
-      'assinatura': 'assinatura',
-      'hora': 'hora',
-      'data': 'data'
-    };
-    return typeMap[mappedType] || 'texto';
-  };
-
+  /**
+   * Busca o checklist e suas perguntas
+   */
   const fetchChecklist = async () => {
     if (!checklistId) {
       setLoading(false);
@@ -47,7 +26,7 @@ export function useChecklistById(checklistId: string | undefined) {
       setLoading(true);
       setError(null);
 
-      // Fetch checklist details
+      // Busca os dados básicos do checklist
       const { data: checklistData, error: checklistError } = await supabase
         .from("checklists")
         .select("*")
@@ -58,7 +37,7 @@ export function useChecklistById(checklistId: string | undefined) {
         throw new Error(`Erro ao buscar checklist: ${checklistError.message}`);
       }
 
-      // Fetch questions
+      // Busca as perguntas do checklist
       const { data: questionsData, error: questionsError } = await supabase
         .from("checklist_itens")
         .select("*")
@@ -69,28 +48,39 @@ export function useChecklistById(checklistId: string | undefined) {
         throw new Error(`Erro ao buscar perguntas: ${questionsError.message}`);
       }
 
-      // Map database questions to frontend format
-      const questions: ChecklistQuestion[] = (questionsData || []).map((item, index) => ({
-        id: item.id,
-        text: item.pergunta || "",
-        responseType: mapDbTypeToFrontendType(item.tipo_resposta),
-        isRequired: item.obrigatorio || false,
-        order: item.ordem || index,
-        options: Array.isArray(item.opcoes) ? item.opcoes.map(opt => String(opt)) : [],
-        allowsPhoto: item.permite_foto || false,
-        allowsVideo: item.permite_video || false,
-        allowsAudio: item.permite_audio || false,
-        allowsFiles: item.permite_files || false,
-        weight: item.weight || 1,
-        hint: item.hint || "",
-        groupId: undefined, // Database doesn't have group_id column
-        condition: undefined, // Database doesn't have condition column
-        conditionValue: item.condition_value || undefined,
-        parentQuestionId: item.parent_item_id || undefined,
-        hasSubChecklist: item.has_subchecklist || false,
-        subChecklistId: item.sub_checklist_id || undefined
-      }));
+      // Mapeia as perguntas do banco de dados para o formato do frontend
+      const questions: ChecklistQuestion[] = (questionsData || []).map((item, index) => {
+        // Mapeia o tipo de resposta para o formato do frontend
+        const responseType = mapResponseType(item.tipo_resposta || "texto", "toFrontend");
+        
+        // Prepara opções para múltipla escolha
+        const options = Array.isArray(item.opcoes) 
+          ? item.opcoes.map(opt => String(opt)) 
+          : [];
+          
+        return {
+          id: item.id,
+          text: item.pergunta || "",
+          responseType,
+          isRequired: item.obrigatorio || false,
+          order: item.ordem || index,
+          options,
+          allowsPhoto: item.permite_foto || false,
+          allowsVideo: item.permite_video || false,
+          allowsAudio: item.permite_audio || false,
+          allowsFiles: item.permite_files || false,
+          weight: item.weight || 1,
+          hint: item.hint || "",
+          groupId: undefined, // O banco de dados não tem coluna group_id
+          condition: undefined, // O banco de dados não tem coluna condition
+          conditionValue: item.condition_value || undefined,
+          parentQuestionId: item.parent_item_id || undefined,
+          hasSubChecklist: item.has_subchecklist || false,
+          subChecklistId: item.sub_checklist_id || undefined
+        };
+      });
 
+      // Cria o objeto de checklist com as perguntas
       const mappedChecklist: ChecklistWithQuestions = {
         id: checklistData.id,
         title: checklistData.title,
@@ -108,11 +98,13 @@ export function useChecklistById(checklistId: string | undefined) {
     } catch (err) {
       console.error("Error fetching checklist:", err);
       setError(err instanceof Error ? err.message : "Erro desconhecido");
+      handleApiError(err, "Erro ao buscar checklist");
     } finally {
       setLoading(false);
     }
   };
 
+  // Busca o checklist quando o ID muda
   useEffect(() => {
     fetchChecklist();
   }, [checklistId]);
