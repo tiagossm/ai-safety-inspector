@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { frontendToDatabaseResponseType } from "@/utils/responseTypeMap";
+import { mapResponseType } from "@/utils/inspection/typeMapping";
 
 interface QuestionCardProps {
   question: ChecklistQuestion;
@@ -297,7 +296,7 @@ export function QuestionCard({ question, onUpdate, onDelete, enableAllMedia = fa
               </h4>
               <p className="text-sm text-muted-foreground">
                 <span className="font-medium">Tipo:</span>{" "}
-                {frontendToDatabaseResponseType(question.responseType)}
+                {mapResponseType(question.responseType, "toDb")}
                 {question.isRequired && " • Obrigatória"}
                 {question.weight && question.weight > 1 && ` • Peso: ${question.weight}`}
               </p>

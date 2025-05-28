@@ -1,4 +1,3 @@
-
 import React, { useCallback } from "react";
 import { YesNoResponseInput } from "./response-types/YesNoResponseInput";
 import { TextResponseInput } from "./response-types/TextResponseInput";
@@ -8,7 +7,7 @@ import { NumberInput } from "@/components/inspection/question-inputs/NumberInput
 import { MultipleChoiceInput } from "@/components/inspection/question-inputs/MultipleChoiceInput";
 import { PhotoInput } from "@/components/inspection/question-inputs/PhotoInput";
 import { SignatureInput } from "@/components/checklist/SignatureInput";
-import { normalizeResponseType } from "@/utils/responseTypeMap";
+import { normalizeResponseType } from "@/utils/inspection/normalizationUtils";
 
 interface ResponseInputRendererProps {
   question: any;

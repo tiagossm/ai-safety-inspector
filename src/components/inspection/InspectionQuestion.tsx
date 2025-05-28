@@ -6,7 +6,7 @@ import { Info, FileText, ExternalLink, Scale } from "lucide-react";
 import { ResponseInputRenderer } from "./question-parts/ResponseInputRenderer";
 import { ActionPlanFormData } from "@/components/action-plans/form/types";
 import { ActionPlan } from "@/services/inspection/actionPlanService";
-import { normalizeResponseType } from "@/utils/responseTypeMap";
+import { normalizeResponseType } from "@/utils/inspection/normalizationUtils";
 
 interface InspectionQuestionProps {
   question: any;

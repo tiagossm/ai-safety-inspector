@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Input } from "@/components/ui/input";
@@ -24,7 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { SubChecklistButton } from "@/components/new-checklist/question-editor/SubChecklistButton";
 import { toast } from "sonner";
-import { frontendToDatabaseResponseType, databaseToFrontendResponseType } from "@/utils/responseTypeMap";
+import { mapResponseType } from "@/utils/inspection/typeMapping";
 
 interface QuestionEditorProps {
   question: ChecklistQuestion;
@@ -66,7 +65,7 @@ export function QuestionEditor({
 
   // Convert database response type to frontend type for proper display
   const frontendResponseType = question.responseType 
-    ? databaseToFrontendResponseType(question.responseType) 
+    ? mapResponseType(question.responseType, "toFrontend") 
     : "yes_no";
 
   const handleUpdate = (field: keyof ChecklistQuestion, value: any) => {
