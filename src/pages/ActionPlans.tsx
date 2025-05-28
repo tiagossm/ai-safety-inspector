@@ -49,6 +49,7 @@ export default function ActionPlans() {
         // Ensure the question property has the correct shape
         const processedItem: ActionPlanWithRelations = {
           ...item,
+          title: item.description, // Use description as title if title doesn't exist
           question: item.question === null ? null : 
             (typeof item.question === 'object' && item.question ? 
               { 

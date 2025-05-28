@@ -1,7 +1,7 @@
 import { jsPDF } from "jspdf";
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
-import { ReportOptions } from "@/types/inspection";
+import { ReportOptions, InspectionResponse, InspectionActionPlan, InspectionSignature } from "@/types/inspection";
 import { handleReportGenerationError } from "@/utils/inspection/errorHandling";
 import { validateReportOptions } from "@/validation/inspectionValidation";
 
@@ -46,18 +46,28 @@ abstract class ReportGenerator {
   /**
    * Método para buscar respostas da inspeção
    */
-  protected async fetchInspectionResponses() {
+  protected async fetchInspectionResponses(): Promise<InspectionResponse[]> {
     try {
       const { data, error } = await supabase
         .from('inspection_responses')
         .select(`
           *,
-          inspection_items (*)
+          inspection_items:inspection_item_id (
+            id,
+            pergunta,
+            type,
+            description
+          )
         `)
         .eq('inspection_id', this.options.inspectionId);
         
       if (error) throw error;
-      return data || [];
+      return (data || []).map(item => ({
+        ...item,
+        inspection_items: Array.isArray(item.inspection_items) 
+          ? item.inspection_items[0] 
+          : item.inspection_items
+      })) as InspectionResponse[];
     } catch (error) {
       throw handleReportGenerationError(error, "fetchInspectionResponses");
     }
@@ -66,7 +76,7 @@ abstract class ReportGenerator {
   /**
    * Método para buscar assinaturas da inspeção
    */
-  protected async fetchInspectionSignatures() {
+  protected async fetchInspectionSignatures(): Promise<InspectionSignature[]> {
     try {
       if (!this.options.includeSignatures) return [];
       
@@ -74,12 +84,21 @@ abstract class ReportGenerator {
         .from('inspection_signatures')
         .select(`
           *,
-          users!inspection_signatures_signer_id_fkey (*)
+          users!inspection_signatures_signer_id_fkey (
+            id,
+            name,
+            email
+          )
         `)
         .eq('inspection_id', this.options.inspectionId);
         
       if (error) throw error;
-      return data || [];
+      return (data || []).map(item => ({
+        ...item,
+        created_at: item.signed_at || new Date().toISOString(),
+        signer_role: 'Responsável', // Default role
+        users: Array.isArray(item.users) ? item.users[0] : item.users
+      })) as InspectionSignature[];
     } catch (error) {
       throw handleReportGenerationError(error, "fetchInspectionSignatures");
     }
@@ -88,7 +107,7 @@ abstract class ReportGenerator {
   /**
    * Método para buscar planos de ação da inspeção
    */
-  protected async fetchActionPlans() {
+  protected async fetchActionPlans(): Promise<InspectionActionPlan[]> {
     try {
       if (!this.options.includeActionPlans) return [];
       
@@ -96,12 +115,20 @@ abstract class ReportGenerator {
         .from('inspection_action_plans')
         .select(`
           *,
-          users!inspection_action_plans_assigned_to_fkey (*)
+          users:assignee (
+            id,
+            name,
+            email
+          )
         `)
         .eq('inspection_id', this.options.inspectionId);
         
       if (error) throw error;
-      return data || [];
+      return (data || []).map(item => ({
+        ...item,
+        title: item.description, // Use description as title if not available
+        users: Array.isArray(item.users) ? item.users[0] : item.users
+      })) as InspectionActionPlan[];
     } catch (error) {
       throw handleReportGenerationError(error, "fetchActionPlans");
     }
@@ -194,9 +221,7 @@ class PDFReportGenerator extends ReportGenerator {
           }
           
           const questionText = response.inspection_items?.pergunta || `Pergunta ${index + 1}`;
-          const responseValue = response.response !== null && response.response !== undefined
-            ? String(response.response)
-            : "Sem resposta";
+          const responseValue = response.answer || "Sem resposta";
           
           // Número e texto da pergunta
           doc.setFont("helvetica", "bold");
@@ -245,7 +270,7 @@ class PDFReportGenerator extends ReportGenerator {
           }
           
           doc.setFont("helvetica", "bold");
-          doc.text(`${index + 1}. ${plan.title}`, 14, y);
+          doc.text(`${index + 1}. ${plan.title || plan.description}`, 14, y);
           y += 7;
           
           doc.setFont("helvetica", "normal");
@@ -263,8 +288,11 @@ class PDFReportGenerator extends ReportGenerator {
             y += 7;
           }
           
-          if (plan.users && plan.users.name) {
+          if (plan.users?.name) {
             doc.text(`Responsável: ${plan.users.name}`, 20, y);
+            y += 7;
+          } else if (plan.assignee) {
+            doc.text(`Responsável: ${plan.assignee}`, 20, y);
             y += 7;
           }
           
@@ -301,7 +329,7 @@ class PDFReportGenerator extends ReportGenerator {
             y += 7;
           }
           
-          doc.text(`Data: ${new Date(signature.created_at || Date.now()).toLocaleDateString()}`, 20, y);
+          doc.text(`Data: ${new Date(signature.created_at).toLocaleDateString()}`, 20, y);
           y += 10;
         });
       }
@@ -369,9 +397,7 @@ class ExcelReportGenerator extends ReportGenerator {
       if (responses && responses.length > 0) {
         responses.forEach((response, index) => {
           const questionText = response.inspection_items?.pergunta || `Pergunta ${index + 1}`;
-          const responseValue = response.response !== null && response.response !== undefined
-            ? String(response.response)
-            : "Sem resposta";
+          const responseValue = response.answer || "Sem resposta";
           const mediaInfo = response.media_urls && response.media_urls.length > 0
             ? `${response.media_urls.length} arquivo(s)`
             : "Nenhum";
@@ -398,12 +424,12 @@ class ExcelReportGenerator extends ReportGenerator {
         actionPlans.forEach((plan, index) => {
           actionPlansData.push([
             index + 1,
-            plan.title,
+            plan.title || plan.description,
             plan.description,
             plan.priority,
             plan.status,
             plan.due_date ? new Date(plan.due_date).toLocaleDateString() : "N/A",
-            plan.users?.name || plan.assigned_to_name || "Não atribuído"
+            plan.users?.name || plan.assignee || "Não atribuído"
           ]);
         });
         
@@ -421,7 +447,7 @@ class ExcelReportGenerator extends ReportGenerator {
             index + 1,
             signature.users?.name || signature.signer_name || `Assinante ${index + 1}`,
             signature.signer_role || "N/A",
-            new Date(signature.created_at || Date.now()).toLocaleDateString()
+            new Date(signature.created_at).toLocaleDateString()
           ]);
         });
         
@@ -476,9 +502,7 @@ class CSVReportGenerator extends ReportGenerator {
       if (responses && responses.length > 0) {
         responses.forEach((response, index) => {
           const questionText = response.inspection_items?.pergunta || `Pergunta ${index + 1}`;
-          const responseValue = response.response !== null && response.response !== undefined
-            ? String(response.response)
-            : "Sem resposta";
+          const responseValue = response.answer || "Sem resposta";
           const mediaInfo = response.media_urls && response.media_urls.length > 0
             ? `${response.media_urls.length} arquivo(s)`
             : "Nenhum";
@@ -503,12 +527,12 @@ class CSVReportGenerator extends ReportGenerator {
         actionPlans.forEach((plan, index) => {
           csvData.push([
             (index + 1).toString(),
-            plan.title,
+            plan.title || plan.description,
             plan.description,
             plan.priority,
             plan.status,
             plan.due_date ? new Date(plan.due_date).toLocaleDateString() : "N/A",
-            plan.users?.name || plan.assigned_to_name || "Não atribuído"
+            plan.users?.name || plan.assignee || "Não atribuído"
           ]);
         });
       }
@@ -524,7 +548,7 @@ class CSVReportGenerator extends ReportGenerator {
             (index + 1).toString(),
             signature.users?.name || signature.signer_name || `Assinante ${index + 1}`,
             signature.signer_role || "N/A",
-            new Date(signature.created_at || Date.now()).toLocaleDateString()
+            new Date(signature.created_at).toLocaleDateString()
           ]);
         });
       }
@@ -675,4 +699,3 @@ export function generateMockPDF(inspectionId: string, inspectionData: any): void
     throw handleReportGenerationError(error, "generateMockPDF");
   }
 }
-

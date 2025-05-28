@@ -1,10 +1,10 @@
 
-import { Checklist } from "@/types/newChecklist";
+import { ChecklistWithStats } from "@/types/newChecklist";
 
 /**
  * Determina a origem do checklist com base nos dados
  */
-export function determineChecklistOrigin(checklist: Checklist): 'manual' | 'ia' | 'csv' {
+export function determineChecklistOrigin(checklist: ChecklistWithStats): 'manual' | 'ia' | 'csv' {
   if (checklist.origin) {
     return checklist.origin as 'manual' | 'ia' | 'csv';
   }
@@ -57,7 +57,7 @@ export function truncateText(text: string | undefined | null, maxLength: number 
 /**
  * Obtém o nome da origem do checklist com base no valor do campo origin
  */
-export function getChecklistOriginName(checklist: Checklist): string {
+export function getChecklistOriginName(checklist: ChecklistWithStats): string {
   if (!checklist.origin) return "Manual";
   
   const originMap: Record<string, string> = {

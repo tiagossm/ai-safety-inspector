@@ -13,7 +13,8 @@ export function useActionPlanFilters(actionPlans: ActionPlanWithRelations[]) {
       const searchMatch = search === "" || 
         plan.description.toLowerCase().includes(search.toLowerCase()) ||
         (plan.title?.toLowerCase().includes(search.toLowerCase()) || false) ||
-        (plan.inspection?.company?.fantasy_name.toLowerCase().includes(search.toLowerCase()) || false) ||
+        (plan.inspection?.company?.fantasy_name?.toLowerCase().includes(search.toLowerCase()) || false) ||
+        (plan.assignee?.toLowerCase().includes(search.toLowerCase()) || false) ||
         (plan.question !== null && 
          typeof plan.question === 'object' && 
          plan.question && 
