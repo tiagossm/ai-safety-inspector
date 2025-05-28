@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { ChatCompletionRequestMessageRoleEnum, Configuration, OpenAIApi } from "https://esm.sh/openai@3.2.1";
 
@@ -334,44 +333,149 @@ serve(async (req) => {
   }
   
   try {
-    const { prompt, questionCount = 10, checklistData, assistantId } = await req.json();
+    // Verificar se a chave da API está configurada
+    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!openaiApiKey) {
+      console.error("OPENAI_API_KEY environment variable is not set");
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "API key not configured",
+          questions: []
+        }),
+        { 
+          status: 200, // Retornar 200 em vez de 400 para evitar erros no cliente
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
+    }
+    
+    // Parse request body with error handling
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (error) {
+      console.error("Error parsing request body:", error);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Invalid request format",
+          questions: []
+        }),
+        { 
+          status: 200, // Retornar 200 em vez de 400
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
+    }
+    
+    const { prompt, questionCount = 10, checklistData, assistantId } = requestBody;
+    
+    // Validate required parameters
+    if (!prompt || !checklistData) {
+      console.error("Missing required parameters");
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Missing required parameters: prompt and checklistData",
+          questions: []
+        }),
+        { 
+          status: 200, // Retornar 200 em vez de 400
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
+    }
+    
     console.log(`Generating checklist with prompt: "${prompt.substring(0, 50)}..."`);
     console.log(`Question count: ${questionCount}`);
     console.log(`Assistant ID: ${assistantId || "not provided"}`);
     
+    // Implement retry logic
     let result;
+    let retryCount = 0;
+    const maxRetries = 2;
+    let lastError = null;
     
-    try {
-      if (assistantId) {
-        result = await generateWithAssistant(prompt, questionCount, assistantId);
-      } else {
-        throw new Error("No assistant ID provided, falling back to OpenAI API");
+    while (retryCount <= maxRetries) {
+      try {
+        if (retryCount > 0) {
+          console.log(`Retry attempt ${retryCount} of ${maxRetries}`);
+        }
+        
+        if (assistantId) {
+          result = await generateWithAssistant(prompt, questionCount, assistantId);
+          break; // Success, exit the retry loop
+        } else {
+          console.log("No assistant ID provided, using OpenAI API directly");
+          result = await generateWithOpenAI(prompt, questionCount);
+          break; // Success, exit the retry loop
+        }
+      } catch (error) {
+        lastError = error;
+        console.error(`Error on attempt ${retryCount + 1}:`, error);
+        
+        // If this is the last retry, we'll exit the loop and handle the error below
+        if (retryCount === maxRetries) {
+          console.error(`All ${maxRetries + 1} attempts failed`);
+          break;
+        }
+        
+        // Wait before retrying (exponential backoff)
+        const waitTime = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s, etc.
+        console.log(`Waiting ${waitTime}ms before retry`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+        
+        retryCount++;
       }
-    } catch (error) {
-      console.log(`Error with assistant method: ${error.message}, falling back to OpenAI API`);
-      result = await generateWithOpenAI(prompt, questionCount);
     }
     
-    return new Response(JSON.stringify({
-      success: true,
-      checklistData: {
-        ...checklistData,
-        title: result.checklistData.title || checklistData.title,
-        description: result.checklistData.description || checklistData.description
-      },
-      questions: result.questions || [],
-      groups: result.groups || []
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    // If we have a result, return it
+    if (result) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          checklistData: {
+            ...checklistData,
+            title: result.checklistData.title || checklistData.title,
+            description: result.checklistData.description || checklistData.description
+          },
+          questions: result.questions || [],
+          groups: result.groups || []
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+    
+    // If we get here, all retries failed
+    console.error("All generation attempts failed:", lastError);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: lastError?.message || "Failed to generate checklist after multiple attempts",
+        questions: []
+      }),
+      { 
+        status: 200, // Retornar 200 em vez de 400
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
   } catch (error) {
-    console.error("Error in generate-checklist function:", error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: `${error.message || "Unknown error occurred"}`
-    }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    console.error("Unexpected error in generate-checklist function:", error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: `${error.message || "Unknown error occurred"}`,
+        questions: []
+      }),
+      { 
+        status: 200, // Retornar 200 em vez de 400
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
   }
 });
+
