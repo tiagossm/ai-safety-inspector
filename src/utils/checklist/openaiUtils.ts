@@ -1,7 +1,6 @@
-
+import { useState, useEffect } from 'react';
+import { listAssistants } from '@/utils/checklist/openaiUtils';
 import { handleOpenAIError } from '@/utils/inspection/errorHandling';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
 interface Assistant {
   id: string;
@@ -10,71 +9,55 @@ interface Assistant {
   model?: string;
 }
 
-interface ChecklistData {
-  title: string;
-  description: string;
-  category: string;
-  company_id?: string;
-}
+export function useOpenAIAssistants() {
+  const [assistants, setAssistants] = useState<Assistant[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-interface GenerateOptions {
-  prompt: string;
-  checklistData: ChecklistData;
-  assistantId?: string;
-  questionCount?: number;
-}
+  const fetchAssistants = async () => {
+    setLoading(true);
+    setError(null);
 
-export async function generateChecklist(options: GenerateOptions) {
-  const {
-    prompt,
-    checklistData,
-    assistantId,
-    questionCount = 10
-  } = options;
+    try {
+      console.log('Fetching OpenAI assistants...');
+      const assistantsData = await listAssistants();
+      console.log('Retorno de listAssistants:', assistantsData); // <- LOG ADICIONADO
 
-  try {
-    console.log('Generating checklist with AI:', options);
-    
-    const { data, error } = await supabase.functions.invoke('generate-checklist', {
-      body: {
-        prompt,
-        checklistData,
-        assistantId,
-        questionCount
+      if (assistantsData && assistantsData.length > 0) {
+        console.log(`Retrieved ${assistantsData.length} OpenAI assistants`);
+        setAssistants(assistantsData);
+      } else {
+        console.warn('No assistants data returned or empty array');
+        setAssistants([]);
+        // Não definimos um erro aqui, apenas um array vazio
+        // Isso evita mostrar uma mensagem de erro quando não há assistentes
       }
-    });
+    } catch (err: any) {
+      console.error('Error fetching assistants:', err);
 
-    if (error) {
-      console.error('Error in AI generation:', error);
-      throw new Error(`Erro na geração por IA: ${error.message}`);
+      // Usar o handler de erros da OpenAI para tratar o erro de forma consistente
+      handleOpenAIError(err, 'useOpenAIAssistants');
+
+      // Definir a mensagem de erro para exibição na UI
+      setError(err.message || 'Erro ao carregar assistentes');
+
+      // Garantir que assistants seja um array vazio em caso de erro
+      setAssistants([]);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    if (!data || !data.success) {
-      console.error('AI generation failed:', data);
-      throw new Error(data?.error || 'Falha ao gerar checklist');
-    }
+  useEffect(() => {
+    fetchAssistants();
+  }, []);
 
-    console.log('Successfully generated checklist:', data);
-    toast.success('Checklist gerado com sucesso!');
-    return data;
-  } catch (error: any) {
-    console.error('Error in generateChecklist:', error);
-    handleOpenAIError(error, 'generateChecklist');
-    toast.error(`Erro na geração por IA: ${error.message}`);
-    throw error;
-  }
+  return {
+    assistants,
+    loading,
+    error,
+    refetch: fetchAssistants,
+  };
 }
 
-export async function listAssistants(): Promise<Assistant[]> {
-  try {
-    // Esta é uma implementação placeholder
-    // A implementação real dependeria da configuração da API OpenAI
-    console.log('Fetching OpenAI assistants...');
-    
-    // Retornar array vazio por enquanto
-    return [];
-  } catch (error: any) {
-    handleOpenAIError(error, 'listAssistants');
-    throw error;
-  }
-}
+export default useOpenAIAssistants;
