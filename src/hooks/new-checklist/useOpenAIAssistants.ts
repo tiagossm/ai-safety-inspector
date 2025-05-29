@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { listAssistants } from '@/utils/checklist/openaiUtils';
 import { handleOpenAIError } from '@/utils/inspection/errorHandling';
 
@@ -13,30 +13,34 @@ export function useOpenAIAssistants() {
   const [assistants, setAssistants] = useState<Assistant[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  
-  const hasFetched = useRef(false); // variável de controle
 
   const fetchAssistants = async () => {
-    if (hasFetched.current) return; // Evita dupla requisição
-    hasFetched.current = true;
-
     setLoading(true);
     setError(null);
 
     try {
       console.log('Fetching OpenAI assistants...');
-      const response = await listAssistants();
-
-      const assistantsData: Assistant[] = Array.isArray(response)
-        ? response
-        : Array.isArray(response.assistants)
-        ? response.assistants
-        : [];
-
-      setAssistants(assistantsData);
+      const assistantsData = await listAssistants();
+      
+      if (assistantsData && assistantsData.length > 0) {
+        console.log(`Retrieved ${assistantsData.length} OpenAI assistants`);
+        setAssistants(assistantsData);
+      } else {
+        console.warn('No assistants data returned or empty array');
+        setAssistants([]);
+        // Não definimos um erro aqui, apenas um array vazio
+        // Isso evita mostrar uma mensagem de erro quando não há assistentes
+      }
     } catch (err: any) {
+      console.error('Error fetching assistants:', err);
+      
+      // Usar o handler de erros da OpenAI para tratar o erro de forma consistente
       handleOpenAIError(err, 'useOpenAIAssistants');
+      
+      // Definir a mensagem de erro para exibição na UI
       setError(err.message || 'Erro ao carregar assistentes');
+      
+      // Garantir que assistants seja um array vazio em caso de erro
       setAssistants([]);
     } finally {
       setLoading(false);
