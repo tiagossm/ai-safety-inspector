@@ -63,13 +63,16 @@ export default function ActionPlans() {
                           (item.question as any).pergunta : undefined
               } : 
               { pergunta: undefined }),
-          // Fix the inspection company type issue
+          // Fix the inspection company type issue - ensure company always has required id
           inspection: item.inspection ? {
             ...item.inspection,
             company: item.inspection.company ? {
-              id: item.inspection.company.id || '',
-              fantasy_name: item.inspection.company.fantasy_name
-            } : undefined
+              id: item.inspection.company.id || '',  // Ensure id is always present
+              fantasy_name: item.inspection.company.fantasy_name || undefined
+            } : {
+              id: '', // Default id if company is null
+              fantasy_name: undefined
+            }
           } : undefined
         };
         return processedItem;
