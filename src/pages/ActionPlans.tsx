@@ -34,7 +34,10 @@ export default function ActionPlans() {
           *,
           inspection:inspection_id (
             id,
-            company:company_id (fantasy_name)
+            company:company_id (
+              id,
+              fantasy_name
+            )
           ),
           question:question_id (pergunta)
         `)
@@ -59,7 +62,15 @@ export default function ActionPlans() {
                           typeof (item.question as any).pergunta === 'string' ? 
                           (item.question as any).pergunta : undefined
               } : 
-              { pergunta: undefined })
+              { pergunta: undefined }),
+          // Fix the inspection company type issue
+          inspection: item.inspection ? {
+            ...item.inspection,
+            company: item.inspection.company ? {
+              id: item.inspection.company.id || '',
+              fantasy_name: item.inspection.company.fantasy_name
+            } : undefined
+          } : undefined
         };
         return processedItem;
       });

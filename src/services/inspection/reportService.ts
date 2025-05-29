@@ -225,7 +225,7 @@ class PDFReportGenerator extends ReportGenerator {
           
           // Número e texto da pergunta
           doc.setFont("helvetica", "bold");
-          doc.text(`${index + 1}. ${questionText}`, 14, y);
+          doc.text(`${(index + 1).toString()}. ${questionText}`, 14, y);
           y += 7;
           
           // Resposta
@@ -235,7 +235,7 @@ class PDFReportGenerator extends ReportGenerator {
           
           // Mídia (se houver e se solicitado)
           if (this.options.includeMedia && response.media_urls && response.media_urls.length > 0) {
-            doc.text(`Mídia: ${response.media_urls.length} arquivo(s) anexado(s)`, 20, y);
+            doc.text(`Mídia: ${response.media_urls.length.toString()} arquivo(s) anexado(s)`, 20, y);
             y += 7;
           }
           
@@ -270,7 +270,7 @@ class PDFReportGenerator extends ReportGenerator {
           }
           
           doc.setFont("helvetica", "bold");
-          doc.text(`${index + 1}. ${plan.title || plan.description}`, 14, y);
+          doc.text(`${(index + 1).toString()}. ${plan.title || plan.description}`, 14, y);
           y += 7;
           
           doc.setFont("helvetica", "normal");
@@ -399,11 +399,11 @@ class ExcelReportGenerator extends ReportGenerator {
           const questionText = response.inspection_items?.pergunta || `Pergunta ${index + 1}`;
           const responseValue = response.answer || "Sem resposta";
           const mediaInfo = response.media_urls && response.media_urls.length > 0
-            ? `${response.media_urls.length} arquivo(s)`
+            ? `${response.media_urls.length.toString()} arquivo(s)`
             : "Nenhum";
             
           responsesData.push([
-            index + 1,
+            (index + 1).toString(),
             questionText,
             responseValue,
             mediaInfo
@@ -423,7 +423,7 @@ class ExcelReportGenerator extends ReportGenerator {
         
         actionPlans.forEach((plan, index) => {
           actionPlansData.push([
-            index + 1,
+            (index + 1).toString(),
             plan.title || plan.description,
             plan.description,
             plan.priority,
@@ -444,7 +444,7 @@ class ExcelReportGenerator extends ReportGenerator {
         
         signatures.forEach((signature, index) => {
           signaturesData.push([
-            index + 1,
+            (index + 1).toString(),
             signature.users?.name || signature.signer_name || `Assinante ${index + 1}`,
             signature.signer_role || "N/A",
             new Date(signature.created_at).toLocaleDateString()
@@ -504,7 +504,7 @@ class CSVReportGenerator extends ReportGenerator {
           const questionText = response.inspection_items?.pergunta || `Pergunta ${index + 1}`;
           const responseValue = response.answer || "Sem resposta";
           const mediaInfo = response.media_urls && response.media_urls.length > 0
-            ? `${response.media_urls.length} arquivo(s)`
+            ? `${response.media_urls.length.toString()} arquivo(s)`
             : "Nenhum";
             
           csvData.push([

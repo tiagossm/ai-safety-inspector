@@ -65,3 +65,13 @@ export interface ReportOptions {
   customTitle?: string;
   customFooter?: string;
 }
+
+// Adicionar constantes de status de inspeção
+export const INSPECTION_STATUSES = {
+  PENDING: 'pendente',
+  IN_PROGRESS: 'em_andamento',
+  COMPLETED: 'concluido',
+  CANCELLED: 'cancelado'
+} as const;
+
+export type InspectionStatus = typeof INSPECTION_STATUSES[keyof typeof INSPECTION_STATUSES];
