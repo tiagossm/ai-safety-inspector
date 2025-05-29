@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { listAssistants } from '@/utils/checklist/openaiUtils';
 import { handleOpenAIError } from '@/utils/inspection/errorHandling';
 
@@ -13,8 +13,13 @@ export function useOpenAIAssistants() {
   const [assistants, setAssistants] = useState<Assistant[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  
+  const hasFetched = useRef(false); // variável de controle
 
   const fetchAssistants = async () => {
+    if (hasFetched.current) return; // Evita dupla requisição
+    hasFetched.current = true;
+
     setLoading(true);
     setError(null);
 
@@ -22,25 +27,14 @@ export function useOpenAIAssistants() {
       console.log('Fetching OpenAI assistants...');
       const response = await listAssistants();
 
-      // Log da resposta para diagnóstico
-      console.log('Assistants data received:', response);
-
-      // Tratamento robusto da resposta considerando possíveis formatos
       const assistantsData: Assistant[] = Array.isArray(response)
         ? response
         : Array.isArray(response.assistants)
         ? response.assistants
         : [];
 
-      if (assistantsData.length > 0) {
-        console.log(`Retrieved ${assistantsData.length} OpenAI assistants`);
-        setAssistants(assistantsData);
-      } else {
-        console.warn('No assistants data returned or empty array');
-        setAssistants([]);
-      }
+      setAssistants(assistantsData);
     } catch (err: any) {
-      console.error('Error fetching assistants:', err);
       handleOpenAIError(err, 'useOpenAIAssistants');
       setError(err.message || 'Erro ao carregar assistentes');
       setAssistants([]);
