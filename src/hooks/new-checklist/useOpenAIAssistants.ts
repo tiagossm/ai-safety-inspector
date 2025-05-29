@@ -20,27 +20,29 @@ export function useOpenAIAssistants() {
 
     try {
       console.log('Fetching OpenAI assistants...');
-      const assistantsData = await listAssistants();
-      
-      if (assistantsData && assistantsData.length > 0) {
+      const response = await listAssistants();
+
+      // Log da resposta para diagnóstico
+      console.log('Assistants data received:', response);
+
+      // Tratamento robusto da resposta considerando possíveis formatos
+      const assistantsData: Assistant[] = Array.isArray(response)
+        ? response
+        : Array.isArray(response.assistants)
+        ? response.assistants
+        : [];
+
+      if (assistantsData.length > 0) {
         console.log(`Retrieved ${assistantsData.length} OpenAI assistants`);
         setAssistants(assistantsData);
       } else {
         console.warn('No assistants data returned or empty array');
         setAssistants([]);
-        // Não definimos um erro aqui, apenas um array vazio
-        // Isso evita mostrar uma mensagem de erro quando não há assistentes
       }
     } catch (err: any) {
       console.error('Error fetching assistants:', err);
-      
-      // Usar o handler de erros da OpenAI para tratar o erro de forma consistente
       handleOpenAIError(err, 'useOpenAIAssistants');
-      
-      // Definir a mensagem de erro para exibição na UI
       setError(err.message || 'Erro ao carregar assistentes');
-      
-      // Garantir que assistants seja um array vazio em caso de erro
       setAssistants([]);
     } finally {
       setLoading(false);
@@ -60,4 +62,3 @@ export function useOpenAIAssistants() {
 }
 
 export default useOpenAIAssistants;
-
