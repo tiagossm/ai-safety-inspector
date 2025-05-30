@@ -1,9 +1,10 @@
 export const questionTypes = [
-  { value: "sim/não", label: "Sim/Não" },
-  { value: "numérico", label: "Numérico" },
-  { value: "texto", label: "Texto" },
-  { value: "foto", label: "Foto" },
-  { value: "assinatura", label: "Assinatura" },
-  { value: "seleção múltipla", label: "Seleção Múltipla" },
-  { value: "data/hora", label: "Data/Hora" }
+  { value: "yes_no", label: "Sim/Não" },
+  { value: "multiple_choice", label: "Seleção Múltipla" },
+  { value: "numeric", label: "Numérico" },
+  { value: "text", label: "Texto" },
+  { value: "time", label: "Hora" },
+  { value: "date", label: "Data" },
+  { value: "photo", label: "Foto" },
+  { value: "signature", label: "Assinatura" }
 ];

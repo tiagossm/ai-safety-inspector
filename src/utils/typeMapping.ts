@@ -4,65 +4,53 @@ import { ResponseType } from "@/types/checklist";
  * Mapeia tipos de resposta entre o frontend e o banco de dados
  * Função centralizada para garantir consistência
  */
+
 export function mapResponseType(
   type: string,
   direction: "toDb" | "toFrontend"
 ): ResponseType {
-  // Mapeamento de tipos do frontend para o banco de dados
-  const frontendToDb: Record<string, ResponseType> = {
-    "sim/não": "sim/não",
-    "yes_no": "sim/não",
-    "boolean": "sim/não",
-    "texto": "texto",
-    "text": "texto",
-    "numérico": "numérico",
-    "numeric": "numérico",
-    "number": "numérico",
-    "seleção múltipla": "seleção múltipla",
-    "multiple_choice": "seleção múltipla",
-    "foto": "foto",
-    "photo": "foto",
-    "assinatura": "assinatura",
-    "signature": "assinatura",
-    "data": "data",
-    "date": "data",
-    "hora": "hora",
-    "time": "hora",
+  // Mapeamento frontend (interno) para banco de dados
+  const frontendToDb: Record<string, string> = {
+    yes_no: "sim/não",
+    multiple_choice: "seleção múltipla",
+    numeric: "numérico",
+    text: "texto",
+    time: "hora",
+    date: "data",
+    photo: "foto",
+    signature: "assinatura",
   };
 
-  // Mapeamento de tipos do banco de dados para o frontend
+  // Mapeamento banco de dados para frontend (interno)
   const dbToFrontend: Record<string, ResponseType> = {
-    "sim/não": "sim/não",
-    "texto": "texto",
-    "numérico": "numérico",
-    "seleção múltipla": "seleção múltipla",
-    "foto": "foto",
-    "assinatura": "assinatura",
-    "data": "data",
-    "hora": "hora",
+    "sim/não": "yes_no",
+    "seleção múltipla": "multiple_choice",
+    "numérico": "numeric",
+    "texto": "text",
+    "hora": "time",
+    "data": "date",
+    "foto": "photo",
+    "assinatura": "signature",
   };
 
-  // Normaliza o tipo para minúsculas para evitar problemas de case
   const normalizedType = type?.toLowerCase() || "";
 
   if (direction === "toDb") {
-    // Busca o tipo no mapeamento ou retorna um valor padrão
     const mappedType = frontendToDb[normalizedType];
     if (!mappedType) {
       console.warn(
         `[typeMapping] Tipo de resposta desconhecido: "${type}". Usando "texto" como padrão.`
       );
-      return "texto";
+      return "texto" as ResponseType;
     }
-    return mappedType;
+    return mappedType as ResponseType;
   } else {
-    // Busca o tipo no mapeamento ou retorna um valor padrão
     const mappedType = dbToFrontend[normalizedType];
     if (!mappedType) {
       console.warn(
-        `[typeMapping] Tipo de resposta desconhecido: "${type}". Usando "texto" como padrão.`
+        `[typeMapping] Tipo de resposta desconhecido: "${type}". Usando "text" como padrão.`
       );
-      return "texto";
+      return "text";
     }
     return mappedType;
   }
