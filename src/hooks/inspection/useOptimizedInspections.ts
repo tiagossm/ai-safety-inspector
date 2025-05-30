@@ -6,126 +6,6 @@ import { toast } from "sonner";
 import { InspectionDetails, InspectionFilters } from "@/types/newChecklist";
 import { useAuth } from "@/components/AuthProvider";
 
-export function useOptimizedInspections() {
-  const { user } = useAuth();
-  
-  const [filters, setFilters] = useState<InspectionFilters>({
-    status: "all",
-    companyId: "all",
-    responsibleId: "all", 
-    checklistId: "all",
-    search: "",
-    priority: "all",
-    startDate: undefined,
-    endDate: undefined
-  });
-
-  const fetchInspectionsQueryFn = async (): Promise<InspectionDetails[]> => {
-    if (!user) {
-      // This should ideally not be reached if `enabled: !!user` is used correctly,
-      // but as a safeguard:
-      throw new Error("Usuário não autenticado");
-    }
-
-    // Fetch inspections without trying to join on responsible_id directly
-    let query = supabase
-      .from("inspections")
-      .select(`
-        id,
-        status,
-        checklist_id,
-        company_id,
-        responsible_id,
-        scheduled_date,
-        created_at,
-        updated_at,
-        location,
-        priority,
-        metadata,
-        inspection_type,
-        companies:company_id(id, fantasy_name),
-        checklist:checklist_id(id, title, description, total_questions)
-      `);
-    
-    // Super admins see all inspections, others only see their own or company's
-    if (user.tier !== "super_admin") {
-      query = query.or(`user_id.eq.${user.id},responsible_id.eq.${user.id}`);
-    }
-    
-    const { data: inspectionsData, error: inspectionsError } = await query.order("created_at", { ascending: false });
-    
-    if (inspectionsError) throw inspectionsError;
-    
-    if (!inspectionsData || inspectionsData.length === 0) {
-      return [];
-    }
-    
-    const userIds = inspectionsData
-      .map(inspection => inspection.responsible_id)
-      .filter((id, index, self) => id !== null && id !== undefined && self.indexOf(id) === index);
-    
-    const checklistIds = inspectionsData
-      .map(inspection => inspection.checklist_id)
-      .filter((id, index, self) => id !== null && id !== undefined && self.indexOf(id) === index);
-    
-    const inspectionIds = inspectionsData
-      .map(inspection => inspection.id)
-      .filter((id, index, self) => id !== null && id !== undefined && self.indexOf(id) === index);
-    
-    const [usersResponse, questionsCountResponses, responsesCountResponses] = await Promise.all([
-      userIds.length > 0 
-        ? supabase
-            .from("users")
-            .select("id, name, email, phone")
-            .in("id", userIds)
-        : Promise.resolve({ data: [], error: null }),
-      
-      checklistIds.length > 0 
-        ? Promise.all(
-            checklistIds.map(checklistId => 
-              supabase
-                .from('checklist_itens')
-                .select('*', { count: 'exact', head: true })
-                .eq('checklist_id', checklistId)
-            )
-          )
-        : Promise.resolve([]),
-        
-      inspectionIds.length > 0
-        ? Promise.all(
-            inspectionIds.map(inspectionId => 
-              supabase
-                .from('inspection_responses')
-                .select('*', { count: 'exact', head: true })
-                .eq('inspection_id', inspectionId)
-            )
-          )
-        : Promise.resolve([])
-    ]);
-
-    if (usersResponse.error) throw usersResponse.error;
-    // Error handling for checklist_itens and inspection_responses counts can be more granular if needed
-    // For now, we assume they either succeed or the count will be 0.
-
-    const usersMap = (usersResponse.data || []).reduce((acc, u) => {
-      acc[u.id] = u;
-      return acc;
-    }, {} as Record<string, {id: string; name: string | null; email: string | null; phone: string | null;}>);
-    
-    const questionsCountMap = checklistIds.reduce((acc, checklistId, index) => {
-      const response = questionsCountResponses[index];
-      // Check for error on individual count queries if supabase client returns it
-      // For this example, we'll assume `response.error` would be checked if available on `response`
-      acc[checklistId] = response?.count ?? 0;
-      return acc;
-    }, {} as Record<string, number>);
-    
-    const responsesCountMap = inspectionIds.reduce((acc, inspectionId, index) => {
-      const response = responsesCountResponses[index];
-      acc[inspectionId] = response?.count ?? 0;
-      return acc;
-    }, {} as Record<string, number>);
-    
 // Define a more specific type for the raw inspection data from Supabase
 // This is an approximation based on the usage in the function
 interface RawInspectionFromSupabase {
@@ -272,9 +152,9 @@ export function useOptimizedInspections() {
         ? Math.round((answeredQuestions / totalQuestions) * 100) 
         : 0;
         
-      const progress = totalQuestions > 0 
-        ? Math.round((answeredQuestions / totalQuestions) * 100) 
-        : 0;
+      // const progress = totalQuestions > 0  // This line is duplicated
+      //   ? Math.round((answeredQuestions / totalQuestions) * 100) 
+      //   : 0;
         
       const metadata = inspection.metadata ?? {}; // Default to empty object if null
           
