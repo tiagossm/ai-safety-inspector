@@ -14,7 +14,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { useInspections } from "@/hooks/useInspections";
+// import { useInspections } from "@/hooks/useInspections"; // This should be useOptimizedInspections if previously refactored
+import { useOptimizedInspections } from "@/hooks/inspection/useOptimizedInspections"; // Assuming this is the correct hook
 import { useInspectionPagination } from "@/hooks/inspection/useInspectionPagination";
 import { useInspectionSelection } from "@/hooks/inspection/useInspectionSelection";
 import { EmptyState } from "@/components/inspection/EmptyState";
@@ -26,7 +27,7 @@ import { InspectionDashboard } from "@/components/inspection/InspectionDashboard
 import { DeleteInspectionDialog } from "@/components/inspection/DeleteInspectionDialog";
 import { ReportGenerationDialog } from "@/components/inspection/ReportGenerationDialog";
 import { SelectionActionsToolbar } from "@/components/inspection/SelectionActionsToolbar";
-import { deleteInspection, deleteMultipleInspections } from "@/services/inspection/inspectionService";
+import { useInspectionMutations } from "@/hooks/inspection/useInspectionMutations";
 import { exportInspections } from "@/services/inspection/exportService";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -40,7 +41,21 @@ import {
 
 export default function Inspections() {
   const navigate = useNavigate();
-  const { inspections, loading, error, fetchInspections, filters, setFilters } = useInspections();
+  // Assuming useInspections was refactored to useOptimizedInspections
+  const { 
+    inspections, // This is filteredInspections from useOptimizedInspections
+    loading, 
+    error, 
+    fetchInspections, // This is refetchInspections from useOptimizedInspections
+    filters, 
+    setFilters 
+  } = useOptimizedInspections();
+  
+  const { 
+    deleteInspection: deleteSingleInspectionMutation, 
+    deleteMultipleInspections: deleteMultipleInspectionsMutation 
+  } = useInspectionMutations();
+
   const [viewMode, setViewMode] = useState<"card" | "table">("card");
   const [searchTerm, setSearchTerm] = useState("");
   
@@ -56,13 +71,13 @@ export default function Inspections() {
   // Estados para excluir inspeção
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [inspectionToDelete, setInspectionToDelete] = useState<{ id: string; title?: string } | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isBatchDeleting, setIsBatchDeleting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   
   // Estado para diálogo de relatório
+  // Assuming InspectionDetails is the correct type for report data. Import if not already.
+  // import { InspectionDetails } from "@/types/newChecklist"; // Ensure this type is available
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
-  const [inspectionForReport, setInspectionForReport] = useState<{ id: string; data: any } | null>(null);
+  const [inspectionForReport, setInspectionForReport] = useState<{ id: string; data: InspectionDetails } | null>(null);
   
   const { 
     currentPage, 
@@ -114,22 +129,19 @@ export default function Inspections() {
   const handleConfirmDelete = async () => {
     if (!inspectionToDelete) {
       // Se inspectionToDelete é null, estamos fazendo uma exclusão em lote
-      return handleBatchDelete();
+      return handleBatchDelete(); // This will call the batch delete mutation
     }
     
-    setIsDeleting(true);
+    // Single deletion
     try {
-      const success = await deleteInspection(inspectionToDelete.id);
-      if (success) {
-        toast.success("Inspeção excluída com sucesso");
-        fetchInspections(); // Recarrega a lista após exclusão
-      }
-    } catch (error: any) {
-      toast.error("Erro ao excluir inspeção", {
-        description: error.message
-      });
+      await deleteSingleInspectionMutation.mutateAsync(inspectionToDelete.id);
+      // Toasts are handled by the mutation hook
+      // Refetch is handled by the mutation hook's onSuccess invalidation
+    } catch (error: unknown) { // Changed from any to unknown
+      // Errors are typically handled by the mutation hook's onError or its internal try/catch
+      // Additional logging or specific UI updates can be done here if needed
+      console.error("Error during single inspection deletion (Inspections.tsx):", error instanceof Error ? error.message : error);
     } finally {
-      setIsDeleting(false);
       setDeleteDialogOpen(false);
       setInspectionToDelete(null);
     }
@@ -139,38 +151,25 @@ export default function Inspections() {
   const handleBatchDelete = async () => {
     if (selectedInspections.length === 0) return Promise.resolve();
     
-    setIsBatchDeleting(true);
     try {
-      const result = await deleteMultipleInspections(selectedInspections);
-      
-      if (result.success) {
-        toast.success(`${result.successCount} inspeções excluídas com sucesso`);
-      } else if (result.successCount > 0) {
-        toast.success(`${result.successCount} inspeções excluídas com sucesso`);
-        toast.error(`Falha ao excluir ${result.errorCount} inspeções`);
-      } else {
-        toast.error(`Falha ao excluir inspeções`);
-      }
-      
-      // Recarrega a lista e limpa a seleção
-      await fetchInspections();
-      clearSelection();
-    } catch (error: any) {
-      toast.error("Erro ao excluir inspeções", {
-        description: error.message
-      });
+      await deleteMultipleInspectionsMutation.mutateAsync(selectedInspections);
+      // Toasts are handled by the mutation hook
+      // Refetch is handled by the mutation hook's onSuccess invalidation
+      clearSelection(); // Clear selection after successful batch delete
+    } catch (error: unknown) { // Changed from any to unknown
+      // Errors are typically handled by the mutation hook's onError or its internal try/catch
+      console.error("Error during batch inspection deletion (Inspections.tsx):", error instanceof Error ? error.message : error);
     } finally {
-      setIsBatchDeleting(false);
-      setDeleteDialogOpen(false);
+      setDeleteDialogOpen(false); // Ensure dialog is closed even if called from confirmDelete directly
     }
     
-    return Promise.resolve();
+    return Promise.resolve(); // Keep as async if called with await
   };
   
   const handleOpenReportDialog = (id: string) => {
-    const inspection = inspections.find(insp => insp.id === id);
+    const inspection = inspections.find(insp => insp.id === id); // inspections is InspectionDetails[]
     if (inspection) {
-      setInspectionForReport({ id, data: inspection });
+      setInspectionForReport({ id, data: inspection }); // data now expects InspectionDetails
       setReportDialogOpen(true);
     } else {
       toast.error("Inspeção não encontrada");
@@ -251,7 +250,7 @@ export default function Inspections() {
             placeholder="Buscar inspeções..."
             className="pl-8"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
           />
         </div>
         
@@ -337,7 +336,7 @@ export default function Inspections() {
           onToggleSelectAll={handleGlobalSelectAll}
           onDelete={handleOpenBatchDeleteDialog}
           onExport={handleExportData}
-          isDeleting={isBatchDeleting}
+          isDeleting={deleteMultipleInspectionsMutation.isPending}
           isExporting={isExporting}
         />
       )}
@@ -383,13 +382,13 @@ export default function Inspections() {
                 {paginatedInspections.map((inspection) => (
                   <InspectionCard 
                     key={inspection.id}
-                    inspection={inspection}
+                    inspection={inspection} // inspection is InspectionDetails
                     onView={() => handleViewInspection(inspection.id)}
                     onDelete={() => handleOpenDeleteDialog(inspection.id, inspection.title)}
                     onGenerateReport={inspection.status === "completed" ? 
                       () => handleOpenReportDialog(inspection.id) : undefined}
                     isSelected={selectedInspections.includes(inspection.id)}
-                    onSelect={(selected) => handleSelectInspection(inspection.id, selected)}
+                    onSelect={(selected: boolean) => handleSelectInspection(inspection.id, selected)}
                   />
                 ))}
               </div>
@@ -399,23 +398,23 @@ export default function Inspections() {
           <TabsContent value="table">
             <ScrollArea className="h-[calc(100vh-420px)]">
               <InspectionTable 
-                inspections={paginatedInspections}
+                inspections={paginatedInspections} // paginatedInspections is InspectionDetails[]
                 onView={handleViewInspection}
-                onDeleteInspection={(id) => {
+                onDeleteInspection={(id: string) => { // Typed id
                   const inspection = paginatedInspections.find(i => i.id === id);
                   handleOpenDeleteDialog(id, inspection?.title);
                 }}
-                onGenerateReport={(id) => {
+                onGenerateReport={(id: string) => { // Typed id
                   const inspection = paginatedInspections.find(i => i.id === id);
-                  if (inspection?.status === "completed") {
+                  if (inspection?.status === "completed") { // Optional chaining for status
                     handleOpenReportDialog(id);
                   } else {
                     toast.info("Apenas inspeções concluídas podem gerar relatórios");
                   }
                 }}
                 selectedInspections={selectedInspections}
-                onSelectInspection={handleSelectInspection}
-                onSelectAll={handleSelectAll}
+                onSelectInspection={handleSelectInspection} // Already correctly typed by inference
+                onSelectAll={handleSelectAll} // Already correctly typed by inference
               />
             </ScrollArea>
           </TabsContent>
@@ -437,7 +436,7 @@ export default function Inspections() {
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleConfirmDelete}
         inspectionTitle={inspectionToDelete?.title}
-        loading={isDeleting || isBatchDeleting}
+        loading={deleteSingleInspectionMutation.isPending || deleteMultipleInspectionsMutation.isPending}
         isMultiple={!inspectionToDelete}
         selectedCount={selectedInspections.length}
       />

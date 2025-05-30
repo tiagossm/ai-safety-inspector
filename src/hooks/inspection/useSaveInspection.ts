@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -13,90 +13,122 @@ interface SaveInspectionResponse {
   subChecklistResponses?: Record<string, any>;
 }
 
+interface SaveInspectionVariables {
+  inspection: any; // Consider defining a more specific type for inspection
+  responsesArray: SaveInspectionResponse[];
+}
+
 export const useSaveInspection = () => {
-  const [isSaving, setIsSaving] = useState(false);
+  const queryClient = useQueryClient();
 
-  const saveInspection = async (inspection: any, responses: SaveInspectionResponse[]) => {
-    setIsSaving(true);
-    
-    try {
-      console.log("[useSaveInspection] Saving inspection:", inspection.id);
-      console.log("[useSaveInspection] Responses to save:", responses);
+  const saveInspectionMutation = useMutation({
+    mutationFn: async (variables: SaveInspectionVariables) => {
+      const { inspection, responsesArray } = variables;
+      const toastId = toast.loading("Salvando progresso...");
 
-      // Atualizar status da inspeção
-      const { error: inspectionError } = await supabase
-        .from("inspections")
-        .update({
-          status: inspection.status || "Em Andamento",
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", inspection.id);
+      try {
+        console.log("[useSaveInspection] Mutation: Saving inspection:", inspection.id);
+        console.log("[useSaveInspection] Mutation: Responses to save:", responsesArray);
 
-      if (inspectionError) {
-        throw inspectionError;
-      }
+        // 1. Atualizar status da inspeção (e updated_at)
+        const { error: inspectionUpdateError } = await supabase
+          .from("inspections")
+          .update({
+            status: inspection.status || "Em Andamento", // or 'in_progress' if that's the enum
+            updated_at: new Date().toISOString(),
+            // Potentially update progress field here if calculated
+          })
+          .eq("id", inspection.id);
 
-      // Salvar respostas
-      for (const response of responses) {
-        if (!response.questionId) continue;
+        if (inspectionUpdateError) {
+          console.error("[useSaveInspection] Mutation: Error updating inspection status:", inspectionUpdateError);
+          throw inspectionUpdateError;
+        }
 
-        const responseData = {
-          inspection_id: inspection.id,
-          inspection_item_id: response.questionId,
-          answer: response.value || "",
-          media_urls: response.mediaUrls || [],
-          comments: response.comments || null,
-          notes: response.notes || null,
-          action_plan: response.actionPlan || null,
-          sub_checklist_responses: response.subChecklistResponses || null,
-          updated_at: new Date().toISOString()
-        };
-
-        // Verificar se a resposta já existe
-        const { data: existingResponse } = await supabase
-          .from("inspection_responses")
-          .select("id")
-          .eq("inspection_id", inspection.id)
-          .eq("inspection_item_id", response.questionId)
-          .single();
-
-        if (existingResponse) {
-          // Atualizar resposta existente
-          const { error } = await supabase
-            .from("inspection_responses")
-            .update(responseData)
-            .eq("id", existingResponse.id);
-
-          if (error) {
-            console.error("[useSaveInspection] Error updating response:", error);
-            throw error;
+        // 2. Salvar/Atualizar respostas
+        // Consider batching these operations if possible and supported by Supabase client for better performance
+        for (const response of responsesArray) {
+          if (!response.questionId) {
+            console.warn("[useSaveInspection] Mutation: Skipping response due to missing questionId", response);
+            continue;
           }
-        } else {
-          // Criar nova resposta
-          const { error } = await supabase
-            .from("inspection_responses")
-            .insert(responseData);
 
-          if (error) {
-            console.error("[useSaveInspection] Error inserting response:", error);
-            throw error;
+          const responseData = {
+            inspection_id: inspection.id,
+            inspection_item_id: response.questionId,
+            answer: response.value ?? "", // Ensure null/undefined becomes empty string or handle as needed
+            media_urls: response.mediaUrls || [],
+            comments: response.comments || null,
+            notes: response.notes || null,
+            action_plan: response.actionPlan || null,
+            sub_checklist_responses: response.subChecklistResponses || null,
+            updated_at: new Date().toISOString(),
+            // completed_at might be set here if a response marks a question as "done"
+          };
+
+          // Upsert logic: Check if exists, then update or insert.
+          // Supabase upsert could simplify this if primary key (composite inspection_id, inspection_item_id) is set up for it.
+          // For now, retaining the check-then-act logic.
+          const { data: existingResponse, error: selectError } = await supabase
+            .from("inspection_responses")
+            .select("id")
+            .eq("inspection_id", inspection.id)
+            .eq("inspection_item_id", response.questionId)
+            .maybeSingle(); // Use maybeSingle to avoid error if no response exists
+
+          if (selectError) {
+            console.error("[useSaveInspection] Mutation: Error selecting existing response:", selectError);
+            throw selectError; // Rethrow if selecting itself fails critically
+          }
+
+          if (existingResponse) {
+            const { error: updateError } = await supabase
+              .from("inspection_responses")
+              .update(responseData)
+              .eq("id", existingResponse.id);
+            if (updateError) {
+              console.error("[useSaveInspection] Mutation: Error updating response:", updateError);
+              throw updateError;
+            }
+          } else {
+            const { error: insertError } = await supabase
+              .from("inspection_responses")
+              .insert(responseData);
+            if (insertError) {
+              console.error("[useSaveInspection] Mutation: Error inserting new response:", insertError);
+              throw insertError;
+            }
           }
         }
+        
+        toast.dismiss(toastId);
+        toast.success("Progresso salvo com sucesso!");
+        console.log("[useSaveInspection] Mutation: Inspection saved successfully");
+        return true; // Or any relevant data from the save operation
+      } catch (error: any) {
+        toast.dismiss(toastId);
+        console.error("[useSaveInspection] Mutation: Error saving inspection:", error);
+        toast.error("Erro ao salvar progresso", {
+          description: error.message || "Ocorreu um erro inesperado.",
+        });
+        throw error; // Rethrow to allow react-query to handle it as an error state
       }
-
-      console.log("[useSaveInspection] Inspection saved successfully");
-      return true;
-    } catch (error: any) {
-      console.error("[useSaveInspection] Error saving inspection:", error);
-      toast.error(`Erro ao salvar inspeção: ${error.message}`);
-      return false;
-    } finally {
-      setIsSaving(false);
-    }
-  };
+    },
+    onSuccess: (data, variables) => {
+      // Invalidate queries to refetch data after successful save
+      // Invalidate specific inspection details
+      queryClient.invalidateQueries({ queryKey: ['inspection', variables.inspection.id] });
+      // Invalidate the list of inspections if status/progress shown there might change
+      queryClient.invalidateQueries({ queryKey: ['inspections'] });
+      
+      console.log("[useSaveInspection] Mutation: onSuccess, queries invalidated for inspection ID:", variables.inspection.id);
+    },
+    // onError: (error, variables, context) => { /* Handled by try/catch in mutationFn for toasts */ }
+  });
 
   return {
-    saveInspection,
-    isSaving
+    // Expose mutateAsync for promise-based usage if needed, or just mutate
+    saveInspection: saveInspectionMutation.mutateAsync, 
+    isSaving: saveInspectionMutation.isPending,
   };
 };
