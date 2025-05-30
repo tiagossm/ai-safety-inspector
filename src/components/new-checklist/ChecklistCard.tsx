@@ -31,7 +31,10 @@ interface ChecklistCardProps {
   onEdit: (id: string) => void;
   onDelete: (id: string, title: string) => void;
   onOpen: (id: string) => void;
-  onStatusChange: () => void;
+  onUpdateStatus: (params: { checklistId: string; newStatus: "active" | "inactive" }) => Promise<void>;
+  // onStatusChange is kept in props if other actions in card might need a generic refetch,
+  // but it's removed from handleToggleStatus. If not used elsewhere, it can be fully removed.
+  onStatusChange?: () => void; 
   isSelected?: boolean;
   onSelect?: (checked: boolean) => void;
 }
@@ -41,7 +44,8 @@ export function ChecklistCard({
   onEdit,
   onDelete,
   onOpen,
-  onStatusChange,
+  onUpdateStatus,
+  // onStatusChange, // No longer directly used by handleToggleStatus
   isSelected = false,
   onSelect
 }: ChecklistCardProps) {
@@ -57,26 +61,12 @@ export function ChecklistCard({
     
     try {
       const newStatus = isActive ? "inactive" : "active";
-      // const { error } = await supabase
-      //   .from("checklists")
-      //   .update({ status_checklist: newStatus === "active" ? "ativo" : "inativo" })
-      //   .eq("id", checklist.id);
-        
-      // if (error) throw error;
-      
-      // toast({
-      //   title: "Status atualizado",
-      //   description: `O checklist foi ${newStatus === "active" ? "ativado" : "desativado"}.`,
-      // });
-      
-      onStatusChange();
+      await onUpdateStatus({ checklistId: checklist.id, newStatus });
+      // The mutation itself (via useChecklistMutations) handles success/error toasts and query invalidation (refetch).
     } catch (error) {
-      console.error("Error toggling status:", error);
-      // toast({
-      //   variant: "destructive",
-      //   title: "Erro",
-      //   description: "Não foi possível alterar o status do checklist.",
-      // });
+      // Error is already handled by useChecklistMutations (logs and toasts)
+      // If specific error handling for this component is needed, add it here.
+      console.error("Error toggling status in ChecklistCard:", error);
     } finally {
       setIsToggling(false);
     }

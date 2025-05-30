@@ -9,7 +9,7 @@ import { useInspectionAuditLogs } from "./useInspectionAuditLogs";
 export type { ResponseData } from "./types/inspectionTypes";
 
 export function useResponseHandling(inspectionId: string | undefined, setResponses: (responses: Record<string, any>) => void) {
-  const [savingData, setSavingData] = useState(false);
+  // const [savingData, setSavingData] = useState(false); // Will be replaced by isSaving from useSaveInspection
   const { logAuditAction } = useInspectionAuditLogs(inspectionId);
 
   // Função melhorada para garantir que as respostas tenham atualizações corretas
@@ -73,11 +73,11 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
   // Integrar handlers específicos
   const { handleMediaChange, handleMediaUpload } = useMediaHandler(inspectionId, handleResponseChange);
   const { handleSaveSubChecklistResponses } = useSubChecklistHandler(setResponses);
-  const { saveInspection, isSaving } = useSaveInspection();
+  const { saveInspection: saveInspectionMutateAsync, isSaving } = useSaveInspection(); // Renamed to avoid confusion
 
   // Função para salvar a inspeção
   const handleSaveInspection = useCallback(async (responses: Record<string, any>, inspection: any) => {
-    setSavingData(true);
+    // setSavingData(true); // No longer needed, isSaving from useSaveInspection will be used
     try {
       // Transformar o objeto responses em um array de responses como esperado pelo saveInspection
       const responsesArray = Object.entries(responses).map(([questionId, response]) => ({
@@ -85,7 +85,8 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
         ...response
       }));
       
-      const result = await saveInspection(inspection, responsesArray);
+      // Call the mutateAsync function with the variables object
+      const result = await saveInspectionMutateAsync({ inspection, responsesArray });
       
       // Log de auditoria para salvamento da inspeção
       if (result && inspectionId) {
@@ -102,11 +103,14 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
       return result;
     } catch (error) {
       console.error("Erro ao salvar inspeção:", error);
+      // The mutation hook (useSaveInspection) already handles toasts for errors.
+      // Rethrow or return false if specific handling is needed here.
       return false;
-    } finally {
-      setSavingData(false);
-    }
-  }, [saveInspection, logAuditAction, inspectionId]);
+    } 
+    // finally {
+      // setSavingData(false); // No longer needed
+    // }
+  }, [saveInspectionMutateAsync, logAuditAction, inspectionId]);
 
   return {
     handleResponseChange,
@@ -114,7 +118,7 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
     handleMediaUpload,
     handleSaveInspection,
     handleSaveSubChecklistResponses,
-    savingResponses: savingData || isSaving,
+    savingResponses: isSaving, // Directly use isSaving from the mutation hook
     logAuditAction
   };
 }
