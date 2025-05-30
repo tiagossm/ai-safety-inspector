@@ -26,6 +26,13 @@ export function useChecklistAI() {
       setIsGenerating(false);
       return { success: false, error: "Campos obrigatórios não preenchidos" };
     }
+
+    // Nova validação: prompt ou descrição são necessários
+    if (!prompt.trim() && (!checklistData.description || !checklistData.description.trim())) {
+      toast.error("Forneça um prompt para a IA ou uma descrição para o checklist.");
+      setIsGenerating(false);
+      return { success: false, error: "Prompt ou descrição são necessários para a geração por IA." };
+    }
     
     try {
       console.log("Iniciando geração de checklist por IA com dados:", checklistData);
