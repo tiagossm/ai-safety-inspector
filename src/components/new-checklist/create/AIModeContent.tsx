@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Card, CardContent, CardHeader, CardTitle,
+  Button, Input, Label, Textarea,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue
+} from "@/components/ui";
 import { Bot, Sparkles, RefreshCw } from "lucide-react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,23 +33,14 @@ interface AIModeContentProps {
 }
 
 export function AIModeContent({
-  aiPrompt,
-  setAiPrompt,
-  aiLoading,
-  setAiLoading,
-  selectedAssistant,
-  setSelectedAssistant,
-  numQuestions,
-  setNumQuestions,
-  contextType,
-  setContextType,
-  contextValue,
-  setContextValue,
-  companyId,
-  category,
-  description,
-  questions,
-  setQuestions
+  aiPrompt, setAiPrompt,
+  aiLoading, setAiLoading,
+  selectedAssistant, setSelectedAssistant,
+  numQuestions, setNumQuestions,
+  contextType, setContextType,
+  contextValue, setContextValue,
+  companyId, category, description,
+  questions, setQuestions
 }: AIModeContentProps) {
   const [companyData, setCompanyData] = useState<any>(null);
   const [formattedPrompt, setFormattedPrompt] = useState<string>("");
@@ -64,22 +54,22 @@ export function AIModeContent({
       setCompanyData(null);
       updateFormattedPrompt(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId, category, description, contextType, contextValue]);
 
   const fetchCompanyData = async (id: string) => {
     try {
       const { data, error } = await supabase
-        .from('companies')
-        .select('*')
-        .eq('id', id)
+        .from("companies")
+        .select("*")
+        .eq("id", id)
         .single();
 
       if (error) throw error;
+
       setCompanyData(data);
       updateFormattedPrompt(data);
     } catch (error) {
-      console.error("Error fetching company data:", error);
+      console.error("Erro ao buscar dados da empresa:", error);
       toast.error("Erro ao carregar dados da empresa");
     }
   };
@@ -102,19 +92,34 @@ Gere ${numQuestions} perguntas específicas para este checklist.`;
   };
 
   const handleGenerateAI = async () => {
+    // 🔐 Validação antes da chamada
+    if (!formattedPrompt || formattedPrompt.trim() === "") {
+      toast.error("Prompt vazio. Verifique os campos preenchidos.");
+      return;
+    }
+
     if (!category.trim() || !companyId || !description.trim() || !selectedAssistant) {
-      toast.error("Preencha todos os campos obrigatórios e selecione um assistente antes de gerar");
+      toast.error("Preencha todos os campos obrigatórios antes de gerar.");
       return;
     }
 
     setAiLoading(true);
+
     try {
+      console.log("📤 Payload para generateChecklistWithAI:", {
+        prompt: formattedPrompt,
+        assistantId: selectedAssistant,
+        questionCount: numQuestions,
+        companyData,
+        category
+      });
+
       const data = await generateChecklistWithAI({
         prompt: formattedPrompt,
         assistantId: selectedAssistant,
-        numQuestions: numQuestions,
-        companyData: companyData,
-        category: category
+        questionCount: numQuestions,
+        companyData,
+        category
       });
 
       if (data?.questions && Array.isArray(data.questions)) {
@@ -134,10 +139,12 @@ Gere ${numQuestions} perguntas específicas para este checklist.`;
         }));
 
         setQuestions([...questions, ...aiQuestions]);
+      } else {
+        toast.warning("Checklist gerado, mas sem perguntas estruturadas.");
       }
     } catch (error: any) {
       console.error("Erro na geração por IA:", error);
-      // O erro já é tratado pela função generateChecklistWithAI
+      toast.error("Erro ao gerar checklist. Tente novamente.");
     } finally {
       setAiLoading(false);
     }
@@ -172,18 +179,14 @@ Gere ${numQuestions} perguntas específicas para este checklist.`;
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {assistantsLoading ? (
-                    <div className="p-2 text-muted-foreground">Carregando assistentes...</div>
-                  ) : assistantsError ? (
-                    <div className="p-2 text-red-500">Erro ao carregar assistentes</div>
-                  ) : assistants.length === 0 ? (
-                    <div className="p-2 text-muted-foreground">Nenhum assistente dispon��vel</div>
+                  {assistants.length === 0 ? (
+                    <SelectItem value="default" disabled>Nenhum assistente disponível</SelectItem>
                   ) : (
                     assistants.map((assistant) => (
                       <SelectItem key={assistant.id} value={assistant.id}>
                         {assistant.name}
                         {assistant.model ? (
-                          <span style={{ fontSize: '0.8em', color: '#888', marginLeft: 8 }}>
+                          <span className="ml-2 text-xs text-muted-foreground">
                             ({assistant.model})
                           </span>
                         ) : null}
@@ -221,7 +224,7 @@ Gere ${numQuestions} perguntas específicas para este checklist.`;
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div>
               <Label htmlFor="contextValue">Valor</Label>
               <Input
@@ -239,11 +242,7 @@ Gere ${numQuestions} perguntas específicas para este checklist.`;
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             Prompt Final
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => updateFormattedPrompt(companyData)}
-            >
+            <Button variant="outline" size="sm" onClick={() => updateFormattedPrompt(companyData)}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Regenerar
             </Button>
@@ -252,7 +251,10 @@ Gere ${numQuestions} perguntas específicas para este checklist.`;
         <CardContent>
           <Textarea
             value={formattedPrompt}
-            onChange={(e) => setAiPrompt(e.target.value)}
+            onChange={(e) => {
+              setFormattedPrompt(e.target.value);
+              setAiPrompt(e.target.value);
+            }}
             rows={8}
             className="font-mono text-sm"
             placeholder="O prompt será gerado automaticamente com base nos campos preenchidos"
