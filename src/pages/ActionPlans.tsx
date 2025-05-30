@@ -34,10 +34,7 @@ export default function ActionPlans() {
           *,
           inspection:inspection_id (
             id,
-            company:company_id (
-              id,
-              fantasy_name
-            )
+            company:company_id (fantasy_name)
           ),
           question:question_id (pergunta)
         `)
@@ -52,7 +49,6 @@ export default function ActionPlans() {
         // Ensure the question property has the correct shape
         const processedItem: ActionPlanWithRelations = {
           ...item,
-          title: item.description, // Use description as title if title doesn't exist
           question: item.question === null ? null : 
             (typeof item.question === 'object' && item.question ? 
               { 
@@ -62,15 +58,7 @@ export default function ActionPlans() {
                           typeof (item.question as any).pergunta === 'string' ? 
                           (item.question as any).pergunta : undefined
               } : 
-              { pergunta: undefined }),
-          // Fix the inspection company type issue - ensure company always has required id
-          inspection: item.inspection ? {
-            ...item.inspection,
-            company: {
-              id: item.inspection.company?.id || '', // Ensure id is always present, default to empty string
-              fantasy_name: item.inspection.company?.fantasy_name || undefined
-            }
-          } : undefined
+              { pergunta: undefined })
         };
         return processedItem;
       });

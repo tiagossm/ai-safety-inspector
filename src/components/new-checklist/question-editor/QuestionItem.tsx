@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -27,7 +26,6 @@ import {
 } from "lucide-react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { SubitemGenerator } from "./SubitemGenerator";
-import { QUESTION_TYPES } from "@/lib/constants";
 
 interface QuestionItemProps {
   question: ChecklistQuestion;
@@ -106,7 +104,7 @@ export function QuestionItem({
     const newSubitem: ChecklistQuestion = {
       id: `new-${Date.now()}`,
       text: "",
-      responseType: "sim/não",
+      responseType: "yes_no",
       isRequired: true,
       weight: 1,
       allowsPhoto: false,
@@ -176,6 +174,15 @@ export function QuestionItem({
     toast.success(`${subitemsToAdd.length} subitens gerados com sucesso`);
   };
 
+  const responseTypeOptions = [
+    { value: "yes_no", label: "Sim/Não" },
+    { value: "text", label: "Texto" },
+    { value: "multiple_choice", label: "Múltipla Escolha" },
+    { value: "numeric", label: "Numérico" },
+    { value: "photo", label: "Foto" },
+    { value: "signature", label: "Assinatura" }
+  ];
+
   return (
     <Card className="border shadow-sm">
       <CardHeader className="px-4 py-3 bg-gray-50">
@@ -229,7 +236,7 @@ export function QuestionItem({
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
                   <SelectContent>
-                    {QUESTION_TYPES.map((option) => (
+                    {responseTypeOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>
@@ -251,7 +258,7 @@ export function QuestionItem({
               </div>
             </div>
 
-            {question.responseType === "seleção múltipla" && (
+            {question.responseType === "multiple_choice" && (
               <div className="space-y-2">
                 <Label>Opções</Label>
                 <div className="space-y-2">

@@ -1,10 +1,9 @@
-import React, { createContext, useContext, ReactNode, useMemo } from "react";
-import { ChecklistQuestion, ChecklistGroup } from "@/types/checklist";
-import { validateQuestion } from "@/validation/checklistValidation";
+
+import React, { createContext, useContext, ReactNode } from "react";
+import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 
 export interface ChecklistEditorContextType {
   // State
-  id?: string;
   title: string;
   description: string;
   category: string;
@@ -16,7 +15,6 @@ export interface ChecklistEditorContextType {
   questionsByGroup: Map<string, ChecklistQuestion[]>;
   nonEmptyGroups: ChecklistGroup[];
   isSubmitting: boolean;
-  isLoading: boolean;
   enableAllMedia: boolean;
   
   // Actions
@@ -34,14 +32,7 @@ export interface ChecklistEditorContextType {
   handleDeleteQuestion: (questionId: string) => void;
   handleDragEnd: (result: any) => void;
   handleSubmit: () => Promise<boolean>;
-  handleSave?: () => Promise<boolean>;
   toggleAllMediaOptions: (enabled: boolean) => void;
-  refetch?: () => void;
-  
-  // Validation helpers
-  validateQuestion: (question: ChecklistQuestion) => boolean;
-  getQuestionErrors: (question: ChecklistQuestion) => Record<string, string[]> | null;
-  isFormValid: () => boolean;
 }
 
 const ChecklistEditorContext = createContext<ChecklistEditorContextType | undefined>(undefined);
@@ -56,48 +47,15 @@ export const useChecklistEditor = () => {
 
 interface ChecklistEditorProviderProps {
   children: ReactNode;
-  value: Omit<ChecklistEditorContextType, 'validateQuestion' | 'getQuestionErrors' | 'isFormValid'>;
+  value: ChecklistEditorContextType;
 }
 
 export const ChecklistEditorProvider: React.FC<ChecklistEditorProviderProps> = ({ 
   children, 
   value 
 }) => {
-  // Adiciona funções de validação ao contexto
-  const enhancedValue = useMemo(() => {
-    const validateQuestionFn = (question: ChecklistQuestion): boolean => {
-      const result = validateQuestion(question);
-      return result.valid;
-    };
-
-    const getQuestionErrorsFn = (question: ChecklistQuestion): Record<string, string[]> | null => {
-      const result = validateQuestion(question);
-      return result.errors;
-    };
-
-    const isFormValidFn = (): boolean => {
-      if (!value.title.trim()) return false;
-      if (!value.category.trim()) return false;
-      if (value.questions.length === 0) return false;
-      
-      // Verifica se todas as perguntas são válidas
-      for (const question of value.questions) {
-        if (!validateQuestionFn(question)) return false;
-      }
-      
-      return true;
-    };
-
-    return {
-      ...value,
-      validateQuestion: validateQuestionFn,
-      getQuestionErrors: getQuestionErrorsFn,
-      isFormValid: isFormValidFn
-    };
-  }, [value]);
-
   return (
-    <ChecklistEditorContext.Provider value={enhancedValue}>
+    <ChecklistEditorContext.Provider value={value}>
       {children}
     </ChecklistEditorContext.Provider>
   );

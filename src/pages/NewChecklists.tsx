@@ -183,7 +183,6 @@ export default function NewChecklists() {
               onDelete={handleDeleteChecklist}
               onOpen={handleOpenChecklist}
               onStatusChange={refetch}
-              onUpdateStatus={updateStatus}
               onBulkDelete={handleBulkDelete}
             />
           </ScrollArea>
@@ -197,7 +196,6 @@ export default function NewChecklists() {
             onDelete={handleDeleteChecklist}
             onOpen={handleOpenChecklist}
             onStatusChange={refetch}
-            // TODO: Pass updateStatus to ChecklistList as well if needed
             onBulkStatusChange={handleBatchUpdateStatus}
             onBulkDelete={handleBulkDelete}
           />

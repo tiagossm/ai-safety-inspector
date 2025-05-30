@@ -66,7 +66,7 @@ export function ActionPlanTable({ actionPlans }: ActionPlanTableProps) {
                 {plan.due_date ? formatDate(plan.due_date) : "Não definida"}
               </TableCell>
               <TableCell>
-                {(plan as any).assignee || "Não atribuído"}
+                {plan.assignee || "Não atribuído"}
               </TableCell>
               <TableCell>
                 <Button variant="outline" size="sm">

@@ -48,7 +48,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
-    "date-fns": "^3.6.0",
+    "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.3.0",
     "framer-motion": "^12.9.2",
     "idb": "^7.1.1",
@@ -81,7 +81,7 @@
     "uuid": "^11.1.0",
     "vaul": "^0.9.3",
     "xlsx": "^0.18.5",
-    "zod": "^3.25.32"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.0",

@@ -5,12 +5,11 @@ import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, RefreshCw, ArrowLeft, ClipboardList } from "lucide-react";
 import { InspectionLayout } from "@/components/inspection/execution/InspectionLayout";
 import { InspectionError } from "@/components/inspection/execution/InspectionError";
 import { InspectionHeaderForm } from "@/components/inspection/execution/InspectionHeaderForm";
-import { LoadingInspectionState } from "@/components/inspection/execution/LoadingInspectionState";
-import { InspectionAuditLogViewer } from "@/components/inspection/audit/InspectionAuditLogViewer";
 import { useInspectionFetch } from "@/hooks/inspection/useInspectionFetch";
 import { useInspectionStatus } from "@/hooks/inspection/useInspectionStatus";
 import { useResponseHandling } from "@/hooks/inspection/useResponseHandling";
@@ -27,7 +26,6 @@ export default function InspectionExecutionPage() {
   const [autoSave, setAutoSave] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [saving, setSaving] = useState(false);
-  const [showAuditLogs, setShowAuditLogs] = useState(false);
   
   // Use the direct inspection fetch hook
   const {
@@ -54,8 +52,7 @@ export default function InspectionExecutionPage() {
     handleSaveInspection,
     handleSaveSubChecklistResponses,
     handleMediaUpload,
-    handleMediaChange,
-    logAuditAction
+    handleMediaChange
   } = useResponseHandling(id, setResponses);
 
   // Get action plans functions
@@ -86,7 +83,7 @@ export default function InspectionExecutionPage() {
     }
   }, [loading, groups, currentGroupId]);
 
-  // Calculate if the inspection is editable
+  // Calculate if the inspection is editable (only when status is 'Pendente' or 'Em Andamento')
   const isInspectionEditable = () => {
     return inspection && [INSPECTION_STATUSES.PENDING, INSPECTION_STATUSES.IN_PROGRESS].includes(inspection.status);
   };
@@ -171,16 +168,6 @@ export default function InspectionExecutionPage() {
       // Complete the inspection
       await completeInspection(inspection);
       
-      // Log completion
-      await logAuditAction(
-        null,
-        'complete_inspection',
-        'status',
-        inspection.status,
-        'Concluído',
-        { completed_at: new Date().toISOString() }
-      );
-      
       // Generate PDF report
       try {
         toast.info("Gerando relatório PDF...");
@@ -226,17 +213,6 @@ export default function InspectionExecutionPage() {
     try {
       setSaving(true);
       const updatedInspection = await reopenInspection(inspection);
-      
-      // Log reopening
-      await logAuditAction(
-        null,
-        'reopen_inspection',
-        'status',
-        inspection.status,
-        'Em Andamento',
-        { reopened_at: new Date().toISOString() }
-      );
-      
       toast.success("Inspeção reaberta com sucesso");
       refreshData();
     } catch (error: any) {
@@ -249,7 +225,6 @@ export default function InspectionExecutionPage() {
 
   // Handle inspection form save
   const handleInspectionDataSave = () => {
-    console.log("[InspectionExecutionPage] Dados da inspeção salvos, atualizando dados...");
     refreshData();
   };
 
@@ -317,11 +292,6 @@ export default function InspectionExecutionPage() {
     );
   }
 
-  // Show loading state
-  if (loading) {
-    return <LoadingInspectionState />;
-  }
-
   // If there's an error fetching the data
   if (error) {
     return (
@@ -339,15 +309,8 @@ export default function InspectionExecutionPage() {
   // Calculate stats
   const stats = calculateStats();
 
-  // CORRIGIDO: Verificação mais específica de dados obrigatórios
-  const hasRequiredData = inspection && company && responsible;
-  
-  console.log("[InspectionExecutionPage] Status dos dados obrigatórios:", {
-    inspection: !!inspection,
-    company: !!company,
-    responsible: !!responsible,
-    hasRequiredData
-  });
+  // Check if the minimum required data is available to show the checklist
+  const hasRequiredData = inspection && company?.id && responsible?.id;
 
   // Calculate action plan stats - significant non-conformities
   const hasActionPlans = Object.keys(plansByQuestion).length > 0;
@@ -412,23 +375,6 @@ export default function InspectionExecutionPage() {
               </div>
             </div>
           )}
-
-          {/* Audit Log Viewer */}
-          <div className="mt-4">
-            <div className="flex justify-between items-center mb-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowAuditLogs(!showAuditLogs)}
-                className="text-sm"
-              >
-                {showAuditLogs ? "Ocultar" : "Mostrar"} Histórico de Auditoria
-              </Button>
-            </div>
-            
-            {showAuditLogs && (
-              <InspectionAuditLogViewer inspectionId={id} />
-            )}
-          </div>
         </div>
       )}
 
@@ -474,26 +420,6 @@ export default function InspectionExecutionPage() {
             <p className="text-muted-foreground mb-4">
               Por favor, preencha os dados obrigatórios da inspeção acima para visualizar o checklist.
             </p>
-            <div className="mt-4 space-y-2 text-sm text-left max-w-md mx-auto">
-              <div className="flex items-center justify-between">
-                <span>Inspeção:</span>
-                <span className={inspection ? "text-green-600" : "text-red-600"}>
-                  {inspection ? "✓ OK" : "✗ Pendente"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Empresa:</span>
-                <span className={company ? "text-green-600" : "text-red-600"}>
-                  {company ? "✓ OK" : "✗ Pendente"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Responsável:</span>
-                <span className={responsible ? "text-green-600" : "text-red-600"}>
-                  {responsible ? "✓ OK" : "✗ Pendente"}
-                </span>
-              </div>
-            </div>
           </Card>
         )
       )}

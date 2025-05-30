@@ -1,161 +1,156 @@
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ChecklistQuestion, ChecklistGroup } from "@/types/checklist";
-import { mapResponseType } from "@/utils/typeMapping";
-import { handleApiError } from "@/utils/errorHandling";
-import { validateBasicChecklist } from "@/validation/checklistValidation";
+import { ChecklistWithStats, NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { toast } from "sonner";
+import { frontendToDatabaseResponseType } from "@/utils/responseTypeMap";
 
-interface ChecklistCreateParams {
-  title: string;
-  description: string;
-  category: string;
-  isTemplate: boolean;
-  companyId?: string;
+const getDatabaseType = (type: string): string => {
+  return frontendToDatabaseResponseType(type);
+};
+
+const getStatusChecklist = (status: string): string => {
+  return status === 'active' ? 'ativo' : 'inativo';
+};
+
+interface CreateParams {
+  checklist: NewChecklistPayload;
+  questions?: ChecklistQuestion[];
+  groups?: ChecklistGroup[];
 }
 
-/**
- * Hook para criação de checklist
- * Aceita parâmetros externos para evitar duplicação de estado
- */
 export function useChecklistCreate() {
-  const navigate = useNavigate();
-  
-  const [questions, setQuestions] = useState<ChecklistQuestion[]>([]);
-  const [groups, setGroups] = useState<ChecklistGroup[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  /**
-   * Adiciona uma nova pergunta ao checklist
-   * @param groupId ID do grupo ao qual a pergunta pertence
-   */
-  const handleAddQuestion = (groupId: string) => {
-    const newQuestion: ChecklistQuestion = {
-      id: `new-${Date.now()}`,
-      text: "",
-      responseType: "sim/não",
-      isRequired: true,
-      order: questions.length,
-      weight: 1,
-      allowsPhoto: false,
-      allowsVideo: false,
-      allowsAudio: false,
-      allowsFiles: false,
-      groupId
-    };
-    
-    setQuestions(prev => [...prev, newQuestion]);
-    toast.success("Pergunta adicionada");
-  };
-
-  /**
-   * Atualiza uma pergunta existente
-   * @param updatedQuestion Pergunta atualizada
-   */
-  const handleUpdateQuestion = (updatedQuestion: ChecklistQuestion) => {
-    setQuestions(prev => 
-      prev.map(q => q.id === updatedQuestion.id ? updatedQuestion : q)
-    );
-  };
-
-  /**
-   * Remove uma pergunta do checklist
-   * @param questionId ID da pergunta a ser removida
-   */
-  const handleDeleteQuestion = (questionId: string) => {
-    setQuestions(prev => prev.filter(q => q.id !== questionId));
-    toast.success("Pergunta excluída");
-  };
-
-  /**
-   * Salva o checklist no banco de dados
-   * @param params Parâmetros do checklist (título, descrição, etc.)
-   * @returns Promise<boolean> Indica se o salvamento foi bem-sucedido
-   */
-  const handleSave = async (params: ChecklistCreateParams): Promise<boolean> => {
-    const { title, description, category, isTemplate, companyId } = params;
-    
-    // Valida os dados básicos usando os parâmetros passados
-    if (!validateBasicChecklist(title, category, questions)) {
-      return false;
-    }
-
-    setIsSubmitting(true);
-    try {
-      // Cria o checklist
-      const { data: checklistData, error: checklistError } = await supabase
+  return useMutation({
+    mutationFn: async (params: CreateParams) => {
+      console.log("Creating new checklist:", params.checklist);
+      
+      if (!params.checklist.title) {
+        throw new Error("Checklist title is required");
+      }
+      
+      const status_checklist = getStatusChecklist(params.checklist.status || 'active');
+      
+      const company_id = params.checklist.company_id;
+      
+      const isAIGenerated = params.checklist.description?.toLowerCase().includes('gerado por ia') ||
+                            params.checklist.description?.toLowerCase().includes('checklist gerado por ia') ||
+                            params.checklist.description?.toLowerCase().includes('checklist: ');
+      
+      const isCSVImported = params.checklist.description?.toLowerCase().includes('importado via csv') ||
+                           params.checklist.description?.toLowerCase().includes('importado de planilha') ||
+                           params.checklist.description?.toLowerCase().includes('importado de excel');
+      
+      const origin = params.checklist.origin || (isAIGenerated ? 'ia' : (isCSVImported ? 'csv' : 'manual'));
+      
+      const { data: newChecklist, error: createError } = await supabase
         .from("checklists")
         .insert({
-          title: title.trim(),
-          description: description.trim(),
-          category: category.trim(),
-          is_template: isTemplate,
-          status_checklist: "ativo",
-          origin: "manual",
-          company_id: companyId || null
+          title: params.checklist.title,
+          description: params.checklist.description,
+          status: params.checklist.status || "active",
+          company_id: company_id,
+          category: params.checklist.category,
+          ...(params.checklist.origin && { origin: params.checklist.origin }),
+          is_template: params.checklist.is_template || false,
+          status_checklist: status_checklist,
+          responsible_id: params.checklist.responsible_id,
+          due_date: params.checklist.due_date
         })
         .select("id")
         .single();
-
-      if (checklistError) throw checklistError;
-
-      const checklistId = checklistData.id;
-
-      // Prepara as perguntas para inserção
-      const questionInserts = questions.map((question, index) => {
-        // Mapeia o tipo de resposta para o formato do banco de dados
-        const dbResponseType = mapResponseType(question.responseType, "toDb");
         
-        // Prepara opções para múltipla escolha
-        const options = question.responseType === "seleção múltipla" 
-          ? (Array.isArray(question.options) ? question.options : []) 
-          : null;
+      if (createError) {
+        console.error("Error creating checklist:", createError);
+        throw createError;
+      }
+      
+      const checklistId = newChecklist.id;
+      console.log("Created checklist with ID:", checklistId);
+      
+      if (params.questions && params.questions.length > 0) {
+        const questionInserts = params.questions.map((question, index) => {
+          let questionHint = question.hint || "";
           
-        return {
-          checklist_id: checklistId,
-          pergunta: question.text,
-          tipo_resposta: dbResponseType,
-          obrigatorio: question.isRequired,
-          ordem: index,
-          weight: question.weight || 1,
-          permite_foto: question.allowsPhoto || false,
-          permite_video: question.allowsVideo || false,
-          permite_audio: question.allowsAudio || false,
-          permite_files: question.allowsFiles || false,
-          hint: question.hint || null,
-          opcoes: options
-        };
-      });
-
-      // Insere as perguntas
-      const { error: questionsError } = await supabase
-        .from("checklist_itens")
-        .insert(questionInserts);
-
-      if (questionsError) throw questionsError;
-
+          if (question.groupId && params.groups) {
+            const group = params.groups.find(g => g.id === question.groupId);
+            if (group) {
+              questionHint = JSON.stringify({
+                groupId: group.id,
+                groupTitle: group.title,
+                groupIndex: params.groups.indexOf(group)
+              });
+            }
+          }
+          
+          let questionOptions: string[] = [];
+          
+          if (question.responseType === 'multiple_choice') {
+            if (Array.isArray(question.options)) {
+              questionOptions = question.options;
+            } else if (typeof question.options === 'string') {
+              try {
+                const optionsStr: string = question.options;
+                
+                if (optionsStr.startsWith('[') && optionsStr.endsWith(']')) {
+                  try {
+                    const parsedOptions = JSON.parse(optionsStr);
+                    if (Array.isArray(parsedOptions)) {
+                      questionOptions = parsedOptions;
+                    }
+                  } catch (e) {
+                    questionOptions = optionsStr.split(',').map(o => o.trim());
+                  }
+                } else {
+                  questionOptions = optionsStr.split(',').map(o => o.trim());
+                }
+              } catch (e) {
+                console.error("Error parsing options:", e);
+              }
+            }
+          }
+          
+          // Convert the frontend response type to database format
+          const dbResponseType = getDatabaseType(question.responseType);
+          
+          console.log(`Preparing question ${index} for checklist ${checklistId}: ${question.text}, type: ${question.responseType} -> ${dbResponseType}`);
+          
+          return {
+            checklist_id: checklistId,
+            pergunta: question.text,
+            tipo_resposta: dbResponseType,
+            obrigatorio: question.isRequired,
+            opcoes: questionOptions,
+            hint: questionHint,
+            weight: question.weight || 1,
+            parent_item_id: question.parentQuestionId,
+            condition_value: question.conditionValue,
+            permite_foto: question.allowsPhoto || false,
+            permite_video: question.allowsVideo || false,
+            permite_audio: question.allowsAudio || false,
+            ordem: question.order || index
+          };
+        });
+        
+        console.log("Sample question data:", questionInserts.slice(0, 2));
+        
+        const { error: questionsError } = await supabase
+          .from("checklist_itens")
+          .insert(questionInserts);
+          
+        if (questionsError) {
+          console.error("Error adding questions:", questionsError);
+          toast.warning("Checklist criado, mas houve erro ao adicionar algumas perguntas.");
+        }
+      }
+      
+      return { id: checklistId };
+    },
+    onSuccess: () => {
       toast.success("Checklist criado com sucesso!");
-      navigate("/new-checklists");
-      return true;
-    } catch (error: any) {
-      handleApiError(error, "Erro ao criar checklist");
-      return false;
-    } finally {
-      setIsSubmitting(false);
+    },
+    onError: (error) => {
+      console.error("Error in useChecklistCreate:", error);
+      toast.error(`Erro ao criar checklist: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
     }
-  };
-
-  return {
-    questions,
-    setQuestions,
-    groups,
-    setGroups,
-    isSubmitting,
-    handleAddQuestion,
-    handleUpdateQuestion,
-    handleDeleteQuestion,
-    handleSave
-  };
+  });
 }

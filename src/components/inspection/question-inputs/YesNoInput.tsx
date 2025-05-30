@@ -1,3 +1,4 @@
+
 import React, { useCallback, useState } from "react";
 import { ResponseButtonGroup } from "../question-parts/response-types/components/ResponseButtonGroup";
 import { ActionPlanButton } from "../question-parts/response-types/components/ActionPlanButton";
@@ -116,26 +117,6 @@ export function YesNoResponseInput({
         multimodalAnalysis={true}
         additionalMediaUrls={response?.mediaUrls ?? []} // Usar additionalMediaUrls ao invés de mediaUrls
       />
-
-      {/* Exemplo de uso correto para campos de texto, data e hora
-      Supondo que você tenha algo como:
-      <TextInput
-        value={typeof response?.value === "object" ? response?.value.value : response?.value}
-        onChange={val => onResponseChange({ ...response, value: val })}
-      />
-
-      Para campos de data:
-      <DateResponseInput
-        value={typeof response?.value === "object" ? response?.value.value : response?.value}
-        onChange={val => onResponseChange({ ...response, value: val })}
-      />
-
-      Para campos de hora:
-      <TimeInput
-        value={typeof response?.value === "object" ? response?.value.value : response?.value}
-        onChange={val => onResponseChange({ ...response, value: val })}
-      />
-      */}
     </div>
   );
 }

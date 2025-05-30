@@ -1,3 +1,4 @@
+
 import React, { useCallback } from "react";
 import { YesNoResponseInput } from "./response-types/YesNoResponseInput";
 import { TextResponseInput } from "./response-types/TextResponseInput";
@@ -7,7 +8,6 @@ import { NumberInput } from "@/components/inspection/question-inputs/NumberInput
 import { MultipleChoiceInput } from "@/components/inspection/question-inputs/MultipleChoiceInput";
 import { PhotoInput } from "@/components/inspection/question-inputs/PhotoInput";
 import { SignatureInput } from "@/components/checklist/SignatureInput";
-import { normalizeResponseType } from "@/utils/inspection/normalizationUtils";
 
 interface ResponseInputRendererProps {
   question: any;
@@ -30,13 +30,16 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   onSaveActionPlan,
   readOnly = false
 }) => {
-  const rawResponseType = question.responseType || question.tipo_resposta || "texto";
-  const responseType = normalizeResponseType(rawResponseType);
-  
-  console.log("ResponseInputRenderer: raw type:", rawResponseType, "normalized:", responseType);
+  const responseType = question.responseType || question.tipo_resposta || "text";
+  const questionText = question.text || question.pergunta || "";
+
+  console.log("ResponseInputRenderer: rendering with responseType:", responseType);
   console.log("ResponseInputRenderer: current response:", response);
 
+  // Ensure response is always an object (even if empty)
   const safeResponse = response || {};
+  
+  // Make sure mediaUrls is always an array
   const mediaUrls = safeResponse.mediaUrls || [];
 
   const handleMediaChange = useCallback((urls: string[]) => {
@@ -76,157 +79,165 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     [onSaveActionPlan]
   );
 
+  // Função para lidar com mudanças em componentes simples
   const handleSimpleValueChange = useCallback((value: any) => {
-    console.log("ResponseInputRenderer: Simple value change:", value);
     onResponseChange({
       ...safeResponse,
       value
     });
   }, [safeResponse, onResponseChange]);
 
-  const renderPhotoInput = () => (
-    <PhotoInput
-      mediaUrls={mediaUrls}
-      onMediaChange={handleMediaChange}
-      allowsPhoto={question.allowsPhoto}
-      allowsVideo={question.allowsVideo}
-      allowsAudio={question.allowsAudio}
-      allowsFiles={question.allowsFiles}
-      inspectionId={inspectionId}
-      questionId={question.id}
-      disabled={readOnly}
-    />
-  );
-
-  // Renderizar com base no tipo normalizado
-  switch (responseType) {
-    case "sim/não":
-      return (
-        <YesNoResponseInput
-          question={question}
-          response={safeResponse}
-          inspectionId={inspectionId}
-          onResponseChange={onResponseChange}
-          onMediaChange={handleMediaChange}
-          actionPlan={actionPlan}
-          onSaveActionPlan={handleSaveActionPlan}
-          readOnly={readOnly}
-          onApplyAISuggestion={(suggestion: string) =>
-            handleResponseWithAnalysis({ aiSuggestion: suggestion })
-          }
-        />
-      );
-
-    case "texto":
-      return (
-        <div className="space-y-2">
-          <TextResponseInput
-            question={question}
-            response={safeResponse}
-            onResponseChange={onResponseChange}
-            onMediaChange={handleMediaChange}
-            onApplyAISuggestion={(suggestion: string) =>
-              handleResponseWithAnalysis({ aiSuggestion: suggestion })
-            }
-            readOnly={readOnly}
-          />
-          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && renderPhotoInput()}
-        </div>
-      );
-
-    case "seleção múltipla":
-      return (
-        <div className="space-y-2">
-          <MultipleChoiceInput 
-            options={question.options || []}
-            value={
-              typeof safeResponse.value === "string"
-                ? safeResponse.value
-                : safeResponse.value?.value || ""
-            }
-            onChange={handleSimpleValueChange}
-          />
-          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && renderPhotoInput()}
-        </div>
-      );
-
-    case "numérico":
-      return (
-        <div className="space-y-2">
-          <NumberInput
-            value={
-              typeof safeResponse.value === "number"
-                ? safeResponse.value
-                : typeof safeResponse.value?.value === "number"
-                  ? safeResponse.value.value
-                  : safeResponse.value?.value !== undefined
-                    ? Number(safeResponse.value.value)
-                    : undefined
-            }
-            onChange={handleSimpleValueChange}
-          />
-          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && renderPhotoInput()}
-        </div>
-      );
-
-    case "foto":
-      return renderPhotoInput();
-
-    case "assinatura":
-      return (
-        <div className="space-y-2">
-          <SignatureInput 
-            value={
-              typeof safeResponse.value === "string"
-                ? safeResponse.value
-                : safeResponse.value?.value || ""
-            }
-            onChange={handleSimpleValueChange}
-          />
-          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && renderPhotoInput()}
-        </div>
-      );
-
-    case "data":
-      return (
-        <div className="space-y-2">
-          <DateResponseInput
-            value={
-              typeof safeResponse.value === "string"
-                ? safeResponse.value
-                : safeResponse.value?.value || ""
-            }
-            onChange={handleSimpleValueChange}
-            readOnly={readOnly}
-          />
-          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && renderPhotoInput()}
-        </div>
-      );
-
-    case "hora":
-      return (
-        <div className="space-y-2">
-          <TimeResponseInput
-            value={
-              typeof safeResponse.value === "string"
-                ? safeResponse.value
-                : safeResponse.value?.value || ""
-            }
-            onChange={handleSimpleValueChange}
-            readOnly={readOnly}
-          />
-          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && renderPhotoInput()}
-        </div>
-      );
-
-    default:
-      console.error("ResponseInputRenderer: Unsupported response type:", responseType);
-      return (
-        <div className="p-4 border border-red-300 bg-red-50 rounded-md">
-          <p className="text-red-700">
-            Tipo de resposta não suportado: {responseType} (original: {rawResponseType})
-          </p>
-        </div>
-      );
+  if (responseType === "yes_no") {
+    return (
+      <YesNoResponseInput
+        question={question}
+        response={safeResponse}
+        inspectionId={inspectionId}
+        onResponseChange={onResponseChange}
+        onMediaChange={handleMediaChange}
+        actionPlan={actionPlan}
+        onSaveActionPlan={handleSaveActionPlan}
+        readOnly={readOnly}
+        onApplyAISuggestion={(suggestion: string) =>
+          handleResponseWithAnalysis({ aiSuggestion: suggestion })
+        }
+      />
+    );
   }
+
+  if (responseType === "text") {
+    return (
+      <TextResponseInput
+        question={question}
+        response={safeResponse}
+        onResponseChange={onResponseChange}
+        onMediaChange={handleMediaChange}
+        onApplyAISuggestion={(suggestion: string) =>
+          handleResponseWithAnalysis({ aiSuggestion: suggestion })
+        }
+        readOnly={readOnly}
+      />
+    );
+  }
+
+  if (responseType === "multiple_choice") {
+    return (
+      <div className="space-y-2">
+        <MultipleChoiceInput 
+          options={question.options || []}
+          value={safeResponse.value}
+          onChange={handleSimpleValueChange}
+        />
+        {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
+          <PhotoInput
+            mediaUrls={mediaUrls}
+            onAddMedia={() => console.log("Adicionar mídia para questão multiple_choice")}
+            onDeleteMedia={(url) => {
+              const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
+              handleMediaChange(updatedUrls);
+            }}
+            allowsPhoto={question.allowsPhoto}
+            allowsVideo={question.allowsVideo}
+            allowsAudio={question.allowsAudio}
+            allowsFiles={question.allowsFiles}
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (responseType === "numeric" || responseType === "number") {
+    return (
+      <div className="space-y-2">
+        <NumberInput
+          value={safeResponse.value}
+          onChange={handleSimpleValueChange}
+        />
+        {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
+          <PhotoInput
+            mediaUrls={mediaUrls}
+            onAddMedia={() => console.log("Adicionar mídia para questão numeric")}
+            onDeleteMedia={(url) => {
+              const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
+              handleMediaChange(updatedUrls);
+            }}
+            allowsPhoto={question.allowsPhoto}
+            allowsVideo={question.allowsVideo}
+            allowsAudio={question.allowsAudio}
+            allowsFiles={question.allowsFiles}
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (responseType === "photo") {
+    return (
+      <PhotoInput
+        mediaUrls={mediaUrls}
+        onAddMedia={() => console.log("Adicionar mídia para questão photo")}
+        onDeleteMedia={(url) => {
+          const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
+          handleMediaChange(updatedUrls);
+        }}
+        allowsPhoto={true}
+        allowsVideo={question.allowsVideo}
+        allowsAudio={question.allowsAudio}
+        allowsFiles={question.allowsFiles}
+      />
+    );
+  }
+
+  if (responseType === "signature") {
+    return (
+      <div className="space-y-2">
+        <SignatureInput 
+          value={safeResponse.value || ""}
+          onChange={handleSimpleValueChange}
+        />
+        {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
+          <PhotoInput
+            mediaUrls={mediaUrls}
+            onAddMedia={() => console.log("Adicionar mídia para questão signature")}
+            onDeleteMedia={(url) => {
+              const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
+              handleMediaChange(updatedUrls);
+            }}
+            allowsPhoto={question.allowsPhoto}
+            allowsVideo={question.allowsVideo}
+            allowsAudio={question.allowsAudio}
+            allowsFiles={question.allowsFiles}
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (responseType === "date") {
+    return (
+      <DateResponseInput
+        value={safeResponse.value}
+        onChange={(value) => handleSimpleValueChange(value)}
+        readOnly={readOnly}
+      />
+    );
+  }
+
+  if (responseType === "time") {
+    return (
+      <TimeResponseInput
+        value={safeResponse.value}
+        onChange={(value) => handleSimpleValueChange(value)}
+        readOnly={readOnly}
+      />
+    );
+  }
+
+  return (
+    <div className="p-4 border border-red-300 bg-red-50 rounded-md">
+      <p className="text-red-700">
+        Tipo de resposta não suportado: {responseType}
+      </p>
+    </div>
+  );
 };

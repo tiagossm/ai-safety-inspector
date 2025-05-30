@@ -1,182 +1,101 @@
 
-import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { ActionPlan } from "@/services/inspection/actionPlanService";
-import { toast } from "sonner";
+import { useCallback } from "react";
+import { useInspectionFetch } from "@/hooks/inspection/useInspectionFetch";
+import { useInspectionStatus } from "@/hooks/inspection/useInspectionStatus";
+import { useQuestionsManagement, Question } from "@/hooks/inspection/useQuestionsManagement";
+import { useResponseHandling } from "@/hooks/inspection/useResponseHandling";
 
-export function useInspectionData(inspectionId?: string) {
-  const [inspection, setInspection] = useState<any>(null);
-  const [responses, setResponses] = useState<Record<string, any>>({});
-  const [actionPlans, setActionPlans] = useState<ActionPlan[]>([]);
-  const [questions, setQuestions] = useState<any[]>([]);
-  const [company, setCompany] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+// Export type for the hook return value
+export interface InspectionDataHook {
+  loading: boolean;
+  error: string | null;
+  detailedError: any;
+  inspection: any;
+  questions: any[];
+  groups: any[];
+  responses: Record<string, any>;
+  company: any;
+  responsible: any;
+  responsibles: any[];
+  subChecklists: Record<string, any>;
+  setResponses: (responses: Record<string, any>) => void;
+  refreshData: () => void;
+  completeInspection: (inspection: any) => Promise<any>;
+  reopenInspection: (inspection: any) => Promise<any>;
+  handleResponseChange: (questionId: string, data: any) => void;
+  handleMediaUpload: (questionId: string, file: File) => Promise<string | null>;
+  handleMediaChange: (questionId: string, mediaUrls: string[]) => void;
+  handleSaveInspection: () => Promise<void>;
+  savingResponses: boolean;
+}
 
-  // Fetch inspection data
-  useEffect(() => {
-    if (inspectionId) {
-      fetchInspectionData();
-    }
-  }, [inspectionId]);
+export function useInspectionData(inspectionId: string | undefined): InspectionDataHook {
+  // Use the fetch hook for loading data
+  const {
+    loading,
+    error,
+    detailedError,
+    inspection,
+    questions,
+    groups,
+    responses,
+    company,
+    responsible,
+    responsibles,
+    subChecklists,
+    setResponses,
+    refreshData,
+  } = useInspectionFetch(inspectionId);
 
-  const fetchInspectionData = async () => {
-    if (!inspectionId) return;
+  // Use the status hook for completing/reopening the inspection
+  const { completeInspection, reopenInspection } = useInspectionStatus(inspectionId);
+  
+  // Use the questions management hook with the correct response handler
+  const {
+    handleResponseChange: onQuestionResponseChange
+  } = useQuestionsManagement(
+    questions as Question[], 
+    responses, 
+    setResponses
+  );
 
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      // Fetch inspection details with related data
-      const { data: inspectionData, error: inspectionError } = await supabase
-        .from('inspections')
-        .select(`
-          *,
-          companies (
-            id,
-            fantasy_name
-          ),
-          checklists (
-            id,
-            title,
-            description
-          )
-        `)
-        .eq('id', inspectionId)
-        .single();
+  // Use the response handling hook (for uploads, media, etc.)
+  const {
+    handleResponseChange: _unusedHandleResponseChange,
+    handleMediaChange,
+    handleMediaUpload,
+    handleSaveInspection: saveInspection,
+    savingResponses
+  } = useResponseHandling(inspectionId, setResponses);
 
-      if (inspectionError) throw inspectionError;
-
-      setInspection(inspectionData);
-      setCompany(inspectionData?.companies);
-
-      // Fetch checklist questions if available
-      if (inspectionData?.checklist_id) {
-        const { data: questionsData, error: questionsError } = await supabase
-          .from('checklist_itens')
-          .select('*')
-          .eq('checklist_id', inspectionData.checklist_id)
-          .order('ordem');
-
-        if (questionsError) {
-          console.error('Error fetching questions:', questionsError);
-        } else {
-          setQuestions(questionsData || []);
-        }
-      }
-
-      // Fetch existing responses
-      const { data: responsesData, error: responsesError } = await supabase
-        .from('inspection_responses')
-        .select('*')
-        .eq('inspection_id', inspectionId);
-
-      if (responsesError) throw responsesError;
-
-      // Convert responses array to object for easier access
-      const responsesMap = responsesData.reduce((acc, response) => {
-        acc[response.inspection_item_id] = response;
-        return acc;
-      }, {} as Record<string, any>);
-
-      setResponses(responsesMap);
-
-    } catch (error: any) {
-      console.error('Error fetching inspection data:', error);
-      setError(error.message || 'Erro ao carregar dados da inspeção');
-      toast.error('Erro ao carregar dados da inspeção');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleResponseChange = useCallback((questionId: string, data: any) => {
-    setResponses(prev => ({
-      ...prev,
-      [questionId]: {
-        ...prev[questionId],
-        ...data,
-        inspection_item_id: questionId,
-        inspection_id: inspectionId
-      }
-    }));
-  }, [inspectionId]);
-
-  const handleMediaChange = useCallback((questionId: string, mediaUrls: string[]) => {
-    setResponses(prev => ({
-      ...prev,
-      [questionId]: {
-        ...prev[questionId],
-        media_urls: mediaUrls,
-        inspection_item_id: questionId,
-        inspection_id: inspectionId
-      }
-    }));
-  }, [inspectionId]);
-
-  const handleMediaUpload = useCallback(async (questionId: string, file: File): Promise<string | null> => {
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${questionId}-${Date.now()}.${fileExt}`;
-      const filePath = `inspections/${inspectionId}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('inspection-files')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage
-        .from('inspection-files')
-        .getPublicUrl(filePath);
-
-      return data.publicUrl;
-    } catch (error: any) {
-      console.error('Error uploading file:', error);
-      toast.error('Erro ao fazer upload do arquivo');
-      return null;
-    }
-  }, [inspectionId]);
-
-  const handleSaveInspection = async (responses: Record<string, any>, inspection: any) => {
-    // Save inspection logic here
-    setIsSubmitting(true);
-    try {
-      // Implementation for saving inspection
-      toast.success('Inspeção salva com sucesso!');
-    } catch (error) {
-      toast.error('Erro ao salvar inspeção');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleSaveSubChecklistResponses = async (subChecklistId: string, responses: Record<string, any>) => {
-    // Save subchecklist responses logic here
-    try {
-      // Implementation for saving subchecklist responses
-      toast.success('Respostas do subchecklist salvas com sucesso!');
-    } catch (error) {
-      toast.error('Erro ao salvar respostas do subchecklist');
-    }
-  };
+  // Wrap the save inspection function to provide the current responses and inspection
+  // Modificamos para retornar Promise<void> em vez de Promise<boolean | void>
+  const handleSaveInspection = useCallback(async (): Promise<void> => {
+    if (!inspection) return;
+    await saveInspection(responses, inspection);
+    // Removemos o retorno explícito para garantir tipo void
+  }, [saveInspection, responses, inspection]);
 
   return {
-    inspection,
-    responses,
-    actionPlans: actionPlans as any[], // Temporary type assertion to resolve conflict
-    questions,
-    company,
-    loading: isLoading, // Alias for compatibility
-    isLoading,
+    loading,
     error,
-    isSubmitting,
-    handleResponseChange,
+    detailedError,
+    inspection,
+    questions,
+    groups,
+    responses,
+    company,
+    responsible,
+    responsibles,
+    subChecklists,
+    setResponses,
+    refreshData,
+    completeInspection,
+    reopenInspection,
+    handleResponseChange: onQuestionResponseChange, // aqui é o correto!
+    handleMediaUpload,
     handleMediaChange,
-    handleMediaUpload: (file: File, questionId: string) => handleMediaUpload(questionId, file),
     handleSaveInspection,
-    handleSaveSubChecklistResponses,
-    refetch: fetchInspectionData
+    savingResponses
   };
 }

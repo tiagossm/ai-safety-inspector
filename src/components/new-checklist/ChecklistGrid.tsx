@@ -13,8 +13,7 @@ interface ChecklistGridProps {
   onEdit: (id: string) => void;
   onDelete: (id: string, title: string) => void;
   onOpen: (id: string) => void;
-  onStatusChange: () => void; // This is actually refetch
-  onUpdateStatus: (params: { checklistId: string; newStatus: "active" | "inactive" }) => Promise<void>;
+  onStatusChange: () => void;
   onBulkDelete?: (ids: string[]) => Promise<void>;
 }
 
@@ -25,7 +24,6 @@ export function ChecklistGrid({
   onDelete,
   onOpen,
   onStatusChange,
-  onUpdateStatus,
   onBulkDelete
 }: ChecklistGridProps) {
   const navigate = useNavigate();
@@ -119,8 +117,7 @@ export function ChecklistGrid({
             onEdit={onEdit}
             onDelete={onDelete}
             onOpen={onOpen}
-            onStatusChange={onStatusChange} // Keep for now, might be used by other actions or until ChecklistList is updated
-            onUpdateStatus={onUpdateStatus}
+            onStatusChange={onStatusChange}
             isSelected={selectedChecklists.includes(checklist.id)}
             onSelect={(checked) => handleSelect(checklist.id, checked)}
           />

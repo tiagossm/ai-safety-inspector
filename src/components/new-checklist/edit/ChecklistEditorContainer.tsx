@@ -24,7 +24,6 @@ export function ChecklistEditorContainer() {
   
   // Context value with all state and actions
   const contextValue = {
-    id: editorContext.id,
     title: editorContext.title,
     description: editorContext.description,
     category: editorContext.category,
@@ -36,7 +35,6 @@ export function ChecklistEditorContainer() {
     questionsByGroup: editorContext.questionsByGroup,
     nonEmptyGroups: editorContext.nonEmptyGroups,
     isSubmitting: editorContext.isSubmitting,
-    isLoading: editorContext.isLoading,
     enableAllMedia: editorContext.enableAllMedia,
     setTitle: editorContext.setTitle,
     setDescription: editorContext.setDescription,
@@ -52,11 +50,13 @@ export function ChecklistEditorContainer() {
     handleDeleteQuestion: editorContext.handleDeleteQuestion,
     handleDragEnd: editorContext.handleDragEnd,
     handleSubmit: editorContext.handleSubmit,
-    handleSave: editorContext.handleSave,
     toggleAllMediaOptions: editorContext.toggleAllMediaOptions,
-    refetch: editorContext.refetch,
+    id: editorContext.id,
   };
   
+  // Remova o auto-save ao navegar de etapa (deixe apenas o save manual)
+  // Remova qualquer chamada automática de handleSave em useEffect ou navegação de etapas
+
   // Enhanced save handler to provide feedback and navigate after success
   const handleSave = async (): Promise<void> => {
     try {
@@ -84,6 +84,15 @@ export function ChecklistEditorContainer() {
     }
     try {
       toast.info("Preparando inspeção...", { duration: 2000 });
+      // Remova o save automático antes de iniciar inspeção
+      // if (editorContext.handleSave) {
+      //   const saveSuccess = await editorContext.handleSave();
+      //   if (!saveSuccess) {
+      //     toast.error("Não foi possível salvar o checklist antes de iniciar a inspeção", { duration: 5000 });
+      //     return;
+      //   }
+      // }
+      // Navegue diretamente para inspeção
       console.log(`Redirecionando para inspeção com checklistId=${editorContext.id}`);
       toast.success("Redirecionando para a inspeção...", { duration: 2000 });
       navigate(`/inspections/new?checklistId=${editorContext.id}`);

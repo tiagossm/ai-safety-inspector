@@ -1,77 +1,51 @@
 
-export interface InspectionResponse {
-  id: string;
-  inspection_id: string;
-  inspection_item_id: string;
-  answer: string;
-  comments?: string;
-  notes?: string;
-  action_plan?: string;
-  media_urls?: string[];
-  created_at: string;
-  updated_at: string;
-  completed_at?: string;
-  sub_checklist_responses?: any;
-  inspection_items?: {
-    id: string;
-    pergunta: string;
-    type?: string;
-    description?: string;
-    template_item_id?: string;
-    created_at: string;
-  };
-}
+export type InspectionStatus = 'Pendente' | 'Em Andamento' | 'Concluído';
 
-export interface InspectionActionPlan {
-  id: string;
-  inspection_id: string;
-  question_id: string;
-  title: string;
-  description: string;
-  status: string;
-  priority: string;
-  due_date?: string;
-  assignee?: string;
-  created_at: string;
-  updated_at: string;
-  users?: {
-    id: string;
-    name: string;
-    email?: string;
-  };
-}
+export const INSPECTION_STATUSES: Record<string, InspectionStatus> = {
+  PENDING: 'Pendente',
+  IN_PROGRESS: 'Em Andamento',
+  COMPLETED: 'Concluído'
+} as const;
 
-export interface InspectionSignature {
+export interface Signature {
   inspection_id: string;
   signer_id: string;
   signer_name?: string;
-  signer_role?: string;
   signature_data: string;
-  signed_at?: string;
+  signed_at: string;
+}
+
+export interface Report {
+  id: string;
+  inspection_id: string;
+  user_id: string;
+  status: string;
   created_at: string;
-  users?: {
+  updated_at: string;
+  action_plan: any;
+  url?: string;
+  format?: string;
+  inspection?: {
     id: string;
-    name: string;
-    email?: string;
+    status: string;
+    company?: {
+      fantasy_name: string;
+    };
+    checklist?: {
+      title: string;
+    };
   };
 }
 
-export interface ReportOptions {
-  inspectionId: string;
-  format: 'pdf' | 'excel' | 'csv';
-  includeMedia?: boolean;
-  includeSignatures?: boolean;
-  includeActionPlans?: boolean;
-  customTitle?: string;
-  customFooter?: string;
+export interface ActionPlan {
+  id?: string;
+  description: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  due_date?: string;
+  assignee?: string;
+  question_id?: string;
+  inspection_id?: string;
+  created_at?: string;
+  updated_at?: string;
 }
-
-// Adicionar constantes de status de inspeção
-export const INSPECTION_STATUSES = {
-  PENDING: 'pendente',
-  IN_PROGRESS: 'em_andamento',
-  COMPLETED: 'concluido',
-  CANCELLED: 'cancelado'
-} as const;
-
-export type InspectionStatus = typeof INSPECTION_STATUSES[keyof typeof INSPECTION_STATUSES];

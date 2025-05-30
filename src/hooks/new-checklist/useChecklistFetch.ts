@@ -1,7 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ChecklistWithStats } from "@/types/newChecklist";
+import { Checklist, ChecklistWithStats } from "@/types/newChecklist";
 import { toast } from "sonner";
 
 // Define types for database responses to avoid TypeScript errors

@@ -4,13 +4,11 @@ import { ResponseData } from "./types/inspectionTypes";
 import { useMediaHandler } from "./useMediaHandler";
 import { useSubChecklistHandler } from "./useSubChecklistHandler";
 import { useSaveInspection } from "./useSaveInspection";
-import { useInspectionAuditLogs } from "./useInspectionAuditLogs";
 
 export type { ResponseData } from "./types/inspectionTypes";
 
 export function useResponseHandling(inspectionId: string | undefined, setResponses: (responses: Record<string, any>) => void) {
-  // const [savingData, setSavingData] = useState(false); // Will be replaced by isSaving from useSaveInspection
-  const { logAuditAction } = useInspectionAuditLogs(inspectionId);
+  const [savingData, setSavingData] = useState(false);
 
   // Função melhorada para garantir que as respostas tenham atualizações corretas
   const handleResponseChange = useCallback((questionId: string, data: any) => {
@@ -33,31 +31,6 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
         updatedResponse.mediaUrls = [];
       }
       
-      // Log manual de auditoria para mudanças específicas que podem não ser capturadas pelo trigger
-      if (typeof data === 'object' && data !== null) {
-        // Log para comentários
-        if (data.comments !== undefined && data.comments !== currentResponse.comments) {
-          logAuditAction(
-            questionId,
-            'edit_comment',
-            'comments',
-            currentResponse.comments || null,
-            data.comments || null
-          );
-        }
-        
-        // Log para notas
-        if (data.notes !== undefined && data.notes !== currentResponse.notes) {
-          logAuditAction(
-            questionId,
-            'edit_notes',
-            'notes',
-            currentResponse.notes || null,
-            data.notes || null
-          );
-        }
-      }
-      
       // Console log para debugging
       console.log(`[useResponseHandling] Atualizando resposta para questão ${questionId}:`, 
         { anterior: currentResponse, nova: updatedResponse });
@@ -68,16 +41,16 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
         [questionId]: updatedResponse
       };
     });
-  }, [setResponses, logAuditAction]);
+  }, [setResponses]);
 
   // Integrar handlers específicos
   const { handleMediaChange, handleMediaUpload } = useMediaHandler(inspectionId, handleResponseChange);
   const { handleSaveSubChecklistResponses } = useSubChecklistHandler(setResponses);
-  const { saveInspection: saveInspectionMutateAsync, isSaving } = useSaveInspection(); // Renamed to avoid confusion
+  const { saveInspection, isSaving } = useSaveInspection();
 
   // Função para salvar a inspeção
   const handleSaveInspection = useCallback(async (responses: Record<string, any>, inspection: any) => {
-    // setSavingData(true); // No longer needed, isSaving from useSaveInspection will be used
+    setSavingData(true);
     try {
       // Transformar o objeto responses em um array de responses como esperado pelo saveInspection
       const responsesArray = Object.entries(responses).map(([questionId, response]) => ({
@@ -85,32 +58,15 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
         ...response
       }));
       
-      // Call the mutateAsync function with the variables object
-      const result = await saveInspectionMutateAsync({ inspection, responsesArray });
-      
-      // Log de auditoria para salvamento da inspeção
-      if (result && inspectionId) {
-        await logAuditAction(
-          null,
-          'save_inspection',
-          'inspection_data',
-          null,
-          { total_responses: responsesArray.length },
-          { saved_at: new Date().toISOString() }
-        );
-      }
-      
+      const result = await saveInspection(inspection, responsesArray);
       return result;
     } catch (error) {
       console.error("Erro ao salvar inspeção:", error);
-      // The mutation hook (useSaveInspection) already handles toasts for errors.
-      // Rethrow or return false if specific handling is needed here.
       return false;
-    } 
-    // finally {
-      // setSavingData(false); // No longer needed
-    // }
-  }, [saveInspectionMutateAsync, logAuditAction, inspectionId]);
+    } finally {
+      setSavingData(false);
+    }
+  }, [saveInspection]);
 
   return {
     handleResponseChange,
@@ -118,7 +74,6 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
     handleMediaUpload,
     handleSaveInspection,
     handleSaveSubChecklistResponses,
-    savingResponses: isSaving, // Directly use isSaving from the mutation hook
-    logAuditAction
+    savingResponses: savingData || isSaving
   };
 }

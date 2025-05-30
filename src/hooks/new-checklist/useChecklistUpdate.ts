@@ -1,9 +1,9 @@
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ChecklistWithStats, ChecklistQuestion, ChecklistGroup } from "@/types/checklist";
+import { ChecklistWithStats, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { toast } from "sonner";
-import { mapResponseType } from "@/utils/typeMapping";
-import { handleApiError } from "@/utils/errorHandling";
+import { frontendToDatabaseResponseType } from "@/utils/responseTypeMap";
 
 interface ChecklistUpdateParams extends Partial<ChecklistWithStats> {
   id: string;
@@ -14,10 +14,6 @@ interface ChecklistUpdateParams extends Partial<ChecklistWithStats> {
   status_checklist?: string;
 }
 
-/**
- * Hook para atualização de checklist
- * Usa o sistema centralizado de mapeamento de tipos e tratamento de erros
- */
 export function useChecklistUpdate() {
   const queryClient = useQueryClient();
 
@@ -25,7 +21,6 @@ export function useChecklistUpdate() {
     mutationFn: async (params: ChecklistUpdateParams) => {
       const { id, questions, groups, deletedQuestionIds, ...updateData } = params;
 
-      // Formata os dados para o formato esperado pelo banco de dados
       const formattedUpdateData = {
         ...updateData,
         is_template:
@@ -44,11 +39,9 @@ export function useChecklistUpdate() {
         updated_at: new Date().toISOString()
       };
 
-      // Remove campos que não existem no banco de dados
       delete formattedUpdateData.isTemplate;
       delete formattedUpdateData.status;
 
-      // Atualiza os dados básicos do checklist
       const { data, error } = await supabase
         .from("checklists")
         .update(formattedUpdateData)
@@ -61,16 +54,12 @@ export function useChecklistUpdate() {
         throw new Error(`Falha ao atualizar dados básicos: ${error.message}`);
       }
 
-      // Processa as perguntas, se fornecidas
       if (questions && questions.length > 0) {
-        // Separa perguntas novas e existentes
         const newQuestions = questions.filter((q) => q.id.startsWith("new-"));
         const existingQuestions = questions.filter((q) => !q.id.startsWith("new-"));
 
-        // Insere novas perguntas
         if (newQuestions.length > 0) {
           const questionsToInsert = newQuestions.map((q, index) => {
-            // Limpa metadados de hint
             let hint = q.hint || "";
             if (typeof hint === "string" && hint.includes("{") && hint.includes("}")) {
               try {
@@ -81,11 +70,8 @@ export function useChecklistUpdate() {
               } catch (e) {}
             }
 
-            // Prepara opções para múltipla escolha
             const options = Array.isArray(q.options) ? q.options.map((opt) => String(opt)) : [];
-            
-            // Mapeia o tipo de resposta para o formato do banco de dados
-            const dbResponseType = mapResponseType(q.responseType, "toDb");
+            const dbResponseType = frontendToDatabaseResponseType(q.responseType);
 
             return {
               checklist_id: id,
@@ -115,9 +101,7 @@ export function useChecklistUpdate() {
           }
         }
 
-        // Atualiza perguntas existentes
         for (const question of existingQuestions) {
-          // Limpa metadados de hint
           let hint = question.hint || "";
           if (typeof hint === "string" && hint.includes("{") && hint.includes("}")) {
             try {
@@ -128,13 +112,11 @@ export function useChecklistUpdate() {
             } catch (e) {}
           }
 
-          // Prepara opções para múltipla escolha
           const options = Array.isArray(question.options)
             ? question.options.map((opt) => String(opt))
             : [];
             
-          // Mapeia o tipo de resposta para o formato do banco de dados
-          const dbResponseType = mapResponseType(question.responseType, "toDb");
+          const dbResponseType = frontendToDatabaseResponseType(question.responseType);
 
           const { error: updateError } = await supabase
             .from("checklist_itens")
@@ -163,7 +145,6 @@ export function useChecklistUpdate() {
         }
       }
 
-      // Exclui perguntas removidas
       if (deletedQuestionIds && deletedQuestionIds.length > 0) {
         const { error: deleteError } = await supabase
           .from("checklist_itens")
@@ -187,7 +168,10 @@ export function useChecklistUpdate() {
     },
 
     onError: (error: any) => {
-      handleApiError(error, "Erro ao atualizar checklist");
+      console.error("Erro na mutação:", error);
+      toast.error(`Erro ao atualizar checklist: ${error.message || "Erro desconhecido"}`, {
+        duration: 5000
+      });
     }
   });
 }
