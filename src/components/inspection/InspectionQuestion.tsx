@@ -1,25 +1,28 @@
-import React, { useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { QuestionHeader } from "./question-parts/QuestionHeader";
+import { ResponseInput } from "./question-parts/ResponseInput";
+import { CommentsSection } from "./question-parts/CommentsSection";
+import { ActionPlanSection } from "./question-parts/ActionPlanSection";
+import { ActionPlan } from '@/services/inspection/actionPlanService';
+import { ActionPlanFormData } from '@/components/action-plans/form/types';
+import { useMediaAnalysis, MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
+import { ActionPlanImplementation } from "./ActionPlanImplementation";
+import { ActionPlanDialog } from "@/components/action-plans/ActionPlanDialog";
 import { Button } from "@/components/ui/button";
-import { Info, FileText, ExternalLink, Scale } from "lucide-react";
-import { ResponseInputRenderer } from "./question-parts/ResponseInputRenderer";
-import { ActionPlanFormData } from "@/components/action-plans/form/types";
-import { ActionPlan } from "@/services/inspection/actionPlanService";
-import { normalizeResponseType } from "@/utils/inspection/normalizationUtils";
 
 interface InspectionQuestionProps {
   question: any;
   index: number;
   response: any;
   onResponseChange: (data: any) => void;
-  onOpenSubChecklist?: () => void;
   allQuestions?: any[];
-  numberLabel: string;
+  numberLabel?: string;
   inspectionId?: string;
+  isSubQuestion?: boolean;
   actionPlan?: ActionPlan;
   onSaveActionPlan?: (data: ActionPlanFormData) => Promise<ActionPlan | void>;
-  isSubQuestion?: boolean; // Adicionando a propriedade faltante
+  onOpenSubChecklist?: () => void;
 }
 
 export function InspectionQuestion({
@@ -27,135 +30,282 @@ export function InspectionQuestion({
   index,
   response,
   onResponseChange,
-  onOpenSubChecklist,
   allQuestions = [],
-  numberLabel,
+  numberLabel = "",
   inspectionId,
+  isSubQuestion = false,
   actionPlan,
   onSaveActionPlan,
-  isSubQuestion = false
+  onOpenSubChecklist
 }: InspectionQuestionProps) {
-  // Normalizar o tipo de resposta
-  const rawResponseType = question.responseType || question.tipo_resposta;
-  const normalizedType = normalizeResponseType(rawResponseType);
-  
-  console.log(`[InspectionQuestion] Question ${question.id}:`, {
-    rawType: rawResponseType,
-    normalizedType,
-    question: question.text || question.pergunta
-  });
+  const [showComments, setShowComments] = useState(false);
+  const [showActionPlan, setShowActionPlan] = useState(false);
+  const [showActionPlanImplementation, setShowActionPlanImplementation] = useState(false);
+  const [showActionPlanDialog, setShowActionPlanDialog] = useState(false);
+  const [loadingSubChecklist, setLoadingSubChecklist] = useState(false);
+  const [multiModalLoading, setMultiModalLoading] = useState(false);
 
-  const handleResponseChange = useCallback(
-    (data: any) => {
-      console.log(`[InspectionQuestion] Response change for question ${question.id}:`, data);
-      onResponseChange(data);
-    },
-    [question.id, onResponseChange]
-  );
+  const [mediaAnalysisResults, setMediaAnalysisResults] = useState<Record<string, MediaAnalysisResult>>({});
+  const { analyze, analyzing } = useMediaAnalysis();
 
-  const handleMediaChange = useCallback(
-    (mediaUrls: string[]) => {
-      console.log(`[InspectionQuestion] Media change for question ${question.id}:`, mediaUrls);
-      onResponseChange({
-        ...response,
-        mediaUrls
-      });
-    },
-    [question.id, response, onResponseChange]
-  );
+  const [aiSuggestion, setAiSuggestion] = useState<string | undefined>();
 
-  // Ajustar o tipo de retorno para resolver o erro de tipo
-  const handleSaveActionPlan = useCallback(
-    async (data: ActionPlanFormData): Promise<void> => {
-      if (onSaveActionPlan) {
-        await onSaveActionPlan(data);
-      }
-    },
-    [onSaveActionPlan]
-  );
-
-  const parseHint = (hint?: string | null): string => {
-    if (!hint) return "";
-
-    try {
-      if (typeof hint === 'string' && hint.startsWith("{") && hint.endsWith("}")) {
-        const parsed = JSON.parse(hint);
-        if (parsed.groupId && parsed.groupTitle) {
-          return "";
-        }
-      }
-    } catch (e) {}
-    return hint;
+  const handleCommentChange = (comment: string) => {
+    onResponseChange({
+      ...response,
+      comment
+    });
   };
 
-  const userHint = parseHint(question.hint);
-  const questionText = question.text || question.pergunta || "";
-  const isRequired = question.isRequired ?? question.obrigatorio ?? false;
-  const weight = question.weight || 1;
+  const handleActionPlanChange = (actionPlan: string) => {
+    onResponseChange({
+      ...response,
+      actionPlan
+    });
+  };
+
+  const handleResponseValueChange = (value: any) => {
+    if (isNegativeResponse(value)) {
+      setShowActionPlan(true);
+    }
+    onResponseChange({
+      ...response,
+      value
+    });
+  };
+
+  const handleMediaChange = (mediaUrls: string[]) => {
+    onResponseChange({
+      ...response,
+      mediaUrls,
+    });
+  };
+
+  const isNegativeResponse = (value: any): boolean => {
+    if (question.responseType === 'yes_no') {
+      return value === false || value === 'no' || value === 'não';
+    }
+    return false;
+  };
+
+  const handleSaveAnalysis = (url: string, result: MediaAnalysisResult) => {
+    setMediaAnalysisResults(prev => ({
+      ...prev,
+      [url]: result
+    }));
+
+    if (result.hasNonConformity) {
+      setShowActionPlan(true);
+      if (result.actionPlanSuggestion && (!response.actionPlan || response.actionPlan === "")) {
+        handleActionPlanChange(result.actionPlanSuggestion);
+      }
+    }
+  };
+
+  // Chamada da IA para abrir o modal estruturado
+  const handleApplyAISuggestion = (suggestion: string) => {
+    console.log("handleApplyAISuggestion foi chamado com:", suggestion);
+    if (!suggestion) return;
+    setAiSuggestion(suggestion);
+    setShowActionPlanDialog(true);
+  };
+
+  const handleAnalyzeAllMedia = async () => {
+    if (!response.mediaUrls || response.mediaUrls.length <= 1) {
+      console.log("Pelo menos 2 imagens são necessárias para análise em conjunto");
+      return;
+    }
+
+    try {
+      setMultiModalLoading(true);
+
+      const result = await analyze({
+        mediaUrl: response.mediaUrls[0],
+        questionText: question.text,
+        multimodalAnalysis: true,
+        additionalMediaUrls: response.mediaUrls.slice(1)
+      });
+
+      if (result) {
+        const updatedResults = {...mediaAnalysisResults};
+
+        response.mediaUrls.forEach((url: string) => {
+          updatedResults[url] = {
+            ...result,
+            questionText: question.text,
+            hasNonConformity: result.hasNonConformity,
+            psychosocialRiskDetected: result.psychosocialRiskDetected,
+            actionPlanSuggestion: result.actionPlanSuggestion
+          };
+        });
+
+        setMediaAnalysisResults(updatedResults);
+
+        if (result.hasNonConformity) {
+          setShowActionPlan(true);
+          if (result.actionPlanSuggestion && (!response.actionPlan || response.actionPlan === "")) {
+            handleActionPlanChange(result.actionPlanSuggestion);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error in multi-modal analysis:", error);
+    } finally {
+      setMultiModalLoading(false);
+    }
+  };
+
+  const handleToggleComments = () => {
+    setShowComments(!showComments);
+  };
+
+  const handleOpenActionPlanDialog = () => {
+    setShowActionPlanDialog(true);
+  };
+
+  const handleOpenSubChecklist = () => {
+    if (onOpenSubChecklist) {
+      setLoadingSubChecklist(true);
+      try {
+        onOpenSubChecklist();
+      } finally {
+        setLoadingSubChecklist(false);
+      }
+    }
+  };
+
+  const getAISuggestions = (): string[] => {
+    const suggestions: string[] = [];
+    Object.values(mediaAnalysisResults).forEach(result => {
+      if (result?.actionPlanSuggestion && !suggestions.includes(result.actionPlanSuggestion)) {
+        suggestions.push(result.actionPlanSuggestion);
+      }
+    });
+    return suggestions;
+  };
+
+  const handleSaveStructuredActionPlan = async (data: ActionPlanFormData) => {
+    if (onSaveActionPlan) {
+      try {
+        const result = await onSaveActionPlan(data);
+        if (result) {
+          setShowActionPlanImplementation(true);
+          setShowActionPlanDialog(false);
+          console.log("Plano de ação salvo com sucesso:", result);
+        }
+        return result;
+      } catch (error) {
+        console.error("Erro ao salvar plano de ação:", error);
+        return undefined;
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (response && isNegativeResponse(response.value)) {
+      setShowActionPlan(true);
+    }
+    if (response && response.actionPlan) {
+      setShowActionPlan(true);
+    }
+    if (actionPlan && inspectionId && question.id) {
+      setShowActionPlanImplementation(true);
+    }
+  }, [response, actionPlan, inspectionId, question.id]);
+
+  const getBestAISuggestion = (): string | undefined => {
+    const suggestions = Object.values(mediaAnalysisResults)
+      .map(result => result?.actionPlanSuggestion)
+      .filter(Boolean);
+    return suggestions.length > 0 ? suggestions[0] : undefined;
+  };
 
   return (
-    <Card className="w-full">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3 flex-1">
-            <Badge variant="outline" className="shrink-0 mt-1">
-              {numberLabel}
-            </Badge>
-            <div className="flex-1">
-              <h3 className="text-lg font-medium leading-tight">
-                {questionText}
-                {isRequired && <span className="text-red-500 ml-1">*</span>}
-              </h3>
-              
-              {userHint && (
-                <div className="flex items-start gap-2 mt-2 p-2 bg-blue-50 rounded-md">
-                  <Info className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
-                  <p className="text-sm text-blue-800">{userHint}</p>
-                </div>
-              )}
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2 shrink-0 ml-3">
-            <Badge variant="secondary" className="flex items-center gap-1">
-              <Scale className="h-3 w-3" />
-              {weight}
-            </Badge>
-            
-            <Badge variant="outline">
-              {normalizedType}
-            </Badge>
-          </div>
-        </div>
+    <Card className={isSubQuestion ? "border-gray-200 bg-gray-50" : ""}>
+      <CardHeader className="py-3 px-4">
+        <QuestionHeader 
+          question={question} 
+          index={index}
+          numberLabel={numberLabel}
+          showComments={showComments}
+          onToggleComments={handleToggleComments}
+          hasSubChecklist={question.hasSubChecklist}
+          loadingSubChecklist={loadingSubChecklist}
+          onOpenSubChecklist={handleOpenSubChecklist}
+        />
       </CardHeader>
+      <CardContent className="py-3 px-4">
+        {/* Input de resposta no topo */}
+        <ResponseInput
+          question={question}
+          value={response?.value}
+          onChange={handleResponseValueChange}
+        />
 
-      <CardContent className="pt-0">
-        <div className="space-y-4">
-          <ResponseInputRenderer
-            question={question}
-            response={response}
-            inspectionId={inspectionId}
-            onResponseChange={handleResponseChange}
-            onMediaChange={handleMediaChange}
-            actionPlan={actionPlan}
-            onSaveActionPlan={handleSaveActionPlan}
-          />
+        {/* Rodapé padronizado para todos os tipos de resposta */}
+        <div className="mt-4 flex flex-wrap gap-2 items-center border-t pt-4">
+          {/* Plano de Ação */}
+          {(isNegativeResponse(response?.value) || showActionPlan || response?.actionPlan) && !showActionPlanImplementation && (
+            <ActionPlanSection
+              isOpen={showActionPlan}
+              onOpenChange={setShowActionPlan}
+              actionPlan={response?.actionPlan || ""}
+              onActionPlanChange={handleActionPlanChange}
+              onOpenDialog={inspectionId && question.id ? handleOpenActionPlanDialog : undefined}
+              hasNegativeResponse={isNegativeResponse(response?.value)}
+              aiSuggestion={getBestAISuggestion()}
+              mediaAnalysisResults={mediaAnalysisResults}
+            />
+          )}
 
-          {question.hasSubChecklist && onOpenSubChecklist && (
-            <div className="pt-2 border-t">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onOpenSubChecklist}
-                className="w-full gap-2"
-              >
-                <FileText className="h-4 w-4" />
-                Abrir Sub-checklist
-                <ExternalLink className="h-4 w-4" />
-              </Button>
-            </div>
+          {/* Botão para abrir o modal de Plano de Ação estruturado */}
+          {inspectionId && question.id && onSaveActionPlan && (
+            <ActionPlanDialog
+              open={showActionPlanDialog}
+              onOpenChange={setShowActionPlanDialog}
+              inspectionId={inspectionId}
+              questionId={question.id}
+              existingPlan={actionPlan}
+              onSave={handleSaveStructuredActionPlan}
+              aiSuggestion={aiSuggestion}
+            />
+          )}
+
+          {/* Botão para Analisar com IA (multi-modal) */}
+          {response?.mediaUrls && response.mediaUrls.length > 1 && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleAnalyzeAllMedia}
+              disabled={multiModalLoading}
+              className="ml-2"
+            >
+              {multiModalLoading ? "Analisando..." : "Analisar com IA"}
+            </Button>
           )}
         </div>
+
+        {/* Comentários e implementação do plano de ação continuam abaixo */}
+        {showComments && (
+          <CommentsSection
+            comment={response?.comment || ""}
+            onCommentChange={handleCommentChange}
+          />
+        )}
+        {showActionPlanImplementation && inspectionId && question.id && onSaveActionPlan && actionPlan && (
+          <div className="mt-4 pt-4 border-t border-dashed">
+            <ActionPlanImplementation
+              inspectionId={inspectionId}
+              questionId={question.id}
+              questionText={question.text || ""}
+              actionPlans={[actionPlan]}
+              loading={false}
+              onSaveActionPlan={handleSaveStructuredActionPlan}
+              aiSuggestions={getAISuggestions()}
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -1,15 +1,14 @@
-
 import React, { useState } from "react";
-import { format, parseISO } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ResponseWrapper } from "./components/ResponseWrapper";
 
 interface DateResponseInputProps {
-  value?: string | { value: string; mediaUrls?: string[] }; // permite objeto ou string
+  value?: string;
   onChange: (value: string) => void;
   disabled?: boolean;
   readOnly?: boolean;
@@ -19,29 +18,19 @@ export function DateResponseInput({
   value,
   onChange,
   disabled = false,
-  readOnly = false,
+  readOnly = false
 }: DateResponseInputProps) {
-  // Extrair string de data de maneira segura
-  const dateValue = React.useMemo(() => {
-    if (typeof value === "string") {
-      return value;
-    } else if (value && typeof value === "object" && "value" in value) {
-      return typeof value.value === "string" ? value.value : "";
-    }
-    return "";
-  }, [value]);
-
-  const selectedDate = dateValue ? parseISO(dateValue) : undefined;
+  const [open, setOpen] = useState(false);
+  const selectedDate = value ? new Date(value) : undefined;
 
   const handleDateChange = (date: Date | undefined) => {
+    setOpen(false);
     if (date) {
       onChange(format(date, "yyyy-MM-dd"));
     } else {
       onChange("");
     }
   };
-
-  const [open, setOpen] = useState(false);
 
   return (
     <ResponseWrapper>
@@ -51,7 +40,6 @@ export function DateResponseInput({
             variant="outline"
             className="w-full justify-start text-left font-normal"
             disabled={disabled || readOnly}
-            tabIndex={0}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {selectedDate
@@ -63,19 +51,13 @@ export function DateResponseInput({
           <Calendar
             mode="single"
             selected={selectedDate}
-            onSelect={(date) => {
-              setOpen(false);
-              handleDateChange(date);
-            }}
+            onSelect={handleDateChange}
             disabled={disabled || readOnly}
             locale={ptBR}
             initialFocus
-            className="pointer-events-auto"
           />
         </PopoverContent>
       </Popover>
-      {/* Campo oculto para garantir formato yyyy-MM-dd se necessário */}
-      <input type="hidden" value={dateValue} />
     </ResponseWrapper>
   );
 }

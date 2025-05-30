@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
@@ -10,7 +9,6 @@ import { ChecklistQuestionsTable } from "@/components/new-checklist/details/Chec
 import { ChecklistLoadingState } from "@/components/new-checklist/details/ChecklistLoadingState";
 import { ChecklistErrorState } from "@/components/new-checklist/details/ChecklistErrorState";
 import { GlobalFloatingActionButton } from "@/components/inspection/GlobalFloatingActionButton";
-import { ChecklistWithStats } from "@/types/newChecklist";
 
 export default function NewChecklistDetails() {
   const { id } = useParams<{ id: string }>();
@@ -24,7 +22,7 @@ export default function NewChecklistDetails() {
 
   const {
     checklist,
-    loading,
+    isLoading,
     error,
     refetch
   } = useChecklistById(id as string);
@@ -56,13 +54,13 @@ export default function NewChecklistDetails() {
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return <ChecklistLoadingState />;
   }
 
   if (error) {
     return <ChecklistErrorState 
-      error={new Error(typeof error === 'string' ? error : 'Erro desconhecido')} 
+      error={error instanceof Error ? error : new Error(String(error))} 
       onRetry={() => refetch()} 
     />;
   }
@@ -71,28 +69,15 @@ export default function NewChecklistDetails() {
     return <ChecklistErrorState error={new Error("Checklist não encontrado")} />;
   }
 
-  // Convert ChecklistWithQuestions to ChecklistWithStats
-  const checklistWithStats: ChecklistWithStats = {
-    ...checklist,
-    status: checklist.status || "ativo",
-    totalQuestions: checklist.questions?.length || 0,
-    completedQuestions: 0,
-    companyName: "",
-    responsibleName: "",
-    createdByName: "",
-    isSubChecklist: false,
-    origin: "manual"
-  };
-
   return (
     <div className="space-y-6">
       <ChecklistDetailsHeader 
-        checklist={checklistWithStats} 
+        checklist={checklist} 
         onEdit={handleEditChecklist}
         onDelete={handleDeleteChecklist}
       />
 
-      <ChecklistInfoCard checklist={checklistWithStats} />
+      <ChecklistInfoCard checklist={checklist} />
       
       <ChecklistQuestionsTable questions={checklist.questions || []} />
 

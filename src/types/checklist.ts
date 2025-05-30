@@ -1,3 +1,4 @@
+
 export interface CollaboratorType {
   id: string;
   name: string;
@@ -6,15 +7,15 @@ export interface CollaboratorType {
   initials?: string; // Adding the initials property as optional
 }
 
-export type ResponseType =
-  | "yes_no"
-  | "text"
-  | "numeric"
-  | "multiple_choice"
-  | "photo"
-  | "signature"
-  | "date"
-  | "time";
+export type ResponseType = 
+  | "sim/não" 
+  | "texto" 
+  | "numérico" 
+  | "seleção múltipla" 
+  | "foto" 
+  | "assinatura" 
+  | "data" 
+  | "hora";
 
 export interface Checklist {
   id: string;
@@ -39,17 +40,13 @@ export interface Checklist {
   comments?: ChecklistComment[];
   attachments?: ChecklistAttachment[];
   history?: ChecklistHistory[];
-  questions?: ChecklistItem[];
-  groups?: ChecklistGroup[];
-  responsibleName?: string;
-  origin?: 'manual' | 'ia' | 'csv';
 }
 
 export interface ChecklistItem {
   id: string;
   checklist_id: string;
   pergunta: string;
-  tipo_resposta: ResponseType | string;
+  tipo_resposta: "sim/não" | "numérico" | "texto" | "foto" | "assinatura" | "seleção múltipla" | string;
   obrigatorio: boolean;
   opcoes?: string[] | null;
   ordem: number;
@@ -66,21 +63,6 @@ export interface ChecklistItem {
   condition_value?: string | null;
   has_subchecklist?: boolean;
   sub_checklist_id?: string;
-  text?: string;
-  responseType?: ResponseType;
-  isRequired?: boolean;
-  options?: string[];
-  allowsPhoto?: boolean;
-  allowsVideo?: boolean;
-  allowsAudio?: boolean;
-  allowsFiles?: boolean;
-  order?: number;
-  groupId?: string;
-  condition?: string;
-  conditionValue?: string;
-  parentQuestionId?: string;
-  hasSubChecklist?: boolean;
-  subChecklistId?: string;
 }
 
 export interface NewChecklist {
@@ -125,132 +107,3 @@ export interface ChecklistHistory {
   details: string;
   created_at: string;
 }
-
-export interface ChecklistWithStats {
-  id: string;
-  title: string;
-  description?: string;
-  isTemplate: boolean;
-  status: string;
-  category?: string;
-  responsibleId?: string;
-  companyId?: string;
-  userId?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  dueDate?: string;
-  isSubChecklist?: boolean;
-  origin?: string;
-  totalQuestions: number;
-  completedQuestions?: number;
-  companyName?: string;
-  responsibleName?: string;
-  createdByName?: string;
-  questions?: ChecklistQuestion[];
-  groups?: ChecklistGroup[];
-}
-
-export interface NewChecklistPayload {
-  title: string;
-  description?: string;
-  is_template?: boolean;
-  status_checklist?: string;
-  status?: string;
-  category?: string;
-  company_id?: string;
-  responsible_id?: string;
-  origin?: string;
-  due_date?: string | null;
-}
-
-export interface ChecklistGroup {
-  id: string;
-  title: string;
-  order: number;
-}
-
-export interface ChecklistSortOption {
-  label: string;
-  value: string;
-}
-
-export interface BatchUpdateResult {
-  success: boolean;
-  count: number;
-}
-
-export interface ChecklistQuestion {
-  id: string;
-  text: string;
-  responseType: ResponseType;
-  isRequired: boolean;
-  options?: string[];
-  weight: number;
-  allowsPhoto: boolean;
-  allowsVideo: boolean;
-  allowsAudio: boolean;
-  allowsFiles?: boolean;
-  order: number;
-  groupId?: string;
-  condition?: string;
-  conditionValue?: string;
-  parentQuestionId?: string;
-  hasSubChecklist?: boolean;
-  subChecklistId?: string;
-  hint?: string;
-}
-
-export interface InspectionDetails {
-  id: string;
-  status: string;
-  companyId?: string;
-  companyName?: string;
-  checklistId?: string;
-  checklistTitle?: string;
-  createdAt: string;
-  updatedAt?: string;
-  responsibleId?: string;
-  responsibleName?: string;
-  scheduledDate?: string;
-  location?: string;
-  syncStatus?: string;
-  metadata?: any;
-  title?: string;
-  company?: {
-    id: string;
-    fantasy_name?: string;
-  };
-  responsible?: {
-    id: string;
-    name?: string;
-  };
-  priority?: 'low' | 'medium' | 'high';
-  progress?: number;
-  description?: string;
-}
-
-export interface InspectionFilters {
-  status?: string;
-  companyId?: string;
-  checklistId?: string;
-  responsibleId?: string;
-  startDate?: Date;
-  endDate?: Date;
-  searchTerm?: string;
-  search?: string;
-  priority?: 'all' | 'low' | 'medium' | 'high';
-}
-
-export interface ChecklistWithQuestions {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  isTemplate: boolean;
-  status?: string;
-  companyId?: string;
-  responsibleId?: string;
-  questions: ChecklistQuestion[];
-  groups?: ChecklistGroup[];
-}
-

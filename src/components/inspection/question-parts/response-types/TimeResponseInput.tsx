@@ -1,49 +1,64 @@
 
 import React from "react";
+import { Input } from "@/components/ui/input";
+import { MediaUploadButton } from "@/components/inspection/question-inputs/MediaUploadButton";
 import { ResponseWrapper } from "./components/ResponseWrapper";
 
 interface TimeResponseInputProps {
-  value?: string | { value: string }; // Permite string ou objeto
+  value?: string;
   onChange: (value: string) => void;
+  onMediaUpload?: () => void;
+  allowsMedia?: boolean;
   disabled?: boolean;
+  question?: any;
+  response?: any;
+  onMediaChange?: (urls: string[]) => void;
+  onApplyAISuggestion?: (suggestion: string) => void;
   readOnly?: boolean;
 }
 
-/**
- * Componente para input do tipo "hora" no formato HH:mm.
- * Fácil integração, suporte a disabled e readOnly.
- */
 export function TimeResponseInput({
-  value = "",
+  value,
   onChange,
+  onMediaUpload,
+  allowsMedia = false,
   disabled = false,
-  readOnly = false,
+  question,
+  response,
+  onMediaChange,
+  readOnly = false
 }: TimeResponseInputProps) {
-  // Extrai valor de string ou objeto de maneira segura
-  const timeValue = React.useMemo(() => {
-    if (typeof value === "string") {
-      return value;
-    } else if (value && typeof value === "object" && "value" in value) {
-      return typeof value.value === "string" ? value.value : "";
-    }
-    return "";
-  }, [value]);
+  // Use o value direto se fornecido, ou tente pegar de response.value se existir
+  const currentValue = value || (response?.value || "");
+  
+  // Ensure mediaUrls is always defined
+  const mediaUrls = response?.mediaUrls || [];
 
-  // Garante que só a string no formato "HH:mm" será passada para o onChange
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(event.target.value);
+  const handleMediaDelete = (urlToDelete: string) => {
+    if (onMediaChange) {
+      const updatedUrls = mediaUrls.filter((url: string) => url !== urlToDelete);
+      onMediaChange(updatedUrls);
+    }
   };
 
   return (
     <ResponseWrapper>
-      <input
+      <Input
         type="time"
-        value={timeValue}
-        onChange={handleChange}
+        value={currentValue}
+        onChange={(e) => onChange(e.target.value)}
         disabled={disabled || readOnly}
-        className="w-full rounded border px-2 py-1"
-        step={1} // permite segundos, opcional
       />
+      
+      {allowsMedia && onMediaUpload && !readOnly && (
+        <div className="flex justify-start mt-2">
+          <MediaUploadButton
+            type="photo"
+            onClick={onMediaUpload}
+            disabled={disabled || readOnly}
+          />
+        </div>
+      )}
     </ResponseWrapper>
   );
 }

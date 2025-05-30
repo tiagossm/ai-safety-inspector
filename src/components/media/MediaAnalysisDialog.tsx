@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -34,13 +34,28 @@ type AnalysisState = {
   errorMessage?: string;
 };
 
+// Função para garantir que cada linha vira um item de lista markdown
+function forceListMarkdown(text: string): string {
+  return text
+    .split('\n')
+    .map(line => {
+      if (/^(\s*-|\s*\d+\.)/.test(line) || line.trim() === "") return line;
+      if (/sugeridas?:/i.test(line)) return `**${line.trim()}**`;
+      return `- ${line.trim()}`;
+    })
+    .join('\n');
+}
+
+// Fallback para extrair ações corretivas do texto da análise
 function getSafeActionPlan(result: MediaAnalysisResult): string {
+  console.log("[getSafeActionPlan] result recebido:", result);
   const isInvalid = !result.actionPlanSuggestion 
     || result.actionPlanSuggestion.trim() === "" 
     || result.actionPlanSuggestion.trim().toLowerCase() === "sugeridas:**";
 
   if (!isInvalid) return result.actionPlanSuggestion!;
-
+  
+  // Procura seção "Ações? Corretivas Sugeridas:" ou similar no texto da análise
   if (result.analysis) {
     const regex = /Ações? [Cc]orretivas [Ss]ugeridas?:([\s\S]+?)(?:\n\S|\n\n|Conclusão:|$)/i;
     const match = result.analysis.match(regex);
@@ -48,7 +63,7 @@ function getSafeActionPlan(result: MediaAnalysisResult): string {
       return match[1].trim();
     }
   }
-  return "";
+  return ""; // Pode retornar "Sem ações corretivas identificadas." se preferir.
 }
 
 export function MediaAnalysisDialog({
@@ -74,57 +89,31 @@ export function MediaAnalysisDialog({
   }, [mediaUrl, mediaUrls, additionalMediaUrls]);
 
   const [analysisMap, setAnalysisMap] = useState<Record<string, AnalysisState>>({});
-
-  // Ref para manter a versão atual do estado analysisMap
-  const analysisMapRef = useRef(analysisMap);
-  useEffect(() => {
-    analysisMapRef.current = analysisMap;
-  }, [analysisMap]);
-
   const { analyze } = useMediaAnalysis();
 
-  // Ref para controlar URLs já analisadas e evitar loops
-  const analyzedUrlsRef = useRef<Set<string>>(new Set());
-
-  // Helper to create a stable key for allImages
-  const allImagesKey = allImages.join('|');
-
-  // Inicializa o mapa de análises quando abrir ou mudar imagens
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      let map: Record<string, AnalysisState> = {};
+      allImages.forEach(url => {
+        map[url] = { status: 'pending' };
+      });
+      setAnalysisMap(map);
+    } else {
       setAnalysisMap({});
-      analyzedUrlsRef.current.clear();
-      return;
     }
-    // Only reset if the images actually changed
-    let map: Record<string, AnalysisState> = {};
-    allImages.forEach(url => {
-      map[url] = { status: 'pending' };
-    });
-    setAnalysisMap(map);
-    analyzedUrlsRef.current.clear();
-    // eslint-disable-next-line
-  }, [open, allImagesKey]);
-
-  // Executa a análise das imagens pendentes
+  }, [open, allImages]);
+  
   useEffect(() => {
     if (!open) return;
-
     allImages.forEach(url => {
-      const state = analysisMapRef.current[url];
-
-      if (analyzedUrlsRef.current.has(url)) return;
-
+      const state = analysisMap[url];
       if (!state || state.status === 'pending' || state.status === 'retry') {
         setAnalysisMap(prev => ({
           ...prev,
           [url]: { ...prev[url], status: 'processing' }
         }));
 
-        analyzedUrlsRef.current.add(url);
-
         const contextImages = allImages.filter(u => u !== url);
-
         analyze({
           mediaUrl: url,
           mediaType,
@@ -133,26 +122,26 @@ export function MediaAnalysisDialog({
           multimodalAnalysis: false,
           additionalMediaUrls: contextImages
         })
-          .then(result => {
-            setAnalysisMap(prev => ({
-              ...prev,
-              [url]: { status: 'done', result }
-            }));
-            if (onAnalysisComplete) onAnalysisComplete(result);
-          })
-          .catch(err => {
-            setAnalysisMap(prev => ({
-              ...prev,
-              [url]: { status: 'error', errorMessage: `Erro ao analisar imagem: ${err.message}` }
-            }));
-            analyzedUrlsRef.current.delete(url); // permite retry depois do erro
-          });
+        .then((result) => {
+          setAnalysisMap(prev => ({
+            ...prev,
+            [url]: { status: 'done', result }
+          }));
+          if (onAnalysisComplete) onAnalysisComplete(result);
+        })
+        .catch((err: any) => {
+          setAnalysisMap(prev => ({
+            ...prev,
+            [url]: { status: 'error', errorMessage: `Erro ao analisar imagem: ${err.message}` }
+          }));
+        });
       }
     });
-  }, [open, analyze, mediaUrl, mediaType, questionText, userAnswer, allImages, onAnalysisComplete]);
+    // eslint-disable-next-line
+  }, [open, analyze, mediaUrl, mediaType, questionText, userAnswer, allImages]);
+  // Removido analysisMap e .join('-') das dependências
 
   const handleRetry = (url: string) => {
-    analyzedUrlsRef.current.delete(url);
     setAnalysisMap(prev => ({
       ...prev,
       [url]: { status: 'retry' }
@@ -264,15 +253,18 @@ export function MediaAnalysisDialog({
                             {renderMarkdown(actionSuggestion)}
                           </div>
                           <Button
-                            size="sm"
-                            variant="destructive"
-                            className="mt-2 w-full"
-                            onClick={() => {
-                              onAddActionPlan?.(actionSuggestion);
-                            }}
-                          >
-                            Adicionar ao Plano de Ação
-                          </Button>
+  size="sm"
+  variant="destructive"
+  className="mt-2 w-full"
+  onClick={() => {
+    onAddActionPlan?.(actionSuggestion);
+  }}
+>
+  Adicionar ao Plano de Ação
+</Button>
+
+
+
                         </div>
                       )}
                       {!hasActionSuggestion && (

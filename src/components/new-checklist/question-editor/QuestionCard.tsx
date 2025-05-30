@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { mapResponseType } from "@/utils/inspection/typeMapping";
+import { frontendToDatabaseResponseType } from "@/utils/responseTypeMap";
 
 interface QuestionCardProps {
   question: ChecklistQuestion;
@@ -34,8 +34,8 @@ export function QuestionCard({ question, onUpdate, onDelete, enableAllMedia = fa
   const handleTypeChange = (value: string) => {
     onUpdate({
       ...question,
-      responseType: value as ChecklistQuestion["responseType"],
-      options: value === "seleção múltipla" && (!question.options || question.options.length === 0) 
+      responseType: value as any,
+      options: value === "multiple_choice" && (!question.options || question.options.length === 0) 
         ? ["Opção 1", "Opção 2"] 
         : question.options,
     });
@@ -131,14 +131,14 @@ export function QuestionCard({ question, onUpdate, onDelete, enableAllMedia = fa
                   <SelectValue placeholder="Selecione o tipo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="sim/não">Sim/Não</SelectItem>
-                  <SelectItem value="texto">Texto</SelectItem>
-                  <SelectItem value="seleção múltipla">Múltipla Escolha</SelectItem>
-                  <SelectItem value="numérico">Numérico</SelectItem>
-                  <SelectItem value="data">Data</SelectItem>
-                  <SelectItem value="hora">Hora</SelectItem>
-                  <SelectItem value="foto">Foto</SelectItem>
-                  <SelectItem value="assinatura">Assinatura</SelectItem>
+                  <SelectItem value="yes_no">Sim/Não</SelectItem>
+                  <SelectItem value="text">Texto</SelectItem>
+                  <SelectItem value="multiple_choice">Múltipla Escolha</SelectItem>
+                  <SelectItem value="numeric">Numérico</SelectItem>
+                  <SelectItem value="date">Data</SelectItem>
+                  <SelectItem value="time">Hora</SelectItem>
+                  <SelectItem value="photo">Foto</SelectItem>
+                  <SelectItem value="signature">Assinatura</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -156,7 +156,7 @@ export function QuestionCard({ question, onUpdate, onDelete, enableAllMedia = fa
             </div>
           </div>
           
-          {question.responseType === "seleção múltipla" && (
+          {question.responseType === "multiple_choice" && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor={`question-options-${question.id}`}>Opções</Label>
@@ -296,7 +296,7 @@ export function QuestionCard({ question, onUpdate, onDelete, enableAllMedia = fa
               </h4>
               <p className="text-sm text-muted-foreground">
                 <span className="font-medium">Tipo:</span>{" "}
-                {mapResponseType(question.responseType, "toDb")}
+                {frontendToDatabaseResponseType(question.responseType)}
                 {question.isRequired && " • Obrigatória"}
                 {question.weight && question.weight > 1 && ` • Peso: ${question.weight}`}
               </p>

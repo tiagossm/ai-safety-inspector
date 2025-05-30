@@ -64,8 +64,7 @@ const processResponses = (responsesData) => {
 
   const responses = {};
   responsesData.forEach(response => {
-    // Usar inspection_item_id em vez de question_id
-    responses[response.inspection_item_id] = {
+    responses[response.question_id] = {
       value: response.answer,
       comment: response.notes,
       actionPlan: response.action_plan,

@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -6,9 +7,9 @@ import { getErrorMessage } from "@/utils/errors";
 export interface Signature {
   inspection_id: string;
   signer_id: string;
+  signer_name?: string;
   signature_data: string;
   signed_at: string;
-  signer_name?: string; // Nome do assinante via relacionamento
 }
 
 interface UseInspectionSignaturesProps {
@@ -39,9 +40,10 @@ export function useInspectionSignatures({ inspectionId, refresh = false }: UseIn
         .select(`
           inspection_id,
           signer_id,
+          signer_name,
           signature_data,
           signed_at,
-          users (name)
+          users:signer_id (name)
         `)
         .eq("inspection_id", inspectionId);
 
@@ -52,9 +54,10 @@ export function useInspectionSignatures({ inspectionId, refresh = false }: UseIn
 
       console.log("Assinaturas recebidas:", data);
 
+      // Transform data to include user name if available
       const formattedSignatures = data.map((sig: any) => ({
         ...sig,
-        signer_name: sig.users?.name || "Usuário Desconhecido"
+        signer_name: sig.signer_name || sig.users?.name || "Usuário Desconhecido"
       }));
 
       setSignatures(formattedSignatures);
@@ -68,7 +71,7 @@ export function useInspectionSignatures({ inspectionId, refresh = false }: UseIn
   }, [inspectionId]);
 
   const addSignature = useCallback(
-    async (signatureData: string, signerId: string) => {
+    async (signatureData: string, signerId: string, signerName?: string) => {
       if (!inspectionId) {
         console.error("ID de inspeção não fornecido");
         return { success: false, error: new Error("ID de inspeção não fornecido") };
@@ -78,8 +81,8 @@ export function useInspectionSignatures({ inspectionId, refresh = false }: UseIn
         const { error } = await supabase.from("inspection_signatures").insert({
           inspection_id: inspectionId,
           signer_id: signerId,
+          signer_name: signerName,
           signature_data: signatureData,
-          signed_at: new Date().toISOString()
         });
 
         if (error) {

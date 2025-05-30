@@ -1,3 +1,4 @@
+
 import React, { useCallback, useEffect } from "react";
 import { InspectionHeader } from "@/components/inspection/InspectionHeader";
 import { QuestionGroups } from "@/components/inspection/QuestionGroups";
@@ -86,23 +87,23 @@ export function InspectionLayout({
       console.log("[InspectionLayout] handleQuestionResponseChange:", questionId, data);
       setResponses((prev) => {
         const current = prev[questionId] || {};
-
+        
         // Ensuring mediaUrls is always an array
         const mediaUrls = data.mediaUrls || current.mediaUrls || [];
-
+        
         // Creating a completely new object to ensure React detects the change
         const updated = {
           ...current,
           ...data,
           mediaUrls: [...mediaUrls] // Clone the array to ensure reference change
         };
-
+        
         console.log("[InspectionLayout] Atualizando resposta:", questionId, updated);
 
         if (onResponseChange) {
           onResponseChange(questionId, updated);
         }
-
+        
         if (onMediaChange && data.mediaUrls) {
           onMediaChange(questionId, [...data.mediaUrls]); // Clone array here too
         }
@@ -185,19 +186,13 @@ export function InspectionLayout({
                   {filteredQuestions.map((question, index) => {
                     // Get response safely (or empty object)
                     const response = responses[question.id] || {};
-
-                    // Ensure mediaUrls is always an array (important: aqui não usa hook)
+                    
+                    // Ensure mediaUrls is always an array
                     const mediaUrls = response.mediaUrls || [];
-
+                    
                     // Create a reactive key that includes both the question ID, media URLs, and response value
-                    const key = `${question.id}-${JSON.stringify(mediaUrls)}-${
-                      response.value !== undefined
-                        ? typeof response.value === "object"
-                          ? response.value.value ?? ""
-                          : String(response.value)
-                        : ""
-                    }`;
-
+                    const key = `${question.id}-${JSON.stringify(mediaUrls)}-${response.value !== undefined ? String(response.value) : ""}`;
+                    
                     console.log('[InspectionLayout] Renderizando Question:', question.id, key, mediaUrls);
 
                     return (

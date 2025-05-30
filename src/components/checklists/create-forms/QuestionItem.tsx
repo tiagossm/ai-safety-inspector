@@ -14,16 +14,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// Question type options with descriptions - updated to include time and date
+// Question type options with descriptions
 const QUESTION_TYPES = [
   { value: "sim/não", label: "Sim/Não" },
   { value: "numérico", label: "Numérico" },
   { value: "texto", label: "Texto" },
   { value: "foto", label: "Foto" },
   { value: "assinatura", label: "Assinatura" },
-  { value: "seleção múltipla", label: "Múltipla Escolha" },
-  { value: "hora", label: "Hora" },
-  { value: "data", label: "Data" }
+  { value: "múltipla escolha", label: "Múltipla Escolha" }
 ];
 
 interface QuestionItemProps {

@@ -1,6 +1,6 @@
+
 import { useState, useEffect } from 'react';
-import { listAssistants } from '@/utils/checklist/openaiUtils';
-import { handleOpenAIError } from '@/utils/inspection/errorHandling';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Assistant {
   id: string;
@@ -17,31 +17,29 @@ export function useOpenAIAssistants() {
   const fetchAssistants = async () => {
     setLoading(true);
     setError(null);
-
+    
     try {
       console.log('Fetching OpenAI assistants...');
-      const assistantsData = await listAssistants();
+      const { data, error } = await supabase.functions.invoke('list-assistants');
       
-      if (assistantsData && assistantsData.length > 0) {
-        console.log(`Retrieved ${assistantsData.length} OpenAI assistants`);
-        setAssistants(assistantsData);
+      if (error) {
+        console.error('Error fetching assistants:', error);
+        setError(`Error fetching assistants: ${error.message}`);
+        return;
+      }
+      
+      console.log('Response from list-assistants:', data);
+      
+      if (data && data.assistants) {
+        console.log(`Retrieved ${data.assistants.length} OpenAI assistants`);
+        setAssistants(data.assistants);
       } else {
-        console.warn('No assistants data returned or empty array');
-        setAssistants([]);
-        // Não definimos um erro aqui, apenas um array vazio
-        // Isso evita mostrar uma mensagem de erro quando não há assistentes
+        setError('No assistants data returned');
+        console.error('No assistants data in response:', data);
       }
     } catch (err: any) {
-      console.error('Error fetching assistants:', err);
-      
-      // Usar o handler de erros da OpenAI para tratar o erro de forma consistente
-      handleOpenAIError(err, 'useOpenAIAssistants');
-      
-      // Definir a mensagem de erro para exibição na UI
-      setError(err.message || 'Erro ao carregar assistentes');
-      
-      // Garantir que assistants seja um array vazio em caso de erro
-      setAssistants([]);
+      console.error('Unexpected error fetching assistants:', err);
+      setError(`Unexpected error: ${err.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -51,13 +49,12 @@ export function useOpenAIAssistants() {
     fetchAssistants();
   }, []);
 
-  return {
-    assistants,
-    loading,
+  return { 
+    assistants, 
+    loading, 
     error,
-    refetch: fetchAssistants,
+    refetch: fetchAssistants 
   };
 }
 
 export default useOpenAIAssistants;
-
