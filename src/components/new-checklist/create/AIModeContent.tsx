@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { normalizeResponseType } from "@/utils/inspection/normalizationUtils";
 import { useOpenAIAssistants } from "@/hooks/new-checklist/useOpenAIAssistants";
-import { generateChecklist } from "@/utils/checklist/openaiUtils";
+import { generateChecklistWithAI } from "@/utils/checklist/openaiUtils";
 
 interface AIModeContentProps {
   aiPrompt: string;
@@ -109,16 +109,12 @@ Gere ${numQuestions} perguntas específicas para este checklist.`;
 
     setAiLoading(true);
     try {
-      const data = await generateChecklist({
+      const data = await generateChecklistWithAI({
         prompt: formattedPrompt,
-        checklistData: {
-          title: `Checklist: ${category}`,
-          description: description,
-          category: category,
-          company_id: companyId
-        },
         assistantId: selectedAssistant,
-        questionCount: numQuestions
+        numQuestions: numQuestions,
+        companyData: companyData,
+        category: category
       });
 
       if (data?.questions && Array.isArray(data.questions)) {
@@ -141,7 +137,7 @@ Gere ${numQuestions} perguntas específicas para este checklist.`;
       }
     } catch (error: any) {
       console.error("Erro na geração por IA:", error);
-      // O erro já é tratado pela função generateChecklist
+      // O erro já é tratado pela função generateChecklistWithAI
     } finally {
       setAiLoading(false);
     }
