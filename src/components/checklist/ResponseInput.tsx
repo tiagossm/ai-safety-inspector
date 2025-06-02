@@ -1,5 +1,4 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,7 +18,8 @@ import { ResponseTypeSelector } from "@/components/common/ResponseTypeSelector";
 import { 
   StandardResponseType,
   convertToFrontendType,
-  convertToDatabaseType
+  convertToDatabaseType,
+  isValidResponseType
 } from "@/types/responseTypes";
 
 interface QuestionEditorProps {
@@ -41,16 +41,21 @@ export function QuestionEditor({
   const [newOption, setNewOption] = useState("");
 
   // Convert database response type to frontend type for proper display
-  const frontendResponseType = question.responseType 
+  const rawFrontendType = question.responseType 
     ? convertToFrontendType(question.responseType) 
     : "yes_no";
+  
+  // Ensure the type is valid, fallback to "text" if not
+  const frontendResponseType: StandardResponseType = isValidResponseType(rawFrontendType) 
+    ? rawFrontendType 
+    : "text";
 
   const handleUpdate = (field: keyof ChecklistQuestion, value: any) => {
     if (onUpdate) {
       let patch = { ...question, [field]: value };
       if (field === "responseType") {
         // Convert frontend type to database format
-        const dbType = convertToDatabaseType(value);
+        const dbType = convertToDatabaseType(value as StandardResponseType);
         patch.responseType = dbType;
       }
       onUpdate(patch);
