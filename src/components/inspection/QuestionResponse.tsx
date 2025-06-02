@@ -84,6 +84,10 @@ export function QuestionEditor({
     }
   };
 
+  const handleResponseTypeChange = (newResponseType: StandardResponseType) => {
+    handleUpdate("responseType", newResponseType);
+  };
+
   const getMediaTypeName = (mediaField: string): string => {
     switch (mediaField) {
       case "allowsPhoto": return "imagem";
@@ -180,9 +184,7 @@ export function QuestionEditor({
             <label className="text-sm font-medium mb-1 block">Tipo de resposta</label>
             <ResponseTypeSelector
               value={frontendResponseType}
-              onChange={(value: StandardResponseType) => {
-                handleUpdate("responseType", value);
-              }}
+              onChange={handleResponseTypeChange}
               showDescriptions={true}
             />
             

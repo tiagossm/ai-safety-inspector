@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { StandardResponseType, RESPONSE_TYPE_LABELS, RESPONSE_TYPE_DESCRIPTIONS } from "@/types/responseTypes";
+import { StandardResponseType, RESPONSE_TYPE_LABELS, RESPONSE_TYPE_DESCRIPTIONS, isValidResponseType } from "@/types/responseTypes";
 
 interface ResponseTypeSelectorProps {
   value: StandardResponseType;
@@ -16,8 +16,18 @@ export function ResponseTypeSelector({
   className,
   showDescriptions = false 
 }: ResponseTypeSelectorProps) {
+  const handleValueChange = (newValue: string) => {
+    // Validar se o valor é um StandardResponseType válido
+    if (isValidResponseType(newValue)) {
+      onChange(newValue);
+    } else {
+      console.warn(`Invalid response type: ${newValue}, falling back to 'text'`);
+      onChange("text");
+    }
+  };
+
   return (
-    <Select value={value} onValueChange={onChange}>
+    <Select value={value} onValueChange={handleValueChange}>
       <SelectTrigger className={className}>
         <SelectValue placeholder="Selecione o tipo" />
       </SelectTrigger>
