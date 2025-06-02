@@ -836,6 +836,66 @@ export type Database = {
           },
         ]
       }
+      inspection_audit_logs: {
+        Row: {
+          access_source: string | null
+          action_type: string
+          changed_field: string | null
+          created_at: string
+          id: string
+          inspection_id: string
+          metadata: Json | null
+          new_value: Json | null
+          previous_value: Json | null
+          question_id: string | null
+          timestamp: string
+          user_id: string
+        }
+        Insert: {
+          access_source?: string | null
+          action_type: string
+          changed_field?: string | null
+          created_at?: string
+          id?: string
+          inspection_id: string
+          metadata?: Json | null
+          new_value?: Json | null
+          previous_value?: Json | null
+          question_id?: string | null
+          timestamp?: string
+          user_id: string
+        }
+        Update: {
+          access_source?: string | null
+          action_type?: string
+          changed_field?: string | null
+          created_at?: string
+          id?: string
+          inspection_id?: string
+          metadata?: Json | null
+          new_value?: Json | null
+          previous_value?: Json | null
+          question_id?: string | null
+          timestamp?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_audit_logs_inspection_id_fkey"
+            columns: ["inspection_id"]
+            isOneToOne: false
+            referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspection_audit_logs_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_itens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inspection_files: {
         Row: {
           created_at: string
@@ -871,6 +931,48 @@ export type Database = {
           },
         ]
       }
+      inspection_items: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          inspection_id: string | null
+          template_item_id: string | null
+          type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          inspection_id?: string | null
+          template_item_id?: string | null
+          type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          inspection_id?: string | null
+          template_item_id?: string | null
+          type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_items_inspection_id_fkey"
+            columns: ["inspection_id"]
+            isOneToOne: false
+            referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspection_items_template_item_id_fkey"
+            columns: ["template_item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_itens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inspection_responses: {
         Row: {
           action_plan: string | null
@@ -880,9 +982,9 @@ export type Database = {
           created_at: string | null
           id: string
           inspection_id: string | null
+          inspection_item_id: string | null
           media_urls: string[] | null
           notes: string | null
-          question_id: string
           sub_checklist_responses: Json | null
           updated_at: string | null
         }
@@ -894,9 +996,9 @@ export type Database = {
           created_at?: string | null
           id?: string
           inspection_id?: string | null
+          inspection_item_id?: string | null
           media_urls?: string[] | null
           notes?: string | null
-          question_id: string
           sub_checklist_responses?: Json | null
           updated_at?: string | null
         }
@@ -908,9 +1010,9 @@ export type Database = {
           created_at?: string | null
           id?: string
           inspection_id?: string | null
+          inspection_item_id?: string | null
           media_urls?: string[] | null
           notes?: string | null
-          question_id?: string
           sub_checklist_responses?: Json | null
           updated_at?: string | null
         }
@@ -923,10 +1025,10 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "inspection_responses_question_id_fkey"
-            columns: ["question_id"]
+            foreignKeyName: "inspection_responses_inspection_item_id_fkey"
+            columns: ["inspection_item_id"]
             isOneToOne: false
-            referencedRelation: "checklist_itens"
+            referencedRelation: "inspection_items"
             referencedColumns: ["id"]
           },
         ]
@@ -937,18 +1039,21 @@ export type Database = {
           signature_data: string
           signed_at: string | null
           signer_id: string
+          signer_name: string | null
         }
         Insert: {
           inspection_id: string
           signature_data: string
           signed_at?: string | null
           signer_id: string
+          signer_name?: string | null
         }
         Update: {
           inspection_id?: string
           signature_data?: string
           signed_at?: string | null
           signer_id?: string
+          signer_name?: string | null
         }
         Relationships: [
           {
@@ -956,6 +1061,13 @@ export type Database = {
             columns: ["inspection_id"]
             isOneToOne: true
             referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspection_signatures_signer_id_fkey"
+            columns: ["signer_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -1980,6 +2092,20 @@ export type Database = {
       }
       l2_normalize: {
         Args: { "": string } | { "": unknown } | { "": unknown }
+        Returns: string
+      }
+      log_inspection_audit: {
+        Args: {
+          p_inspection_id: string
+          p_question_id?: string
+          p_user_id?: string
+          p_action_type?: string
+          p_changed_field?: string
+          p_previous_value?: Json
+          p_new_value?: Json
+          p_access_source?: string
+          p_metadata?: Json
+        }
         Returns: string
       }
       match_documents: {

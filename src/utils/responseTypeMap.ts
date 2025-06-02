@@ -1,32 +1,11 @@
 
 // Este arquivo mapeia os tipos de resposta entre o frontend e o banco de dados
+import { RESPONSE_TYPE_MAP, StandardResponseType } from "@/types/responseTypes";
 
-export function frontendToDatabaseResponseType(frontendType: string): string {
-  const typeMap: Record<string, string> = {
-    'yes_no': 'sim/não',
-    'text': 'texto',
-    'numeric': 'numérico',
-    'multiple_choice': 'seleção múltipla',
-    'photo': 'foto',
-    'signature': 'assinatura',
-    'time': 'time',
-    'date': 'date'
-  };
-
-  return typeMap[frontendType] || 'texto';
+export function frontendToDatabaseResponseType(frontendType: StandardResponseType): string {
+  return RESPONSE_TYPE_MAP.frontend[frontendType] || "texto";
 }
 
-export function databaseToFrontendResponseType(dbType: string): string {
-  const typeMap: Record<string, string> = {
-    'sim/não': 'yes_no',
-    'texto': 'text',
-    'numérico': 'numeric',
-    'seleção múltipla': 'multiple_choice',
-    'foto': 'photo',
-    'assinatura': 'signature',
-    'time': 'time',
-    'date': 'date'
-  };
-
-  return typeMap[dbType] || 'text';
+export function databaseToFrontendResponseType(dbType: string): StandardResponseType {
+  return RESPONSE_TYPE_MAP.database[dbType as keyof typeof RESPONSE_TYPE_MAP.database] || "text";
 }

@@ -1,29 +1,22 @@
+
 import React, { useState, useEffect } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Input } from "@/components/ui/input";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { 
   Trash2,
-  GripHorizontal,
   Plus,
   Image,
   Video,
   Mic,
-  FileText,
-  Copy
+  FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SubChecklistButton } from "@/components/new-checklist/question-editor/SubChecklistButton";
 import { toast } from "sonner";
-import { frontendToDatabaseResponseType, databaseToFrontendResponseType } from "@/utils/responseTypeMap";
+import { ResponseTypeSelector } from "@/components/common/ResponseTypeSelector";
+import { StandardResponseType } from "@/types/responseTypes";
 
 interface QuestionEditorProps {
   question: ChecklistQuestion;
@@ -43,19 +36,9 @@ export function QuestionEditor({
   const [showOptionsEditor, setShowOptionsEditor] = useState(false);
   const [newOption, setNewOption] = useState("");
 
-  // Convert database response type to frontend type for proper display
-  const frontendResponseType = question.responseType 
-    ? databaseToFrontendResponseType(question.responseType) as "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature" | "time" | "date"
-    : "yes_no";
-
   const handleUpdate = (field: keyof ChecklistQuestion, value: any) => {
     if (onUpdate) {
-      let patch = { ...question, [field]: value };
-      if (field === "responseType") {
-        // Convert the UI value to database format
-        patch.responseType = value;
-      }
-      onUpdate(patch);
+      onUpdate({ ...question, [field]: value });
 
       if (field === "allowsPhoto" || field === "allowsVideo" || field === "allowsAudio" || field === "allowsFiles") {
         const status = value ? "ativada" : "desativada";
@@ -152,26 +135,10 @@ export function QuestionEditor({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="text-sm font-medium mb-1 block">Tipo de resposta</label>
-            <Select
-              value={frontendResponseType}
-              onValueChange={(value: "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature" | "time" | "date") => {
-                handleUpdate("responseType", value);
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="yes_no">Sim/Não</SelectItem>
-                <SelectItem value="text">Texto</SelectItem>
-                <SelectItem value="multiple_choice">Múltipla escolha</SelectItem>
-                <SelectItem value="numeric">Numérico</SelectItem>
-                <SelectItem value="photo">Foto</SelectItem>
-                <SelectItem value="signature">Assinatura</SelectItem>
-                <SelectItem value="time">Hora</SelectItem>
-                <SelectItem value="date">Data</SelectItem>
-              </SelectContent>
-            </Select>
+            <ResponseTypeSelector
+              value={question.responseType}
+              onChange={(value: StandardResponseType) => handleUpdate("responseType", value)}
+            />
           </div>
 
           <div>
@@ -194,7 +161,7 @@ export function QuestionEditor({
           </div>
         </div>
 
-        {frontendResponseType === "multiple_choice" && (
+        {question.responseType === "multiple_choice" && (
           <div className="mt-4 space-y-2">
             <label className="text-sm font-medium mb-1 block">Opções</label>
             <div className="space-y-2">

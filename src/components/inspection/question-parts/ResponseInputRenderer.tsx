@@ -2,12 +2,13 @@
 import React, { useCallback } from "react";
 import { YesNoResponseInput } from "./response-types/YesNoResponseInput";
 import { TextResponseInput } from "./response-types/TextResponseInput";
-import { DateResponseInput } from "./response-types/DateResponseInput";
-import { TimeResponseInput } from "./response-types/TimeResponseInput";
+import { DateInput } from "@/components/inspection/question-inputs/DateInput";
+import { TimeInput } from "@/components/inspection/question-inputs/TimeInput";
 import { NumberInput } from "@/components/inspection/question-inputs/NumberInput";
 import { MultipleChoiceInput } from "@/components/inspection/question-inputs/MultipleChoiceInput";
 import { PhotoInput } from "@/components/inspection/question-inputs/PhotoInput";
 import { SignatureInput } from "@/components/checklist/SignatureInput";
+import { convertToFrontendType } from "@/utils/responseTypeMap";
 
 interface ResponseInputRendererProps {
   question: any;
@@ -30,8 +31,9 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   onSaveActionPlan,
   readOnly = false
 }) => {
-  const responseType = question.responseType || question.tipo_resposta || "text";
-  const questionText = question.text || question.pergunta || "";
+  // Normalizar tipo de resposta para formato padrão
+  const rawResponseType = question.responseType || question.tipo_resposta || "text";
+  const responseType = convertToFrontendType(rawResponseType);
 
   console.log("ResponseInputRenderer: rendering with responseType:", responseType);
   console.log("ResponseInputRenderer: current response:", response);
@@ -146,7 +148,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     );
   }
 
-  if (responseType === "numeric" || responseType === "number") {
+  if (responseType === "numeric") {
     return (
       <div className="space-y-2">
         <NumberInput
@@ -215,7 +217,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
 
   if (responseType === "date") {
     return (
-      <DateResponseInput
+      <DateInput
         value={safeResponse.value}
         onChange={(value) => handleSimpleValueChange(value)}
         readOnly={readOnly}
@@ -225,7 +227,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
 
   if (responseType === "time") {
     return (
-      <TimeResponseInput
+      <TimeInput
         value={safeResponse.value}
         onChange={(value) => handleSimpleValueChange(value)}
         readOnly={readOnly}

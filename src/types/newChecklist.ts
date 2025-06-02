@@ -1,3 +1,6 @@
+
+import { StandardResponseType } from "./responseTypes";
+
 export interface ChecklistWithStats {
   id: string;
   title: string;
@@ -102,10 +105,11 @@ export interface BatchUpdateResult {
   count: number;
 }
 
+// Interface atualizada com tipos padronizados
 export interface ChecklistQuestion {
   id: string;
   text: string;
-  responseType: "yes_no" | "text" | "numeric" | "multiple_choice" | "photo" | "signature" | "time" | "date";
+  responseType: StandardResponseType;
   isRequired: boolean;
   options?: string[];
   weight: number;
@@ -136,7 +140,7 @@ export interface InspectionDetails {
   responsibleId?: string;
   responsibleName?: string;
   scheduledDate?: string;
-  location?: string; // Field for location
+  location?: string;
   syncStatus?: string;
   metadata?: any;
   title?: string;
