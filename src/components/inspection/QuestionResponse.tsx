@@ -50,7 +50,7 @@ export function QuestionEditor({
   
   // Ensure the type is valid, fallback to "text" if not
   const frontendResponseType: StandardResponseType = isValidResponseType(rawFrontendType) 
-    ? rawFrontendType 
+    ? (rawFrontendType as StandardResponseType)
     : "text";
 
   // Verifica se o tipo atual requer opções
