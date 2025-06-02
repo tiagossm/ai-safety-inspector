@@ -19,7 +19,8 @@ export function ResponseTypeSelector({
   const handleValueChange = (newValue: string) => {
     // Validar se o valor é um StandardResponseType válido
     if (isValidResponseType(newValue)) {
-      onChange(newValue);
+      // Type assertion é segura aqui porque validamos acima
+      onChange(newValue as StandardResponseType);
     } else {
       console.warn(`Invalid response type: ${newValue}, falling back to 'text'`);
       onChange("text");

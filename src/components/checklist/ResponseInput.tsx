@@ -68,6 +68,7 @@ export function QuestionEditor({
     }
   };
 
+  // Simplificar o handler - o ResponseTypeSelector já garante o tipo correto
   const handleResponseTypeChange = (newResponseType: StandardResponseType) => {
     handleUpdate("responseType", newResponseType);
   };
