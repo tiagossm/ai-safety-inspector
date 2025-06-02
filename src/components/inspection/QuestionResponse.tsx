@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Input } from "@/components/ui/input";
@@ -12,18 +13,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { 
   Trash2,
-  GripHorizontal,
   Plus,
   Image,
   Video,
   Mic,
   FileText,
-  Copy
+  AlertCircle,
+  Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SubChecklistButton } from "@/components/new-checklist/question-editor/SubChecklistButton";
 import { toast } from "sonner";
-import { frontendToDatabaseResponseType, databaseToFrontendResponseType } from "@/utils/responseTypeMap";
+import { databaseToFrontendResponseType } from "@/utils/responseTypeMap";
+import { 
+  RESPONSE_TYPE_LABELS, 
+  RESPONSE_TYPE_DESCRIPTIONS,
+  TYPES_REQUIRING_OPTIONS,
+  StandardResponseType 
+} from "@/types/responseTypes";
 
 interface QuestionEditorProps {
   question: ChecklistQuestion;
@@ -45,8 +52,12 @@ export function QuestionEditor({
 
   // Convert database response type to frontend type for proper display
   const frontendResponseType = question.responseType 
-    ? databaseToFrontendResponseType(question.responseType) as "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature"
+    ? databaseToFrontendResponseType(question.responseType) as StandardResponseType
     : "yes_no";
+
+  // Verifica se o tipo atual requer opções
+  const requiresOptions = TYPES_REQUIRING_OPTIONS.includes(frontendResponseType);
+  const hasValidOptions = question.options && Array.isArray(question.options) && question.options.length > 0;
 
   const handleUpdate = (field: keyof ChecklistQuestion, value: any) => {
     if (onUpdate) {
@@ -54,6 +65,15 @@ export function QuestionEditor({
       if (field === "responseType") {
         // Convert the UI value to database format
         patch.responseType = value;
+        
+        // Se mudou para um tipo que não requer opções, limpa as opções
+        if (!TYPES_REQUIRING_OPTIONS.includes(value)) {
+          patch.options = [];
+        }
+        // Se mudou para um tipo que requer opções e não tem, adiciona opções padrão
+        else if (!hasValidOptions) {
+          patch.options = ["Opção 1", "Opção 2"];
+        }
       }
       onUpdate(patch);
 
@@ -136,6 +156,13 @@ export function QuestionEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enableAllMedia]);
 
+  // Auto-abre o editor de opções quando necessário
+  useEffect(() => {
+    if (requiresOptions && !hasValidOptions) {
+      setShowOptionsEditor(true);
+    }
+  }, [requiresOptions, hasValidOptions]);
+
   return (
     <div className={`border rounded-md p-4 ${isSubQuestion ? 'bg-gray-50' : 'bg-white'}`}>
       <div className="space-y-4">
@@ -154,24 +181,34 @@ export function QuestionEditor({
             <label className="text-sm font-medium mb-1 block">Tipo de resposta</label>
             <Select
               value={frontendResponseType}
-              onValueChange={(value: "yes_no" | "text" | "multiple_choice" | "numeric" | "photo" | "signature" | "time" | "date") => {
+              onValueChange={(value: StandardResponseType) => {
                 handleUpdate("responseType", value);
               }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o tipo" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="yes_no">Sim/Não</SelectItem>
-                <SelectItem value="text">Texto</SelectItem>
-                <SelectItem value="multiple_choice">Múltipla escolha</SelectItem>
-                <SelectItem value="numeric">Numérico</SelectItem>
-                <SelectItem value="photo">Foto</SelectItem>
-                <SelectItem value="signature">Assinatura</SelectItem>
-                <SelectItem value="time">Hora</SelectItem>
-                <SelectItem value="date">Data</SelectItem>
+              <SelectContent className="bg-white z-50 max-h-64 overflow-y-auto">
+                {Object.entries(RESPONSE_TYPE_LABELS).map(([key, label]) => (
+                  <SelectItem key={key} value={key} className="cursor-pointer">
+                    <div className="flex flex-col">
+                      <span className="font-medium">{label}</span>
+                      <span className="text-xs text-gray-500">
+                        {RESPONSE_TYPE_DESCRIPTIONS[key as StandardResponseType]}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
+            
+            {/* Alerta para tipos que requerem opções */}
+            {requiresOptions && !hasValidOptions && (
+              <div className="flex items-center gap-1 text-amber-600 text-xs mt-1">
+                <AlertCircle className="h-3 w-3" />
+                <span>Este tipo requer opções configuradas</span>
+              </div>
+            )}
           </div>
 
           <div>
@@ -194,21 +231,30 @@ export function QuestionEditor({
           </div>
         </div>
 
-        {frontendResponseType === "multiple_choice" ? (
+        {/* Editor de opções - aparece automaticamente para tipos que requerem */}
+        {requiresOptions && (
           <div className="mt-4 space-y-2">
             <div className="flex justify-between items-center">
               <label className="text-sm font-medium">Opções de resposta</label>
-              <Button 
-                type="button" 
-                variant="ghost" 
-                size="sm"
-                onClick={() => setShowOptionsEditor(!showOptionsEditor)}
-              >
-                {showOptionsEditor ? "Ocultar" : "Editar opções"}
-              </Button>
+              <div className="flex items-center gap-2">
+                {!hasValidOptions && (
+                  <div className="flex items-center gap-1 text-amber-600 text-xs">
+                    <Info className="h-3 w-3" />
+                    <span>Obrigatório</span>
+                  </div>
+                )}
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowOptionsEditor(!showOptionsEditor)}
+                >
+                  {showOptionsEditor ? "Ocultar" : "Editar opções"}
+                </Button>
+              </div>
             </div>
 
-            {showOptionsEditor && (
+            {(showOptionsEditor || !hasValidOptions) && (
               <div className="space-y-2 mt-2 border-t pt-2">
                 {(question.options || []).map((option, index) => (
                   <div key={index} className="flex gap-2">
@@ -220,6 +266,7 @@ export function QuestionEditor({
                         handleUpdate("options", newOptions);
                       }}
                       className="flex-1"
+                      placeholder={`Opção ${index + 1}`}
                     />
                     <Button
                       type="button"
@@ -248,6 +295,7 @@ export function QuestionEditor({
                     type="button"
                     variant="outline"
                     onClick={handleAddOption}
+                    disabled={!newOption.trim()}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Adicionar
@@ -256,7 +304,7 @@ export function QuestionEditor({
               </div>
             )}
           </div>
-        ) : null}
+        )}
 
         <div>
           <label className="text-sm font-medium mb-1 block">Dica para o inspetor</label>

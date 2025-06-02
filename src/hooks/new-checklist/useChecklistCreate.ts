@@ -1,4 +1,3 @@
-
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats, NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
@@ -6,10 +5,23 @@ import { toast } from "sonner";
 import { convertToDatabaseType } from "@/types/responseTypes";
 
 const getDatabaseType = (responseType: string): string => {
-  // Converter para StandardResponseType antes de usar a função de conversão
-  const validTypes = ["yes_no", "text", "numeric", "multiple_choice", "photo", "signature", "date", "time"];
-  const standardType = validTypes.includes(responseType) ? responseType as any : "text";
-  return convertToDatabaseType(standardType);
+  // Mapeamento expandido para suportar novos tipos
+  const typeMap: Record<string, string> = {
+    "yes_no": "sim/não",
+    "text": "texto",
+    "paragraph": "parágrafo", 
+    "numeric": "numérico",
+    "multiple_choice": "seleção múltipla",
+    "checkboxes": "caixas de seleção",
+    "dropdown": "lista suspensa",
+    "photo": "foto",
+    "signature": "assinatura",
+    "date": "data",
+    "time": "hora",
+    "datetime": "data e hora"
+  };
+
+  return typeMap[responseType] || "texto";
 };
 
 const getStatusChecklist = (status: string): string => {
