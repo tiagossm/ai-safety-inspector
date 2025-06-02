@@ -8,7 +8,7 @@ import { NumberInput } from "@/components/inspection/question-inputs/NumberInput
 import { MultipleChoiceInput } from "@/components/inspection/question-inputs/MultipleChoiceInput";
 import { PhotoInput } from "@/components/inspection/question-inputs/PhotoInput";
 import { SignatureInput } from "@/components/checklist/SignatureInput";
-import { convertToFrontendType } from "@/utils/responseTypeMap";
+import { convertToFrontendType } from "@/types/responseTypes";
 
 interface ResponseInputRendererProps {
   question: any;
