@@ -73,6 +73,8 @@ export function useChecklistUpdate() {
             const options = Array.isArray(q.options) ? q.options.map((opt) => String(opt)) : [];
             const dbResponseType = frontendToDatabaseResponseType(q.responseType);
 
+            console.log(`Mapping question ${index}: ${q.responseType} -> ${dbResponseType}`);
+
             return {
               checklist_id: id,
               pergunta: q.text,
@@ -117,6 +119,8 @@ export function useChecklistUpdate() {
             : [];
             
           const dbResponseType = frontendToDatabaseResponseType(question.responseType);
+
+          console.log(`Updating question: ${question.responseType} -> ${dbResponseType}`);
 
           const { error: updateError } = await supabase
             .from("checklist_itens")

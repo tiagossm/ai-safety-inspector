@@ -5,6 +5,7 @@ import { AIAssistantType } from "@/types/AIAssistantType";
 import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { supabase } from "@/integrations/supabase/client";
 import { handleError, validateRequiredFields } from "@/utils/errorHandling";
+import { normalizeAIResponseType } from "@/utils/responseTypeMap";
 
 export { type AIAssistantType };
 
@@ -59,10 +60,18 @@ export function useChecklistAI() {
         throw new Error(data?.error || 'Falha ao gerar checklist');
       }
       
-      const questions: ChecklistQuestion[] = data.questions || [];
+      // Normalizar tipos de resposta das perguntas vindas da IA
+      const questions: ChecklistQuestion[] = (data.questions || []).map((q: any, index: number) => ({
+        ...q,
+        responseType: normalizeAIResponseType(q.responseType || 'text'),
+        id: q.id || `ai-${Date.now()}-${index}`,
+        order: q.order !== undefined ? q.order : index
+      }));
+      
       const groups: ChecklistGroup[] = data.groups || [];
       
       console.log(`Geração bem-sucedida! Recebidas ${questions.length} perguntas e ${groups.length} grupos`);
+      console.log("Tipos de resposta normalizados:", questions.map(q => `${q.text}: ${q.responseType}`));
       
       toast.success("Checklist gerado com sucesso!");
       return { success: true, questions, groups, checklistData };

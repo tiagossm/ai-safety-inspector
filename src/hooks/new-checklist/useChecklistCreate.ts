@@ -1,171 +1,105 @@
-import { useMutation } from "@tanstack/react-query";
+
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ChecklistWithStats, NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
+import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { toast } from "sonner";
-import { convertToDatabaseType } from "@/types/responseTypes";
+import { frontendToDatabaseResponseType } from "@/utils/responseTypeMap";
 
-const getDatabaseType = (responseType: string): string => {
-  // Mapeamento expandido para suportar novos tipos
-  const typeMap: Record<string, string> = {
-    "yes_no": "sim/não",
-    "text": "texto",
-    "paragraph": "parágrafo", 
-    "numeric": "numérico",
-    "multiple_choice": "seleção múltipla",
-    "checkboxes": "caixas de seleção",
-    "dropdown": "lista suspensa",
-    "photo": "foto",
-    "signature": "assinatura",
-    "date": "data",
-    "time": "hora",
-    "datetime": "data e hora"
-  };
-
-  return typeMap[responseType] || "texto";
-};
-
-const getStatusChecklist = (status: string): string => {
-  return status === 'active' ? 'ativo' : 'inativo';
-};
-
-interface CreateParams {
+interface ChecklistCreateParams {
   checklist: NewChecklistPayload;
-  questions?: ChecklistQuestion[];
-  groups?: ChecklistGroup[];
+  questions: ChecklistQuestion[];
+  groups: ChecklistGroup[];
 }
 
 export function useChecklistCreate() {
+  const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: async (params: CreateParams) => {
-      console.log("Creating new checklist:", params.checklist);
-      
-      if (!params.checklist.title) {
-        throw new Error("Checklist title is required");
-      }
-      
-      const status_checklist = getStatusChecklist(params.checklist.status || 'active');
-      
-      const company_id = params.checklist.company_id;
-      
-      const isAIGenerated = params.checklist.description?.toLowerCase().includes('gerado por ia') ||
-                            params.checklist.description?.toLowerCase().includes('checklist gerado por ia') ||
-                            params.checklist.description?.toLowerCase().includes('checklist: ');
-      
-      const isCSVImported = params.checklist.description?.toLowerCase().includes('importado via csv') ||
-                           params.checklist.description?.toLowerCase().includes('importado de planilha') ||
-                           params.checklist.description?.toLowerCase().includes('importado de excel');
-      
-      const origin = params.checklist.origin || (isAIGenerated ? 'ia' : (isCSVImported ? 'csv' : 'manual'));
-      
-      const { data: newChecklist, error: createError } = await supabase
+    mutationFn: async ({ checklist, questions, groups }: ChecklistCreateParams) => {
+      console.log("Iniciando criação de checklist:", checklist);
+      console.log("Perguntas a serem criadas:", questions.length);
+
+      // Inserir checklist
+      const checklistData = {
+        title: checklist.title,
+        description: checklist.description || "",
+        category: checklist.category,
+        is_template: checklist.is_template || false,
+        status_checklist: checklist.status_checklist || "ativo",
+        company_id: checklist.company_id || null,
+        responsible_id: checklist.responsible_id || null,
+        origin: checklist.origin || "manual"
+      };
+
+      const { data: newChecklist, error: checklistError } = await supabase
         .from("checklists")
-        .insert({
-          title: params.checklist.title,
-          description: params.checklist.description,
-          status: params.checklist.status || "active",
-          company_id: company_id,
-          category: params.checklist.category,
-          ...(params.checklist.origin && { origin: params.checklist.origin }),
-          is_template: params.checklist.is_template || false,
-          status_checklist: status_checklist,
-          responsible_id: params.checklist.responsible_id,
-          due_date: params.checklist.due_date
-        })
-        .select("id")
+        .insert(checklistData)
+        .select()
         .single();
-        
-      if (createError) {
-        console.error("Error creating checklist:", createError);
-        throw createError;
+
+      if (checklistError) {
+        console.error("Erro ao criar checklist:", checklistError);
+        throw new Error(`Falha ao criar checklist: ${checklistError.message}`);
       }
-      
-      const checklistId = newChecklist.id;
-      console.log("Created checklist with ID:", checklistId);
-      
-      if (params.questions && params.questions.length > 0) {
-        const questionInserts = params.questions.map((question, index) => {
-          let questionHint = question.hint || "";
+
+      console.log("Checklist criado com ID:", newChecklist.id);
+
+      // Inserir perguntas se existirem
+      if (questions && questions.length > 0) {
+        const questionsToInsert = questions.map((question, index) => {
+          const dbResponseType = frontendToDatabaseResponseType(question.responseType);
           
-          if (question.groupId && params.groups) {
-            const group = params.groups.find(g => g.id === question.groupId);
-            if (group) {
-              questionHint = JSON.stringify({
-                groupId: group.id,
-                groupTitle: group.title,
-                groupIndex: params.groups.indexOf(group)
-              });
-            }
-          }
-          
-          let questionOptions: string[] = [];
-          
-          if (question.responseType === 'multiple_choice') {
-            if (Array.isArray(question.options)) {
-              questionOptions = question.options;
-            } else if (typeof question.options === 'string') {
-              try {
-                const optionsStr: string = question.options;
-                
-                if (optionsStr.startsWith('[') && optionsStr.endsWith(']')) {
-                  try {
-                    const parsedOptions = JSON.parse(optionsStr);
-                    if (Array.isArray(parsedOptions)) {
-                      questionOptions = parsedOptions;
-                    }
-                  } catch (e) {
-                    questionOptions = optionsStr.split(',').map(o => o.trim());
-                  }
-                } else {
-                  questionOptions = optionsStr.split(',').map(o => o.trim());
-                }
-              } catch (e) {
-                console.error("Error parsing options:", e);
-              }
-            }
-          }
-          
-          // Convert the frontend response type to database format
-          const dbResponseType = getDatabaseType(question.responseType);
-          
-          console.log(`Preparing question ${index} for checklist ${checklistId}: ${question.text}, type: ${question.responseType} -> ${dbResponseType}`);
-          
+          console.log(`Mapeando pergunta ${index}: ${question.responseType} -> ${dbResponseType}`);
+
           return {
-            checklist_id: checklistId,
+            checklist_id: newChecklist.id,
             pergunta: question.text,
             tipo_resposta: dbResponseType,
-            obrigatorio: question.isRequired,
-            opcoes: questionOptions,
-            hint: questionHint,
+            obrigatorio: question.isRequired !== false,
+            ordem: question.order !== undefined ? question.order : index,
+            opcoes: Array.isArray(question.options) ? question.options : null,
             weight: question.weight || 1,
-            parent_item_id: question.parentQuestionId,
-            condition_value: question.conditionValue,
             permite_foto: question.allowsPhoto || false,
             permite_video: question.allowsVideo || false,
             permite_audio: question.allowsAudio || false,
-            ordem: question.order || index
+            permite_files: question.allowsFiles || false,
+            parent_item_id: question.parentQuestionId || null,
+            condition_value: question.conditionValue || null,
+            hint: question.hint || null
           };
         });
-        
-        console.log("Sample question data:", questionInserts.slice(0, 2));
-        
+
+        console.log("Inserindo perguntas no banco:", questionsToInsert);
+
         const { error: questionsError } = await supabase
           .from("checklist_itens")
-          .insert(questionInserts);
-          
+          .insert(questionsToInsert);
+
         if (questionsError) {
-          console.error("Error adding questions:", questionsError);
-          toast.warning("Checklist criado, mas houve erro ao adicionar algumas perguntas.");
+          console.error("Erro ao inserir perguntas:", questionsError);
+          // Rollback: deletar o checklist criado
+          await supabase.from("checklists").delete().eq("id", newChecklist.id);
+          throw new Error(`Falha ao inserir perguntas: ${questionsError.message}`);
         }
+
+        console.log(`${questionsToInsert.length} perguntas inseridas com sucesso`);
       }
-      
-      return { id: checklistId };
+
+      console.log("Checklist criado com sucesso!");
+      return newChecklist;
     },
-    onSuccess: () => {
-      toast.success("Checklist criado com sucesso!");
+
+    onSuccess: (data) => {
+      toast.success("Checklist criado com sucesso!", { duration: 5000 });
+      queryClient.invalidateQueries({ queryKey: ["new-checklists"] });
+      queryClient.invalidateQueries({ queryKey: ["checklists"] });
     },
-    onError: (error) => {
-      console.error("Error in useChecklistCreate:", error);
-      toast.error(`Erro ao criar checklist: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
+
+    onError: (error: any) => {
+      console.error("Erro na criação do checklist:", error);
+      toast.error(`Erro ao criar checklist: ${error.message || "Erro desconhecido"}`, {
+        duration: 5000
+      });
     }
   });
 }
