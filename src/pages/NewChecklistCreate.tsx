@@ -1,4 +1,3 @@
-
 import {
   Select,
   SelectContent,
@@ -25,6 +24,8 @@ import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/
 import { FloatingNavigation } from "@/components/ui/FloatingNavigation";
 import { useChecklistCompanies } from "@/hooks/checklist/form/useChecklistCompanies";
 import { NewChecklist } from "@/types/checklist";
+import { ResponseTypeSelector } from "@/components/common/ResponseTypeSelector";
+import { StandardResponseType } from "@/types/responseTypes";
 
 export default function NewChecklistCreate() {
   const navigate = useNavigate();
@@ -152,11 +153,9 @@ export default function NewChecklistCreate() {
         return;
       }
       
-      // Fix the type of status_checklist to be explicitly "ativo" | "inativo"
       const statusChecklistValue = checklist.status === "active" ? "ativo" : "inativo";
       const statusChecklist = statusChecklistValue as "ativo" | "inativo";
       
-      // Fix the type of origin to be explicitly "manual" | "ia" | "csv"
       const originValue = activeTab;
       const origin = originValue as "manual" | "ia" | "csv";
       
@@ -166,7 +165,6 @@ export default function NewChecklistCreate() {
         origin: origin
       };
       
-      // Convert to NewChecklist type for the API call to fix the type incompatibility
       const checklistForMutation: any = {
         ...processedChecklist,
       };
@@ -434,21 +432,14 @@ export default function NewChecklistCreate() {
                           <div className="flex items-center justify-between">
                             <div className="space-y-2">
                               <Label>Tipo de resposta</Label>
-                              <select
+                              <ResponseTypeSelector
                                 value={question.responseType}
-                                onChange={(e) => handleUpdateQuestion({ 
-                                  ...question, 
-                                  responseType: e.target.value as ChecklistQuestion["responseType"]
-                                })}
-                                className="w-full border rounded p-2"
-                              >
-                                <option value="yes_no">Sim/Não</option>
-                                <option value="multiple_choice">Múltipla escolha</option>
-                                <option value="text">Texto</option>
-                                <option value="numeric">Numérico</option>
-                                <option value="photo">Foto</option>
-                                <option value="signature">Assinatura</option>
-                              </select>
+                                onChange={(responseType: StandardResponseType) => 
+                                  handleUpdateQuestion({ ...question, responseType })
+                                }
+                                className="w-full"
+                                showDescriptions={true}
+                              />
                             </div>
                             
                             <Button
