@@ -1,6 +1,6 @@
 
 import React from "react";
-import { CheckboxesInput } from "@/components/inspection/question-inputs/CheckboxesInput";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface CheckboxesResponseInputProps {
   options: string[];
@@ -11,16 +11,40 @@ interface CheckboxesResponseInputProps {
 
 export function CheckboxesResponseInput({ 
   options, 
-  value, 
+  value = [], 
   onChange, 
   readOnly = false 
 }: CheckboxesResponseInputProps) {
+  const currentValue = Array.isArray(value) ? value : [];
+
+  const handleToggleOption = (option: string) => {
+    if (readOnly) return;
+    
+    const newValue = currentValue.includes(option)
+      ? currentValue.filter(item => item !== option)
+      : [...currentValue, option];
+    
+    onChange(newValue);
+  };
+
   return (
-    <CheckboxesInput 
-      options={options}
-      value={value}
-      onChange={onChange}
-      readOnly={readOnly}
-    />
+    <div className="space-y-2">
+      {options.map((option, index) => (
+        <div key={index} className="flex items-center space-x-2">
+          <Checkbox
+            id={`checkbox-${index}`}
+            checked={currentValue.includes(option)}
+            onCheckedChange={() => handleToggleOption(option)}
+            disabled={readOnly}
+          />
+          <label 
+            htmlFor={`checkbox-${index}`}
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            {option}
+          </label>
+        </div>
+      ))}
+    </div>
   );
 }

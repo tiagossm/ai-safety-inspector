@@ -2,13 +2,6 @@
 import React, { useState, useEffect } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Input } from "@/components/ui/input";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { 
@@ -24,12 +17,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { SubChecklistButton } from "@/components/new-checklist/question-editor/SubChecklistButton";
 import { toast } from "sonner";
-import { databaseToFrontendResponseType } from "@/utils/responseTypeMap";
+import { ResponseTypeSelector } from "@/components/common/ResponseTypeSelector";
 import { 
-  RESPONSE_TYPE_LABELS, 
-  RESPONSE_TYPE_DESCRIPTIONS,
-  TYPES_REQUIRING_OPTIONS,
-  StandardResponseType 
+  StandardResponseType,
+  convertToFrontendType,
+  convertToDatabaseType,
+  TYPES_REQUIRING_OPTIONS
 } from "@/types/responseTypes";
 
 interface QuestionEditorProps {
@@ -52,7 +45,7 @@ export function QuestionEditor({
 
   // Convert database response type to frontend type for proper display
   const frontendResponseType = question.responseType 
-    ? databaseToFrontendResponseType(question.responseType) as StandardResponseType
+    ? convertToFrontendType(question.responseType) 
     : "yes_no";
 
   // Verifica se o tipo atual requer opções
@@ -63,8 +56,9 @@ export function QuestionEditor({
     if (onUpdate) {
       let patch = { ...question, [field]: value };
       if (field === "responseType") {
-        // Convert the UI value to database format
-        patch.responseType = value;
+        // Convert frontend type to database format
+        const dbType = convertToDatabaseType(value);
+        patch.responseType = dbType;
         
         // Se mudou para um tipo que não requer opções, limpa as opções
         if (!TYPES_REQUIRING_OPTIONS.includes(value)) {
@@ -179,28 +173,13 @@ export function QuestionEditor({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="text-sm font-medium mb-1 block">Tipo de resposta</label>
-            <Select
+            <ResponseTypeSelector
               value={frontendResponseType}
-              onValueChange={(value: StandardResponseType) => {
+              onChange={(value: StandardResponseType) => {
                 handleUpdate("responseType", value);
               }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o tipo" />
-              </SelectTrigger>
-              <SelectContent className="bg-white z-50 max-h-64 overflow-y-auto">
-                {Object.entries(RESPONSE_TYPE_LABELS).map(([key, label]) => (
-                  <SelectItem key={key} value={key} className="cursor-pointer">
-                    <div className="flex flex-col">
-                      <span className="font-medium">{label}</span>
-                      <span className="text-xs text-gray-500">
-                        {RESPONSE_TYPE_DESCRIPTIONS[key as StandardResponseType]}
-                      </span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              showDescriptions={true}
+            />
             
             {/* Alerta para tipos que requerem opções */}
             {requiresOptions && !hasValidOptions && (

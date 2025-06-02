@@ -1,28 +1,25 @@
 
 import React from "react";
-import { ParagraphInput } from "@/components/inspection/question-inputs/ParagraphInput";
+import { Textarea } from "@/components/ui/textarea";
 
 interface ParagraphResponseInputProps {
   value: string | undefined;
   onChange: (value: string) => void;
   readOnly?: boolean;
-  maxLength?: number;
 }
 
 export function ParagraphResponseInput({ 
   value, 
   onChange, 
-  readOnly = false,
-  maxLength = 1000
+  readOnly = false 
 }: ParagraphResponseInputProps) {
   return (
-    <ParagraphInput 
-      value={value}
-      onChange={onChange}
+    <Textarea
+      value={value || ""}
+      onChange={(e) => onChange(e.target.value)}
       readOnly={readOnly}
-      maxLength={maxLength}
-      placeholder="Digite sua resposta detalhada..."
-      minRows={4}
+      placeholder="Digite sua resposta..."
+      className="min-h-[100px] resize-vertical"
     />
   );
 }
