@@ -1,9 +1,8 @@
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { toast } from "sonner";
-import { frontendToDatabaseResponseType } from "@/utils/responseTypeMap";
+import { normalizeResponseType } from "@/utils/inspection/normalizationUtils";
 
 interface ChecklistCreateParams {
   checklist: NewChecklistPayload;
@@ -47,8 +46,10 @@ export function useChecklistCreate() {
       // Inserir perguntas se existirem
       if (questions && questions.length > 0) {
         const questionsToInsert = questions.map((question, index) => {
-          const dbResponseType = frontendToDatabaseResponseType(question.responseType);
-          
+          const dbResponseType = normalizeResponseType(
+            question.responseType || question.tipo_resposta || ""
+          );
+
           console.log(`Mapeando pergunta ${index}: ${question.responseType} -> ${dbResponseType}`);
 
           return {
@@ -69,7 +70,11 @@ export function useChecklistCreate() {
           };
         });
 
-        console.log("Inserindo perguntas no banco:", questionsToInsert);
+        // Log para depuração dos tipos de resposta
+        console.log(
+          "Tipos de resposta para inserir:",
+          questionsToInsert.map((q) => q.tipo_resposta)
+        );
 
         const { error: questionsError } = await supabase
           .from("checklist_itens")
