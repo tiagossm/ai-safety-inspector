@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChecklistQuestion } from "@/types/newChecklist";
-import { QuestionEditor } from "@/components/new-checklist/edit/QuestionEditor";
+import { QuestionEditor } from "@/components/new-checklist/question-editor/QuestionEditor";
 import { toast } from "sonner";
 import { Loader2, Sparkles } from "lucide-react";
 

@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
-import { QuestionEditor } from "./QuestionEditor";
+import { QuestionEditor } from "@/components/new-checklist/question-editor/QuestionEditor";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";

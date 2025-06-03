@@ -26,6 +26,7 @@ interface ResponseTypeSelectorProps {
   onChange: (value: StandardResponseType) => void;
   showDescriptions?: boolean;
   disabled?: boolean;
+  className?: string;
 }
 
 const getResponseTypeIcon = (type: StandardResponseType) => {
@@ -52,7 +53,8 @@ export function ResponseTypeSelector({
   value,
   onChange,
   showDescriptions = false,
-  disabled = false
+  disabled = false,
+  className = ""
 }: ResponseTypeSelectorProps) {
   const responseTypes: StandardResponseType[] = [
     "yes_no",
@@ -75,7 +77,7 @@ export function ResponseTypeSelector({
       onValueChange={onChange}
       disabled={disabled}
     >
-      <SelectTrigger className="w-full">
+      <SelectTrigger className={`w-full ${className}`}>
         <SelectValue>
           <div className="flex items-center gap-2">
             {getResponseTypeIcon(value)}
