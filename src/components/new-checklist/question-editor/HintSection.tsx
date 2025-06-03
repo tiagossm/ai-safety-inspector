@@ -2,6 +2,7 @@
 import React from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Textarea } from "@/components/ui/textarea";
+import { Info } from "lucide-react";
 
 interface HintSectionProps {
   question: ChecklistQuestion;
@@ -9,34 +10,22 @@ interface HintSectionProps {
 }
 
 export function HintSection({ question, onUpdate }: HintSectionProps) {
-  const parseHint = (hint?: string | null): string => {
-    if (!hint) return "";
-
-    try {
-      if (typeof hint === 'string' && hint.startsWith("{") && hint.endsWith("}")) {
-        const parsed = JSON.parse(hint);
-        if (parsed.groupId && parsed.groupTitle) {
-          return "";
-        }
-      }
-    } catch (e) {}
-    return hint;
-  };
-
-  const userHint = parseHint(question.hint);
-
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium text-gray-700">
-        Dica para o inspetor
+      <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+        <Info className="h-4 w-4" />
+        Dica/Instrução
       </label>
       <Textarea
-        placeholder="Digite uma dica que será exibida para ajudar o inspetor..."
-        value={userHint}
+        placeholder="Adicione uma dica ou instrução para esta pergunta (opcional)"
+        value={question.hint || ""}
         onChange={(e) => onUpdate({ ...question, hint: e.target.value })}
-        className="w-full"
+        className="resize-none"
         rows={2}
       />
+      <p className="text-xs text-gray-500">
+        Esta dica será exibida durante a execução da inspeção
+      </p>
     </div>
   );
 }
