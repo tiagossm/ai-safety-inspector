@@ -39,9 +39,11 @@ export function QuestionEditor({
   const [newOption, setNewOption] = useState("");
 
   /* garante que trabalhamos sempre com os literais padronizados */
-  const frontendResponseType: StandardResponseType = question.responseType
+  const rawFrontendType = question.responseType
     ? convertToFrontendType(question.responseType)
     : "yes_no";
+  const frontendResponseType: StandardResponseType =
+    typeof rawFrontendType === "string" ? (rawFrontendType as StandardResponseType) : "text";
 
   const handleUpdate = (field: keyof ChecklistQuestion, value: any) => {
     if (!onUpdate) return;
@@ -159,7 +161,7 @@ export function QuestionEditor({
             <ResponseTypeSelector
               value={frontendResponseType}
               onChange={handleResponseTypeChange}
-              showDescriptions
+              showDescriptions={true}
             />
           </div>
 
@@ -270,28 +272,58 @@ export function QuestionEditor({
             Opções de mídia
           </label>
           <div className="flex flex-wrap gap-2 mt-1">
-            {[
-              ["allowsPhoto", question.allowsPhoto, Image, "Imagem"],
-              ["allowsVideo", question.allowsVideo, Video, "Vídeo"],
-              ["allowsAudio", question.allowsAudio, Mic, "Áudio"],
-              ["allowsFiles", question.allowsFiles, FileText, "Anexo"]
-            ].map(([field, status, Icon, label]) => (
-              <Button
-                key={field as string}
-                type="button"
-                variant={status ? "default" : "outline"}
-                size="sm"
-                className="gap-2 min-w-[110px]"
-                title={`Permitir ${label.toLowerCase()}`}
-                onClick={() =>
-                  handleUpdate(field as keyof ChecklistQuestion, !status)
-                }
-                aria-label={`Permitir anexar ${label.toLowerCase()}`}
-              >
-                <Icon className="h-4 w-4" />
-                <span>{label}</span>
-              </Button>
-            ))}
+            <Button
+              type="button"
+              variant={question.allowsPhoto ? "default" : "outline"}
+              size="sm"
+              className="gap-2 min-w-[110px]"
+              title="Permitir fotos"
+              onClick={() => handleUpdate("allowsPhoto", !question.allowsPhoto)}
+              aria-label="Permitir anexar imagens"
+              data-active={question.allowsPhoto ? "true" : "false"}
+            >
+              <Image className="h-4 w-4" />
+              <span>Imagem</span>
+            </Button>
+            <Button
+              type="button"
+              variant={question.allowsVideo ? "default" : "outline"}
+              size="sm"
+              className="gap-2 min-w-[110px]"
+              title="Permitir vídeos"
+              onClick={() => handleUpdate("allowsVideo", !question.allowsVideo)}
+              aria-label="Permitir anexar vídeos"
+              data-active={question.allowsVideo ? "true" : "false"}
+            >
+              <Video className="h-4 w-4" />
+              <span>Vídeo</span>
+            </Button>
+            <Button
+              type="button"
+              variant={question.allowsAudio ? "default" : "outline"}
+              size="sm"
+              className="gap-2 min-w-[110px]"
+              title="Permitir áudios"
+              onClick={() => handleUpdate("allowsAudio", !question.allowsAudio)}
+              aria-label="Permitir anexar áudios"
+              data-active={question.allowsAudio ? "true" : "false"}
+            >
+              <Mic className="h-4 w-4" />
+              <span>Áudio</span>
+            </Button>
+            <Button
+              type="button"
+              variant={question.allowsFiles ? "default" : "outline"}
+              size="sm"
+              className="gap-2 min-w-[110px]"
+              title="Permitir arquivos"
+              onClick={() => handleUpdate("allowsFiles", !question.allowsFiles)}
+              aria-label="Permitir anexar arquivos"
+              data-active={question.allowsFiles ? "true" : "false"}
+            >
+              <FileText className="h-4 w-4" />
+              <span>Anexo</span>
+            </Button>
           </div>
         </div>
 

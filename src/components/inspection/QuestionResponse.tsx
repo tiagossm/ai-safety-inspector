@@ -42,28 +42,26 @@ export function QuestionEditor({
   const [newOption, setNewOption] = useState("");
 
   /* Sempre use os literais padronizados no front-end */
-  const frontendResponseType: StandardResponseType = question.responseType
+  const rawFrontendType = question.responseType
     ? convertToFrontendType(question.responseType)
     : "yes_no";
+  const frontendResponseType: StandardResponseType =
+    typeof rawFrontendType === "string" ? (rawFrontendType as StandardResponseType) : "text";
 
   /* status para opções */
   const requiresOptions = TYPES_REQUIRING_OPTIONS.includes(frontendResponseType);
   const hasValidOptions =
     question.options && Array.isArray(question.options) && question.options.length > 0;
 
+  // Corrija o handler para garantir atualização correta dos campos booleanos
   const handleUpdate = (field: keyof ChecklistQuestion, value: any) => {
     if (!onUpdate) return;
 
-    const patch: ChecklistQuestion = {
-      ...question,
-      [field]: value,
-      ...(field === "responseType"
-        ? { responseType: value as StandardResponseType }
-        : {})
-    };
+    // Corrija para garantir que campos booleanos sejam atualizados corretamente
+    let patch: ChecklistQuestion = { ...question, [field]: value };
 
-    /* se mudou o tipo, gerencia opções */
     if (field === "responseType") {
+      patch.responseType = value as StandardResponseType;
       if (!TYPES_REQUIRING_OPTIONS.includes(value as StandardResponseType)) {
         patch.options = [];
       } else if (!hasValidOptions) {
@@ -73,7 +71,6 @@ export function QuestionEditor({
 
     onUpdate(patch);
 
-    /* feedback para mídia */
     if (
       field === "allowsPhoto" ||
       field === "allowsVideo" ||
@@ -304,28 +301,58 @@ export function QuestionEditor({
         <div>
           <label className="text-sm font-medium mb-1 block">Opções de mídia</label>
           <div className="flex flex-wrap gap-2 mt-1">
-            {[
-              ["allowsPhoto", question.allowsPhoto, Image, "Imagem"],
-              ["allowsVideo", question.allowsVideo, Video, "Vídeo"],
-              ["allowsAudio", question.allowsAudio, Mic, "Áudio"],
-              ["allowsFiles", question.allowsFiles, FileText, "Anexo"]
-            ].map(([field, status, Icon, label]) => (
-              <Button
-                key={field as string}
-                type="button"
-                variant={status ? "default" : "outline"}
-                size="sm"
-                className="gap-2 min-w-[110px]"
-                title={`Permitir ${label.toLowerCase()}`}
-                onClick={() =>
-                  handleUpdate(field as keyof ChecklistQuestion, !status)
-                }
-                aria-label={`Permitir anexar ${label.toLowerCase()}`}
-              >
-                <Icon className="h-4 w-4" />
-                <span>{label}</span>
-              </Button>
-            ))}
+            <Button
+              type="button"
+              variant={question.allowsPhoto ? "default" : "outline"}
+              size="sm"
+              className="gap-2 min-w-[110px]"
+              title="Permitir fotos"
+              onClick={() => handleUpdate("allowsPhoto", !question.allowsPhoto)}
+              aria-label="Permitir anexar imagens"
+              data-active={question.allowsPhoto ? "true" : "false"}
+            >
+              <Image className="h-4 w-4" />
+              <span>Imagem</span>
+            </Button>
+            <Button
+              type="button"
+              variant={question.allowsVideo ? "default" : "outline"}
+              size="sm"
+              className="gap-2 min-w-[110px]"
+              title="Permitir vídeos"
+              onClick={() => handleUpdate("allowsVideo", !question.allowsVideo)}
+              aria-label="Permitir anexar vídeos"
+              data-active={question.allowsVideo ? "true" : "false"}
+            >
+              <Video className="h-4 w-4" />
+              <span>Vídeo</span>
+            </Button>
+            <Button
+              type="button"
+              variant={question.allowsAudio ? "default" : "outline"}
+              size="sm"
+              className="gap-2 min-w-[110px]"
+              title="Permitir áudios"
+              onClick={() => handleUpdate("allowsAudio", !question.allowsAudio)}
+              aria-label="Permitir anexar áudios"
+              data-active={question.allowsAudio ? "true" : "false"}
+            >
+              <Mic className="h-4 w-4" />
+              <span>Áudio</span>
+            </Button>
+            <Button
+              type="button"
+              variant={question.allowsFiles ? "default" : "outline"}
+              size="sm"
+              className="gap-2 min-w-[110px]"
+              title="Permitir arquivos"
+              onClick={() => handleUpdate("allowsFiles", !question.allowsFiles)}
+              aria-label="Permitir anexar arquivos"
+              data-active={question.allowsFiles ? "true" : "false"}
+            >
+              <FileText className="h-4 w-4" />
+              <span>Anexo</span>
+            </Button>
           </div>
         </div>
 
@@ -353,12 +380,14 @@ export function QuestionEditor({
                 hasSubChecklist={question.hasSubChecklist || false}
                 subChecklistId={question.subChecklistId}
                 onSubChecklistCreated={(subChecklistId) => {
-                  onUpdate?.({
-                    ...question,
-                    hasSubChecklist: true,
-                    subChecklistId
-                  });
-                  toast.success("Subitems adicionados com sucesso");
+                  if (onUpdate) {
+                    onUpdate({
+                      ...question,
+                      hasSubChecklist: true,
+                      subChecklistId
+                    });
+                    toast.success("Subitems adicionados com sucesso");
+                  }
                 }}
               />
             )}

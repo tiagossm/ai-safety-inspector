@@ -16,12 +16,13 @@ export function ResponseTypeSection({
   onUpdate
 }: ResponseTypeSectionProps) {
   /* sempre em StandardResponseType no front-end */
-  const frontendResponseType: StandardResponseType = question.responseType
+  const rawFrontendType = question.responseType
     ? convertToFrontendType(question.responseType)
     : "yes_no";
+  const frontendResponseType: StandardResponseType =
+    typeof rawFrontendType === "string" ? (rawFrontendType as StandardResponseType) : "text";
 
   const handleResponseTypeChange = (newType: StandardResponseType) => {
-    /* mantém o valor padronizado; conversão para DB fica para a camada de API */
     onUpdate({ ...question, responseType: newType });
   };
 
