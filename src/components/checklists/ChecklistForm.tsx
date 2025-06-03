@@ -20,9 +20,10 @@ import { toast } from "sonner";
 import { CompanyListItem } from "@/hooks/checklist/useFilterChecklists";
 
 interface ChecklistFormProps {
-  checklist: Checklist | null;
-  users: any[];
-  setChecklist: (checklist: Checklist) => void;
+  checklist?: Checklist | null;
+  users?: any[];
+  setChecklist?: (checklist: Checklist) => void;
+  onCreate?: (checklistData: any) => void;
 }
 
 // Create a DatePicker component to replace the missing module
@@ -59,7 +60,7 @@ function DatePicker({ date, setDate, className }: {
   );
 }
 
-export default function ChecklistForm({ checklist, users, setChecklist }: ChecklistFormProps) {
+export default function ChecklistForm({ checklist, users = [], setChecklist, onCreate }: ChecklistFormProps) {
   const [isTemplate, setIsTemplate] = useState(false);
   const [companies, setCompanies] = useState<CompanyListItem[]>([]);
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
@@ -100,7 +101,7 @@ export default function ChecklistForm({ checklist, users, setChecklist }: Checkl
   }, [checklist]);
 
   const handleChange = (field: string, value: any) => {
-    if (checklist) {
+    if (checklist && setChecklist) {
       // Log the change for debugging
       console.log(`Updating checklist field ${field}:`, value);
       
@@ -119,16 +120,24 @@ export default function ChecklistForm({ checklist, users, setChecklist }: Checkl
     }
   };
 
-  if (!checklist) return null;
+  // Handle creation mode when onCreate is provided
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (onCreate && checklist) {
+      onCreate(checklist);
+    }
+  };
 
-  return (
+  if (!checklist && !onCreate) return null;
+
+  const formContent = (
     <div className="space-y-6 p-6 border rounded-lg bg-card">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <Label htmlFor="title">Nome do Checklist</Label>
           <Input
             id="title"
-            value={checklist.title || ""}
+            value={checklist?.title || ""}
             onChange={(e) => handleChange("title", e.target.value)}
             placeholder="Digite o título do checklist"
           />
@@ -268,4 +277,18 @@ export default function ChecklistForm({ checklist, users, setChecklist }: Checkl
       </div>
     </div>
   );
+
+  // If onCreate is provided, wrap in a form
+  if (onCreate) {
+    return (
+      <form onSubmit={handleSubmit}>
+        {formContent}
+        <div className="mt-6 flex justify-end">
+          <Button type="submit">Criar Checklist</Button>
+        </div>
+      </form>
+    );
+  }
+
+  return formContent;
 }
