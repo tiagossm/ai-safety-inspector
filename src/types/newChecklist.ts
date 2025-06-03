@@ -105,7 +105,7 @@ export interface BatchUpdateResult {
   count: number;
 }
 
-// Interface atualizada com tipos padronizados e propriedades hierárquicas completas
+// Interface completamente atualizada com todas as propriedades hierárquicas necessárias
 export interface ChecklistQuestion {
   id: string;
   text: string;
@@ -125,11 +125,11 @@ export interface ChecklistQuestion {
   hasSubChecklist?: boolean;
   subChecklistId?: string;
   hint?: string;
-  // Propriedades hierárquicas completas
-  level?: number;
-  path?: string;
+  // Propriedades hierárquicas obrigatórias para o sistema
+  level: number;
+  path: string;
   displayCondition?: any;
-  isConditional?: boolean;
+  isConditional: boolean;
 }
 
 // Extended InspectionDetails interface with all required properties
