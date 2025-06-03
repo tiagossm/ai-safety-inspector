@@ -64,6 +64,7 @@ export function SubChecklistQuestions({
                 <QuestionEditor
                   question={question}
                   onUpdate={onUpdateQuestion}
+                  onDelete={onDeleteQuestion}
                   isSubQuestion={true}
                 />
               </div>
