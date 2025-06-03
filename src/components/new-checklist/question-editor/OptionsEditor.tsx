@@ -45,7 +45,7 @@ export function OptionsEditor({ question, onUpdate }: OptionsEditorProps) {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 mt-2 border-t pt-2">
       {options.map((option, index) => (
         <div key={index} className="flex items-center gap-2 group">
           <div className="flex items-center">
@@ -74,7 +74,7 @@ export function OptionsEditor({ question, onUpdate }: OptionsEditorProps) {
         </div>
       ))}
       
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 mt-2">
         <div className="flex items-center">
           <span className="text-sm text-gray-600 ml-1 min-w-[2rem]">
             {options.length + 1}.
@@ -82,7 +82,7 @@ export function OptionsEditor({ question, onUpdate }: OptionsEditorProps) {
         </div>
         
         <Input
-          placeholder="Adicionar opção"
+          placeholder="Nova opção"
           value={newOption}
           onChange={(e) => setNewOption(e.target.value)}
           className="flex-1"
@@ -96,13 +96,12 @@ export function OptionsEditor({ question, onUpdate }: OptionsEditorProps) {
         
         <Button
           type="button"
-          variant="ghost"
-          size="icon"
+          variant="outline"
           onClick={addOption}
           disabled={!newOption.trim()}
-          className="text-gray-400 hover:text-blue-500"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-4 w-4 mr-2" />
+          Adicionar
         </Button>
       </div>
     </div>

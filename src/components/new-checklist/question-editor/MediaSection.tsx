@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Button } from "@/components/ui/button";
 import { Image, Video, Mic, FileText } from "lucide-react";
@@ -12,6 +12,26 @@ interface MediaSectionProps {
 }
 
 export function MediaSection({ question, onUpdate, enableAllMedia }: MediaSectionProps) {
+  // Sincroniza as opções de mídia com enableAllMedia
+  useEffect(() => {
+    if (enableAllMedia !== undefined) {
+      if (
+        question.allowsPhoto !== enableAllMedia ||
+        question.allowsVideo !== enableAllMedia ||
+        question.allowsAudio !== enableAllMedia ||
+        question.allowsFiles !== enableAllMedia
+      ) {
+        onUpdate({
+          ...question,
+          allowsPhoto: enableAllMedia,
+          allowsVideo: enableAllMedia,
+          allowsAudio: enableAllMedia,
+          allowsFiles: enableAllMedia
+        });
+      }
+    }
+  }, [enableAllMedia, question, onUpdate]);
+
   const handleMediaToggle = (field: keyof ChecklistQuestion, value: boolean) => {
     onUpdate({ ...question, [field]: value });
     

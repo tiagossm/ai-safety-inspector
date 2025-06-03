@@ -1,8 +1,9 @@
+
 import React from "react";
 import { useChecklistEditor } from "@/contexts/ChecklistEditorContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { QuestionCard } from "../question-editor/QuestionCard";
+import { QuestionEditor } from "../question-editor/QuestionEditor";
 import { Switch } from "@/components/ui/switch";
 
 export function ChecklistQuestionList() {
@@ -48,7 +49,7 @@ export function ChecklistQuestionList() {
             {questions
               .sort((a, b) => a.order - b.order)
               .map((question) => (
-                <QuestionCard
+                <QuestionEditor
                   key={question.id}
                   question={question}
                   onUpdate={handleUpdateQuestion}
@@ -94,7 +95,7 @@ export function ChecklistQuestionList() {
                 {groupQuestions
                   .sort((a, b) => a.order - b.order)
                   .map((question) => (
-                    <QuestionCard
+                    <QuestionEditor
                       key={question.id}
                       question={question}
                       onUpdate={handleUpdateQuestion}
