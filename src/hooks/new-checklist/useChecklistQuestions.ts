@@ -33,7 +33,7 @@ export function useChecklistQuestions(
     };
     
     setQuestions(prevQuestions => [...prevQuestions, newQuestion]);
-    toast.success("Pergunta adicionada", { duration: 5000 });
+    toast.success("Pergunta adicionada", { duration: 3000 });
     return newId;
   }, [questions, setQuestions, enableAllMedia]);
 
@@ -51,23 +51,23 @@ export function useChecklistQuestions(
     // If it's a new question (not yet saved to DB), just remove it
     if (questionId.startsWith('new-')) {
       setQuestions(prevQuestions => prevQuestions.filter(q => q.id !== questionId));
-      toast.success("Pergunta removida", { duration: 5000 });
+      toast.success("Pergunta removida", { duration: 3000 });
       return;
     }
     
     // For existing questions, mark for deletion
     setDeletedQuestionIds(prev => [...prev, questionId]);
     setQuestions(prevQuestions => prevQuestions.filter(q => q.id !== questionId));
-    toast.success("Pergunta removida", { duration: 5000 });
+    toast.success("Pergunta removida", { duration: 3000 });
   }, [setQuestions, setDeletedQuestionIds]);
 
-  // Função melhorada para toggle de todas as opções de mídia
+  // Função corrigida para toggle de todas as opções de mídia
   const toggleAllMediaOptions = useCallback((enabled: boolean) => {
     console.log("toggleAllMediaOptions chamado com:", enabled);
     
     setEnableAllMedia(enabled);
     
-    // Atualizar todas as perguntas existentes
+    // Atualizar todas as perguntas existentes com as novas configurações de mídia
     setQuestions(prevQuestions => 
       prevQuestions.map(question => ({
         ...question,
@@ -78,11 +78,11 @@ export function useChecklistQuestions(
       }))
     );
     
-    // Adicionar notificação toast
+    // Notificação de feedback
     if (enabled) {
-      toast.success("Todos os recursos de mídia ativados para todas as perguntas", { duration: 5000 });
+      toast.success("Todos os recursos de mídia ativados para todas as perguntas", { duration: 3000 });
     } else {
-      toast.success("Todos os recursos de mídia desativados para todas as perguntas", { duration: 5000 });
+      toast.success("Todos os recursos de mídia desativados para todas as perguntas", { duration: 3000 });
     }
   }, [setQuestions]);
 

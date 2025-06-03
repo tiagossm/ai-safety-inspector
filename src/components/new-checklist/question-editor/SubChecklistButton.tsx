@@ -1,11 +1,14 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { FileCheck, Plus, Loader2 } from "lucide-react";
+import { FileCheck, Plus, Loader2, Sparkles } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SubChecklistAIGenerator } from "./SubChecklistAIGenerator";
+import { ChecklistQuestion } from "@/types/newChecklist";
 import { toast } from "sonner";
 
 interface SubChecklistButtonProps {
@@ -13,18 +16,21 @@ interface SubChecklistButtonProps {
   hasSubChecklist: boolean;
   subChecklistId?: string;
   onSubChecklistCreated: (subChecklistId: string) => void;
+  parentQuestion: ChecklistQuestion;
 }
 
 export function SubChecklistButton({
   parentQuestionId,
   hasSubChecklist,
   subChecklistId,
-  onSubChecklistCreated
+  onSubChecklistCreated,
+  parentQuestion
 }: SubChecklistButtonProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [subChecklistTitle, setSubChecklistTitle] = useState("");
   const [subChecklistDescription, setSubChecklistDescription] = useState("");
+  const [activeTab, setActiveTab] = useState("manual");
 
   const handleCreateSubChecklist = async () => {
     if (!subChecklistTitle.trim()) {
@@ -99,64 +105,87 @@ export function SubChecklistButton({
           Adicionar Sub-checklist
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Criar Sub-checklist</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="title" className="text-right">
-              Título
-            </Label>
-            <Input
-              id="title"
-              value={subChecklistTitle}
-              onChange={(e) => setSubChecklistTitle(e.target.value)}
-              className="col-span-3"
-              placeholder="Nome do sub-checklist"
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="manual">Manual</TabsTrigger>
+            <TabsTrigger value="ai">
+              <Sparkles className="h-4 w-4 mr-2" />
+              Com IA
+            </TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="manual" className="space-y-4">
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="title" className="text-right">
+                  Título
+                </Label>
+                <Input
+                  id="title"
+                  value={subChecklistTitle}
+                  onChange={(e) => setSubChecklistTitle(e.target.value)}
+                  className="col-span-3"
+                  placeholder="Nome do sub-checklist"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="description" className="text-right">
+                  Descrição
+                </Label>
+                <Textarea
+                  id="description"
+                  value={subChecklistDescription}
+                  onChange={(e) => setSubChecklistDescription(e.target.value)}
+                  className="col-span-3"
+                  placeholder="Descrição opcional"
+                  rows={3}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsDialogOpen(false)}
+                disabled={isCreating}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                onClick={handleCreateSubChecklist}
+                disabled={isCreating || !subChecklistTitle.trim()}
+              >
+                {isCreating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Criando...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Criar
+                  </>
+                )}
+              </Button>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="ai" className="space-y-4">
+            <SubChecklistAIGenerator
+              parentQuestion={parentQuestion}
+              onSubChecklistCreated={(id) => {
+                onSubChecklistCreated(id);
+                setIsDialogOpen(false);
+              }}
             />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="description" className="text-right">
-              Descrição
-            </Label>
-            <Textarea
-              id="description"
-              value={subChecklistDescription}
-              onChange={(e) => setSubChecklistDescription(e.target.value)}
-              className="col-span-3"
-              placeholder="Descrição opcional"
-              rows={3}
-            />
-          </div>
-        </div>
-        <div className="flex justify-end gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setIsDialogOpen(false)}
-            disabled={isCreating}
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="button"
-            onClick={handleCreateSubChecklist}
-            disabled={isCreating || !subChecklistTitle.trim()}
-          >
-            {isCreating ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Criando...
-              </>
-            ) : (
-              <>
-                <Plus className="h-4 w-4 mr-2" />
-                Criar
-              </>
-            )}
-          </Button>
-        </div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

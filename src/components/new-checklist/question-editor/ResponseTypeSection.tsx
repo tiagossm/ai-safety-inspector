@@ -17,6 +17,8 @@ export function ResponseTypeSection({
   const currentResponseType = question.responseType || "yes_no";
   
   const handleResponseTypeChange = (newType: StandardResponseType) => {
+    console.log("Mudando tipo de resposta de", currentResponseType, "para", newType);
+    
     // Criar um novo objeto para garantir que o React detecte a mudança
     const updatedQuestion = { 
       ...question, 
@@ -27,12 +29,14 @@ export function ResponseTypeSection({
     if (!["multiple_choice", "checkboxes", "dropdown"].includes(newType)) {
       updatedQuestion.options = [];
     }
-    // Se o novo tipo requer opções mas não há opções, criar opções padrão
+    // Se o novo tipo requer opções mas não há opções, será tratado pela OptionsSection
     else if (["multiple_choice", "checkboxes", "dropdown"].includes(newType) && 
              (!updatedQuestion.options || updatedQuestion.options.length === 0)) {
-      updatedQuestion.options = ["Opção 1", "Opção 2"];
+      // Não criar opções aqui, deixar para a OptionsSection
+      updatedQuestion.options = [];
     }
     
+    console.log("Pergunta atualizada:", updatedQuestion);
     onUpdate(updatedQuestion);
   };
 

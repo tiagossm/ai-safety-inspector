@@ -13,7 +13,6 @@ interface MediaSectionProps {
 
 export function MediaSection({ question, onUpdate, enableAllMedia }: MediaSectionProps) {
   const handleMediaToggle = (field: keyof ChecklistQuestion, value: boolean) => {
-    // Criar um novo objeto para garantir que o React detecte a mudança
     const updatedQuestion = { 
       ...question, 
       [field]: value 
@@ -46,11 +45,7 @@ export function MediaSection({ question, onUpdate, enableAllMedia }: MediaSectio
           type="button"
           variant={question.allowsPhoto ? "default" : "outline"}
           size="sm"
-          className={`justify-start gap-2 ${
-            question.allowsPhoto 
-              ? "bg-primary text-primary-foreground" 
-              : "border-gray-300 text-gray-700 hover:bg-gray-50"
-          }`}
+          className="justify-start gap-2"
           onClick={() => handleMediaToggle("allowsPhoto", !question.allowsPhoto)}
         >
           <Image className="h-4 w-4" />
@@ -61,11 +56,7 @@ export function MediaSection({ question, onUpdate, enableAllMedia }: MediaSectio
           type="button"
           variant={question.allowsVideo ? "default" : "outline"}
           size="sm"
-          className={`justify-start gap-2 ${
-            question.allowsVideo 
-              ? "bg-primary text-primary-foreground" 
-              : "border-gray-300 text-gray-700 hover:bg-gray-50"
-          }`}
+          className="justify-start gap-2"
           onClick={() => handleMediaToggle("allowsVideo", !question.allowsVideo)}
         >
           <Video className="h-4 w-4" />
@@ -76,11 +67,7 @@ export function MediaSection({ question, onUpdate, enableAllMedia }: MediaSectio
           type="button"
           variant={question.allowsAudio ? "default" : "outline"}
           size="sm"
-          className={`justify-start gap-2 ${
-            question.allowsAudio 
-              ? "bg-primary text-primary-foreground" 
-              : "border-gray-300 text-gray-700 hover:bg-gray-50"
-          }`}
+          className="justify-start gap-2"
           onClick={() => handleMediaToggle("allowsAudio", !question.allowsAudio)}
         >
           <Mic className="h-4 w-4" />
@@ -91,11 +78,7 @@ export function MediaSection({ question, onUpdate, enableAllMedia }: MediaSectio
           type="button"
           variant={question.allowsFiles ? "default" : "outline"}
           size="sm"
-          className={`justify-start gap-2 ${
-            question.allowsFiles 
-              ? "bg-primary text-primary-foreground" 
-              : "border-gray-300 text-gray-700 hover:bg-gray-50"
-          }`}
+          className="justify-start gap-2"
           onClick={() => handleMediaToggle("allowsFiles", !question.allowsFiles)}
         >
           <FileText className="h-4 w-4" />

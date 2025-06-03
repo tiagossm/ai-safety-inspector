@@ -34,8 +34,21 @@ export function OptionsSection({ question, onUpdate }: OptionsSectionProps) {
   useEffect(() => {
     if (requiresOptions && !hasValidOptions) {
       setShowOptionsEditor(true);
+    } else if (requiresOptions && hasValidOptions) {
+      setShowOptionsEditor(false);
     }
   }, [requiresOptions, hasValidOptions]);
+
+  // Auto-cria opções padrão se necessário
+  useEffect(() => {
+    if (requiresOptions && !hasValidOptions) {
+      const updatedQuestion = {
+        ...question,
+        options: ["Opção 1", "Opção 2"]
+      };
+      onUpdate(updatedQuestion);
+    }
+  }, [requiresOptions, hasValidOptions, question, onUpdate]);
 
   if (!requiresOptions) {
     return null;
@@ -54,14 +67,16 @@ export function OptionsSection({ question, onUpdate }: OptionsSectionProps) {
               <span>Obrigatório</span>
             </div>
           )}
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowOptionsEditor(!showOptionsEditor)}
-          >
-            {showOptionsEditor ? "Ocultar" : "Editar opções"}
-          </Button>
+          {hasValidOptions && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowOptionsEditor(!showOptionsEditor)}
+            >
+              {showOptionsEditor ? "Ocultar" : "Editar opções"}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -77,6 +92,12 @@ export function OptionsSection({ question, onUpdate }: OptionsSectionProps) {
           question={question} 
           onUpdate={onUpdate} 
         />
+      )}
+
+      {hasValidOptions && !showOptionsEditor && (
+        <div className="text-xs text-gray-500">
+          {question.options?.length} opções configuradas
+        </div>
       )}
     </div>
   );
