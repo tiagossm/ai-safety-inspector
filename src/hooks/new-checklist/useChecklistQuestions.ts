@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { toast } from "sonner";
@@ -40,8 +41,8 @@ export function useChecklistQuestions(
     setQuestions((prev) =>
       prev.map((q) =>
         q.id === updated.id
-          ? { ...q, ...updated, options: updated.options ? [...updated.options] : [] }
-          : q // NÃO faça spread aqui, mantenha o objeto original para não quebrar referências
+          ? { ...updated, options: updated.options ? [...updated.options] : [] }
+          : q
       )
     );
   }
@@ -60,11 +61,13 @@ export function useChecklistQuestions(
     toast.success("Pergunta removida", { duration: 5000 });
   }, [setQuestions, setDeletedQuestionIds]);
 
-  // Updated toggle all media options function to include allowsFiles
+  // Função melhorada para toggle de todas as opções de mídia
   const toggleAllMediaOptions = useCallback((enabled: boolean) => {
+    console.log("toggleAllMediaOptions chamado com:", enabled);
+    
     setEnableAllMedia(enabled);
     
-    // Update all questions to enable/disable media options
+    // Atualizar todas as perguntas existentes
     setQuestions(prevQuestions => 
       prevQuestions.map(question => ({
         ...question,
@@ -75,11 +78,11 @@ export function useChecklistQuestions(
       }))
     );
     
-    // Add toast notification
+    // Adicionar notificação toast
     if (enabled) {
-      toast.success("Todos os recursos de mídia ativados", { duration: 5000 });
+      toast.success("Todos os recursos de mídia ativados para todas as perguntas", { duration: 5000 });
     } else {
-      toast.success("Todos os recursos de mídia desativados", { duration: 5000 });
+      toast.success("Todos os recursos de mídia desativados para todas as perguntas", { duration: 5000 });
     }
   }, [setQuestions]);
 

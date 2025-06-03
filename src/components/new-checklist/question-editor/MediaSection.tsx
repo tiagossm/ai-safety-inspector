@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Button } from "@/components/ui/button";
 import { Image, Video, Mic, FileText } from "lucide-react";
@@ -12,28 +12,14 @@ interface MediaSectionProps {
 }
 
 export function MediaSection({ question, onUpdate, enableAllMedia }: MediaSectionProps) {
-  // Sincroniza as opções de mídia com enableAllMedia
-  useEffect(() => {
-    if (enableAllMedia !== undefined) {
-      if (
-        question.allowsPhoto !== enableAllMedia ||
-        question.allowsVideo !== enableAllMedia ||
-        question.allowsAudio !== enableAllMedia ||
-        question.allowsFiles !== enableAllMedia
-      ) {
-        onUpdate({
-          ...question,
-          allowsPhoto: enableAllMedia,
-          allowsVideo: enableAllMedia,
-          allowsAudio: enableAllMedia,
-          allowsFiles: enableAllMedia
-        });
-      }
-    }
-  }, [enableAllMedia, question, onUpdate]);
-
   const handleMediaToggle = (field: keyof ChecklistQuestion, value: boolean) => {
-    onUpdate({ ...question, [field]: value });
+    // Criar um novo objeto para garantir que o React detecte a mudança
+    const updatedQuestion = { 
+      ...question, 
+      [field]: value 
+    };
+    
+    onUpdate(updatedQuestion);
     
     const mediaType = getMediaTypeName(field);
     const status = value ? "ativada" : "desativada";
@@ -60,7 +46,11 @@ export function MediaSection({ question, onUpdate, enableAllMedia }: MediaSectio
           type="button"
           variant={question.allowsPhoto ? "default" : "outline"}
           size="sm"
-          className="justify-start gap-2"
+          className={`justify-start gap-2 ${
+            question.allowsPhoto 
+              ? "bg-primary text-primary-foreground" 
+              : "border-gray-300 text-gray-700 hover:bg-gray-50"
+          }`}
           onClick={() => handleMediaToggle("allowsPhoto", !question.allowsPhoto)}
         >
           <Image className="h-4 w-4" />
@@ -71,7 +61,11 @@ export function MediaSection({ question, onUpdate, enableAllMedia }: MediaSectio
           type="button"
           variant={question.allowsVideo ? "default" : "outline"}
           size="sm"
-          className="justify-start gap-2"
+          className={`justify-start gap-2 ${
+            question.allowsVideo 
+              ? "bg-primary text-primary-foreground" 
+              : "border-gray-300 text-gray-700 hover:bg-gray-50"
+          }`}
           onClick={() => handleMediaToggle("allowsVideo", !question.allowsVideo)}
         >
           <Video className="h-4 w-4" />
@@ -82,7 +76,11 @@ export function MediaSection({ question, onUpdate, enableAllMedia }: MediaSectio
           type="button"
           variant={question.allowsAudio ? "default" : "outline"}
           size="sm"
-          className="justify-start gap-2"
+          className={`justify-start gap-2 ${
+            question.allowsAudio 
+              ? "bg-primary text-primary-foreground" 
+              : "border-gray-300 text-gray-700 hover:bg-gray-50"
+          }`}
           onClick={() => handleMediaToggle("allowsAudio", !question.allowsAudio)}
         >
           <Mic className="h-4 w-4" />
@@ -93,7 +91,11 @@ export function MediaSection({ question, onUpdate, enableAllMedia }: MediaSectio
           type="button"
           variant={question.allowsFiles ? "default" : "outline"}
           size="sm"
-          className="justify-start gap-2"
+          className={`justify-start gap-2 ${
+            question.allowsFiles 
+              ? "bg-primary text-primary-foreground" 
+              : "border-gray-300 text-gray-700 hover:bg-gray-50"
+          }`}
           onClick={() => handleMediaToggle("allowsFiles", !question.allowsFiles)}
         >
           <FileText className="h-4 w-4" />

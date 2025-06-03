@@ -1,10 +1,8 @@
+
 import React from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { ResponseTypeSelector } from "@/components/common/ResponseTypeSelector";
-import {
-  StandardResponseType,
-  convertToFrontendType
-} from "@/types/responseTypes";
+import { StandardResponseType } from "@/types/responseTypes";
 
 interface ResponseTypeSectionProps {
   question: ChecklistQuestion;
@@ -15,15 +13,27 @@ export function ResponseTypeSection({
   question,
   onUpdate
 }: ResponseTypeSectionProps) {
-  /* sempre em StandardResponseType no front-end */
-  const rawFrontendType = question.responseType
-    ? convertToFrontendType(question.responseType)
-    : "yes_no";
-  const frontendResponseType: StandardResponseType =
-    typeof rawFrontendType === "string" ? (rawFrontendType as StandardResponseType) : "text";
-
+  // Garantir que sempre temos um tipo válido
+  const currentResponseType = question.responseType || "yes_no";
+  
   const handleResponseTypeChange = (newType: StandardResponseType) => {
-    onUpdate({ ...question, responseType: newType });
+    // Criar um novo objeto para garantir que o React detecte a mudança
+    const updatedQuestion = { 
+      ...question, 
+      responseType: newType 
+    };
+    
+    // Se o novo tipo não requer opções, limpar as opções existentes
+    if (!["multiple_choice", "checkboxes", "dropdown"].includes(newType)) {
+      updatedQuestion.options = [];
+    }
+    // Se o novo tipo requer opções mas não há opções, criar opções padrão
+    else if (["multiple_choice", "checkboxes", "dropdown"].includes(newType) && 
+             (!updatedQuestion.options || updatedQuestion.options.length === 0)) {
+      updatedQuestion.options = ["Opção 1", "Opção 2"];
+    }
+    
+    onUpdate(updatedQuestion);
   };
 
   return (
@@ -32,7 +42,7 @@ export function ResponseTypeSection({
         Tipo de resposta
       </label>
       <ResponseTypeSelector
-        value={frontendResponseType}
+        value={currentResponseType}
         onChange={handleResponseTypeChange}
         showDescriptions
       />

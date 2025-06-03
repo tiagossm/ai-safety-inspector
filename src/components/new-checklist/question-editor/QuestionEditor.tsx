@@ -20,23 +20,36 @@ export function QuestionEditor({
   isSubQuestion = false,
   enableAllMedia = false
 }: QuestionEditorProps) {
+  // Função para garantir que as atualizações sejam propagadas corretamente
+  const handleQuestionUpdate = (updatedQuestion: ChecklistQuestion) => {
+    // Log para debug
+    console.log("QuestionEditor: Atualizando pergunta", {
+      id: question.id,
+      updatedFields: Object.keys(updatedQuestion).filter(
+        key => updatedQuestion[key as keyof ChecklistQuestion] !== question[key as keyof ChecklistQuestion]
+      )
+    });
+    
+    onUpdate(updatedQuestion);
+  };
+
   return (
     <div className={`border rounded-lg ${isSubQuestion ? 'bg-gray-50 border-gray-200' : 'bg-white border-gray-300'} overflow-hidden`}>
       <QuestionHeader 
         question={question}
-        onUpdate={onUpdate}
+        onUpdate={handleQuestionUpdate}
         isSubQuestion={isSubQuestion}
       />
       
       <QuestionContent 
         question={question}
-        onUpdate={onUpdate}
+        onUpdate={handleQuestionUpdate}
         enableAllMedia={enableAllMedia}
       />
       
       <QuestionActions 
         question={question}
-        onUpdate={onUpdate}
+        onUpdate={handleQuestionUpdate}
         onDelete={onDelete}
         isSubQuestion={isSubQuestion}
       />
