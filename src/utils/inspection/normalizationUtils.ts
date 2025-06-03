@@ -1,4 +1,3 @@
-
 /**
  * Normalizes various input response types to a consistent set of values
  * This helps handle different response type formats across the application
@@ -107,3 +106,5 @@ export const isNegativeResponse = (value: any): boolean => {
   
   return false;
 };
+
+export const normalizeAIResponseType = normalizeResponseType;
