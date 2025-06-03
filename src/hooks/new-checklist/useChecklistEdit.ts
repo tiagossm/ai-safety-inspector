@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
@@ -53,7 +52,6 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
     state.deletedQuestionIds
   );
 
-  // Improved useEffect to ensure proper data loading from the checklist
   useEffect(() => {
     if (checklist) {
       console.log("Setting initial checklist data:", checklist);
@@ -63,11 +61,9 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
       state.setIsTemplate(checklist.isTemplate || false);
       state.setStatus(checklist.status === "inactive" ? "inactive" : "active");
 
-      // Handle questions and groups properly
       if (checklist.questions && Array.isArray(checklist.questions) && checklist.questions.length > 0) {
         console.log(`Checklist has ${checklist.questions.length} questions`);
         
-        // Adicione este mapeamento para corrigir tipos antigos e traduzidos
         const normalizeResponseType = (type: string) => {
           if (!type) return "yes_no";
           if (type === "hora") return "time";
@@ -78,7 +74,6 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
           if (type === "assinatura") return "signature";
           if (type === "seleção múltipla") return "multiple_choice";
           if (type === "imagem") return "photo";
-          // já aceita os tipos em inglês também
           return type;
         };
 
@@ -140,7 +135,6 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
     }
   }, [checklist]);
 
-  // Save handler with proper navigation
   const handleSave = async () => {
     if (isSubmitting) return false;
     
@@ -150,7 +144,7 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
       
       if (success) {
         toast.success("Checklist salvo com sucesso!", { duration: 5000 });
-        navigate("/new-checklists"); // Navigate to checklist list on success
+        navigate("/new-checklists");
         return true;
       } else {
         toast.error("Erro ao salvar checklist", { duration: 5000 });
@@ -163,7 +157,6 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
     }
   };
 
-  // Start Inspection handler with proper navigation
   const handleStartInspection = async () => {
     try {
       if (!id) {
@@ -173,14 +166,12 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
       
       toast.info("Preparando inspeção...", { duration: 2000 });
       
-      // Save checklist first
       const saveSuccess = await handleSubmit();
       if (!saveSuccess) {
         toast.error("Não foi possível salvar o checklist antes de iniciar a inspeção", { duration: 5000 });
         return;
       }
       
-      // Navigate directly to the inspection execution
       console.log(`Redirecionando para execução da inspeção com checklistId=${id}`);
       toast.success("Redirecionando para a inspeção...", { duration: 2000 });
       navigate(`/inspections/${id}/view`);
