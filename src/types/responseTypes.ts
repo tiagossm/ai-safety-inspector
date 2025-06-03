@@ -83,9 +83,10 @@ export function isValidResponseType(type: string): type is StandardResponseType 
   return Object.keys(RESPONSE_TYPE_LABELS).includes(type);
 }
 
-// Conversão segura entre tipos
+// Conversão segura entre tipos - agora retorna StandardResponseType
 export function convertToFrontendType(dbType: string): StandardResponseType {
   const converted = RESPONSE_TYPE_MAP.database[dbType as keyof typeof RESPONSE_TYPE_MAP.database];
+  // Garantir que sempre retornamos um StandardResponseType válido
   return converted || "text";
 }
 

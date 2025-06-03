@@ -15,22 +15,20 @@ interface ResponseTypeSectionProps {
 }
 
 export function ResponseTypeSection({ question, onUpdate }: ResponseTypeSectionProps) {
+  // Convert database response type to frontend type with proper validation
   const rawFrontendType = question.responseType 
     ? convertToFrontendType(question.responseType) 
     : "yes_no";
   
+  // Ensure the type is valid, with explicit type assertion after validation
   const frontendResponseType: StandardResponseType = isValidResponseType(rawFrontendType)
-    ? rawFrontendType
+    ? (rawFrontendType as StandardResponseType)
     : "text";
 
   const handleResponseTypeChange = (newResponseType: StandardResponseType) => {
-    if (isValidResponseType(newResponseType)) {
-      const dbType = convertToDatabaseType(newResponseType);
-      onUpdate({ ...question, responseType: dbType });
-    } else {
-      console.warn(`Invalid response type received: ${newResponseType}, falling back to 'text'`);
-      onUpdate({ ...question, responseType: convertToDatabaseType("text") });
-    }
+    // A função já recebe um StandardResponseType válido do ResponseTypeSelector
+    const dbType = convertToDatabaseType(newResponseType);
+    onUpdate({ ...question, responseType: dbType });
   };
 
   return (

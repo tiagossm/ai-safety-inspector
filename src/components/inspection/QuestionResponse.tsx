@@ -43,14 +43,14 @@ export function QuestionEditor({
   const [showOptionsEditor, setShowOptionsEditor] = useState(false);
   const [newOption, setNewOption] = useState("");
 
-  // Convert database response type to frontend type for proper display
+  // Convert database response type to frontend type with proper validation
   const rawFrontendType = question.responseType 
     ? convertToFrontendType(question.responseType) 
     : "yes_no";
   
-  // Ensure the type is valid, fallback to "text" if not
+  // Ensure the type is valid, with explicit type assertion after validation
   const frontendResponseType: StandardResponseType = isValidResponseType(rawFrontendType)
-    ? rawFrontendType
+    ? (rawFrontendType as StandardResponseType)
     : "text";
 
   // Verifica se o tipo atual requer opções
@@ -86,13 +86,8 @@ export function QuestionEditor({
 
   // Validar e converter o tipo de resposta com verificação de tipo
   const handleResponseTypeChange = (newResponseType: StandardResponseType) => {
-    // Garantir que o valor é válido antes de atualizar
-    if (isValidResponseType(newResponseType)) {
-      handleUpdate("responseType", newResponseType);
-    } else {
-      console.warn(`Invalid response type received: ${newResponseType}, falling back to 'text'`);
-      handleUpdate("responseType", "text");
-    }
+    // A função já recebe um StandardResponseType válido do ResponseTypeSelector
+    handleUpdate("responseType", newResponseType);
   };
 
   const getMediaTypeName = (mediaField: string): string => {
