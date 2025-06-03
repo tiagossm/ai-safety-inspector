@@ -47,7 +47,7 @@ export function QuestionEditor({
   
   // Ensure the type is valid, fallback to "text" if not
   const frontendResponseType: StandardResponseType = isValidResponseType(rawFrontendType)
-    ? (rawFrontendType as StandardResponseType)
+    ? rawFrontendType
     : "text";
 
   const handleUpdate = (field: keyof ChecklistQuestion, value: any) => {
