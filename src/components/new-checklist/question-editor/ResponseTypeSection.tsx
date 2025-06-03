@@ -1,11 +1,9 @@
-
 import React from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { ResponseTypeSelector } from "@/components/common/ResponseTypeSelector";
-import { 
+import {
   StandardResponseType,
-  convertToFrontendType,
-  convertToDatabaseType
+  convertToFrontendType
 } from "@/types/responseTypes";
 
 interface ResponseTypeSectionProps {
@@ -13,16 +11,18 @@ interface ResponseTypeSectionProps {
   onUpdate: (question: ChecklistQuestion) => void;
 }
 
-export function ResponseTypeSection({ question, onUpdate }: ResponseTypeSectionProps) {
-  // Convert database response type to frontend type with proper type assertion
-  const frontendResponseType: StandardResponseType = question.responseType 
-    ? convertToFrontendType(question.responseType) 
+export function ResponseTypeSection({
+  question,
+  onUpdate
+}: ResponseTypeSectionProps) {
+  /* sempre em StandardResponseType no front-end */
+  const frontendResponseType: StandardResponseType = question.responseType
+    ? convertToFrontendType(question.responseType)
     : "yes_no";
 
-  const handleResponseTypeChange = (newResponseType: StandardResponseType) => {
-    // A função já recebe um StandardResponseType válido do ResponseTypeSelector
-    const dbType = convertToDatabaseType(newResponseType);
-    onUpdate({ ...question, responseType: dbType });
+  const handleResponseTypeChange = (newType: StandardResponseType) => {
+    /* mantém o valor padronizado; conversão para DB fica para a camada de API */
+    onUpdate({ ...question, responseType: newType });
   };
 
   return (
@@ -33,7 +33,7 @@ export function ResponseTypeSection({ question, onUpdate }: ResponseTypeSectionP
       <ResponseTypeSelector
         value={frontendResponseType}
         onChange={handleResponseTypeChange}
-        showDescriptions={true}
+        showDescriptions
       />
     </div>
   );

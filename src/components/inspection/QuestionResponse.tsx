@@ -3,7 +3,7 @@ import { ChecklistQuestion } from "@/types/newChecklist";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { 
+import {
   Trash2,
   Plus,
   Image,
@@ -17,10 +17,9 @@ import { Button } from "@/components/ui/button";
 import { SubChecklistButton } from "@/components/new-checklist/question-editor/SubChecklistButton";
 import { toast } from "sonner";
 import { ResponseTypeSelector } from "@/components/common/ResponseTypeSelector";
-import { 
+import {
   StandardResponseType,
   convertToFrontendType,
-  convertToDatabaseType,
   TYPES_REQUIRING_OPTIONS
 } from "@/types/responseTypes";
 
@@ -42,138 +41,143 @@ export function QuestionEditor({
   const [showOptionsEditor, setShowOptionsEditor] = useState(false);
   const [newOption, setNewOption] = useState("");
 
-  // Convert database response type to frontend type with proper type assertion
-  const frontendResponseType: StandardResponseType = question.responseType 
-    ? convertToFrontendType(question.responseType) 
+  /* Sempre use os literais padronizados no front-end */
+  const frontendResponseType: StandardResponseType = question.responseType
+    ? convertToFrontendType(question.responseType)
     : "yes_no";
 
-  // Verifica se o tipo atual requer opções
+  /* status para opções */
   const requiresOptions = TYPES_REQUIRING_OPTIONS.includes(frontendResponseType);
-  const hasValidOptions = question.options && Array.isArray(question.options) && question.options.length > 0;
+  const hasValidOptions =
+    question.options && Array.isArray(question.options) && question.options.length > 0;
 
   const handleUpdate = (field: keyof ChecklistQuestion, value: any) => {
-    if (onUpdate) {
-      let patch = { ...question, [field]: value };
-      if (field === "responseType") {
-        // Convert frontend type to database format
-        const dbType = convertToDatabaseType(value as StandardResponseType);
-        patch.responseType = dbType;
-        
-        // Se mudou para um tipo que não requer opções, limpa as opções
-        if (!TYPES_REQUIRING_OPTIONS.includes(value as StandardResponseType)) {
-          patch.options = [];
-        }
-        // Se mudou para um tipo que requer opções e não tem, adiciona opções padrão
-        else if (!hasValidOptions) {
-          patch.options = ["Opção 1", "Opção 2"];
-        }
-      }
-      onUpdate(patch);
+    if (!onUpdate) return;
 
-      if (field === "allowsPhoto" || field === "allowsVideo" || field === "allowsAudio" || field === "allowsFiles") {
-        const status = value ? "ativada" : "desativada";
-        const mediaType = getMediaTypeName(field);
-        toast.success(`Opção de ${mediaType} ${status}`);
+    const patch: ChecklistQuestion = {
+      ...question,
+      [field]: value,
+      ...(field === "responseType"
+        ? { responseType: value as StandardResponseType }
+        : {})
+    };
+
+    /* se mudou o tipo, gerencia opções */
+    if (field === "responseType") {
+      if (!TYPES_REQUIRING_OPTIONS.includes(value as StandardResponseType)) {
+        patch.options = [];
+      } else if (!hasValidOptions) {
+        patch.options = ["Opção 1", "Opção 2"];
       }
+    }
+
+    onUpdate(patch);
+
+    /* feedback para mídia */
+    if (
+      field === "allowsPhoto" ||
+      field === "allowsVideo" ||
+      field === "allowsAudio" ||
+      field === "allowsFiles"
+    ) {
+      const status = value ? "ativada" : "desativada";
+      const mediaType = getMediaTypeName(field);
+      toast.success(`Opção de ${mediaType} ${status}`);
     }
   };
 
-  // Validar e converter o tipo de resposta com verificação de tipo
-  const handleResponseTypeChange = (newResponseType: StandardResponseType) => {
-    // A função já recebe um StandardResponseType válido do ResponseTypeSelector
-    handleUpdate("responseType", newResponseType);
-  };
+  const handleResponseTypeChange = (newType: StandardResponseType) =>
+    handleUpdate("responseType", newType);
 
   const getMediaTypeName = (mediaField: string): string => {
     switch (mediaField) {
-      case "allowsPhoto": return "imagem";
-      case "allowsVideo": return "vídeo";
-      case "allowsAudio": return "áudio";
-      case "allowsFiles": return "anexo";
-      default: return "mídia";
+      case "allowsPhoto":
+        return "imagem";
+      case "allowsVideo":
+        return "vídeo";
+      case "allowsAudio":
+        return "áudio";
+      case "allowsFiles":
+        return "anexo";
+      default:
+        return "mídia";
     }
   };
 
   const handleAddOption = () => {
-    if (newOption.trim() && onUpdate) {
-      const currentOptions = question.options || [];
-      onUpdate({
-        ...question,
-        options: [...currentOptions, newOption.trim()]
-      });
-      setNewOption("");
-      toast.success("Opção adicionada");
-    }
+    if (!newOption.trim() || !onUpdate) return;
+    const currentOptions = question.options || [];
+    onUpdate({
+      ...question,
+      options: [...currentOptions, newOption.trim()]
+    });
+    setNewOption("");
+    toast.success("Opção adicionada");
   };
 
   const handleRemoveOption = (index: number) => {
-    if (onUpdate) {
-      const currentOptions = [...(question.options || [])];
-      currentOptions.splice(index, 1);
-      onUpdate({
-        ...question,
-        options: currentOptions
-      });
-      toast.success("Opção removida");
-    }
+    if (!onUpdate) return;
+    const currentOptions = [...(question.options || [])];
+    currentOptions.splice(index, 1);
+    onUpdate({ ...question, options: currentOptions });
+    toast.success("Opção removida");
   };
 
   const parseHint = (hint?: string | null): string => {
     if (!hint) return "";
-
     try {
-      if (typeof hint === 'string' && hint.startsWith("{") && hint.endsWith("}")) {
+      if (typeof hint === "string" && hint.startsWith("{") && hint.endsWith("}")) {
         const parsed = JSON.parse(hint);
-        if (parsed.groupId && parsed.groupTitle) {
-          return "";
-        }
+        if (parsed.groupId && parsed.groupTitle) return "";
       }
-    } catch (e) {}
+    } catch {
+      /* ignore */
+    }
     return hint;
   };
 
   const userHint = parseHint(question.hint);
 
-  // Sincroniza as opções de mídia com enableAllMedia
+  /* sincroniza enableAllMedia */
   useEffect(() => {
-    if (onUpdate) {
-      if (
-        question.allowsPhoto !== enableAllMedia ||
-        question.allowsVideo !== enableAllMedia ||
-        question.allowsAudio !== enableAllMedia ||
-        question.allowsFiles !== enableAllMedia
-      ) {
-        onUpdate({
-          ...question,
-          allowsPhoto: enableAllMedia,
-          allowsVideo: enableAllMedia,
-          allowsAudio: enableAllMedia,
-          allowsFiles: enableAllMedia,
-        });
-      }
+    if (!onUpdate) return;
+    if (
+      question.allowsPhoto !== enableAllMedia ||
+      question.allowsVideo !== enableAllMedia ||
+      question.allowsAudio !== enableAllMedia ||
+      question.allowsFiles !== enableAllMedia
+    ) {
+      onUpdate({
+        ...question,
+        allowsPhoto: enableAllMedia,
+        allowsVideo: enableAllMedia,
+        allowsAudio: enableAllMedia,
+        allowsFiles: enableAllMedia
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enableAllMedia]);
 
-  // Auto-abre o editor de opções quando necessário
+  /* auto-abre editor se necessário */
   useEffect(() => {
-    if (requiresOptions && !hasValidOptions) {
-      setShowOptionsEditor(true);
-    }
+    if (requiresOptions && !hasValidOptions) setShowOptionsEditor(true);
   }, [requiresOptions, hasValidOptions]);
 
+  /* --- JSX --- */
   return (
-    <div className={`border rounded-md p-4 ${isSubQuestion ? 'bg-gray-50' : 'bg-white'}`}>
+    <div
+      className={`border rounded-md p-4 ${
+        isSubQuestion ? "bg-gray-50" : "bg-white"
+      }`}
+    >
       <div className="space-y-4">
-        <div>
-          <Textarea
-            placeholder="Texto da pergunta"
-            value={question.text}
-            onChange={(e) => handleUpdate("text", e.target.value)}
-            className="w-full"
-            rows={2}
-          />
-        </div>
+        <Textarea
+          placeholder="Texto da pergunta"
+          value={question.text}
+          onChange={(e) => handleUpdate("text", e.target.value)}
+          className="w-full"
+          rows={2}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -181,10 +185,9 @@ export function QuestionEditor({
             <ResponseTypeSelector
               value={frontendResponseType}
               onChange={handleResponseTypeChange}
-              showDescriptions={true}
+              showDescriptions
             />
-            
-            {/* Alerta para tipos que requerem opções */}
+
             {requiresOptions && !hasValidOptions && (
               <div className="flex items-center gap-1 text-amber-600 text-xs mt-1">
                 <AlertCircle className="h-3 w-3" />
@@ -213,7 +216,6 @@ export function QuestionEditor({
           </div>
         </div>
 
-        {/* Editor de opções - aparece automaticamente para tipos que requerem */}
         {requiresOptions && (
           <div className="mt-4 space-y-2">
             <div className="flex justify-between items-center">
@@ -225,9 +227,9 @@ export function QuestionEditor({
                     <span>Obrigatório</span>
                   </div>
                 )}
-                <Button 
-                  type="button" 
-                  variant="ghost" 
+                <Button
+                  type="button"
+                  variant="ghost"
                   size="sm"
                   onClick={() => setShowOptionsEditor(!showOptionsEditor)}
                 >
@@ -302,57 +304,28 @@ export function QuestionEditor({
         <div>
           <label className="text-sm font-medium mb-1 block">Opções de mídia</label>
           <div className="flex flex-wrap gap-2 mt-1">
-            <Button
-              type="button"
-              variant={question.allowsPhoto ? "default" : "outline"}
-              size="sm"
-              className="gap-2 min-w-[110px]"
-              title="Permitir fotos"
-              onClick={() => handleUpdate("allowsPhoto", !question.allowsPhoto)}
-              aria-label="Permitir anexar imagens"
-            >
-              <Image className="h-4 w-4" />
-              <span>Imagem</span>
-            </Button>
-
-            <Button
-              type="button"
-              variant={question.allowsVideo ? "default" : "outline"}
-              size="sm"
-              className="gap-2 min-w-[110px]"
-              title="Permitir vídeos"
-              onClick={() => handleUpdate("allowsVideo", !question.allowsVideo)}
-              aria-label="Permitir anexar vídeos"
-            >
-              <Video className="h-4 w-4" />
-              <span>Vídeo</span>
-            </Button>
-
-            <Button
-              type="button"
-              variant={question.allowsAudio ? "default" : "outline"}
-              size="sm"
-              className="gap-2 min-w-[110px]"
-              title="Permitir áudios"
-              onClick={() => handleUpdate("allowsAudio", !question.allowsAudio)}
-              aria-label="Permitir anexar áudios"
-            >
-              <Mic className="h-4 w-4" />
-              <span>Áudio</span>
-            </Button>
-
-            <Button
-              type="button"
-              variant={question.allowsFiles ? "default" : "outline"}
-              size="sm"
-              className="gap-2 min-w-[110px]"
-              title="Permitir arquivos"
-              onClick={() => handleUpdate("allowsFiles", !question.allowsFiles)}
-              aria-label="Permitir anexar arquivos"
-            >
-              <FileText className="h-4 w-4" />
-              <span>Anexo</span>
-            </Button>
+            {[
+              ["allowsPhoto", question.allowsPhoto, Image, "Imagem"],
+              ["allowsVideo", question.allowsVideo, Video, "Vídeo"],
+              ["allowsAudio", question.allowsAudio, Mic, "Áudio"],
+              ["allowsFiles", question.allowsFiles, FileText, "Anexo"]
+            ].map(([field, status, Icon, label]) => (
+              <Button
+                key={field as string}
+                type="button"
+                variant={status ? "default" : "outline"}
+                size="sm"
+                className="gap-2 min-w-[110px]"
+                title={`Permitir ${label.toLowerCase()}`}
+                onClick={() =>
+                  handleUpdate(field as keyof ChecklistQuestion, !status)
+                }
+                aria-label={`Permitir anexar ${label.toLowerCase()}`}
+              >
+                <Icon className="h-4 w-4" />
+                <span>{label}</span>
+              </Button>
+            ))}
           </div>
         </div>
 
@@ -363,10 +336,8 @@ export function QuestionEditor({
               variant="ghost"
               size="sm"
               onClick={() => {
-                if (onDelete) {
-                  onDelete(question.id);
-                  toast.success("Pergunta excluída");
-                }
+                onDelete(question.id);
+                toast.success("Pergunta excluída");
               }}
               className="text-red-500 hover:text-red-700"
             >
@@ -382,14 +353,12 @@ export function QuestionEditor({
                 hasSubChecklist={question.hasSubChecklist || false}
                 subChecklistId={question.subChecklistId}
                 onSubChecklistCreated={(subChecklistId) => {
-                  if (onUpdate) {
-                    onUpdate({
-                      ...question,
-                      hasSubChecklist: true,
-                      subChecklistId
-                    });
-                    toast.success("Subitems adicionados com sucesso");
-                  }
+                  onUpdate?.({
+                    ...question,
+                    hasSubChecklist: true,
+                    subChecklistId
+                  });
+                  toast.success("Subitems adicionados com sucesso");
                 }}
               />
             )}
