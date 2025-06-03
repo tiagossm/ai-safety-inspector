@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -13,7 +12,7 @@ import { ChecklistGroup, ChecklistQuestion } from "@/types/newChecklist";
 export function useChecklistEditorContext() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { checklist, isLoading: loading, error, refetch } = useChecklistById(id || "");
+  const { data: checklist, isLoading: loading, error, refetch } = useChecklistById(id || "");
   
   // Use our refactored hooks for state management
   const {

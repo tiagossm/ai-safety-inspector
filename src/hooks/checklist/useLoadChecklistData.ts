@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { useChecklistById } from "@/hooks/new-checklist/useChecklistById";
@@ -69,7 +70,7 @@ export function useLoadChecklistData() {
           setLoading(false);
         }
       } else {
-        if (checklistQuery.loading) {
+        if (checklistQuery.isLoading) {
           setLoading(true);
           return;
         }
@@ -80,15 +81,15 @@ export function useLoadChecklistData() {
           return;
         }
 
-        if (checklistQuery.checklist) {
-          const checklist = checklistQuery.checklist;
+        if (checklistQuery.data) {
+          const checklist = checklistQuery.data;
           const groupIdBase = `group-default-${Date.now()}`;
           
           // Process groups and questions from the normalized checklist data
-          const groups = checklistQuery.groups?.length
-            ? checklistQuery.groups.map(group => ({
+          const groups = checklist.groups?.length
+            ? checklist.groups.map(group => ({
                 ...group,
-                questions: checklistQuery.questions
+                questions: (checklist.questions || [])
                   .filter(q => q.groupId === group.id)
                   .map(q => ({
                     ...q,
@@ -104,7 +105,7 @@ export function useLoadChecklistData() {
             : [{
                 id: groupIdBase,
                 title: "Geral",
-                questions: (checklistQuery.questions || []).map(q => ({
+                questions: (checklist.questions || []).map(q => ({
                   ...q,
                   type: q.responseType,
                   required: q.isRequired,
@@ -116,13 +117,12 @@ export function useLoadChecklistData() {
                 }))
               }];
 
-          // Adicione logs para depuração
           console.log("Checklist para edição:", checklist);
           console.log("Groups para edição:", groups);
 
           setEditorData({
             checklistData: checklist,
-            questions: checklistQuery.questions || [],
+            questions: checklist.questions || [],
             groups,
             mode: "edit"
           });
@@ -132,7 +132,7 @@ export function useLoadChecklistData() {
     };
 
     loadChecklistData();
-  }, [id, isEditorMode, checklistQuery]);
+  }, [id, isEditorMode, checklistQuery.isLoading, checklistQuery.error, checklistQuery.data]);
 
   return { loading, error, editorData };
 }
