@@ -62,7 +62,7 @@ export function QuestionEditor({
       let patch = { ...question, [field]: value };
       if (field === "responseType") {
         // Convert frontend type to database format
-        const dbType = convertToDatabaseType(value as StandardResponseType);
+        const dbType = convertToDatabaseType(value);
         patch.responseType = dbType;
         
         // Se mudou para um tipo que não requer opções, limpa as opções
