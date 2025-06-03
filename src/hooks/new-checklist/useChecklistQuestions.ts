@@ -41,7 +41,7 @@ export function useChecklistQuestions(
       prev.map((q) =>
         q.id === updated.id
           ? { ...q, ...updated, options: updated.options ? [...updated.options] : [] }
-          : { ...q }
+          : q // NÃO faça spread aqui, mantenha o objeto original para não quebrar referências
       )
     );
   }
