@@ -29,7 +29,10 @@ export function useChecklistQuestions(
       allowsVideo: enableAllMedia,
       allowsAudio: enableAllMedia,
       allowsFiles: enableAllMedia,
-      groupId
+      groupId,
+      level: 0,
+      path: newId,
+      isConditional: false
     };
     
     setQuestions(prevQuestions => [...prevQuestions, newQuestion]);

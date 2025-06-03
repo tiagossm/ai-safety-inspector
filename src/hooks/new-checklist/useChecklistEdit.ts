@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
@@ -87,7 +88,10 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
           const questionsWithValidGroups = checklist.questions.map((q: any) => ({
             ...q,
             groupId: q.groupId || checklist.groups[0].id,
-            responseType: normalizeResponseType(q.responseType || q.tipo_resposta)
+            responseType: normalizeResponseType(q.responseType || q.tipo_resposta),
+            level: q.level || 0,
+            path: q.path || q.id,
+            isConditional: q.isConditional || false
           }));
           state.setQuestions(questionsWithValidGroups);
         } else {
@@ -99,7 +103,10 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
           const questionsWithDefaultGroup = checklist.questions.map((q: any) => ({
             ...q,
             groupId: "default",
-            responseType: normalizeResponseType(q.responseType || q.tipo_resposta)
+            responseType: normalizeResponseType(q.responseType || q.tipo_resposta),
+            level: q.level || 0,
+            path: q.path || q.id,
+            isConditional: q.isConditional || false
           }));
           state.setGroups([defaultGroup]);
           state.setQuestions(questionsWithDefaultGroup);
@@ -122,7 +129,10 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
           allowsAudio: false,
           allowsFiles: false,
           order: 0,
-          groupId: "default"
+          groupId: "default",
+          level: 0,
+          path: `new-${Date.now()}`,
+          isConditional: false
         };
         state.setGroups([defaultGroup]);
         state.setQuestions([defaultQuestion]);

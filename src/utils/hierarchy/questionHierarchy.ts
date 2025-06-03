@@ -5,7 +5,7 @@ export interface HierarchicalQuestion extends ChecklistQuestion {
   level: number;
   path: string;
   displayCondition?: any;
-  isConditional?: boolean;
+  isConditional: boolean;
   children?: HierarchicalQuestion[];
   parent?: HierarchicalQuestion;
 }

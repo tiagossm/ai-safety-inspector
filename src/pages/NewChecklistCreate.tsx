@@ -67,7 +67,10 @@ export default function NewChecklistCreate() {
       allowsVideo: false,
       allowsAudio: false,
       allowsFiles: false,
-      order: 0
+      order: 0,
+      level: 0,
+      path: `new-${Date.now()}-0`,
+      isConditional: false
     }
   ]);
   
@@ -91,8 +94,9 @@ export default function NewChecklistCreate() {
   }, [questions, groups]);
   
   const handleAddQuestion = () => {
+    const newId = `new-${Date.now()}-${questions.length}`;
     const newQuestion: ChecklistQuestion = {
-      id: `new-${Date.now()}-${questions.length}`,
+      id: newId,
       text: "",
       responseType: "yes_no",
       isRequired: true,
@@ -102,7 +106,10 @@ export default function NewChecklistCreate() {
       allowsAudio: false,
       allowsFiles: false,
       order: questions.length,
-      groupId: groups[0]?.id
+      groupId: groups[0]?.id,
+      level: 0,
+      path: newId,
+      isConditional: false
     };
     
     setQuestions([...questions, newQuestion]);
@@ -259,8 +266,9 @@ export default function NewChecklistCreate() {
           options = row.opcoes.split('|').map((opt: string) => opt.trim());
         }
         
+        const questionId = `imported-${Date.now()}-${index}`;
         return {
-          id: `imported-${Date.now()}-${index}`,
+          id: questionId,
           text: row.pergunta || row.question || `Pergunta ${index + 1}`,
           responseType: responseType,
           isRequired: row.obrigatorio === 'true' || row.required === 'true' || true,
@@ -271,7 +279,10 @@ export default function NewChecklistCreate() {
           allowsFiles: false,
           order: index,
           options: options,
-          groupId: questions[0]?.groupId
+          groupId: questions[0]?.groupId,
+          level: 0,
+          path: questionId,
+          isConditional: false
         };
       });
       

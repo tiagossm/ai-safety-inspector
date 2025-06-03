@@ -43,7 +43,10 @@ export function AIModeContent({ onQuestionsGenerated, onCancel }: AIModeContentP
           allowsAudio: false,
           allowsFiles: false,
           options: [],
-          hint: "Verifique se não há ruídos estranhos ou vibração excessiva"
+          hint: "Verifique se não há ruídos estranhos ou vibração excessiva",
+          level: 0,
+          path: `q-${Date.now()}-1`,
+          isConditional: false
         },
         {
           id: `q-${Date.now()}-2`,
@@ -57,7 +60,10 @@ export function AIModeContent({ onQuestionsGenerated, onCancel }: AIModeContentP
           allowsAudio: false,
           allowsFiles: false,
           options: [],
-          hint: "Seja específico sobre o que foi observado"
+          hint: "Seja específico sobre o que foi observado",
+          level: 0,
+          path: `q-${Date.now()}-2`,
+          isConditional: false
         },
         {
           id: `q-${Date.now()}-3`,
@@ -71,7 +77,10 @@ export function AIModeContent({ onQuestionsGenerated, onCancel }: AIModeContentP
           allowsAudio: false,
           allowsFiles: false,
           options: ["Baixa", "Média", "Alta", "Crítica"],
-          hint: "Selecione baseado na urgência da situação"
+          hint: "Selecione baseado na urgência da situação",
+          level: 0,
+          path: `q-${Date.now()}-3`,
+          isConditional: false
         }
       ];
 
