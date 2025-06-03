@@ -38,7 +38,11 @@ export function useChecklistQuestions(
 
   function handleUpdateQuestion(updated: ChecklistQuestion) {
     setQuestions((prev) =>
-      prev.map((q) => (q.id === updated.id ? { ...updated } : q))
+      prev.map((q) =>
+        q.id === updated.id
+          ? { ...q, ...updated, options: updated.options ? [...updated.options] : [] }
+          : { ...q }
+      )
     );
   }
 
