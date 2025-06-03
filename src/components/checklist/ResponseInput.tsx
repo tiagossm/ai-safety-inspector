@@ -55,7 +55,7 @@ export function QuestionEditor({
       let patch = { ...question, [field]: value };
       if (field === "responseType") {
         // Convert frontend type to database format
-        const dbType = convertToDatabaseType(value as StandardResponseType);
+        const dbType = convertToDatabaseType(value);
         patch.responseType = dbType;
       }
       onUpdate(patch);
@@ -68,9 +68,15 @@ export function QuestionEditor({
     }
   };
 
-  // Simplificar o handler - o ResponseTypeSelector já garante o tipo correto
+  // Validar e converter o tipo de resposta com verificação de tipo
   const handleResponseTypeChange = (newResponseType: StandardResponseType) => {
-    handleUpdate("responseType", newResponseType);
+    // Garantir que o valor é válido antes de atualizar
+    if (isValidResponseType(newResponseType)) {
+      handleUpdate("responseType", newResponseType);
+    } else {
+      console.warn(`Invalid response type received: ${newResponseType}, falling back to 'text'`);
+      handleUpdate("responseType", "text");
+    }
   };
 
   const getMediaTypeName = (mediaField: string): string => {

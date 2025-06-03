@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
@@ -47,7 +48,7 @@ export function useChecklistCreate() {
       if (questions && questions.length > 0) {
         const questionsToInsert = questions.map((question, index) => {
           const dbResponseType = normalizeResponseType(
-            question.responseType || question.tipo_resposta || ""
+            question.responseType || ""
           );
 
           console.log(`Mapeando pergunta ${index}: ${question.responseType} -> ${dbResponseType}`);
