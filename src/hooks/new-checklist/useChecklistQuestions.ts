@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { toast } from "sonner";
@@ -37,13 +36,11 @@ export function useChecklistQuestions(
     return newId;
   }, [questions, setQuestions, enableAllMedia]);
 
-  const handleUpdateQuestion = useCallback((updatedQuestion: ChecklistQuestion) => {
-    setQuestions(prevQuestions => 
-      prevQuestions.map(q => 
-        q.id === updatedQuestion.id ? updatedQuestion : q
-      )
+  function handleUpdateQuestion(updated: ChecklistQuestion) {
+    setQuestions((prev) =>
+      prev.map((q) => (q.id === updated.id ? { ...updated } : q))
     );
-  }, [setQuestions]);
+  }
 
   const handleDeleteQuestion = useCallback((questionId: string) => {
     // If it's a new question (not yet saved to DB), just remove it
