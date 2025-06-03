@@ -26,21 +26,23 @@ export const useSaveInspection = () => {
   const [isSaving, setIsSaving] = useState(false);
   const navigate = useNavigate();
   
-  // Função para salvar respostas da inspeção
+  // Função para salvar respostas da inspeção na nova tabela hierárquica
   const saveResponses = async (inspectionId: string, responses: any[]) => {
     if (!responses || !responses.length) return true;
     
     let hasError = false;
     setIsSaving(true);
     
-    // Formatar os dados para inserção
+    // Formatar os dados para inserção na nova tabela
     const responsesData = responses.map(r => ({
       inspection_id: inspectionId,
-      question_id: r.questionId,
-      answer: r.value,
+      checklist_item_id: r.questionId,
+      answer: r.value ? (typeof r.value === 'object' ? r.value : { value: r.value }) : { value: null },
       action_plan: r.actionPlan,
       comments: r.comments,
+      notes: r.notes,
       media_urls: r.mediaUrls || [],
+      parent_response_id: r.parentResponseId || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }));
@@ -49,11 +51,11 @@ export const useSaveInspection = () => {
       // Usar nossa função helper para envolver a chamada Supabase
       await wrapSupabaseCall(
         supabase
-          .from("inspection_responses")
-          .upsert(responsesData, { onConflict: 'inspection_id,question_id' })
+          .from("checklist_item_responses")
+          .upsert(responsesData, { onConflict: 'inspection_id,checklist_item_id' })
       );
       
-      console.log(`Salvou ${responsesData.length} respostas`);
+      console.log(`Salvou ${responsesData.length} respostas na nova estrutura hierárquica`);
     } catch (error) {
       console.error("Erro ao salvar respostas:", error);
       hasError = true;

@@ -89,7 +89,9 @@ export function useChecklistUpdate() {
               permite_files: q.allowsFiles || false,
               parent_item_id: q.parentQuestionId,
               condition_value: q.conditionValue,
-              hint: hint
+              hint: hint,
+              display_condition: q.displayCondition,
+              is_conditional: q.isConditional || false
             };
           });
 
@@ -138,6 +140,8 @@ export function useChecklistUpdate() {
               parent_item_id: question.parentQuestionId,
               condition_value: question.conditionValue,
               hint: hint,
+              display_condition: question.displayCondition,
+              is_conditional: question.isConditional || false,
               updated_at: new Date().toISOString()
             })
             .eq("id", question.id);
