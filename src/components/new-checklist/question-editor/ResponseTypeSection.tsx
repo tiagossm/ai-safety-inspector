@@ -14,7 +14,7 @@ interface ResponseTypeSectionProps {
 }
 
 export function ResponseTypeSection({ question, onUpdate }: ResponseTypeSectionProps) {
-  // Convert database response type to frontend type - now guaranteed to return StandardResponseType
+  // Convert database response type to frontend type with proper type assertion
   const frontendResponseType: StandardResponseType = question.responseType 
     ? convertToFrontendType(question.responseType) 
     : "yes_no";

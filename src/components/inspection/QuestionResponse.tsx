@@ -21,8 +21,7 @@ import {
   StandardResponseType,
   convertToFrontendType,
   convertToDatabaseType,
-  TYPES_REQUIRING_OPTIONS,
-  isValidResponseType
+  TYPES_REQUIRING_OPTIONS
 } from "@/types/responseTypes";
 
 interface QuestionEditorProps {
@@ -43,7 +42,7 @@ export function QuestionEditor({
   const [showOptionsEditor, setShowOptionsEditor] = useState(false);
   const [newOption, setNewOption] = useState("");
 
-  // Convert database response type to frontend type with proper validation
+  // Convert database response type to frontend type with proper type assertion
   const frontendResponseType: StandardResponseType = question.responseType 
     ? convertToFrontendType(question.responseType) 
     : "yes_no";
@@ -57,11 +56,11 @@ export function QuestionEditor({
       let patch = { ...question, [field]: value };
       if (field === "responseType") {
         // Convert frontend type to database format
-        const dbType = convertToDatabaseType(value);
+        const dbType = convertToDatabaseType(value as StandardResponseType);
         patch.responseType = dbType;
         
         // Se mudou para um tipo que não requer opções, limpa as opções
-        if (!TYPES_REQUIRING_OPTIONS.includes(value)) {
+        if (!TYPES_REQUIRING_OPTIONS.includes(value as StandardResponseType)) {
           patch.options = [];
         }
         // Se mudou para um tipo que requer opções e não tem, adiciona opções padrão

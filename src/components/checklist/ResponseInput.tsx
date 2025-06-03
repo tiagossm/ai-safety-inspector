@@ -18,8 +18,7 @@ import { ResponseTypeSelector } from "@/components/common/ResponseTypeSelector";
 import { 
   StandardResponseType,
   convertToFrontendType,
-  convertToDatabaseType,
-  isValidResponseType
+  convertToDatabaseType
 } from "@/types/responseTypes";
 
 interface QuestionEditorProps {
@@ -40,7 +39,7 @@ export function QuestionEditor({
   const [showOptionsEditor, setShowOptionsEditor] = useState(false);
   const [newOption, setNewOption] = useState("");
 
-  // Convert database response type to frontend type with proper validation
+  // Convert database response type to frontend type with proper type assertion
   const frontendResponseType: StandardResponseType = question.responseType 
     ? convertToFrontendType(question.responseType) 
     : "yes_no";
@@ -50,7 +49,7 @@ export function QuestionEditor({
       let patch = { ...question, [field]: value };
       if (field === "responseType") {
         // Convert frontend type to database format
-        const dbType = convertToDatabaseType(value);
+        const dbType = convertToDatabaseType(value as StandardResponseType);
         patch.responseType = dbType;
       }
       onUpdate(patch);
