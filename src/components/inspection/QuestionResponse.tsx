@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Input } from "@/components/ui/input";
@@ -389,6 +390,7 @@ export function QuestionEditor({
                 parentQuestionId={question.id}
                 hasSubChecklist={!!question.hasSubChecklist}
                 subChecklistId={question.subChecklistId}
+                parentQuestion={question}
                 onSubChecklistCreated={(subChecklistId) => {
                   if (onUpdate) {
                     onUpdate({
