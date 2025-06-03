@@ -41,14 +41,9 @@ export function QuestionEditor({
   const [newOption, setNewOption] = useState("");
 
   // Convert database response type to frontend type with proper validation
-  const rawFrontendType = question.responseType 
+  const frontendResponseType: StandardResponseType = question.responseType 
     ? convertToFrontendType(question.responseType) 
     : "yes_no";
-  
-  // Ensure the type is valid, with explicit type assertion after validation
-  const frontendResponseType: StandardResponseType = isValidResponseType(rawFrontendType)
-    ? (rawFrontendType as StandardResponseType)
-    : "text";
 
   const handleUpdate = (field: keyof ChecklistQuestion, value: any) => {
     if (onUpdate) {

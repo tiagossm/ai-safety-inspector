@@ -5,8 +5,7 @@ import { ResponseTypeSelector } from "@/components/common/ResponseTypeSelector";
 import { 
   StandardResponseType,
   convertToFrontendType,
-  convertToDatabaseType,
-  isValidResponseType
+  convertToDatabaseType
 } from "@/types/responseTypes";
 
 interface ResponseTypeSectionProps {
@@ -15,15 +14,10 @@ interface ResponseTypeSectionProps {
 }
 
 export function ResponseTypeSection({ question, onUpdate }: ResponseTypeSectionProps) {
-  // Convert database response type to frontend type with proper validation
-  const rawFrontendType = question.responseType 
+  // Convert database response type to frontend type - now guaranteed to return StandardResponseType
+  const frontendResponseType: StandardResponseType = question.responseType 
     ? convertToFrontendType(question.responseType) 
     : "yes_no";
-  
-  // Ensure the type is valid, with explicit type assertion after validation
-  const frontendResponseType: StandardResponseType = isValidResponseType(rawFrontendType)
-    ? (rawFrontendType as StandardResponseType)
-    : "text";
 
   const handleResponseTypeChange = (newResponseType: StandardResponseType) => {
     // A função já recebe um StandardResponseType válido do ResponseTypeSelector
