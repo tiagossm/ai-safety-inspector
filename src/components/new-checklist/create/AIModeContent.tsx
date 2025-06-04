@@ -133,6 +133,7 @@ export function AIModeContent({ onQuestionsGenerated, onCancel }: AIModeContentP
             <QuestionEditor
               key={question.id}
               question={question}
+              questions={generatedQuestions}
               onUpdate={handleQuestionUpdate}
               onDelete={handleQuestionDelete}
             />

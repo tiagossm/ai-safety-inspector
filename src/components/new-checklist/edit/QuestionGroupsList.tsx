@@ -62,7 +62,6 @@ export function QuestionGroupsList({
                       <QuestionGroup
                         group={group}
                         questions={groupQuestions}
-                        allQuestions={questions}
                         groupIndex={index}
                         onUpdateGroup={onUpdateGroup}
                         onAddQuestion={onAddQuestion}

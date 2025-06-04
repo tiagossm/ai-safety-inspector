@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
@@ -14,7 +13,7 @@ import {
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useTheme } from "@/components/ui/ThemeContext";
+import { useTheme } from "next-themes";
 
 const menuItems = [
   { title: "Dashboard", icon: LayoutDashboard, url: "/" },

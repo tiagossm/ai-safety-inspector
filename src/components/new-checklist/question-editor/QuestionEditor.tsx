@@ -8,24 +8,26 @@ import { generateQuestionNumber, getQuestionDepth } from "@/utils/questionNumber
 
 interface QuestionEditorProps {
   question: ChecklistQuestion;
-  questions: ChecklistQuestion[];
+  questions?: ChecklistQuestion[];
   groupIndex?: number;
   onUpdate: (question: ChecklistQuestion) => void;
   onDelete: (id: string) => void;
   onAddSubQuestion?: (parentId: string) => void;
   isSubQuestion?: boolean;
   enableAllMedia?: boolean;
+  dragHandleProps?: any;
 }
 
 export function QuestionEditor({
   question,
-  questions,
+  questions = [],
   groupIndex = 0,
   onUpdate,
   onDelete,
   onAddSubQuestion,
   isSubQuestion = false,
-  enableAllMedia = false
+  enableAllMedia = false,
+  dragHandleProps
 }: QuestionEditorProps) {
   const questionNumber = generateQuestionNumber(question, questions, groupIndex);
   const depth = getQuestionDepth(question, questions);

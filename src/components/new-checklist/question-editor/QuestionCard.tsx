@@ -5,6 +5,7 @@ import { QuestionEditor } from "./QuestionEditor";
 
 interface QuestionCardProps {
   question: ChecklistQuestion;
+  questions?: ChecklistQuestion[];
   onUpdate: (question: ChecklistQuestion) => void;
   onDelete: (id: string) => void;
   enableAllMedia?: boolean;
@@ -12,6 +13,7 @@ interface QuestionCardProps {
 
 export function QuestionCard({
   question,
+  questions = [],
   onUpdate,
   onDelete,
   enableAllMedia = false
@@ -19,6 +21,7 @@ export function QuestionCard({
   return (
     <QuestionEditor
       question={question}
+      questions={questions}
       onUpdate={onUpdate}
       onDelete={onDelete}
       enableAllMedia={enableAllMedia}
