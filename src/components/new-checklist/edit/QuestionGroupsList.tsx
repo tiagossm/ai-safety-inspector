@@ -15,6 +15,7 @@ interface QuestionGroupsListProps {
   onDeleteGroup: (groupId: string) => void;
   onAddSubQuestion: (parentId: string) => void;
   enableAllMedia?: boolean;
+  isSubmitting?: boolean;
 }
 
 export function QuestionGroupsList({
@@ -27,7 +28,8 @@ export function QuestionGroupsList({
   onDeleteQuestion,
   onDeleteGroup,
   onAddSubQuestion,
-  enableAllMedia = false
+  enableAllMedia = false,
+  isSubmitting = false
 }: QuestionGroupsListProps) {
   return (
     <>
@@ -71,6 +73,7 @@ export function QuestionGroupsList({
                         onAddSubQuestion={onAddSubQuestion}
                         dragHandleProps={draggableProvided.dragHandleProps}
                         enableAllMedia={enableAllMedia}
+                        isSubmitting={isSubmitting}
                       />
                       {droppableProvided.placeholder}
                     </div>
