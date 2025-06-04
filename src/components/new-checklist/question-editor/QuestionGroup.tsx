@@ -19,6 +19,7 @@ interface QuestionGroupProps {
   onAddSubQuestion: (parentId: string) => void;
   dragHandleProps?: any;
   enableAllMedia?: boolean;
+  isSubmitting?: boolean;
 }
 
 export function QuestionGroup({
@@ -32,7 +33,8 @@ export function QuestionGroup({
   onDeleteGroup,
   onAddSubQuestion,
   dragHandleProps,
-  enableAllMedia = false
+  enableAllMedia = false,
+  isSubmitting = false
 }: QuestionGroupProps) {
   const handleGroupTitleChange = (title: string) => {
     onUpdateGroup({ ...group, title });
@@ -94,6 +96,7 @@ export function QuestionGroup({
           onChange={(e) => handleGroupTitleChange(e.target.value)}
           placeholder="Nome do grupo"
           className="flex-1 border-0 bg-transparent p-0 focus-visible:ring-0"
+          disabled={isSubmitting}
         />
         
         <div className="flex items-center gap-2">
@@ -102,6 +105,7 @@ export function QuestionGroup({
             size="sm"
             onClick={() => onAddQuestion(group.id)}
             className="flex items-center gap-1"
+            disabled={isSubmitting}
           >
             <Plus className="h-3 w-3" />
             <span>Pergunta</span>
@@ -112,6 +116,7 @@ export function QuestionGroup({
             size="sm"
             onClick={() => onDeleteGroup(group.id)}
             className="flex items-center gap-1"
+            disabled={isSubmitting}
           >
             <Trash2 className="h-3 w-3" />
           </Button>
@@ -128,6 +133,7 @@ export function QuestionGroup({
               size="sm"
               onClick={() => onAddQuestion(group.id)}
               className="mt-2"
+              disabled={isSubmitting}
             >
               <Plus className="h-3 w-3 mr-1" />
               Adicionar primeira pergunta
