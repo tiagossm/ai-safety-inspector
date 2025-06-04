@@ -1,7 +1,6 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { Checklist } from "@/types/checklist";
 
 export function useSaveChecklist(checklistId: string) {
@@ -19,7 +18,9 @@ export function useSaveChecklist(checklistId: string) {
           status_checklist: data.status_checklist,
           category: data.category,
           responsible_id: data.responsible_id,
-          company_id: data.company_id
+          company_id: data.company_id,
+          due_date: data.due_date,
+          status: data.status
         })
         .eq("id", checklistId);
 
@@ -27,11 +28,9 @@ export function useSaveChecklist(checklistId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["checklists"] });
-      toast.success("Checklist atualizado com sucesso");
     },
     onError: (error) => {
       console.error("Erro ao atualizar checklist:", error);
-      toast.error("Erro ao atualizar checklist");
     }
   });
 }
