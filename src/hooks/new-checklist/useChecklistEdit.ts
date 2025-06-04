@@ -23,7 +23,9 @@ export function useChecklistEdit(checklist: any, id: string | undefined) {
     state.setQuestions,
     state.groups,
     state.deletedQuestionIds,
-    state.setDeletedQuestionIds
+    state.setDeletedQuestionIds,
+    state.enableAllMedia,
+    state.setEnableAllMedia
   );
 
   const {

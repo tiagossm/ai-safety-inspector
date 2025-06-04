@@ -36,11 +36,13 @@ export function useChecklistEditorContext() {
     handleDeleteQuestion,
     toggleAllMediaOptions
   } = useChecklistQuestions(
-    questions, 
-    setQuestions, 
-    groups, 
-    deletedQuestionIds, 
-    setDeletedQuestionIds
+    questions,
+    setQuestions,
+    groups,
+    deletedQuestionIds,
+    setDeletedQuestionIds,
+    enableAllMedia,
+    setEnableAllMedia
   );
   
   // Groups management

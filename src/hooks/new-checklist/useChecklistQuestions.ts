@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import { ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { toast } from "sonner";
 
@@ -8,9 +8,10 @@ export function useChecklistQuestions(
   setQuestions: React.Dispatch<React.SetStateAction<ChecklistQuestion[]>>,
   groups: ChecklistGroup[],
   deletedQuestionIds: string[],
-  setDeletedQuestionIds: React.Dispatch<React.SetStateAction<string[]>>
+  setDeletedQuestionIds: React.Dispatch<React.SetStateAction<string[]>>,
+  enableAllMedia: boolean,
+  setEnableAllMedia: React.Dispatch<React.SetStateAction<boolean>>
 ) {
-  const [enableAllMedia, setEnableAllMedia] = useState(false);
 
   const handleAddQuestion = useCallback((groupId: string = "default") => {
     const newId = `new-${Date.now()}`;
@@ -95,7 +96,7 @@ export function useChecklistQuestions(
 
   const toggleAllMediaOptions = useCallback((enabled: boolean) => {
     console.log("Alternando opções de mídia para:", enabled);
-    
+
     setEnableAllMedia(enabled);
     
     // Atualizar todas as perguntas existentes com as novas configurações de mídia
@@ -115,7 +116,7 @@ export function useChecklistQuestions(
     } else {
       toast.success("Recursos de mídia desativados para todas as perguntas", { duration: 3000 });
     }
-  }, [setQuestions]);
+  }, [setQuestions, setEnableAllMedia]);
 
   return {
     handleAddQuestion,
