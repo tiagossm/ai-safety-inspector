@@ -1,10 +1,10 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { ChecklistQuestion } from "@/types/newChecklist";
-import { Trash2, Plus, Image, Video, Mic, FileText } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Trash2, Plus } from "lucide-react";
+import { ChecklistQuestion } from "@/types/newChecklist";
 
 interface QuestionActionsProps {
   question: ChecklistQuestion;
@@ -21,100 +21,101 @@ export function QuestionActions({
   onDelete,
   onAddSubQuestion,
   isSubQuestion = false,
-  canAddSubQuestion = false
+  canAddSubQuestion = true
 }: QuestionActionsProps) {
-  const handleMediaToggle = (field: keyof ChecklistQuestion, value: boolean) => {
+  const handleRequiredChange = (required: boolean) => {
+    onUpdate({ ...question, isRequired: required });
+  };
+
+  const handleMediaChange = (field: keyof ChecklistQuestion, value: boolean) => {
     onUpdate({ ...question, [field]: value });
   };
 
   return (
-    <div className="p-3 border-t bg-gray-50 space-y-3">
+    <div className="p-3 bg-gray-50 border-t space-y-3">
+      {/* Required Toggle */}
+      <div className="flex items-center justify-between">
+        <Label htmlFor={`required-${question.id}`} className="text-sm">
+          Pergunta obrigatória
+        </Label>
+        <Switch
+          id={`required-${question.id}`}
+          checked={question.isRequired}
+          onCheckedChange={handleRequiredChange}
+        />
+      </div>
+
       {/* Media Options */}
       <div className="space-y-2">
-        <Label className="text-xs font-medium text-gray-700">Opções de Mídia</Label>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="flex items-center space-x-2">
-            <Switch
-              id={`photo-${question.id}`}
-              checked={question.allowsPhoto}
-              onCheckedChange={(checked) => handleMediaToggle("allowsPhoto", checked)}
-              size="sm"
-            />
-            <Label htmlFor={`photo-${question.id}`} className="text-xs flex items-center gap-1">
-              <Image className="h-3 w-3" />
-              Foto
-            </Label>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Switch
-              id={`video-${question.id}`}
-              checked={question.allowsVideo}
-              onCheckedChange={(checked) => handleMediaToggle("allowsVideo", checked)}
-              size="sm"
-            />
-            <Label htmlFor={`video-${question.id}`} className="text-xs flex items-center gap-1">
-              <Video className="h-3 w-3" />
-              Vídeo
-            </Label>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Switch
-              id={`audio-${question.id}`}
-              checked={question.allowsAudio}
-              onCheckedChange={(checked) => handleMediaToggle("allowsAudio", checked)}
-              size="sm"
-            />
-            <Label htmlFor={`audio-${question.id}`} className="text-xs flex items-center gap-1">
-              <Mic className="h-3 w-3" />
-              Áudio
-            </Label>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Switch
-              id={`files-${question.id}`}
-              checked={question.allowsFiles}
-              onCheckedChange={(checked) => handleMediaToggle("allowsFiles", checked)}
-              size="sm"
-            />
-            <Label htmlFor={`files-${question.id}`} className="text-xs flex items-center gap-1">
-              <FileText className="h-3 w-3" />
-              Arquivos
-            </Label>
-          </div>
+        <div className="flex items-center justify-between">
+          <Label htmlFor={`photo-${question.id}`} className="text-sm">
+            Permitir fotos
+          </Label>
+          <Switch
+            id={`photo-${question.id}`}
+            checked={question.allowsPhoto}
+            onCheckedChange={(value) => handleMediaChange('allowsPhoto', value)}
+          />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <Label htmlFor={`video-${question.id}`} className="text-sm">
+            Permitir vídeos
+          </Label>
+          <Switch
+            id={`video-${question.id}`}
+            checked={question.allowsVideo}
+            onCheckedChange={(value) => handleMediaChange('allowsVideo', value)}
+          />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <Label htmlFor={`audio-${question.id}`} className="text-sm">
+            Permitir áudio
+          </Label>
+          <Switch
+            id={`audio-${question.id}`}
+            checked={question.allowsAudio}
+            onCheckedChange={(value) => handleMediaChange('allowsAudio', value)}
+          />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <Label htmlFor={`files-${question.id}`} className="text-sm">
+            Permitir arquivos
+          </Label>
+          <Switch
+            id={`files-${question.id}`}
+            checked={question.allowsFiles}
+            onCheckedChange={(value) => handleMediaChange('allowsFiles', value)}
+          />
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {/* Add Sub-question Button */}
-          {!isSubQuestion && canAddSubQuestion && onAddSubQuestion && (
+      <div className="flex items-center justify-between pt-2">
+        <div className="flex gap-2">
+          {!isSubQuestion && canAddSubQuestion && (
             <Button
-              type="button"
               variant="outline"
               size="sm"
               onClick={onAddSubQuestion}
-              className="text-xs h-7"
+              className="flex items-center gap-1"
             >
-              <Plus className="h-3 w-3 mr-1" />
-              Subpergunta
+              <Plus className="h-3 w-3" />
+              <span>Subpergunta</span>
             </Button>
           )}
         </div>
         
-        {/* Delete Button */}
         <Button
-          type="button"
-          variant="ghost"
+          variant="destructive"
           size="sm"
           onClick={() => onDelete(question.id)}
-          className="text-red-600 hover:text-red-700 hover:bg-red-50 h-7"
+          className="flex items-center gap-1"
         >
-          <Trash2 className="h-3 w-3 mr-1" />
-          Excluir
+          <Trash2 className="h-3 w-3" />
+          <span>Excluir</span>
         </Button>
       </div>
     </div>
