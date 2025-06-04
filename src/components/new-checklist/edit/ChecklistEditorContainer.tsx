@@ -54,9 +54,6 @@ export function ChecklistEditorContainer() {
     id: editorContext.id,
   };
   
-  // Remova o auto-save ao navegar de etapa (deixe apenas o save manual)
-  // Remova qualquer chamada automática de handleSave em useEffect ou navegação de etapas
-
   // Enhanced save handler to provide feedback and navigate after success
   const handleSave = async (): Promise<void> => {
     try {
@@ -84,15 +81,6 @@ export function ChecklistEditorContainer() {
     }
     try {
       toast.info("Preparando inspeção...", { duration: 2000 });
-      // Remova o save automático antes de iniciar inspeção
-      // if (editorContext.handleSave) {
-      //   const saveSuccess = await editorContext.handleSave();
-      //   if (!saveSuccess) {
-      //     toast.error("Não foi possível salvar o checklist antes de iniciar a inspeção", { duration: 5000 });
-      //     return;
-      //   }
-      // }
-      // Navegue diretamente para inspeção
       console.log(`Redirecionando para inspeção com checklistId=${editorContext.id}`);
       toast.success("Redirecionando para a inspeção...", { duration: 2000 });
       navigate(`/inspections/new?checklistId=${editorContext.id}`);
@@ -105,8 +93,10 @@ export function ChecklistEditorContainer() {
   return (
     <ChecklistEditorProvider value={contextValue}>
       <div className="space-y-6">
-        {/* Header section */}
+        {/* Header section with question counter */}
         <ChecklistHeader 
+          totalQuestions={editorContext.questions.length}
+          totalGroups={editorContext.nonEmptyGroups.length}
           onBack={() => navigate("/new-checklists")}
           onRefresh={() => {
             if (editorContext.id) {

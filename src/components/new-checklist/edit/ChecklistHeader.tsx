@@ -2,8 +2,11 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2, PlayCircle, Save } from "lucide-react";
+import { QuestionCounter } from "./QuestionCounter";
 
 interface ChecklistHeaderProps {
+  totalQuestions?: number;
+  totalGroups?: number;
   onBack: () => void;
   onRefresh: () => void;
   onStartInspection: () => void;
@@ -11,6 +14,8 @@ interface ChecklistHeaderProps {
 }
 
 export function ChecklistHeader({ 
+  totalQuestions = 0,
+  totalGroups = 0,
   onBack, 
   onRefresh, 
   onStartInspection, 
@@ -26,7 +31,10 @@ export function ChecklistHeader({
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-2xl font-bold">Editar Checklist</h1>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <h1 className="text-2xl font-bold">Editar Checklist</h1>
+          <QuestionCounter totalQuestions={totalQuestions} totalGroups={totalGroups} />
+        </div>
       </div>
       
       <div className="flex items-center gap-2 w-full sm:w-auto">

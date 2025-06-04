@@ -32,7 +32,8 @@ export function useChecklistQuestions(
       groupId,
       level: 0,
       path: newId,
-      isConditional: false
+      isConditional: false,
+      options: []
     };
     
     setQuestions(prevQuestions => [...prevQuestions, newQuestion]);
@@ -51,18 +52,33 @@ export function useChecklistQuestions(
   }
 
   const handleDeleteQuestion = useCallback((questionId: string) => {
-    // If it's a new question (not yet saved to DB), just remove it
-    if (questionId.startsWith('new-')) {
-      setQuestions(prevQuestions => prevQuestions.filter(q => q.id !== questionId));
-      toast.success("Pergunta removida", { duration: 3000 });
-      return;
+    // Also delete any sub-questions
+    const questionsToDelete = [questionId];
+    const findSubQuestions = (parentId: string) => {
+      questions.forEach(q => {
+        if (q.parentQuestionId === parentId) {
+          questionsToDelete.push(q.id);
+          findSubQuestions(q.id); // Recursively find sub-sub-questions
+        }
+      });
+    };
+    findSubQuestions(questionId);
+
+    // If they're new questions (not yet saved to DB), just remove them
+    const newQuestions = questionsToDelete.filter(id => id.startsWith('new-'));
+    const existingQuestions = questionsToDelete.filter(id => !id.startsWith('new-'));
+    
+    if (existingQuestions.length > 0) {
+      setDeletedQuestionIds(prev => [...prev, ...existingQuestions]);
     }
     
-    // For existing questions, mark for deletion
-    setDeletedQuestionIds(prev => [...prev, questionId]);
-    setQuestions(prevQuestions => prevQuestions.filter(q => q.id !== questionId));
-    toast.success("Pergunta removida", { duration: 3000 });
-  }, [setQuestions, setDeletedQuestionIds]);
+    setQuestions(prevQuestions => 
+      prevQuestions.filter(q => !questionsToDelete.includes(q.id))
+    );
+    
+    const deletedCount = questionsToDelete.length;
+    toast.success(`${deletedCount > 1 ? `${deletedCount} perguntas removidas` : "Pergunta removida"}`, { duration: 3000 });
+  }, [setQuestions, setDeletedQuestionIds, questions]);
 
   // Função corrigida para toggle de todas as opções de mídia
   const toggleAllMediaOptions = useCallback((enabled: boolean) => {

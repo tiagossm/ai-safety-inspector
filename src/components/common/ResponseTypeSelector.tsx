@@ -1,105 +1,43 @@
 
 import React from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { 
-  StandardResponseType,
-  RESPONSE_TYPE_LABELS,
-  RESPONSE_TYPE_DESCRIPTIONS
-} from "@/types/responseTypes";
-import { 
-  CheckSquare, 
-  Type, 
-  Hash, 
-  FileText, 
-  CircleDot, 
-  CheckCheck, 
-  ChevronDown, 
-  Camera, 
-  PenTool, 
-  Calendar, 
-  Clock, 
-  CalendarClock 
-} from "lucide-react";
+import { StandardResponseType } from "@/types/responseTypes";
 
 interface ResponseTypeSelectorProps {
   value: StandardResponseType;
   onChange: (value: StandardResponseType) => void;
   showDescriptions?: boolean;
-  disabled?: boolean;
-  className?: string;
 }
 
-const getResponseTypeIcon = (type: StandardResponseType) => {
-  const iconProps = { className: "h-4 w-4", strokeWidth: 1.5 };
-  
-  switch (type) {
-    case "yes_no": return <CheckSquare {...iconProps} />;
-    case "text": return <Type {...iconProps} />;
-    case "paragraph": return <FileText {...iconProps} />;
-    case "numeric": return <Hash {...iconProps} />;
-    case "multiple_choice": return <CircleDot {...iconProps} />;
-    case "checkboxes": return <CheckCheck {...iconProps} />;
-    case "dropdown": return <ChevronDown {...iconProps} />;
-    case "photo": return <Camera {...iconProps} />;
-    case "signature": return <PenTool {...iconProps} />;
-    case "date": return <Calendar {...iconProps} />;
-    case "time": return <Clock {...iconProps} />;
-    case "datetime": return <CalendarClock {...iconProps} />;
-    default: return <Type {...iconProps} />;
-  }
-};
+const RESPONSE_TYPE_OPTIONS = [
+  { value: "yes_no", label: "Sim/Não", description: "Resposta binária simples" },
+  { value: "text", label: "Texto", description: "Resposta em texto livre" },
+  { value: "paragraph", label: "Parágrafo", description: "Texto longo com múltiplas linhas" },
+  { value: "multiple_choice", label: "Múltipla Escolha", description: "Seleção única entre opções" },
+  { value: "checkboxes", label: "Caixas de Seleção", description: "Múltiplas seleções" },
+  { value: "dropdown", label: "Lista Suspensa", description: "Seleção em dropdown" },
+  { value: "numeric", label: "Numérico", description: "Valores numéricos" },
+  { value: "date", label: "Data", description: "Seleção de data" },
+  { value: "time", label: "Hora", description: "Seleção de horário" },
+  { value: "datetime", label: "Data e Hora", description: "Data e hora combinadas" },
+  { value: "photo", label: "Foto", description: "Captura de imagem" },
+  { value: "signature", label: "Assinatura", description: "Assinatura digital" }
+] as const;
 
-export function ResponseTypeSelector({
-  value,
-  onChange,
-  showDescriptions = false,
-  disabled = false,
-  className = ""
-}: ResponseTypeSelectorProps) {
-  const responseTypes: StandardResponseType[] = [
-    "yes_no",
-    "text", 
-    "paragraph",
-    "numeric",
-    "multiple_choice",
-    "checkboxes",
-    "dropdown",
-    "photo",
-    "signature",
-    "date",
-    "time",
-    "datetime"
-  ];
-
+export function ResponseTypeSelector({ value, onChange, showDescriptions = false }: ResponseTypeSelectorProps) {
   return (
-    <Select
-      value={value}
-      onValueChange={onChange}
-      disabled={disabled}
-    >
-      <SelectTrigger className={`w-full ${className}`}>
-        <SelectValue>
-          <div className="flex items-center gap-2">
-            {getResponseTypeIcon(value)}
-            <span>{RESPONSE_TYPE_LABELS[value]}</span>
-          </div>
-        </SelectValue>
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger>
+        <SelectValue placeholder="Selecione o tipo de resposta" />
       </SelectTrigger>
-      <SelectContent className="bg-white border shadow-lg z-50">
-        {responseTypes.map((type) => (
-          <SelectItem key={type} value={type} className="cursor-pointer">
-            <div className="flex items-start gap-3 py-1">
-              <div className="mt-0.5">
-                {getResponseTypeIcon(type)}
-              </div>
-              <div className="flex flex-col">
-                <span className="font-medium">{RESPONSE_TYPE_LABELS[type]}</span>
-                {showDescriptions && (
-                  <span className="text-xs text-gray-500 mt-0.5">
-                    {RESPONSE_TYPE_DESCRIPTIONS[type]}
-                  </span>
-                )}
-              </div>
+      <SelectContent>
+        {RESPONSE_TYPE_OPTIONS.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            <div className="flex flex-col">
+              <span>{option.label}</span>
+              {showDescriptions && (
+                <span className="text-xs text-gray-500">{option.description}</span>
+              )}
             </div>
           </SelectItem>
         ))}

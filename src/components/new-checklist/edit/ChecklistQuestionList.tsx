@@ -1,129 +1,124 @@
 
 import React from "react";
+import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import { useChecklistEditor } from "@/contexts/ChecklistEditorContext";
-import { Card, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { QuestionEditor } from "../question-editor/QuestionEditor";
-import { Switch } from "@/components/ui/switch";
+import { QuestionGroupsList } from "./QuestionGroupsList";
+import { MediaToggle } from "./MediaToggle";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 export function ChecklistQuestionList() {
   const {
     questions,
-    handleAddQuestion,
-    handleUpdateQuestion,
-    handleDeleteQuestion,
+    groups,
     viewMode,
     questionsByGroup,
     nonEmptyGroups,
     enableAllMedia,
+    handleAddGroup,
+    handleUpdateGroup,
+    handleAddQuestion,
+    handleUpdateQuestion,
+    handleDeleteQuestion,
+    handleDeleteGroup,
+    handleDragEnd,
     toggleAllMediaOptions
   } = useChecklistEditor();
 
-  // Botão toggle igual ao da imagem (Switch + Label)
-  const MediaToggle = () => (
-    <div className="flex items-center space-x-2">
-      <Switch
-        id="enable-all-media"
-        checked={enableAllMedia}
-        onCheckedChange={toggleAllMediaOptions}
-      />
-      <Label htmlFor="enable-all-media">Habilitar todas mídias</Label>
-    </div>
-  );
+  // Handle adding sub-questions
+  const handleAddSubQuestion = (parentId: string) => {
+    // Find the parent question to get its group
+    const parentQuestion = questions.find(q => q.id === parentId);
+    if (parentQuestion) {
+      const newId = `new-${Date.now()}`;
+      const siblingSubQuestions = questions.filter(q => q.parentQuestionId === parentId);
+      const order = questions.length + siblingSubQuestions.length;
 
-  if (viewMode === "flat") {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium">Perguntas</h3>
-          <MediaToggle />
-        </div>
-        {questions.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6 text-center text-muted-foreground">
-              Nenhuma pergunta adicionada. Clique em "Adicionar Pergunta" para começar.
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {questions
-              .sort((a, b) => a.order - b.order)
-              .map((question) => (
-                <QuestionEditor
-                  key={question.id}
-                  question={question}
-                  onUpdate={handleUpdateQuestion}
-                  onDelete={handleDeleteQuestion}
-                  enableAllMedia={enableAllMedia}
-                />
-              ))}
-          </div>
-        )}
-        <div className="flex justify-end mt-6">
-          <button
-            type="button"
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-            onClick={() => handleAddQuestion("default")}
-          >
-            Adicionar Pergunta
-          </button>
-        </div>
-      </div>
-    );
-  }
+      const newSubQuestion = {
+        id: newId,
+        text: "",
+        responseType: "yes_no" as const,
+        isRequired: true,
+        order,
+        weight: 1,
+        allowsPhoto: enableAllMedia,
+        allowsVideo: enableAllMedia,
+        allowsAudio: enableAllMedia,
+        allowsFiles: enableAllMedia,
+        groupId: parentQuestion.groupId,
+        parentQuestionId: parentId,
+        level: (parentQuestion.level || 0) + 1,
+        path: `${parentQuestion.path}/${newId}`,
+        isConditional: false,
+        options: []
+      };
+      
+      handleUpdateQuestion(newSubQuestion);
+    }
+  };
 
-  // Grouped mode
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium">Grupos de Perguntas</h3>
-        <MediaToggle />
-      </div>
-      {nonEmptyGroups.length === 0 ? (
-        <Card>
-          <CardContent className="pt-6 text-center text-muted-foreground">
-            Nenhum grupo com perguntas. Adicione perguntas para começar.
-          </CardContent>
-        </Card>
-      ) : (
-        nonEmptyGroups.map((group) => {
-          const groupQuestions = questionsByGroup.get(group.id) || [];
-          return (
-            <div key={group.id} className="space-y-3">
-              <h4 className="text-md font-medium">{group.title}</h4>
-              <div className="space-y-3 pl-4 border-l-2 border-muted-foreground/20">
-                {groupQuestions
-                  .sort((a, b) => a.order - b.order)
-                  .map((question) => (
-                    <QuestionEditor
-                      key={question.id}
-                      question={question}
-                      onUpdate={handleUpdateQuestion}
-                      onDelete={handleDeleteQuestion}
-                      enableAllMedia={enableAllMedia}
-                    />
-                  ))}
-                <button
-                  type="button"
-                  className="px-4 py-2 bg-primary/10 text-primary rounded-md hover:bg-primary/20"
-                  onClick={() => handleAddQuestion(group.id)}
+    <div className="space-y-6">
+      {/* Media Toggle */}
+      <MediaToggle 
+        enableAllMedia={enableAllMedia}
+        onToggle={toggleAllMediaOptions}
+      />
+
+      {/* Questions Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Perguntas do Checklist</CardTitle>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleAddGroup}
+              className="flex items-center gap-1"
+            >
+              <Plus className="h-4 w-4" />
+              Novo Grupo
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="groups" type="GROUP">
+              {(provided) => (
+                <div
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  className="space-y-4"
                 >
-                  Adicionar Pergunta ao Grupo
-                </button>
-              </div>
+                  <QuestionGroupsList
+                    groups={nonEmptyGroups}
+                    questions={questions}
+                    questionsByGroup={questionsByGroup}
+                    onUpdateGroup={handleUpdateGroup}
+                    onAddQuestion={handleAddQuestion}
+                    onUpdateQuestion={handleUpdateQuestion}
+                    onDeleteQuestion={handleDeleteQuestion}
+                    onDeleteGroup={handleDeleteGroup}
+                    onAddSubQuestion={handleAddSubQuestion}
+                    enableAllMedia={enableAllMedia}
+                  />
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
+
+          {/* Empty State */}
+          {questions.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              <p>Nenhuma pergunta adicionada ainda.</p>
+              <p className="text-sm">Adicione um grupo para começar.</p>
             </div>
-          );
-        })
-      )}
-      <div className="flex justify-end mt-6">
-        <button
-          type="button"
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-          onClick={() => handleAddQuestion("default")}
-        >
-          Adicionar Pergunta
-        </button>
-      </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
