@@ -123,6 +123,7 @@ export function ChecklistQuestionList() {
           ) : (
             <QuestionGroupsList
               groups={nonEmptyGroups}
+              questions={questions}
               questionsByGroup={questionsByGroup}
               onUpdateGroup={handleUpdateGroup}
               onAddQuestion={handleAddQuestion}
