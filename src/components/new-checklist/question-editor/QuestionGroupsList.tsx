@@ -27,6 +27,40 @@ export function QuestionGroupsList({
   enableAllMedia = false,
   isSubmitting = false
 }: QuestionGroupsListProps) {
+  // Handle adding sub-questions
+  const handleAddSubQuestion = (parentId: string) => {
+    // Find the parent question to get its group
+    const allQuestions = Array.from(questionsByGroup.values()).flat();
+    const parentQuestion = allQuestions.find(q => q.id === parentId);
+    
+    if (parentQuestion) {
+      const newId = `new-${Date.now()}`;
+      const siblingSubQuestions = allQuestions.filter(q => q.parentQuestionId === parentId);
+      const order = allQuestions.length + siblingSubQuestions.length;
+
+      const newSubQuestion = {
+        id: newId,
+        text: "",
+        responseType: "yes_no" as const,
+        isRequired: true,
+        order,
+        weight: 1,
+        allowsPhoto: enableAllMedia,
+        allowsVideo: enableAllMedia,
+        allowsAudio: enableAllMedia,
+        allowsFiles: enableAllMedia,
+        groupId: parentQuestion.groupId,
+        parentQuestionId: parentId,
+        level: (parentQuestion.level || 0) + 1,
+        path: `${parentQuestion.path}/${newId}`,
+        isConditional: false,
+        options: []
+      };
+      
+      onUpdateQuestion(newSubQuestion);
+    }
+  };
+
   return (
     <>
       {groups.map((group, index) => {
@@ -59,11 +93,13 @@ export function QuestionGroupsList({
                       <QuestionGroup
                         group={group}
                         questions={groupQuestions}
+                        groupIndex={index}
                         onUpdateGroup={onUpdateGroup}
                         onAddQuestion={onAddQuestion}
                         onUpdateQuestion={onUpdateQuestion}
                         onDeleteQuestion={onDeleteQuestion}
                         onDeleteGroup={onDeleteGroup}
+                        onAddSubQuestion={handleAddSubQuestion}
                         dragHandleProps={draggableProvided.dragHandleProps}
                         enableAllMedia={enableAllMedia}
                         isSubmitting={isSubmitting}
