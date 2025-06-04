@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { OptionsEditor } from "./OptionsEditor";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Info } from "lucide-react";
+import { AlertCircle, Settings } from "lucide-react";
 import { 
   StandardResponseType,
   convertToFrontendType,
@@ -30,23 +30,21 @@ export function OptionsSection({ question, onUpdate }: OptionsSectionProps) {
   const requiresOptions = TYPES_REQUIRING_OPTIONS.includes(frontendResponseType);
   const hasValidOptions = question.options && Array.isArray(question.options) && question.options.length > 0;
 
-  // Auto-abre editor se necessário
+  // Sempre mostrar editor de opções se necessário
   useEffect(() => {
-    if (requiresOptions && !hasValidOptions) {
+    if (requiresOptions) {
       setShowOptionsEditor(true);
-    } else if (requiresOptions && hasValidOptions) {
+      
+      // Auto-criar opções padrão se não existirem
+      if (!hasValidOptions) {
+        const updatedQuestion = {
+          ...question,
+          options: ["Opção 1", "Opção 2"]
+        };
+        onUpdate(updatedQuestion);
+      }
+    } else {
       setShowOptionsEditor(false);
-    }
-  }, [requiresOptions, hasValidOptions]);
-
-  // Auto-cria opções padrão se necessário
-  useEffect(() => {
-    if (requiresOptions && !hasValidOptions) {
-      const updatedQuestion = {
-        ...question,
-        options: ["Opção 1", "Opção 2"]
-      };
-      onUpdate(updatedQuestion);
     }
   }, [requiresOptions, hasValidOptions, question, onUpdate]);
 
@@ -63,8 +61,8 @@ export function OptionsSection({ question, onUpdate }: OptionsSectionProps) {
         <div className="flex items-center gap-2">
           {!hasValidOptions && (
             <div className="flex items-center gap-1 text-amber-600 text-xs">
-              <Info className="h-3 w-3" />
-              <span>Obrigatório</span>
+              <AlertCircle className="h-3 w-3" />
+              <span>Configuração necessária</span>
             </div>
           )}
           {hasValidOptions && (
@@ -73,30 +71,26 @@ export function OptionsSection({ question, onUpdate }: OptionsSectionProps) {
               variant="ghost"
               size="sm"
               onClick={() => setShowOptionsEditor(!showOptionsEditor)}
+              className="flex items-center gap-1"
             >
-              {showOptionsEditor ? "Ocultar" : "Editar opções"}
+              <Settings className="h-3 w-3" />
+              {showOptionsEditor ? "Ocultar" : "Configurar"}
             </Button>
           )}
         </div>
       </div>
 
-      {requiresOptions && !hasValidOptions && (
-        <div className="flex items-center gap-1 text-amber-600 text-xs">
-          <AlertCircle className="h-3 w-3" />
-          <span>Este tipo requer opções configuradas</span>
-        </div>
-      )}
-
-      {(showOptionsEditor || !hasValidOptions) && (
+      {/* Sempre mostrar para tipos que requerem opções */}
+      {requiresOptions && (
         <OptionsEditor 
           question={question} 
           onUpdate={onUpdate} 
         />
       )}
 
-      {hasValidOptions && !showOptionsEditor && (
-        <div className="text-xs text-gray-500">
-          {question.options?.length} opções configuradas
+      {hasValidOptions && (
+        <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
+          ✓ {question.options?.length} opções configuradas
         </div>
       )}
     </div>

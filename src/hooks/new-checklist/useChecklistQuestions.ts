@@ -12,11 +12,14 @@ export function useChecklistQuestions(
 ) {
   const [enableAllMedia, setEnableAllMedia] = useState(false);
 
-  const handleAddQuestion = useCallback((groupId: string) => {
+  const handleAddQuestion = useCallback((groupId: string = "default") => {
     const newId = `new-${Date.now()}`;
     const order = questions.length > 0 
       ? Math.max(...questions.map(q => q.order)) + 1 
       : 0;
+
+    // Ensure we have a valid group ID
+    const targetGroupId = groupId || (groups.length > 0 ? groups[0].id : "default");
 
     const newQuestion: ChecklistQuestion = {
       id: newId,
@@ -29,7 +32,7 @@ export function useChecklistQuestions(
       allowsVideo: enableAllMedia,
       allowsAudio: enableAllMedia,
       allowsFiles: enableAllMedia,
-      groupId,
+      groupId: targetGroupId,
       level: 0,
       path: newId,
       isConditional: false,
@@ -39,17 +42,27 @@ export function useChecklistQuestions(
     setQuestions(prevQuestions => [...prevQuestions, newQuestion]);
     toast.success("Pergunta adicionada", { duration: 3000 });
     return newId;
-  }, [questions, setQuestions, enableAllMedia]);
+  }, [questions, setQuestions, enableAllMedia, groups]);
 
-  function handleUpdateQuestion(updated: ChecklistQuestion) {
+  const handleUpdateQuestion = useCallback((updated: ChecklistQuestion) => {
+    console.log("Atualizando pergunta:", {
+      id: updated.id,
+      text: updated.text?.substring(0, 50),
+      responseType: updated.responseType,
+      options: updated.options
+    });
+
     setQuestions((prev) =>
       prev.map((q) =>
         q.id === updated.id
-          ? { ...updated, options: updated.options ? [...updated.options] : [] }
+          ? { 
+              ...updated, 
+              options: updated.options ? [...updated.options] : [] 
+            }
           : q
       )
     );
-  }
+  }, [setQuestions]);
 
   const handleDeleteQuestion = useCallback((questionId: string) => {
     // Also delete any sub-questions
@@ -80,9 +93,8 @@ export function useChecklistQuestions(
     toast.success(`${deletedCount > 1 ? `${deletedCount} perguntas removidas` : "Pergunta removida"}`, { duration: 3000 });
   }, [setQuestions, setDeletedQuestionIds, questions]);
 
-  // Função corrigida para toggle de todas as opções de mídia
   const toggleAllMediaOptions = useCallback((enabled: boolean) => {
-    console.log("toggleAllMediaOptions chamado com:", enabled);
+    console.log("Alternando opções de mídia para:", enabled);
     
     setEnableAllMedia(enabled);
     
@@ -97,11 +109,11 @@ export function useChecklistQuestions(
       }))
     );
     
-    // Notificação de feedback
+    // Feedback melhorado
     if (enabled) {
-      toast.success("Todos os recursos de mídia ativados para todas as perguntas", { duration: 3000 });
+      toast.success("Recursos de mídia ativados para todas as perguntas", { duration: 3000 });
     } else {
-      toast.success("Todos os recursos de mídia desativados para todas as perguntas", { duration: 3000 });
+      toast.success("Recursos de mídia desativados para todas as perguntas", { duration: 3000 });
     }
   }, [setQuestions]);
 

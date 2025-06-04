@@ -14,13 +14,13 @@ export function MediaToggle({ enableAllMedia, onToggle }: MediaToggleProps) {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm">Configurações de Mídia</CardTitle>
+        <CardTitle className="text-sm">Recursos de Mídia</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Label htmlFor="enable-all-media" className="text-sm font-medium">
-              Habilitar todas as opções de mídia
+              Habilitar recursos de mídia para todas as perguntas
             </Label>
           </div>
           <Switch
@@ -31,7 +31,7 @@ export function MediaToggle({ enableAllMedia, onToggle }: MediaToggleProps) {
         </div>
         
         {enableAllMedia && (
-          <div className="flex items-center gap-4 text-xs text-green-600 bg-green-50 p-2 rounded">
+          <div className="flex items-center gap-4 text-xs text-green-600 bg-green-50 p-3 rounded-md">
             <div className="flex items-center gap-1">
               <Image className="h-3 w-3" />
               <span>Fotos</span>
@@ -49,6 +49,12 @@ export function MediaToggle({ enableAllMedia, onToggle }: MediaToggleProps) {
               <span>Arquivos</span>
             </div>
           </div>
+        )}
+        
+        {!enableAllMedia && (
+          <p className="text-xs text-gray-500">
+            Os recursos de mídia podem ser habilitados individualmente para cada pergunta
+          </p>
         )}
       </CardContent>
     </Card>
