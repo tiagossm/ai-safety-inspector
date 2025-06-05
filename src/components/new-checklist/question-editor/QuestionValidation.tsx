@@ -77,13 +77,26 @@ export function QuestionValidation({ question, allQuestions = [] }: QuestionVali
     // Validação: perguntas condicionais
     if (question.isConditional && question.displayCondition) {
       const { rules } = question.displayCondition;
-      if (!rules || rules.length === 0) {
+      
+      // Verificar condição principal
+      if (!question.displayCondition.parentQuestionId) {
         issues.push({
           type: 'error',
-          message: 'Pergunta condicional deve ter pelo menos uma regra',
+          message: 'Pergunta condicional deve ter uma pergunta pai selecionada',
           field: 'displayCondition'
         });
-      } else {
+      }
+      
+      if (!question.displayCondition.expectedValue) {
+        issues.push({
+          type: 'error',
+          message: 'Pergunta condicional deve ter um valor esperado definido',
+          field: 'displayCondition'
+        });
+      }
+
+      // Verificar regras adicionais se existirem
+      if (rules && rules.length > 0) {
         rules.forEach((rule, index) => {
           if (!rule.parentQuestionId) {
             issues.push({

@@ -105,6 +105,21 @@ export interface BatchUpdateResult {
   count: number;
 }
 
+// Definindo as interfaces para as condições de exibição
+export interface DisplayConditionRule {
+  parentQuestionId: string;
+  expectedValue: string;
+  operator?: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than';
+}
+
+export interface DisplayCondition {
+  parentQuestionId: string;
+  expectedValue: string;
+  operator?: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than';
+  rules?: DisplayConditionRule[];
+  logic?: 'AND' | 'OR';
+}
+
 // Interface atualizada para usar StandardResponseType e incluir todas as propriedades necessárias
 export interface ChecklistQuestion {
   id: string;
@@ -125,10 +140,7 @@ export interface ChecklistQuestion {
   options: string[]; // Mantém compatibilidade
   multipleChoiceOptions?: import("@/types/multipleChoice").ChecklistItemOption[]; // Opções avançadas
   hint?: string;
-  displayCondition?: {
-    parentQuestionId: string;
-    expectedValue: string;
-  };
+  displayCondition?: DisplayCondition;
   conditionalQuestions?: ChecklistQuestion[];
   // Propriedades para suporte a sub-checklists
   hasSubChecklist?: boolean;

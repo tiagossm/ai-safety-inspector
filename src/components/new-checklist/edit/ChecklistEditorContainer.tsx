@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChecklistEditActions } from "@/components/new-checklist/edit/ChecklistEditActions";
@@ -15,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Wand2, Eye, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { ChecklistQuestion } from "@/types/newChecklist";
 
 export function ChecklistEditorContainer() {
   const editorContext = useChecklistEditorContext();
@@ -99,7 +99,7 @@ export function ChecklistEditorContainer() {
 
   const handleAddAISuggestion = (suggestion: Partial<ChecklistQuestion>) => {
     const defaultGroupId = editorContext.groups.length > 0 ? editorContext.groups[0].id : "default";
-    const newQuestion = {
+    const newQuestion: ChecklistQuestion = {
       id: `new-${Date.now()}`,
       text: suggestion.text || "",
       responseType: suggestion.responseType || "yes_no" as const,
