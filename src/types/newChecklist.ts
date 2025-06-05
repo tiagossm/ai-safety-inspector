@@ -1,4 +1,3 @@
-
 import { StandardResponseType } from "./responseTypes";
 
 export interface ChecklistWithStats {
@@ -109,27 +108,39 @@ export interface BatchUpdateResult {
 export interface ChecklistQuestion {
   id: string;
   text: string;
-  responseType: StandardResponseType;
+  responseType: 
+    | "yes_no" 
+    | "text" 
+    | "paragraph" 
+    | "number" 
+    | "multiple_choice" 
+    | "checkboxes" 
+    | "dropdown" 
+    | "date" 
+    | "time" 
+    | "datetime" 
+    | "photo" 
+    | "signature";
   isRequired: boolean;
-  options?: string[];
+  order: number;
   weight: number;
   allowsPhoto: boolean;
   allowsVideo: boolean;
   allowsAudio: boolean;
-  allowsFiles?: boolean;
-  order: number;
-  groupId?: string;
-  condition?: string;
-  conditionValue?: string;
+  allowsFiles: boolean;
+  groupId: string;
   parentQuestionId?: string;
-  hasSubChecklist?: boolean;
-  subChecklistId?: string;
-  hint?: string;
-  // Propriedades hierárquicas obrigatórias para o sistema
-  level: number;
-  path: string;
-  displayCondition?: any;
+  level?: number;
+  path?: string;
   isConditional: boolean;
+  options: string[]; // Mantém compatibilidade
+  multipleChoiceOptions?: import("@/types/multipleChoice").ChecklistItemOption[]; // Opções avançadas
+  hint?: string;
+  displayCondition?: {
+    parentQuestionId: string;
+    expectedValue: string;
+  };
+  conditionalQuestions?: ChecklistQuestion[];
 }
 
 // Extended InspectionDetails interface with all required properties

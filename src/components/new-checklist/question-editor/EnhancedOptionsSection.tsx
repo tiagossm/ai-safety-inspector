@@ -54,10 +54,16 @@ export function EnhancedOptionsSection({
   const handleOptionsChange = (newOptions: ChecklistItemOption[]) => {
     setInternalOptions(newOptions);
     
-    // Atualizar a pergunta com as novas opções
+    // Converter ChecklistItemOption[] para o formato esperado pela interface ChecklistQuestion
+    // Mantemos tanto o formato string[] quanto os dados completos para compatibilidade
+    const optionsForQuestion = newOptions.map(option => option.option_text);
+    
+    // Atualizar a pergunta com as novas opções no formato esperado
     onUpdate({
       ...question,
-      options: newOptions
+      options: optionsForQuestion, // string[] para compatibilidade
+      // Armazenar as opções completas em uma propriedade customizada se necessário
+      multipleChoiceOptions: newOptions
     });
   };
 
