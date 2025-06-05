@@ -5,7 +5,7 @@ import { AIAssistantType } from "@/types/AIAssistantType";
 import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
 import { supabase } from "@/integrations/supabase/client";
 import { handleError, validateRequiredFields } from "@/utils/errorHandling";
-import { normalizeAIResponseType } from "@/utils/responseTypeMap";
+import { convertToFrontendType } from "@/types/responseTypes";
 
 export { type AIAssistantType };
 
@@ -63,7 +63,7 @@ export function useChecklistAI() {
       // Normalizar tipos de resposta das perguntas vindas da IA
       const questions: ChecklistQuestion[] = (data.questions || []).map((q: any, index: number) => ({
         ...q,
-        responseType: normalizeAIResponseType(q.responseType || 'text'),
+        responseType: convertToFrontendType(q.responseType || 'text'),
         id: q.id || `ai-${Date.now()}-${index}`,
         order: q.order !== undefined ? q.order : index
       }));

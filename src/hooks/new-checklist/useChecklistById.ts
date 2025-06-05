@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ChecklistWithStats, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
-import { databaseToFrontendResponseType } from "@/utils/responseTypeMap";
+import { convertToFrontendType } from "@/types/responseTypes";
 
 const processChecklistItems = (items: any[]): ChecklistQuestion[] => {
   if (!items || !Array.isArray(items)) {
@@ -27,7 +27,7 @@ const processChecklistItems = (items: any[]): ChecklistQuestion[] => {
       id: item.id,
       text: item.pergunta,
       description: item.hint || "",
-      responseType: databaseToFrontendResponseType(item.tipo_resposta),
+      responseType: convertToFrontendType(item.tipo_resposta),
       isRequired: item.obrigatorio !== false,
       order: item.ordem || index,
       groupId: item.group_id || "default",

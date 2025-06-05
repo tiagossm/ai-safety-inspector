@@ -114,7 +114,6 @@ export function AdvancedOptionsEditor({
               id="enable-scoring"
               checked={showScoring}
               onCheckedChange={setShowScoring}
-              size="sm"
             />
           </div>
         )}
@@ -150,7 +149,6 @@ export function AdvancedOptionsEditor({
                   <Switch
                     checked={option.is_correct || false}
                     onCheckedChange={(checked) => handleUpdateOption(index, 'is_correct', checked)}
-                    size="sm"
                   />
                   <Label className="text-xs text-gray-600">Correta</Label>
                 </div>
