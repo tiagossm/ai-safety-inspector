@@ -91,16 +91,22 @@ export function useChecklistEdit(checklistId?: string) {
         let displayCondition: DisplayCondition | undefined;
         if (item.display_condition) {
           try {
-            const parsed = typeof item.display_condition === 'string' 
-              ? JSON.parse(item.display_condition) 
-              : item.display_condition;
-            displayCondition = {
-              parentQuestionId: parsed.parentQuestionId || '',
-              expectedValue: parsed.expectedValue || '',
-              operator: parsed.operator,
-              rules: parsed.rules || [],
-              logic: parsed.logic
-            };
+            let parsed: any;
+            if (typeof item.display_condition === 'string') {
+              parsed = JSON.parse(item.display_condition);
+            } else if (typeof item.display_condition === 'object' && item.display_condition !== null) {
+              parsed = item.display_condition;
+            }
+            
+            if (parsed && (parsed.parentQuestionId || parsed.expectedValue)) {
+              displayCondition = {
+                parentQuestionId: parsed.parentQuestionId || '',
+                expectedValue: parsed.expectedValue || '',
+                operator: parsed.operator || 'equals',
+                rules: parsed.rules || [],
+                logic: parsed.logic || 'AND'
+              };
+            }
           } catch (e) {
             console.error("Error parsing display_condition:", e);
             displayCondition = undefined;
@@ -220,14 +226,17 @@ export function useChecklistEdit(checklistId?: string) {
 
   const updateQuestionMutation = useMutation({
     mutationFn: async (question: ChecklistQuestion) => {
-      // Converter DisplayCondition para JSON compatível
-      const displayCondition = question.displayCondition ? {
-        parentQuestionId: question.displayCondition.parentQuestionId,
-        expectedValue: question.displayCondition.expectedValue,
-        operator: question.displayCondition.operator,
-        rules: question.displayCondition.rules,
-        logic: question.displayCondition.logic
-      } : null;
+      // Converter DisplayCondition para JSON simples
+      let displayCondition = null;
+      if (question.displayCondition) {
+        displayCondition = {
+          parentQuestionId: question.displayCondition.parentQuestionId || '',
+          expectedValue: question.displayCondition.expectedValue || '',
+          operator: question.displayCondition.operator || 'equals',
+          rules: question.displayCondition.rules || [],
+          logic: question.displayCondition.logic || 'AND'
+        };
+      }
 
       const { data, error } = await supabase
         .from("checklist_itens")

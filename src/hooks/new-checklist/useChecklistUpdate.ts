@@ -103,14 +103,17 @@ export function useChecklistUpdate() {
             const options = Array.isArray(q.options) ? q.options.map((opt) => String(opt)) : [];
             const dbResponseType = frontendToDatabaseResponseType(q.responseType);
 
-            // Converter DisplayCondition para JSON compatível
-            const displayCondition = q.displayCondition ? {
-              parentQuestionId: q.displayCondition.parentQuestionId,
-              expectedValue: q.displayCondition.expectedValue,
-              operator: q.displayCondition.operator,
-              rules: q.displayCondition.rules,
-              logic: q.displayCondition.logic
-            } : null;
+            // Converter DisplayCondition para JSON simples
+            let displayCondition = null;
+            if (q.displayCondition) {
+              displayCondition = {
+                parentQuestionId: q.displayCondition.parentQuestionId || '',
+                expectedValue: q.displayCondition.expectedValue || '',
+                operator: q.displayCondition.operator || 'equals',
+                rules: q.displayCondition.rules || [],
+                logic: q.displayCondition.logic || 'AND'
+              };
+            }
 
             console.log(`Mapping question ${index}: ${q.responseType} -> ${dbResponseType}`);
 
@@ -161,14 +164,17 @@ export function useChecklistUpdate() {
             
           const dbResponseType = frontendToDatabaseResponseType(question.responseType);
 
-          // Converter DisplayCondition para JSON compatível
-          const displayCondition = question.displayCondition ? {
-            parentQuestionId: question.displayCondition.parentQuestionId,
-            expectedValue: question.displayCondition.expectedValue,
-            operator: question.displayCondition.operator,
-            rules: question.displayCondition.rules,
-            logic: question.displayCondition.logic
-          } : null;
+          // Converter DisplayCondition para JSON simples
+          let displayCondition = null;
+          if (question.displayCondition) {
+            displayCondition = {
+              parentQuestionId: question.displayCondition.parentQuestionId || '',
+              expectedValue: question.displayCondition.expectedValue || '',
+              operator: question.displayCondition.operator || 'equals',
+              rules: question.displayCondition.rules || [],
+              logic: question.displayCondition.logic || 'AND'
+            };
+          }
 
           console.log(`Updating question: ${question.responseType} -> ${dbResponseType}`);
 

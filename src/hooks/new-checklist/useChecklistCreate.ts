@@ -56,14 +56,17 @@ export function useChecklistCreate() {
       // Criar perguntas se existirem
       if (questions && questions.length > 0) {
         const questionsToInsert = questions.map((question) => {
-          // Converter DisplayCondition para JSON compatível removendo propriedades não compatíveis
-          const displayCondition = question.displayCondition ? {
-            parentQuestionId: question.displayCondition.parentQuestionId,
-            expectedValue: question.displayCondition.expectedValue,
-            operator: question.displayCondition.operator,
-            rules: question.displayCondition.rules,
-            logic: question.displayCondition.logic
-          } : null;
+          // Converter DisplayCondition para JSON simples
+          let displayCondition = null;
+          if (question.displayCondition) {
+            displayCondition = {
+              parentQuestionId: question.displayCondition.parentQuestionId || '',
+              expectedValue: question.displayCondition.expectedValue || '',
+              operator: question.displayCondition.operator || 'equals',
+              rules: question.displayCondition.rules || [],
+              logic: question.displayCondition.logic || 'AND'
+            };
+          }
 
           return {
             checklist_id: checklist.id,
