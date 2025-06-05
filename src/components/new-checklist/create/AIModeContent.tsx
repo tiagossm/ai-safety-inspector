@@ -1,12 +1,13 @@
 
 import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Sparkles, Wand2 } from "lucide-react";
 import { ChecklistQuestion } from "@/types/newChecklist";
-import { QuestionEditor } from "@/components/new-checklist/question-editor/QuestionEditor";
 import { toast } from "sonner";
-import { Loader2, Sparkles } from "lucide-react";
 
 interface AIModeContentProps {
   onQuestionsGenerated: (questions: ChecklistQuestion[]) => void;
@@ -14,181 +15,147 @@ interface AIModeContentProps {
 }
 
 export function AIModeContent({ onQuestionsGenerated, onCancel }: AIModeContentProps) {
-  const [prompt, setPrompt] = useState("");
-  const [generatedQuestions, setGeneratedQuestions] = useState<ChecklistQuestion[]>([]);
+  const [description, setDescription] = useState("");
+  const [questionCount, setQuestionCount] = useState(10);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
 
   const handleGenerate = async () => {
-    if (!prompt.trim()) {
+    if (!description.trim()) {
       toast.error("Por favor, descreva o tipo de checklist que deseja criar");
       return;
     }
 
     setIsGenerating(true);
-    try {
-      // Simular geração de perguntas por IA
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const mockQuestions: ChecklistQuestion[] = [
-        {
-          id: `q-${Date.now()}-1`,
-          text: "O equipamento está funcionando corretamente?",
-          responseType: "yes_no",
-          isRequired: true,
-          order: 1,
-          weight: 1,
-          allowsPhoto: true,
-          allowsVideo: false,
-          allowsAudio: false,
-          allowsFiles: false,
-          options: [],
-          hint: "Verifique se não há ruídos estranhos ou vibração excessiva",
-          level: 0,
-          path: `q-${Date.now()}-1`,
-          isConditional: false
-        },
-        {
-          id: `q-${Date.now()}-2`,
-          text: "Descreva as condições observadas",
-          responseType: "text",
-          isRequired: true,
-          order: 2,
-          weight: 1,
-          allowsPhoto: true,
-          allowsVideo: false,
-          allowsAudio: false,
-          allowsFiles: false,
-          options: [],
-          hint: "Seja específico sobre o que foi observado",
-          level: 0,
-          path: `q-${Date.now()}-2`,
-          isConditional: false
-        },
-        {
-          id: `q-${Date.now()}-3`,
-          text: "Qual o nível de prioridade?",
-          responseType: "multiple_choice",
-          isRequired: true,
-          order: 3,
-          weight: 2,
-          allowsPhoto: false,
-          allowsVideo: false,
-          allowsAudio: false,
-          allowsFiles: false,
-          options: ["Baixa", "Média", "Alta", "Crítica"],
-          hint: "Selecione baseado na urgência da situação",
-          level: 0,
-          path: `q-${Date.now()}-3`,
-          isConditional: false
-        }
-      ];
+    
+    // Simular geração de perguntas por IA
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    const sampleQuestions: ChecklistQuestion[] = [
+      {
+        id: `ai-question-1`,
+        text: "O equipamento está funcionando corretamente?",
+        responseType: "yes_no",
+        isRequired: true,
+        order: 0,
+        weight: 1,
+        allowsPhoto: true,
+        allowsVideo: false,
+        allowsAudio: false,
+        allowsFiles: false,
+        options: [],
+        hint: "Verificar se não há ruídos anômalos ou vazamentos",
+        level: 0,
+        path: `ai-question-1`,
+        isConditional: false,
+        groupId: "default"
+      },
+      {
+        id: `ai-question-2`,
+        text: "Observações gerais sobre a inspeção:",
+        responseType: "text",
+        isRequired: true,
+        order: 1,
+        weight: 1,
+        allowsPhoto: true,
+        allowsVideo: false,
+        allowsAudio: false,
+        allowsFiles: false,
+        options: [],
+        hint: "Descreva qualquer observação relevante",
+        level: 0,
+        path: `ai-question-2`,
+        isConditional: false,
+        groupId: "default"
+      },
+      {
+        id: `ai-question-3`,
+        text: "Qual o nível de risco identificado?",
+        responseType: "multiple_choice",
+        isRequired: true,
+        order: 2,
+        weight: 1,
+        allowsPhoto: false,
+        allowsVideo: false,
+        allowsAudio: false,
+        allowsFiles: false,
+        options: ["Baixo", "Médio", "Alto", "Crítico"],
+        hint: "Selecione o nível de risco apropriado",
+        level: 0,
+        path: `ai-question-3`,
+        isConditional: false,
+        groupId: "default"
+      }
+    ];
 
-      setGeneratedQuestions(mockQuestions);
-      toast.success("Perguntas geradas com sucesso!");
-      setIsEditing(true);
-    } catch (error) {
-      console.error("Erro ao gerar perguntas:", error);
-      toast.error("Erro ao gerar perguntas. Tente novamente.");
-    } finally {
-      setIsGenerating(false);
-    }
+    setIsGenerating(false);
+    onQuestionsGenerated(sampleQuestions);
+    toast.success("Perguntas geradas com sucesso!");
   };
-
-  const handleQuestionUpdate = (updatedQuestion: ChecklistQuestion) => {
-    setGeneratedQuestions(prev => 
-      prev.map(q => q.id === updatedQuestion.id ? updatedQuestion : q)
-    );
-  };
-
-  const handleQuestionDelete = (questionId: string) => {
-    setGeneratedQuestions(prev => prev.filter(q => q.id !== questionId));
-  };
-
-  const handleConfirm = () => {
-    if (generatedQuestions.length === 0) {
-      toast.error("Nenhuma pergunta foi gerada");
-      return;
-    }
-    onQuestionsGenerated(generatedQuestions);
-  };
-
-  if (isEditing) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Revisar e Editar Perguntas</h3>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setIsEditing(false)}>
-              Voltar
-            </Button>
-            <Button onClick={handleConfirm}>
-              Confirmar Perguntas
-            </Button>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          {generatedQuestions.map((question) => (
-            <QuestionEditor
-              key={question.id}
-              question={question}
-              questions={generatedQuestions}
-              onUpdate={handleQuestionUpdate}
-              onDelete={handleQuestionDelete}
-            />
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5" />
-            Gerar Checklist com IA
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block">
-              Descreva o tipo de checklist que você quer criar
-            </label>
-            <Textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Ex: Checklist de segurança para inspeção de equipamentos industriais, incluindo verificações de funcionamento, condições de segurança e manutenção preventiva..."
-              rows={6}
-              className="w-full"
-            />
-          </div>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5" />
+          Gerar Checklist com IA
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div>
+          <Label htmlFor="description">Descreva o tipo de checklist que você quer criar</Label>
+          <Textarea
+            id="description"
+            placeholder="Ex: Checklist de segurança para inspeção de equipamentos industriais..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={4}
+            className="mt-2"
+          />
+        </div>
 
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={onCancel}>
-              Cancelar
-            </Button>
-            <Button 
-              onClick={handleGenerate}
-              disabled={isGenerating || !prompt.trim()}
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Gerando...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Gerar Perguntas
-                </>
-              )}
-            </Button>
+        <div>
+          <Label htmlFor="questionCount">Número de perguntas (aproximado)</Label>
+          <Input
+            id="questionCount"
+            type="number"
+            min="5"
+            max="50"
+            value={questionCount}
+            onChange={(e) => setQuestionCount(Number(e.target.value))}
+            className="mt-2"
+          />
+        </div>
+
+        <div className="flex gap-3">
+          <Button 
+            onClick={handleGenerate} 
+            disabled={isGenerating || !description.trim()}
+            className="flex-1"
+          >
+            {isGenerating ? (
+              <>
+                <Wand2 className="mr-2 h-4 w-4 animate-spin" />
+                Gerando...
+              </>
+            ) : (
+              <>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Gerar Checklist
+              </>
+            )}
+          </Button>
+          
+          <Button variant="outline" onClick={onCancel}>
+            Cancelar
+          </Button>
+        </div>
+
+        {isGenerating && (
+          <div className="text-sm text-muted-foreground text-center">
+            Nossa IA está analisando sua descrição e criando perguntas personalizadas...
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

@@ -65,6 +65,12 @@ const FRONTEND_TO_DB_TYPE_MAP: Record<StandardResponseType, string> = {
   'signature': 'assinatura'
 };
 
+// Exportar o mapeamento que o responseTypeMap.ts está tentando importar
+export const RESPONSE_TYPE_MAP = {
+  frontend: FRONTEND_TO_DB_TYPE_MAP,
+  database: DB_TO_FRONTEND_TYPE_MAP
+};
+
 // Função para converter tipo do banco para o frontend
 export function convertToFrontendType(dbType: string): StandardResponseType {
   const normalized = dbType?.toLowerCase?.() || '';
@@ -74,6 +80,11 @@ export function convertToFrontendType(dbType: string): StandardResponseType {
 // Função para converter tipo do frontend para o banco
 export function frontendToDatabaseResponseType(frontendType: StandardResponseType): string {
   return FRONTEND_TO_DB_TYPE_MAP[frontendType] || 'texto';
+}
+
+// Adicionar a função que falta para compatibilidade
+export function convertToDatabaseType(frontendType: StandardResponseType): string {
+  return frontendToDatabaseResponseType(frontendType);
 }
 
 // Função para validar valor de resposta
