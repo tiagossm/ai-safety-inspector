@@ -105,11 +105,12 @@ export interface BatchUpdateResult {
   count: number;
 }
 
-// Definindo as interfaces para as condições de exibição
+// Definindo as interfaces para as condições de exibição com índice de string
 export interface DisplayConditionRule {
   parentQuestionId: string;
   expectedValue: string;
   operator?: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than';
+  [key: string]: any; // Adiciona índice de string para compatibilidade com Json
 }
 
 export interface DisplayCondition {
@@ -118,6 +119,7 @@ export interface DisplayCondition {
   operator?: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than';
   rules?: DisplayConditionRule[];
   logic?: 'AND' | 'OR';
+  [key: string]: any; // Adiciona índice de string para compatibilidade com Json
 }
 
 // Interface atualizada para usar StandardResponseType e incluir todas as propriedades necessárias

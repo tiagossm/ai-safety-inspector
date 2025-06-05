@@ -103,7 +103,7 @@ export function useChecklistEdit(checklistId?: string) {
         isConditional: item.is_conditional || false,
         parentQuestionId: item.parent_item_id,
         conditionValue: item.condition_value,
-        displayCondition: item.display_condition,
+        displayCondition: item.display_condition ? JSON.parse(JSON.stringify(item.display_condition)) : undefined,
         hasSubChecklist: item.has_subchecklist,
         subChecklistId: item.sub_checklist_id,
       })) as ChecklistQuestion[];
@@ -197,6 +197,10 @@ export function useChecklistEdit(checklistId?: string) {
 
   const updateQuestionMutation = useMutation({
     mutationFn: async (question: ChecklistQuestion) => {
+      // Converter DisplayCondition para JSON compatível
+      const displayCondition = question.displayCondition ? 
+        JSON.parse(JSON.stringify(question.displayCondition)) : null;
+
       const { data, error } = await supabase
         .from("checklist_itens")
         .update({
@@ -213,7 +217,7 @@ export function useChecklistEdit(checklistId?: string) {
           parent_item_id: question.parentQuestionId,
           condition_value: question.conditionValue,
           hint: question.hint,
-          display_condition: question.displayCondition,
+          display_condition: displayCondition,
           is_conditional: question.isConditional,
           has_subchecklist: question.hasSubChecklist,
           sub_checklist_id: question.subChecklistId,

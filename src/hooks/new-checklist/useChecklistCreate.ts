@@ -5,47 +5,42 @@ import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/
 import { toast } from "sonner";
 import { frontendToDatabaseResponseType } from "@/utils/responseTypeMap";
 
-interface ChecklistCreateParams extends NewChecklistPayload {
-  questions?: ChecklistQuestion[];
-  groups?: ChecklistGroup[];
+interface CreateChecklistParams extends NewChecklistPayload {
+  questions: ChecklistQuestion[];
+  groups: ChecklistGroup[];
 }
 
 export function useChecklistCreate() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: ChecklistCreateParams) => {
+    mutationFn: async (params: CreateChecklistParams) => {
       const { questions, groups, ...checklistData } = params;
 
-      // Create the checklist first
+      // Criar o checklist
       const { data: checklist, error: checklistError } = await supabase
         .from("checklists")
         .insert({
-          title: checklistData.title,
-          description: checklistData.description,
+          ...checklistData,
           is_template: checklistData.is_template || false,
           status_checklist: checklistData.status_checklist || "ativo",
-          category: checklistData.category,
-          company_id: checklistData.company_id,
-          responsible_id: checklistData.responsible_id,
-          origin: checklistData.origin || "manual",
-          due_date: checklistData.due_date,
+          status: checklistData.status || "active"
         })
         .select()
         .single();
 
-      if (checklistError) {
+      if (checklistError || !checklist) {
         console.error("Erro ao criar checklist:", checklistError);
-        throw new Error(`Falha ao criar checklist: ${checklistError.message}`);
+        throw new Error(`Falha ao criar checklist: ${checklistError?.message || "Erro desconhecido"}`);
       }
 
-      // Insert groups if provided
+      // Criar grupos se existirem
       if (groups && groups.length > 0) {
-        const groupsToInsert = groups.map((g) => ({
-          id: g.id,
+        const groupsToInsert = groups.map(group => ({
+          id: group.id,
           checklist_id: checklist.id,
-          title: g.title,
-          order: g.order,
+          title: group.title,
+          order: group.order
         }));
 
         const { error: groupsError } = await supabase
@@ -53,46 +48,37 @@ export function useChecklistCreate() {
           .insert(groupsToInsert);
 
         if (groupsError) {
-          console.error("Erro ao inserir grupos:", groupsError);
-          throw new Error(`Falha ao inserir grupos: ${groupsError.message}`);
+          console.error("Erro ao criar grupos:", groupsError);
+          throw new Error(`Falha ao criar grupos: ${groupsError.message}`);
         }
       }
 
-      // Insert questions if provided
+      // Criar perguntas se existirem
       if (questions && questions.length > 0) {
-        const questionsToInsert = questions.map((q, index) => {
-          // Handle hint that might contain group metadata
-          let hint = q.hint || "";
-          if (typeof hint === "string" && hint.includes("{") && hint.includes("}")) {
-            try {
-              const parsed = JSON.parse(hint);
-              if (parsed && (parsed.groupId || parsed.groupTitle || parsed.groupIndex)) {
-                hint = ""; // Clear metadata hints
-              }
-            } catch (e) {
-              // If parsing fails, keep the original hint
-            }
-          }
-
-          const options = Array.isArray(q.options) ? q.options.map(opt => String(opt)) : [];
+        const questionsToInsert = questions.map((question) => {
+          // Converter DisplayCondition para JSON compatível
+          const displayCondition = question.displayCondition ? 
+            JSON.parse(JSON.stringify(question.displayCondition)) : null;
 
           return {
             checklist_id: checklist.id,
-            pergunta: q.text,
-            tipo_resposta: frontendToDatabaseResponseType(q.responseType),
-            obrigatorio: q.isRequired,
-            ordem: q.order || index,
-            opcoes: options,
-            weight: q.weight || 1,
-            permite_foto: q.allowsPhoto,
-            permite_video: q.allowsVideo,
-            permite_audio: q.allowsAudio,
-            permite_files: q.allowsFiles || false,
-            parent_item_id: q.parentQuestionId,
-            condition_value: q.conditionValue,
-            hint: hint,
-            display_condition: q.displayCondition,
-            is_conditional: q.isConditional || false
+            pergunta: question.text,
+            tipo_resposta: frontendToDatabaseResponseType(question.responseType),
+            obrigatorio: question.isRequired,
+            ordem: question.order,
+            opcoes: question.options,
+            weight: question.weight || 1,
+            permite_foto: question.allowsPhoto,
+            permite_video: question.allowsVideo,
+            permite_audio: question.allowsAudio,
+            permite_files: question.allowsFiles || false,
+            parent_item_id: question.parentQuestionId,
+            condition_value: question.conditionValue,
+            hint: question.hint,
+            display_condition: displayCondition,
+            is_conditional: question.isConditional || false,
+            has_subchecklist: question.hasSubChecklist || false,
+            sub_checklist_id: question.subChecklistId
           };
         });
 
@@ -101,8 +87,8 @@ export function useChecklistCreate() {
           .insert(questionsToInsert);
 
         if (questionsError) {
-          console.error("Erro ao inserir perguntas:", questionsError);
-          throw new Error(`Falha ao inserir perguntas: ${questionsError.message}`);
+          console.error("Erro ao criar perguntas:", questionsError);
+          throw new Error(`Falha ao criar perguntas: ${questionsError.message}`);
         }
       }
 
