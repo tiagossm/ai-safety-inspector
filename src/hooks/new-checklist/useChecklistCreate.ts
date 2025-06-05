@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { NewChecklistPayload, ChecklistQuestion, ChecklistGroup } from "@/types/newChecklist";
@@ -36,6 +37,25 @@ export function useChecklistCreate() {
       if (checklistError) {
         console.error("Erro ao criar checklist:", checklistError);
         throw new Error(`Falha ao criar checklist: ${checklistError.message}`);
+      }
+
+      // Insert groups if provided
+      if (groups && groups.length > 0) {
+        const groupsToInsert = groups.map((g) => ({
+          id: g.id,
+          checklist_id: checklist.id,
+          title: g.title,
+          order: g.order,
+        }));
+
+        const { error: groupsError } = await supabase
+          .from("checklist_groups")
+          .insert(groupsToInsert);
+
+        if (groupsError) {
+          console.error("Erro ao inserir grupos:", groupsError);
+          throw new Error(`Falha ao inserir grupos: ${groupsError.message}`);
+        }
       }
 
       // Insert questions if provided

@@ -224,6 +224,48 @@ export type Database = {
           },
         ]
       }
+      checklist_groups: {
+        Row: {
+          checklist_id: string
+          created_at: string
+          id: string
+          order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          checklist_id: string
+          created_at?: string
+          id?: string
+          order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          checklist_id?: string
+          created_at?: string
+          id?: string
+          order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_groups_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_with_creator"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_groups_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_history: {
         Row: {
           action: string

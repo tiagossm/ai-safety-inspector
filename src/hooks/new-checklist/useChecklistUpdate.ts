@@ -54,6 +54,36 @@ export function useChecklistUpdate() {
         throw new Error(`Falha ao atualizar dados básicos: ${error.message}`);
       }
 
+      // Update groups if provided
+      if (groups && groups.length > 0) {
+        // First, delete existing groups for this checklist
+        const { error: deleteGroupsError } = await supabase
+          .from("checklist_groups")
+          .delete()
+          .eq("checklist_id", id);
+
+        if (deleteGroupsError) {
+          console.error("Erro ao deletar grupos existentes:", deleteGroupsError);
+        }
+
+        // Then insert new groups
+        const groupsToInsert = groups.map((g) => ({
+          id: g.id,
+          checklist_id: id,
+          title: g.title,
+          order: g.order,
+        }));
+
+        const { error: insertGroupsError } = await supabase
+          .from("checklist_groups")
+          .insert(groupsToInsert);
+
+        if (insertGroupsError) {
+          console.error("Erro ao inserir grupos atualizados:", insertGroupsError);
+          throw new Error(`Falha ao atualizar grupos: ${insertGroupsError.message}`);
+        }
+      }
+
       if (questions && questions.length > 0) {
         const newQuestions = questions.filter((q) => q.id.startsWith("new-"));
         const existingQuestions = questions.filter((q) => !q.id.startsWith("new-"));

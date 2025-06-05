@@ -1,3 +1,4 @@
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/integrations/supabase/client";
@@ -38,8 +39,16 @@ export function useChecklistEdit(checklistId?: string) {
         throw error;
       }
 
-      setChecklistData(data);
-      return data as Checklist;
+      // Garantir que o origin seja um valor válido
+      const checklistWithValidOrigin = {
+        ...data,
+        origin: (data.origin === 'manual' || data.origin === 'ia' || data.origin === 'csv') 
+          ? data.origin 
+          : 'manual' as const
+      };
+
+      setChecklistData(checklistWithValidOrigin);
+      return checklistWithValidOrigin as Checklist;
     },
     enabled: !!checklistId,
   });
@@ -73,14 +82,14 @@ export function useChecklistEdit(checklistId?: string) {
         allowsAudio: item.permite_audio || false,
         allowsFiles: item.permite_files || false,
         options: item.opcoes || [],
-        groupId: item.group_id || "default",
+        groupId: "default", // Valor padrão até implementarmos grupos completamente
         level: 0,
         path: item.id,
         isConditional: item.is_conditional || false,
         parentQuestionId: item.parent_item_id,
         conditionValue: item.condition_value,
         displayCondition: item.display_condition,
-        hasSubChecklist: item.hasSubChecklist,
+        hasSubChecklist: item.has_subchecklist,
         subChecklistId: item.sub_checklist_id,
       })) as ChecklistQuestion[];
 
@@ -167,8 +176,7 @@ export function useChecklistEdit(checklistId?: string) {
           hint: question.hint,
           display_condition: question.displayCondition,
           is_conditional: question.isConditional,
-          group_id: question.groupId,
-          hasSubChecklist: question.hasSubChecklist,
+          has_subchecklist: question.hasSubChecklist,
           sub_checklist_id: question.subChecklistId,
         })
         .eq("id", question.id)
@@ -207,7 +215,7 @@ export function useChecklistEdit(checklistId?: string) {
       level: 0,
       path: `new-${Date.now()}-${Math.random()}`,
       isConditional: false,
-      options: [] // Adicionar a propriedade options que estava faltando
+      options: []
     };
 
     setQuestions(prev => [...prev, newQuestion]);
@@ -239,20 +247,16 @@ export function useChecklistEdit(checklistId?: string) {
     mutationFn: async (title: string) => {
       if (!checklistId) throw new Error("Checklist ID is required to add a group.");
 
-      const newGroup: ChecklistGroup = {
+      const newGroup = {
         id: uuidv4(),
+        checklist_id: checklistId,
         title: title,
         order: groups.length,
       };
 
       const { data, error } = await supabase
         .from("checklist_groups")
-        .insert({
-          id: newGroup.id,
-          checklist_id: checklistId,
-          title: newGroup.title,
-          order: newGroup.order,
-        })
+        .insert(newGroup)
         .select()
         .single();
 
@@ -261,7 +265,11 @@ export function useChecklistEdit(checklistId?: string) {
         throw new Error(`Failed to add group: ${error.message}`);
       }
 
-      return { ...newGroup, ...data } as ChecklistGroup;
+      return {
+        id: data.id,
+        title: data.title,
+        order: data.order,
+      } as ChecklistGroup;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["checklist-groups", checklistId] });
@@ -289,7 +297,11 @@ export function useChecklistEdit(checklistId?: string) {
         throw new Error(`Failed to update group: ${error.message}`);
       }
 
-      return data as ChecklistGroup;
+      return {
+        id: data.id,
+        title: data.title,
+        order: data.order,
+      } as ChecklistGroup;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["checklist-groups", checklistId] });
@@ -336,10 +348,10 @@ export function useChecklistEdit(checklistId?: string) {
     addGroup: addGroupMutation.mutate,
     updateGroup: updateGroupMutation.mutate,
     deleteGroup: deleteGroupMutation.mutate,
-    isUpdatingChecklist: updateChecklistMutation.isLoading,
-    isUpdatingQuestion: updateQuestionMutation.isLoading,
-    isAddingGroup: addGroupMutation.isLoading,
-    isUpdatingGroup: updateGroupMutation.isLoading,
-    isDeletingGroup: deleteGroupMutation.isLoading,
+    isUpdatingChecklist: updateChecklistMutation.isPending,
+    isUpdatingQuestion: updateQuestionMutation.isPending,
+    isAddingGroup: addGroupMutation.isPending,
+    isUpdatingGroup: updateGroupMutation.isPending,
+    isDeletingGroup: deleteGroupMutation.isPending,
   };
 }
