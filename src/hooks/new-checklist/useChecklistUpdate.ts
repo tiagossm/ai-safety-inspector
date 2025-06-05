@@ -104,8 +104,13 @@ export function useChecklistUpdate() {
             const dbResponseType = frontendToDatabaseResponseType(q.responseType);
 
             // Converter DisplayCondition para JSON compatível
-            const displayCondition = q.displayCondition ? 
-              JSON.parse(JSON.stringify(q.displayCondition)) : null;
+            const displayCondition = q.displayCondition ? {
+              parentQuestionId: q.displayCondition.parentQuestionId,
+              expectedValue: q.displayCondition.expectedValue,
+              operator: q.displayCondition.operator,
+              rules: q.displayCondition.rules,
+              logic: q.displayCondition.logic
+            } : null;
 
             console.log(`Mapping question ${index}: ${q.responseType} -> ${dbResponseType}`);
 
@@ -157,8 +162,13 @@ export function useChecklistUpdate() {
           const dbResponseType = frontendToDatabaseResponseType(question.responseType);
 
           // Converter DisplayCondition para JSON compatível
-          const displayCondition = question.displayCondition ? 
-            JSON.parse(JSON.stringify(question.displayCondition)) : null;
+          const displayCondition = question.displayCondition ? {
+            parentQuestionId: question.displayCondition.parentQuestionId,
+            expectedValue: question.displayCondition.expectedValue,
+            operator: question.displayCondition.operator,
+            rules: question.displayCondition.rules,
+            logic: question.displayCondition.logic
+          } : null;
 
           console.log(`Updating question: ${question.responseType} -> ${dbResponseType}`);
 

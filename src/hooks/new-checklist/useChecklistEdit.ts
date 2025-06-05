@@ -5,7 +5,8 @@ import {
   Checklist,
   ChecklistItem,
   ChecklistQuestion,
-  ChecklistGroup
+  ChecklistGroup,
+  DisplayCondition
 } from "@/types/newChecklist";
 import { toast } from "sonner";
 import { useCallback, useState } from "react";
@@ -85,28 +86,50 @@ export function useChecklistEdit(checklistId?: string) {
         throw error;
       }
 
-      const typedQuestions = data.map(item => ({
-        id: item.id,
-        text: item.pergunta,
-        responseType: item.tipo_resposta,
-        isRequired: item.obrigatorio,
-        order: item.ordem,
-        weight: item.weight || 1,
-        allowsPhoto: item.permite_foto || false,
-        allowsVideo: item.permite_video || false,
-        allowsAudio: item.permite_audio || false,
-        allowsFiles: item.permite_files || false,
-        options: item.opcoes || [],
-        groupId: "default", // Valor padrão até implementarmos grupos completamente
-        level: 0,
-        path: item.id,
-        isConditional: item.is_conditional || false,
-        parentQuestionId: item.parent_item_id,
-        conditionValue: item.condition_value,
-        displayCondition: item.display_condition ? JSON.parse(JSON.stringify(item.display_condition)) : undefined,
-        hasSubChecklist: item.has_subchecklist,
-        subChecklistId: item.sub_checklist_id,
-      })) as ChecklistQuestion[];
+      const typedQuestions = data.map(item => {
+        // Converter display_condition de Json para DisplayCondition
+        let displayCondition: DisplayCondition | undefined;
+        if (item.display_condition) {
+          try {
+            const parsed = typeof item.display_condition === 'string' 
+              ? JSON.parse(item.display_condition) 
+              : item.display_condition;
+            displayCondition = {
+              parentQuestionId: parsed.parentQuestionId || '',
+              expectedValue: parsed.expectedValue || '',
+              operator: parsed.operator,
+              rules: parsed.rules || [],
+              logic: parsed.logic
+            };
+          } catch (e) {
+            console.error("Error parsing display_condition:", e);
+            displayCondition = undefined;
+          }
+        }
+
+        return {
+          id: item.id,
+          text: item.pergunta,
+          responseType: item.tipo_resposta,
+          isRequired: item.obrigatorio,
+          order: item.ordem,
+          weight: item.weight || 1,
+          allowsPhoto: item.permite_foto || false,
+          allowsVideo: item.permite_video || false,
+          allowsAudio: item.permite_audio || false,
+          allowsFiles: item.permite_files || false,
+          options: Array.isArray(item.opcoes) ? item.opcoes : [],
+          groupId: "default", // Valor padrão até implementarmos grupos completamente
+          level: 0,
+          path: item.id,
+          isConditional: item.is_conditional || false,
+          parentQuestionId: item.parent_item_id,
+          conditionValue: item.condition_value,
+          displayCondition,
+          hasSubChecklist: item.has_subchecklist,
+          subChecklistId: item.sub_checklist_id,
+        };
+      }) as ChecklistQuestion[];
 
       setQuestions(typedQuestions);
       return typedQuestions;
@@ -198,8 +221,13 @@ export function useChecklistEdit(checklistId?: string) {
   const updateQuestionMutation = useMutation({
     mutationFn: async (question: ChecklistQuestion) => {
       // Converter DisplayCondition para JSON compatível
-      const displayCondition = question.displayCondition ? 
-        JSON.parse(JSON.stringify(question.displayCondition)) : null;
+      const displayCondition = question.displayCondition ? {
+        parentQuestionId: question.displayCondition.parentQuestionId,
+        expectedValue: question.displayCondition.expectedValue,
+        operator: question.displayCondition.operator,
+        rules: question.displayCondition.rules,
+        logic: question.displayCondition.logic
+      } : null;
 
       const { data, error } = await supabase
         .from("checklist_itens")
