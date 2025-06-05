@@ -1,4 +1,3 @@
-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from "@/integrations/supabase/client";
@@ -39,16 +38,18 @@ export function useChecklistEdit(checklistId?: string) {
         throw error;
       }
 
-      // Garantir que o origin seja um valor válido
-      const checklistWithValidOrigin = {
+      // Garantir que o origin seja um valor válido e corrigir a tipagem
+      const validOrigin = (['manual', 'ia', 'csv'] as const).includes(data.origin as any) 
+        ? (data.origin as 'manual' | 'ia' | 'csv')
+        : 'manual' as const;
+
+      const checklistWithValidOrigin: Checklist = {
         ...data,
-        origin: (data.origin === 'manual' || data.origin === 'ia' || data.origin === 'csv') 
-          ? data.origin 
-          : 'manual' as const
+        origin: validOrigin
       };
 
       setChecklistData(checklistWithValidOrigin);
-      return checklistWithValidOrigin as Checklist;
+      return checklistWithValidOrigin;
     },
     enabled: !!checklistId,
   });
@@ -144,7 +145,17 @@ export function useChecklistEdit(checklistId?: string) {
         throw new Error(`Failed to update checklist: ${error.message}`);
       }
 
-      return data as Checklist;
+      // Garantir tipagem correta no retorno também
+      const validOrigin = (['manual', 'ia', 'csv'] as const).includes(data.origin as any) 
+        ? (data.origin as 'manual' | 'ia' | 'csv')
+        : 'manual' as const;
+
+      const typedData: Checklist = {
+        ...data,
+        origin: validOrigin
+      };
+
+      return typedData;
     },
     onSuccess: (data) => {
       toast.success("Checklist atualizado com sucesso!");
