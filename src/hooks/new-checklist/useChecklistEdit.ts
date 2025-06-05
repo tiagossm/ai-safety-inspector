@@ -38,14 +38,28 @@ export function useChecklistEdit(checklistId?: string) {
         throw error;
       }
 
-      // Garantir que o origin seja um valor válido e corrigir a tipagem
-      const validOrigin = (['manual', 'ia', 'csv'] as const).includes(data.origin as any) 
+      // Garantir que o origin seja um valor válido e fazer casting correto
+      const validOrigin: 'manual' | 'ia' | 'csv' = (['manual', 'ia', 'csv'] as const).includes(data.origin as any) 
         ? (data.origin as 'manual' | 'ia' | 'csv')
-        : 'manual' as const;
+        : 'manual';
 
       const checklistWithValidOrigin: Checklist = {
-        ...data,
-        origin: validOrigin
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        status: data.status,
+        status_checklist: data.status_checklist,
+        is_template: data.is_template,
+        user_id: data.user_id,
+        company_id: data.company_id,
+        responsible_id: data.responsible_id,
+        category: data.category,
+        origin: validOrigin,
+        questions: data.questions,
+        groups: data.groups,
+        responsibleName: data.responsibleName
       };
 
       setChecklistData(checklistWithValidOrigin);
@@ -146,13 +160,27 @@ export function useChecklistEdit(checklistId?: string) {
       }
 
       // Garantir tipagem correta no retorno também
-      const validOrigin = (['manual', 'ia', 'csv'] as const).includes(data.origin as any) 
+      const validOrigin: 'manual' | 'ia' | 'csv' = (['manual', 'ia', 'csv'] as const).includes(data.origin as any) 
         ? (data.origin as 'manual' | 'ia' | 'csv')
-        : 'manual' as const;
+        : 'manual';
 
       const typedData: Checklist = {
-        ...data,
-        origin: validOrigin
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        status: data.status,
+        status_checklist: data.status_checklist,
+        is_template: data.is_template,
+        user_id: data.user_id,
+        company_id: data.company_id,
+        responsible_id: data.responsible_id,
+        category: data.category,
+        origin: validOrigin,
+        questions: data.questions,
+        groups: data.groups,
+        responsibleName: data.responsibleName
       };
 
       return typedData;
