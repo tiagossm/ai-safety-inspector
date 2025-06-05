@@ -57,9 +57,11 @@ export default function NewChecklistCreate() {
       allowsAudio: false,
       allowsFiles: false,
       order: 0,
+      groupId: "default",
       level: 0,
       path: `new-${Date.now()}`,
-      isConditional: false
+      isConditional: false,
+      options: []
     };
 
     const defaultGroup: ChecklistGroup = {
@@ -70,25 +72,9 @@ export default function NewChecklistCreate() {
 
     const questionsWithGroupId = questions.map(q => ({
       ...q,
-      groupId: "default"
-    }));
-
-    const groupedQuestions: ChecklistQuestion = {
-      id: `new-${Date.now()}`,
-      text: "",
-      responseType: "yes_no",
-      isRequired: true,
-      weight: 1,
-      allowsPhoto: false,
-      allowsVideo: false,
-      allowsAudio: false,
-      allowsFiles: false,
-      order: 0,
       groupId: "default",
-      level: 0,
-      path: `new-${Date.now()}`,
-      isConditional: false
-    };
+      options: q.options || []
+    }));
 
     const sessionData = {
       checklistData: {

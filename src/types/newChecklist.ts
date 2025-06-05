@@ -1,3 +1,4 @@
+
 import { StandardResponseType } from "./responseTypes";
 
 export interface ChecklistWithStats {
@@ -104,23 +105,11 @@ export interface BatchUpdateResult {
   count: number;
 }
 
-// Interface completamente atualizada com todas as propriedades hierárquicas necessárias
+// Interface atualizada para usar StandardResponseType e incluir todas as propriedades necessárias
 export interface ChecklistQuestion {
   id: string;
   text: string;
-  responseType: 
-    | "yes_no" 
-    | "text" 
-    | "paragraph" 
-    | "number" 
-    | "multiple_choice" 
-    | "checkboxes" 
-    | "dropdown" 
-    | "date" 
-    | "time" 
-    | "datetime" 
-    | "photo" 
-    | "signature";
+  responseType: StandardResponseType;
   isRequired: boolean;
   order: number;
   weight: number;
@@ -141,6 +130,11 @@ export interface ChecklistQuestion {
     expectedValue: string;
   };
   conditionalQuestions?: ChecklistQuestion[];
+  // Propriedades para suporte a sub-checklists
+  hasSubChecklist?: boolean;
+  subChecklistId?: string;
+  // Propriedade para compatibilidade com hooks existentes
+  conditionValue?: string;
 }
 
 // Extended InspectionDetails interface with all required properties

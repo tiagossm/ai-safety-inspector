@@ -20,7 +20,7 @@ export function ResponseTypeSection({
     console.log("Alterando tipo de resposta de", currentResponseType, "para", newType);
     
     // Criar um novo objeto para garantir que o React detecte a mudança
-    const updatedQuestion = { 
+    const updatedQuestion: ChecklistQuestion = { 
       ...question, 
       responseType: newType 
     };
