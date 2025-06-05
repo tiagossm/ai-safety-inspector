@@ -57,9 +57,9 @@ export function useChecklistEdit(checklistId?: string) {
         responsible_id: data.responsible_id,
         category: data.category,
         origin: validOrigin,
-        questions: data.questions,
-        groups: data.groups,
-        responsibleName: data.responsibleName
+        questions: undefined, // Será carregado separadamente
+        groups: undefined, // Será carregado separadamente
+        responsibleName: undefined // Poderia ser carregado com JOIN se necessário
       };
 
       setChecklistData(checklistWithValidOrigin);
@@ -178,9 +178,9 @@ export function useChecklistEdit(checklistId?: string) {
         responsible_id: data.responsible_id,
         category: data.category,
         origin: validOrigin,
-        questions: data.questions,
-        groups: data.groups,
-        responsibleName: data.responsibleName
+        questions: undefined, // Será carregado separadamente
+        groups: undefined, // Será carregado separadamente
+        responsibleName: undefined // Poderia ser carregado com JOIN se necessário
       };
 
       return typedData;
