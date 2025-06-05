@@ -336,6 +336,50 @@ export type Database = {
           },
         ]
       }
+      checklist_item_options: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_correct: boolean | null
+          item_id: string
+          option_text: string
+          option_value: string | null
+          score: number | null
+          sort_order: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_correct?: boolean | null
+          item_id: string
+          option_text: string
+          option_value?: string | null
+          score?: number | null
+          sort_order?: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_correct?: boolean | null
+          item_id?: string
+          option_text?: string
+          option_value?: string | null
+          score?: number | null
+          sort_order?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_item_options_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_itens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_item_responses: {
         Row: {
           action_plan: string | null
@@ -2149,6 +2193,10 @@ export type Database = {
           permite_audio: boolean
           permite_files: boolean
         }[]
+      }
+      get_checklist_with_items: {
+        Args: { checklist_id_param: string }
+        Returns: Json
       }
       get_cipa_dimensioning: {
         Args: { p_employee_count: number; p_cnae: string; p_risk_level: number }

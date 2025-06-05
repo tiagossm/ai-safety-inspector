@@ -1,98 +1,105 @@
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
-import { OptionsEditor } from "./OptionsEditor";
+import { EnhancedOptionsSection } from "./EnhancedOptionsSection";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Settings } from "lucide-react";
-import { 
-  StandardResponseType,
-  convertToFrontendType,
-  TYPES_REQUIRING_OPTIONS,
-  isValidResponseType
-} from "@/types/responseTypes";
+import { Input } from "@/components/ui/input";
+import { Trash2, Plus } from "lucide-react";
 
 interface OptionsSectionProps {
   question: ChecklistQuestion;
   onUpdate: (question: ChecklistQuestion) => void;
 }
 
-export function OptionsSection({ question, onUpdate }: OptionsSectionProps) {
-  const [showOptionsEditor, setShowOptionsEditor] = useState(false);
+export function OptionsSection({
+  question,
+  onUpdate
+}: OptionsSectionProps) {
+  const needsOptions = ["multiple_choice", "checkboxes", "dropdown"].includes(question.responseType);
 
-  const rawFrontendType = question.responseType 
-    ? convertToFrontendType(question.responseType) 
-    : "yes_no";
-  
-  const frontendResponseType: StandardResponseType = isValidResponseType(rawFrontendType)
-    ? rawFrontendType
-    : "text";
-
-  const requiresOptions = TYPES_REQUIRING_OPTIONS.includes(frontendResponseType);
-  const hasValidOptions = question.options && Array.isArray(question.options) && question.options.length > 0;
-
-  // Sempre mostrar editor de opções se necessário
-  useEffect(() => {
-    if (requiresOptions) {
-      setShowOptionsEditor(true);
-      
-      // Auto-criar opções padrão se não existirem
-      if (!hasValidOptions) {
-        const updatedQuestion = {
-          ...question,
-          options: ["Opção 1", "Opção 2"]
-        };
-        onUpdate(updatedQuestion);
-      }
-    } else {
-      setShowOptionsEditor(false);
-    }
-  }, [requiresOptions, hasValidOptions, question, onUpdate]);
-
-  if (!requiresOptions) {
+  if (!needsOptions) {
     return null;
   }
 
+  // Usar o novo componente aprimorado para tipos avançados
+  const supportsAdvancedOptions = ['multiple_choice', 'checkboxes', 'dropdown'].includes(question.responseType);
+  
+  if (supportsAdvancedOptions) {
+    return <EnhancedOptionsSection question={question} onUpdate={onUpdate} />;
+  }
+
+  // Fallback para tipos simples (mantém compatibilidade)
+  const options = Array.isArray(question.options) ? question.options : [];
+
+  const addOption = () => {
+    const newOption = `Opção ${options.length + 1}`;
+    onUpdate({
+      ...question,
+      options: [...options, newOption]
+    });
+  };
+
+  const updateOption = (index: number, value: string) => {
+    const updatedOptions = [...options];
+    updatedOptions[index] = value;
+    onUpdate({
+      ...question,
+      options: updatedOptions
+    });
+  };
+
+  const removeOption = (index: number) => {
+    const updatedOptions = options.filter((_, i) => i !== index);
+    onUpdate({
+      ...question,
+      options: updatedOptions
+    });
+  };
+
   return (
-    <div className="space-y-3">
-      <div className="flex justify-between items-center">
-        <label className="text-sm font-medium text-gray-700">
-          Opções de resposta
-        </label>
-        <div className="flex items-center gap-2">
-          {!hasValidOptions && (
-            <div className="flex items-center gap-1 text-amber-600 text-xs">
-              <AlertCircle className="h-3 w-3" />
-              <span>Configuração necessária</span>
-            </div>
-          )}
-          {hasValidOptions && (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-sm">Opções de Resposta</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {options.map((option: any, index: number) => (
+          <div key={index} className="flex gap-2">
+            <Input
+              value={typeof option === 'string' ? option : option.option_text || ''}
+              onChange={(e) => updateOption(index, e.target.value)}
+              placeholder={`Opção ${index + 1}`}
+              className="flex-1"
+            />
             <Button
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => setShowOptionsEditor(!showOptionsEditor)}
-              className="flex items-center gap-1"
+              onClick={() => removeOption(index)}
+              className="text-destructive"
             >
-              <Settings className="h-3 w-3" />
-              {showOptionsEditor ? "Ocultar" : "Configurar"}
+              <Trash2 className="h-4 w-4" />
             </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Sempre mostrar para tipos que requerem opções */}
-      {requiresOptions && (
-        <OptionsEditor 
-          question={question} 
-          onUpdate={onUpdate} 
-        />
-      )}
-
-      {hasValidOptions && (
-        <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
-          ✓ {question.options?.length} opções configuradas
-        </div>
-      )}
-    </div>
+          </div>
+        ))}
+        
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={addOption}
+          className="w-full"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Adicionar Opção
+        </Button>
+        
+        {options.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            Adicione pelo menos uma opção para perguntas de múltipla escolha
+          </p>
+        )}
+      </CardContent>
+    </Card>
   );
 }

@@ -9,9 +9,9 @@ import { DateTimeResponseInput } from "./response-types/DateTimeResponseInput";
 import { DateInput } from "@/components/inspection/question-inputs/DateInput";
 import { TimeInput } from "@/components/inspection/question-inputs/TimeInput";
 import { NumberInput } from "@/components/inspection/question-inputs/NumberInput";
-import { MultipleChoiceInput } from "@/components/inspection/question-inputs/MultipleChoiceInput";
 import { PhotoInput } from "@/components/inspection/question-inputs/PhotoInput";
 import { SignatureInput } from "@/components/checklist/SignatureInput";
+import { EnhancedMultipleChoiceInput } from "./response-types/EnhancedMultipleChoiceInput";
 import { convertToFrontendType, validateResponseValue, TYPES_REQUIRING_OPTIONS } from "@/types/responseTypes";
 
 interface ResponseInputRendererProps {
@@ -171,69 +171,20 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
       );
 
     case "multiple_choice":
-      return (
-        <div className="space-y-2">
-          <MultipleChoiceInput 
-            options={question.options || []}
-            value={safeResponse.value}
-            onChange={handleSimpleValueChange}
-          />
-          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
-            <PhotoInput
-              mediaUrls={mediaUrls}
-              onAddMedia={() => console.log("Adicionar mídia para questão multiple_choice")}
-              onDeleteMedia={(url) => {
-                const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-                handleMediaChange(updatedUrls);
-              }}
-              allowsPhoto={question.allowsPhoto}
-              allowsVideo={question.allowsVideo}
-              allowsAudio={question.allowsAudio}
-              allowsFiles={question.allowsFiles}
-            />
-          )}
-        </div>
-      );
-
     case "checkboxes":
-      return (
-        <div className="space-y-2">
-          <CheckboxesResponseInput
-            options={question.options || []}
-            value={safeResponse.value}
-            onChange={handleSimpleValueChange}
-            readOnly={readOnly}
-          />
-          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
-            <PhotoInput
-              mediaUrls={mediaUrls}
-              onAddMedia={() => console.log("Adicionar mídia para questão checkboxes")}
-              onDeleteMedia={(url) => {
-                const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-                handleMediaChange(updatedUrls);
-              }}
-              allowsPhoto={question.allowsPhoto}
-              allowsVideo={question.allowsVideo}
-              allowsAudio={question.allowsAudio}
-              allowsFiles={question.allowsFiles}
-            />
-          )}
-        </div>
-      );
-
     case "dropdown":
       return (
         <div className="space-y-2">
-          <DropdownResponseInput
-            options={question.options || []}
-            value={safeResponse.value}
-            onChange={handleSimpleValueChange}
+          <EnhancedMultipleChoiceInput
+            question={question}
+            value={safeResponse}
+            onChange={onResponseChange}
             readOnly={readOnly}
           />
           {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
             <PhotoInput
               mediaUrls={mediaUrls}
-              onAddMedia={() => console.log("Adicionar mídia para questão dropdown")}
+              onAddMedia={() => console.log("Adicionar mídia para questão múltipla escolha")}
               onDeleteMedia={(url) => {
                 const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
                 handleMediaChange(updatedUrls);
