@@ -1,6 +1,8 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,126 +10,50 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    
-    if (!OPENAI_API_KEY) {
-      console.error("OPENAI_API_KEY is not set");
-      // Return mock data with a 200 status code when API key is not available
-      const mockAssistants = {
-        assistants: [
-          {
-            id: "asst_mock_1",
-            name: "Assistente de Segurança do Trabalho",
-            model: "gpt-4-turbo",
-            description: "Especializado em normas de segurança",
-            created_at: Date.now()
-          },
-          {
-            id: "asst_mock_2",
-            name: "Assistente de Qualidade",
-            model: "gpt-4",
-            description: "Especializado em ISO 9001",
-            created_at: Date.now()
-          }
-        ]
-      };
-      
-      return new Response(JSON.stringify(mockAssistants), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    if (!openAIApiKey) {
+      throw new Error('Chave da API OpenAI não configurada');
     }
 
-    console.log("Fetching assistants from OpenAI API...");
-    
-    // Get assistants from OpenAI
-    const response = await fetch('https://api.openai.com/v1/assistants?limit=100&order=desc', {
+    const response = await fetch('https://api.openai.com/v1/assistants', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'OpenAI-Beta': 'assistants=v1',
-        'Content-Type': 'application/json'
-      }
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+        'OpenAI-Beta': 'assistants=v2'
+      },
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OpenAI API error:', errorText, 'Status:', response.status);
-      
-      // Return mock data with a 200 status code on API error
-      const mockAssistants = {
-        assistants: [
-          {
-            id: "asst_mock_1",
-            name: "Assistente de Segurança do Trabalho",
-            model: "gpt-4-turbo",
-            description: "Especializado em normas de segurança",
-            created_at: Date.now()
-          },
-          {
-            id: "asst_mock_2",
-            name: "Assistente de Qualidade",
-            model: "gpt-4",
-            description: "Especializado em ISO 9001",
-            created_at: Date.now()
-          }
-        ]
-      };
-      
-      return new Response(JSON.stringify(mockAssistants), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      throw new Error(`Erro da API OpenAI: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
-    console.log(`Retrieved ${data.data?.length || 0} assistants from OpenAI`);
-    
-    // Map to simplified structure
-    const assistants = data.data.map((assistant: any) => ({
-      id: assistant.id,
-      name: assistant.name || 'Untitled Assistant',
-      model: assistant.model,
-      description: assistant.description,
-      created_at: assistant.created_at
-    }));
 
-    return new Response(JSON.stringify({ assistants }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        assistants: data.data || []
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
   } catch (error) {
-    console.error('Error in list-openai-assistants function:', error);
-    
-    // Return mock data on any error with a 200 status code
-    const mockAssistants = {
-      assistants: [
-        {
-          id: "asst_mock_1",
-          name: "Assistente de Segurança do Trabalho",
-          model: "gpt-4-turbo",
-          description: "Especializado em normas de segurança",
-          created_at: Date.now()
-        },
-        {
-          id: "asst_mock_2",
-          name: "Assistente de Qualidade",
-          model: "gpt-4",
-          description: "Especializado em ISO 9001",
-          created_at: Date.now()
-        }
-      ]
-    };
-    
-    return new Response(JSON.stringify(mockAssistants), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    console.error('Erro na função list-openai-assistants:', error);
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: error.message,
+        assistants: []
+      }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
   }
 });

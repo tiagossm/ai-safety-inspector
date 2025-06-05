@@ -1,4 +1,5 @@
-import React from "react";
+
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChecklistEditActions } from "@/components/new-checklist/edit/ChecklistEditActions";
 import { LoadingState } from "@/components/new-checklist/edit/LoadingState";
@@ -8,11 +9,17 @@ import { ChecklistHeader } from "@/components/new-checklist/edit/ChecklistHeader
 import { useChecklistEditorContext } from "@/hooks/new-checklist/useChecklistEditorContext";
 import { ChecklistBasicInfo } from "./ChecklistBasicInfo";
 import { ChecklistQuestionList } from "./ChecklistQuestionList";
+import { QuestionSuggestionPanel } from "@/components/new-checklist/ai/QuestionSuggestionPanel";
+import { AccessibilityPanel } from "@/components/new-checklist/accessibility/AccessibilityPanel";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Wand2, Eye, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 export function ChecklistEditorContainer() {
   const editorContext = useChecklistEditorContext();
   const navigate = useNavigate();
+  const [accessibilityConfig, setAccessibilityConfig] = useState({});
   
   if (!editorContext) {
     return <LoadingState />;
@@ -89,6 +96,30 @@ export function ChecklistEditorContainer() {
       toast.error(`Erro ao iniciar inspeção: ${error instanceof Error ? error.message : "Erro desconhecido"}`, { duration: 5000 });
     }
   };
+
+  const handleAddAISuggestion = (suggestion: Partial<ChecklistQuestion>) => {
+    const defaultGroupId = editorContext.groups.length > 0 ? editorContext.groups[0].id : "default";
+    const newQuestion = {
+      id: `new-${Date.now()}`,
+      text: suggestion.text || "",
+      responseType: suggestion.responseType || "yes_no" as const,
+      isRequired: suggestion.isRequired || true,
+      order: editorContext.questions.length,
+      weight: suggestion.weight || 1,
+      allowsPhoto: suggestion.allowsPhoto || false,
+      allowsVideo: suggestion.allowsVideo || false,
+      allowsAudio: suggestion.allowsAudio || false,
+      allowsFiles: suggestion.allowsFiles || false,
+      groupId: defaultGroupId,
+      level: 0,
+      path: `new-${Date.now()}`,
+      isConditional: suggestion.isConditional || false,
+      options: suggestion.options || [],
+      hint: suggestion.hint
+    };
+    
+    editorContext.handleUpdateQuestion(newQuestion);
+  };
   
   return (
     <ChecklistEditorProvider value={contextValue}>
@@ -109,36 +140,75 @@ export function ChecklistEditorContainer() {
           onStartInspection={handleStartInspection}
           onSave={handleSave}
         />
-        {/* Form section */}
-        <form onSubmit={(e) => {
-          e.preventDefault();
-          handleSave();
-        }} className="space-y-6">
-          {/* Basic information section */}
-          <ChecklistBasicInfo
-            title={editorContext.title}
-            description={editorContext.description}
-            category={editorContext.category}
-            isTemplate={editorContext.isTemplate}
-            status={editorContext.status}
-            onTitleChange={editorContext.setTitle}
-            onDescriptionChange={editorContext.setDescription}
-            onCategoryChange={editorContext.setCategory}
-            onIsTemplateChange={editorContext.setIsTemplate}
-            onStatusChange={editorContext.setStatus}
-          />
-          
-          {/* Questions section */}
-          <ChecklistQuestionList />
-          
-          {/* Bottom actions */}
-          <ChecklistEditActions
-            isSubmitting={editorContext.isSubmitting}
-            onCancel={() => navigate("/new-checklists")}
-            onStartInspection={handleStartInspection}
-            onSave={handleSave}
-          />
-        </form>
+        
+        {/* Main content with tabs */}
+        <Tabs defaultValue="editor" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="editor" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Editor
+            </TabsTrigger>
+            <TabsTrigger value="ai" className="flex items-center gap-2">
+              <Wand2 className="h-4 w-4" />
+              IA & Sugestões
+            </TabsTrigger>
+            <TabsTrigger value="accessibility" className="flex items-center gap-2">
+              <Eye className="h-4 w-4" />
+              Acessibilidade
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Editor Tab */}
+          <TabsContent value="editor">
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              handleSave();
+            }} className="space-y-6">
+              {/* Basic information section */}
+              <ChecklistBasicInfo
+                title={editorContext.title}
+                description={editorContext.description}
+                category={editorContext.category}
+                isTemplate={editorContext.isTemplate}
+                status={editorContext.status}
+                onTitleChange={editorContext.setTitle}
+                onDescriptionChange={editorContext.setDescription}
+                onCategoryChange={editorContext.setCategory}
+                onIsTemplateChange={editorContext.setIsTemplate}
+                onStatusChange={editorContext.setStatus}
+              />
+              
+              {/* Questions section */}
+              <ChecklistQuestionList />
+              
+              {/* Bottom actions */}
+              <ChecklistEditActions
+                isSubmitting={editorContext.isSubmitting}
+                onCancel={() => navigate("/new-checklists")}
+                onStartInspection={handleStartInspection}
+                onSave={handleSave}
+              />
+            </form>
+          </TabsContent>
+
+          {/* AI Tab */}
+          <TabsContent value="ai" className="space-y-6">
+            <QuestionSuggestionPanel
+              category={editorContext.category}
+              existingQuestions={editorContext.questions}
+              onAddSuggestion={handleAddAISuggestion}
+              groupId={editorContext.groups.length > 0 ? editorContext.groups[0].id : "default"}
+            />
+          </TabsContent>
+
+          {/* Accessibility Tab */}
+          <TabsContent value="accessibility" className="space-y-6">
+            <AccessibilityPanel
+              onConfigChange={setAccessibilityConfig}
+            />
+          </TabsContent>
+        </Tabs>
+        
         <FloatingNavigation threshold={400} />
       </div>
     </ChecklistEditorProvider>
