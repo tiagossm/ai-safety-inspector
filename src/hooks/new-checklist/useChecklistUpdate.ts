@@ -103,7 +103,7 @@ export function useChecklistUpdate() {
             const options = Array.isArray(q.options) ? q.options.map((opt) => String(opt)) : [];
             const dbResponseType = frontendToDatabaseResponseType(q.responseType);
 
-            // Converter DisplayCondition para JSON simples
+            // Converter DisplayCondition para JSON compatível com Supabase
             let displayCondition = null;
             if (q.displayCondition) {
               displayCondition = {
@@ -112,7 +112,7 @@ export function useChecklistUpdate() {
                 operator: q.displayCondition.operator || 'equals',
                 rules: q.displayCondition.rules || [],
                 logic: q.displayCondition.logic || 'AND'
-              };
+              } as Record<string, any>;
             }
 
             console.log(`Mapping question ${index}: ${q.responseType} -> ${dbResponseType}`);
@@ -164,7 +164,7 @@ export function useChecklistUpdate() {
             
           const dbResponseType = frontendToDatabaseResponseType(question.responseType);
 
-          // Converter DisplayCondition para JSON simples
+          // Converter DisplayCondition para JSON compatível com Supabase
           let displayCondition = null;
           if (question.displayCondition) {
             displayCondition = {
@@ -173,7 +173,7 @@ export function useChecklistUpdate() {
               operator: question.displayCondition.operator || 'equals',
               rules: question.displayCondition.rules || [],
               logic: question.displayCondition.logic || 'AND'
-            };
+            } as Record<string, any>;
           }
 
           console.log(`Updating question: ${question.responseType} -> ${dbResponseType}`);

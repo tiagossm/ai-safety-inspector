@@ -56,7 +56,7 @@ export function useChecklistCreate() {
       // Criar perguntas se existirem
       if (questions && questions.length > 0) {
         const questionsToInsert = questions.map((question) => {
-          // Converter DisplayCondition para JSON simples
+          // Converter DisplayCondition para JSON compatível com Supabase
           let displayCondition = null;
           if (question.displayCondition) {
             displayCondition = {
@@ -65,7 +65,7 @@ export function useChecklistCreate() {
               operator: question.displayCondition.operator || 'equals',
               rules: question.displayCondition.rules || [],
               logic: question.displayCondition.logic || 'AND'
-            };
+            } as Record<string, any>;
           }
 
           return {

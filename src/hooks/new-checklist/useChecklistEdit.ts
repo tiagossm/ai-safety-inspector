@@ -226,7 +226,7 @@ export function useChecklistEdit(checklistId?: string) {
 
   const updateQuestionMutation = useMutation({
     mutationFn: async (question: ChecklistQuestion) => {
-      // Converter DisplayCondition para JSON simples
+      // Converter DisplayCondition para JSON compatível com Supabase
       let displayCondition = null;
       if (question.displayCondition) {
         displayCondition = {
@@ -235,7 +235,7 @@ export function useChecklistEdit(checklistId?: string) {
           operator: question.displayCondition.operator || 'equals',
           rules: question.displayCondition.rules || [],
           logic: question.displayCondition.logic || 'AND'
-        };
+        } as Record<string, any>;
       }
 
       const { data, error } = await supabase
