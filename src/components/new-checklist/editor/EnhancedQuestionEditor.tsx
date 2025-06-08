@@ -6,18 +6,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Trash2, GripVertical } from "lucide-react";
+import { Trash2, GripVertical, ChevronDown, ChevronUp } from "lucide-react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { ResponseTypeSelector } from "@/components/common/ResponseTypeSelector";
 import { StandardResponseType, TYPES_REQUIRING_OPTIONS } from "@/types/responseTypes";
-import { MediaOptionsToggle } from "./MediaOptionsToggle";
+import { MediaCard } from "./MediaCard";
 import { AdvancedOptionsEditor } from "./AdvancedOptionsEditor";
+import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 
 interface EnhancedQuestionEditorProps {
   question: ChecklistQuestion;
   questionIndex: number;
   onUpdate: (question: ChecklistQuestion) => void;
   onDelete: (id: string) => void;
+  onAddSubQuestion?: (parentId: string) => void;
   isDragging?: boolean;
 }
 
@@ -26,9 +28,11 @@ export function EnhancedQuestionEditor({
   questionIndex,
   onUpdate,
   onDelete,
+  onAddSubQuestion,
   isDragging = false
 }: EnhancedQuestionEditorProps) {
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const [showMediaCard, setShowMediaCard] = useState(false);
   
   const requiresOptions = TYPES_REQUIRING_OPTIONS.includes(question.responseType);
 
@@ -45,6 +49,16 @@ export function EnhancedQuestionEditor({
 
   const handleOptionsUpdate = (newOptions: string[]) => {
     onUpdate({ ...question, options: newOptions });
+  };
+
+  const handleMediaUpdate = (updates: Partial<ChecklistQuestion>) => {
+    onUpdate({ ...question, ...updates });
+  };
+
+  const handleAddSubQuestion = () => {
+    if (onAddSubQuestion) {
+      onAddSubQuestion(question.id);
+    }
   };
 
   return (
@@ -141,15 +155,29 @@ export function EnhancedQuestionEditor({
           />
         </div>
 
-        {/* Opções de mídia */}
+        {/* Card de mídia consolidado */}
         <div>
-          <Label>Opções de mídia permitidas</Label>
-          <div className="mt-2">
-            <MediaOptionsToggle
-              question={question}
-              onUpdate={(updates) => onUpdate({ ...question, ...updates })}
-            />
-          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowMediaCard(!showMediaCard)}
+            className="flex items-center gap-2 p-0 h-auto text-sm font-medium"
+          >
+            {showMediaCard ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            Configurações de mídia
+          </Button>
+          
+          <Collapsible open={showMediaCard}>
+            <CollapsibleContent>
+              <div className="mt-2">
+                <MediaCard
+                  question={question}
+                  onUpdate={handleMediaUpdate}
+                />
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
 
         {/* Botão para opções avançadas */}
@@ -162,6 +190,18 @@ export function EnhancedQuestionEditor({
           >
             {showAdvancedOptions ? 'Ocultar' : 'Mostrar'} opções avançadas
           </Button>
+          
+          {onAddSubQuestion && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleAddSubQuestion}
+              className="ml-auto"
+            >
+              + Subpergunta
+            </Button>
+          )}
         </div>
 
         {/* Seção de opções avançadas */}
