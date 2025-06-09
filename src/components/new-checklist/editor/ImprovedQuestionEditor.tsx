@@ -1,37 +1,30 @@
 
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
+import { ChecklistQuestion } from "@/types/newChecklist";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { 
-  Trash2, 
-  GripVertical, 
-  ChevronDown, 
-  ChevronUp, 
-  Settings, 
-  Camera,
-  AlertTriangle,
-  CheckCircle2,
-  Plus
-} from "lucide-react";
-import { ChecklistQuestion } from "@/types/newChecklist";
-import { ResponseTypeSelector } from "@/components/common/ResponseTypeSelector";
-import { StandardResponseType, TYPES_REQUIRING_OPTIONS } from "@/types/responseTypes";
-import { MediaCard } from "./MediaCard";
-import { UnifiedOptionsEditor } from "./UnifiedOptionsEditor";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { GripVertical, Trash2, Settings, ChevronDown, ChevronUp, AlertCircle, CheckCircle } from "lucide-react";
+import { ResponseTypeSelector } from "./ResponseTypeSelector";
+import { AdvancedOptionsEditor } from "./AdvancedOptionsEditor";
+import { MediaCard } from "./MediaCard";
+import { ConditionalQuestionCard } from "./ConditionalQuestionCard";
+import { SubQuestionsCard } from "./SubQuestionsCard";
+import { TYPES_REQUIRING_OPTIONS } from "@/types/responseTypes";
 
 interface ImprovedQuestionEditorProps {
   question: ChecklistQuestion;
   questionIndex: number;
   onUpdate: (question: ChecklistQuestion) => void;
-  onDelete: (id: string) => void;
+  onDelete: (questionId: string) => void;
   onAddSubQuestion?: (parentId: string) => void;
+  allQuestions?: ChecklistQuestion[];
   isDragging?: boolean;
 }
 
@@ -41,16 +34,15 @@ export function ImprovedQuestionEditor({
   onUpdate,
   onDelete,
   onAddSubQuestion,
+  allQuestions = [],
   isDragging = false
 }: ImprovedQuestionEditorProps) {
-  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
-  const [showMediaCard, setShowMediaCard] = useState(false);
-  
-  const requiresOptions = TYPES_REQUIRING_OPTIONS.includes(question.responseType);
-  
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   // Validação da pergunta
   const validation = React.useMemo(() => {
-    const hasText = question.text.trim().length > 0;
+    const hasText = question.text && question.text.trim().length > 0;
+    const requiresOptions = TYPES_REQUIRING_OPTIONS.includes(question.responseType as any);
     const hasValidOptions = !requiresOptions || (question.options && question.options.length > 0);
     const hasValidWeight = question.weight > 0;
     
@@ -59,260 +51,187 @@ export function ImprovedQuestionEditor({
       hasText,
       hasValidOptions,
       hasValidWeight,
-      issues: [
-        !hasText && "Texto da pergunta é obrigatório",
-        !hasValidOptions && "Opções de resposta são obrigatórias para este tipo",
-        !hasValidWeight && "Peso deve ser maior que zero"
-      ].filter(Boolean)
+      requiresOptions
     };
-  }, [question.text, question.options, question.weight, requiresOptions]);
+  }, [question]);
 
-  const handleUpdate = useCallback((field: keyof ChecklistQuestion, value: any) => {
+  const handleFieldUpdate = (field: keyof ChecklistQuestion, value: any) => {
     const updatedQuestion = { ...question, [field]: value };
-    
-    // Limpar opções se o tipo não exigir
-    if (field === 'responseType' && !TYPES_REQUIRING_OPTIONS.includes(value as StandardResponseType)) {
-      updatedQuestion.options = [];
-    }
-    
     onUpdate(updatedQuestion);
-  }, [question, onUpdate]);
+  };
 
-  const handleOptionsUpdate = useCallback((newOptions: string[]) => {
-    onUpdate({ ...question, options: newOptions });
-  }, [question, onUpdate]);
-
-  const handleMediaUpdate = useCallback((updates: Partial<ChecklistQuestion>) => {
-    onUpdate({ ...question, ...updates });
-  }, [question, onUpdate]);
-
-  const handleAddSubQuestion = useCallback(() => {
-    if (onAddSubQuestion) {
-      onAddSubQuestion(question.id);
-    }
-  }, [onAddSubQuestion, question.id]);
-
-  const hasMediaEnabled = question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles;
+  const handleOptionsChange = (options: string[]) => {
+    handleFieldUpdate('options', options);
+  };
 
   return (
-    <Card className={`transition-all duration-200 ${isDragging ? 'opacity-50 rotate-1 shadow-lg' : 'hover:shadow-md'} ${!validation.isValid ? 'border-l-4 border-l-red-500' : 'border-l-4 border-l-green-500'}`}>
+    <Card className={`transition-all duration-200 ${
+      isDragging ? 'shadow-lg border-blue-300 bg-blue-50' : 'hover:shadow-md'
+    } ${validation.isValid ? 'border-green-200' : 'border-amber-200'}`}>
       <CardHeader className="pb-3">
         <div className="flex items-center gap-3">
-          <div className="cursor-move hover:bg-gray-100 p-1 rounded">
-            <GripVertical className="h-5 w-5 text-gray-400" />
+          <div className="cursor-move text-gray-400 hover:text-gray-600">
+            <GripVertical className="h-5 w-5" />
           </div>
           
-          <div className="flex-1 space-y-1">
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-xs">
-                #{questionIndex + 1}
-              </Badge>
-              {validation.isValid ? (
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-              ) : (
-                <AlertTriangle className="h-4 w-4 text-red-600" />
-              )}
-              {question.isRequired && (
-                <Badge variant="secondary" className="text-xs">Obrigatório</Badge>
-              )}
-              {hasMediaEnabled && (
-                <Badge variant="outline" className="text-xs flex items-center gap-1">
-                  <Camera className="h-3 w-3" />
-                  Mídia
-                </Badge>
-              )}
+          <Badge variant="outline" className="min-w-[2.5rem] text-center">
+            {questionIndex + 1}
+          </Badge>
+          
+          <div className="flex-1 flex items-center gap-2">
+            <div className="flex-1">
+              <Textarea
+                placeholder="Digite o texto da pergunta..."
+                value={question.text || ""}
+                onChange={(e) => handleFieldUpdate("text", e.target.value)}
+                className={`border-0 p-0 resize-none min-h-[2rem] text-base font-medium ${
+                  !validation.hasText ? 'text-amber-600 placeholder-amber-400' : ''
+                }`}
+                rows={1}
+              />
             </div>
             
-            {!validation.isValid && validation.issues.length > 0 && (
-              <div className="text-xs text-red-600">
-                {validation.issues.join(", ")}
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              {validation.isValid ? (
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              ) : (
+                <AlertCircle className="h-5 w-5 text-amber-600" />
+              )}
+              
+              <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <Settings className="h-4 w-4 mr-1" />
+                    {showAdvanced ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </Button>
+                </CollapsibleTrigger>
+              </Collapsible>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onDelete(question.id)}
+                className="text-red-500 hover:text-red-700"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Configurações básicas */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mt-3">
+          <div>
+            <Label className="text-xs text-gray-600 mb-1 block">Tipo de resposta</Label>
+            <ResponseTypeSelector
+              value={question.responseType}
+              onChange={(type) => handleFieldUpdate("responseType", type)}
+            />
           </div>
           
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => onDelete(question.id)}
-            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          <div>
+            <Label className="text-xs text-gray-600 mb-1 block">Peso/Pontos</Label>
+            <Input
+              type="number"
+              min="0"
+              max="100"
+              value={question.weight || 1}
+              onChange={(e) => handleFieldUpdate("weight", Number(e.target.value))}
+              className="h-9"
+            />
+          </div>
+          
+          <div className="flex items-center space-x-2 pt-4">
+            <Switch
+              id={`required-${question.id}`}
+              checked={question.isRequired || false}
+              onCheckedChange={(checked) => handleFieldUpdate("isRequired", checked)}
+            />
+            <Label htmlFor={`required-${question.id}`} className="text-xs text-gray-600">
+              Obrigatório
+            </Label>
+          </div>
+          
+          <div className="flex items-center space-x-2 pt-4">
+            <Switch
+              id={`conditional-${question.id}`}
+              checked={question.isConditional || false}
+              onCheckedChange={(checked) => handleFieldUpdate("isConditional", checked)}
+            />
+            <Label htmlFor={`conditional-${question.id}`} className="text-xs text-gray-600">
+              Condicional
+            </Label>
+          </div>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Texto da pergunta */}
-        <div>
-          <Label htmlFor={`question-text-${question.id}`} className="text-sm font-medium">
-            Texto da pergunta *
-          </Label>
-          <Textarea
-            id={`question-text-${question.id}`}
-            placeholder="Digite sua pergunta aqui..."
-            value={question.text}
-            onChange={(e) => handleUpdate('text', e.target.value)}
-            className={`mt-1 resize-none ${!question.text.trim() ? 'border-red-300 focus:border-red-500' : ''}`}
-            rows={2}
-          />
-        </div>
+        {/* Editor de opções */}
+        <AdvancedOptionsEditor
+          options={question.options || []}
+          onOptionsChange={handleOptionsChange}
+          questionId={question.id}
+          responseType={question.responseType}
+        />
 
-        {/* Grid de configurações principais */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Dica para o inspetor */}
+        {question.hint !== undefined && (
           <div>
-            <Label className="text-sm font-medium">Tipo de resposta</Label>
-            <ResponseTypeSelector
-              value={question.responseType}
-              onChange={(type) => handleUpdate('responseType', type)}
-              showDescriptions={false}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor={`weight-${question.id}`} className="text-sm font-medium">
-              Peso/Pontos
+            <Label className="text-sm font-medium text-gray-700 mb-2 block">
+              Dica para o inspetor
             </Label>
             <Input
-              id={`weight-${question.id}`}
-              type="number"
-              min="1"
-              max="100"
-              value={question.weight}
-              onChange={(e) => handleUpdate('weight', Number(e.target.value))}
-              className={question.weight <= 0 ? 'border-red-300' : ''}
+              placeholder="Digite uma dica opcional que ajudará o inspetor..."
+              value={question.hint || ""}
+              onChange={(e) => handleFieldUpdate("hint", e.target.value)}
+              className="w-full"
             />
           </div>
-
-          <div className="flex items-center justify-between p-3 border rounded-md">
-            <Label htmlFor={`required-${question.id}`} className="text-sm font-medium">
-              Obrigatório
-            </Label>
-            <Switch
-              id={`required-${question.id}`}
-              checked={question.isRequired}
-              onCheckedChange={(checked) => handleUpdate('isRequired', checked)}
-            />
-          </div>
-        </div>
-
-        {/* Editor de opções unificado */}
-        {requiresOptions && (
-          <UnifiedOptionsEditor
-            options={question.options || []}
-            onOptionsChange={handleOptionsUpdate}
-            questionId={question.id}
-            responseType={question.responseType}
-          />
         )}
 
-        {/* Dica/Hint */}
-        <div>
-          <Label htmlFor={`hint-${question.id}`} className="text-sm font-medium">
-            Dica para o inspetor
-          </Label>
-          <Textarea
-            id={`hint-${question.id}`}
-            placeholder="Digite uma dica opcional que ajudará o inspetor..."
-            value={question.hint || ''}
-            onChange={(e) => handleUpdate('hint', e.target.value)}
-            className="mt-1 resize-none"
-            rows={2}
-          />
-        </div>
+        {/* Configurações avançadas */}
+        <Collapsible open={showAdvanced}>
+          <CollapsibleContent className="space-y-4">
+            {/* Configurações de mídia */}
+            <MediaCard
+              question={question}
+              onUpdate={(updates) => onUpdate({ ...question, ...updates })}
+            />
 
-        <Separator />
+            {/* Pergunta condicional */}
+            <ConditionalQuestionCard
+              question={question}
+              availableQuestions={allQuestions}
+              onUpdate={(updates) => onUpdate({ ...question, ...updates })}
+            />
 
-        {/* Seções colapsáveis */}
-        <div className="space-y-2">
-          {/* Configurações de mídia */}
-          <Collapsible open={showMediaCard} onOpenChange={setShowMediaCard}>
-            <CollapsibleTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="flex items-center justify-between w-full p-2 hover:bg-gray-50"
-              >
-                <span className="flex items-center gap-2 text-sm font-medium">
-                  <Camera className="h-4 w-4" />
-                  Configurações de mídia
-                  {hasMediaEnabled && (
-                    <Badge variant="secondary" className="text-xs">Ativo</Badge>
-                  )}
-                </span>
-                {showMediaCard ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="mt-2">
-                <MediaCard
-                  question={question}
-                  onUpdate={handleMediaUpdate}
-                />
+            {/* Subperguntas */}
+            {onAddSubQuestion && (
+              <SubQuestionsCard
+                question={question}
+                allQuestions={allQuestions}
+                onUpdateQuestion={onUpdate}
+                onDeleteQuestion={onDelete}
+                onAddSubQuestion={onAddSubQuestion}
+              />
+            )}
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* Alertas de validação */}
+        {!validation.isValid && (
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5" />
+              <div className="text-sm text-amber-800">
+                <div className="font-medium mb-1">Esta pergunta precisa de atenção:</div>
+                <ul className="text-xs space-y-0.5">
+                  {!validation.hasText && <li>• Adicione o texto da pergunta</li>}
+                  {validation.requiresOptions && !validation.hasValidOptions && <li>• Adicione opções de resposta</li>}
+                  {!validation.hasValidWeight && <li>• Defina um peso válido (maior que 0)</li>}
+                </ul>
               </div>
-            </CollapsibleContent>
-          </Collapsible>
-
-          {/* Opções avançadas */}
-          <Collapsible open={showAdvancedOptions} onOpenChange={setShowAdvancedOptions}>
-            <CollapsibleTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="flex items-center justify-between w-full p-2 hover:bg-gray-50"
-              >
-                <span className="flex items-center gap-2 text-sm font-medium">
-                  <Settings className="h-4 w-4" />
-                  Opções avançadas
-                </span>
-                {showAdvancedOptions ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="space-y-4 pt-4 border-t border-gray-100">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center justify-between p-3 border rounded-md">
-                    <Label htmlFor={`conditional-${question.id}`} className="text-sm font-medium">
-                      Pergunta condicional
-                    </Label>
-                    <Switch
-                      id={`conditional-${question.id}`}
-                      checked={question.isConditional}
-                      onCheckedChange={(checked) => handleUpdate('isConditional', checked)}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 border rounded-md">
-                    <Label htmlFor={`subchecklist-${question.id}`} className="text-sm font-medium">
-                      Tem subchecklist
-                    </Label>
-                    <Switch
-                      id={`subchecklist-${question.id}`}
-                      checked={!!question.hasSubChecklist}
-                      onCheckedChange={(checked) => handleUpdate('hasSubChecklist', checked)}
-                    />
-                  </div>
-                </div>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        </div>
-
-        {/* Ações da pergunta */}
-        {onAddSubQuestion && (
-          <div className="flex justify-end pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleAddSubQuestion}
-              className="flex items-center gap-1"
-            >
-              <Plus className="h-4 w-4" />
-              Subpergunta
-            </Button>
+            </div>
           </div>
         )}
       </CardContent>
