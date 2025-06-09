@@ -12,6 +12,7 @@ interface SimpleQuestionListProps {
   onUpdateQuestion: (question: ChecklistQuestion) => void;
   onDeleteQuestion: (id: string) => void;
   onDragEnd: (result: DropResult) => void;
+  onAddSubQuestion?: (parentId: string) => void;
   enableAllMedia: boolean;
   isSubmitting: boolean;
 }
@@ -22,6 +23,7 @@ export function SimpleQuestionList({
   onUpdateQuestion,
   onDeleteQuestion,
   onDragEnd,
+  onAddSubQuestion,
   enableAllMedia,
   isSubmitting
 }: SimpleQuestionListProps) {
@@ -71,6 +73,8 @@ export function SimpleQuestionList({
                           questionIndex={index}
                           onUpdate={onUpdateQuestion}
                           onDelete={onDeleteQuestion}
+                          onAddSubQuestion={onAddSubQuestion}
+                          allQuestions={questions}
                           isDragging={snapshot.isDragging}
                         />
                       </div>

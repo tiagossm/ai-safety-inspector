@@ -8,13 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { GripVertical, Trash2, Settings, ChevronDown, ChevronUp, AlertCircle, CheckCircle } from "lucide-react";
 import { ResponseTypeSelector } from "./ResponseTypeSelector";
 import { AdvancedOptionsEditor } from "./AdvancedOptionsEditor";
 import { MediaCard } from "./MediaCard";
-import { ConditionalQuestionCard } from "./ConditionalQuestionCard";
 import { SubQuestionsCard } from "./SubQuestionsCard";
 import { TYPES_REQUIRING_OPTIONS } from "@/types/responseTypes";
 
@@ -120,7 +118,7 @@ export function ImprovedQuestionEditor({
         </div>
 
         {/* Configurações básicas */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mt-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
           <div>
             <Label className="text-xs text-gray-600 mb-1 block">Tipo de resposta</Label>
             <ResponseTypeSelector
@@ -149,17 +147,6 @@ export function ImprovedQuestionEditor({
             />
             <Label htmlFor={`required-${question.id}`} className="text-xs text-gray-600">
               Obrigatório
-            </Label>
-          </div>
-          
-          <div className="flex items-center space-x-2 pt-4">
-            <Switch
-              id={`conditional-${question.id}`}
-              checked={question.isConditional || false}
-              onCheckedChange={(checked) => handleFieldUpdate("isConditional", checked)}
-            />
-            <Label htmlFor={`conditional-${question.id}`} className="text-xs text-gray-600">
-              Condicional
             </Label>
           </div>
         </div>
@@ -195,13 +182,6 @@ export function ImprovedQuestionEditor({
             {/* Configurações de mídia */}
             <MediaCard
               question={question}
-              onUpdate={(updates) => onUpdate({ ...question, ...updates })}
-            />
-
-            {/* Pergunta condicional */}
-            <ConditionalQuestionCard
-              question={question}
-              availableQuestions={allQuestions}
               onUpdate={(updates) => onUpdate({ ...question, ...updates })}
             />
 
