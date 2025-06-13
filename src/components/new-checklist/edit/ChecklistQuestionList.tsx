@@ -2,7 +2,7 @@
 import React from "react";
 import { useChecklistEditor } from "@/contexts/ChecklistEditorContext";
 import { SimpleQuestionList } from "./SimpleQuestionList";
-import { MediaToggle } from "./MediaToggle";
+import { ImprovedMediaToggle } from "./ImprovedMediaToggle";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -74,8 +74,8 @@ export function ChecklistQuestionList() {
 
   return (
     <div className="space-y-6">
-      {/* Media Toggle */}
-      <MediaToggle 
+      {/* Media Toggle Melhorado */}
+      <ImprovedMediaToggle 
         enableAllMedia={enableAllMedia}
         onToggle={toggleAllMediaOptions}
       />

@@ -6,26 +6,23 @@ import { Plus, AlertCircle } from "lucide-react";
 import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
 import { CompactQuestionEditor } from "../editor/CompactQuestionEditor";
 
-interface SimpleQuestionListProps {
+interface SimplifiedQuestionListProps {
   questions: ChecklistQuestion[];
   onAddQuestion: () => void;
   onUpdateQuestion: (question: ChecklistQuestion) => void;
   onDeleteQuestion: (id: string) => void;
   onDragEnd: (result: DropResult) => void;
-  onAddSubQuestion?: (parentId: string) => void;
-  enableAllMedia: boolean;
   isSubmitting: boolean;
 }
 
-export function SimpleQuestionList({
+export function SimplifiedQuestionList({
   questions,
   onAddQuestion,
   onUpdateQuestion,
   onDeleteQuestion,
   onDragEnd,
-  enableAllMedia,
   isSubmitting
-}: SimpleQuestionListProps) {
+}: SimplifiedQuestionListProps) {
   const mainQuestions = questions.filter(q => !q.parentQuestionId);
   
   return (
@@ -33,7 +30,7 @@ export function SimpleQuestionList({
       {/* Header simplificado */}
       <div className="flex justify-between items-center">
         <div className="text-sm text-gray-600">
-          {mainQuestions.length} pergunta{mainQuestions.length !== 1 ? 's' : ''} principal{mainQuestions.length !== 1 ? 'is' : ''}
+          {mainQuestions.length} pergunta{mainQuestions.length !== 1 ? 's' : ''}
         </div>
         <Button
           type="button"
@@ -47,7 +44,7 @@ export function SimpleQuestionList({
         </Button>
       </div>
 
-      {/* Lista de perguntas com drag and drop */}
+      {/* Lista de perguntas */}
       {mainQuestions.length > 0 ? (
         <DragDropContext onDragEnd={onDragEnd}>
           <Droppable droppableId="questions-list">
