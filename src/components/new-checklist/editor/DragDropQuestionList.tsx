@@ -1,6 +1,6 @@
 
 import React from "react";
-import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { EnhancedQuestionEditor } from "./EnhancedQuestionEditor";
 

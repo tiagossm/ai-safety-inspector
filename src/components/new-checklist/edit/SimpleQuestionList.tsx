@@ -3,7 +3,7 @@ import React from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Button } from "@/components/ui/button";
 import { Plus, AlertCircle } from "lucide-react";
-import { DragDropContext, Droppable, Draggable, DropResult } from "react-beautiful-dnd";
+import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { CompactQuestionEditor } from "../editor/CompactQuestionEditor";
 
 interface SimpleQuestionListProps {
