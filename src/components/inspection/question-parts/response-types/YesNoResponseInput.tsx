@@ -29,17 +29,19 @@ export function YesNoResponseInput({
 }: YesNoResponseInputProps) {
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
   const [selectedMediaUrl, setSelectedMediaUrl] = useState<string | null>(null);
-
   const [mediaAnalysisResults, setMediaAnalysisResults] = useState<Record<string, any>>(
     response?.mediaAnalysisResults || {}
   );
-  const [isActionPlanDialogOpen, setIsActionPlanDialogOpen] = useState(false);
 
   const currentValue = response?.value;
   const mediaUrls = response?.mediaUrls || [];
 
+  // Atualiza resultados locais somente se realmente mudaram
   useEffect(() => {
-    if (response?.mediaAnalysisResults) {
+    if (
+      response?.mediaAnalysisResults &&
+      JSON.stringify(response.mediaAnalysisResults) !== JSON.stringify(mediaAnalysisResults)
+    ) {
       setMediaAnalysisResults(response.mediaAnalysisResults);
     }
   }, [response?.mediaAnalysisResults]);
@@ -58,15 +60,18 @@ export function YesNoResponseInput({
     }
   }, [response, onResponseChange, onMediaChange]);
 
+  // Salva resultado da análise da mídia sem reabrir/reenviar para análise
   const handleAnalysisResults = useCallback((results: any) => {
+    const updatedResults = { ...(response?.mediaAnalysisResults || {}), ...results };
+    setMediaAnalysisResults(updatedResults);
     const updatedResponse = {
       ...response,
-      mediaAnalysisResults: { ...(response?.mediaAnalysisResults || {}), ...results }
+      mediaAnalysisResults: updatedResults
     };
-    setMediaAnalysisResults(prev => ({ ...prev, ...results }));
     onResponseChange(updatedResponse);
   }, [response, onResponseChange]);
 
+  // Só abre modal ao clicar no botão, sem trigger por mudanças no estado!
   const handleOpenAnalysis = useCallback(() => {
     if (response?.mediaUrls && response.mediaUrls.length > 0) {
       setSelectedMediaUrl(response.mediaUrls[0]);
@@ -98,7 +103,7 @@ export function YesNoResponseInput({
         mediaUrls={mediaUrls}
         readOnly={readOnly}
         mediaAnalysisResults={mediaAnalysisResults}
-        onOpenAnalysis={handleOpenAnalysis}
+        onOpenAnalysis={handleOpenAnalysis} // Só usuario manual abre
       />
 
       <MediaUploadInput
@@ -125,7 +130,7 @@ export function YesNoResponseInput({
           mediaUrls={mediaUrls}
           onDelete={!readOnly ? handleDeleteMedia : undefined}
           onOpenPreview={() => {}}
-          onOpenAnalysis={() => {}}
+          onOpenAnalysis={() => {}} // Não dispara nada automático!
           readOnly={readOnly}
           questionText={question.text || question.pergunta || ""}
           analysisResults={mediaAnalysisResults}
