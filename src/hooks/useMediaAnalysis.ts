@@ -24,6 +24,10 @@ export interface MediaAnalysisOptions {
   mediaType?: string;
 }
 
+// Cache simples para evitar análises duplicadas
+const analysisCache = new Map<string, { result: MediaAnalysisResult; timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
 export function useMediaAnalysis() {
   const [analyzing, setAnalyzing] = useState(false);
 
@@ -34,14 +38,20 @@ export function useMediaAnalysis() {
       toast.error("URL de mídia inválida para análise");
       return null;
     }
+
+    // Verifica cache primeiro
+    const cacheKey = `${mediaUrl}-${questionText}-${userAnswer || ''}`;
+    const cached = analysisCache.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+      console.log("Retornando resultado do cache para:", mediaUrl);
+      return cached.result;
+    }
     
     setAnalyzing(true);
     
     try {
-      // Determinar o tipo de mídia
       const detectedMediaType = mediaType || getMediaType(mediaUrl);
       
-      // Construir o payload para a função Edge
       const payload = {
         mediaUrl,
         questionText: questionText || "",
@@ -51,9 +61,8 @@ export function useMediaAnalysis() {
         additionalMediaUrls: additionalMediaUrls || []
       };
       
-      console.log("Enviando análise de mídia com payload:", payload);
+      console.log("Enviando análise de mídia:", payload);
       
-      // Chamar a função Edge para análise
       const { data, error } = await supabase.functions.invoke('analyze-media', {
         body: payload
       });
@@ -64,15 +73,11 @@ export function useMediaAnalysis() {
         return null;
       }
       
-      console.log("Resultado da análise:", data);
-      
-      // Verificar se o resultado tem a estrutura esperada
       if (!data) {
         toast.error("Resposta da análise de mídia vazia");
         return null;
       }
       
-      // Formatar resultado
       const result: MediaAnalysisResult = {
         analysis: data.analysis || data.transcript || "Sem análise disponível",
         type: detectedMediaType,
@@ -85,6 +90,19 @@ export function useMediaAnalysis() {
         confidence: data.confidence || 0
       };
       
+      // Armazena no cache
+      analysisCache.set(cacheKey, { result, timestamp: Date.now() });
+      
+      // Limpa cache antigo periodicamente
+      if (analysisCache.size > 50) {
+        const now = Date.now();
+        for (const [key, value] of analysisCache.entries()) {
+          if (now - value.timestamp > CACHE_DURATION) {
+            analysisCache.delete(key);
+          }
+        }
+      }
+      
       return result;
     } catch (error: any) {
       console.error("Erro durante análise de mídia:", error);
@@ -95,7 +113,6 @@ export function useMediaAnalysis() {
     }
   }, []);
   
-  // Função auxiliar para determinar o tipo de mídia
   const getMediaType = (url: string): string => {
     if (!url) return 'unknown';
     
@@ -114,8 +131,14 @@ export function useMediaAnalysis() {
     return 'unknown';
   };
 
+  // Função para limpar cache manualmente se necessário
+  const clearCache = useCallback(() => {
+    analysisCache.clear();
+  }, []);
+
   return {
     analyze,
-    analyzing
+    analyzing,
+    clearCache
   };
 }

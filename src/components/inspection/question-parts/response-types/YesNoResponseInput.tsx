@@ -36,15 +36,17 @@ export function YesNoResponseInput({
   const currentValue = response?.value;
   const mediaUrls = response?.mediaUrls || [];
 
-  // Atualiza resultados locais somente se realmente mudaram
+  // Sincroniza apenas quando os resultados do response mudaram efetivamente
   useEffect(() => {
-    if (
-      response?.mediaAnalysisResults &&
-      JSON.stringify(response.mediaAnalysisResults) !== JSON.stringify(mediaAnalysisResults)
-    ) {
-      setMediaAnalysisResults(response.mediaAnalysisResults);
+    if (response?.mediaAnalysisResults) {
+      const responseResultsString = JSON.stringify(response.mediaAnalysisResults);
+      const localResultsString = JSON.stringify(mediaAnalysisResults);
+      
+      if (responseResultsString !== localResultsString) {
+        setMediaAnalysisResults(response.mediaAnalysisResults);
+      }
     }
-  }, [response?.mediaAnalysisResults]);
+  }, [response?.mediaAnalysisResults, mediaAnalysisResults]);
 
   const handleResponseChange = useCallback((value: boolean) => {
     const updatedResponse = { ...response, value };
@@ -60,31 +62,48 @@ export function YesNoResponseInput({
     }
   }, [response, onResponseChange, onMediaChange]);
 
-  // Salva resultado da análise da mídia sem reabrir/reenviar para análise
-  const handleAnalysisResults = useCallback((results: any) => {
-    const updatedResults = { ...(response?.mediaAnalysisResults || {}), ...results };
+  // Handler para salvar resultados da análise apenas quando necessário
+  const handleAnalysisResults = useCallback((results: any, mediaUrl: string) => {
+    // Evita atualizações desnecessárias verificando se o resultado mudou
+    const existingResult = mediaAnalysisResults[mediaUrl];
+    if (existingResult && JSON.stringify(existingResult) === JSON.stringify(results)) {
+      return; // Nenhuma mudança, não atualiza
+    }
+
+    const updatedResults = { ...mediaAnalysisResults, [mediaUrl]: results };
     setMediaAnalysisResults(updatedResults);
+    
     const updatedResponse = {
       ...response,
       mediaAnalysisResults: updatedResults
     };
     onResponseChange(updatedResponse);
-  }, [response, onResponseChange]);
+  }, [mediaAnalysisResults, response, onResponseChange]);
 
-  // Só abre modal ao clicar no botão, sem trigger por mudanças no estado!
+  // Abre modal de análise apenas por ação manual do usuário
   const handleOpenAnalysis = useCallback(() => {
-    if (response?.mediaUrls && response.mediaUrls.length > 0) {
-      setSelectedMediaUrl(response.mediaUrls[0]);
-    } else {
-      setSelectedMediaUrl(null);
+    if (mediaUrls && mediaUrls.length > 0) {
+      setSelectedMediaUrl(mediaUrls[0]);
+      setIsAnalysisOpen(true);
     }
-    setIsAnalysisOpen(true);
-  }, [response?.mediaUrls]);
+  }, [mediaUrls]);
 
   const handleDeleteMedia = useCallback((urlToDelete: string) => {
     const updatedMediaUrls = mediaUrls.filter(url => url !== urlToDelete);
     handleMediaChange(updatedMediaUrls);
-  }, [mediaUrls, handleMediaChange]);
+    
+    // Remove também o resultado da análise correspondente
+    const updatedResults = { ...mediaAnalysisResults };
+    delete updatedResults[urlToDelete];
+    setMediaAnalysisResults(updatedResults);
+    
+    const updatedResponse = {
+      ...response,
+      mediaUrls: updatedMediaUrls,
+      mediaAnalysisResults: updatedResults
+    };
+    onResponseChange(updatedResponse);
+  }, [mediaUrls, mediaAnalysisResults, response, handleMediaChange, onResponseChange]);
 
   return (
     <div className="space-y-4">
@@ -103,7 +122,7 @@ export function YesNoResponseInput({
         mediaUrls={mediaUrls}
         readOnly={readOnly}
         mediaAnalysisResults={mediaAnalysisResults}
-        onOpenAnalysis={handleOpenAnalysis} // Só usuario manual abre
+        onOpenAnalysis={handleOpenAnalysis}
       />
 
       <MediaUploadInput
@@ -115,13 +134,7 @@ export function YesNoResponseInput({
         allowsFiles={question.allowsFiles || question.permite_files || false}
         readOnly={readOnly}
         questionText={question.text || question.pergunta || ""}
-        onSaveAnalysis={(url, result) => {
-          setMediaAnalysisResults(prev => ({ ...prev, [url]: result }));
-          onResponseChange({
-            ...response,
-            mediaAnalysisResults: { ...mediaAnalysisResults, [url]: result }
-          });
-        }}
+        onSaveAnalysis={handleAnalysisResults}
         analysisResults={mediaAnalysisResults}
       />
 
@@ -130,17 +143,11 @@ export function YesNoResponseInput({
           mediaUrls={mediaUrls}
           onDelete={!readOnly ? handleDeleteMedia : undefined}
           onOpenPreview={() => {}}
-          onOpenAnalysis={() => {}} // Não dispara nada automático!
+          onOpenAnalysis={handleOpenAnalysis}
           readOnly={readOnly}
           questionText={question.text || question.pergunta || ""}
           analysisResults={mediaAnalysisResults}
-          onSaveAnalysis={(url, result) => {
-            setMediaAnalysisResults(prev => ({ ...prev, [url]: result }));
-            onResponseChange({
-              ...response,
-              mediaAnalysisResults: { ...mediaAnalysisResults, [url]: result }
-            });
-          }}
+          onSaveAnalysis={handleAnalysisResults}
         />
       )}
 
@@ -150,9 +157,13 @@ export function YesNoResponseInput({
         mediaUrl={selectedMediaUrl}
         questionText={question.text || question.pergunta || ""}
         userAnswer={currentValue === true ? "Sim" : currentValue === false ? "Não" : ""}
-        onAnalysisComplete={handleAnalysisResults}
+        onAnalysisComplete={(result) => {
+          if (selectedMediaUrl) {
+            handleAnalysisResults(result, selectedMediaUrl);
+          }
+        }}
         multimodalAnalysis={true}
-        additionalMediaUrls={mediaUrls}
+        additionalMediaUrls={mediaUrls.filter(url => url !== selectedMediaUrl)}
       />
     </div>
   );

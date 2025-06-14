@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -26,15 +27,15 @@ interface MediaAnalysisDialogProps {
   additionalMediaUrls?: string[];
 }
 
-type Status = 'pending' | 'processing' | 'done' | 'error' | 'retry';
+type Status = 'idle' | 'analyzing' | 'done' | 'error';
 
 type AnalysisState = {
   status: Status;
   result?: MediaAnalysisResult;
   errorMessage?: string;
+  analyzed?: boolean; // Flag para indicar se já foi analisado
 };
 
-// Função para garantir que cada linha vira um item de lista markdown
 function forceListMarkdown(text: string): string {
   return text
     .split('\n')
@@ -46,16 +47,13 @@ function forceListMarkdown(text: string): string {
     .join('\n');
 }
 
-// Fallback para extrair ações corretivas do texto da análise
 function getSafeActionPlan(result: MediaAnalysisResult): string {
-  console.log("[getSafeActionPlan] result recebido:", result);
   const isInvalid = !result.actionPlanSuggestion 
     || result.actionPlanSuggestion.trim() === "" 
     || result.actionPlanSuggestion.trim().toLowerCase() === "sugeridas:**";
 
   if (!isInvalid) return result.actionPlanSuggestion!;
   
-  // Procura seção "Ações? Corretivas Sugeridas:" ou similar no texto da análise
   if (result.analysis) {
     const regex = /Ações? [Cc]orretivas [Ss]ugeridas?:([\s\S]+?)(?:\n\S|\n\n|Conclusão:|$)/i;
     const match = result.analysis.match(regex);
@@ -63,7 +61,7 @@ function getSafeActionPlan(result: MediaAnalysisResult): string {
       return match[1].trim();
     }
   }
-  return ""; // Pode retornar "Sem ações corretivas identificadas." se preferir.
+  return "";
 }
 
 export function MediaAnalysisDialog({
@@ -91,64 +89,63 @@ export function MediaAnalysisDialog({
   const [analysisMap, setAnalysisMap] = useState<Record<string, AnalysisState>>({});
   const { analyze } = useMediaAnalysis();
 
+  // Inicializa estado das imagens quando o dialog abre
   useEffect(() => {
-    if (open) {
-      let map: Record<string, AnalysisState> = {};
+    if (open && allImages.length > 0) {
+      const newMap: Record<string, AnalysisState> = {};
       allImages.forEach(url => {
-        map[url] = { status: 'pending' };
+        newMap[url] = { status: 'idle', analyzed: false };
       });
-      setAnalysisMap(map);
-    } else {
+      setAnalysisMap(newMap);
+    } else if (!open) {
       setAnalysisMap({});
     }
   }, [open, allImages]);
-  
-  useEffect(() => {
-    if (!open) return;
-    allImages.forEach(url => {
-      const state = analysisMap[url];
-      if (!state || state.status === 'pending' || state.status === 'retry') {
-        setAnalysisMap(prev => ({
-          ...prev,
-          [url]: { ...prev[url], status: 'processing' }
-        }));
 
-        const contextImages = allImages.filter(u => u !== url);
-        analyze({
-          mediaUrl: url,
-          mediaType,
-          questionText,
-          userAnswer,
-          multimodalAnalysis: false,
-          additionalMediaUrls: contextImages
-        })
-        .then((result) => {
-          setAnalysisMap(prev => ({
-            ...prev,
-            [url]: { status: 'done', result }
-          }));
-          if (onAnalysisComplete) onAnalysisComplete(result);
-        })
-        .catch((err: any) => {
-          setAnalysisMap(prev => ({
-            ...prev,
-            [url]: { status: 'error', errorMessage: `Erro ao analisar imagem: ${err.message}` }
-          }));
-        });
-      }
-    });
-    // eslint-disable-next-line
-  }, [open, analyze, mediaUrl, mediaType, questionText, userAnswer, allImages]);
-  // Removido analysisMap e .join('-') das dependências
+  // Função para analisar uma imagem específica
+  const analyzeImage = useCallback(async (url: string) => {
+    if (!url) return;
 
-  const handleRetry = (url: string) => {
     setAnalysisMap(prev => ({
       ...prev,
-      [url]: { status: 'retry' }
+      [url]: { ...prev[url], status: 'analyzing' }
     }));
-  };
 
-  const isLoading = Object.values(analysisMap).some(state => state?.status === 'processing');
+    try {
+      const contextImages = allImages.filter(u => u !== url);
+      const result = await analyze({
+        mediaUrl: url,
+        mediaType,
+        questionText,
+        userAnswer,
+        multimodalAnalysis: false,
+        additionalMediaUrls: contextImages
+      });
+
+      if (result) {
+        setAnalysisMap(prev => ({
+          ...prev,
+          [url]: { status: 'done', result, analyzed: true }
+        }));
+        
+        if (onAnalysisComplete) {
+          onAnalysisComplete(result);
+        }
+      } else {
+        throw new Error('Nenhum resultado retornado da análise');
+      }
+    } catch (error: any) {
+      console.error('Erro ao analisar imagem:', error);
+      setAnalysisMap(prev => ({
+        ...prev,
+        [url]: { 
+          status: 'error', 
+          errorMessage: `Erro ao analisar imagem: ${error.message}`,
+          analyzed: false
+        }
+      }));
+    }
+  }, [allImages, analyze, mediaType, questionText, userAnswer, onAnalysisComplete]);
 
   const renderMarkdown = (md: string) =>
     <ReactMarkdown
@@ -165,13 +162,13 @@ export function MediaAnalysisDialog({
       <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center">
-            Análise Individualizada das Imagens
+            Análise de Imagens com IA
           </DialogTitle>
         </DialogHeader>
 
         {showMaxWarning && (
           <div className="mb-3 bg-yellow-100 text-yellow-900 text-xs rounded px-3 py-2 border border-yellow-300">
-            Atenção: apenas as 4 primeiras imagens foram analisadas. As demais não serão processadas.
+            Atenção: apenas as 4 primeiras imagens serão analisadas.
           </div>
         )}
 
@@ -188,18 +185,11 @@ export function MediaAnalysisDialog({
           </div>
         )}
 
-        {isLoading && (
-          <div className="flex flex-col items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-            <p className="text-sm text-gray-600">Analisando imagens...</p>
-          </div>
-        )}
-
         {allImages.length > 0 && (
           <div className={`grid gap-4 ${allImages.length > 1 ? 'grid-cols-2 sm:grid-cols-4' : ''}`}>
             {allImages.map((url, idx) => {
-              const state = analysisMap[url];
-              const result = state?.result;
+              const state = analysisMap[url] || { status: 'idle', analyzed: false };
+              const result = state.result;
               const actionSuggestion = result ? getSafeActionPlan(result) : "";
               const hasActionSuggestion = !!actionSuggestion && actionSuggestion.trim().length > 0;
 
@@ -213,19 +203,38 @@ export function MediaAnalysisDialog({
                   <p className="text-xs text-center mt-1 text-gray-500">
                     {idx === 0 ? 'Imagem principal' : `Imagem adicional ${idx}`}
                   </p>
-                  {state?.status === 'processing' && (
+                  
+                  {/* Botão para iniciar análise */}
+                  {state.status === 'idle' && !state.analyzed && (
+                    <Button 
+                      size="sm" 
+                      onClick={() => analyzeImage(url)}
+                      className="mt-2 w-full"
+                    >
+                      Analisar com IA
+                    </Button>
+                  )}
+
+                  {/* Status de carregamento */}
+                  {state.status === 'analyzing' && (
                     <div className="flex flex-col items-center mt-3 mb-3">
                       <Loader2 className="h-5 w-5 animate-spin text-primary" />
                       <span className="text-xs mt-1 text-gray-600">Analisando...</span>
                     </div>
                   )}
-                  {state?.status === 'error' && (
+
+                  {/* Erro */}
+                  {state.status === 'error' && (
                     <div className="w-full border rounded-md p-2 bg-red-50 border-red-200 mt-1">
                       <div className="text-xs text-red-700 mb-2">{state.errorMessage}</div>
-                      <Button size="sm" variant="secondary" onClick={() => handleRetry(url)}>Tentar novamente</Button>
+                      <Button size="sm" variant="secondary" onClick={() => analyzeImage(url)}>
+                        Tentar novamente
+                      </Button>
                     </div>
                   )}
-                  {state?.status === 'done' && result && (
+
+                  {/* Resultado da análise */}
+                  {state.status === 'done' && result && (
                     <>
                       {hasActionSuggestion && (
                         <div className="w-full my-2 p-2 rounded-md border text-center bg-amber-50 border-amber-200">
@@ -237,36 +246,34 @@ export function MediaAnalysisDialog({
                           </div>
                         </div>
                       )}
+                      
                       <div className="w-full border rounded-md p-2 bg-gray-50 mb-1">
                         <h3 className="text-xs font-medium text-gray-700 mb-1">Análise da Imagem:</h3>
                         <div className="text-xs whitespace-pre-line">
                           {renderMarkdown(result.analysis ?? "")}
                         </div>
                       </div>
+                      
                       {hasActionSuggestion && (
                         <div className="w-full border rounded-md p-2 bg-amber-50 border-amber-200 mt-1">
                           <div className="flex items-center mb-1">
                             <Sparkles className="h-3 w-3 text-amber-500 mr-1" />
-                            <h3 className="text-xs font-medium text-amber-800">Ações Corretivas Sugeridas:</h3>
+                            <h3 className="text-xs font-medium text-amber-800">Ações Corretivas:</h3>
                           </div>
                           <div className="text-xs text-amber-700">
                             {renderMarkdown(actionSuggestion)}
                           </div>
                           <Button
-  size="sm"
-  variant="destructive"
-  className="mt-2 w-full"
-  onClick={() => {
-    onAddActionPlan?.(actionSuggestion);
-  }}
->
-  Adicionar ao Plano de Ação
-</Button>
-
-
-
+                            size="sm"
+                            variant="default"
+                            className="mt-2 w-full"
+                            onClick={() => onAddActionPlan?.(actionSuggestion)}
+                          >
+                            Adicionar ao Plano de Ação
+                          </Button>
                         </div>
                       )}
+                      
                       {!hasActionSuggestion && (
                         <Button
                           size="sm"
@@ -274,7 +281,7 @@ export function MediaAnalysisDialog({
                           className="mt-2 w-full"
                           onClick={() => onAddComment?.("Situação em conformidade conforme análise IA.")}
                         >
-                          Adicionar comentário de conformidade
+                          Marcar como conforme
                         </Button>
                       )}
                     </>
