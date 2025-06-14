@@ -1,7 +1,45 @@
 
 import { ChecklistQuestion } from "@/types/newChecklist";
 
+// Função auxiliar para converter qualquer opção em string para validação
+function extractText(opt: any): string {
+  if (typeof opt === 'string') return opt.trim();
+  if (opt && typeof opt === 'object' && typeof opt.option_text === 'string') return opt.option_text.trim();
+  return '';
+}
+
 export function useChecklistValidation() {
+  // Checa se opções são genéricas (ex: 'Opção 1', 'Opção 2', ...), duplicadas ou ruins
+  const validateOptionsQuality = (options: any[]): string[] => {
+    const errors: string[] = [];
+    const MIN_OPTION_LENGTH = 3;
+    if (!options || !Array.isArray(options) || options.length < 2) {
+      errors.push("Adicione pelo menos 2 opções de resposta.");
+      return errors;
+    }
+    // Normalizar texto das opções
+    const texts = options.map(extractText);
+
+    // Checagem de opções vazias, muito curtas ou genéricas
+    texts.forEach((text, idx) => {
+      if (!text) {
+        errors.push(`Opção ${idx + 1} está vazia.`);
+      } else if (text.length < MIN_OPTION_LENGTH) {
+        errors.push(`Opção ${idx + 1} muito curta (mínimo ${MIN_OPTION_LENGTH} caracteres).`);
+      } else if (/^op(ç|c)[ãa]o\s?\d+$/i.test(text)) {
+        errors.push(`Opção ${idx + 1} parece ser genérica demais ("${text}").`);
+      }
+    });
+
+    // Duplicatas
+    const lower = texts.map(t => t.toLowerCase());
+    const uniques = new Set(lower);
+    if (uniques.size !== lower.length) {
+      errors.push("Existem opções de resposta duplicadas.");
+    }
+    return errors;
+  };
+
   const validateQuestion = (question: ChecklistQuestion): string[] => {
     const errors: string[] = [];
     
@@ -21,27 +59,10 @@ export function useChecklistValidation() {
     ];
     
     if (typesRequiringOptions.includes(question.responseType)) {
-      if (!question.options || !Array.isArray(question.options) || question.options.length === 0) {
-        errors.push("Perguntas de múltipla escolha devem ter pelo menos uma opção");
+      if (!question.options || !Array.isArray(question.options) || question.options.length < 2) {
+        errors.push("Perguntas de múltipla escolha devem ter pelo menos 2 opções válidas.");
       } else {
-        // Verificar se as opções têm texto válido
-        const emptyOptions = question.options.filter(opt => 
-          typeof opt === 'string' ? !opt.trim() : !opt.option_text?.trim()
-        );
-        
-        if (emptyOptions.length > 0) {
-          errors.push("Todas as opções devem ter texto válido");
-        }
-        
-        // Verificar duplicatas
-        const optionTexts = question.options.map(opt => 
-          typeof opt === 'string' ? opt.trim().toLowerCase() : opt.option_text?.trim().toLowerCase()
-        );
-        const uniqueTexts = new Set(optionTexts);
-        
-        if (uniqueTexts.size !== optionTexts.length) {
-          errors.push("Não é possível ter opções duplicadas");
-        }
+        errors.push(...validateOptionsQuality(question.options));
       }
     }
     
@@ -63,7 +84,8 @@ export function useChecklistValidation() {
     return { isValid, errors };
   };
   
-  const ensureValidOptions = (responseType: string, currentOptions?: any[]): string[] => {
+  // Versão que retorna opções padrão se necessário
+  const ensureValidOptions = (responseType: string, currentOptions?: any[]): any[] => {
     const typesRequiringOptions = [
       'multiple_choice', 
       'dropdown', 
@@ -72,15 +94,12 @@ export function useChecklistValidation() {
       'lista suspensa',
       'caixas de seleção'
     ];
-    
     if (!typesRequiringOptions.includes(responseType)) {
       return [];
     }
-    
-    if (!currentOptions || !Array.isArray(currentOptions) || currentOptions.length === 0) {
+    if (!currentOptions || !Array.isArray(currentOptions) || currentOptions.length < 2) {
       return ["Opção 1", "Opção 2"];
     }
-    
     return currentOptions;
   };
   

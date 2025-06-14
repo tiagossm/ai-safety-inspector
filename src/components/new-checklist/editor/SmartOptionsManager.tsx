@@ -1,10 +1,17 @@
 
 import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { useChecklistValidation } from "@/hooks/new-checklist/useChecklistValidation";
+
+// Função auxiliar para normalizar texto de uma opção (string ou objeto)
+function getOptionText(opt: any, fallback: string): string {
+  if (typeof opt === "string") return opt;
+  if (opt && typeof opt === "object" && typeof opt.option_text === "string") return opt.option_text;
+  return fallback;
+}
 
 interface SmartOptionsManagerProps {
   question: ChecklistQuestion;
@@ -12,7 +19,7 @@ interface SmartOptionsManagerProps {
 }
 
 export function SmartOptionsManager({ question, onChange }: SmartOptionsManagerProps) {
-  const { ensureValidOptions } = useChecklistValidation();
+  const { ensureValidOptions, validateQuestion } = useChecklistValidation();
   
   // Garantir que as opções sejam válidas quando o tipo de resposta muda
   useEffect(() => {
@@ -34,7 +41,9 @@ export function SmartOptionsManager({ question, onChange }: SmartOptionsManagerP
         });
       }
     }
-  }, [question.responseType, question.options, onChange, ensureValidOptions]);
+    // Não dependemos do onChange aqui, só de question
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [question.responseType, question.options]);
   
   const typesRequiringOptions = [
     'multiple_choice', 
@@ -53,7 +62,11 @@ export function SmartOptionsManager({ question, onChange }: SmartOptionsManagerP
   
   const updateOption = (index: number, value: string) => {
     const newOptions = [...options];
-    newOptions[index] = value;
+    if (typeof options[index] === "string" || !options[index]) {
+      newOptions[index] = value;
+    } else {
+      newOptions[index] = { ...options[index], option_text: value };
+    }
     onChange({
       ...question,
       options: newOptions
@@ -61,10 +74,10 @@ export function SmartOptionsManager({ question, onChange }: SmartOptionsManagerP
   };
   
   const addOption = () => {
-    const newOptions = [...options, `Opção ${options.length + 1}`];
+    const nextIndex = options.length + 1;
     onChange({
       ...question,
-      options: newOptions
+      options: [...options, `Opção ${nextIndex}`]
     });
   };
   
@@ -72,14 +85,17 @@ export function SmartOptionsManager({ question, onChange }: SmartOptionsManagerP
     if (options.length <= 2) {
       return; // Manter pelo menos 2 opções
     }
-    
     const newOptions = options.filter((_, i) => i !== index);
     onChange({
       ...question,
       options: newOptions
     });
   };
-  
+
+  // Validação das opções (qualidade)
+  const validationMessages = validateQuestion(question).filter(msg => msg.toLowerCase().includes('opç'));
+  const hasQualityWarning = validationMessages.length > 0;
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
@@ -97,12 +113,26 @@ export function SmartOptionsManager({ question, onChange }: SmartOptionsManagerP
           Adicionar
         </Button>
       </div>
+
+      {hasQualityWarning && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-800 text-xs p-2 rounded flex gap-2 mb-1">
+          <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5" />
+          <div>
+            <b>Atenção às opções:</b>
+            <ul className="list-disc pl-5 space-y-0.5">
+              {validationMessages.map((m, i) => (
+                <li key={i}>{m}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
       
       <div className="space-y-2">
         {options.map((option, index) => (
           <div key={index} className="flex items-center gap-2">
             <Input
-              value={typeof option === 'string' ? option : option.option_text || ''}
+              value={getOptionText(option, "")}
               onChange={(e) => updateOption(index, e.target.value)}
               placeholder={`Opção ${index + 1}`}
               className="flex-1"
@@ -114,6 +144,7 @@ export function SmartOptionsManager({ question, onChange }: SmartOptionsManagerP
                 variant="ghost"
                 onClick={() => removeOption(index)}
                 className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                title="Excluir opção"
               >
                 <Trash2 className="h-3 w-3" />
               </Button>
