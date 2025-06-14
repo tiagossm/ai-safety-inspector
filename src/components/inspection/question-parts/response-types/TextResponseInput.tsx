@@ -1,13 +1,10 @@
+
 import React, { useState, useEffect, useCallback } from "react";
 import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { MediaAttachments } from "@/components/inspection/question-inputs/MediaAttachments";
-import { ActionPlanButton } from "./components/ActionPlanButton";
-import { MediaAnalysisButton } from "./components/MediaAnalysisButton";
-import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
 
 interface TextResponseInputProps {
   question: any;
@@ -25,12 +22,8 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
   question,
   response,
   onResponseChange,
-  onMediaChange,
   onApplyAISuggestion,
-  readOnly = false,
-  inspectionId,
-  actionPlan,
-  onSaveActionPlan
+  readOnly = false
 }) => {
   const [analysisResults, setAnalysisResults] = useState<Record<string, MediaAnalysisResult>>(
     response?.mediaAnalysisResults || {}
@@ -40,7 +33,6 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
   // Update local state when response changes
   useEffect(() => {
     if (response?.mediaAnalysisResults) {
-      console.log("TextResponseInput: updating analysis results:", response.mediaAnalysisResults);
       setAnalysisResults(response.mediaAnalysisResults);
     }
   }, [response?.mediaAnalysisResults]);
@@ -54,37 +46,6 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
     setAiSuggestion(suggestion);
   }, [analysisResults]);
   
-  const handleSaveAnalysis = useCallback((url: string, result: MediaAnalysisResult) => {
-    console.log("TextResponseInput: saving analysis for URL:", url, result);
-    const newResults = {
-      ...analysisResults,
-      [url]: result
-    };
-    
-    setAnalysisResults(newResults);
-    
-    // Update the response with the new analysis results
-    const updatedResponse = {
-      ...response,
-      mediaAnalysisResults: newResults
-    };
-    
-    onResponseChange(updatedResponse);
-    
-    // If there's a non-conformity, show a toast notification
-    if (result.hasNonConformity) {
-      toast.info("IA detectou possível não conformidade", {
-        description: "Foi sugerido um plano de ação.",
-        duration: 5000
-      });
-    }
-    
-    // If we have an action plan suggestion, update state
-    if (result.actionPlanSuggestion) {
-      setAiSuggestion(result.actionPlanSuggestion);
-    }
-  }, [analysisResults, response, onResponseChange]);
-  
   // Check if we have non-conformity results in any media analysis
   const hasNonConformityInAnalysis = Object.values(analysisResults).some(result => 
     result.hasNonConformity
@@ -97,51 +58,15 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
       value: e.target.value 
     });
   }, [readOnly, response, onResponseChange]);
-
-  const handleMediaChange = useCallback((urls: string[]) => {
-    console.log("TextResponseInput: media URLs changed:", urls);
-    
-    const updatedResponse = {
-      ...response,
-      mediaUrls: urls
-    };
-    
-    onResponseChange(updatedResponse);
-    
-    if (onMediaChange) {
-      onMediaChange(urls);
-    }
-  }, [response, onResponseChange, onMediaChange]);
   
   const handleApplyAISuggestion = useCallback(() => {
     if (aiSuggestion && onApplyAISuggestion) {
-      console.log("TextResponseInput: Applying AI suggestion:", aiSuggestion);
       onApplyAISuggestion(aiSuggestion);
       toast.success("Sugestão da IA aplicada", {
         description: "O plano de ação foi preenchido com a sugestão da IA",
       });
     }
   }, [aiSuggestion, onApplyAISuggestion]);
-
-  // Funções para lidar com a mídia
-  const handleOpenPreview = useCallback((url: string) => {
-    console.log("TextResponseInput: Opening preview for URL:", url);
-  }, []);
-
-  const handleOpenAnalysis = useCallback((url: string) => {
-    console.log("TextResponseInput: Opening analysis for URL:", url);
-  }, []);
-
-  const handleDeleteMedia = useCallback((urlToDelete: string) => {
-    console.log("TextResponseInput: Deleting media URL:", urlToDelete);
-    const currentMediaUrls = response?.mediaUrls || [];
-    const updatedMediaUrls = currentMediaUrls.filter(url => url !== urlToDelete);
-    handleMediaChange(updatedMediaUrls);
-  }, [response, handleMediaChange]);
-
-  // Verificar se existem mídias anexadas
-  const mediaUrls = response?.mediaUrls || [];
-  const hasMedia = mediaUrls.length > 0;
 
   return (
     <div className="space-y-4">
@@ -163,21 +88,6 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
           </Badge>
         )}
       </div>
-
-      {/* Renderização inline das mídias anexadas (imediatamente após o textarea) */}
-      {hasMedia && (
-        <MediaAttachments
-          mediaUrls={mediaUrls}
-          onDelete={!readOnly ? handleDeleteMedia : undefined}
-          onOpenPreview={handleOpenPreview}
-          onOpenAnalysis={handleOpenAnalysis}
-          readOnly={readOnly}
-          questionText={question.text || question.pergunta || ""}
-          analysisResults={analysisResults}
-          onSaveAnalysis={handleSaveAnalysis}
-          onApplyAISuggestion={onApplyAISuggestion}
-        />
-      )}
       
       {/* AI Suggestion for Action Plan */}
       {aiSuggestion && (
@@ -232,27 +142,6 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
           </div>
         </div>
       )}
-
-      <div className="flex flex-wrap gap-2">
-        <ActionPlanButton
-          onActionPlanClick={() => {/* ... */}}
-          readOnly={readOnly}
-        />
-        {(question.allowsPhoto || question.allowsVideo) && (
-          <MediaAnalysisButton onOpenAnalysis={() => {/* ... */}} />
-        )}
-      </div>
-      <MediaUploadInput
-        mediaUrls={response?.mediaUrls || []}
-        onMediaChange={(urls) => {/* ... */}}
-        allowsPhoto={question.allowsPhoto}
-        allowsVideo={question.allowsVideo}
-        allowsAudio={question.allowsAudio}
-        allowsFiles={question.allowsFiles}
-        readOnly={readOnly}
-        questionText={question.text}
-        // ...outros props...
-      />
     </div>
   );
 };

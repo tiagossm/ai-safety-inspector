@@ -1,4 +1,3 @@
-
 import React, { useCallback, useState } from "react";
 import { StandardActionButtons } from "./StandardActionButtons";
 import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
@@ -16,6 +15,7 @@ import { NumberResponseInput } from "./response-types/NumberResponseInput";
 import { PhotoInput } from "@/components/inspection/question-inputs/PhotoInput";
 import { SignatureInput } from "@/components/checklist/SignatureInput";
 import { convertToFrontendType } from "@/types/responseTypes";
+import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 
 interface ResponseInputRendererProps {
   question: any;
@@ -66,9 +66,20 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     setIsAnalysisOpen(true);
   }, [mediaUrls]);
 
+  // Handler para salvar análise e atualizar response
+  const handleAnalysisComplete = useCallback((result: MediaAnalysisResult) => {
+    if (selectedMediaUrl) {
+      const updatedResults = { ...mediaAnalysisResults, [selectedMediaUrl]: result };
+      const updatedResponse = {
+        ...safeResponse,
+        mediaAnalysisResults: updatedResults
+      };
+      onResponseChange(updatedResponse);
+    }
+  }, [selectedMediaUrl, mediaAnalysisResults, safeResponse, onResponseChange]);
+
   switch (responseType) {
     case "yes_no":
-      // Passar todos handlers extras, modal já padronizado no YesNoResponseInput
       return (
         <YesNoResponseInput
           question={question}
@@ -88,7 +99,6 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             question={question}
             response={safeResponse}
             onResponseChange={onResponseChange}
-            onMediaChange={handleMediaChange}
             readOnly={readOnly}
           />
           <StandardActionButtons
@@ -111,6 +121,15 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             allowsFiles={question.allowsFiles || question.permite_files || false}
             readOnly={readOnly}
             questionText={question.text || question.pergunta || ""}
+            onSaveAnalysis={(url: string, result: MediaAnalysisResult) => {
+              const updatedResults = { ...mediaAnalysisResults, [url]: result };
+              const updatedResponse = {
+                ...safeResponse,
+                mediaAnalysisResults: updatedResults
+              };
+              onResponseChange(updatedResponse);
+            }}
+            analysisResults={mediaAnalysisResults}
           />
           <MediaAnalysisDialog
             open={isAnalysisOpen}
@@ -119,6 +138,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             questionText={question.text || question.pergunta || ""}
             multimodalAnalysis={true}
             additionalMediaUrls={mediaUrls}
+            onAnalysisComplete={handleAnalysisComplete}
           />
         </div>
       );
@@ -158,6 +178,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             questionText={question.text || question.pergunta || ""}
             multimodalAnalysis={true}
             additionalMediaUrls={mediaUrls}
+            onAnalysisComplete={handleAnalysisComplete}
           />
         </div>
       );
@@ -200,6 +221,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             questionText={question.text || question.pergunta || ""}
             multimodalAnalysis={true}
             additionalMediaUrls={mediaUrls}
+            onAnalysisComplete={handleAnalysisComplete}
           />
         </div>
       );
@@ -245,6 +267,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             questionText={question.text || question.pergunta || ""}
             multimodalAnalysis={true}
             additionalMediaUrls={mediaUrls}
+            onAnalysisComplete={handleAnalysisComplete}
           />
         </div>
       );
@@ -288,6 +311,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             questionText={question.text || question.pergunta || ""}
             multimodalAnalysis={true}
             additionalMediaUrls={mediaUrls}
+            onAnalysisComplete={handleAnalysisComplete}
           />
         </div>
       );
