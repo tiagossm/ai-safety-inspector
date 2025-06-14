@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from "react";
 import { ActionPlanButton } from "./response-types/components/ActionPlanButton";
 import { MediaAnalysisButton } from "./response-types/components/MediaAnalysisButton";

@@ -15,7 +15,9 @@ import { NumberResponseInput } from "./response-types/NumberResponseInput";
 import { PhotoInput } from "@/components/inspection/question-inputs/PhotoInput";
 import { SignatureInput } from "@/components/checklist/SignatureInput";
 import { convertToFrontendType } from "@/types/responseTypes";
-import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
+import { MediaAnalysisResult, Plan5W2H } from "@/hooks/useMediaAnalysis";
+import { ActionPlan5W2HDialog } from "@/components/action-plans/ActionPlan5W2HDialog";
+
 
 interface ResponseInputRendererProps {
   question: any;
@@ -48,6 +50,8 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   // Para análise IA modal
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
   const [selectedMediaUrl, setSelectedMediaUrl] = useState<string | null>(null);
+  const [isActionPlanDialogOpen, setIsActionPlanDialogOpen] = useState(false);
+  const [ia5W2Hplan, setIa5W2Hplan] = useState<Plan5W2H | null>(null);
 
   // Handler de mídia centralizado
   const handleMediaChange = useCallback((urls: string[]) => {
@@ -66,6 +70,16 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     setIsAnalysisOpen(true);
   }, [mediaUrls]);
 
+  const handleOpenActionPlan = useCallback(() => {
+    setIa5W2Hplan(null);
+    setIsActionPlanDialogOpen(true);
+  }, []);
+
+  const handleAdd5W2HActionPlan = useCallback((plan: Plan5W2H) => {
+    setIa5W2Hplan(plan);
+    setIsActionPlanDialogOpen(true);
+  }, []);
+
   // Handler para salvar análise e atualizar response
   const handleAnalysisComplete = useCallback((result: MediaAnalysisResult) => {
     if (selectedMediaUrl) {
@@ -77,6 +91,35 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
       onResponseChange(updatedResponse);
     }
   }, [selectedMediaUrl, mediaAnalysisResults, safeResponse, onResponseChange]);
+
+  const actionPlanDialog = (
+    <ActionPlan5W2HDialog
+      open={isActionPlanDialogOpen}
+      onOpenChange={setIsActionPlanDialogOpen}
+      questionId={question?.id}
+      inspectionId={inspectionId}
+      existingPlan={actionPlan}
+      onSave={async (data: any) => {
+        await onSaveActionPlan?.(data);
+        setIsActionPlanDialogOpen(false);
+      }}
+      iaSuggestions={mediaAnalysisResults}
+      ia5W2Hplan={ia5W2Hplan}
+    />
+  );
+
+  const mediaAnalysisDialog = (
+    <MediaAnalysisDialog
+      open={isAnalysisOpen}
+      onOpenChange={setIsAnalysisOpen}
+      mediaUrl={selectedMediaUrl}
+      questionText={question.text || question.pergunta || ""}
+      multimodalAnalysis={true}
+      additionalMediaUrls={mediaUrls}
+      onAnalysisComplete={handleAnalysisComplete}
+      onAdd5W2HActionPlan={handleAdd5W2HActionPlan}
+    />
+  );
 
   switch (responseType) {
     case "yes_no":
@@ -103,14 +146,9 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           />
           <StandardActionButtons
             question={question}
-            inspectionId={inspectionId}
-            response={safeResponse}
-            actionPlan={actionPlan}
-            onSaveActionPlan={onSaveActionPlan}
-            mediaUrls={mediaUrls}
             readOnly={readOnly}
-            mediaAnalysisResults={mediaAnalysisResults}
             onOpenAnalysis={handleOpenAnalysis}
+            onActionPlanClick={handleOpenActionPlan}
           />
           <MediaUploadInput
             mediaUrls={mediaUrls}
@@ -131,15 +169,8 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             }}
             analysisResults={mediaAnalysisResults}
           />
-          <MediaAnalysisDialog
-            open={isAnalysisOpen}
-            onOpenChange={setIsAnalysisOpen}
-            mediaUrl={selectedMediaUrl}
-            questionText={question.text || question.pergunta || ""}
-            multimodalAnalysis={true}
-            additionalMediaUrls={mediaUrls}
-            onAnalysisComplete={handleAnalysisComplete}
-          />
+          {mediaAnalysisDialog}
+          {actionPlanDialog}
         </div>
       );
     case "paragraph":
@@ -152,14 +183,9 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           />
           <StandardActionButtons
             question={question}
-            inspectionId={inspectionId}
-            response={safeResponse}
-            actionPlan={actionPlan}
-            onSaveActionPlan={onSaveActionPlan}
-            mediaUrls={mediaUrls}
             readOnly={readOnly}
-            mediaAnalysisResults={mediaAnalysisResults}
             onOpenAnalysis={handleOpenAnalysis}
+            onActionPlanClick={handleOpenActionPlan}
           />
           <MediaUploadInput
             mediaUrls={mediaUrls}
@@ -171,15 +197,8 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             readOnly={readOnly}
             questionText={question.text || question.pergunta || ""}
           />
-          <MediaAnalysisDialog
-            open={isAnalysisOpen}
-            onOpenChange={setIsAnalysisOpen}
-            mediaUrl={selectedMediaUrl}
-            questionText={question.text || question.pergunta || ""}
-            multimodalAnalysis={true}
-            additionalMediaUrls={mediaUrls}
-            onAnalysisComplete={handleAnalysisComplete}
-          />
+          {mediaAnalysisDialog}
+          {actionPlanDialog}
         </div>
       );
     case "multiple_choice":
@@ -195,14 +214,9 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           />
           <StandardActionButtons
             question={question}
-            inspectionId={inspectionId}
-            response={safeResponse}
-            actionPlan={actionPlan}
-            onSaveActionPlan={onSaveActionPlan}
-            mediaUrls={mediaUrls}
             readOnly={readOnly}
-            mediaAnalysisResults={mediaAnalysisResults}
             onOpenAnalysis={handleOpenAnalysis}
+            onActionPlanClick={handleOpenActionPlan}
           />
           <MediaUploadInput
             mediaUrls={mediaUrls}
@@ -214,15 +228,8 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             readOnly={readOnly}
             questionText={question.text || question.pergunta || ""}
           />
-          <MediaAnalysisDialog
-            open={isAnalysisOpen}
-            onOpenChange={setIsAnalysisOpen}
-            mediaUrl={selectedMediaUrl}
-            questionText={question.text || question.pergunta || ""}
-            multimodalAnalysis={true}
-            additionalMediaUrls={mediaUrls}
-            onAnalysisComplete={handleAnalysisComplete}
-          />
+          {mediaAnalysisDialog}
+          {actionPlanDialog}
         </div>
       );
     case "numeric":
@@ -241,14 +248,9 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           />
           <StandardActionButtons
             question={question}
-            inspectionId={inspectionId}
-            response={safeResponse}
-            actionPlan={actionPlan}
-            onSaveActionPlan={onSaveActionPlan}
-            mediaUrls={mediaUrls}
             readOnly={readOnly}
-            mediaAnalysisResults={mediaAnalysisResults}
             onOpenAnalysis={handleOpenAnalysis}
+            onActionPlanClick={handleOpenActionPlan}
           />
           <MediaUploadInput
             mediaUrls={mediaUrls}
@@ -260,15 +262,8 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             readOnly={readOnly}
             questionText={question.text || question.pergunta || ""}
           />
-          <MediaAnalysisDialog
-            open={isAnalysisOpen}
-            onOpenChange={setIsAnalysisOpen}
-            mediaUrl={selectedMediaUrl}
-            questionText={question.text || question.pergunta || ""}
-            multimodalAnalysis={true}
-            additionalMediaUrls={mediaUrls}
-            onAnalysisComplete={handleAnalysisComplete}
-          />
+          {mediaAnalysisDialog}
+          {actionPlanDialog}
         </div>
       );
     case "photo":
@@ -285,14 +280,9 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           />
           <StandardActionButtons
             question={question}
-            inspectionId={inspectionId}
-            response={safeResponse}
-            actionPlan={actionPlan}
-            onSaveActionPlan={onSaveActionPlan}
-            mediaUrls={mediaUrls}
             readOnly={readOnly}
-            mediaAnalysisResults={mediaAnalysisResults}
             onOpenAnalysis={handleOpenAnalysis}
+            onActionPlanClick={handleOpenActionPlan}
           />
           <MediaUploadInput
             mediaUrls={mediaUrls}
@@ -304,15 +294,8 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             readOnly={readOnly}
             questionText={question.text || question.pergunta || ""}
           />
-          <MediaAnalysisDialog
-            open={isAnalysisOpen}
-            onOpenChange={setIsAnalysisOpen}
-            mediaUrl={selectedMediaUrl}
-            questionText={question.text || question.pergunta || ""}
-            multimodalAnalysis={true}
-            additionalMediaUrls={mediaUrls}
-            onAnalysisComplete={handleAnalysisComplete}
-          />
+          {mediaAnalysisDialog}
+          {actionPlanDialog}
         </div>
       );
     case "signature":
@@ -324,15 +307,10 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           />
           <StandardActionButtons
             question={question}
-            inspectionId={inspectionId}
-            response={safeResponse}
-            actionPlan={actionPlan}
-            onSaveActionPlan={onSaveActionPlan}
-            mediaUrls={mediaUrls}
             readOnly={readOnly}
-            mediaAnalysisResults={mediaAnalysisResults}
-            onOpenAnalysis={handleOpenAnalysis}
+            onActionPlanClick={handleOpenActionPlan}
           />
+          {actionPlanDialog}
         </div>
       );
     case "date":
@@ -345,15 +323,10 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           />
           <StandardActionButtons
             question={question}
-            inspectionId={inspectionId}
-            response={safeResponse}
-            actionPlan={actionPlan}
-            onSaveActionPlan={onSaveActionPlan}
-            mediaUrls={mediaUrls}
             readOnly={readOnly}
-            mediaAnalysisResults={mediaAnalysisResults}
-            onOpenAnalysis={handleOpenAnalysis}
+            onActionPlanClick={handleOpenActionPlan}
           />
+          {actionPlanDialog}
         </div>
       );
     case "time":
@@ -366,15 +339,10 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           />
           <StandardActionButtons
             question={question}
-            inspectionId={inspectionId}
-            response={safeResponse}
-            actionPlan={actionPlan}
-            onSaveActionPlan={onSaveActionPlan}
-            mediaUrls={mediaUrls}
             readOnly={readOnly}
-            mediaAnalysisResults={mediaAnalysisResults}
-            onOpenAnalysis={handleOpenAnalysis}
+            onActionPlanClick={handleOpenActionPlan}
           />
+          {actionPlanDialog}
         </div>
       );
     case "datetime":
@@ -387,15 +355,10 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           />
           <StandardActionButtons
             question={question}
-            inspectionId={inspectionId}
-            response={safeResponse}
-            actionPlan={actionPlan}
-            onSaveActionPlan={onSaveActionPlan}
-            mediaUrls={mediaUrls}
             readOnly={readOnly}
-            mediaAnalysisResults={mediaAnalysisResults}
-            onOpenAnalysis={handleOpenAnalysis}
+            onActionPlanClick={handleOpenActionPlan}
           />
+          {actionPlanDialog}
         </div>
       );
     default:

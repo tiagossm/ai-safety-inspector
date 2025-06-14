@@ -5,7 +5,8 @@ import { StandardActionButtons } from "../StandardActionButtons";
 import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { MediaAttachments } from "@/components/inspection/question-inputs/MediaAttachments";
-import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
+import { MediaAnalysisResult, Plan5W2H } from "@/hooks/useMediaAnalysis";
+import { ActionPlan5W2HDialog } from "@/components/action-plans/ActionPlan5W2HDialog";
 
 interface YesNoResponseInputProps {
   question: any;
@@ -33,6 +34,9 @@ export function YesNoResponseInput({
   const [mediaAnalysisResults, setMediaAnalysisResults] = useState<Record<string, MediaAnalysisResult>>(
     response?.mediaAnalysisResults || {}
   );
+  const [isActionPlanDialogOpen, setIsActionPlanDialogOpen] = useState(false);
+  const [ia5W2Hplan, setIa5W2Hplan] = useState<Plan5W2H | null>(null);
+
 
   const currentValue = response?.value;
   const mediaUrls = response?.mediaUrls || [];
@@ -89,6 +93,16 @@ export function YesNoResponseInput({
     }
   }, [mediaUrls]);
 
+  const handleOpenActionPlan = useCallback(() => {
+    setIa5W2Hplan(null);
+    setIsActionPlanDialogOpen(true);
+  }, []);
+
+  const handleAdd5W2HActionPlan = useCallback((plan: Plan5W2H) => {
+    setIa5W2Hplan(plan);
+    setIsActionPlanDialogOpen(true);
+  }, []);
+
   const handleDeleteMedia = useCallback((urlToDelete: string) => {
     const updatedMediaUrls = mediaUrls.filter(url => url !== urlToDelete);
     handleMediaChange(updatedMediaUrls);
@@ -116,14 +130,9 @@ export function YesNoResponseInput({
 
       <StandardActionButtons
         question={question}
-        inspectionId={inspectionId}
-        response={response}
-        actionPlan={actionPlan}
-        onSaveActionPlan={onSaveActionPlan}
-        mediaUrls={mediaUrls}
         readOnly={readOnly}
-        mediaAnalysisResults={mediaAnalysisResults}
         onOpenAnalysis={handleOpenAnalysis}
+        onActionPlanClick={handleOpenActionPlan}
       />
 
       <MediaUploadInput
@@ -165,6 +174,20 @@ export function YesNoResponseInput({
         }}
         multimodalAnalysis={true}
         additionalMediaUrls={mediaUrls.filter(url => url !== selectedMediaUrl)}
+        onAdd5W2HActionPlan={handleAdd5W2HActionPlan}
+      />
+      <ActionPlan5W2HDialog
+        open={isActionPlanDialogOpen}
+        onOpenChange={setIsActionPlanDialogOpen}
+        questionId={question?.id}
+        inspectionId={inspectionId}
+        existingPlan={actionPlan}
+        onSave={async (data: any) => {
+          await onSaveActionPlan?.(data);
+          setIsActionPlanDialogOpen(false);
+        }}
+        iaSuggestions={mediaAnalysisResults}
+        ia5W2Hplan={ia5W2Hplan}
       />
     </div>
   );

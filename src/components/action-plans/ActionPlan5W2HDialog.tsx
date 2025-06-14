@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
@@ -15,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
+import { Plan5W2H } from "@/hooks/useMediaAnalysis";
 
 const actionPlanSchema = z.object({
   what: z.string().min(5, { message: "Descreva o que será feito" }),
@@ -38,6 +38,7 @@ export interface ActionPlan5W2HDialogProps {
   existingPlan?: any;
   onSave: (data: any) => Promise<void>;
   iaSuggestions?: Record<string, any>;
+  ia5W2Hplan?: Plan5W2H | null;
 }
 
 export function ActionPlan5W2HDialog({
@@ -47,7 +48,8 @@ export function ActionPlan5W2HDialog({
   inspectionId,
   existingPlan,
   onSave,
-  iaSuggestions
+  iaSuggestions,
+  ia5W2Hplan
 }: ActionPlan5W2HDialogProps) {
   const [saving, setSaving] = useState(false);
   
@@ -79,6 +81,18 @@ export function ActionPlan5W2HDialog({
         priority: existingPlan.priority || "média",
         status: existingPlan.status || "pendente",
       });
+    } else if (ia5W2Hplan) {
+      form.reset({
+        what: ia5W2Hplan.what || "",
+        why: ia5W2Hplan.why || "",
+        how: ia5W2Hplan.how || "",
+        who: ia5W2Hplan.who || "",
+        where: ia5W2Hplan.where || "",
+        when: new Date(),
+        howMuch: ia5W2Hplan.howMuch || "",
+        priority: "média",
+        status: "pendente",
+      });
     } else if (iaSuggestions) {
       // Encontrar a primeira sugestão de plano de ação nas análises
       const suggestion = Object.values(iaSuggestions).find(
@@ -89,7 +103,7 @@ export function ActionPlan5W2HDialog({
         form.setValue("what", suggestion.actionPlanSuggestion);
       }
     }
-  }, [existingPlan, iaSuggestions, form]);
+  }, [existingPlan, iaSuggestions, ia5W2Hplan, form]);
   
   const onSubmit = async (data: ActionPlanFormValues) => {
     setSaving(true);

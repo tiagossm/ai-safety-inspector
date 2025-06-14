@@ -8,7 +8,7 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useMediaAnalysis, MediaAnalysisResult } from '@/hooks/useMediaAnalysis';
+import { useMediaAnalysis, MediaAnalysisResult, Plan5W2H } from '@/hooks/useMediaAnalysis';
 import { Loader2, Sparkles } from 'lucide-react';
 import ReactMarkdown from "react-markdown";
 
@@ -21,6 +21,7 @@ interface MediaAnalysisDialogProps {
   userAnswer?: string;
   onAnalysisComplete?: (result: MediaAnalysisResult) => void;
   onAddActionPlan?: (suggestion: string) => void;
+  onAdd5W2HActionPlan?: (plan: Plan5W2H) => void;
   onAddComment?: (comment: string) => void;
   multimodalAnalysis?: boolean;
   mediaUrls?: string[];
@@ -73,6 +74,7 @@ export function MediaAnalysisDialog({
   userAnswer = "",
   onAnalysisComplete,
   onAddActionPlan,
+  onAdd5W2HActionPlan,
   onAddComment,
   multimodalAnalysis = false,
   mediaUrls = [],
@@ -192,6 +194,9 @@ export function MediaAnalysisDialog({
               const result = state.result;
               const actionSuggestion = result ? getSafeActionPlan(result) : "";
               const hasActionSuggestion = !!actionSuggestion && actionSuggestion.trim().length > 0;
+              const plan5w2h = result?.plan5w2h;
+              const has5w2h = !!plan5w2h && Object.values(plan5w2h).some(v => v && v.trim() !== "");
+
 
               return (
                 <div key={url} className="col-span-1 border rounded-lg shadow-sm p-2 bg-white flex flex-col items-center">
@@ -236,7 +241,7 @@ export function MediaAnalysisDialog({
                   {/* Resultado da análise */}
                   {state.status === 'done' && result && (
                     <>
-                      {hasActionSuggestion && (
+                      {(hasActionSuggestion || has5w2h) && (
                         <div className="w-full my-2 p-2 rounded-md border text-center bg-amber-50 border-amber-200">
                           <div className="flex items-center justify-center gap-1">
                             <Sparkles className="h-4 w-4 text-amber-500" />
@@ -254,7 +259,33 @@ export function MediaAnalysisDialog({
                         </div>
                       </div>
                       
-                      {hasActionSuggestion && (
+                      {has5w2h && onAdd5W2HActionPlan && plan5w2h ? (
+                        <div className="w-full border rounded-md p-2 bg-amber-50 border-amber-200 mt-1">
+                          <div className="flex items-center mb-1">
+                            <Sparkles className="h-3 w-3 text-amber-500 mr-1" />
+                            <h3 className="text-xs font-medium text-amber-800">Ações Corretivas (5W2H):</h3>
+                          </div>
+                           <div className="text-xs text-amber-700 space-y-1">
+                              {plan5w2h.what && <p><strong>O quê:</strong> {plan5w2h.what}</p>}
+                              {plan5w2h.why && <p><strong>Porquê:</strong> {plan5w2h.why}</p>}
+                              {plan5w2h.who && <p><strong>Quem:</strong> {plan5w2h.who}</p>}
+                              {plan5w2h.where && <p><strong>Onde:</strong> {plan5w2h.where}</p>}
+                              {plan5w2h.how && <p><strong>Como:</strong> {plan5w2h.how}</p>}
+                              {plan5w2h.howMuch && <p><strong>Quanto custa:</strong> {plan5w2h.howMuch}</p>}
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="default"
+                            className="mt-2 w-full"
+                            onClick={() => {
+                              onAdd5W2HActionPlan(plan5w2h);
+                              onOpenChange(false);
+                            }}
+                          >
+                            Usar Sugestão 5W2H
+                          </Button>
+                        </div>
+                      ) : hasActionSuggestion && onAddActionPlan ? (
                         <div className="w-full border rounded-md p-2 bg-amber-50 border-amber-200 mt-1">
                           <div className="flex items-center mb-1">
                             <Sparkles className="h-3 w-3 text-amber-500 mr-1" />
@@ -267,14 +298,15 @@ export function MediaAnalysisDialog({
                             size="sm"
                             variant="default"
                             className="mt-2 w-full"
-                            onClick={() => onAddActionPlan?.(actionSuggestion)}
+                            onClick={() => {
+                                onAddActionPlan(actionSuggestion)
+                                onOpenChange(false);
+                            }}
                           >
                             Adicionar ao Plano de Ação
                           </Button>
                         </div>
-                      )}
-                      
-                      {!hasActionSuggestion && (
+                      ) : (
                         <Button
                           size="sm"
                           variant="secondary"

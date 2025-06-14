@@ -1,7 +1,16 @@
-
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+export interface Plan5W2H {
+  what?: string;
+  why?: string;
+  who?: string;
+  where?: string;
+  when?: string;
+  how?: string;
+  howMuch?: string;
+}
 
 export interface MediaAnalysisResult {
   analysis?: string;
@@ -13,6 +22,7 @@ export interface MediaAnalysisResult {
   questionText?: string;
   userAnswer?: string;
   confidence?: number;
+  plan5w2h?: Plan5W2H;
 }
 
 export interface MediaAnalysisOptions {
@@ -87,7 +97,8 @@ export function useMediaAnalysis() {
         psychosocialRiskDetected: data.psychosocialRiskDetected || false,
         questionText,
         userAnswer,
-        confidence: data.confidence || 0
+        confidence: data.confidence || 0,
+        plan5w2h: data.plan5w2h || null,
       };
       
       // Armazena no cache
