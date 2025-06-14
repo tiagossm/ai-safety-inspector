@@ -1,3 +1,4 @@
+
 import { useCallback, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -9,6 +10,7 @@ import { useChecklistSubmit } from "./useChecklistSubmit";
 import { handleError } from "@/utils/errorHandling";
 import { ChecklistGroup, ChecklistQuestion } from "@/types/newChecklist";
 import { generateUUID, isValidUUID } from "@/utils/uuidValidation";
+import { useCreateInspection } from "@/hooks/inspection/useCreateInspection";
 
 export function useChecklistEditorContext() {
   const navigate = useNavigate();
@@ -86,6 +88,7 @@ export function useChecklistEditorContext() {
     groups,
     deletedQuestionIds
   );
+  const { createInspection } = useCreateInspection();
   
   // Initialize form with data from the checklist when it's loaded
   useEffect(() => {
@@ -218,34 +221,41 @@ export function useChecklistEditorContext() {
   }, [handleSubmit, setIsSubmitting]);
   
   const handleStartInspection = useCallback(async () => {
+    if (!id) {
+      toast.error("É preciso salvar o checklist antes de iniciar uma inspeção");
+      return false;
+    }
+
+    setIsSubmitting(true);
     try {
-      if (!id) {
-        toast.error("É preciso salvar o checklist antes de iniciar uma inspeção");
-        return false;
-      }
-      
-      setIsSubmitting(true);
-      // First save the checklist and only continue if save is successful
+      toast.info("Salvando o checklist...");
       const success = await handleSubmit();
       
       if (!success) {
-        setIsSubmitting(false);
-        toast.error("Erro ao preparar inspeção: Não foi possível salvar o checklist");
+        toast.error("Erro ao preparar inspeção: Não foi possível salvar o checklist.");
         return false;
       }
       
-      // Navigate directly to inspection execution page
-      console.log(`Redirecionando para execução da inspeção com checklistId=${id}`);
-      toast.success("Navegando para execução de inspeção...");
-      navigate(`/inspections/${id}/view`);
-      setIsSubmitting(false);
-      return true;
-    } catch (error) {
-      setIsSubmitting(false);
-      handleError(error instanceof Error ? error : new Error(String(error)), "Erro ao preparar inspeção");
+      toast.info("Criando nova inspeção...");
+      const inspectionResult = await createInspection({ checklistId: id });
+
+      if (inspectionResult && inspectionResult.id) {
+        console.log(`Inspeção criada com ID: ${inspectionResult.id}. Redirecionando...`);
+        toast.success("Inspeção criada com sucesso! Redirecionando...");
+        navigate(`/inspections/${inspectionResult.id}`);
+        return true;
+      }
+      
+      toast.error("Ocorreu um erro ao criar a inspeção.");
       return false;
+
+    } catch (error) {
+      handleError(error instanceof Error ? error : new Error(String(error)), "Erro ao iniciar a inspeção");
+      return false;
+    } finally {
+      setIsSubmitting(false);
     }
-  }, [handleSubmit, id, navigate, setIsSubmitting]);
+  }, [id, handleSubmit, createInspection, navigate, setIsSubmitting, handleError]);
 
   return {
     // State data

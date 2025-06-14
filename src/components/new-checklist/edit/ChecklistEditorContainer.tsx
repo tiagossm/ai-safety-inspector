@@ -75,22 +75,7 @@ export function ChecklistEditorContainer() {
     }
   };
 
-  // Enhanced start inspection handler with proper error handling
-  const handleStartInspection = async (): Promise<void> => {
-    if (!editorContext.id) {
-      toast.error("É necessário salvar o checklist antes de iniciar a inspeção", { duration: 5000 });
-      return;
-    }
-    try {
-      toast.info("Preparando inspeção...", { duration: 2000 });
-      console.log(`Redirecionando para inspeção com checklistId=${editorContext.id}`);
-      toast.success("Redirecionando para a inspeção...", { duration: 2000 });
-      navigate(`/inspections/new?checklistId=${editorContext.id}`);
-    } catch (error) {
-      console.error("Error starting inspection:", error);
-      toast.error(`Erro ao iniciar inspeção: ${error instanceof Error ? error.message : "Erro desconhecido"}`, { duration: 5000 });
-    }
-  };
+  // The local handleStartInspection is removed. We'll use the one from context.
   
   return (
     <ChecklistEditorProvider value={contextValue}>
@@ -108,7 +93,7 @@ export function ChecklistEditorContainer() {
               }
             }
           }}
-          onStartInspection={handleStartInspection}
+          onStartInspection={editorContext.handleStartInspection}
           onSave={handleSave}
         />
         
@@ -138,7 +123,7 @@ export function ChecklistEditorContainer() {
           <ChecklistEditActions
             isSubmitting={editorContext.isSubmitting}
             onCancel={() => navigate("/new-checklists")}
-            onStartInspection={handleStartInspection}
+            onStartInspection={editorContext.handleStartInspection}
             onSave={handleSave}
           />
         </form>
