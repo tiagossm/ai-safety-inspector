@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, AlertTriangle } from "lucide-react";
@@ -60,12 +61,11 @@ export function SmartOptionsManager({ question, onChange }: SmartOptionsManagerP
   const options = Array.isArray(question.options) ? question.options : [];
 
   const updateQuestion = (newValues: Partial<ChecklistQuestion>) => {
-    // Esta verificação garante que 'question' é um objeto válido antes de fazer o spread.
+    // Esta verificação garante que 'question' é um objeto válido.
     if (question && typeof question === 'object') {
-      onChange({
-        ...question,
-        ...newValues,
-      });
+      // Usando Object.assign para contornar o problema de inferência de tipo do TypeScript com o spread operator.
+      const updatedQuestion = Object.assign({}, question, newValues);
+      onChange(updatedQuestion);
     }
   };
 
