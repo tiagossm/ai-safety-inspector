@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -242,7 +241,7 @@ export function useChecklistEditorContext() {
       if (inspectionResult && inspectionResult.id) {
         console.log(`Inspeção criada com ID: ${inspectionResult.id}. Redirecionando...`);
         toast.success("Inspeção criada com sucesso! Redirecionando...");
-        navigate(`/inspections/${inspectionResult.id}`);
+        navigate(`/inspections/${inspectionResult.id}/view`);
         return true;
       }
       
@@ -255,7 +254,7 @@ export function useChecklistEditorContext() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [id, handleSubmit, createInspection, navigate, setIsSubmitting, handleError]);
+  }, [id, handleSubmit, createInspection, navigate, setIsSubmitting]);
 
   return {
     // State data
