@@ -8,6 +8,7 @@ import { useChecklistGroups } from "./useChecklistGroups";
 import { useChecklistSubmit } from "./useChecklistSubmit";
 import { handleError } from "@/utils/errorHandling";
 import { ChecklistGroup, ChecklistQuestion } from "@/types/newChecklist";
+import { generateUUID, isValidUUID } from "@/utils/uuidValidation";
 
 export function useChecklistEditorContext() {
   const navigate = useNavigate();
@@ -31,7 +32,7 @@ export function useChecklistEditorContext() {
   
   // Questions management
   const {
-    handleAddQuestion,
+    handleAddQuestion: originalHandleAddQuestion,
     handleUpdateQuestion,
     handleDeleteQuestion,
     toggleAllMediaOptions
@@ -42,6 +43,21 @@ export function useChecklistEditorContext() {
     deletedQuestionIds, 
     setDeletedQuestionIds
   );
+
+  // Wrapper for handleAddQuestion to replace 'default' groupId
+  const handleAddQuestion = useCallback((groupId: string) => {
+    const mainGroup = groups.find(g => g.order === 0) || groups[0];
+    const realGroupId = (groupId === 'default' && mainGroup) ? mainGroup.id : groupId;
+    
+    if (realGroupId && isValidUUID(realGroupId)) {
+      originalHandleAddQuestion(realGroupId);
+    } else if (mainGroup && isValidUUID(mainGroup.id)) {
+      originalHandleAddQuestion(mainGroup.id);
+    } else {
+      console.error("Could not find a valid group to add question to.", { groups });
+      toast.error("Não foi possível adicionar a pergunta. Grupo inválido.");
+    }
+  }, [groups, originalHandleAddQuestion]);
   
   // Groups management
   const {
@@ -84,28 +100,37 @@ export function useChecklistEditorContext() {
       setStatus(checklistStatus);
       
       if (checklist.questions && checklist.questions.length > 0) {
-        setQuestions(checklist.questions);
+        let groupsToSet = (checklist.groups && checklist.groups.length > 0)
+          ? checklist.groups.filter(g => g.id && isValidUUID(g.id))
+          : [];
         
-        if (checklist.groups && checklist.groups.length > 0) {
-          setGroups(checklist.groups);
+        let mainGroupId: string;
+
+        if (groupsToSet.length === 0) {
+          mainGroupId = generateUUID();
+          groupsToSet.push({ id: mainGroupId, title: "Geral", order: 0 });
         } else {
-          const defaultGroup: ChecklistGroup = {
-            id: "default",
-            title: "Geral",
-            order: 0
-          };
-          setGroups([defaultGroup]);
+          mainGroupId = groupsToSet.sort((a, b) => a.order - b.order)[0].id;
         }
+
+        const questionsToSet = checklist.questions.map(q => ({
+          ...q,
+          groupId: (q.groupId && isValidUUID(q.groupId)) ? q.groupId : mainGroupId
+        }));
+        
+        setQuestions(questionsToSet);
+        setGroups(groupsToSet);
       } else {
+        const newGroupId = generateUUID();
         const defaultGroup: ChecklistGroup = {
-          id: "default",
+          id: newGroupId,
           title: "Geral",
           order: 0
         };
         
-        // Use a properly typed responseType value
+        const newQuestionId = `new-${Date.now()}`;
         const defaultQuestion: ChecklistQuestion = {
-          id: `new-${Date.now()}`,
+          id: newQuestionId,
           text: "",
           responseType: "yes_no", // This must be one of the allowed types
           isRequired: true,
@@ -115,10 +140,10 @@ export function useChecklistEditorContext() {
           allowsAudio: false,
           allowsFiles: false,
           order: 0,
-          groupId: "default",
+          groupId: newGroupId,
           options: [], // Properly initialize options as an empty array
           level: 0,
-          path: `new-${Date.now()}`,
+          path: newQuestionId,
           isConditional: false
         };
         

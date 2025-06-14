@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
 import { useChecklistUpdate } from "@/hooks/new-checklist/useChecklistUpdate";
@@ -65,11 +64,8 @@ export function useChecklistSubmit(
         .filter(q => q.text.trim())
         .map(sanitizeQuestionUUIDs);
       
-      // Sanitizar grupos
-      const sanitizedGroups = groups.map(group => ({
-        ...group,
-        id: sanitizeUUID(group.id) || group.id // Manter ID original se não for UUID válido
-      }));
+      // Os grupos agora devem ser válidos a partir do contexto, não é mais necessário sanitizar aqui.
+      const sanitizedGroups = groups;
       
       const dbStatus = status === "inactive" ? "inativo" : "ativo";
       
