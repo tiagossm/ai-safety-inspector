@@ -1,5 +1,11 @@
 
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
+import { ResponseButtonGroup } from "./response-types/components/ResponseButtonGroup";
+import { ActionPlanButton } from "./response-types/components/ActionPlanButton";
+import { MediaAnalysisButton } from "./response-types/components/MediaAnalysisButton";
+import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
+import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
+import { MediaAttachments } from "@/components/inspection/question-inputs/MediaAttachments";
 import { YesNoResponseInput } from "./response-types/YesNoResponseInput";
 import { TextResponseInput } from "./response-types/TextResponseInput";
 import { ParagraphResponseInput } from "./response-types/ParagraphResponseInput";
@@ -39,82 +45,102 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   const rawResponseType = question.responseType || question.tipo_resposta || "text";
   const responseType = convertToFrontendType(rawResponseType);
 
-  console.log("ResponseInputRenderer: rendering with responseType:", responseType);
-  console.log("ResponseInputRenderer: current response:", response);
-
   // Ensure response is always an object (even if empty)
   const safeResponse = response || {};
-  
-  // Make sure mediaUrls is always an array
   const mediaUrls = safeResponse.mediaUrls || [];
 
-  // Validar se o tipo requer opções
-  const requiresOptions = TYPES_REQUIRING_OPTIONS.includes(responseType);
-  const hasValidOptions = question.options && Array.isArray(question.options) && question.options.length > 0;
+  // Incluir state para análise, plano de ação e preview de mídia, comum para todos tipos
+  const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
+  const [selectedMediaUrl, setSelectedMediaUrl] = useState<string | null>(null);
+  const [isActionPlanOpen, setIsActionPlanOpen] = useState(false);
 
-  if (requiresOptions && !hasValidOptions) {
-    return (
-      <div className="p-4 border border-yellow-300 bg-yellow-50 rounded-md">
-        <p className="text-yellow-700">
-          Este tipo de pergunta ({responseType}) requer opções configuradas.
-        </p>
-      </div>
-    );
-  }
-
+  // Handler de mídia centralizado
   const handleMediaChange = useCallback((urls: string[]) => {
-    console.log("ResponseInputRenderer: Media changed:", urls);
-    
     const updatedResponse = {
       ...safeResponse,
       mediaUrls: urls
     };
-    
-    console.log("ResponseInputRenderer: Updating response with media URLs:", updatedResponse);
     onResponseChange(updatedResponse);
-    
-    if (onMediaChange) {
-      onMediaChange(urls);
-    }
+    if (onMediaChange) onMediaChange(urls);
   }, [safeResponse, onResponseChange, onMediaChange]);
 
-  const handleResponseWithAnalysis = useCallback((updatedData: any) => {
-    console.log("ResponseInputRenderer: Handling response with analysis:", updatedData);
+  // Handler de plano de ação centralizado
+  const handleActionPlanClick = useCallback(() => {
+    setIsActionPlanOpen(true);
+  }, []);
 
+  // Handler para abrir análise de IA
+  const handleOpenAnalysis = useCallback(() => {
+    if (safeResponse.mediaUrls && safeResponse.mediaUrls.length > 0) {
+      setSelectedMediaUrl(safeResponse.mediaUrls[0]);
+    } else {
+      setSelectedMediaUrl(null);
+    }
+    setIsAnalysisOpen(true);
+  }, [safeResponse.mediaUrls]);
+
+  // Handler para salvar uma sugestão da IA como plano de ação (fica para o futuro)
+  const handleApplyAISuggestion = useCallback((suggestion: string) => {
+    // Aqui pode implementar, se necessário (já previsível)
+  }, []);
+
+  // Handler para salvar análise de mídia (padrão)
+  const handleAnalysisResults = useCallback((results: any) => {
     const updatedResponse = {
       ...safeResponse,
-      ...updatedData,
-    };
-
-    onResponseChange(updatedResponse);
-  }, [safeResponse, onResponseChange]);
-
-  const handleSaveActionPlan = useCallback(
-    async (actionPlanData: any) => {
-      console.log("ResponseInputRenderer: Saving action plan:", actionPlanData);
-      if (onSaveActionPlan) {
-        await onSaveActionPlan(actionPlanData);
+      mediaAnalysisResults: {
+        ...(safeResponse?.mediaAnalysisResults || {}),
+        ...results,
       }
-    },
-    [onSaveActionPlan]
+    };
+    onResponseChange(updatedResponse);
+
+    if (results.actionPlanSuggestion && handleApplyAISuggestion) {
+      handleApplyAISuggestion(results.actionPlanSuggestion);
+    }
+  }, [safeResponse, onResponseChange, handleApplyAISuggestion]);
+
+  // Estrutura comum para botões: mídia, plano de ação e IA
+  const StandardMediaAndActionRow = (
+    <div className="flex flex-wrap gap-2 mt-2 mb-1">
+      <ActionPlanButton 
+        onActionPlanClick={handleActionPlanClick}
+        readOnly={readOnly}
+      />
+      <MediaAnalysisButton onOpenAnalysis={handleOpenAnalysis} />
+    </div>
   );
 
-  // Função para lidar com mudanças em componentes simples
-  const handleSimpleValueChange = useCallback((value: any) => {
-    // Validar valor antes de salvar
-    if (!validateResponseValue(responseType, value)) {
-      console.warn(`Invalid value for type ${responseType}:`, value);
-    }
+  // Estrutura comum do input de mídia e anexos
+  const StandardMediaInputs = (
+    <>
+      <MediaUploadInput
+        mediaUrls={mediaUrls}
+        onMediaChange={handleMediaChange}
+        allowsPhoto={question.allowsPhoto || question.permite_foto || false}
+        allowsVideo={question.allowsVideo || question.permite_video || false}
+        allowsAudio={question.allowsAudio || question.permite_audio || false}
+        allowsFiles={question.allowsFiles || question.permite_files || false}
+        readOnly={readOnly}
+        questionText={question.text || question.pergunta || ""}
+        onApplyAISuggestion={handleApplyAISuggestion}
+      />
+      <MediaAnalysisDialog
+        open={isAnalysisOpen}
+        onOpenChange={setIsAnalysisOpen}
+        mediaUrl={selectedMediaUrl}
+        questionText={question.text || question.pergunta || ""}
+        onAnalysisComplete={handleAnalysisResults}
+        multimodalAnalysis={true}
+        additionalMediaUrls={mediaUrls}
+      />
+    </>
+  );
 
-    onResponseChange({
-      ...safeResponse,
-      value
-    });
-  }, [safeResponse, onResponseChange, responseType]);
-
-  // Renderização baseada no tipo de resposta
+  // Renderização centralizada para todos os tipos
   switch (responseType) {
     case "yes_no":
+      // Sim/Não já possui a estrutura correta, então só usa o componente.
       return (
         <YesNoResponseInput
           question={question}
@@ -123,172 +149,128 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           onResponseChange={onResponseChange}
           onMediaChange={handleMediaChange}
           actionPlan={actionPlan}
-          onSaveActionPlan={handleSaveActionPlan}
+          onSaveActionPlan={onSaveActionPlan}
           readOnly={readOnly}
-          onApplyAISuggestion={(suggestion: string) =>
-            handleResponseWithAnalysis({ aiSuggestion: suggestion })
-          }
+          onApplyAISuggestion={handleApplyAISuggestion}
         />
       );
-
     case "text":
       return (
-        <TextResponseInput
-          question={question}
-          response={safeResponse}
-          onResponseChange={onResponseChange}
-          onMediaChange={handleMediaChange}
-          onApplyAISuggestion={(suggestion: string) =>
-            handleResponseWithAnalysis({ aiSuggestion: suggestion })
-          }
-          readOnly={readOnly}
-        />
-      );
-
-    case "paragraph":
-      return (
-        <div className="space-y-2">
-          <ParagraphResponseInput
-            value={safeResponse.value}
-            onChange={handleSimpleValueChange}
+        <div className="space-y-4">
+          <TextResponseInput
+            question={question}
+            response={safeResponse}
+            onResponseChange={onResponseChange}
+            // Passar onMediaChange para garantir consistência de atualização
+            onMediaChange={handleMediaChange}
+            onApplyAISuggestion={handleApplyAISuggestion}
             readOnly={readOnly}
           />
-          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
-            <PhotoInput
-              mediaUrls={mediaUrls}
-              onAddMedia={() => console.log("Adicionar mídia para questão parágrafo")}
-              onDeleteMedia={(url) => {
-                const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-                handleMediaChange(updatedUrls);
-              }}
-              allowsPhoto={question.allowsPhoto}
-              allowsVideo={question.allowsVideo}
-              allowsAudio={question.allowsAudio}
-              allowsFiles={question.allowsFiles}
-            />
-          )}
+          {StandardMediaAndActionRow}
+          {StandardMediaInputs}
         </div>
       );
-
+    case "paragraph":
+      return (
+        <div className="space-y-4">
+          <ParagraphResponseInput
+            value={safeResponse.value}
+            onChange={val => onResponseChange({ ...safeResponse, value: val })}
+            readOnly={readOnly}
+          />
+          {StandardMediaAndActionRow}
+          {StandardMediaInputs}
+        </div>
+      );
     case "multiple_choice":
     case "checkboxes":
     case "dropdown":
       return (
-        <div className="space-y-2">
+        <div className="space-y-4">
           <EnhancedMultipleChoiceInput
             question={question}
             value={safeResponse}
             onChange={onResponseChange}
             readOnly={readOnly}
           />
-          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
-            <PhotoInput
-              mediaUrls={mediaUrls}
-              onAddMedia={() => console.log("Adicionar mídia para questão múltipla escolha")}
-              onDeleteMedia={(url) => {
-                const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-                handleMediaChange(updatedUrls);
-              }}
-              allowsPhoto={question.allowsPhoto}
-              allowsVideo={question.allowsVideo}
-              allowsAudio={question.allowsAudio}
-              allowsFiles={question.allowsFiles}
-            />
-          )}
+          {StandardMediaAndActionRow}
+          {StandardMediaInputs}
         </div>
       );
-
     case "numeric":
       return (
-        <div className="space-y-2">
+        <div className="space-y-4">
           <NumberInput
             value={safeResponse.value}
-            onChange={handleSimpleValueChange}
+            onChange={val => onResponseChange({ ...safeResponse, value: val })}
           />
-          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
-            <PhotoInput
-              mediaUrls={mediaUrls}
-              onAddMedia={() => console.log("Adicionar mídia para questão numeric")}
-              onDeleteMedia={(url) => {
-                const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-                handleMediaChange(updatedUrls);
-              }}
-              allowsPhoto={question.allowsPhoto}
-              allowsVideo={question.allowsVideo}
-              allowsAudio={question.allowsAudio}
-              allowsFiles={question.allowsFiles}
-            />
-          )}
+          {StandardMediaAndActionRow}
+          {StandardMediaInputs}
         </div>
       );
-
     case "photo":
       return (
-        <PhotoInput
-          mediaUrls={mediaUrls}
-          onAddMedia={() => console.log("Adicionar mídia para questão photo")}
-          onDeleteMedia={(url) => {
-            const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-            handleMediaChange(updatedUrls);
-          }}
-          allowsPhoto={true}
-          allowsVideo={question.allowsVideo}
-          allowsAudio={question.allowsAudio}
-          allowsFiles={question.allowsFiles}
-        />
-      );
-
-    case "signature":
-      return (
-        <div className="space-y-2">
-          <SignatureInput 
-            value={safeResponse.value || ""}
-            onChange={handleSimpleValueChange}
+        <div className="space-y-4">
+          <PhotoInput
+            mediaUrls={mediaUrls}
+            onAddMedia={() => {}}  // já tratado via MediaUploadInput
+            onDeleteMedia={url => handleMediaChange(mediaUrls.filter((mediaUrl:any) => mediaUrl !== url))}
+            allowsPhoto={true}
+            allowsVideo={question.allowsVideo}
+            allowsAudio={question.allowsAudio}
+            allowsFiles={question.allowsFiles}
           />
-          {(question.allowsPhoto || question.allowsVideo || question.allowsAudio || question.allowsFiles) && (
-            <PhotoInput
-              mediaUrls={mediaUrls}
-              onAddMedia={() => console.log("Adicionar mídia para questão signature")}
-              onDeleteMedia={(url) => {
-                const updatedUrls = mediaUrls.filter((mediaUrl) => mediaUrl !== url);
-                handleMediaChange(updatedUrls);
-              }}
-              allowsPhoto={question.allowsPhoto}
-              allowsVideo={question.allowsVideo}
-              allowsAudio={question.allowsAudio}
-              allowsFiles={question.allowsFiles}
-            />
-          )}
+          {StandardMediaAndActionRow}
+          {StandardMediaInputs}
         </div>
       );
-
+    case "signature":
+      return (
+        <div className="space-y-4">
+          <SignatureInput 
+            value={safeResponse.value || ""}
+            onChange={val => onResponseChange({ ...safeResponse, value: val })}
+          />
+          {StandardMediaAndActionRow}
+          {StandardMediaInputs}
+        </div>
+      );
     case "date":
       return (
-        <DateInput
-          value={safeResponse.value}
-          onChange={handleSimpleValueChange}
-          readOnly={readOnly}
-        />
+        <div className="space-y-4">
+          <DateInput
+            value={safeResponse.value}
+            onChange={val => onResponseChange({ ...safeResponse, value: val })}
+            readOnly={readOnly}
+          />
+          {StandardMediaAndActionRow}
+          {StandardMediaInputs}
+        </div>
       );
-
     case "time":
       return (
-        <TimeInput
-          value={safeResponse.value}
-          onChange={handleSimpleValueChange}
-          readOnly={readOnly}
-        />
+        <div className="space-y-4">
+          <TimeInput
+            value={safeResponse.value}
+            onChange={val => onResponseChange({ ...safeResponse, value: val })}
+            readOnly={readOnly}
+          />
+          {StandardMediaAndActionRow}
+          {StandardMediaInputs}
+        </div>
       );
-
     case "datetime":
       return (
-        <DateTimeResponseInput
-          value={safeResponse.value}
-          onChange={handleSimpleValueChange}
-          readOnly={readOnly}
-        />
+        <div className="space-y-4">
+          <DateTimeResponseInput
+            value={safeResponse.value}
+            onChange={val => onResponseChange({ ...safeResponse, value: val })}
+            readOnly={readOnly}
+          />
+          {StandardMediaAndActionRow}
+          {StandardMediaInputs}
+        </div>
       );
-
     default:
       return (
         <div className="p-4 border border-red-300 bg-red-50 rounded-md">
