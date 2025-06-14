@@ -35,10 +35,8 @@ export function SmartOptionsManager({ question, onChange }: SmartOptionsManagerP
     if (typesRequiringOptions.includes(question.responseType)) {
       const validOptions = ensureValidOptions(question.responseType, question.options);
       if (JSON.stringify(validOptions) !== JSON.stringify(question.options)) {
-        onChange({
-          ...question,
-          options: validOptions
-        });
+        const updatedQuestion = Object.assign({}, question, { options: validOptions });
+        onChange(updatedQuestion);
       }
     }
     // Não dependemos do onChange aqui, só de question
@@ -70,18 +68,20 @@ export function SmartOptionsManager({ question, onChange }: SmartOptionsManagerP
   };
 
   const updateOption = (index: number, value: string) => {
-    const newOptions = [...options];
+    const newOptions = Array.from(options);
     if (typeof options[index] === "string" || !options[index]) {
       newOptions[index] = value;
     } else if (typeof options[index] === "object") {
-      newOptions[index] = { ...options[index], option_text: value };
+      newOptions[index] = Object.assign({}, options[index], { option_text: value });
     }
     updateQuestion({ options: newOptions });
   };
   
   const addOption = () => {
     const nextIndex = options.length + 1;
-    updateQuestion({ options: [...options, `Opção ${nextIndex}`] });
+    const newOptions = Array.from(options);
+    newOptions.push(`Opção ${nextIndex}`);
+    updateQuestion({ options: newOptions });
   };
   
   const removeOption = (index: number) => {
