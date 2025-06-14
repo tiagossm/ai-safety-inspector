@@ -52,9 +52,10 @@ export function useChecklistSubmit(
   const handleSubmit = useCallback(async () => {
     if (isSubmitting || !id) return false;
     setIsSubmitting(true);
-    
+
     try {
-      if (!validateChecklist(title, category, questions)) {
+      // Correção aqui: validateChecklist espera apenas questions!
+      if (!validateChecklist(questions)) {
         setIsSubmitting(false);
         return false;
       }

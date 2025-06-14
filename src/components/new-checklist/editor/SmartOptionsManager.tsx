@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, AlertTriangle } from "lucide-react";
@@ -64,7 +63,7 @@ export function SmartOptionsManager({ question, onChange }: SmartOptionsManagerP
     const newOptions = [...options];
     if (typeof options[index] === "string" || !options[index]) {
       newOptions[index] = value;
-    } else {
+    } else if (typeof options[index] === "object") {
       newOptions[index] = { ...options[index], option_text: value };
     }
     onChange({
