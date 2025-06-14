@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, AlertTriangle } from "lucide-react";
@@ -60,6 +59,16 @@ export function SmartOptionsManager({ question, onChange }: SmartOptionsManagerP
   
   const options = Array.isArray(question.options) ? question.options : [];
 
+  const updateQuestion = (newValues: Partial<ChecklistQuestion>) => {
+    // Esta verificação garante que 'question' é um objeto válido antes de fazer o spread.
+    if (question && typeof question === 'object') {
+      onChange({
+        ...question,
+        ...newValues,
+      });
+    }
+  };
+
   const updateOption = (index: number, value: string) => {
     const newOptions = [...options];
     if (typeof options[index] === "string" || !options[index]) {
@@ -67,18 +76,12 @@ export function SmartOptionsManager({ question, onChange }: SmartOptionsManagerP
     } else if (typeof options[index] === "object") {
       newOptions[index] = { ...options[index], option_text: value };
     }
-    onChange({
-      ...question,
-      options: newOptions
-    });
+    updateQuestion({ options: newOptions });
   };
   
   const addOption = () => {
     const nextIndex = options.length + 1;
-    onChange({
-      ...question,
-      options: [...options, `Opção ${nextIndex}`]
-    });
+    updateQuestion({ options: [...options, `Opção ${nextIndex}`] });
   };
   
   const removeOption = (index: number) => {
@@ -86,10 +89,7 @@ export function SmartOptionsManager({ question, onChange }: SmartOptionsManagerP
       return; // Manter pelo menos 2 opções
     }
     const newOptions = options.filter((_, i) => i !== index);
-    onChange({
-      ...question,
-      options: newOptions
-    });
+    updateQuestion({ options: newOptions });
   };
 
   // Validação das opções (qualidade)
@@ -161,4 +161,3 @@ export function SmartOptionsManager({ question, onChange }: SmartOptionsManagerP
     </div>
   );
 }
-
