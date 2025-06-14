@@ -5,6 +5,7 @@ import { StandardActionButtons } from "../StandardActionButtons";
 import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { MediaAttachments } from "@/components/inspection/question-inputs/MediaAttachments";
+import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 
 interface YesNoResponseInputProps {
   question: any;
@@ -29,7 +30,7 @@ export function YesNoResponseInput({
 }: YesNoResponseInputProps) {
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
   const [selectedMediaUrl, setSelectedMediaUrl] = useState<string | null>(null);
-  const [mediaAnalysisResults, setMediaAnalysisResults] = useState<Record<string, any>>(
+  const [mediaAnalysisResults, setMediaAnalysisResults] = useState<Record<string, MediaAnalysisResult>>(
     response?.mediaAnalysisResults || {}
   );
 
@@ -62,15 +63,15 @@ export function YesNoResponseInput({
     }
   }, [response, onResponseChange, onMediaChange]);
 
-  // Handler para salvar resultados da análise apenas quando necessário
-  const handleAnalysisResults = useCallback((results: any, mediaUrl: string) => {
+  // Handler corrigido para salvar resultados da análise com a ordem correta dos parâmetros
+  const handleAnalysisResults = useCallback((mediaUrl: string, result: MediaAnalysisResult) => {
     // Evita atualizações desnecessárias verificando se o resultado mudou
     const existingResult = mediaAnalysisResults[mediaUrl];
-    if (existingResult && JSON.stringify(existingResult) === JSON.stringify(results)) {
+    if (existingResult && JSON.stringify(existingResult) === JSON.stringify(result)) {
       return; // Nenhuma mudança, não atualiza
     }
 
-    const updatedResults = { ...mediaAnalysisResults, [mediaUrl]: results };
+    const updatedResults = { ...mediaAnalysisResults, [mediaUrl]: result };
     setMediaAnalysisResults(updatedResults);
     
     const updatedResponse = {
@@ -159,7 +160,7 @@ export function YesNoResponseInput({
         userAnswer={currentValue === true ? "Sim" : currentValue === false ? "Não" : ""}
         onAnalysisComplete={(result) => {
           if (selectedMediaUrl) {
-            handleAnalysisResults(result, selectedMediaUrl);
+            handleAnalysisResults(selectedMediaUrl, result);
           }
         }}
         multimodalAnalysis={true}
