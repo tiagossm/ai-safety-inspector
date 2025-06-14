@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, AlertTriangle } from "lucide-react";
@@ -59,9 +60,6 @@ export function SmartOptionsManager({ question, onChange }: SmartOptionsManagerP
   
   const options = Array.isArray(question.options) ? question.options : [];
 
-  // Garante que question seja objeto do tipo ChecklistQuestion (fallback para objeto vazio caso falsy)
-  const safeQuestion = question && typeof question === "object" ? question : {} as ChecklistQuestion;
-
   const updateOption = (index: number, value: string) => {
     const newOptions = [...options];
     if (typeof options[index] === "string" || !options[index]) {
@@ -70,7 +68,7 @@ export function SmartOptionsManager({ question, onChange }: SmartOptionsManagerP
       newOptions[index] = { ...options[index], option_text: value };
     }
     onChange({
-      ...safeQuestion,
+      ...question,
       options: newOptions
     });
   };
@@ -78,7 +76,7 @@ export function SmartOptionsManager({ question, onChange }: SmartOptionsManagerP
   const addOption = () => {
     const nextIndex = options.length + 1;
     onChange({
-      ...safeQuestion,
+      ...question,
       options: [...options, `Opção ${nextIndex}`]
     });
   };
@@ -89,7 +87,7 @@ export function SmartOptionsManager({ question, onChange }: SmartOptionsManagerP
     }
     const newOptions = options.filter((_, i) => i !== index);
     onChange({
-      ...safeQuestion,
+      ...question,
       options: newOptions
     });
   };
@@ -163,3 +161,4 @@ export function SmartOptionsManager({ question, onChange }: SmartOptionsManagerP
     </div>
   );
 }
+
