@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from "react";
 import { ActionPlanButton } from "./response-types/components/ActionPlanButton";
 import { MediaAnalysisButton } from "./response-types/components/MediaAnalysisButton";
@@ -6,13 +7,14 @@ import { ActionPlan5W2HDialog } from "@/components/action-plans/ActionPlan5W2HDi
 interface StandardActionButtonsProps {
   question: any;
   inspectionId?: string;
-  response: any;
+  response?: any;
   actionPlan?: any;
   onSaveActionPlan?: (data: any) => Promise<void>;
   mediaUrls?: string[];
   readOnly?: boolean;
   mediaAnalysisResults?: Record<string, any>;
   onOpenAnalysis?: () => void;
+  onActionPlanClick?: () => void;
 }
 
 export function StandardActionButtons({
@@ -24,14 +26,19 @@ export function StandardActionButtons({
   mediaUrls = [],
   readOnly = false,
   mediaAnalysisResults = {},
-  onOpenAnalysis
+  onOpenAnalysis,
+  onActionPlanClick
 }: StandardActionButtonsProps) {
   const [isActionPlanDialogOpen, setIsActionPlanDialogOpen] = useState(false);
 
   // Abertura do modal 5W2H
   const handleOpenActionPlan = useCallback(() => {
-    setIsActionPlanDialogOpen(true);
-  }, []);
+    if (onActionPlanClick) {
+      onActionPlanClick();
+    } else {
+      setIsActionPlanDialogOpen(true);
+    }
+  }, [onActionPlanClick]);
 
   // Abertura análise IA (prop pode vir injetada ou não)
   const handleOpenAnalysis = useCallback(() => {
@@ -50,18 +57,20 @@ export function StandardActionButtons({
         )}
         {/* Mais botões universais futuramente aqui */}
       </div>
-      <ActionPlan5W2HDialog
-        open={isActionPlanDialogOpen}
-        onOpenChange={setIsActionPlanDialogOpen}
-        questionId={question?.id}
-        inspectionId={inspectionId}
-        existingPlan={actionPlan}
-        onSave={async (data: any) => {
-          await onSaveActionPlan?.(data);
-          setIsActionPlanDialogOpen(false);
-        }}
-        iaSuggestions={mediaAnalysisResults}
-      />
+      {!onActionPlanClick && (
+        <ActionPlan5W2HDialog
+          open={isActionPlanDialogOpen}
+          onOpenChange={setIsActionPlanDialogOpen}
+          questionId={question?.id}
+          inspectionId={inspectionId}
+          existingPlan={actionPlan}
+          onSave={async (data: any) => {
+            await onSaveActionPlan?.(data);
+            setIsActionPlanDialogOpen(false);
+          }}
+          iaSuggestions={mediaAnalysisResults}
+        />
+      )}
     </>
   );
 }
