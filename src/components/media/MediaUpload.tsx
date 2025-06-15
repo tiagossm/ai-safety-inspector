@@ -30,8 +30,20 @@ export function MediaUpload({
   
   const handleMediaUploaded = (mediaData: any) => {
     setUploading(false);
+    setProgress(100);
+    
+    console.log('[MediaUpload] Media uploaded:', mediaData);
+    
     if (mediaData && mediaData.url) {
-      onMediaUploaded(mediaData);
+      // Garantir que a URL está no formato correto para exibição
+      const processedMediaData = {
+        ...mediaData,
+        url: mediaData.url,
+        publicUrl: mediaData.url // Adicionar publicUrl para compatibilidade
+      };
+      
+      console.log('[MediaUpload] Processed media data:', processedMediaData);
+      onMediaUploaded(processedMediaData);
     }
   };
 

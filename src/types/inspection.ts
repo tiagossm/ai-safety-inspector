@@ -1,10 +1,10 @@
 
-export type InspectionStatus = 'Pendente' | 'Em Andamento' | 'Concluído';
+export type InspectionStatus = 'aberto' | 'em_andamento' | 'concluido';
 
 export const INSPECTION_STATUSES: Record<string, InspectionStatus> = {
-  PENDING: 'Pendente',
-  IN_PROGRESS: 'Em Andamento',
-  COMPLETED: 'Concluído'
+  PENDING: 'aberto',
+  IN_PROGRESS: 'em_andamento',
+  COMPLETED: 'concluido'
 } as const;
 
 export interface Signature {

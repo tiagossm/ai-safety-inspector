@@ -1,7 +1,9 @@
+
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { INSPECTION_STATUSES } from "@/types/inspection";
 
 // Função auxiliar para converter promessas do Supabase em Promises completas
 const wrapSupabaseCall = <T>(supabasePromise: any): Promise<T> => {
@@ -77,13 +79,23 @@ export const useSaveInspection = () => {
     let hasError = false;
     setIsSaving(true);
     
+    // Mapear status para os valores corretos do banco
+    let dbStatus = inspection.status;
+    if (inspection.status === 'Concluído' || inspection.status === 'Completed') {
+      dbStatus = INSPECTION_STATUSES.COMPLETED;
+    } else if (inspection.status === 'Em Andamento' || inspection.status === 'In Progress') {
+      dbStatus = INSPECTION_STATUSES.IN_PROGRESS;
+    } else if (inspection.status === 'Pendente' || inspection.status === 'Pending') {
+      dbStatus = INSPECTION_STATUSES.PENDING;
+    }
+    
     // Atualizar o status da inspeção
     try {
       await wrapSupabaseCall(
         supabase
           .from("inspections")
           .update({
-            status: inspection.status,
+            status: dbStatus,
             updated_at: new Date().toISOString(),
             inspector_name: inspection.inspectorName,
             inspector_title: inspection.inspectorTitle,
@@ -94,7 +106,7 @@ export const useSaveInspection = () => {
           .eq("id", inspection.id)
       );
       
-      console.log(`Atualizou status da inspeção para ${inspection.status}`);
+      console.log(`Atualizou status da inspeção para ${dbStatus}`);
     } catch (error) {
       console.error("Erro ao atualizar inspeção:", error);
       hasError = true;
