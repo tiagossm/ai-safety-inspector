@@ -4,7 +4,7 @@ import { X, ZoomIn, Download, Sparkles, Heart } from "lucide-react";
 import { MediaPreviewDialog } from "@/components/media/MediaPreviewDialog";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { MediaAttachmentRenderer } from "@/components/media/renderers/MediaAttachmentRenderer";
-import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
+import { MediaAnalysisResult, Plan5W2H } from "@/hooks/useMediaAnalysis";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -16,7 +16,7 @@ interface MediaAttachmentsProps {
   readOnly?: boolean;
   questionText?: string;
   onSaveAnalysis?: (url: string, result: MediaAnalysisResult) => void;
-  onApplyAISuggestion?: (suggestion: string) => void; // Função que abre modal 5W2H!
+  onApplyAISuggestion?: (plan: Plan5W2H) => void; // Alterado para Plan5W2H
   analysisResults?: Record<string, MediaAnalysisResult>;
 }
 
@@ -76,8 +76,8 @@ export function MediaAttachments({
 
   const handleApplySuggestion = (url: string) => {
     const analysis = analysisResults[url];
-    if (onApplyAISuggestion && analysis?.actionPlanSuggestion) {
-      onApplyAISuggestion(analysis.actionPlanSuggestion);
+    if (onApplyAISuggestion && analysis?.plan5w2h) {
+      onApplyAISuggestion(analysis.plan5w2h);
     }
   };
 
