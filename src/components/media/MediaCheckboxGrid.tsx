@@ -1,12 +1,14 @@
 
 import React from "react";
 import { getFilenameFromUrl } from "@/utils/fileUtils";
+import { Trash2 } from "lucide-react";
 
 interface MediaCheckboxGridProps {
   files: string[];
   selected: string[];
   onToggle: (url: string) => void;
   disabled?: boolean;
+  onDeleteFile?: (url: string) => void; // NOVO!
 }
 
 // Decide tipo pelo nome
@@ -19,7 +21,7 @@ const getType = (url: string) => {
   return "file";
 };
 
-export function MediaCheckboxGrid({ files, selected, onToggle, disabled }: MediaCheckboxGridProps) {
+export function MediaCheckboxGrid({ files, selected, onToggle, disabled, onDeleteFile }: MediaCheckboxGridProps) {
   return (
     <div className="flex flex-wrap gap-3">
       {files.map((url, idx) => {
@@ -41,7 +43,26 @@ export function MediaCheckboxGrid({ files, selected, onToggle, disabled }: Media
               disabled={disabled}
               tabIndex={0}
               aria-label={`Selecionar ${realFilename}`}
+              style={{ zIndex: 1 }}
             />
+            {/* Botão de excluir */}
+            {onDeleteFile && !disabled && (
+              <button
+                type="button"
+                className="absolute right-1 top-1 p-0.5 rounded hover:bg-red-50"
+                aria-label={`Excluir ${realFilename}`}
+                title="Remover da lista"
+                tabIndex={0}
+                style={{ zIndex: 2 }}
+                onClick={e => { 
+                  e.stopPropagation(); 
+                  e.preventDefault(); 
+                  onDeleteFile(url);
+                }}
+              >
+                <Trash2 className="w-4 h-4 text-red-400 hover:text-red-600" />
+              </button>
+            )}
             <div className="my-3">
               {type === "image" && (
                 <img src={url} alt={`mídia ${idx+1}`} className="w-[64px] h-[64px] object-cover rounded" />
@@ -88,4 +109,3 @@ export function MediaCheckboxGrid({ files, selected, onToggle, disabled }: Media
     </div>
   )
 }
-

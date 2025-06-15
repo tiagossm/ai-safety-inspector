@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Dialog, 
@@ -50,12 +51,9 @@ export function MediaAnalysisDialog({
   mediaUrls = [],
   additionalMediaUrls = []
 }: MediaAnalysisDialogProps) {
-  // Arquivos disponíveis (sempre únicos)
-  const allFiles: string[] = useMemo(() => {
-    const uniq = Array.from(new Set([...(mediaUrls || []), ...(additionalMediaUrls || []), ...(mediaUrl ? [mediaUrl] : [])]));
-    return uniq;
-  }, [mediaUrl, mediaUrls, additionalMediaUrls]);
-
+  // Estado local para controlar os arquivos da timeline
+  const [allFiles, setAllFiles] = useState<string[]>([]);
+  
   // Tipo principal: se todos selecionados forem do mesmo tipo, identifica (mesma lógica)
   const guessPrincipalType = (files: string[]) => {
     if (!files.length) return undefined;
@@ -72,19 +70,28 @@ export function MediaAnalysisDialog({
   const [analysisState, setAnalysisState] = useState<AnalysisState>({ status: 'idle', analyzed: false });
   const { analyze } = useMediaAnalysis();
 
-  // Sempre resetar seleção quando abrir ou mudar arquivos
+  // Sempre resetar seleção e lista de arquivos quando abrir ou mudar arquivos
   useEffect(() => {
     if (open) {
+      // Monta timeline única a partir das props
+      const filesInitial = Array.from(new Set([...(mediaUrls || []), ...(additionalMediaUrls || []), ...(mediaUrl ? [mediaUrl] : [])]));
+      setAllFiles(filesInitial);
       setAnalysisState({ status: 'idle', analyzed: false });
-      setSelected(allFiles); // Inicia com todos selecionados
+      setSelected(filesInitial); // Seleciona todos por padrão
     }
-  }, [open, allFiles.join(",")]);
+  }, [open, mediaUrl, JSON.stringify(mediaUrls), JSON.stringify(additionalMediaUrls)]);
 
   // Alterna seleção individual
   const toggleSelection = (url: string) => {
     setSelected(sel => 
       sel.includes(url) ? sel.filter(u => u !== url) : sel.concat(url)
     );
+  };
+
+  // Novo: remover arquivo da timeline (estado local)
+  const handleDeleteFile = (url: string) => {
+    setAllFiles(files => files.filter(u => u !== url));
+    setSelected(sel => sel.filter(u => u !== url));
   };
 
   // Handler análise (usa somente os selecionados)
@@ -135,6 +142,7 @@ export function MediaAnalysisDialog({
             selected={selected}
             onToggle={toggleSelection}
             disabled={analysisState.status === "analyzing"}
+            onDeleteFile={handleDeleteFile}
           />
           {selected.length === 0 && (
             <div className="text-xs text-red-600 mt-2">Selecione pelo menos uma mídia.</div>
