@@ -1,4 +1,3 @@
-
 // Imports extras para áudio
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
@@ -250,7 +249,8 @@ serve(async (req) => {
       });
     }
 
-    const { mediaUrl, additionalMediaUrls = [], questionText = "", userAnswer = "", mediaType = "" } = await req.json();
+    // NOVO: ler isWebmAudio
+    const { mediaUrl, additionalMediaUrls = [], questionText = "", userAnswer = "", mediaType = "", isWebmAudio = false } = await req.json();
     if (!mediaUrl) {
       return new Response(JSON.stringify({ error: "Missing media URL" }), {
         status: 400,
@@ -258,15 +258,22 @@ serve(async (req) => {
       });
     }
 
-    // Detecta tipo pelo mediaType ou extensão:
+    // Reforço: detecção robusta de tipo
     const extension = mediaUrl.split(".").pop()?.toLowerCase();
-    const isAudio = mediaType === "audio" || ["mp3", "wav", "ogg", "m4a", "webm"].includes(extension ?? "");
+    const isWebm = extension === "webm";
+    const treatAsAudio = isWebm && isWebmAudio;
+    const treatAsVideo = isWebm && !isWebmAudio;
+
+    // Preferência: se o mediaType recebido for audio e o arquivo for .webm OU campo extra isWebmAudio = true, tratamos como áudio
+    const isAudio = mediaType === "audio" || ["mp3", "wav", "ogg", "m4a"].includes(extension ?? "") || treatAsAudio;
     const isImage = mediaType === "image" || ["jpg", "jpeg", "png", "gif", "webp", "bmp"].includes(extension ?? "");
     const isPdf = mediaType === "pdf" || extension === "pdf";
+    // .webm vídeo: só analisa como vídeo no futuro
+    // const isVideo = mediaType === "video" || ["mp4", "webm", "mov", "avi"].includes(extension ?? "") || treatAsVideo;
 
     let analysisResult;
     if (isAudio) {
-      console.log("[analyze-media] Processando áudio");
+      console.log(`[analyze-media] Processando áudio (ext: ${extension}) - isWebmAudio? ${treatAsAudio}`);
       analysisResult = await analyzeAudio(openAIApiKey, mediaUrl, questionText, userAnswer);
       analysisResult.analysisType = "audio";
     } else if (isImage) {
@@ -279,7 +286,13 @@ serve(async (req) => {
       analysisResult = await analyzePdf(openAIApiKey, mediaUrl, questionText, userAnswer);
       analysisResult.analysisType = "pdf";
     } else {
-      throw new Error("Tipo de mídia não suportado para análise.");
+      // Falha personalizada para .webm desconhecido ou tipos não suportados:
+      let details = "";
+      if (isWebm) {
+        details = treatAsVideo ? "Arquivo .webm enviado sem indicação clara se é áudio ou vídeo. Não suportado automaticamente." :
+                  "Arquivo .webm enviado mas não marcado como áudio.";
+      }
+      throw new Error(`Tipo de mídia não suportado para análise. ${details}`);
     }
 
     return new Response(JSON.stringify(analysisResult), {

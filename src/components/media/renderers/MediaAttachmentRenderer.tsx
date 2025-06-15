@@ -1,4 +1,3 @@
-
 import React from "react";
 import { getFileType, getFilenameFromUrl } from "@/utils/fileUtils";
 import { determineSpecificFileType } from "@/utils/fileTypeUtils";
@@ -123,6 +122,13 @@ export const MediaAttachmentRenderer = ({
         const extension = url.split(".").pop()?.toLowerCase() || "";
         const specificFileType = determineSpecificFileType(extension);
 
+        // Verifica .webm de áudio (nova heurística para passar mediaType correto!)
+        const isWebm = extension === "webm";
+        const isWebmAudio = isWebm && (
+          url.toLowerCase().includes('/audio/') ||
+          url.toLowerCase().endsWith('audio.webm')
+        );
+
         // Imagem avulsa (não entra na galeria)
         if (fileType === "image") {
           return (
@@ -150,7 +156,7 @@ export const MediaAttachmentRenderer = ({
         }
 
         // Áudio: render com ícone (por consistência)
-        if (fileType === "audio") {
+        if (fileType === "audio" || isWebmAudio) {
           return (
             <AudioRenderer
               key={url}
@@ -158,7 +164,8 @@ export const MediaAttachmentRenderer = ({
               index={index}
               fileName={fileName}
               onOpenPreview={onOpenPreview}
-              onOpenAnalysis={onOpenAnalysis}
+              // Passa mediaType='audio' explicitamente no callback!
+              onOpenAnalysis={(u, q) => onOpenAnalysis(u, q, 'audio')}
               readOnly={readOnly}
               onDelete={onDelete}
               onDownload={handleDownload}
@@ -169,10 +176,10 @@ export const MediaAttachmentRenderer = ({
           );
         }
 
-        // Vídeo
+        // Vídeo (inclui .webm sem heurística de áudio)
         if (
           fileType === "video" ||
-          (url.endsWith(".webm") && !url.includes("audio"))
+          (isWebm && !isWebmAudio)
         ) {
           return (
             <VideoRenderer
@@ -181,7 +188,8 @@ export const MediaAttachmentRenderer = ({
               index={index}
               fileName={fileName}
               onOpenPreview={onOpenPreview}
-              onOpenAnalysis={onOpenAnalysis}
+              // Passa mediaType='video' explicitamente
+              onOpenAnalysis={(u, q) => onOpenAnalysis(u, q, 'video')}
               readOnly={readOnly}
               onDelete={onDelete}
               hasAnalysis={hasAnalysis}
@@ -191,27 +199,7 @@ export const MediaAttachmentRenderer = ({
           );
         }
 
-        // Caso .webm for áudio (edge case)
-        if (url.endsWith(".webm") && url.includes("audio")) {
-          return (
-            <AudioRenderer
-              key={url}
-              url={url}
-              index={index}
-              fileName={fileName}
-              onOpenPreview={onOpenPreview}
-              onOpenAnalysis={onOpenAnalysis}
-              readOnly={readOnly}
-              onDelete={onDelete}
-              onDownload={handleDownload}
-              hasAnalysis={hasAnalysis}
-              questionText={questionText}
-              smallSize={smallSize}
-            />
-          );
-        }
-
-        // Qualquer outro tipo de arquivo usa placeholder visual com ícone adequado
+        // Outros tipos
         return (
           <FileVisualPlaceholder
             key={url}

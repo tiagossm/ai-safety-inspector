@@ -42,7 +42,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 export function useMediaAnalysis() {
   const [analyzing, setAnalyzing] = useState(false);
 
-  // Define o tipo de mídia mais robustamente
+  // Função aprimorada para detectar tipo de .webm
   const getMediaType = (url: string): string => {
     if (!url) return 'unknown';
     const extension = url.split('.').pop()?.toLowerCase();
@@ -50,13 +50,36 @@ export function useMediaAnalysis() {
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(extension || '')) {
       return 'image';
     } else if (['mp4', 'webm', 'mov', 'avi'].includes(extension || '')) {
+      // Decisão: .webm pode ser áudio ou vídeo. O padrão será 'video', MAS:
+      // Se houver WebM e content-type (muito difícil pegar pelo url), vamos exigir mediaType correto no nível do botão.
+      if (extension === "webm") {
+        // Para URL, heurística: webm de áudio, muitos têm 'audio' no path, senão vai pelo mediaType do componente
+        // Aqui, não há acesso ao content-type, então esperamos que o usuário ou UX (botão) envie mediaType correto
+        // Só garantimos que se passar mediaType='audio', enviamos assim
+        // Retorna video por padrão para .webm, o back corrigirá
+        return 'video';
+      }
       return 'video';
     } else if (['mp3', 'wav', 'ogg', 'm4a', 'webm'].includes(extension || '')) {
+      // .webm aparece aqui também: só deve cair como áudio se o botão/UX for de áudio
       return 'audio';
     } else if (['pdf', 'doc', 'docx', 'txt'].includes(extension || '')) {
       return 'document';
     }
     return 'unknown';
+  };
+
+  // Checagem extra para .webm áudio no contexto UI
+  const isWebmAudioUrl = (url: string, mediaType?: string): boolean => {
+    if (!url) return false;
+    const isWebm = url.toLowerCase().endsWith('.webm');
+    if (!isWebm) return false;
+    // Preferência: se mediaType foi definido explicitamente como áudio, confiaremos nele
+    if (mediaType && mediaType === 'audio') return true;
+    // Heurística: nomes/paths comuns de áudio
+    if (url.toLowerCase().includes('/audio/') || url.toLowerCase().includes('audio.webm')) return true;
+    // Poderíamos adicionar mais padrões se necessário no futuro
+    return false;
   };
 
   const analyze = useCallback(async (options: MediaAnalysisOptions): Promise<MediaAnalysisResult | null> => {
@@ -78,7 +101,14 @@ export function useMediaAnalysis() {
     setAnalyzing(true);
 
     try {
-      const detectedMediaType = mediaType || getMediaType(mediaUrl);
+      // Detecção robusta do tipo: se for .webm, decide pelo mediaType recebido OU heurística
+      let detectedMediaType = mediaType || getMediaType(mediaUrl);
+      let webmIsAudio = false;
+      if (mediaUrl && mediaUrl.toLowerCase().endsWith('.webm')) {
+        webmIsAudio = isWebmAudioUrl(mediaUrl, mediaType);
+        if (webmIsAudio) detectedMediaType = 'audio';
+        // Se não crava áudio, deixa como video (o edge tratará também)
+      }
 
       const payload = {
         mediaUrl,
@@ -86,7 +116,8 @@ export function useMediaAnalysis() {
         userAnswer: userAnswer || "",
         mediaType: detectedMediaType,
         multimodalAnalysis: multimodalAnalysis || false,
-        additionalMediaUrls: additionalMediaUrls || []
+        additionalMediaUrls: additionalMediaUrls || [],
+        isWebmAudio: webmIsAudio, // NOVO: esse campo será lido no edge function!
       };
 
       console.log("[useMediaAnalysis] Enviando análise de mídia:", payload);
@@ -126,7 +157,6 @@ export function useMediaAnalysis() {
         }
       }
 
-      // Adapta para áudio: pode haver transcript. Coloca no resultado.
       const result: MediaAnalysisResult = {
         analysis: data.analysis || "Sem análise disponível",
         type: detectedMediaType,
@@ -143,7 +173,6 @@ export function useMediaAnalysis() {
 
       analysisCache.set(cacheKey, { result, timestamp: Date.now() });
 
-      // Limpa cache antigo periodicamente
       if (analysisCache.size > 50) {
         const now = Date.now();
         for (const [key, value] of analysisCache.entries()) {
@@ -162,7 +191,6 @@ export function useMediaAnalysis() {
     }
   }, []);
 
-  // Função para limpar cache manualmente se necessário
   const clearCache = useCallback(() => {
     analysisCache.clear();
   }, []);

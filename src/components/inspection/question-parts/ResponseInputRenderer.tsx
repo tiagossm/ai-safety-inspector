@@ -1,4 +1,3 @@
-
 import React, { useCallback, useState } from "react";
 import { StandardActionButtons, StandardActionButtonsProps } from "./StandardActionButtons";
 import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
@@ -71,15 +70,25 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     setIsAnalysisOpen(true);
   }, []);
 
-  const handleOpenActionPlan = useCallback(() => {
-    setIa5W2Hplan(null);
-    setIsActionPlanDialogOpen(true);
-  }, []);
-
-  const handleAdd5W2HActionPlan = useCallback((plan: Plan5W2H) => {
-    setIa5W2Hplan(plan);
-    setIsActionPlanDialogOpen(true);
-  }, []);
+  // Modificado: ao passar para o MediaAnalysisDialog, envia mediaType correto para .webm áudio
+  const getPrimaryMediaType = () => {
+    if (!mediaUrls || mediaUrls.length === 0) return undefined;
+    const url = mediaUrls[0];
+    if (!url) return undefined;
+    const ext = url.split('.').pop()?.toLowerCase() || "";
+    if (ext === "webm") {
+      // Heurística do MediaAttachmentRenderer
+      if (url.toLowerCase().includes('/audio/') || url.toLowerCase().endsWith('audio.webm')) {
+        return "audio";
+      }
+      return "video";
+    }
+    // Restante: texto de fallback
+    if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) return "audio";
+    if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].includes(ext)) return "image";
+    if (ext === "pdf") return "pdf";
+    return undefined;
+  };
 
   // Handler para salvar análise e atualizar response
   const handleAnalysisComplete = useCallback((url: string, result: MediaAnalysisResult) => {
@@ -133,6 +142,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
       open={isAnalysisOpen}
       onOpenChange={setIsAnalysisOpen}
       mediaUrl={mediaUrls && mediaUrls.length > 0 ? mediaUrls[0] : null}
+      mediaType={getPrimaryMediaType()}
       questionText={question.text || question.pergunta || ""}
       userAnswer={
         safeResponse?.value === true ? "Sim" : 
