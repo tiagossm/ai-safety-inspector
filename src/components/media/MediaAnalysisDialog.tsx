@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useMediaAnalysis, MediaAnalysisResult, Plan5W2H } from '@/hooks/useMediaAnalysis';
 import { Loader2, Sparkles } from 'lucide-react';
 import ReactMarkdown from "react-markdown";
+import { MediaCheckboxGrid } from "./MediaCheckboxGrid";
 
 interface MediaAnalysisDialogProps {
   open: boolean;
@@ -49,50 +50,60 @@ export function MediaAnalysisDialog({
   mediaUrls = [],
   additionalMediaUrls = []
 }: MediaAnalysisDialogProps) {
-  // NOVO: sempre considerar TODAS as mídias (se vier mais de uma em mediaUrls)
+  // Arquivos disponíveis (sempre únicos)
   const allFiles: string[] = useMemo(() => {
     const uniq = Array.from(new Set([...(mediaUrls || []), ...(additionalMediaUrls || []), ...(mediaUrl ? [mediaUrl] : [])]));
     return uniq;
   }, [mediaUrl, mediaUrls, additionalMediaUrls]);
-  
-  // Detecta tipo predominante (se houver áudio, usar áudio; senão, video; senão, imagem)
-  const principalMediaType = useMemo(() => {
-    if (!allFiles.length) return undefined;
-    const exts = allFiles.map(url => (url.split('.').pop() || "").toLowerCase());
+
+  // Tipo principal: se todos selecionados forem do mesmo tipo, identifica (mesma lógica)
+  const guessPrincipalType = (files: string[]) => {
+    if (!files.length) return undefined;
+    const exts = files.map(url => (url.split('.').pop() || "").toLowerCase());
     if (exts.find(e => ['mp3','wav','ogg','m4a','webm'].includes(e))) return "audio";
     if (exts.find(e => ['mp4','webm','mov','avi'].includes(e))) return "video";
     if (exts.find(e => ['jpg','jpeg','png','webp','gif','bmp'].includes(e))) return "image";
     if (exts.find(e => e === "pdf")) return "pdf";
     return undefined;
-  }, [allFiles]);
+  };
 
-  // Adaptando estado e hook
+  // Estado dos selecionados
+  const [selected, setSelected] = useState<string[]>([]);
   const [analysisState, setAnalysisState] = useState<AnalysisState>({ status: 'idle', analyzed: false });
   const { analyze } = useMediaAnalysis();
 
-  // Ao abrir dialog, resetar state
+  // Sempre resetar seleção quando abrir ou mudar arquivos
   useEffect(() => {
     if (open) {
       setAnalysisState({ status: 'idle', analyzed: false });
+      setSelected(allFiles); // Inicia com todos selecionados
     }
   }, [open, allFiles.join(",")]);
 
-  // Handler para análise consolidada: dispara com todas as mídias
+  // Alterna seleção individual
+  const toggleSelection = (url: string) => {
+    setSelected(sel => 
+      sel.includes(url) ? sel.filter(u => u !== url) : sel.concat(url)
+    );
+  };
+
+  // Handler análise (usa somente os selecionados)
   const handleAnalyzeConsolidated = useCallback(async () => {
+    if (selected.length === 0) return; // Não permite analisar nada
     setAnalysisState({ status: 'analyzing', analyzed: false });
     try {
       const result = await analyze({
-        mediaUrl: allFiles[0],
+        mediaUrl: selected[0],
         questionText,
         userAnswer,
-        multimodalAnalysis: true,
-        additionalMediaUrls: allFiles.slice(1),
-        mediaType: principalMediaType
+        multimodalAnalysis: selected.length > 1,
+        additionalMediaUrls: selected.slice(1),
+        mediaType: guessPrincipalType(selected)
       });
 
       if (result) {
         setAnalysisState({ status: 'done', result, analyzed: true });
-        onAnalysisComplete?.(allFiles.join(','), result); // Usa join para chave (mas pai salva na resp da questão)
+        onAnalysisComplete?.(selected.join(','), result);
       } else {
         throw new Error('Nenhum resultado retornado da análise');
       }
@@ -103,54 +114,49 @@ export function MediaAnalysisDialog({
         analyzed: false
       });
     }
-  }, [analyze, allFiles, principalMediaType, questionText, userAnswer, onAnalysisComplete]);
+  }, [analyze, selected, questionText, userAnswer, onAnalysisComplete]);
 
   // Render
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[850px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             Análise Consolidada com IA ({allFiles.length} mídias)
           </DialogTitle>
         </DialogHeader>
 
-        <div className="mb-4 flex flex-wrap gap-2">
-          {allFiles.map((url, idx) => {
-            if (principalMediaType === 'audio' && url.match(/\.(mp3|wav|ogg|m4a|webm)$/i)) {
-              return (
-                <audio key={url} controls src={url} className="max-w-[220px] my-2" />
-              );
-            }
-            if (principalMediaType === 'video' && url.match(/\.(mp4|webm|mov|avi)$/i)) {
-              return (
-                <video key={url} src={url} controls className="max-w-[220px] max-h-[120px] rounded border" />
-              );
-            }
-            // Imagem como padrão
-            if (url.match(/\.(jpg|jpeg|png|webp|gif|bmp)$/i)) {
-              return (
-                <img key={url} src={url} alt={`mídia ${idx+1}`} className="w-[74px] h-[74px] object-cover rounded border" />
-              );
-            }
-            // Qualquer tipo fallback
-            return (
-              <div key={url} className="w-[74px] h-[74px] bg-gray-100 border rounded flex items-center justify-center text-xs text-gray-400">Arquivo</div>
-            );
-          })}
+        <div className="mb-4">
+          <div className="text-xs text-gray-800 font-medium mb-1">
+            Selecione as mídias para incluir na análise:
+          </div>
+          <MediaCheckboxGrid
+            files={allFiles}
+            selected={selected}
+            onToggle={toggleSelection}
+            disabled={analysisState.status === "analyzing"}
+          />
+          {selected.length === 0 && (
+            <div className="text-xs text-red-600 mt-2">Selecione pelo menos uma mídia.</div>
+          )}
         </div>
 
         {analysisState.status === 'idle' && !analysisState.analyzed && (
-          <Button size="sm" onClick={handleAnalyzeConsolidated} className="mb-2 w-full">
+          <Button 
+            size="sm"
+            onClick={handleAnalyzeConsolidated}
+            className="mb-2 w-full"
+            disabled={selected.length === 0}
+          >
             <Sparkles className="h-4 w-4 mr-2" />
-            Analisar todas as mídias com IA
+            Analisar mídias selecionadas com IA
           </Button>
         )}
 
         {analysisState.status === 'analyzing' && (
           <div className="flex flex-col items-center mt-3 mb-3">
             <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            <span className="text-xs mt-1 text-gray-600">Analisando todas as mídias...</span>
+            <span className="text-xs mt-1 text-gray-600">Analisando mídias selecionadas...</span>
           </div>
         )}
 
@@ -161,13 +167,13 @@ export function MediaAnalysisDialog({
               size="sm"
               variant="secondary"
               onClick={handleAnalyzeConsolidated}
+              disabled={selected.length === 0}
             >
               Tentar novamente
             </Button>
           </div>
         )}
 
-        {/* Resultado consolidado */}
         {analysisState.status === 'done' && analysisState.result && (
           <>
             <div className="w-full border rounded-md p-2 bg-gray-50 mb-2">
