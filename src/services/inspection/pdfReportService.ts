@@ -1,6 +1,6 @@
-import { pdf, Document } from '@react-pdf/renderer';
+
+import { pdf, Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import { supabase } from "@/integrations/supabase/client";
-import { InspectionPDFDocument } from "@/components/reports/InspectionPDFDocument";
 import { generateReportDTO } from "../reportDtoService";
 import { toast } from "sonner";
 import React from 'react';
@@ -17,6 +17,67 @@ export interface PDFGenerationResult {
   fileName: string;
 }
 
+// Definir cores e estilos
+const colors = {
+  primary: '#00966E',
+  secondary: '#FFBF00', 
+  danger: '#D72638',
+  text: '#333333',
+  lightGray: '#F5F5F5',
+  white: '#FFFFFF'
+};
+
+const styles = StyleSheet.create({
+  page: {
+    flexDirection: 'column',
+    backgroundColor: colors.white,
+    fontFamily: 'Helvetica',
+    fontSize: 10,
+    padding: 30,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 10,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.primary,
+  },
+  logo: {
+    width: 40,
+    height: 40,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.primary,
+    textAlign: 'center',
+    marginBottom: 30,
+  },
+  subtitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.primary,
+    marginBottom: 15,
+    marginTop: 20,
+  },
+  section: {
+    marginBottom: 20,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    marginBottom: 5,
+  },
+  label: {
+    fontWeight: 'bold',
+    width: '30%',
+  },
+  value: {
+    width: '70%',
+  },
+});
+
 /**
  * Gera o PDF da inspeção e armazena no Supabase Storage
  */
@@ -30,10 +91,51 @@ export async function generateInspectionPDF(
     // Gerar DTO com todos os dados necessários
     const reportData = await generateReportDTO(inspectionId);
     
-    // Gerar o PDF usando react-pdf - criar apenas o conteúdo interno
-    const pdfBlob = await pdf(
-      React.createElement(InspectionPDFDocument, { reportData })
-    ).toBlob();
+    // Criar o documento PDF diretamente
+    const document = React.createElement(Document, {}, [
+      // Capa
+      React.createElement(Page, { key: 'cover', size: 'A4', style: styles.page }, [
+        React.createElement(View, { key: 'header', style: styles.header }, [
+          React.createElement(Text, { key: 'title', style: styles.title }, 'Relatório de Inspeção'),
+          React.createElement(Image, { key: 'logo', style: styles.logo, src: '/lovable-uploads/LogoazulFT.png' })
+        ]),
+        React.createElement(View, { key: 'info', style: styles.section }, [
+          React.createElement(View, { key: 'company', style: styles.infoRow }, [
+            React.createElement(Text, { key: 'company-label', style: styles.label }, 'Empresa:'),
+            React.createElement(Text, { key: 'company-value', style: styles.value }, reportData.inspection.companyName)
+          ]),
+          React.createElement(View, { key: 'checklist', style: styles.infoRow }, [
+            React.createElement(Text, { key: 'checklist-label', style: styles.label }, 'Checklist:'),
+            React.createElement(Text, { key: 'checklist-value', style: styles.value }, reportData.inspection.checklistTitle)
+          ]),
+          React.createElement(View, { key: 'inspector', style: styles.infoRow }, [
+            React.createElement(Text, { key: 'inspector-label', style: styles.label }, 'Inspetor:'),
+            React.createElement(Text, { key: 'inspector-value', style: styles.value }, reportData.inspector.name)
+          ]),
+          React.createElement(View, { key: 'date', style: styles.infoRow }, [
+            React.createElement(Text, { key: 'date-label', style: styles.label }, 'Data:'),
+            React.createElement(Text, { key: 'date-value', style: styles.value }, 
+              new Date(reportData.inspection.createdAt).toLocaleDateString('pt-BR'))
+          ])
+        ])
+      ]),
+      
+      // Resumo Executivo
+      React.createElement(Page, { key: 'summary', size: 'A4', style: styles.page }, [
+        React.createElement(Text, { key: 'summary-title', style: styles.title }, 'Resumo Executivo'),
+        React.createElement(View, { key: 'summary-content', style: styles.section }, [
+          React.createElement(Text, { key: 'summary-text' }, 
+            `Conformidade: ${reportData.summary.conformityPercent}% | ` +
+            `Não Conformidades: ${reportData.summary.totalNc} | ` +
+            `Total de Mídias: ${reportData.summary.totalMedia} | ` +
+            `Questões: ${reportData.summary.completedQuestions}/${reportData.summary.totalQuestions}`
+          )
+        ])
+      ])
+    ]);
+    
+    // Gerar o PDF usando react-pdf
+    const pdfBlob = await pdf(document).toBlob();
     
     // Verificar tamanho do PDF (máximo 8MB)
     const maxSizeBytes = 8 * 1024 * 1024; // 8MB
@@ -99,9 +201,6 @@ async function calculateSHA256(blob: Blob): Promise<string> {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-/**
- * Verifica se o bucket reports existe e cria se necessário
- */
 async function ensureReportsBucket(): Promise<boolean> {
   try {
     // Tentar listar buckets para verificar se 'reports' existe
@@ -126,9 +225,6 @@ async function ensureReportsBucket(): Promise<boolean> {
   }
 }
 
-/**
- * Comprime imagens se necessário
- */
 async function compressImageIfNeeded(url: string, maxWidth: number = 1080): Promise<string> {
   try {
     // Para URLs externas, retornar como está
