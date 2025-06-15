@@ -1,6 +1,5 @@
 
-// Corrigir bug do campo de texto perdendo o foco (deveria só renderizar um controlled input)
-import React, { useRef } from "react";
+import React from "react";
 
 interface ParagraphResponseInputProps {
   value: string | undefined;
@@ -13,8 +12,6 @@ export function ParagraphResponseInput({
   onChange,
   readOnly = false
 }: ParagraphResponseInputProps) {
-  // Garantir sempre controlled; o bug ocorre se o componente for recriado a cada tecla pela key ou outra prop inesperada.
-  // Aqui, garantimos controlled.
   return (
     <textarea
       className="w-full border rounded p-2 text-sm"
@@ -23,8 +20,6 @@ export function ParagraphResponseInput({
       value={value}
       onChange={e => onChange(e.target.value)}
       disabled={readOnly}
-      autoFocus={false}
-      // Importante: não usar key dinâmica
     />
   );
 }
