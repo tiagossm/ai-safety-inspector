@@ -1,162 +1,105 @@
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type"
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
   try {
     const openAIApiKey = Deno.env.get("OPENAI_API_KEY");
     if (!openAIApiKey) {
       return new Response(JSON.stringify({ error: "OpenAI API key not configured" }), {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    // Recebe parâmetros
-    const { mediaUrl, questionText, userAnswer = "", questionId } = await req.json();
+
+    const { mediaUrl, questionText, userAnswer = "" } = await req.json();
     if (!mediaUrl) {
       return new Response(JSON.stringify({ error: "Missing media URL" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Prompt 5W2H: análise crítica, sem julgar conformidade!
     const userPrompt = `
-Você receberá uma imagem, uma pergunta de inspeção e a resposta do usuário.
+Analise a imagem fornecida no contexto da seguinte pergunta de inspeção e da resposta do usuário.
 
-Pergunta: "${questionText}"
-Resposta do usuário: "${userAnswer}"
+- Pergunta: "${questionText}"
+- Resposta do Usuário: "${userAnswer}"
 
-Seu trabalho é:
-1. Analisar a imagem e descrever o contexto, o ambiente ou sinais visuais que se relacionam com a pergunta e a resposta.
-2. Se identificar oportunidades de melhoria, risco, sintoma, ou não conformidade, sugira um plano de ação no formato **5W2H** (O quê, Por quê, Quem, Quando, Onde, Como).  
-- "Quanto custa" deve ser deixado em aberto para preenchimento posterior.
-3. Caso não haja ação necessária, responda "Nenhuma ação sugerida".
+Sua tarefa é retornar um objeto JSON estritamente com a seguinte estrutura:
+{
+  "comment": "Uma análise curta e objetiva da imagem, focando em segurança e conformidade. Descreva o que você vê.",
+  "hasNonConformity": boolean,
+  "plan5w2h": {
+    "what": "O que precisa ser feito?",
+    "why": "Por que isso é necessário?",
+    "who": "Quem é o responsável por fazer?",
+    "when": "Quando deve ser feito?",
+    "where": "Onde a ação deve ocorrer?",
+    "how": "Como a ação deve ser executada?",
+    "howMuch": ""
+  }
+}
 
-**Responda exatamente neste formato, em português:**
-
-Comentário:
-(Síntese objetiva da análise contextual da imagem.)
-
-Plano de Ação (5W2H):
-- O quê (What):
-- Por quê (Why):
-- Quem (Who):
-- Quando (When):
-- Onde (Where):
-- Como (How):
-- Quanto custa (How much): 
-
-Se não houver ação sugerida, preencha o campo “Plano de Ação” com “Nenhuma ação sugerida”.
-
-Exemplo:
-Comentário:
-A imagem mostra um colaborador aparentemente tenso, de acordo com a resposta "Sim".
-
-Plano de Ação (5W2H):
-- O quê (What): Incentivar técnicas de respiração.
-- Por quê (Why): Reduzir o nervosismo relatado.
-- Quem (Who): Próprio colaborador.
-- Quando (When): Imediatamente.
-- Onde (Where): Local de trabalho.
-- Como (How): Realizar pausas para exercícios respiratórios guiados.
-- Quanto custa (How much): 
-
-NUNCA preencha o campo "Quanto custa" (How much) — deixe em branco.
+- Se uma não conformidade for detectada, defina "hasNonConformity" como true e preencha o "plan5w2h" com um plano de ação claro e prático.
+- Se tudo estiver em conformidade, defina "hasNonConformity" como false, e retorne um objeto "plan5w2h" com todos os campos como strings vazias.
+- O campo "howMuch" deve ser sempre uma string vazia.
+- Seja direto e técnico na sua análise e sugestões.
     `.trim();
 
-    // Chama a IA normalmente
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${openAIApiKey}`
+        Authorization: `Bearer ${openAIApiKey}`,
       },
       body: JSON.stringify({
         model: "gpt-4o",
+        response_format: { type: "json_object" },
         messages: [
           {
             role: "system",
-            content: "Você é um engenheiro especialista em SST (Saúde e Segurança do Trabalho), capaz de analisar imagens e sugerir planos de ação detalhados no formato 5W2H para riscos ou oportunidades identificadas."
+            content: "Você é um engenheiro especialista em SST (Saúde e Segurança do Trabalho) que analisa imagens de inspeções e retorna dados estruturados em JSON."
           },
           {
             role: "user",
             content: [
-              {
-                type: "text",
-                text: userPrompt
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: mediaUrl
-                }
-              }
-            ]
-          }
+              { type: "text", text: userPrompt },
+              { type: "image_url", image_url: { url: mediaUrl } },
+            ],
+          },
         ],
-        max_tokens: 1200
-      })
+        max_tokens: 1500,
+      }),
     });
+
     const data = await response.json();
+
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${data.error?.message || "Unknown error"}`);
-    }
-    const analysisText = data.choices[0].message.content || "";
-
-    // Faz parsing dos campos
-    const get = (label: string) => {
-      const m = analysisText.match(new RegExp(`${label}:\\s*([\\s\\S]*?)(?:\\n-|$)`, 'i'));
-      return m ? m[1].trim() : "";
-    };
-
-    const commentMatch = analysisText.match(/Comentário:\s*([\s\S]*?)(?:Plano de Ação|$)/i);
-    const comment = commentMatch ? commentMatch[1].trim() : "";
-
-    let actionPlan = {
-      what: get("O quê \\(What\\)"),
-      why: get("Por quê \\(Why\\)"),
-      who: get("Quem \\(Who\\)"),
-      when: get("Quando \\(When\\)"),
-      where: get("Onde \\(Where\\)"),
-      how: get("Como \\(How\\)"),
-      howMuch: "" // sempre em branco!
-    };
-
-    // Se não houver ação sugerida:
-    if (/nenhuma ação sugerida/i.test(analysisText)) {
-      actionPlan = {
-        what: "",
-        why: "",
-        who: "",
-        when: "",
-        where: "",
-        how: "",
-        howMuch: ""
-      };
+      console.error("OpenAI API error:", data.error?.message, data);
+      throw new Error(data.error?.message || "Unknown OpenAI error");
     }
 
-    return new Response(JSON.stringify({
-      actionPlan,
-      comment,
-      questionId,
-      raw: data
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    const analysisResult = JSON.parse(data.choices[0].message.content);
+
+    return new Response(JSON.stringify(analysisResult), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   } catch (error) {
-    console.error("Error analyzing media:", error);
-    return new Response(JSON.stringify({
-      error: `Error analyzing media: ${error.message}`
-    }), {
+    console.error("Error analyzing media:", error.message);
+    return new Response(JSON.stringify({ error: `Error analyzing media: ${error.message}` }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
+

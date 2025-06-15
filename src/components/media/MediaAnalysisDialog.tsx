@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Dialog, 
   DialogContent, 
@@ -19,8 +18,7 @@ interface MediaAnalysisDialogProps {
   mediaType?: string | null;
   questionText?: string;
   userAnswer?: string;
-  onAnalysisComplete?: (result: MediaAnalysisResult) => void;
-  onAddActionPlan?: (suggestion: string) => void;
+  onAnalysisComplete?: (url: string, result: MediaAnalysisResult) => void;
   onAdd5W2HActionPlan?: (plan: Plan5W2H) => void;
   onAddComment?: (comment: string) => void;
   multimodalAnalysis?: boolean;
@@ -37,34 +35,6 @@ type AnalysisState = {
   analyzed?: boolean;
 };
 
-function forceListMarkdown(text: string): string {
-  return text
-    .split('\n')
-    .map(line => {
-      if (/^(\s*-|\s*\d+\.)/.test(line) || line.trim() === "") return line;
-      if (/sugeridas?:/i.test(line)) return `**${line.trim()}**`;
-      return `- ${line.trim()}`;
-    })
-    .join('\n');
-}
-
-function getSafeActionPlan(result: MediaAnalysisResult): string {
-  const isInvalid = !result.actionPlanSuggestion 
-    || result.actionPlanSuggestion.trim() === "" 
-    || result.actionPlanSuggestion.trim().toLowerCase() === "sugeridas:**";
-
-  if (!isInvalid) return result.actionPlanSuggestion!;
-  
-  if (result.analysis) {
-    const regex = /Ações? [Cc]orretivas [Ss]ugeridas?:([\s\S]+?)(?:\n\S|\n\n|Conclusão:|$)/i;
-    const match = result.analysis.match(regex);
-    if (match && match[1]) {
-      return match[1].trim();
-    }
-  }
-  return "";
-}
-
 export function MediaAnalysisDialog({
   open,
   onOpenChange,
@@ -73,7 +43,6 @@ export function MediaAnalysisDialog({
   questionText = "",
   userAnswer = "",
   onAnalysisComplete,
-  onAddActionPlan,
   onAdd5W2HActionPlan,
   onAddComment,
   multimodalAnalysis = false,
@@ -82,12 +51,10 @@ export function MediaAnalysisDialog({
 }: MediaAnalysisDialogProps) {
   const MAX_IMAGES = 4;
   
-  // Correção: usar useMemo para evitar recriação desnecessária do array
-  const allImages: string[] = React.useMemo(() => {
+  const allImages: string[] = useMemo(() => {
     if (!mediaUrl) return [];
     
-    // Usar uma única fonte de imagens para evitar loops
-    const sourceImages = mediaUrls.length > 0 ? mediaUrls : additionalMediaUrls;
+    const sourceImages = mediaUrls.length > 0 ? mediaUrls : (additionalMediaUrls || []);
     const otherImages = sourceImages.filter(url => url !== mediaUrl);
     
     return [mediaUrl, ...otherImages].slice(0, MAX_IMAGES);
@@ -96,13 +63,14 @@ export function MediaAnalysisDialog({
   const [analysisMap, setAnalysisMap] = useState<Record<string, AnalysisState>>({});
   const { analyze } = useMediaAnalysis();
 
-  // Inicializa estado das imagens - CORREÇÃO: evitar loop infinito
+  const allImagesStringified = useMemo(() => JSON.stringify(allImages), [allImages]);
+
   useEffect(() => {
-    if (open && allImages.length > 0) {
+    if (open) {
+      const currentImages = JSON.parse(allImagesStringified) as string[];
       setAnalysisMap(prev => {
         const newMap: Record<string, AnalysisState> = {};
-        allImages.forEach(url => {
-          // Manter estado existente se já existe
+        currentImages.forEach(url => {
           newMap[url] = prev[url] || { status: 'idle', analyzed: false };
         });
         return newMap;
@@ -110,9 +78,8 @@ export function MediaAnalysisDialog({
     } else if (!open) {
       setAnalysisMap({});
     }
-  }, [open]); // Removido allImages da dependência para evitar loop
+  }, [open, allImagesStringified]);
 
-  // Função para analisar uma imagem específica
   const analyzeImage = useCallback(async (url: string) => {
     if (!url) return;
 
@@ -128,7 +95,7 @@ export function MediaAnalysisDialog({
         mediaType,
         questionText,
         userAnswer,
-        multimodalAnalysis: false,
+        multimodalAnalysis: false, 
         additionalMediaUrls: contextImages
       });
 
@@ -138,9 +105,7 @@ export function MediaAnalysisDialog({
           [url]: { status: 'done', result, analyzed: true }
         }));
         
-        if (onAnalysisComplete) {
-          onAnalysisComplete(result);
-        }
+        onAnalysisComplete?.(url, result);
       } else {
         throw new Error('Nenhum resultado retornado da análise');
       }
@@ -155,7 +120,7 @@ export function MediaAnalysisDialog({
         }
       }));
     }
-  }, [analyze, mediaType, questionText, userAnswer, onAnalysisComplete]); // Removido allImages
+  }, [analyze, allImages, mediaType, questionText, userAnswer, onAnalysisComplete]);
 
   const renderMarkdown = (md: string) =>
     <ReactMarkdown
@@ -196,14 +161,13 @@ export function MediaAnalysisDialog({
         )}
 
         {allImages.length > 0 && (
-          <div className={`grid gap-4 ${allImages.length > 1 ? 'grid-cols-2 sm:grid-cols-4' : ''}`}>
+          <div className={`grid gap-4 ${allImages.length > 1 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' : ''}`}>
             {allImages.map((url, idx) => {
               const state = analysisMap[url] || { status: 'idle', analyzed: false };
               const result = state.result;
-              const actionSuggestion = result ? getSafeActionPlan(result) : "";
-              const hasActionSuggestion = !!actionSuggestion && actionSuggestion.trim().length > 0;
               const plan5w2h = result?.plan5w2h;
-              const has5w2h = !!plan5w2h && Object.values(plan5w2h).some(v => v && v.trim() !== "");
+              const has5w2h = !!plan5w2h && Object.values(plan5w2h).some(v => v && String(v).trim() !== "");
+              const hasNonConformity = result?.hasNonConformity === true;
 
               return (
                 <div key={url} className="col-span-1 border rounded-lg shadow-sm p-2 bg-white flex flex-col items-center">
@@ -222,6 +186,7 @@ export function MediaAnalysisDialog({
                       onClick={() => analyzeImage(url)}
                       className="mt-2 w-full"
                     >
+                      <Sparkles className="h-4 w-4 mr-2" />
                       Analisar com IA
                     </Button>
                   )}
@@ -244,7 +209,7 @@ export function MediaAnalysisDialog({
 
                   {state.status === 'done' && result && (
                     <>
-                      {(hasActionSuggestion || has5w2h) && (
+                      {hasNonConformity && has5w2h && (
                         <div className="w-full my-2 p-2 rounded-md border text-center bg-amber-50 border-amber-200">
                           <div className="flex items-center justify-center gap-1">
                             <Sparkles className="h-4 w-4 text-amber-500" />
@@ -256,17 +221,17 @@ export function MediaAnalysisDialog({
                       )}
                       
                       <div className="w-full border rounded-md p-2 bg-gray-50 mb-1">
-                        <h3 className="text-xs font-medium text-gray-700 mb-1">Análise da Imagem:</h3>
+                        <h3 className="text-xs font-medium text-gray-700 mb-1">Análise da IA:</h3>
                         <div className="text-xs whitespace-pre-line">
-                          {renderMarkdown(result.analysis ?? "")}
+                          {renderMarkdown(result.analysis ?? "Nenhuma análise disponível.")}
                         </div>
                       </div>
                       
-                      {has5w2h && onAdd5W2HActionPlan && plan5w2h ? (
+                      {hasNonConformity && has5w2h && onAdd5W2HActionPlan && plan5w2h ? (
                         <div className="w-full border rounded-md p-2 bg-amber-50 border-amber-200 mt-1">
                           <div className="flex items-center mb-1">
                             <Sparkles className="h-3 w-3 text-amber-500 mr-1" />
-                            <h3 className="text-xs font-medium text-amber-800">Ações Corretivas (5W2H):</h3>
+                            <h3 className="text-xs font-medium text-amber-800">Sugestão (5W2H):</h3>
                           </div>
                            <div className="text-xs text-amber-700 space-y-1">
                               {plan5w2h.what && <p><strong>O quê:</strong> {plan5w2h.what}</p>}
@@ -274,12 +239,12 @@ export function MediaAnalysisDialog({
                               {plan5w2h.who && <p><strong>Quem:</strong> {plan5w2h.who}</p>}
                               {plan5w2h.where && <p><strong>Onde:</strong> {plan5w2h.where}</p>}
                               {plan5w2h.how && <p><strong>Como:</strong> {plan5w2h.how}</p>}
-                              {plan5w2h.howMuch && <p><strong>Quanto custa:</strong> {plan5w2h.howMuch}</p>}
+                              {plan5w2h.howMuch && <p><strong>Quanto:</strong> {plan5w2h.howMuch}</p>}
                           </div>
                           <Button
                             size="sm"
                             variant="default"
-                            className="mt-2 w-full"
+                            className="mt-2 w-full bg-amber-500 hover:bg-amber-600"
                             onClick={() => {
                               onAdd5W2HActionPlan(plan5w2h);
                               onOpenChange(false);
@@ -288,36 +253,10 @@ export function MediaAnalysisDialog({
                             Usar Sugestão 5W2H
                           </Button>
                         </div>
-                      ) : hasActionSuggestion && onAddActionPlan ? (
-                        <div className="w-full border rounded-md p-2 bg-amber-50 border-amber-200 mt-1">
-                          <div className="flex items-center mb-1">
-                            <Sparkles className="h-3 w-3 text-amber-500 mr-1" />
-                            <h3 className="text-xs font-medium text-amber-800">Ações Corretivas:</h3>
-                          </div>
-                          <div className="text-xs text-amber-700">
-                            {renderMarkdown(actionSuggestion)}
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="default"
-                            className="mt-2 w-full"
-                            onClick={() => {
-                                onAddActionPlan(actionSuggestion)
-                                onOpenChange(false);
-                            }}
-                          >
-                            Adicionar ao Plano de Ação
-                          </Button>
-                        </div>
                       ) : (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          className="mt-2 w-full"
-                          onClick={() => onAddComment?.("Situação em conformidade conforme análise IA.")}
-                        >
-                          Marcar como conforme
-                        </Button>
+                        <div className="w-full mt-2 text-center text-xs p-2 rounded-md bg-green-50 text-green-800 border border-green-200">
+                         {result.analysis ? "Análise concluída. Nenhuma ação sugerida." : "Análise concluída."}
+                        </div>
                       )}
                     </>
                   )}

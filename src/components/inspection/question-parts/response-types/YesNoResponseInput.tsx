@@ -6,10 +6,6 @@ interface YesNoResponseInputProps {
   question: any;
   response: any;
   onResponseChange: (data: any) => void;
-  inspectionId?: string;
-  onMediaChange?: (urls: string[]) => void;
-  actionPlan?: any;
-  onSaveActionPlan?: (data: any) => Promise<void>;
   readOnly?: boolean;
 }
 
@@ -17,10 +13,6 @@ export function YesNoResponseInput({
   question,
   response = {},
   onResponseChange,
-  inspectionId,
-  onMediaChange,
-  actionPlan,
-  onSaveActionPlan,
   readOnly = false
 }: YesNoResponseInputProps) {
   // Garantir estrutura consistente do response

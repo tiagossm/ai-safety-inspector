@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -16,7 +17,7 @@ export interface MediaAnalysisResult {
   analysis?: string;
   type?: string;
   analysisType?: string;
-  actionPlanSuggestion?: string;
+  actionPlanSuggestion?: string | null;
   hasNonConformity?: boolean;
   psychosocialRiskDetected?: boolean;
   questionText?: string;
@@ -66,6 +67,7 @@ export function useMediaAnalysis() {
         mediaUrl,
         questionText: questionText || "",
         userAnswer: userAnswer || "",
+        // Os parâmetros abaixo não são usados pela nova função, mas mantidos para compatibilidade
         mediaType: detectedMediaType,
         multimodalAnalysis: multimodalAnalysis || false,
         additionalMediaUrls: additionalMediaUrls || []
@@ -88,11 +90,27 @@ export function useMediaAnalysis() {
         return null;
       }
       
+      let actionPlanSuggestionText: string | null = null;
+      if (data.plan5w2h && data.hasNonConformity) {
+        const { what, why, who, when, where, how } = data.plan5w2h;
+        const parts = [
+          what && `- O quê: ${what}`,
+          why && `- Por quê: ${why}`,
+          who && `- Quem: ${who}`,
+          when && `- Quando: ${when}`,
+          where && `- Onde: ${where}`,
+          how && `- Como: ${how}`,
+        ].filter(Boolean);
+        if (parts.length > 0) {
+          actionPlanSuggestionText = `Plano de Ação Sugerido:\n${parts.join('\n')}`;
+        }
+      }
+
       const result: MediaAnalysisResult = {
-        analysis: data.analysis || data.transcript || "Sem análise disponível",
+        analysis: data.comment || "Sem análise disponível",
         type: detectedMediaType,
         analysisType: data.analysisType || "general",
-        actionPlanSuggestion: data.actionPlanSuggestion || null,
+        actionPlanSuggestion: actionPlanSuggestionText,
         hasNonConformity: data.hasNonConformity || false,
         psychosocialRiskDetected: data.psychosocialRiskDetected || false,
         questionText,
@@ -153,3 +171,4 @@ export function useMediaAnalysis() {
     clearCache
   };
 }
+

@@ -1,4 +1,3 @@
-
 import React, { useCallback, useState } from "react";
 import { StandardActionButtons, StandardActionButtonsProps } from "./StandardActionButtons";
 import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
@@ -56,7 +55,6 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
 
   // Estados centralizados para modais
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
-  const [selectedMediaUrl, setSelectedMediaUrl] = useState<string | null>(null);
   const [isActionPlanDialogOpen, setIsActionPlanDialogOpen] = useState(false);
   const [ia5W2Hplan, setIa5W2Hplan] = useState<Plan5W2H | null>(null);
 
@@ -69,13 +67,8 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
 
   // Handler análise IA centralizado
   const handleOpenAnalysis = useCallback(() => {
-    if (mediaUrls && mediaUrls.length > 0) {
-      setSelectedMediaUrl(mediaUrls[0]);
-    } else {
-      setSelectedMediaUrl(null);
-    }
     setIsAnalysisOpen(true);
-  }, [mediaUrls]);
+  }, []);
 
   const handleOpenActionPlan = useCallback(() => {
     setIa5W2Hplan(null);
@@ -88,16 +81,15 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   }, []);
 
   // Handler para salvar análise e atualizar response
-  const handleAnalysisComplete = useCallback((result: MediaAnalysisResult) => {
-    if (selectedMediaUrl) {
-      const updatedResults = { ...mediaAnalysisResults, [selectedMediaUrl]: result };
-      const updatedResponse = {
-        ...safeResponse,
-        mediaAnalysisResults: updatedResults
-      };
-      onResponseChange(updatedResponse);
-    }
-  }, [selectedMediaUrl, mediaAnalysisResults, safeResponse, onResponseChange]);
+  const handleAnalysisComplete = useCallback((url: string, result: MediaAnalysisResult) => {
+    console.log(`[ResponseInputRenderer] Análise completa para ${url}`, result);
+    const updatedResults = { ...mediaAnalysisResults, [url]: result };
+    const updatedResponse = {
+      ...safeResponse,
+      mediaAnalysisResults: updatedResults
+    };
+    onResponseChange(updatedResponse);
+  }, [mediaAnalysisResults, safeResponse, onResponseChange]);
 
   // Componentes de modal centralizados
   const actionPlanDialog = (
@@ -120,10 +112,15 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     <MediaAnalysisDialog
       open={isAnalysisOpen}
       onOpenChange={setIsAnalysisOpen}
-      mediaUrl={selectedMediaUrl}
+      mediaUrl={mediaUrls && mediaUrls.length > 0 ? mediaUrls[0] : null}
       questionText={question.text || question.pergunta || ""}
+      userAnswer={
+        safeResponse?.value === true ? "Sim" : 
+        safeResponse?.value === false ? "Não" : 
+        String(safeResponse?.value || "")
+      }
       multimodalAnalysis={true}
-      additionalMediaUrls={mediaUrls}
+      mediaUrls={mediaUrls}
       onAnalysisComplete={handleAnalysisComplete}
       onAdd5W2HActionPlan={handleAdd5W2HActionPlan}
     />
@@ -138,10 +135,26 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             response={safeResponse}
             inspectionId={inspectionId}
             onResponseChange={onResponseChange}
-            onMediaChange={handleMediaChange}
-            actionPlan={actionPlan}
-            onSaveActionPlan={onSaveActionPlan}
             readOnly={readOnly}
+          />
+          <StandardActionButtons
+            question={question}
+            readOnly={readOnly}
+            onOpenAnalysis={handleOpenAnalysis}
+            onActionPlanClick={handleOpenActionPlan}
+            mediaUrls={mediaUrls}
+            mediaAnalysisResults={mediaAnalysisResults}
+            dummyProp="UniqueKeyForProps20250615"
+          />
+          <MediaUploadInput
+            mediaUrls={mediaUrls}
+            onMediaChange={handleMediaChange}
+            allowsPhoto={question.allowsPhoto || question.permite_foto || false}
+            allowsVideo={question.allowsVideo || question.permite_video || false}
+            allowsAudio={question.allowsAudio || question.permite_audio || false}
+            allowsFiles={question.allowsFiles || question.permite_files || false}
+            readOnly={readOnly}
+            questionText={question.text || question.pergunta || ""}
           />
           {mediaAnalysisDialog}
           {actionPlanDialog}
@@ -175,15 +188,6 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             allowsFiles={question.allowsFiles || question.permite_files || false}
             readOnly={readOnly}
             questionText={question.text || question.pergunta || ""}
-            onSaveAnalysis={(url: string, result: MediaAnalysisResult) => {
-              const updatedResults = { ...mediaAnalysisResults, [url]: result };
-              const updatedResponse = {
-                ...safeResponse,
-                mediaAnalysisResults: updatedResults
-              };
-              onResponseChange(updatedResponse);
-            }}
-            analysisResults={mediaAnalysisResults}
           />
           {mediaAnalysisDialog}
           {actionPlanDialog}
@@ -270,10 +274,6 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             value={safeResponse.value}
             response={safeResponse}
             onChange={val => onResponseChange({ ...safeResponse, value: val })}
-            onMediaChange={handleMediaChange}
-            inspectionId={inspectionId}
-            actionPlan={actionPlan}
-            onSaveActionPlan={onSaveActionPlan}
             readOnly={readOnly}
           />
           <StandardActionButtons
@@ -311,6 +311,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             allowsVideo={question.allowsVideo}
             allowsAudio={question.allowsAudio}
             allowsFiles={question.allowsFiles}
+            readOnly={readOnly}
           />
           <StandardActionButtons
             question={question}
