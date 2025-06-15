@@ -165,7 +165,7 @@ export const MediaAttachmentRenderer = ({
               fileName={fileName}
               onOpenPreview={onOpenPreview}
               // Passa mediaType='audio' explicitamente no callback!
-              onOpenAnalysis={(u, q) => onOpenAnalysis(u, q, 'audio')}
+              onOpenAnalysis={onOpenAnalysis}
               readOnly={readOnly}
               onDelete={onDelete}
               onDownload={handleDownload}
@@ -189,7 +189,7 @@ export const MediaAttachmentRenderer = ({
               fileName={fileName}
               onOpenPreview={onOpenPreview}
               // Passa mediaType='video' explicitamente
-              onOpenAnalysis={(u, q) => onOpenAnalysis(u, q, 'video')}
+              onOpenAnalysis={onOpenAnalysis}
               readOnly={readOnly}
               onDelete={onDelete}
               hasAnalysis={hasAnalysis}

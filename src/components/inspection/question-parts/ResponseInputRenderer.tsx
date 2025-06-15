@@ -1,3 +1,4 @@
+
 import React, { useCallback, useState } from "react";
 import { StandardActionButtons, StandardActionButtonsProps } from "./StandardActionButtons";
 import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
@@ -57,6 +58,16 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
   const [isActionPlanDialogOpen, setIsActionPlanDialogOpen] = useState(false);
   const [ia5W2Hplan, setIa5W2Hplan] = useState<Plan5W2H | null>(null);
+
+  // --- NOVO: Corrigir/implementar handleAdd5W2HActionPlan e handleOpenActionPlan
+  const handleAdd5W2HActionPlan = useCallback((plan: Plan5W2H) => {
+    setIa5W2Hplan(plan);
+    setIsActionPlanDialogOpen(true);
+  }, []);
+
+  const handleOpenActionPlan = useCallback(() => {
+    setIsActionPlanDialogOpen(true);
+  }, []);
 
   // Handler de mídia centralizado
   const handleMediaChange = useCallback((urls: string[]) => {
@@ -446,3 +457,4 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
       );
   }
 };
+
