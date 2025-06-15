@@ -1,6 +1,36 @@
+
 // Imports extras para áudio
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+
+// Helpers
+function getImageExtensionFromContentType(contentType: string): string | null {
+  if (contentType.includes("jpeg")) return "jpeg";
+  if (contentType.includes("jpg")) return "jpg";
+  if (contentType.includes("png")) return "png";
+  if (contentType.includes("webp")) return "webp";
+  if (contentType.includes("gif")) return "gif";
+  return null;
+}
+
+// Auxiliar: baixa imagem do Supabase Storage e retorna base64/data
+async function fetchAndConvertImageToBase64(url: string): Promise<{ base64: string, mime: string }> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Não foi possível baixar a imagem: permissão ou URL inválida.");
+  const mime = res.headers.get("Content-Type") || "";
+  const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+  if (!allowed.includes(mime)) {
+    throw new Error(`Formato não suportado (${mime}). Apenas: ${allowed.join(", ")}`);
+  }
+  const blob = await res.blob();
+  // Converte para base64: necessário dado o OpenAI requer HTTP(s) acessível ou base64
+  const arrayBuffer = await blob.arrayBuffer();
+  const base64String = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+  return {
+    base64: `data:${mime};base64,${base64String}`,
+    mime
+  };
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,7 +38,36 @@ const corsHeaders = {
 };
 
 async function analyzeImage(openAIApiKey: string, allMediaUrls: string[], questionText: string, userAnswer: string) {
-  const imageContent = allMediaUrls.map(url => ({ type: "image_url", image_url: { url } }));
+  // Baixar/converter todas as imagens
+  const allowedFormats = ["jpg", "jpeg", "png", "webp", "gif"];
+  const imageContents = [];
+  for (const url of allMediaUrls) {
+    try {
+      // Pega extensão pela URL OU pelo Content-Type após fetch
+      let extension = url.split(".").pop()?.toLowerCase() || "";
+      let isAllowedExt = allowedFormats.includes(extension);
+      let baseObj;
+      if (!isAllowedExt) {
+        // Tenta pelo Content-Type depois do fetch
+        baseObj = await fetchAndConvertImageToBase64(url);
+        extension = getImageExtensionFromContentType(baseObj.mime) || "";
+        isAllowedExt = allowedFormats.includes(extension);
+      }
+      if (!isAllowedExt) {
+        throw new Error(
+          "Você fez upload de uma imagem não suportada. Formatos aceitos: jpg, jpeg, png, webp, gif."
+        );
+      }
+      // Se veio do Content-Type, já temos base64. Senão, tenta como está.
+      if (!baseObj) {
+        baseObj = await fetchAndConvertImageToBase64(url);
+      }
+      imageContents.push({ type: "image_url", image_url: { url: baseObj.base64 } });
+    } catch (e) {
+      throw new Error(e?.message || "Erro ao preparar imagem. Verifique se ela é pública e no formato correto.");
+    }
+  }
+
   const userPrompt = `
 Você é um especialista sênior em Saúde e Segurança do Trabalho (SST) e sua tarefa é analisar mídias de uma inspeção de segurança.
 
@@ -65,7 +124,7 @@ Você DEVE retornar um objeto JSON com a seguinte estrutura. Não adicione nenhu
           role: "user",
           content: [
             { type: "text", text: userPrompt },
-            ...imageContent,
+            ...imageContents,
           ],
         },
       ],

@@ -5,6 +5,7 @@ import { determineSpecificFileType } from "@/utils/fileTypeUtils";
 import { toast } from "sonner";
 import { ImageRenderer, AudioRenderer, VideoRenderer, DocumentRenderer, GenericFileRenderer } from "./MediaTypeRenderer";
 import { MediaGallery } from "./MediaGalleryGrid";
+import { FileText, FileAudio, FileVideo, FileImage } from "lucide-react";
 
 // Novo: layout responsivo flexível
 function getGridColumns(count: number) {
@@ -27,11 +28,32 @@ interface MediaAttachmentRendererProps {
   smallSize?: boolean;
 }
 
-// Novo: Componente para melhorar UX com PDF
-const PDFPlaceholder = ({ url, fileName }: { url: string; fileName: string }) => (
+const fileTypeIcons: Record<string, React.ReactNode> = {
+  pdf: <FileText className="text-blue-700 w-8 h-8 mb-2" />,
+  audio: <FileAudio className="text-pink-600 w-8 h-8 mb-2" />,
+  video: <FileVideo className="text-violet-600 w-8 h-8 mb-2" />,
+  image: <FileImage className="text-green-600 w-8 h-8 mb-2" />,
+  word: <FileText className="text-sky-700 w-8 h-8 mb-2" />,
+  excel: <FileText className="text-green-700 w-8 h-8 mb-2" />,
+  code: <FileText className="text-gray-700 w-8 h-8 mb-2" />,
+  zip: <FileText className="text-yellow-700 w-8 h-8 mb-2" />,
+  presentation: <FileText className="text-orange-700 w-8 h-8 mb-2" />,
+  file: <FileText className="text-gray-400 w-8 h-8 mb-2" />,
+};
+
+// Novo: Componente para placeholder visual de PDF e para outros tipos
+const FileVisualPlaceholder = ({
+  url,
+  fileName,
+  type,
+}: {
+  url: string;
+  fileName: string;
+  type: string;
+}) => (
   <div className="flex flex-col items-center justify-center border p-3 rounded bg-gray-50 min-w-[120px] max-w-[160px] w-full">
     <div className="flex flex-col items-center">
-      <span className="text-5xl mb-1">📄</span>
+      {fileTypeIcons[type] || fileTypeIcons.file}
       <span className="text-xs font-bold text-gray-600 truncate text-center">{fileName}</span>
     </div>
     <a
@@ -41,7 +63,7 @@ const PDFPlaceholder = ({ url, fileName }: { url: string; fileName: string }) =>
       className="text-xs text-blue-500 underline mt-2"
       aria-label={`Abrir ${fileName}`}
     >
-      Abrir PDF
+      Abrir arquivo
     </a>
   </div>
 );
@@ -61,20 +83,20 @@ export const MediaAttachmentRenderer = ({
   // Função de download única
   const handleDownload = (url: string, filename: string) => {
     try {
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = filename || 'download';
+      a.download = filename || "download";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
     } catch (error) {
-      toast.error('Não foi possível fazer o download do arquivo');
-      console.error('Erro no download:', error);
+      toast.error("Não foi possível fazer o download do arquivo");
+      console.error("Erro no download:", error);
     }
   };
 
   // Se todos forem imagem (e mais que 1), galeria.
-  const allImages = urls.every((u) => getFileType(u) === 'image');
+  const allImages = urls.every((u) => getFileType(u) === "image");
   if (allImages && urls.length > 1) {
     return (
       <MediaGallery
@@ -91,18 +113,18 @@ export const MediaAttachmentRenderer = ({
     );
   }
 
-  // Novo: exibe grid para múltiplos tipos juntos
+  // Grid para múltiplos tipos juntos
   return (
     <div className={`grid gap-2 ${getGridColumns(urls.length)}`}>
       {urls.map((url, index) => {
         const fileType = getFileType(url);
         const fileName = getFilenameFromUrl(url);
         const hasAnalysis = analysisResults && analysisResults[url];
-        const extension = url.split('.').pop()?.toLowerCase() || '';
+        const extension = url.split(".").pop()?.toLowerCase() || "";
         const specificFileType = determineSpecificFileType(extension);
 
         // Imagem avulsa (não entra na galeria)
-        if (fileType === 'image') {
+        if (fileType === "image") {
           return (
             <ImageRenderer
               key={url}
@@ -120,15 +142,15 @@ export const MediaAttachmentRenderer = ({
           );
         }
 
-        // PDF melhor tratado: placeholder visual simpático
+        // PDF placeholder visual (agora com ícone)
         if (specificFileType === "pdf") {
           return (
-            <PDFPlaceholder key={url} url={url} fileName={fileName} />
+            <FileVisualPlaceholder key={url} url={url} fileName={fileName} type="pdf" />
           );
         }
 
-        // Áudio
-        if (fileType === 'audio') {
+        // Áudio: render com ícone (por consistência)
+        if (fileType === "audio") {
           return (
             <AudioRenderer
               key={url}
@@ -148,7 +170,10 @@ export const MediaAttachmentRenderer = ({
         }
 
         // Vídeo
-        if (fileType === 'video' || (url.endsWith('.webm') && !url.includes('audio'))) {
+        if (
+          fileType === "video" ||
+          (url.endsWith(".webm") && !url.includes("audio"))
+        ) {
           return (
             <VideoRenderer
               key={url}
@@ -167,7 +192,7 @@ export const MediaAttachmentRenderer = ({
         }
 
         // Caso .webm for áudio (edge case)
-        if (url.endsWith('.webm') && url.includes('audio')) {
+        if (url.endsWith(".webm") && url.includes("audio")) {
           return (
             <AudioRenderer
               key={url}
@@ -186,18 +211,13 @@ export const MediaAttachmentRenderer = ({
           );
         }
 
-        // Qualquer outro tipo
+        // Qualquer outro tipo de arquivo usa placeholder visual com ícone adequado
         return (
-          <GenericFileRenderer
+          <FileVisualPlaceholder
             key={url}
             url={url}
-            index={index}
             fileName={fileName}
-            specificFileType={specificFileType}
-            onDownload={handleDownload}
-            readOnly={readOnly}
-            onDelete={onDelete}
-            smallSize={smallSize}
+            type={specificFileType}
           />
         );
       })}
