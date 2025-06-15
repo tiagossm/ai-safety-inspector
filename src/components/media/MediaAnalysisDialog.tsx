@@ -50,16 +50,18 @@ export function MediaAnalysisDialog({
   additionalMediaUrls = []
 }: MediaAnalysisDialogProps) {
   const MAX_IMAGES = 4;
-  
+
   const allImages: string[] = useMemo(() => {
     if (!mediaUrl) return [];
-    
+    // Mantém fluxo para images, mas serve como base de comparação
     const sourceImages = mediaUrls.length > 0 ? mediaUrls : (additionalMediaUrls || []);
     const otherImages = sourceImages.filter(url => url !== mediaUrl);
-    
+
     return [mediaUrl, ...otherImages].slice(0, MAX_IMAGES);
   }, [mediaUrl, mediaUrls, additionalMediaUrls]);
 
+  const isAudio = (mediaType === "audio") || (mediaUrl && /\.(mp3|wav|ogg|m4a|webm)$/i.test(mediaUrl));
+   
   const [analysisMap, setAnalysisMap] = useState<Record<string, AnalysisState>>({});
   const { analyze } = useMediaAnalysis();
 
@@ -80,7 +82,8 @@ export function MediaAnalysisDialog({
     }
   }, [open, allImagesStringified]);
 
-  const analyzeImage = useCallback(async (url: string) => {
+  // Fluxo para análise de imagem e áudio
+  const analyzeMedia = useCallback(async (url: string, mediaType: string) => {
     if (!url) return;
 
     setAnalysisMap(prev => ({
@@ -95,7 +98,7 @@ export function MediaAnalysisDialog({
         mediaType,
         questionText,
         userAnswer,
-        multimodalAnalysis: false, 
+        multimodalAnalysis: false,
         additionalMediaUrls: contextImages
       });
 
@@ -104,18 +107,17 @@ export function MediaAnalysisDialog({
           ...prev,
           [url]: { status: 'done', result, analyzed: true }
         }));
-        
+
         onAnalysisComplete?.(url, result);
       } else {
         throw new Error('Nenhum resultado retornado da análise');
       }
     } catch (error: any) {
-      console.error('Erro ao analisar imagem:', error);
       setAnalysisMap(prev => ({
         ...prev,
-        [url]: { 
-          status: 'error', 
-          errorMessage: `Erro ao analisar imagem: ${error.message}`,
+        [url]: {
+          status: 'error',
+          errorMessage: `Erro ao analisar: ${error.message}`,
           analyzed: false
         }
       }));
@@ -129,9 +131,131 @@ export function MediaAnalysisDialog({
         p: ({node, ...props}) => <p className="mb-2" {...props} />
       }}
     >{md}</ReactMarkdown>;
-
   const showMaxWarning = (mediaUrls.length > MAX_IMAGES || additionalMediaUrls.length > MAX_IMAGES);
 
+  // Áudio: exibe player e transcrição/análise
+  if (isAudio && mediaUrl) {
+    const state = analysisMap[mediaUrl] || { status: 'idle', analyzed: false };
+    const result = state.result;
+    const plan5w2h = result?.plan5w2h;
+    const has5w2h = !!plan5w2h && Object.values(plan5w2h).some(v => v && String(v).trim() !== "");
+    const hasNonConformity = result?.hasNonConformity === true;
+
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              Análise de Áudio com IA
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="mb-4 border rounded p-3 bg-gray-50">
+            <audio controls src={mediaUrl} className="w-full my-2" />
+            <p className="text-xs text-gray-500">Áudio para análise</p>
+          </div>
+
+          {(state.status === 'idle' && !state.analyzed) && (
+            <Button
+              size="sm"
+              onClick={() => analyzeMedia(mediaUrl, "audio")}
+              className="mb-2 w-full"
+            >
+              <Sparkles className="h-4 w-4 mr-2" />
+              Analisar com IA
+            </Button>
+          )}
+
+          {state.status === 'analyzing' && (
+            <div className="flex flex-col items-center mt-3 mb-3">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <span className="text-xs mt-1 text-gray-600">Analisando...</span>
+            </div>
+          )}
+
+          {state.status === 'error' && (
+            <div className="w-full border rounded-md p-2 bg-red-50 border-red-200 mt-1 mb-2">
+              <div className="text-xs text-red-700 mb-2">{state.errorMessage}</div>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => analyzeMedia(mediaUrl, "audio")}
+              >
+                Tentar novamente
+              </Button>
+            </div>
+          )}
+
+          {state.status === 'done' && result && (
+            <>
+              {hasNonConformity && has5w2h && (
+                <div className="w-full my-2 p-2 rounded-md border text-center bg-amber-50 border-amber-200">
+                  <div className="flex items-center justify-center gap-1">
+                    <Sparkles className="h-4 w-4 text-amber-500" />
+                    <span className="text-xs font-medium text-amber-800">
+                      Plano de ação sugerido
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div className="mb-2 border rounded p-2 bg-gray-50">
+                <h3 className="text-xs font-medium text-gray-700 mb-1">Transcrição do Áudio:</h3>
+                <div className="text-xs whitespace-pre-line text-gray-900">
+                  {result.transcript ?? <span className="italic text-gray-400">Sem transcrição</span>}
+                </div>
+              </div>
+
+              <div className="w-full border rounded-md p-2 bg-gray-50 mb-1">
+                <h3 className="text-xs font-medium text-gray-700 mb-1">Análise da IA:</h3>
+                <div className="text-xs whitespace-pre-line">
+                  {renderMarkdown(result.analysis ?? "Nenhuma análise disponível.")}
+                </div>
+              </div>
+
+              {hasNonConformity && has5w2h && onAdd5W2HActionPlan && plan5w2h ? (
+                <div className="w-full border rounded-md p-2 bg-amber-50 border-amber-200 mt-1">
+                  <div className="flex items-center mb-1">
+                    <Sparkles className="h-3 w-3 text-amber-500 mr-1" />
+                    <h3 className="text-xs font-medium text-amber-800">Sugestão (5W2H):</h3>
+                  </div>
+                  <div className="text-xs text-amber-700 space-y-1">
+                    {plan5w2h.what && <p><strong>O quê:</strong> {plan5w2h.what}</p>}
+                    {plan5w2h.why && <p><strong>Porquê:</strong> {plan5w2h.why}</p>}
+                    {plan5w2h.who && <p><strong>Quem:</strong> {plan5w2h.who}</p>}
+                    {plan5w2h.where && <p><strong>Onde:</strong> {plan5w2h.where}</p>}
+                    {plan5w2h.how && <p><strong>Como:</strong> {plan5w2h.how}</p>}
+                    {plan5w2h.howMuch && <p><strong>Quanto:</strong> {plan5w2h.howMuch}</p>}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="mt-2 w-full bg-amber-500 hover:bg-amber-600"
+                    onClick={() => {
+                      onAdd5W2HActionPlan(plan5w2h);
+                      onOpenChange(false);
+                    }}
+                  >
+                    Usar Sugestão 5W2H
+                  </Button>
+                </div>
+              ) : (
+                <div className="w-full mt-2 text-center text-xs p-2 rounded-md bg-green-50 text-green-800 border border-green-200">
+                  {result.analysis ? "Análise concluída. Nenhuma ação sugerida." : "Análise concluída."}
+                </div>
+              )}
+            </>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // ---- Fluxo original para imagens e outros tipos
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
@@ -179,34 +303,30 @@ export function MediaAnalysisDialog({
                   <p className="text-xs text-center mt-1 text-gray-500">
                     {idx === 0 ? 'Imagem principal' : `Imagem adicional ${idx}`}
                   </p>
-                  
                   {state.status === 'idle' && !state.analyzed && (
-                    <Button 
-                      size="sm" 
-                      onClick={() => analyzeImage(url)}
+                    <Button
+                      size="sm"
+                      onClick={() => analyzeMedia(url, "image")}
                       className="mt-2 w-full"
                     >
                       <Sparkles className="h-4 w-4 mr-2" />
                       Analisar com IA
                     </Button>
                   )}
-
                   {state.status === 'analyzing' && (
                     <div className="flex flex-col items-center mt-3 mb-3">
                       <Loader2 className="h-5 w-5 animate-spin text-primary" />
                       <span className="text-xs mt-1 text-gray-600">Analisando...</span>
                     </div>
                   )}
-
                   {state.status === 'error' && (
                     <div className="w-full border rounded-md p-2 bg-red-50 border-red-200 mt-1">
                       <div className="text-xs text-red-700 mb-2">{state.errorMessage}</div>
-                      <Button size="sm" variant="secondary" onClick={() => analyzeImage(url)}>
+                      <Button size="sm" variant="secondary" onClick={() => analyzeMedia(url, "image")}>
                         Tentar novamente
                       </Button>
                     </div>
                   )}
-
                   {state.status === 'done' && result && (
                     <>
                       {hasNonConformity && has5w2h && (
@@ -219,27 +339,25 @@ export function MediaAnalysisDialog({
                           </div>
                         </div>
                       )}
-                      
                       <div className="w-full border rounded-md p-2 bg-gray-50 mb-1">
                         <h3 className="text-xs font-medium text-gray-700 mb-1">Análise da IA:</h3>
                         <div className="text-xs whitespace-pre-line">
                           {renderMarkdown(result.analysis ?? "Nenhuma análise disponível.")}
                         </div>
                       </div>
-                      
                       {hasNonConformity && has5w2h && onAdd5W2HActionPlan && plan5w2h ? (
                         <div className="w-full border rounded-md p-2 bg-amber-50 border-amber-200 mt-1">
                           <div className="flex items-center mb-1">
                             <Sparkles className="h-3 w-3 text-amber-500 mr-1" />
                             <h3 className="text-xs font-medium text-amber-800">Sugestão (5W2H):</h3>
                           </div>
-                           <div className="text-xs text-amber-700 space-y-1">
-                              {plan5w2h.what && <p><strong>O quê:</strong> {plan5w2h.what}</p>}
-                              {plan5w2h.why && <p><strong>Porquê:</strong> {plan5w2h.why}</p>}
-                              {plan5w2h.who && <p><strong>Quem:</strong> {plan5w2h.who}</p>}
-                              {plan5w2h.where && <p><strong>Onde:</strong> {plan5w2h.where}</p>}
-                              {plan5w2h.how && <p><strong>Como:</strong> {plan5w2h.how}</p>}
-                              {plan5w2h.howMuch && <p><strong>Quanto:</strong> {plan5w2h.howMuch}</p>}
+                          <div className="text-xs text-amber-700 space-y-1">
+                            {plan5w2h.what && <p><strong>O quê:</strong> {plan5w2h.what}</p>}
+                            {plan5w2h.why && <p><strong>Porquê:</strong> {plan5w2h.why}</p>}
+                            {plan5w2h.who && <p><strong>Quem:</strong> {plan5w2h.who}</p>}
+                            {plan5w2h.where && <p><strong>Onde:</strong> {plan5w2h.where}</p>}
+                            {plan5w2h.how && <p><strong>Como:</strong> {plan5w2h.how}</p>}
+                            {plan5w2h.howMuch && <p><strong>Quanto:</strong> {plan5w2h.howMuch}</p>}
                           </div>
                           <Button
                             size="sm"
@@ -255,7 +373,7 @@ export function MediaAnalysisDialog({
                         </div>
                       ) : (
                         <div className="w-full mt-2 text-center text-xs p-2 rounded-md bg-green-50 text-green-800 border border-green-200">
-                         {result.analysis ? "Análise concluída. Nenhuma ação sugerida." : "Análise concluída."}
+                          {result.analysis ? "Análise concluída. Nenhuma ação sugerida." : "Análise concluída."}
                         </div>
                       )}
                     </>

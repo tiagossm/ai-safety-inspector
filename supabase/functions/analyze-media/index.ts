@@ -1,4 +1,6 @@
 
+// Imports extras para áudio
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 
 const corsHeaders = {
@@ -6,33 +8,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  try {
-    const openAIApiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openAIApiKey) {
-      return new Response(JSON.stringify({ error: "OpenAI API key not configured" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const { mediaUrl, additionalMediaUrls = [], questionText, userAnswer = "" } = await req.json();
-    
-    if (!mediaUrl && (!additionalMediaUrls || additionalMediaUrls.length === 0)) {
-      return new Response(JSON.stringify({ error: "Missing media URL(s)" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const allMediaUrls = [mediaUrl, ...additionalMediaUrls].filter(Boolean);
-    const imageContent = allMediaUrls.map(url => ({ type: "image_url", image_url: { url } }));
-
-    const userPrompt = `
+async function analyzeImage(openAIApiKey: string, allMediaUrls: string[], questionText: string, userAnswer: string) {
+  const imageContent = allMediaUrls.map(url => ({ type: "image_url", image_url: { url } }));
+  const userPrompt = `
 Você é um especialista sênior em Saúde e Segurança do Trabalho (SST) e sua tarefa é analisar mídias de uma inspeção de segurança.
 
 **Contexto da Inspeção:**
@@ -58,7 +36,6 @@ Você DEVE retornar um objeto JSON com a seguinte estrutura. Não adicione nenhu
     "howMuch": ""
   }
 }
-
 **Regras de Lógica:**
 1.  **hasNonConformity**:
     *   Deve ser \`true\` se a evidência visual contradiz a resposta do usuário (ex: resposta 'Sim' para 'Extintor desobstruído?', mas a foto mostra um extintor obstruído) OU se a imagem mostra uma condição insegura clara, independentemente da resposta.
@@ -69,52 +46,170 @@ Você DEVE retornar um objeto JSON com a seguinte estrutura. Não adicione nenhu
 3.  **psychosocialRiskDetected**:
     *   Avalie se a mídia sugere riscos psicossociais (ex: assédio, estresse excessivo, violência no trabalho, etc.). Defina como \`true\` ou \`false\`.
 4.  **howMuch**: Este campo deve ser SEMPRE uma string vazia.
-    `.trim();
+  `.trim();
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${openAIApiKey}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content: "Você é um engenheiro especialista em SST (Saúde e Segurança do Trabalho) que analisa imagens de inspeções e retorna dados estruturados em JSON."
-          },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: userPrompt },
-              ...imageContent,
-            ],
-          },
-        ],
-        max_tokens: 1500,
-      }),
-    });
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${openAIApiKey}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-4o",
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content: "Você é um engenheiro especialista em SST (Saúde e Segurança do Trabalho) que analisa imagens de inspeções e retorna dados estruturados em JSON."
+        },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: userPrompt },
+            ...imageContent,
+          ],
+        },
+      ],
+      max_tokens: 1500,
+    }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error?.message || "Erro de análise na OpenAI");
+  }
+  return JSON.parse(data.choices[0].message.content);
+}
 
-    const data = await response.json();
+// Áudio: utiliza Whisper para transcrição e, depois, gera análise textual com contexto SST.
+async function analyzeAudio(openAIApiKey: string, audioUrl: string, questionText: string, userAnswer: string) {
+  // Baixa o áudio do URL:
+  const audioRes = await fetch(audioUrl);
+  if (!audioRes.ok) throw new Error("Erro ao baixar o áudio");
 
-    if (!response.ok) {
-      console.error("OpenAI API error:", data.error?.message, data);
-      throw new Error(data.error?.message || "Unknown OpenAI error");
+  const audioBlob = await audioRes.blob();
+  const audioFile = new File([audioBlob], "audio.webm", { type: audioBlob.type });
+
+  // Transcreve
+  const form = new FormData();
+  form.append("file", audioFile, "audio.webm");
+  form.append("model", "whisper-1");
+  // Inclui prompt para contexto, se desejar
+  form.append("prompt", `Contexto SST: ${questionText}. Resposta original do usuário: ${userAnswer}`);
+
+  const whisperResp = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${openAIApiKey}` },
+    body: form
+  });
+
+  const whisperData = await whisperResp.json();
+  if (!whisperResp.ok) throw new Error(whisperData.error?.message || "Erro Whisper");
+
+  const transcript = whisperData.text || "";
+
+  // Gera análise com texto transcrito
+  const analysisPrompt = `
+Você é um engenheiro de Segurança do Trabalho. Valide o áudio transcrito em relação à pergunta da inspeção:
+Pergunta: "${questionText}"
+Transcrição do áudio: "${transcript}"
+Resposta original (se houver): "${userAnswer}"
+
+Com base na transcrição, faça uma análise objetiva de possíveis não-conformidades e riscos. Use o seguinte formato de resposta (JSON apenas):
+
+{
+  "analysis": "Texto objetivo da análise",
+  "hasNonConformity": boolean,
+  "psychosocialRiskDetected": boolean,
+  "plan5w2h": {
+    "what": "",
+    "why": "",
+    "who": "",
+    "when": "",
+    "where": "",
+    "how": "",
+    "howMuch": ""
+  },
+  "transcript": "Texto transcrito"
+}
+
+Se não houver não conformidade, todos os campos do plano (menos 'howMuch') devem ser string vazia.
+`.trim();
+
+  const aiResp = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${openAIApiKey}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-4o",
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: "Você é um engenheiro de SST que retorna análises objetivas sobre riscos e planos de ação em inspeções." },
+        { role: "user", content: analysisPrompt }
+      ],
+      max_tokens: 1200,
+    }),
+  });
+  const aiData = await aiResp.json();
+  if (!aiResp.ok) throw new Error(aiData.error?.message || "Erro OpenAI Análise Áudio");
+
+  const resultObj = JSON.parse(aiData.choices[0].message.content || "{}");
+  return { ...resultObj, transcript };
+}
+
+serve(async (req) => {
+  // CORS
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const openAIApiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!openAIApiKey) {
+      return new Response(JSON.stringify({ error: "OpenAI API key not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const analysisResult = JSON.parse(data.choices[0].message.content);
+    const { mediaUrl, additionalMediaUrls = [], questionText = "", userAnswer = "", mediaType = "" } = await req.json();
+    if (!mediaUrl) {
+      return new Response(JSON.stringify({ error: "Missing media URL" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Detecta tipo pelo mediaType ou extensão:
+    const extension = mediaUrl.split(".").pop()?.toLowerCase();
+    const isAudio = mediaType === "audio" || ["mp3", "wav", "ogg", "m4a", "webm"].includes(extension ?? "");
+    const isImage = mediaType === "image" || ["jpg", "jpeg", "png", "gif", "webp", "bmp"].includes(extension ?? "");
+    
+    let analysisResult;
+    if (isAudio) {
+      console.log("[analyze-media] Processando áudio");
+      analysisResult = await analyzeAudio(openAIApiKey, mediaUrl, questionText, userAnswer);
+      analysisResult.analysisType = "audio";
+    } else if (isImage) {
+      console.log("[analyze-media] Processando imagem");
+      const allMedia = [mediaUrl, ...(additionalMediaUrls || [])].filter(Boolean);
+      analysisResult = await analyzeImage(openAIApiKey, allMedia, questionText, userAnswer);
+      analysisResult.analysisType = "image";
+    } else {
+      throw new Error("Tipo de mídia não suportado para análise.");
+    }
 
     return new Response(JSON.stringify(analysisResult), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
-  } catch (error) {
-    console.error("Error analyzing media:", error.message);
-    return new Response(JSON.stringify({ error: `Error analyzing media: ${error.message}` }), {
+  } catch (error: any) {
+    console.error("Error in analyze-media:", error.message);
+    return new Response(JSON.stringify({ error: `Erro na análise de mídia: ${error.message}` }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
+
