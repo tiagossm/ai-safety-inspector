@@ -1,11 +1,14 @@
 
-// Esse comentário força o TypeScript a atualizar a tipagem caso exista cache antigo (2025-06-15 update).
+/**
+ * Versão com força de cache 2025-06-15 - UniqueKeyForProps
+ * Se você vir esse comentário, está na versão correta da interface!!!
+ */
 import React, { useState, useCallback } from "react";
 import { ActionPlanButton } from "./response-types/components/ActionPlanButton";
 import { MediaAnalysisButton } from "./response-types/components/MediaAnalysisButton";
 import { ActionPlan5W2HDialog } from "@/components/action-plans/ActionPlan5W2HDialog";
 
-// Interface explicitamente tipada e exportada
+// ADICIONA PROPRIEDADE 'dummyProp' para forçar a build invalidar completamente
 export interface StandardActionButtonsProps {
   question: any;
   inspectionId?: string;
@@ -17,6 +20,8 @@ export interface StandardActionButtonsProps {
   mediaAnalysisResults?: Record<string, any>;
   onOpenAnalysis?: () => void;
   onActionPlanClick?: () => void;
+  /** Não utilizar, apenas para forçar atualização de tipos! */
+  dummyProp?: "UniqueKeyForProps20250615";
 }
 
 export function StandardActionButtons(props: StandardActionButtonsProps) {
@@ -31,6 +36,8 @@ export function StandardActionButtons(props: StandardActionButtonsProps) {
     mediaAnalysisResults = {},
     onOpenAnalysis,
     onActionPlanClick,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    dummyProp, // Forçar TypeScript a perceber mudança
   } = props;
 
   const [isActionPlanDialogOpen, setIsActionPlanDialogOpen] = useState(false);

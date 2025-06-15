@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useEffect } from "react";
 import { ResponseButtonGroup } from "./components/ResponseButtonGroup";
-import { StandardActionButtons } from "../StandardActionButtons";
+import { StandardActionButtons, StandardActionButtonsProps } from "../StandardActionButtons";
 import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { MediaAttachments } from "@/components/inspection/question-inputs/MediaAttachments";
@@ -132,6 +132,7 @@ export function YesNoResponseInput({
         readOnly={readOnly}
         onOpenAnalysis={handleOpenAnalysis}
         onActionPlanClick={handleOpenActionPlan}
+        dummyProp="UniqueKeyForProps20250615"
       />
 
       <MediaUploadInput

@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { StandardActionButtons } from "./StandardActionButtons";
+import { StandardActionButtons, StandardActionButtonsProps } from "./StandardActionButtons";
 import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { EnhancedMultipleChoiceInput } from "./response-types/EnhancedMultipleChoiceInput";
@@ -149,6 +149,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             readOnly={readOnly}
             onOpenAnalysis={handleOpenAnalysis}
             onActionPlanClick={handleOpenActionPlan}
+            dummyProp="UniqueKeyForProps20250615"
           />
           <MediaUploadInput
             mediaUrls={mediaUrls}
@@ -186,6 +187,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             readOnly={readOnly}
             onOpenAnalysis={handleOpenAnalysis}
             onActionPlanClick={handleOpenActionPlan}
+            dummyProp="UniqueKeyForProps20250615"
           />
           <MediaUploadInput
             mediaUrls={mediaUrls}
@@ -217,6 +219,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             readOnly={readOnly}
             onOpenAnalysis={handleOpenAnalysis}
             onActionPlanClick={handleOpenActionPlan}
+            dummyProp="UniqueKeyForProps20250615"
           />
           <MediaUploadInput
             mediaUrls={mediaUrls}
@@ -251,6 +254,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             readOnly={readOnly}
             onOpenAnalysis={handleOpenAnalysis}
             onActionPlanClick={handleOpenActionPlan}
+            dummyProp="UniqueKeyForProps20250615"
           />
           <MediaUploadInput
             mediaUrls={mediaUrls}
@@ -283,6 +287,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             readOnly={readOnly}
             onOpenAnalysis={handleOpenAnalysis}
             onActionPlanClick={handleOpenActionPlan}
+            dummyProp="UniqueKeyForProps20250615"
           />
           <MediaUploadInput
             mediaUrls={mediaUrls}
@@ -309,6 +314,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             question={question}
             readOnly={readOnly}
             onActionPlanClick={handleOpenActionPlan}
+            dummyProp="UniqueKeyForProps20250615"
           />
           {actionPlanDialog}
         </div>
@@ -325,6 +331,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             question={question}
             readOnly={readOnly}
             onActionPlanClick={handleOpenActionPlan}
+            dummyProp="UniqueKeyForProps20250615"
           />
           {actionPlanDialog}
         </div>
@@ -341,6 +348,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             question={question}
             readOnly={readOnly}
             onActionPlanClick={handleOpenActionPlan}
+            dummyProp="UniqueKeyForProps20250615"
           />
           {actionPlanDialog}
         </div>
@@ -357,6 +365,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             question={question}
             readOnly={readOnly}
             onActionPlanClick={handleOpenActionPlan}
+            dummyProp="UniqueKeyForProps20250615"
           />
           {actionPlanDialog}
         </div>
