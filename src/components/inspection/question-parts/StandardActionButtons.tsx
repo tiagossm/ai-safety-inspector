@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from "react";
 import { ActionPlanButton } from "./response-types/components/ActionPlanButton";
 import { MediaAnalysisButton } from "./response-types/components/MediaAnalysisButton";
@@ -18,7 +17,7 @@ export interface StandardActionButtonsProps {
   onActionPlanClick?: () => void;
 }
 
-// Declarar props explicitamente tipadas para garantir TypeScript
+// Componente exportado explicitamente
 export function StandardActionButtons(props: StandardActionButtonsProps) {
   const {
     question,
