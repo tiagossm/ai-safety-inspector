@@ -84,11 +84,30 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   // Handler para salvar análise e atualizar response
   const handleAnalysisComplete = useCallback((url: string, result: MediaAnalysisResult) => {
     console.log(`[ResponseInputRenderer] Análise completa para ${url}`, result);
-    const updatedResults = { ...mediaAnalysisResults, [url]: result };
+
+    // Garante que não existe referência circular ou deep response indexado:
+    const cleanResult: MediaAnalysisResult = JSON.parse(JSON.stringify(result));
+
+    const updatedResults = {
+      ...mediaAnalysisResults,
+      [url]: cleanResult
+    };
+
     const updatedResponse = {
       ...safeResponse,
       mediaAnalysisResults: updatedResults
     };
+
+    // Nunca enviar funções, nunca incluir subChecklistResponses, manter apenas fields esperados
+    delete updatedResponse.subChecklistResponses;
+    if (updatedResponse.mediaAnalysisResults) {
+      Object.values(updatedResponse.mediaAnalysisResults).forEach((val: any) => {
+        if (val && typeof val === "object" && typeof val.subChecklistResponses !== "undefined") {
+          delete val.subChecklistResponses;
+        }
+      });
+    }
+
     onResponseChange(updatedResponse);
   }, [mediaAnalysisResults, safeResponse, onResponseChange]);
 

@@ -50,7 +50,7 @@ export function useMediaAnalysis() {
       return null;
     }
 
-    // Verifica cache primeiro
+    // Cache simples para evitar análises duplicadas
     const allUrls = [mediaUrl, ...(additionalMediaUrls || [])].sort().join(',');
     const cacheKey = `${allUrls}-${questionText}-${userAnswer || ''}`;
     const cached = analysisCache.get(cacheKey);
@@ -90,10 +90,16 @@ export function useMediaAnalysis() {
         toast.error("Resposta da análise de mídia vazia");
         return null;
       }
-      
+
+      // Garante que o plano 5w2h seja sempre objeto ou null, nunca string
+      let plan5w2hObj: Plan5W2H | null = null;
+      if (data.plan5w2h && typeof data.plan5w2h === "object") {
+        plan5w2hObj = { ...data.plan5w2h };
+      }
+
       let actionPlanSuggestionText: string | null = null;
-      if (data.plan5w2h && data.hasNonConformity) {
-        const { what, why, who, when, where, how } = data.plan5w2h;
+      if (plan5w2hObj && data.hasNonConformity) {
+        const { what, why, who, when, where, how } = plan5w2hObj;
         const parts = [
           what && `- O quê: ${what}`,
           why && `- Por quê: ${why}`,
@@ -112,17 +118,16 @@ export function useMediaAnalysis() {
         type: detectedMediaType,
         analysisType: data.analysisType || "general",
         actionPlanSuggestion: actionPlanSuggestionText,
-        hasNonConformity: data.hasNonConformity || false,
-        psychosocialRiskDetected: data.psychosocialRiskDetected || false,
+        hasNonConformity: !!data.hasNonConformity,
+        psychosocialRiskDetected: !!data.psychosocialRiskDetected,
         questionText,
         userAnswer,
         confidence: data.confidence || 0,
-        plan5w2h: data.plan5w2h || null,
+        plan5w2h: plan5w2hObj,
       };
-      
-      // Armazena no cache
+
       analysisCache.set(cacheKey, { result, timestamp: Date.now() });
-      
+
       // Limpa cache antigo periodicamente
       if (analysisCache.size > 50) {
         const now = Date.now();
@@ -132,7 +137,6 @@ export function useMediaAnalysis() {
           }
         }
       }
-      
       return result;
     } catch (error: any) {
       console.error("Erro durante análise de mídia:", error);
