@@ -89,25 +89,26 @@ export function useMediaAnalysis() {
       return null;
     }
 
-    // Cache...
-    const allUrls = [mediaUrl, ...(additionalMediaUrls || [])].sort().join(',');
+    // Altera chave de cache: usa todas urls concatenadas se multimodal
+    const allUrls = multimodalAnalysis
+      ? [mediaUrl, ...(additionalMediaUrls || [])].sort().join(',')
+      : mediaUrl;
     const cacheKey = `${allUrls}-${questionText}-${userAnswer || ''}`;
     const cached = analysisCache.get(cacheKey);
     if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
-      console.log("Retornando resultado do cache para:", mediaUrl);
+      console.log("Retornando resultado do cache para:", allUrls);
       return cached.result;
     }
 
     setAnalyzing(true);
 
     try {
-      // Detecção robusta do tipo: se for .webm, decide pelo mediaType recebido OU heurística
+      // Detecta tipo principal (como na MediaAnalysisDialog)
       let detectedMediaType = mediaType || getMediaType(mediaUrl);
       let webmIsAudio = false;
       if (mediaUrl && mediaUrl.toLowerCase().endsWith('.webm')) {
         webmIsAudio = isWebmAudioUrl(mediaUrl, mediaType);
         if (webmIsAudio) detectedMediaType = 'audio';
-        // Se não crava áudio, deixa como video (o edge tratará também)
       }
 
       const payload = {
@@ -115,12 +116,12 @@ export function useMediaAnalysis() {
         questionText: questionText || "",
         userAnswer: userAnswer || "",
         mediaType: detectedMediaType,
-        multimodalAnalysis: multimodalAnalysis || false,
+        multimodalAnalysis: !!multimodalAnalysis,
         additionalMediaUrls: additionalMediaUrls || [],
-        isWebmAudio: webmIsAudio, // NOVO: esse campo será lido no edge function!
+        isWebmAudio: webmIsAudio,
       };
 
-      console.log("[useMediaAnalysis] Enviando análise de mídia:", payload);
+      console.log("[useMediaAnalysis] Enviando análise consolidada:", payload);
 
       const { data, error } = await supabase.functions.invoke('analyze-media', {
         body: payload

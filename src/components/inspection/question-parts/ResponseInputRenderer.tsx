@@ -1,4 +1,3 @@
-
 import React, { useCallback, useState } from "react";
 import { StandardActionButtons, StandardActionButtonsProps } from "./StandardActionButtons";
 import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
@@ -59,6 +58,11 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   const [isActionPlanDialogOpen, setIsActionPlanDialogOpen] = useState(false);
   const [ia5W2Hplan, setIa5W2Hplan] = useState<Plan5W2H | null>(null);
 
+  // <<<<<< NOVO - handler que abre modal de análise com TODAS mídias >>>>>>
+  const handleOpenAnalysisConsolidated = useCallback(() => {
+    setIsAnalysisOpen(true);
+  }, []);
+
   // --- NOVO: Corrigir/implementar handleAdd5W2HActionPlan e handleOpenActionPlan
   const handleAdd5W2HActionPlan = useCallback((plan: Plan5W2H) => {
     setIa5W2Hplan(plan);
@@ -75,11 +79,6 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     onResponseChange(updatedResponse);
     if (onMediaChange) onMediaChange(urls);
   }, [safeResponse, onResponseChange, onMediaChange]);
-
-  // Handler análise IA centralizado
-  const handleOpenAnalysis = useCallback(() => {
-    setIsAnalysisOpen(true);
-  }, []);
 
   // Modificado: ao passar para o MediaAnalysisDialog, envia mediaType correto para .webm áudio
   const getPrimaryMediaType = () => {
@@ -148,6 +147,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     />
   );
 
+  // NOVO: Passar todas as mídias para o dialog e garantir análise única
   const mediaAnalysisDialog = (
     <MediaAnalysisDialog
       open={isAnalysisOpen}
@@ -180,7 +180,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           <StandardActionButtons
             question={question}
             readOnly={readOnly}
-            onOpenAnalysis={handleOpenAnalysis}
+            onOpenAnalysis={handleOpenAnalysisConsolidated}
             onActionPlanClick={handleOpenActionPlan}
             mediaUrls={mediaUrls}
             mediaAnalysisResults={mediaAnalysisResults}
@@ -213,7 +213,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           <StandardActionButtons
             question={question}
             readOnly={readOnly}
-            onOpenAnalysis={handleOpenAnalysis}
+            onOpenAnalysis={handleOpenAnalysisConsolidated}
             onActionPlanClick={handleOpenActionPlan}
             mediaUrls={mediaUrls}
             mediaAnalysisResults={mediaAnalysisResults}
@@ -245,7 +245,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           <StandardActionButtons
             question={question}
             readOnly={readOnly}
-            onOpenAnalysis={handleOpenAnalysis}
+            onOpenAnalysis={handleOpenAnalysisConsolidated}
             onActionPlanClick={handleOpenActionPlan}
             mediaUrls={mediaUrls}
             mediaAnalysisResults={mediaAnalysisResults}
@@ -285,7 +285,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           <StandardActionButtons
             question={question}
             readOnly={readOnly}
-            onOpenAnalysis={handleOpenAnalysis}
+            onOpenAnalysis={handleOpenAnalysisConsolidated}
             onActionPlanClick={handleOpenActionPlan}
             mediaUrls={mediaUrls}
             mediaAnalysisResults={mediaAnalysisResults}
@@ -319,7 +319,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           <StandardActionButtons
             question={question}
             readOnly={readOnly}
-            onOpenAnalysis={handleOpenAnalysis}
+            onOpenAnalysis={handleOpenAnalysisConsolidated}
             onActionPlanClick={handleOpenActionPlan}
             mediaUrls={mediaUrls}
             mediaAnalysisResults={mediaAnalysisResults}
@@ -355,7 +355,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           <StandardActionButtons
             question={question}
             readOnly={readOnly}
-            onOpenAnalysis={handleOpenAnalysis}
+            onOpenAnalysis={handleOpenAnalysisConsolidated}
             onActionPlanClick={handleOpenActionPlan}
             mediaUrls={mediaUrls}
             mediaAnalysisResults={mediaAnalysisResults}
@@ -457,4 +457,3 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
       );
   }
 };
-
