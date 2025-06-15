@@ -1,3 +1,4 @@
+
 import { pdf, Document } from '@react-pdf/renderer';
 import { supabase } from "@/integrations/supabase/client";
 import { InspectionPDFDocument } from "@/components/reports/InspectionPDFDocument";
@@ -30,7 +31,7 @@ export async function generateInspectionPDF(
     // Gerar DTO com todos os dados necessários
     const reportData = await generateReportDTO(inspectionId);
     
-    // Gerar o PDF usando react-pdf - usar React.createElement em vez de JSX
+    // Gerar o PDF usando react-pdf - criar o Document diretamente
     const documentElement = React.createElement(InspectionPDFDocument, { reportData });
     const pdfBlob = await pdf(documentElement).toBlob();
     
