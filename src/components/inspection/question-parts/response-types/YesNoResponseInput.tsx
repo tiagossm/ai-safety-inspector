@@ -91,6 +91,16 @@ export function YesNoResponseInput({
     [mediaUrls, safeResponse, onResponseChange]
   );
 
+  // Handler para abrir análise de IA
+  const handleOpenAnalysis = useCallback(
+    (url: string, questionContext?: string) => {
+      console.log("Abrindo análise para URL:", url, "com contexto:", questionContext);
+      // Este handler será usado pelo MediaAttachments para abrir a análise de IA
+      // A lógica específica de abertura do modal será implementada internamente pelo MediaAttachments
+    },
+    []
+  );
+
   return (
     <div className="space-y-4">
       <ResponseButtonGroup
@@ -129,6 +139,7 @@ export function YesNoResponseInput({
           mediaUrls={mediaUrls}
           onDelete={!readOnly ? handleDeleteMedia : undefined}
           onOpenPreview={() => {}}
+          onOpenAnalysis={handleOpenAnalysis}
           readOnly={readOnly}
           questionText={question.text || question.pergunta || ""}
           analysisResults={safeResponse.mediaAnalysisResults}
