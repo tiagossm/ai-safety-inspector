@@ -5,9 +5,9 @@ import { determineSpecificFileType } from "@/utils/fileTypeUtils";
 import { toast } from "sonner";
 import { ImageRenderer, AudioRenderer, VideoRenderer, DocumentRenderer, GenericFileRenderer } from "./MediaTypeRenderer";
 import { MediaGallery } from "./MediaGalleryGrid";
-import { FileText, FileAudio, FileVideo, FileImage } from "lucide-react";
+import { FileText, FileAudio, FileVideo, FileImage, ExternalLink } from "lucide-react";
 
-// Novo: layout responsivo flexível
+// Layout responsivo flexível otimizado
 function getGridColumns(count: number, smallSize: boolean = false) {
   if (smallSize) {
     // Para smallSize, usar layout mais compacto
@@ -37,20 +37,20 @@ interface MediaAttachmentRendererProps {
 }
 
 const fileTypeIcons: Record<string, React.ReactNode> = {
-  pdf: <FileText className="text-blue-700 w-6 h-6 mb-1" />,
-  audio: <FileAudio className="text-pink-600 w-6 h-6 mb-1" />,
-  video: <FileVideo className="text-violet-600 w-6 h-6 mb-1" />,
-  image: <FileImage className="text-green-600 w-6 h-6 mb-1" />,
-  word: <FileText className="text-sky-700 w-6 h-6 mb-1" />,
-  excel: <FileText className="text-green-700 w-6 h-6 mb-1" />,
-  code: <FileText className="text-gray-700 w-6 h-6 mb-1" />,
-  zip: <FileText className="text-yellow-700 w-6 h-6 mb-1" />,
-  presentation: <FileText className="text-orange-700 w-6 h-6 mb-1" />,
-  file: <FileText className="text-gray-400 w-6 h-6 mb-1" />,
+  pdf: <FileText className="text-blue-700 w-4 h-4 mb-1" />,
+  audio: <FileAudio className="text-pink-600 w-4 h-4 mb-1" />,
+  video: <FileVideo className="text-violet-600 w-4 h-4 mb-1" />,
+  image: <FileImage className="text-green-600 w-4 h-4 mb-1" />,
+  word: <FileText className="text-sky-700 w-4 h-4 mb-1" />,
+  excel: <FileText className="text-green-700 w-4 h-4 mb-1" />,
+  code: <FileText className="text-gray-700 w-4 h-4 mb-1" />,
+  zip: <FileText className="text-yellow-700 w-4 h-4 mb-1" />,
+  presentation: <FileText className="text-orange-700 w-4 h-4 mb-1" />,
+  file: <FileText className="text-gray-400 w-4 h-4 mb-1" />,
 };
 
-// Novo: Componente para placeholder visual de PDF e para outros tipos
-const FileVisualPlaceholder = ({
+// Placeholder visual otimizado para tamanhos pequenos
+const CompactFilePreview = ({
   url,
   fileName,
   type,
@@ -60,25 +60,32 @@ const FileVisualPlaceholder = ({
   fileName: string;
   type: string;
   smallSize?: boolean;
-}) => (
-  <div className={`flex flex-col items-center justify-center border p-2 rounded bg-gray-50 ${
-    smallSize ? 'min-w-[80px] max-w-[100px]' : 'min-w-[120px] max-w-[160px]'
-  } w-full`}>
-    <div className="flex flex-col items-center">
-      {fileTypeIcons[type] || fileTypeIcons.file}
-      <span className={`${smallSize ? 'text-[10px]' : 'text-xs'} font-bold text-gray-600 truncate text-center`}>{fileName}</span>
+}) => {
+  const truncatedName = fileName.length > 15 ? fileName.substring(0, 12) + '...' : fileName;
+  
+  return (
+    <div className={`flex flex-col items-center justify-center border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors ${
+      smallSize ? 'p-1 min-w-[60px] max-w-[80px] h-16' : 'p-2 min-w-[100px] max-w-[140px] h-20'
+    }`}>
+      <div className="flex flex-col items-center justify-center flex-1">
+        {fileTypeIcons[type] || fileTypeIcons.file}
+        <span className={`${smallSize ? 'text-[9px]' : 'text-[10px]'} font-medium text-gray-600 text-center leading-tight`}>
+          {truncatedName}
+        </span>
+      </div>
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`${smallSize ? 'text-[8px]' : 'text-[9px]'} text-blue-500 hover:text-blue-700 flex items-center gap-1 mt-1`}
+        aria-label={`Abrir ${fileName}`}
+      >
+        <ExternalLink className="w-2 h-2" />
+        Abrir
+      </a>
     </div>
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`${smallSize ? 'text-[10px]' : 'text-xs'} text-blue-500 underline mt-1`}
-      aria-label={`Abrir ${fileName}`}
-    >
-      Abrir
-    </a>
-  </div>
-);
+  );
+};
 
 export const MediaAttachmentRenderer = ({
   urls = [],
@@ -109,7 +116,7 @@ export const MediaAttachmentRenderer = ({
     }
   };
 
-  // Se todos forem imagem (e mais que 1), galeria.
+  // Se todos forem imagem (e mais que 1), usar galeria compacta.
   const allImages = urls.every((u) => getFileType(u) === "image");
   if (allImages && urls.length > 1) {
     return (
@@ -121,8 +128,8 @@ export const MediaAttachmentRenderer = ({
         onDelete={readOnly ? undefined : onDelete}
         readOnly={readOnly}
         questionText={questionText}
-        columns={Math.min(smallSize ? 3 : 5, Math.ceil(Math.sqrt(urls.length)))}
-        maxThumbSize={smallSize ? 50 : 90}
+        columns={Math.min(smallSize ? 3 : 4, Math.ceil(Math.sqrt(urls.length)))}
+        maxThumbSize={smallSize ? 40 : 80}
       />
     );
   }
@@ -137,7 +144,7 @@ export const MediaAttachmentRenderer = ({
         const extension = url.split(".").pop()?.toLowerCase() || "";
         const specificFileType = determineSpecificFileType(extension);
 
-        // Verifica .webm de áudio (nova heurística para passar mediaType correto!)
+        // Verifica .webm de áudio
         const isWebm = extension === "webm";
         const isWebmAudio = isWebm && (
           url.toLowerCase().includes('/audio/') ||
@@ -163,14 +170,20 @@ export const MediaAttachmentRenderer = ({
           );
         }
 
-        // PDF placeholder visual (agora com ícone)
-        if (specificFileType === "pdf") {
+        // PDF e outros documentos - placeholder compacto
+        if (specificFileType === "pdf" || fileType === "document") {
           return (
-            <FileVisualPlaceholder key={url} url={url} fileName={fileName} type="pdf" smallSize={smallSize} />
+            <CompactFilePreview 
+              key={url} 
+              url={url} 
+              fileName={fileName} 
+              type={specificFileType} 
+              smallSize={smallSize} 
+            />
           );
         }
 
-        // Áudio: render com ícone (por consistência)
+        // Áudio: render com ícone compacto
         if (fileType === "audio" || isWebmAudio) {
           return (
             <AudioRenderer
@@ -179,7 +192,6 @@ export const MediaAttachmentRenderer = ({
               index={index}
               fileName={fileName}
               onOpenPreview={onOpenPreview}
-              // Passa mediaType='audio' explicitamente no callback!
               onOpenAnalysis={readOnly ? () => {} : onOpenAnalysis}
               readOnly={readOnly}
               onDelete={readOnly ? undefined : onDelete}
@@ -192,10 +204,7 @@ export const MediaAttachmentRenderer = ({
         }
 
         // Vídeo (inclui .webm sem heurística de áudio)
-        if (
-          fileType === "video" ||
-          (isWebm && !isWebmAudio)
-        ) {
+        if (fileType === "video" || (isWebm && !isWebmAudio)) {
           return (
             <VideoRenderer
               key={url}
@@ -203,7 +212,6 @@ export const MediaAttachmentRenderer = ({
               index={index}
               fileName={fileName}
               onOpenPreview={onOpenPreview}
-              // Passa mediaType='video' explicitamente
               onOpenAnalysis={readOnly ? () => {} : onOpenAnalysis}
               readOnly={readOnly}
               onDelete={readOnly ? undefined : onDelete}
@@ -214,9 +222,9 @@ export const MediaAttachmentRenderer = ({
           );
         }
 
-        // Outros tipos
+        // Outros tipos de arquivo
         return (
-          <FileVisualPlaceholder
+          <CompactFilePreview
             key={url}
             url={url}
             fileName={fileName}
