@@ -1,6 +1,7 @@
+
 import React, { useCallback, useState, useEffect } from "react";
 import { ResponseButtonGroup } from "./components/ResponseButtonGroup";
-import { StandardActionButtons, StandardActionButtonsProps } from "../StandardActionButtons";
+import { StandardActionButtons } from "../StandardActionButtons";
 import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { MediaAttachments } from "@/components/inspection/question-inputs/MediaAttachments";
@@ -20,7 +21,7 @@ interface YesNoResponseInputProps {
 
 export function YesNoResponseInput({
   question,
-  response,
+  response = {},
   onResponseChange,
   inspectionId,
   onMediaChange,
@@ -36,55 +37,59 @@ export function YesNoResponseInput({
   const [isActionPlanDialogOpen, setIsActionPlanDialogOpen] = useState(false);
   const [ia5W2Hplan, setIa5W2Hplan] = useState<Plan5W2H | null>(null);
 
-
+  // Garantir estrutura PLANA
   const currentValue = response?.value;
-  const mediaUrls = response?.mediaUrls || [];
+  const mediaUrls: string[] = Array.isArray(response?.mediaUrls) ? response.mediaUrls : [];
 
   // Sincroniza apenas quando os resultados do response mudaram efetivamente
   useEffect(() => {
     if (response?.mediaAnalysisResults) {
       const responseResultsString = JSON.stringify(response.mediaAnalysisResults);
       const localResultsString = JSON.stringify(mediaAnalysisResults);
-      
+
       if (responseResultsString !== localResultsString) {
         setMediaAnalysisResults(response.mediaAnalysisResults);
       }
     }
+    // eslint-disable-next-line
   }, [response?.mediaAnalysisResults, mediaAnalysisResults]);
 
+  // Garante atualizar ao nível plano, SEM aninhar value: { value: ... }
   const handleResponseChange = useCallback((value: boolean) => {
-    const updatedResponse = { ...response, value };
+    const updatedResponse = {
+      ...response,
+      value, // valor direto
+    };
     onResponseChange(updatedResponse);
   }, [response, onResponseChange]);
 
+  // Atualiza o array de mídias no nível correto
   const handleMediaChange = useCallback((newMediaUrls: string[]) => {
     if (onMediaChange) {
       onMediaChange(newMediaUrls);
     } else {
-      const updatedResponse = { ...response, mediaUrls: newMediaUrls };
-      onResponseChange(updatedResponse);
+      onResponseChange({
+        ...response,
+        mediaUrls: newMediaUrls
+      });
     }
   }, [response, onResponseChange, onMediaChange]);
 
-  // Handler corrigido para salvar resultados da análise com a ordem correta dos parâmetros
+  // Salva resultado da IA no objeto plano de resposta.
   const handleAnalysisResults = useCallback((mediaUrl: string, result: MediaAnalysisResult) => {
-    // Evita atualizações desnecessárias verificando se o resultado mudou
     const existingResult = mediaAnalysisResults[mediaUrl];
     if (existingResult && JSON.stringify(existingResult) === JSON.stringify(result)) {
-      return; // Nenhuma mudança, não atualiza
+      return;
     }
-
     const updatedResults = { ...mediaAnalysisResults, [mediaUrl]: result };
     setMediaAnalysisResults(updatedResults);
-    
-    const updatedResponse = {
+
+    onResponseChange({
       ...response,
       mediaAnalysisResults: updatedResults
-    };
-    onResponseChange(updatedResponse);
+    });
   }, [mediaAnalysisResults, response, onResponseChange]);
 
-  // Abre modal de análise apenas por ação manual do usuário
   const handleOpenAnalysis = useCallback(() => {
     if (mediaUrls && mediaUrls.length > 0) {
       setSelectedMediaUrl(mediaUrls[0]);
@@ -102,23 +107,23 @@ export function YesNoResponseInput({
     setIsActionPlanDialogOpen(true);
   }, []);
 
+  // Ao deletar mídia, remove também análise e mantém plano
   const handleDeleteMedia = useCallback((urlToDelete: string) => {
     const updatedMediaUrls = mediaUrls.filter(url => url !== urlToDelete);
     handleMediaChange(updatedMediaUrls);
-    
-    // Remove também o resultado da análise correspondente
+
     const updatedResults = { ...mediaAnalysisResults };
     delete updatedResults[urlToDelete];
     setMediaAnalysisResults(updatedResults);
-    
-    const updatedResponse = {
+
+    onResponseChange({
       ...response,
       mediaUrls: updatedMediaUrls,
       mediaAnalysisResults: updatedResults
-    };
-    onResponseChange(updatedResponse);
+    });
   }, [mediaUrls, mediaAnalysisResults, response, handleMediaChange, onResponseChange]);
 
+  // Corrige as props passadas para os componentes filhos!
   return (
     <div className="space-y-4">
       <ResponseButtonGroup
@@ -192,3 +197,4 @@ export function YesNoResponseInput({
     </div>
   );
 }
+
