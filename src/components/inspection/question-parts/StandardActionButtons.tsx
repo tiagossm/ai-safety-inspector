@@ -4,7 +4,8 @@ import { ActionPlanButton } from "./response-types/components/ActionPlanButton";
 import { MediaAnalysisButton } from "./response-types/components/MediaAnalysisButton";
 import { ActionPlan5W2HDialog } from "@/components/action-plans/ActionPlan5W2HDialog";
 
-interface StandardActionButtonsProps {
+// Interface precisa ser exportada explicitamente para as props ficarem claras no projeto
+export interface StandardActionButtonsProps {
   question: any;
   inspectionId?: string;
   response?: any;
@@ -17,18 +18,21 @@ interface StandardActionButtonsProps {
   onActionPlanClick?: () => void;
 }
 
-export function StandardActionButtons({
-  question,
-  inspectionId,
-  response,
-  actionPlan,
-  onSaveActionPlan,
-  mediaUrls = [],
-  readOnly = false,
-  mediaAnalysisResults = {},
-  onOpenAnalysis,
-  onActionPlanClick
-}: StandardActionButtonsProps) {
+// Declarar props explicitamente tipadas para garantir TypeScript
+export function StandardActionButtons(props: StandardActionButtonsProps) {
+  const {
+    question,
+    inspectionId,
+    response,
+    actionPlan,
+    onSaveActionPlan,
+    mediaUrls = [],
+    readOnly = false,
+    mediaAnalysisResults = {},
+    onOpenAnalysis,
+    onActionPlanClick,
+  } = props;
+
   const [isActionPlanDialogOpen, setIsActionPlanDialogOpen] = useState(false);
 
   // Abertura do modal 5W2H
