@@ -93,45 +93,52 @@ export function InspectionAnswersSummary({ questions, responses }: InspectionAns
             <div className="space-y-2">
               <h3 className="font-medium">{question.text || question.pergunta}</h3>
               
-              {/* Usa ResponseInputRenderer em modo readOnly para renderizar a resposta */}
-              <div className="flex flex-col md:flex-row md:items-start md:gap-2">
-                <span className="text-muted-foreground mr-2 min-w-[70px]">Resposta:</span>
-                <div className="flex-1">
-                  <ResponseInputRenderer
-                    question={question}
-                    response={formattedResponse}
-                    onResponseChange={() => {}} // Função vazia pois é readOnly
-                    onMediaChange={() => {}} // Função vazia pois é readOnly
-                    readOnly={true}
-                  />
-                  
-                  {/* Exibe resumo compacto do plano de ação se houver */}
-                  {!!actionPlan && <ActionPlanInlineSummary actionPlan={actionPlan} />}
+              {/* Container flex para resposta e mídia na mesma linha */}
+              <div className="flex flex-col space-y-2">
+                {/* Usa ResponseInputRenderer em modo readOnly para renderizar a resposta */}
+                <div className="flex flex-col md:flex-row md:items-start md:gap-2">
+                  <span className="text-muted-foreground mr-2 min-w-[70px]">Resposta:</span>
+                  <div className="flex-1">
+                    <ResponseInputRenderer
+                      question={question}
+                      response={formattedResponse}
+                      onResponseChange={() => {}} // Função vazia pois é readOnly
+                      onMediaChange={() => {}} // Função vazia pois é readOnly
+                      readOnly={true}
+                    />
+                    
+                    {/* Exibe resumo compacto do plano de ação se houver */}
+                    {!!actionPlan && <ActionPlanInlineSummary actionPlan={actionPlan} />}
+                  </div>
                 </div>
+
+                {/* Renderização compacta das mídias inline */}
+                {mediaUrls && mediaUrls.length > 0 && (
+                  <div className="flex flex-col md:flex-row md:items-start md:gap-2 pt-1">
+                    <span className="text-muted-foreground text-xs mr-2 min-w-[70px]">Mídias:</span>
+                    <div className="flex-1">
+                      <MediaAttachmentRenderer
+                        urls={mediaUrls}
+                        onOpenPreview={handleOpenPreview}
+                        onOpenAnalysis={handleOpenAnalysis}
+                        readOnly={true}
+                        questionText={question.text || question.pergunta}
+                        analysisResults={mediaAnalysisResults}
+                        smallSize={true}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {notes && (
+                  <div className="flex flex-col md:flex-row md:items-start md:gap-2 pt-1">
+                    <span className="text-muted-foreground text-xs mr-2 min-w-[70px]">Observações:</span>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-800">{notes}</p>
+                    </div>
+                  </div>
+                )}
               </div>
-
-              {/* Renderização direta das mídias usando MediaAttachmentRenderer */}
-              {mediaUrls && mediaUrls.length > 0 && (
-                <div className="pt-2">
-                  <p className="text-xs text-muted-foreground mb-2">Mídias anexadas:</p>
-                  <MediaAttachmentRenderer
-                    urls={mediaUrls}
-                    onOpenPreview={handleOpenPreview}
-                    onOpenAnalysis={handleOpenAnalysis}
-                    readOnly={true}
-                    questionText={question.text || question.pergunta}
-                    analysisResults={mediaAnalysisResults}
-                    smallSize={true}
-                  />
-                </div>
-              )}
-
-              {notes && (
-                <div className="pt-1">
-                  <p className="text-xs text-muted-foreground mb-0.5">Observações:</p>
-                  <p className="text-xs text-gray-800">{notes}</p>
-                </div>
-              )}
 
               {/* Botão e modal para plano de ação */}
               {!!actionPlan && (

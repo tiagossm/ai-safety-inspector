@@ -8,7 +8,15 @@ import { MediaGallery } from "./MediaGalleryGrid";
 import { FileText, FileAudio, FileVideo, FileImage } from "lucide-react";
 
 // Novo: layout responsivo flexível
-function getGridColumns(count: number) {
+function getGridColumns(count: number, smallSize: boolean = false) {
+  if (smallSize) {
+    // Para smallSize, usar layout mais compacto
+    if (count <= 1) return "grid-cols-1";
+    if (count === 2) return "grid-cols-2";
+    if (count === 3) return "grid-cols-3";
+    return "grid-cols-4";
+  }
+  
   if (count <= 1) return "grid-cols-1";
   if (count === 2) return "grid-cols-1 sm:grid-cols-2";
   if (count === 3) return "grid-cols-1 sm:grid-cols-2 md:grid-cols-3";
@@ -29,16 +37,16 @@ interface MediaAttachmentRendererProps {
 }
 
 const fileTypeIcons: Record<string, React.ReactNode> = {
-  pdf: <FileText className="text-blue-700 w-8 h-8 mb-2" />,
-  audio: <FileAudio className="text-pink-600 w-8 h-8 mb-2" />,
-  video: <FileVideo className="text-violet-600 w-8 h-8 mb-2" />,
-  image: <FileImage className="text-green-600 w-8 h-8 mb-2" />,
-  word: <FileText className="text-sky-700 w-8 h-8 mb-2" />,
-  excel: <FileText className="text-green-700 w-8 h-8 mb-2" />,
-  code: <FileText className="text-gray-700 w-8 h-8 mb-2" />,
-  zip: <FileText className="text-yellow-700 w-8 h-8 mb-2" />,
-  presentation: <FileText className="text-orange-700 w-8 h-8 mb-2" />,
-  file: <FileText className="text-gray-400 w-8 h-8 mb-2" />,
+  pdf: <FileText className="text-blue-700 w-6 h-6 mb-1" />,
+  audio: <FileAudio className="text-pink-600 w-6 h-6 mb-1" />,
+  video: <FileVideo className="text-violet-600 w-6 h-6 mb-1" />,
+  image: <FileImage className="text-green-600 w-6 h-6 mb-1" />,
+  word: <FileText className="text-sky-700 w-6 h-6 mb-1" />,
+  excel: <FileText className="text-green-700 w-6 h-6 mb-1" />,
+  code: <FileText className="text-gray-700 w-6 h-6 mb-1" />,
+  zip: <FileText className="text-yellow-700 w-6 h-6 mb-1" />,
+  presentation: <FileText className="text-orange-700 w-6 h-6 mb-1" />,
+  file: <FileText className="text-gray-400 w-6 h-6 mb-1" />,
 };
 
 // Novo: Componente para placeholder visual de PDF e para outros tipos
@@ -46,24 +54,28 @@ const FileVisualPlaceholder = ({
   url,
   fileName,
   type,
+  smallSize = false
 }: {
   url: string;
   fileName: string;
   type: string;
+  smallSize?: boolean;
 }) => (
-  <div className="flex flex-col items-center justify-center border p-3 rounded bg-gray-50 min-w-[120px] max-w-[160px] w-full">
+  <div className={`flex flex-col items-center justify-center border p-2 rounded bg-gray-50 ${
+    smallSize ? 'min-w-[80px] max-w-[100px]' : 'min-w-[120px] max-w-[160px]'
+  } w-full`}>
     <div className="flex flex-col items-center">
       {fileTypeIcons[type] || fileTypeIcons.file}
-      <span className="text-xs font-bold text-gray-600 truncate text-center">{fileName}</span>
+      <span className={`${smallSize ? 'text-[10px]' : 'text-xs'} font-bold text-gray-600 truncate text-center`}>{fileName}</span>
     </div>
     <a
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-xs text-blue-500 underline mt-2"
+      className={`${smallSize ? 'text-[10px]' : 'text-xs'} text-blue-500 underline mt-1`}
       aria-label={`Abrir ${fileName}`}
     >
-      Abrir arquivo
+      Abrir
     </a>
   </div>
 );
@@ -109,15 +121,15 @@ export const MediaAttachmentRenderer = ({
         onDelete={readOnly ? undefined : onDelete}
         readOnly={readOnly}
         questionText={questionText}
-        columns={Math.min(5, Math.ceil(Math.sqrt(urls.length)))}
-        maxThumbSize={smallSize ? 75 : 90}
+        columns={Math.min(smallSize ? 3 : 5, Math.ceil(Math.sqrt(urls.length)))}
+        maxThumbSize={smallSize ? 50 : 90}
       />
     );
   }
 
   // Grid para múltiplos tipos juntos
   return (
-    <div className={`grid gap-2 ${getGridColumns(urls.length)}`}>
+    <div className={`grid gap-1 ${getGridColumns(urls.length, smallSize)}`}>
       {urls.map((url, index) => {
         const fileType = getFileType(url);
         const fileName = getFilenameFromUrl(url);
@@ -154,7 +166,7 @@ export const MediaAttachmentRenderer = ({
         // PDF placeholder visual (agora com ícone)
         if (specificFileType === "pdf") {
           return (
-            <FileVisualPlaceholder key={url} url={url} fileName={fileName} type="pdf" />
+            <FileVisualPlaceholder key={url} url={url} fileName={fileName} type="pdf" smallSize={smallSize} />
           );
         }
 
@@ -209,6 +221,7 @@ export const MediaAttachmentRenderer = ({
             url={url}
             fileName={fileName}
             type={specificFileType}
+            smallSize={smallSize}
           />
         );
       })}
