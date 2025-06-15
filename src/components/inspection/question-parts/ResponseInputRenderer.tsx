@@ -1,3 +1,4 @@
+
 import React, { useCallback, useState } from "react";
 import { StandardActionButtons, StandardActionButtonsProps } from "./StandardActionButtons";
 import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
@@ -17,7 +18,6 @@ import { SignatureInput } from "@/components/checklist/SignatureInput";
 import { convertToFrontendType } from "@/types/responseTypes";
 import { MediaAnalysisResult, Plan5W2H } from "@/hooks/useMediaAnalysis";
 import { ActionPlan5W2HDialog } from "@/components/action-plans/ActionPlan5W2HDialog";
-
 
 interface ResponseInputRendererProps {
   question: any;
@@ -43,11 +43,18 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   const rawResponseType = question.responseType || question.tipo_resposta || "text";
   const responseType = convertToFrontendType(rawResponseType);
 
-  const safeResponse = response || {};
-  const mediaUrls = safeResponse.mediaUrls || [];
-  const mediaAnalysisResults = safeResponse.mediaAnalysisResults || {};
+  // Garantir estrutura consistente do response
+  const safeResponse = {
+    value: response?.value,
+    mediaUrls: Array.isArray(response?.mediaUrls) ? response.mediaUrls : [],
+    mediaAnalysisResults: response?.mediaAnalysisResults || {},
+    ...response
+  };
 
-  // Para análise IA modal
+  const mediaUrls = safeResponse.mediaUrls;
+  const mediaAnalysisResults = safeResponse.mediaAnalysisResults;
+
+  // Estados centralizados para modais
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
   const [selectedMediaUrl, setSelectedMediaUrl] = useState<string | null>(null);
   const [isActionPlanDialogOpen, setIsActionPlanDialogOpen] = useState(false);
@@ -55,12 +62,12 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
 
   // Handler de mídia centralizado
   const handleMediaChange = useCallback((urls: string[]) => {
-    const updatedResponse = { ...response, mediaUrls: urls };
+    const updatedResponse = { ...safeResponse, mediaUrls: urls };
     onResponseChange(updatedResponse);
     if (onMediaChange) onMediaChange(urls);
-  }, [response, onResponseChange, onMediaChange]);
+  }, [safeResponse, onResponseChange, onMediaChange]);
 
-  // Handler análise IA centralizado para abrir modal
+  // Handler análise IA centralizado
   const handleOpenAnalysis = useCallback(() => {
     if (mediaUrls && mediaUrls.length > 0) {
       setSelectedMediaUrl(mediaUrls[0]);
@@ -92,6 +99,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     }
   }, [selectedMediaUrl, mediaAnalysisResults, safeResponse, onResponseChange]);
 
+  // Componentes de modal centralizados
   const actionPlanDialog = (
     <ActionPlan5W2HDialog
       open={isActionPlanDialogOpen}
@@ -124,23 +132,28 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   switch (responseType) {
     case "yes_no":
       return (
-        <YesNoResponseInput
-          question={question}
-          response={response || {}} // Passa sempre objeto plano!
-          inspectionId={inspectionId}
-          onResponseChange={onResponseChange}
-          onMediaChange={handleMediaChange}
-          actionPlan={actionPlan}
-          onSaveActionPlan={onSaveActionPlan}
-          readOnly={readOnly}
-        />
+        <div className="space-y-4">
+          <YesNoResponseInput
+            question={question}
+            response={safeResponse}
+            inspectionId={inspectionId}
+            onResponseChange={onResponseChange}
+            onMediaChange={handleMediaChange}
+            actionPlan={actionPlan}
+            onSaveActionPlan={onSaveActionPlan}
+            readOnly={readOnly}
+          />
+          {mediaAnalysisDialog}
+          {actionPlanDialog}
+        </div>
       );
+
     case "text":
       return (
         <div className="space-y-4">
           <TextResponseInput
             question={question}
-            response={response}
+            response={safeResponse}
             onResponseChange={onResponseChange}
             readOnly={readOnly}
           />
@@ -149,10 +162,12 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             readOnly={readOnly}
             onOpenAnalysis={handleOpenAnalysis}
             onActionPlanClick={handleOpenActionPlan}
+            mediaUrls={mediaUrls}
+            mediaAnalysisResults={mediaAnalysisResults}
             dummyProp="UniqueKeyForProps20250615"
           />
           <MediaUploadInput
-            mediaUrls={response?.mediaUrls || []}
+            mediaUrls={mediaUrls}
             onMediaChange={handleMediaChange}
             allowsPhoto={question.allowsPhoto || question.permite_foto || false}
             allowsVideo={question.allowsVideo || question.permite_video || false}
@@ -161,25 +176,26 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             readOnly={readOnly}
             questionText={question.text || question.pergunta || ""}
             onSaveAnalysis={(url: string, result: MediaAnalysisResult) => {
-              const updatedResults = { ...(response?.mediaAnalysisResults || {}), [url]: result };
+              const updatedResults = { ...mediaAnalysisResults, [url]: result };
               const updatedResponse = {
-                ...response,
+                ...safeResponse,
                 mediaAnalysisResults: updatedResults
               };
               onResponseChange(updatedResponse);
             }}
-            analysisResults={response?.mediaAnalysisResults || {}}
+            analysisResults={mediaAnalysisResults}
           />
           {mediaAnalysisDialog}
           {actionPlanDialog}
         </div>
       );
+
     case "paragraph":
       return (
         <div className="space-y-4">
           <ParagraphResponseInput
-            value={response?.value}
-            onChange={val => onResponseChange({ ...response, value: val })}
+            value={safeResponse.value}
+            onChange={val => onResponseChange({ ...safeResponse, value: val })}
             readOnly={readOnly}
           />
           <StandardActionButtons
@@ -187,10 +203,12 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             readOnly={readOnly}
             onOpenAnalysis={handleOpenAnalysis}
             onActionPlanClick={handleOpenActionPlan}
+            mediaUrls={mediaUrls}
+            mediaAnalysisResults={mediaAnalysisResults}
             dummyProp="UniqueKeyForProps20250615"
           />
           <MediaUploadInput
-            mediaUrls={response?.mediaUrls || []}
+            mediaUrls={mediaUrls}
             onMediaChange={handleMediaChange}
             allowsPhoto={question.allowsPhoto || question.permite_foto || false}
             allowsVideo={question.allowsVideo || question.permite_video || false}
@@ -203,6 +221,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           {actionPlanDialog}
         </div>
       );
+
     case "multiple_choice":
     case "checkboxes":
     case "dropdown":
@@ -210,11 +229,11 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         <div className="space-y-4">
           <EnhancedMultipleChoiceInput
             question={question}
-            value={response?.value || {}} // Atenção: envia apenas o PLANO do campo 'value'
+            value={safeResponse.value || {}}
             onChange={val =>
               onResponseChange({
-                ...response,
-                value: val // GUARDA SOMENTE O VALOR da resposta, nunca aninha o objeto completo!
+                ...safeResponse,
+                value: val
               })
             }
             readOnly={readOnly}
@@ -224,10 +243,12 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             readOnly={readOnly}
             onOpenAnalysis={handleOpenAnalysis}
             onActionPlanClick={handleOpenActionPlan}
+            mediaUrls={mediaUrls}
+            mediaAnalysisResults={mediaAnalysisResults}
             dummyProp="UniqueKeyForProps20250615"
           />
           <MediaUploadInput
-            mediaUrls={response?.mediaUrls || []}
+            mediaUrls={mediaUrls}
             onMediaChange={handleMediaChange}
             allowsPhoto={question.allowsPhoto || question.permite_foto || false}
             allowsVideo={question.allowsVideo || question.permite_video || false}
@@ -240,6 +261,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           {actionPlanDialog}
         </div>
       );
+
     case "numeric":
       return (
         <div className="space-y-4">
@@ -259,6 +281,8 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             readOnly={readOnly}
             onOpenAnalysis={handleOpenAnalysis}
             onActionPlanClick={handleOpenActionPlan}
+            mediaUrls={mediaUrls}
+            mediaAnalysisResults={mediaAnalysisResults}
             dummyProp="UniqueKeyForProps20250615"
           />
           <MediaUploadInput
@@ -275,12 +299,13 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           {actionPlanDialog}
         </div>
       );
+
     case "photo":
       return (
         <div className="space-y-4">
           <PhotoInput
             mediaUrls={mediaUrls}
-            onAddMedia={() => {}} // já tratado via MediaUploadInput
+            onAddMedia={() => {}}
             onDeleteMedia={url => handleMediaChange(mediaUrls.filter((mediaUrl: any) => mediaUrl !== url))}
             allowsPhoto={true}
             allowsVideo={question.allowsVideo}
@@ -292,6 +317,8 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             readOnly={readOnly}
             onOpenAnalysis={handleOpenAnalysis}
             onActionPlanClick={handleOpenActionPlan}
+            mediaUrls={mediaUrls}
+            mediaAnalysisResults={mediaAnalysisResults}
             dummyProp="UniqueKeyForProps20250615"
           />
           <MediaUploadInput
@@ -308,6 +335,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           {actionPlanDialog}
         </div>
       );
+
     case "signature":
       return (
         <div className="space-y-4">
@@ -324,6 +352,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           {actionPlanDialog}
         </div>
       );
+
     case "date":
       return (
         <div className="space-y-4">
@@ -341,6 +370,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           {actionPlanDialog}
         </div>
       );
+
     case "time":
       return (
         <div className="space-y-4">
@@ -358,6 +388,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           {actionPlanDialog}
         </div>
       );
+
     case "datetime":
       return (
         <div className="space-y-4">
@@ -375,6 +406,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           {actionPlanDialog}
         </div>
       );
+
     default:
       return (
         <div className="p-4 border border-red-300 bg-red-50 rounded-md">

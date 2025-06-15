@@ -10,35 +10,35 @@ export type { ResponseData } from "./types/inspectionTypes";
 export function useResponseHandling(inspectionId: string | undefined, setResponses: (responses: Record<string, any>) => void) {
   const [savingData, setSavingData] = useState(false);
 
-  // Função melhorada para garantir que as respostas tenham atualizações corretas
+  // Função otimizada para garantir estrutura consistente das respostas
   const handleResponseChange = useCallback((questionId: string, data: any) => {
     setResponses((prev) => {
-      // Certifique-se de que estamos trabalhando com uma cópia do objeto de resposta atual
-      const currentResponse = prev[questionId] ? {...prev[questionId]} : {};
+      const currentResponse = prev[questionId] || {};
       
-      // Se data é um objeto, spread suas propriedades para a resposta atual
-      // Se não, assume que é um valor simples para o campo value
-      const updatedResponse = typeof data === 'object' && data !== null
-        ? { ...currentResponse, ...data, updatedAt: new Date().toISOString() }
-        : { ...currentResponse, value: data, updatedAt: new Date().toISOString() };
+      // Garantir estrutura consistente para evitar loops
+      const safeData = {
+        value: data?.value !== undefined ? data.value : currentResponse.value,
+        mediaUrls: Array.isArray(data?.mediaUrls) ? [...data.mediaUrls] : 
+                   Array.isArray(currentResponse.mediaUrls) ? [...currentResponse.mediaUrls] : [],
+        mediaAnalysisResults: data?.mediaAnalysisResults || currentResponse.mediaAnalysisResults || {},
+        ...data,
+        updatedAt: new Date().toISOString()
+      };
       
-      // Garantir que mediaUrls seja sempre um array
-      if (updatedResponse.mediaUrls) {
-        updatedResponse.mediaUrls = [...updatedResponse.mediaUrls];
-      } else if (data && data.mediaUrls) {
-        updatedResponse.mediaUrls = [...data.mediaUrls];
-      } else if (!updatedResponse.mediaUrls) {
-        updatedResponse.mediaUrls = [];
+      // Verificar se houve mudança real para evitar re-renders desnecessários
+      const hasChanged = JSON.stringify(currentResponse) !== JSON.stringify(safeData);
+      
+      if (!hasChanged) {
+        console.log(`[useResponseHandling] Sem mudanças para questão ${questionId}, ignorando atualização`);
+        return prev;
       }
       
-      // Console log para debugging
       console.log(`[useResponseHandling] Atualizando resposta para questão ${questionId}:`, 
-        { anterior: currentResponse, nova: updatedResponse });
+        { anterior: currentResponse, nova: safeData });
       
-      // Retornar um novo objeto de respostas com a resposta atualizada
       return {
         ...prev,
-        [questionId]: updatedResponse
+        [questionId]: safeData
       };
     });
   }, [setResponses]);

@@ -1,12 +1,10 @@
 
-import React, { useCallback, useState, useEffect } from "react";
+import React, { useCallback, useState } from "react";
 import { ResponseButtonGroup } from "./components/ResponseButtonGroup";
 import { StandardActionButtons } from "../StandardActionButtons";
 import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
-import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { MediaAttachments } from "@/components/inspection/question-inputs/MediaAttachments";
-import { MediaAnalysisResult, Plan5W2H } from "@/hooks/useMediaAnalysis";
-import { ActionPlan5W2HDialog } from "@/components/action-plans/ActionPlan5W2HDialog";
+import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
 
 interface YesNoResponseInputProps {
   question: any;
@@ -19,7 +17,6 @@ interface YesNoResponseInputProps {
   readOnly?: boolean;
 }
 
-// Sempre trabalhar com objeto plano
 export function YesNoResponseInput({
   question,
   response = {},
@@ -30,107 +27,68 @@ export function YesNoResponseInput({
   onSaveActionPlan,
   readOnly = false
 }: YesNoResponseInputProps) {
-  const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
-  const [selectedMediaUrl, setSelectedMediaUrl] = useState<string | null>(null);
-  const [mediaAnalysisResults, setMediaAnalysisResults] = useState<Record<string, MediaAnalysisResult>>(
-    response?.mediaAnalysisResults || {}
-  );
-  const [isActionPlanDialogOpen, setIsActionPlanDialogOpen] = useState(false);
-  const [ia5W2Hplan, setIa5W2Hplan] = useState<Plan5W2H | null>(null);
+  // Garantir estrutura consistente do response
+  const safeResponse = {
+    value: response?.value,
+    mediaUrls: Array.isArray(response?.mediaUrls) ? response.mediaUrls : [],
+    mediaAnalysisResults: response?.mediaAnalysisResults || {},
+    ...response
+  };
 
-  // Extração segura dos valores — sempre plano!
-  const currentValue = response?.value;
-  const mediaUrls: string[] = Array.isArray(response?.mediaUrls)
-    ? response.mediaUrls.filter((url: string) => typeof url === "string")
-    : [];
+  const currentValue = safeResponse.value;
+  const mediaUrls = safeResponse.mediaUrls;
 
-  // Sincroniza resultados da IA somente quando de fato mudaram
-  useEffect(() => {
-    if (response?.mediaAnalysisResults) {
-      const responseResultsString = JSON.stringify(response.mediaAnalysisResults);
-      const localResultsString = JSON.stringify(mediaAnalysisResults);
-
-      if (responseResultsString !== localResultsString) {
-        setMediaAnalysisResults(response.mediaAnalysisResults);
-      }
-    }
-    // eslint-disable-next-line
-  }, [response?.mediaAnalysisResults]);
-
-  // Handler flat para o campo value, nunca aninhar!
+  // Handler para mudança no valor da resposta
   const handleResponseChange = useCallback(
     (value: boolean) => {
-      onResponseChange({ ...response, value });
+      onResponseChange({ ...safeResponse, value });
     },
-    [response, onResponseChange]
+    [safeResponse, onResponseChange]
   );
 
-  // Atualiza mediaUrls no objeto resposta, plano!
+  // Handler para mudança nas URLs de mídia
   const handleMediaChange = useCallback(
     (newMediaUrls: string[]) => {
+      const updatedResponse = { ...safeResponse, mediaUrls: newMediaUrls };
+      onResponseChange(updatedResponse);
+      
       if (onMediaChange) {
         onMediaChange(newMediaUrls);
-      } else {
-        onResponseChange({ ...response, mediaUrls: newMediaUrls });
       }
     },
-    [response, onResponseChange, onMediaChange]
+    [safeResponse, onResponseChange, onMediaChange]
   );
 
-  // Salva resultado da IA no objeto plano de resposta.
+  // Handler para resultados da análise de IA
   const handleAnalysisResults = useCallback(
     (mediaUrl: string, result: MediaAnalysisResult) => {
-      // Não duplica se igual
-      const existingResult = mediaAnalysisResults[mediaUrl];
-      if (existingResult && JSON.stringify(existingResult) === JSON.stringify(result)) {
-        return;
-      }
-      const updatedResults = { ...mediaAnalysisResults, [mediaUrl]: result };
-      setMediaAnalysisResults(updatedResults);
-
+      const updatedResults = { 
+        ...safeResponse.mediaAnalysisResults, 
+        [mediaUrl]: result 
+      };
+      
       onResponseChange({
-        ...response,
+        ...safeResponse,
         mediaAnalysisResults: updatedResults,
       });
     },
-    [mediaAnalysisResults, response, onResponseChange]
+    [safeResponse, onResponseChange]
   );
 
-  // Abrir modal análise somente por ação do usuário
-  const handleOpenAnalysis = useCallback(() => {
-    if (mediaUrls && mediaUrls.length > 0) {
-      setSelectedMediaUrl(mediaUrls[0]);
-      setIsAnalysisOpen(true);
-    }
-  }, [mediaUrls]);
-
-  const handleOpenActionPlan = useCallback(() => {
-    setIa5W2Hplan(null);
-    setIsActionPlanDialogOpen(true);
-  }, []);
-
-  const handleAdd5W2HActionPlan = useCallback((plan: Plan5W2H) => {
-    setIa5W2Hplan(plan);
-    setIsActionPlanDialogOpen(true);
-  }, []);
-
-  // Ao deletar mídia, remove também análise correspondente
+  // Handler para deletar mídia
   const handleDeleteMedia = useCallback(
     (urlToDelete: string) => {
       const updatedMediaUrls = mediaUrls.filter((url) => url !== urlToDelete);
-      handleMediaChange(updatedMediaUrls);
-
-      const updatedResults = { ...mediaAnalysisResults };
+      const updatedResults = { ...safeResponse.mediaAnalysisResults };
       delete updatedResults[urlToDelete];
-      setMediaAnalysisResults(updatedResults);
 
       onResponseChange({
-        ...response,
+        ...safeResponse,
         mediaUrls: updatedMediaUrls,
         mediaAnalysisResults: updatedResults,
       });
     },
-    [mediaUrls, mediaAnalysisResults, response, handleMediaChange, onResponseChange]
+    [mediaUrls, safeResponse, onResponseChange]
   );
 
   return (
@@ -144,8 +102,12 @@ export function YesNoResponseInput({
       <StandardActionButtons
         question={question}
         readOnly={readOnly}
-        onOpenAnalysis={handleOpenAnalysis}
-        onActionPlanClick={handleOpenActionPlan}
+        mediaUrls={mediaUrls}
+        inspectionId={inspectionId}
+        response={safeResponse}
+        actionPlan={actionPlan}
+        onSaveActionPlan={onSaveActionPlan}
+        mediaAnalysisResults={safeResponse.mediaAnalysisResults}
         dummyProp="UniqueKeyForProps20250615"
       />
 
@@ -159,7 +121,7 @@ export function YesNoResponseInput({
         readOnly={readOnly}
         questionText={question.text || question.pergunta || ""}
         onSaveAnalysis={handleAnalysisResults}
-        analysisResults={mediaAnalysisResults}
+        analysisResults={safeResponse.mediaAnalysisResults}
       />
 
       {mediaUrls.length > 0 && (
@@ -167,45 +129,12 @@ export function YesNoResponseInput({
           mediaUrls={mediaUrls}
           onDelete={!readOnly ? handleDeleteMedia : undefined}
           onOpenPreview={() => {}}
-          onOpenAnalysis={handleOpenAnalysis}
           readOnly={readOnly}
           questionText={question.text || question.pergunta || ""}
-          analysisResults={mediaAnalysisResults}
+          analysisResults={safeResponse.mediaAnalysisResults}
           onSaveAnalysis={handleAnalysisResults}
         />
       )}
-
-      <MediaAnalysisDialog
-        open={isAnalysisOpen}
-        onOpenChange={setIsAnalysisOpen}
-        mediaUrl={selectedMediaUrl}
-        questionText={question.text || question.pergunta || ""}
-        userAnswer={
-          currentValue === true ? "Sim" : currentValue === false ? "Não" : ""
-        }
-        onAnalysisComplete={(result) => {
-          if (selectedMediaUrl) {
-            handleAnalysisResults(selectedMediaUrl, result);
-          }
-        }}
-        multimodalAnalysis={true}
-        additionalMediaUrls={mediaUrls.filter((url) => url !== selectedMediaUrl)}
-        onAdd5W2HActionPlan={handleAdd5W2HActionPlan}
-      />
-
-      <ActionPlan5W2HDialog
-        open={isActionPlanDialogOpen}
-        onOpenChange={setIsActionPlanDialogOpen}
-        questionId={question?.id}
-        inspectionId={inspectionId}
-        existingPlan={actionPlan}
-        onSave={async (data: any) => {
-          await onSaveActionPlan?.(data);
-          setIsActionPlanDialogOpen(false);
-        }}
-        iaSuggestions={mediaAnalysisResults}
-        ia5W2Hplan={ia5W2Hplan}
-      />
     </div>
   );
 }

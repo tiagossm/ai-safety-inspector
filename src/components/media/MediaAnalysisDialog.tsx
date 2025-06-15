@@ -34,7 +34,7 @@ type AnalysisState = {
   status: Status;
   result?: MediaAnalysisResult;
   errorMessage?: string;
-  analyzed?: boolean; // Flag para indicar se já foi analisado
+  analyzed?: boolean;
 };
 
 function forceListMarkdown(text: string): string {
@@ -81,28 +81,36 @@ export function MediaAnalysisDialog({
   additionalMediaUrls = []
 }: MediaAnalysisDialogProps) {
   const MAX_IMAGES = 4;
+  
+  // Correção: usar useMemo para evitar recriação desnecessária do array
   const allImages: string[] = React.useMemo(() => {
     if (!mediaUrl) return [];
-    const base = mediaUrls.length > 0 ? mediaUrls : additionalMediaUrls;
-    const filtered = base.filter(url => url !== mediaUrl);
-    return [mediaUrl, ...filtered].slice(0, MAX_IMAGES);
+    
+    // Usar uma única fonte de imagens para evitar loops
+    const sourceImages = mediaUrls.length > 0 ? mediaUrls : additionalMediaUrls;
+    const otherImages = sourceImages.filter(url => url !== mediaUrl);
+    
+    return [mediaUrl, ...otherImages].slice(0, MAX_IMAGES);
   }, [mediaUrl, mediaUrls, additionalMediaUrls]);
 
   const [analysisMap, setAnalysisMap] = useState<Record<string, AnalysisState>>({});
   const { analyze } = useMediaAnalysis();
 
-  // Inicializa estado das imagens quando o dialog abre
+  // Inicializa estado das imagens - CORREÇÃO: evitar loop infinito
   useEffect(() => {
     if (open && allImages.length > 0) {
-      const newMap: Record<string, AnalysisState> = {};
-      allImages.forEach(url => {
-        newMap[url] = { status: 'idle', analyzed: false };
+      setAnalysisMap(prev => {
+        const newMap: Record<string, AnalysisState> = {};
+        allImages.forEach(url => {
+          // Manter estado existente se já existe
+          newMap[url] = prev[url] || { status: 'idle', analyzed: false };
+        });
+        return newMap;
       });
-      setAnalysisMap(newMap);
     } else if (!open) {
       setAnalysisMap({});
     }
-  }, [open, allImages]);
+  }, [open]); // Removido allImages da dependência para evitar loop
 
   // Função para analisar uma imagem específica
   const analyzeImage = useCallback(async (url: string) => {
@@ -147,7 +155,7 @@ export function MediaAnalysisDialog({
         }
       }));
     }
-  }, [allImages, analyze, mediaType, questionText, userAnswer, onAnalysisComplete]);
+  }, [analyze, mediaType, questionText, userAnswer, onAnalysisComplete]); // Removido allImages
 
   const renderMarkdown = (md: string) =>
     <ReactMarkdown
@@ -197,7 +205,6 @@ export function MediaAnalysisDialog({
               const plan5w2h = result?.plan5w2h;
               const has5w2h = !!plan5w2h && Object.values(plan5w2h).some(v => v && v.trim() !== "");
 
-
               return (
                 <div key={url} className="col-span-1 border rounded-lg shadow-sm p-2 bg-white flex flex-col items-center">
                   <img
@@ -209,7 +216,6 @@ export function MediaAnalysisDialog({
                     {idx === 0 ? 'Imagem principal' : `Imagem adicional ${idx}`}
                   </p>
                   
-                  {/* Botão para iniciar análise */}
                   {state.status === 'idle' && !state.analyzed && (
                     <Button 
                       size="sm" 
@@ -220,7 +226,6 @@ export function MediaAnalysisDialog({
                     </Button>
                   )}
 
-                  {/* Status de carregamento */}
                   {state.status === 'analyzing' && (
                     <div className="flex flex-col items-center mt-3 mb-3">
                       <Loader2 className="h-5 w-5 animate-spin text-primary" />
@@ -228,7 +233,6 @@ export function MediaAnalysisDialog({
                     </div>
                   )}
 
-                  {/* Erro */}
                   {state.status === 'error' && (
                     <div className="w-full border rounded-md p-2 bg-red-50 border-red-200 mt-1">
                       <div className="text-xs text-red-700 mb-2">{state.errorMessage}</div>
@@ -238,7 +242,6 @@ export function MediaAnalysisDialog({
                     </div>
                   )}
 
-                  {/* Resultado da análise */}
                   {state.status === 'done' && result && (
                     <>
                       {(hasActionSuggestion || has5w2h) && (

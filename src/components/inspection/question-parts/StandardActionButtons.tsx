@@ -7,6 +7,8 @@ import React, { useState, useCallback } from "react";
 import { ActionPlanButton } from "./response-types/components/ActionPlanButton";
 import { MediaAnalysisButton } from "./response-types/components/MediaAnalysisButton";
 import { ActionPlan5W2HDialog } from "@/components/action-plans/ActionPlan5W2HDialog";
+import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
+import { MediaAnalysisResult, Plan5W2H } from "@/hooks/useMediaAnalysis";
 
 /**
  * Interface oficial dos props dos botões universais
@@ -27,7 +29,6 @@ export interface StandardActionButtonsProps {
   dummyProp?: "UniqueKeyForProps20250615";
 }
 
-// ATENÇÃO: Sempre utilize o export named abaixo!
 export function StandardActionButtons(props: StandardActionButtonsProps) {
   const {
     question,
@@ -40,25 +41,55 @@ export function StandardActionButtons(props: StandardActionButtonsProps) {
     mediaAnalysisResults = {},
     onOpenAnalysis,
     onActionPlanClick,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    dummyProp, // Forçar TypeScript a perceber mudança
   } = props;
 
   const [isActionPlanDialogOpen, setIsActionPlanDialogOpen] = useState(false);
+  const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
+  const [selectedMediaUrl, setSelectedMediaUrl] = useState<string | null>(null);
+  const [ia5W2Hplan, setIa5W2Hplan] = useState<Plan5W2H | null>(null);
 
   // Abertura do modal 5W2H
   const handleOpenActionPlan = useCallback(() => {
     if (onActionPlanClick) {
       onActionPlanClick();
     } else {
+      setIa5W2Hplan(null);
       setIsActionPlanDialogOpen(true);
     }
   }, [onActionPlanClick]);
 
-  // Abertura análise IA (prop pode vir injetada ou não)
+  // Abertura análise IA centralizada
   const handleOpenAnalysis = useCallback(() => {
-    if (onOpenAnalysis) onOpenAnalysis();
-  }, [onOpenAnalysis]);
+    if (onOpenAnalysis) {
+      onOpenAnalysis();
+    } else if (mediaUrls && mediaUrls.length > 0) {
+      setSelectedMediaUrl(mediaUrls[0]);
+      setIsAnalysisOpen(true);
+    }
+  }, [onOpenAnalysis, mediaUrls]);
+
+  const handleAdd5W2HActionPlan = useCallback((plan: Plan5W2H) => {
+    setIa5W2Hplan(plan);
+    setIsActionPlanDialogOpen(true);
+  }, []);
+
+  // Handler para salvar análise e atualizar response
+  const handleAnalysisComplete = useCallback((result: MediaAnalysisResult) => {
+    if (selectedMediaUrl && response) {
+      const updatedResults = { 
+        ...mediaAnalysisResults, 
+        [selectedMediaUrl]: result 
+      };
+      
+      // Atualizar via response se disponível
+      if (response.onResponseChange) {
+        response.onResponseChange({
+          ...response,
+          mediaAnalysisResults: updatedResults
+        });
+      }
+    }
+  }, [selectedMediaUrl, mediaAnalysisResults, response]);
 
   return (
     <>
@@ -70,8 +101,9 @@ export function StandardActionButtons(props: StandardActionButtonsProps) {
         {(question?.allowsPhoto || question?.allowsVideo || question?.permite_foto || question?.permite_video) && (
           <MediaAnalysisButton onOpenAnalysis={handleOpenAnalysis} />
         )}
-        {/* Mais botões universais futuramente aqui */}
       </div>
+      
+      {/* Modal 5W2H quando não há handler externo */}
       {!onActionPlanClick && (
         <ActionPlan5W2HDialog
           open={isActionPlanDialogOpen}
@@ -84,6 +116,25 @@ export function StandardActionButtons(props: StandardActionButtonsProps) {
             setIsActionPlanDialogOpen(false);
           }}
           iaSuggestions={mediaAnalysisResults}
+          ia5W2Hplan={ia5W2Hplan}
+        />
+      )}
+
+      {/* Modal de análise IA quando não há handler externo */}
+      {!onOpenAnalysis && (
+        <MediaAnalysisDialog
+          open={isAnalysisOpen}
+          onOpenChange={setIsAnalysisOpen}
+          mediaUrl={selectedMediaUrl}
+          questionText={question.text || question.pergunta || ""}
+          userAnswer={
+            response?.value === true ? "Sim" : 
+            response?.value === false ? "Não" : ""
+          }
+          multimodalAnalysis={true}
+          additionalMediaUrls={mediaUrls.filter((url) => url !== selectedMediaUrl)}
+          onAnalysisComplete={handleAnalysisComplete}
+          onAdd5W2HActionPlan={handleAdd5W2HActionPlan}
         />
       )}
     </>
