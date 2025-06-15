@@ -135,7 +135,7 @@ export function MediaAttachments({
         questionText={questionText}
         onAnalysisComplete={handleAnalysisComplete}
         additionalMediaUrls={mediaUrls}
-        onAddActionPlan={onApplyAISuggestion}
+        onAdd5W2HActionPlan={onApplyAISuggestion}
       />
     </>
   );

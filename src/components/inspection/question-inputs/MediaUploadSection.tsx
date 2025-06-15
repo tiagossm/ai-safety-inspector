@@ -1,4 +1,3 @@
-
 import React, { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -212,7 +211,7 @@ export function MediaUploadSection({
         mediaType={selectedMediaType}
         questionText={questionText}
         onAnalysisComplete={handleAnalysisComplete}
-        onAddActionPlan={onApplyAISuggestion}
+        onAdd5W2HActionPlan={onApplyAISuggestion}
       />
       {planoAcao.length > 0 && (
         <ul className="mt-2">
