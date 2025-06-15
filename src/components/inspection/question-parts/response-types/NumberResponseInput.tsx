@@ -7,6 +7,10 @@ interface NumberResponseInputProps {
   value?: number | string;
   response?: any;
   onChange: (value: number | string) => void;
+  onMediaChange?: (urls: string[]) => void;
+  inspectionId?: string;
+  actionPlan?: any;
+  onSaveActionPlan?: (data: any) => Promise<void>;
   readOnly?: boolean;
 }
 
@@ -15,6 +19,10 @@ export function NumberResponseInput({
   value,
   response = {},
   onChange,
+  onMediaChange,
+  inspectionId,
+  actionPlan,
+  onSaveActionPlan,
   readOnly = false
 }: NumberResponseInputProps) {
   return (
