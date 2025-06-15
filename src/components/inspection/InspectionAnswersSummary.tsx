@@ -1,10 +1,10 @@
-
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { MediaRenderer } from "@/components/media/MediaRenderer";
 import { ActionPlanModalInline } from "./ActionPlanModalInline";
 import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
+import { ActionPlanInlineSummary } from "./ActionPlanInlineSummary";
 
 // Componente badge simples
 function Badge({ children, className = "" }: { children: React.ReactNode; className?: string }) {
@@ -174,6 +174,8 @@ export function InspectionAnswersSummary({ questions, responses }: InspectionAns
                 <span className="text-muted-foreground mr-2 min-w-[70px]">Resposta:</span>
                 <div className="flex-1">
                   {renderAnswerInline(answer, question)}
+                  {/* Exibe resumo compacto do plano de ação se houver */}
+                  {!!actionPlan && <ActionPlanInlineSummary actionPlan={actionPlan} />}
                 </div>
               </div>
               {!!mediaUrls.length && (
@@ -194,6 +196,7 @@ export function InspectionAnswersSummary({ questions, responses }: InspectionAns
                   <p className="text-xs text-gray-800">{notes}</p>
                 </div>
               )}
+              {/* Botão e modal - manteve igual */}
               {!!actionPlan && (
                 <div className="pt-1 flex items-center gap-2">
                   <Button
