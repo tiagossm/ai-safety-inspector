@@ -55,10 +55,10 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
 
   // Handler de mídia centralizado
   const handleMediaChange = useCallback((urls: string[]) => {
-    const updatedResponse = { ...safeResponse, mediaUrls: urls };
+    const updatedResponse = { ...response, mediaUrls: urls };
     onResponseChange(updatedResponse);
     if (onMediaChange) onMediaChange(urls);
-  }, [safeResponse, onResponseChange, onMediaChange]);
+  }, [response, onResponseChange, onMediaChange]);
 
   // Handler análise IA centralizado para abrir modal
   const handleOpenAnalysis = useCallback(() => {
@@ -126,7 +126,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
       return (
         <YesNoResponseInput
           question={question}
-          response={safeResponse}
+          response={response || {}} // Passa sempre objeto plano!
           inspectionId={inspectionId}
           onResponseChange={onResponseChange}
           onMediaChange={handleMediaChange}
@@ -140,7 +140,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         <div className="space-y-4">
           <TextResponseInput
             question={question}
-            response={safeResponse}
+            response={response}
             onResponseChange={onResponseChange}
             readOnly={readOnly}
           />
@@ -152,7 +152,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             dummyProp="UniqueKeyForProps20250615"
           />
           <MediaUploadInput
-            mediaUrls={mediaUrls}
+            mediaUrls={response?.mediaUrls || []}
             onMediaChange={handleMediaChange}
             allowsPhoto={question.allowsPhoto || question.permite_foto || false}
             allowsVideo={question.allowsVideo || question.permite_video || false}
@@ -161,14 +161,14 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             readOnly={readOnly}
             questionText={question.text || question.pergunta || ""}
             onSaveAnalysis={(url: string, result: MediaAnalysisResult) => {
-              const updatedResults = { ...mediaAnalysisResults, [url]: result };
+              const updatedResults = { ...(response?.mediaAnalysisResults || {}), [url]: result };
               const updatedResponse = {
-                ...safeResponse,
+                ...response,
                 mediaAnalysisResults: updatedResults
               };
               onResponseChange(updatedResponse);
             }}
-            analysisResults={mediaAnalysisResults}
+            analysisResults={response?.mediaAnalysisResults || {}}
           />
           {mediaAnalysisDialog}
           {actionPlanDialog}
@@ -178,8 +178,8 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
       return (
         <div className="space-y-4">
           <ParagraphResponseInput
-            value={safeResponse.value}
-            onChange={val => onResponseChange({ ...safeResponse, value: val })}
+            value={response?.value}
+            onChange={val => onResponseChange({ ...response, value: val })}
             readOnly={readOnly}
           />
           <StandardActionButtons
@@ -190,7 +190,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             dummyProp="UniqueKeyForProps20250615"
           />
           <MediaUploadInput
-            mediaUrls={mediaUrls}
+            mediaUrls={response?.mediaUrls || []}
             onMediaChange={handleMediaChange}
             allowsPhoto={question.allowsPhoto || question.permite_foto || false}
             allowsVideo={question.allowsVideo || question.permite_video || false}
@@ -210,8 +210,13 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         <div className="space-y-4">
           <EnhancedMultipleChoiceInput
             question={question}
-            value={safeResponse}
-            onChange={onResponseChange}
+            value={response?.value || {}} // Atenção: envia apenas o PLANO do campo 'value'
+            onChange={val =>
+              onResponseChange({
+                ...response,
+                value: val // GUARDA SOMENTE O VALOR da resposta, nunca aninha o objeto completo!
+              })
+            }
             readOnly={readOnly}
           />
           <StandardActionButtons
@@ -222,7 +227,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             dummyProp="UniqueKeyForProps20250615"
           />
           <MediaUploadInput
-            mediaUrls={mediaUrls}
+            mediaUrls={response?.mediaUrls || []}
             onMediaChange={handleMediaChange}
             allowsPhoto={question.allowsPhoto || question.permite_foto || false}
             allowsVideo={question.allowsVideo || question.permite_video || false}
