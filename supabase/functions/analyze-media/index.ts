@@ -20,39 +20,55 @@ serve(async (req) => {
       });
     }
 
-    const { mediaUrl, questionText, userAnswer = "" } = await req.json();
-    if (!mediaUrl) {
-      return new Response(JSON.stringify({ error: "Missing media URL" }), {
+    const { mediaUrl, additionalMediaUrls = [], questionText, userAnswer = "" } = await req.json();
+    
+    if (!mediaUrl && (!additionalMediaUrls || additionalMediaUrls.length === 0)) {
+      return new Response(JSON.stringify({ error: "Missing media URL(s)" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    const allMediaUrls = [mediaUrl, ...additionalMediaUrls].filter(Boolean);
+    const imageContent = allMediaUrls.map(url => ({ type: "image_url", image_url: { url } }));
+
     const userPrompt = `
-Analise a imagem fornecida no contexto da seguinte pergunta de inspeção e da resposta do usuário.
+Você é um especialista sênior em Saúde e Segurança do Trabalho (SST) e sua tarefa é analisar mídias de uma inspeção de segurança.
 
-- Pergunta: "${questionText}"
-- Resposta do Usuário: "${userAnswer}"
+**Contexto da Inspeção:**
+- **Pergunta do Checklist:** "${questionText}"
+- **Resposta do Usuário:** "${userAnswer}"
 
-Sua tarefa é retornar um objeto JSON estritamente com a seguinte estrutura:
+**Sua Análise:**
+Analise a(s) imagem(ns) e/ou vídeo(s) fornecidos. Sua análise deve ser rigorosa e objetiva, cruzando as informações da pergunta, da resposta do usuário e da evidência visual.
+
+**Formato de Saída (JSON Estrito):**
+Você DEVE retornar um objeto JSON com a seguinte estrutura. Não adicione nenhum texto fora do objeto JSON.
 {
-  "comment": "Uma análise curta e objetiva da imagem, focando em segurança e conformidade. Descreva o que você vê.",
+  "analysis": "Descreva objetivamente o que você vê na mídia. Conecte suas observações com a pergunta e a resposta do usuário. Seja direto e técnico.",
   "hasNonConformity": boolean,
+  "psychosocialRiskDetected": boolean,
   "plan5w2h": {
-    "what": "O que precisa ser feito?",
-    "why": "Por que isso é necessário?",
-    "who": "Quem é o responsável por fazer?",
-    "when": "Quando deve ser feito?",
-    "where": "Onde a ação deve ocorrer?",
-    "how": "Como a ação deve ser executada?",
+    "what": "O que precisa ser feito para corrigir a não conformidade? (Se houver)",
+    "why": "Por que a correção é necessária? (Justificativa baseada em risco ou norma)",
+    "who": "Quem é o responsável pela execução? (Cargo ou função, ex: 'Líder da Equipe')",
+    "when": "Quando deve ser concluído? (Prazo, ex: 'Imediatamente', 'Em 24 horas')",
+    "where": "Onde a ação deve ocorrer? (Local específico)",
+    "how": "Como a ação deve ser executada? (Passos práticos)",
     "howMuch": ""
   }
 }
 
-- Se uma não conformidade for detectada, defina "hasNonConformity" como true e preencha o "plan5w2h" com um plano de ação claro e prático.
-- Se tudo estiver em conformidade, defina "hasNonConformity" como false, e retorne um objeto "plan5w2h" com todos os campos como strings vazias.
-- O campo "howMuch" deve ser sempre uma string vazia.
-- Seja direto e técnico na sua análise e sugestões.
+**Regras de Lógica:**
+1.  **hasNonConformity**:
+    *   Deve ser \`true\` se a evidência visual contradiz a resposta do usuário (ex: resposta 'Sim' para 'Extintor desobstruído?', mas a foto mostra um extintor obstruído) OU se a imagem mostra uma condição insegura clara, independentemente da resposta.
+    *   Deve ser \`false\` se a evidência visual está de acordo com uma resposta segura ou se não há risco aparente.
+2.  **plan5w2h**:
+    *   Se \`hasNonConformity\` for \`true\`, TODOS os campos do \`plan5w2h\` (exceto 'howMuch') DEVEM ser preenchidos com um plano de ação claro, prático e detalhado.
+    *   Se \`hasNonConformity\` for \`false\`, TODOS os campos do \`plan5w2h\` devem ser strings vazias.
+3.  **psychosocialRiskDetected**:
+    *   Avalie se a mídia sugere riscos psicossociais (ex: assédio, estresse excessivo, violência no trabalho, etc.). Defina como \`true\` ou \`false\`.
+4.  **howMuch**: Este campo deve ser SEMPRE uma string vazia.
     `.trim();
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -73,7 +89,7 @@ Sua tarefa é retornar um objeto JSON estritamente com a seguinte estrutura:
             role: "user",
             content: [
               { type: "text", text: userPrompt },
-              { type: "image_url", image_url: { url: mediaUrl } },
+              ...imageContent,
             ],
           },
         ],
@@ -102,4 +118,3 @@ Sua tarefa é retornar um objeto JSON estritamente com a seguinte estrutura:
     });
   }
 });
-

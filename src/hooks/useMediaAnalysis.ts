@@ -51,7 +51,8 @@ export function useMediaAnalysis() {
     }
 
     // Verifica cache primeiro
-    const cacheKey = `${mediaUrl}-${questionText}-${userAnswer || ''}`;
+    const allUrls = [mediaUrl, ...(additionalMediaUrls || [])].sort().join(',');
+    const cacheKey = `${allUrls}-${questionText}-${userAnswer || ''}`;
     const cached = analysisCache.get(cacheKey);
     if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
       console.log("Retornando resultado do cache para:", mediaUrl);
@@ -107,7 +108,7 @@ export function useMediaAnalysis() {
       }
 
       const result: MediaAnalysisResult = {
-        analysis: data.comment || "Sem análise disponível",
+        analysis: data.analysis || "Sem análise disponível",
         type: detectedMediaType,
         analysisType: data.analysisType || "general",
         actionPlanSuggestion: actionPlanSuggestionText,
@@ -171,4 +172,3 @@ export function useMediaAnalysis() {
     clearCache
   };
 }
-
