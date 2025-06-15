@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { MediaRenderer } from "@/components/media/MediaRenderer";
@@ -15,55 +16,122 @@ function Badge({ children, className = "" }: { children: React.ReactNode; classN
   );
 }
 
-// Renderização simplificada de objetos comuns
-function renderInlineObject(answer: any) {
-  // Múltipla escolha com "selectedOptions"
-  if (
-    answer &&
-    typeof answer === "object" &&
-    answer.multipleChoiceData &&
-    Array.isArray(answer.multipleChoiceData.selectedOptions)
-  ) {
+// Nova função para extrair valor de estruturas aninhadas
+function extractValueFromNestedStructure(obj: any): any {
+  if (!obj || typeof obj !== "object") return obj;
+  
+  // Se tem propriedade 'value', usa ela
+  if (obj.hasOwnProperty('value')) {
+    return obj.value;
+  }
+  
+  // Se tem multipleChoiceData com selectedOptions
+  if (obj.multipleChoiceData?.selectedOptions) {
+    return obj.multipleChoiceData.selectedOptions;
+  }
+  
+  // Se o objeto tem apenas uma propriedade, retorna seu valor
+  const keys = Object.keys(obj);
+  if (keys.length === 1) {
+    return obj[keys[0]];
+  }
+  
+  return obj;
+}
+
+// Função melhorada para detectar tipo de múltipla escolha
+function isMultipleChoiceStructure(obj: any): boolean {
+  if (!obj || typeof obj !== "object") return false;
+  
+  // Detecta estrutura com multipleChoiceData
+  if (obj.multipleChoiceData?.selectedOptions) return true;
+  
+  // Detecta estrutura onde value é array
+  if (obj.value && Array.isArray(obj.value)) return true;
+  
+  // Detecta estrutura de checkbox (todas as propriedades são boolean)
+  const values = Object.values(obj);
+  if (values.length > 1 && values.every(v => typeof v === "boolean")) return true;
+  
+  return false;
+}
+
+// Função melhorada para renderizar múltipla escolha
+function renderMultipleChoice(obj: any): React.ReactNode {
+  let selectedOptions: string[] = [];
+  
+  if (obj.multipleChoiceData?.selectedOptions) {
+    selectedOptions = obj.multipleChoiceData.selectedOptions;
+  } else if (obj.value && Array.isArray(obj.value)) {
+    selectedOptions = obj.value;
+  } else if (typeof obj === "object") {
+    // Checkbox structure - pega keys onde valor é true
+    selectedOptions = Object.entries(obj)
+      .filter(([, value]) => value === true)
+      .map(([key]) => key);
+  }
+  
+  if (selectedOptions.length === 0) {
+    return <span className="text-amber-600">Não respondido</span>;
+  }
+  
+  return (
+    <span>
+      {selectedOptions.map((option, idx) => (
+        <Badge key={String(option) + idx}>{String(option)}</Badge>
+      ))}
+    </span>
+  );
+}
+
+// Função melhorada para renderizar objetos inline
+function renderInlineObject(answer: any): React.ReactNode | null {
+  if (!answer || typeof answer !== "object") return null;
+  
+  // Múltipla escolha
+  if (isMultipleChoiceStructure(answer)) {
+    return renderMultipleChoice(answer);
+  }
+  
+  // Estruturas com valor aninhado
+  const extractedValue = extractValueFromNestedStructure(answer);
+  if (extractedValue !== answer && extractedValue !== undefined) {
+    // Se conseguiu extrair um valor, tenta renderizar recursivamente
+    if (typeof extractedValue === "string" || typeof extractedValue === "number" || typeof extractedValue === "boolean") {
+      return <span>{String(extractedValue)}</span>;
+    }
+    if (Array.isArray(extractedValue)) {
+      return (
+        <span>
+          {extractedValue.map((item, idx) => (
+            <Badge key={idx}>{String(item)}</Badge>
+          ))}
+        </span>
+      );
+    }
+  }
+  
+  // Objetos simples com apenas valores primitivos
+  const entries = Object.entries(answer);
+  const isPrimitiveObject = entries.every(([, v]) => 
+    typeof v === "string" || typeof v === "number" || typeof v === "boolean"
+  );
+  
+  if (isPrimitiveObject && entries.length <= 5) { // Limite para evitar sobrecarga visual
     return (
       <span>
-        {answer.multipleChoiceData.selectedOptions.map((item: any, idx: number) => (
-          <Badge key={String(item) + idx}>{String(item)}</Badge>
-        ))}
-      </span>
-    );
-  }
-  // Valor direto dentro de "value"
-  if (answer && typeof answer === "object" && answer.value !== undefined && typeof answer.value !== "object") {
-    return <span>{String(answer.value)}</span>;
-  }
-  // Checkbox do tipo { op1: true, op2: false }
-  if (answer && typeof answer === "object" && Object.values(answer).every(v => typeof v === "boolean")) {
-    const checked = Object.entries(answer).filter(([, v]) => v === true).map(([k]) => k);
-    if (checked.length === 0) return <span className="text-amber-600">Não respondido</span>;
-    return (
-      <span>
-        {checked.map((item, idx) => (
-          <Badge key={item + idx}>{item}</Badge>
-        ))}
-      </span>
-    );
-  }
-  // Fallback: outros objetos curtos
-  if (answer && typeof answer === "object" && Object.values(answer).every(v => ["string","number"].includes(typeof v))) {
-    return (
-      <span>
-        {Object.entries(answer).map(([k,v], idx) => (
+        {entries.map(([k, v], idx) => (
           <Badge key={k + idx}>{k}: {String(v)}</Badge>
         ))}
       </span>
     );
   }
-  // Falha: não extraiu nada legível
-  return null;
+  
+  return null; // Falha em extrair algo legível
 }
 
 // Função utilitária para identificar o tipo de questão
-function getQuestionType(question: any) {
+function getQuestionType(question: any): string {
   return (
     question.responseType ||
     question.tipo_resposta ||
@@ -73,14 +141,15 @@ function getQuestionType(question: any) {
   ).toLowerCase();
 }
 
-function renderAnswerInline(answer: any, question: any) {
+function renderAnswerInline(answer: any, question: any): React.ReactNode {
   const type = getQuestionType(question);
 
   // Casos "não respondido"
   if (
     answer === undefined ||
     answer === null ||
-    (typeof answer === "string" && answer.trim() === "")
+    (typeof answer === "string" && answer.trim() === "") ||
+    (typeof answer === "object" && answer !== null && Object.keys(answer).length === 0)
   ) {
     return <span className="text-amber-600">Não respondido</span>;
   }
@@ -107,7 +176,7 @@ function renderAnswerInline(answer: any, question: any) {
     return <span>{answer}</span>;
   }
 
-  // Múltipla escolha array
+  // Múltipla escolha array direto
   if (Array.isArray(answer)) {
     if (answer.length === 0) {
       return <span className="text-amber-600">Não respondido</span>;
@@ -121,22 +190,36 @@ function renderAnswerInline(answer: any, question: any) {
     );
   }
 
-  // Objetos SPECIAL: tentar inline legível
-  const triedInline = renderInlineObject(answer);
-  if (triedInline) return triedInline;
-
-  // Última opção: stringificada do objeto para consulta rápida (mas inline, não só "resposta complexa")
+  // Objetos complexos: tentar renderização inline inteligente
   if (typeof answer === "object" && answer !== null) {
-    return (
-      <span className="text-xs text-gray-800 bg-gray-50 px-2 py-1 rounded border font-mono max-w-full overflow-auto block whitespace-pre-wrap">
-        {JSON.stringify(answer, null, 2)}
-      </span>
-    );
+    const inlineResult = renderInlineObject(answer);
+    if (inlineResult) {
+      return inlineResult;
+    }
+
+    // Se não conseguiu renderizar inline, mostra JSON compacto apenas para respostas pequenas
+    const jsonString = JSON.stringify(answer);
+    if (jsonString.length <= 200) {
+      return (
+        <span className="text-xs text-gray-800 bg-gray-50 px-2 py-1 rounded border font-mono">
+          {jsonString}
+        </span>
+      );
+    } else {
+      // Para objetos muito grandes, mostra indicador
+      return (
+        <span className="text-amber-700 bg-amber-50 px-2 py-1 rounded text-xs">
+          Resposta complexa (ver detalhes no modal)
+        </span>
+      );
+    }
   }
 
   // Fallback geral
   return (
-    <span className="text-amber-700" title="Tipo de resposta não reconhecido">{String(answer)}</span>
+    <span className="text-amber-700" title="Tipo de resposta não reconhecido">
+      {String(answer)}
+    </span>
   );
 }
 
