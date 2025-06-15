@@ -6,12 +6,46 @@ import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
 import { ActionPlanInlineSummary } from "./ActionPlanInlineSummary";
 import { ResponseInputRenderer } from "./question-parts/ResponseInputRenderer";
-import { MediaAttachments } from "./question-inputs/MediaAttachments";
+import { MediaAttachmentRenderer } from "@/components/media/renderers/MediaAttachmentRenderer";
 
 interface InspectionAnswersSummaryProps {
   questions: any[];
   responses: Record<string, any>;
 }
+
+// Função para extrair mediaUrls de estruturas aninhadas
+const extractMediaUrls = (response: any): string[] => {
+  console.log('[InspectionAnswersSummary] Extraindo mediaUrls de:', response);
+  
+  let mediaUrls: string[] = [];
+  
+  // Tentar extrair de diferentes localizações possíveis
+  const possiblePaths = [
+    response.mediaUrls,
+    response.media_urls,
+    response.value?.mediaUrls,
+    response.value?.media_urls,
+    response.answer?.mediaUrls,
+    response.answer?.media_urls,
+    response.answer?.value?.mediaUrls,
+    response.answer?.value?.media_urls,
+  ];
+  
+  for (const path of possiblePaths) {
+    if (Array.isArray(path) && path.length > 0) {
+      mediaUrls = path;
+      console.log('[InspectionAnswersSummary] MediaUrls encontradas em:', path);
+      break;
+    } else if (typeof path === 'string' && path.trim() !== '') {
+      mediaUrls = [path];
+      console.log('[InspectionAnswersSummary] MediaUrl string encontrada:', path);
+      break;
+    }
+  }
+  
+  console.log('[InspectionAnswersSummary] MediaUrls extraídas:', mediaUrls);
+  return mediaUrls;
+};
 
 export function InspectionAnswersSummary({ questions, responses }: InspectionAnswersSummaryProps) {
   const [modalOpenId, setModalOpenId] = useState<string | null>(null);
@@ -37,20 +71,10 @@ export function InspectionAnswersSummary({ questions, responses }: InspectionAns
     <div className="space-y-6">
       {questions.map((question) => {
         const response = responses?.[question.id] || {};
-        const notes = response.comment ?? response.comments ?? "";
+        console.log(`[InspectionAnswersSummary] Processando questão ${question.id}:`, response);
         
-        // Garantir que mediaUrls seja sempre um array
-        let mediaUrls: string[] = [];
-        if (Array.isArray(response.mediaUrls)) {
-          mediaUrls = response.mediaUrls;
-        } else if (Array.isArray(response.media_urls)) {
-          mediaUrls = response.media_urls;
-        } else if (typeof response.mediaUrls === 'string') {
-          mediaUrls = [response.mediaUrls];
-        } else if (typeof response.media_urls === 'string') {
-          mediaUrls = [response.media_urls];
-        }
-
+        const notes = response.comment ?? response.comments ?? "";
+        const mediaUrls = extractMediaUrls(response);
         const actionPlan = response.actionPlan || response.action_plan;
         const mediaAnalysisResults = response.mediaAnalysisResults || {};
 
@@ -86,17 +110,18 @@ export function InspectionAnswersSummary({ questions, responses }: InspectionAns
                 </div>
               </div>
 
-              {/* Exibe mídias anexadas se houver - usando componente independente */}
+              {/* Renderização direta das mídias usando MediaAttachmentRenderer */}
               {mediaUrls && mediaUrls.length > 0 && (
-                <div className="pt-1">
-                  <p className="text-xs text-muted-foreground mb-1">Mídias anexadas:</p>
-                  <MediaAttachments
-                    mediaUrls={mediaUrls}
+                <div className="pt-2">
+                  <p className="text-xs text-muted-foreground mb-2">Mídias anexadas:</p>
+                  <MediaAttachmentRenderer
+                    urls={mediaUrls}
                     onOpenPreview={handleOpenPreview}
                     onOpenAnalysis={handleOpenAnalysis}
                     readOnly={true}
                     questionText={question.text || question.pergunta}
                     analysisResults={mediaAnalysisResults}
+                    smallSize={true}
                   />
                 </div>
               )}
