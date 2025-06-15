@@ -68,13 +68,51 @@ const processResponses = (responsesData) => {
 
   const responses = {};
   responsesData.forEach(response => {
+    let value;
+    let mediaAnalysisResults = {};
+    let originalAnswer = response.answer;
+
+    // Extrai value e mediaAnalysisResults de possíveis objetos aninhados (compatível com antigo e novo)
+    if (originalAnswer && typeof originalAnswer === "object") {
+      // Versão objeto aninhado
+      value = originalAnswer.value !== undefined ? originalAnswer.value : originalAnswer;
+      if (originalAnswer.mediaAnalysisResults) {
+        mediaAnalysisResults = originalAnswer.mediaAnalysisResults;
+      }
+    } else if (typeof originalAnswer === "string") {
+      try {
+        const parsed = JSON.parse(originalAnswer);
+        value = parsed.value !== undefined ? parsed.value : parsed;
+        if (parsed.mediaAnalysisResults) {
+          mediaAnalysisResults = parsed.mediaAnalysisResults;
+        }
+      } catch {
+        value = originalAnswer;
+        mediaAnalysisResults = {};
+      }
+    } else {
+      value = originalAnswer;
+      mediaAnalysisResults = {};
+    }
+
+    // Carregar mediaUrls: preferir da coluna, se existir, do contrário busca no objeto
+    let mediaUrls = [];
+    if (response.media_urls && Array.isArray(response.media_urls)) {
+      mediaUrls = response.media_urls.filter((u) => typeof u === "string");
+    } else if (
+      originalAnswer &&
+      typeof originalAnswer === "object" &&
+      Array.isArray(originalAnswer.mediaUrls)
+    ) {
+      mediaUrls = [...originalAnswer.mediaUrls];
+    }
+
     responses[response.checklist_item_id] = {
-      value: typeof response.answer === 'string' ? response.answer : 
-             response.answer && typeof response.answer === 'object' ? 
-             JSON.stringify(response.answer) : response.answer,
+      value,
+      mediaUrls,
+      mediaAnalysisResults,
       comment: response.comments || response.notes,
       actionPlan: response.action_plan,
-      mediaUrls: response.media_urls || [],
       subChecklistResponses: response.sub_checklist_responses || {},
       updatedAt: response.updated_at,
       parentResponseId: response.parent_response_id

@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { ResponseData } from "./types/inspectionTypes";
 import { useMediaHandler } from "./useMediaHandler";
@@ -15,14 +14,14 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
     setResponses((prev) => {
       const currentResponse = prev[questionId] || {};
 
-      // Garantir que field mediaAnalysisResults existe e é sempre objeto "plano" (sem circularidade)
+      // Fatore apenas value e mediaAnalysisResults, o resto vai explicitamente (mediaUrls..)
       let cleanMediaAnalysisResults = (data?.mediaAnalysisResults && typeof data.mediaAnalysisResults === "object")
         ? JSON.parse(JSON.stringify(data.mediaAnalysisResults))
         : (currentResponse.mediaAnalysisResults && typeof currentResponse.mediaAnalysisResults === "object")
           ? JSON.parse(JSON.stringify(currentResponse.mediaAnalysisResults))
           : {};
 
-      // Remove qualquer referência circular potencial nas respostas e resultados
+      // Monta o objeto resposta de acordo com os campos esperados
       const safeData = {
         value: data?.value !== undefined ? data.value : currentResponse.value,
         mediaUrls: Array.isArray(data?.mediaUrls) ? [...data.mediaUrls] :
@@ -33,18 +32,16 @@ export function useResponseHandling(inspectionId: string | undefined, setRespons
         updatedAt: new Date().toISOString()
       };
 
-      // Garantir que não existe introdução indesejada de referências profundas
-      // (Se algum campo mediaAnalysisResults está com paths ou subChecklistResponses, elimina)
+      // Corrige referência circular e limpa subChecklistResponses dos analysis
       for (const key in safeData.mediaAnalysisResults) {
         if (safeData.mediaAnalysisResults[key] && typeof safeData.mediaAnalysisResults[key] === "object") {
-          // Remove possíveis subChecklistResponses dentro do resultado de análise por segurança
           if (safeData.mediaAnalysisResults[key].subChecklistResponses) {
             delete safeData.mediaAnalysisResults[key].subChecklistResponses;
           }
         }
       }
 
-      // Verificar se houve mudança real para evitar re-renders desnecessários
+      // Detecta se mudou mesmo
       const hasChanged = JSON.stringify(currentResponse) !== JSON.stringify(safeData);
 
       if (!hasChanged) {

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -33,17 +32,25 @@ export const useSaveInspection = () => {
     let hasError = false;
     setIsSaving(true);
     
-    // Formatar os dados para inserção na nova tabela
+    // Formatar corretamente: answer sem duplicação de mediaUrls nem analysis
     const responsesData = responses.map(r => ({
       inspection_id: inspectionId,
       checklist_item_id: r.questionId,
-      answer: r.value ? (typeof r.value === 'object' ? r.value : { value: r.value }) : { value: null },
+      // O answer armazena SOMENTE o "value" e "mediaAnalysisResults" se existirem
+      answer: (() => {
+        let obj: any = {};
+        if (typeof r.value !== "undefined") obj.value = r.value;
+        if (r.mediaAnalysisResults) obj.mediaAnalysisResults = r.mediaAnalysisResults;
+        // Salva somente quando não está vazio, senão salva null
+        if (Object.keys(obj).length === 0) return { value: null };
+        return obj;
+      })(),
       action_plan: r.actionPlan,
       comments: r.comments,
       notes: r.notes,
-      media_urls: r.mediaUrls || [],
+      media_urls: Array.isArray(r.mediaUrls) ? [...r.mediaUrls] : [],
       parent_response_id: r.parentResponseId || null,
-      created_at: new Date().toISOString(),
+      created_at: r.createdAt ? r.createdAt : new Date().toISOString(),
       updated_at: new Date().toISOString()
     }));
     
@@ -55,7 +62,7 @@ export const useSaveInspection = () => {
           .upsert(responsesData, { onConflict: 'inspection_id,checklist_item_id' })
       );
       
-      console.log(`Salvou ${responsesData.length} respostas na nova estrutura hierárquica`);
+      console.log(`[saveResponses] Salvou ${responsesData.length} corretas:`, responsesData);
     } catch (error) {
       console.error("Erro ao salvar respostas:", error);
       hasError = true;
