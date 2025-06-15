@@ -1,4 +1,3 @@
-
 // Imports extras para áudio
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
@@ -78,6 +77,25 @@ Você DEVE retornar um objeto JSON com a seguinte estrutura. Não adicione nenhu
     throw new Error(data.error?.message || "Erro de análise na OpenAI");
   }
   return JSON.parse(data.choices[0].message.content);
+}
+
+async function analyzePdf(openAIApiKey: string, pdfUrl: string, questionText: string, userAnswer: string) {
+  // Não há suporte real por enquanto. Retornar mensagem amigável:
+  return {
+    analysis: "Análise automática de PDFs ainda não suportada. Por favor, analise manualmente o documento.",
+    hasNonConformity: false,
+    psychosocialRiskDetected: false,
+    plan5w2h: {
+      what: "",
+      why: "",
+      who: "",
+      when: "",
+      where: "",
+      how: "",
+      howMuch: ""
+    },
+    analysisType: "pdf"
+  };
 }
 
 // Áudio: utiliza Whisper para transcrição e, depois, gera análise textual com contexto SST.
@@ -185,7 +203,8 @@ serve(async (req) => {
     const extension = mediaUrl.split(".").pop()?.toLowerCase();
     const isAudio = mediaType === "audio" || ["mp3", "wav", "ogg", "m4a", "webm"].includes(extension ?? "");
     const isImage = mediaType === "image" || ["jpg", "jpeg", "png", "gif", "webp", "bmp"].includes(extension ?? "");
-    
+    const isPdf = mediaType === "pdf" || extension === "pdf";
+
     let analysisResult;
     if (isAudio) {
       console.log("[analyze-media] Processando áudio");
@@ -196,6 +215,10 @@ serve(async (req) => {
       const allMedia = [mediaUrl, ...(additionalMediaUrls || [])].filter(Boolean);
       analysisResult = await analyzeImage(openAIApiKey, allMedia, questionText, userAnswer);
       analysisResult.analysisType = "image";
+    } else if (isPdf) {
+      console.log("[analyze-media] Processando PDF");
+      analysisResult = await analyzePdf(openAIApiKey, mediaUrl, questionText, userAnswer);
+      analysisResult.analysisType = "pdf";
     } else {
       throw new Error("Tipo de mídia não suportado para análise.");
     }
@@ -212,4 +235,3 @@ serve(async (req) => {
     });
   }
 });
-

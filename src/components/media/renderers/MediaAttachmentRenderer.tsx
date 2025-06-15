@@ -6,8 +6,18 @@ import { toast } from "sonner";
 import { ImageRenderer, AudioRenderer, VideoRenderer, DocumentRenderer, GenericFileRenderer } from "./MediaTypeRenderer";
 import { MediaGallery } from "./MediaGalleryGrid";
 
+// Novo: layout responsivo flexível
+function getGridColumns(count: number) {
+  if (count <= 1) return "grid-cols-1";
+  if (count === 2) return "grid-cols-1 sm:grid-cols-2";
+  if (count === 3) return "grid-cols-1 sm:grid-cols-2 md:grid-cols-3";
+  if (count >= 4 && count <= 6) return "grid-cols-2 sm:grid-cols-3 md:grid-cols-4";
+  if (count > 6) return "grid-cols-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-6";
+  return "grid-cols-1";
+}
+
 interface MediaAttachmentRendererProps {
-  urls: string[]; // <- agora aceita array
+  urls: string[];
   onOpenPreview: (url: string) => void;
   onOpenAnalysis: (url: string, questionText?: string) => void;
   onDelete?: (url: string) => void;
@@ -16,6 +26,25 @@ interface MediaAttachmentRendererProps {
   analysisResults?: Record<string, any>;
   smallSize?: boolean;
 }
+
+// Novo: Componente para melhorar UX com PDF
+const PDFPlaceholder = ({ url, fileName }: { url: string; fileName: string }) => (
+  <div className="flex flex-col items-center justify-center border p-3 rounded bg-gray-50 min-w-[120px] max-w-[160px] w-full">
+    <div className="flex flex-col items-center">
+      <span className="text-5xl mb-1">📄</span>
+      <span className="text-xs font-bold text-gray-600 truncate text-center">{fileName}</span>
+    </div>
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-xs text-blue-500 underline mt-2"
+      aria-label={`Abrir ${fileName}`}
+    >
+      Abrir PDF
+    </a>
+  </div>
+);
 
 export const MediaAttachmentRenderer = ({
   urls = [],
@@ -29,7 +58,7 @@ export const MediaAttachmentRenderer = ({
 }: MediaAttachmentRendererProps) => {
   if (!urls || urls.length === 0) return null;
 
-  // Função de download (única para todos os tipos)
+  // Função de download única
   const handleDownload = (url: string, filename: string) => {
     try {
       const a = document.createElement('a');
@@ -44,7 +73,7 @@ export const MediaAttachmentRenderer = ({
     }
   };
 
-  // Se todos forem imagem, mostra a galeria
+  // Se todos forem imagem (e mais que 1), galeria.
   const allImages = urls.every((u) => getFileType(u) === 'image');
   if (allImages && urls.length > 1) {
     return (
@@ -62,53 +91,15 @@ export const MediaAttachmentRenderer = ({
     );
   }
 
-  // Caso misto ou não-imagem, renderiza cada arquivo conforme tipo
+  // Novo: exibe grid para múltiplos tipos juntos
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className={`grid gap-2 ${getGridColumns(urls.length)}`}>
       {urls.map((url, index) => {
         const fileType = getFileType(url);
         const fileName = getFilenameFromUrl(url);
         const hasAnalysis = analysisResults && analysisResults[url];
         const extension = url.split('.').pop()?.toLowerCase() || '';
         const specificFileType = determineSpecificFileType(extension);
-
-        // Video ou áudio .webm (lógica preservada)
-        if (url.endsWith('.webm')) {
-          if (url.includes('audio')) {
-            return (
-              <AudioRenderer
-                key={url}
-                url={url}
-                index={index}
-                fileName={fileName}
-                onOpenPreview={onOpenPreview}
-                onOpenAnalysis={onOpenAnalysis}
-                readOnly={readOnly}
-                onDelete={onDelete}
-                onDownload={handleDownload}
-                hasAnalysis={hasAnalysis}
-                questionText={questionText}
-                smallSize={smallSize}
-              />
-            );
-          } else {
-            return (
-              <VideoRenderer
-                key={url}
-                url={url}
-                index={index}
-                fileName={fileName}
-                onOpenPreview={onOpenPreview}
-                onOpenAnalysis={onOpenAnalysis}
-                readOnly={readOnly}
-                onDelete={onDelete}
-                hasAnalysis={hasAnalysis}
-                questionText={questionText}
-                smallSize={smallSize}
-              />
-            );
-          }
-        }
 
         // Imagem avulsa (não entra na galeria)
         if (fileType === 'image') {
@@ -126,6 +117,13 @@ export const MediaAttachmentRenderer = ({
               questionText={questionText}
               smallSize={smallSize}
             />
+          );
+        }
+
+        // PDF melhor tratado: placeholder visual simpático
+        if (specificFileType === "pdf") {
+          return (
+            <PDFPlaceholder key={url} url={url} fileName={fileName} />
           );
         }
 
@@ -150,7 +148,7 @@ export const MediaAttachmentRenderer = ({
         }
 
         // Vídeo
-        if (fileType === 'video') {
+        if (fileType === 'video' || (url.endsWith('.webm') && !url.includes('audio'))) {
           return (
             <VideoRenderer
               key={url}
@@ -168,18 +166,21 @@ export const MediaAttachmentRenderer = ({
           );
         }
 
-        // PDF
-        if (specificFileType === 'pdf') {
+        // Caso .webm for áudio (edge case)
+        if (url.endsWith('.webm') && url.includes('audio')) {
           return (
-            <DocumentRenderer
+            <AudioRenderer
               key={url}
               url={url}
               index={index}
               fileName={fileName}
               onOpenPreview={onOpenPreview}
+              onOpenAnalysis={onOpenAnalysis}
               readOnly={readOnly}
               onDelete={onDelete}
-              specificFileType={specificFileType}
+              onDownload={handleDownload}
+              hasAnalysis={hasAnalysis}
+              questionText={questionText}
               smallSize={smallSize}
             />
           );
