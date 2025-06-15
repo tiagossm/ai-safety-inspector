@@ -1,9 +1,11 @@
+
+// Esse comentário força o TypeScript a atualizar a tipagem caso exista cache antigo (2025-06-15 update).
 import React, { useState, useCallback } from "react";
 import { ActionPlanButton } from "./response-types/components/ActionPlanButton";
 import { MediaAnalysisButton } from "./response-types/components/MediaAnalysisButton";
 import { ActionPlan5W2HDialog } from "@/components/action-plans/ActionPlan5W2HDialog";
 
-// Interface precisa ser exportada explicitamente para as props ficarem claras no projeto
+// Interface explicitamente tipada e exportada
 export interface StandardActionButtonsProps {
   question: any;
   inspectionId?: string;
@@ -17,7 +19,6 @@ export interface StandardActionButtonsProps {
   onActionPlanClick?: () => void;
 }
 
-// Componente exportado explicitamente
 export function StandardActionButtons(props: StandardActionButtonsProps) {
   const {
     question,
@@ -77,3 +78,4 @@ export function StandardActionButtons(props: StandardActionButtonsProps) {
     </>
   );
 }
+
