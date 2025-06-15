@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   table: {
-    display: 'table',
+    display: 'flex',
     width: 'auto',
     borderStyle: 'solid',
     borderWidth: 1,
@@ -374,7 +374,7 @@ export const InspectionPDFDocument: React.FC<InspectionPDFDocumentProps> = ({ re
                 {reportData.mediaByType.videos.map((video, index) => (
                   <View key={index} style={styles.mediaItem}>
                     <Text style={{ fontSize: 12, marginBottom: 5 }}>▶</Text>
-                    <Image style={styles.qrCode} src={video.qrCode} />
+                    {video.qrCode && <Image style={styles.qrCode} src={video.qrCode} />}
                     <Text style={{ fontSize: 8, marginTop: 5 }}>
                       Perg. {video.questionNumber} - Vídeo {index + 1}
                     </Text>
@@ -392,7 +392,7 @@ export const InspectionPDFDocument: React.FC<InspectionPDFDocumentProps> = ({ re
                 {reportData.mediaByType.audios.map((audio, index) => (
                   <View key={index} style={styles.mediaItem}>
                     <Text style={{ fontSize: 12, marginBottom: 5 }}>🎤</Text>
-                    <Image style={styles.qrCode} src={audio.qrCode} />
+                    {audio.qrCode && <Image style={styles.qrCode} src={audio.qrCode} />}
                     <Text style={{ fontSize: 8, marginTop: 5 }}>
                       Perg. {audio.questionNumber} - Áudio {index + 1}
                     </Text>
@@ -410,7 +410,7 @@ export const InspectionPDFDocument: React.FC<InspectionPDFDocumentProps> = ({ re
                 {reportData.mediaByType.files.map((file, index) => (
                   <View key={index} style={styles.mediaItem}>
                     <Text style={{ fontSize: 12, marginBottom: 5 }}>📎</Text>
-                    <Image style={styles.qrCode} src={file.qrCode} />
+                    {file.qrCode && <Image style={styles.qrCode} src={file.qrCode} />}
                     <Text style={{ fontSize: 8, marginTop: 5 }}>
                       {file.fileName}
                     </Text>

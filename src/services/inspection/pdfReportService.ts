@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { InspectionPDFDocument } from "@/components/reports/InspectionPDFDocument";
 import { generateReportDTO } from "../reportDtoService";
 import { toast } from "sonner";
+import React from 'react';
 
 export interface PDFGenerationOptions {
   includeHighResImages?: boolean;
@@ -31,7 +32,7 @@ export async function generateInspectionPDF(
     const reportData = await generateReportDTO(inspectionId);
     
     // Gerar o PDF usando react-pdf
-    const pdfBlob = await pdf(InspectionPDFDocument({ reportData })).toBlob();
+    const pdfBlob = await pdf(React.createElement(InspectionPDFDocument, { reportData })).toBlob();
     
     // Verificar tamanho do PDF (máximo 8MB)
     const maxSizeBytes = 8 * 1024 * 1024; // 8MB
