@@ -1,4 +1,3 @@
-
 import { pdf, Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import { supabase } from "@/integrations/supabase/client";
 import { generateReportDTO } from "../reportDtoService";
@@ -35,6 +34,12 @@ const styles = StyleSheet.create({
     fontSize: 10,
     padding: 30,
   },
+  coverPage: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -65,6 +70,95 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 20,
   },
+  table: {
+    display: 'flex',
+    width: 'auto',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    borderColor: '#CCCCCC',
+  },
+  tableRow: {
+    margin: 'auto',
+    flexDirection: 'row',
+  },
+  tableColHeader: {
+    width: '25%',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+    borderColor: '#CCCCCC',
+    backgroundColor: colors.lightGray,
+    padding: 5,
+  },
+  tableCol: {
+    width: '25%',
+    borderStyle: 'solid',
+    borderWidth: 1,
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+    borderColor: '#CCCCCC',
+    padding: 5,
+  },
+  tableCellHeader: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  tableCell: {
+    fontSize: 9,
+    textAlign: 'left',
+  },
+  mediaGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 10,
+  },
+  mediaItem: {
+    width: 120,
+    height: 120,
+    border: '1px solid #CCCCCC',
+    padding: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mediaImage: {
+    width: 100,
+    height: 80,
+    objectFit: 'cover',
+  },
+  qrCode: {
+    width: 50,
+    height: 50,
+  },
+  signatureSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 30,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: colors.primary,
+  },
+  signatureBox: {
+    width: '45%',
+    alignItems: 'center',
+  },
+  signatureImage: {
+    width: 150,
+    height: 75,
+    marginBottom: 10,
+  },
+  compliantText: {
+    color: colors.primary,
+    fontWeight: 'bold',
+  },
+  nonCompliantText: {
+    color: colors.danger,
+    fontWeight: 'bold',
+  },
   infoRow: {
     flexDirection: 'row',
     marginBottom: 5,
@@ -91,7 +185,7 @@ export async function generateInspectionPDF(
     // Gerar DTO com todos os dados necessários
     const reportData = await generateReportDTO(inspectionId);
     
-    // Criar o documento PDF diretamente
+    // Criar o documento PDF usando os estilos do InspectionPDFDocument
     const document = React.createElement(Document, {}, [
       // Capa
       React.createElement(Page, { key: 'cover', size: 'A4', style: styles.page }, [
@@ -99,6 +193,7 @@ export async function generateInspectionPDF(
           React.createElement(Text, { key: 'title', style: styles.title }, 'Relatório de Inspeção'),
           React.createElement(Image, { key: 'logo', style: styles.logo, src: '/lovable-uploads/LogoazulFT.png' })
         ]),
+        
         React.createElement(View, { key: 'info', style: styles.section }, [
           React.createElement(View, { key: 'company', style: styles.infoRow }, [
             React.createElement(Text, { key: 'company-label', style: styles.label }, 'Empresa:'),
@@ -123,12 +218,80 @@ export async function generateInspectionPDF(
       // Resumo Executivo
       React.createElement(Page, { key: 'summary', size: 'A4', style: styles.page }, [
         React.createElement(Text, { key: 'summary-title', style: styles.title }, 'Resumo Executivo'),
-        React.createElement(View, { key: 'summary-content', style: styles.section }, [
-          React.createElement(Text, { key: 'summary-text' }, 
-            `Conformidade: ${reportData.summary.conformityPercent}% | ` +
-            `Não Conformidades: ${reportData.summary.totalNc} | ` +
-            `Total de Mídias: ${reportData.summary.totalMedia} | ` +
-            `Questões: ${reportData.summary.completedQuestions}/${reportData.summary.totalQuestions}`
+        
+        React.createElement(View, { key: 'summary-table', style: styles.section }, [
+          React.createElement(View, { key: 'table', style: styles.table }, [
+            React.createElement(View, { key: 'header-row', style: styles.tableRow }, [
+              React.createElement(View, { key: 'conf-header', style: styles.tableColHeader }, [
+                React.createElement(Text, { key: 'conf-text', style: styles.tableCellHeader }, 'Conformidade')
+              ]),
+              React.createElement(View, { key: 'nc-header', style: styles.tableColHeader }, [
+                React.createElement(Text, { key: 'nc-text', style: styles.tableCellHeader }, 'Não Conformidades')
+              ]),
+              React.createElement(View, { key: 'media-header', style: styles.tableColHeader }, [
+                React.createElement(Text, { key: 'media-text', style: styles.tableCellHeader }, 'Total de Mídias')
+              ]),
+              React.createElement(View, { key: 'quest-header', style: styles.tableColHeader }, [
+                React.createElement(Text, { key: 'quest-text', style: styles.tableCellHeader }, 'Questões')
+              ])
+            ]),
+            React.createElement(View, { key: 'data-row', style: styles.tableRow }, [
+              React.createElement(View, { key: 'conf-cell', style: styles.tableCol }, [
+                React.createElement(Text, { key: 'conf-value', style: styles.tableCell }, `${reportData.summary.conformityPercent}%`)
+              ]),
+              React.createElement(View, { key: 'nc-cell', style: styles.tableCol }, [
+                React.createElement(Text, { key: 'nc-value', style: styles.tableCell }, reportData.summary.totalNc.toString())
+              ]),
+              React.createElement(View, { key: 'media-cell', style: styles.tableCol }, [
+                React.createElement(Text, { key: 'media-value', style: styles.tableCell }, reportData.summary.totalMedia.toString())
+              ]),
+              React.createElement(View, { key: 'quest-cell', style: styles.tableCol }, [
+                React.createElement(Text, { key: 'quest-value', style: styles.tableCell }, 
+                  `${reportData.summary.completedQuestions}/${reportData.summary.totalQuestions}`)
+              ])
+            ])
+          ])
+        ])
+      ]),
+      
+      // Resultados Detalhados
+      React.createElement(Page, { key: 'results', size: 'A4', style: styles.page }, [
+        React.createElement(Text, { key: 'results-title', style: styles.title }, 'Resultados Detalhados'),
+        
+        React.createElement(View, { key: 'results-table', style: styles.table }, [
+          React.createElement(View, { key: 'results-header', style: styles.tableRow }, [
+            React.createElement(View, { key: 'num-header', style: [styles.tableColHeader, { width: '10%' }] }, [
+              React.createElement(Text, { key: 'num-text', style: styles.tableCellHeader }, 'Nº')
+            ]),
+            React.createElement(View, { key: 'question-header', style: [styles.tableColHeader, { width: '40%' }] }, [
+              React.createElement(Text, { key: 'question-text', style: styles.tableCellHeader }, 'Pergunta')
+            ]),
+            React.createElement(View, { key: 'answer-header', style: [styles.tableColHeader, { width: '20%' }] }, [
+              React.createElement(Text, { key: 'answer-text', style: styles.tableCellHeader }, 'Resposta')
+            ]),
+            React.createElement(View, { key: 'comment-header', style: [styles.tableColHeader, { width: '30%' }] }, [
+              React.createElement(Text, { key: 'comment-text', style: styles.tableCellHeader }, 'Observação')
+            ])
+          ]),
+          
+          ...reportData.responses.map((response, index) => 
+            React.createElement(View, { key: `response-${index}`, style: styles.tableRow }, [
+              React.createElement(View, { key: `num-${index}`, style: [styles.tableCol, { width: '10%' }] }, [
+                React.createElement(Text, { key: `num-value-${index}`, style: styles.tableCell }, response.questionNumber.toString())
+              ]),
+              React.createElement(View, { key: `question-${index}`, style: [styles.tableCol, { width: '40%' }] }, [
+                React.createElement(Text, { key: `question-value-${index}`, style: styles.tableCell }, response.questionText)
+              ]),
+              React.createElement(View, { key: `answer-${index}`, style: [styles.tableCol, { width: '20%' }] }, [
+                React.createElement(Text, { 
+                  key: `answer-value-${index}`, 
+                  style: [styles.tableCell, response.isCompliant ? styles.compliantText : styles.nonCompliantText] 
+                }, response.answer)
+              ]),
+              React.createElement(View, { key: `comment-${index}`, style: [styles.tableCol, { width: '30%' }] }, [
+                React.createElement(Text, { key: `comment-value-${index}`, style: styles.tableCell }, response.comments || '-')
+              ])
+            ])
           )
         ])
       ])
