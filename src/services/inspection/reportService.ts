@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { getErrorMessage } from "@/utils/errors";
 import jsPDF from "jspdf";
@@ -624,5 +623,29 @@ export function generateMockPDF(inspectionId: string, inspectionData: any): void
     downloadReport(url, filename);
   } catch (error) {
     console.error("Error generating mock PDF:", error);
+  }
+}
+
+/**
+ * Generate PDF report using react-pdf (NEW METHOD)
+ */
+export async function generateInspectionPDFReport(inspectionId: string): Promise<string | null> {
+  try {
+    const { generateInspectionPDF } = await import('./pdfReportService');
+    
+    const result = await generateInspectionPDF(inspectionId);
+    
+    toast.success('Relatório PDF gerado com sucesso!', {
+      description: `Arquivo: ${result.fileName} (${(result.size / 1024 / 1024).toFixed(2)}MB)`
+    });
+    
+    return result.url;
+    
+  } catch (error) {
+    console.error("Erro ao gerar relatório PDF:", error);
+    toast.error("Erro ao gerar relatório PDF", {
+      description: error instanceof Error ? error.message : "Erro desconhecido"
+    });
+    throw error;
   }
 }
