@@ -11,14 +11,25 @@ export async function generateReportDTO(inspectionId: string): Promise<ReportDTO
     .select(`
       *,
       company:company_id(fantasy_name),
-      checklist:checklist_id(title, description),
-      responsible:responsible_id(name, email)
+      checklist:checklist_id(title, description)
     `)
     .eq('id', inspectionId)
     .single();
 
   if (inspectionError) {
     throw new Error(`Erro ao buscar inspeção: ${inspectionError.message}`);
+  }
+
+  // Buscar dados do responsável separadamente se necessário
+  let responsibleData = null;
+  if (inspection.responsible_id) {
+    const { data: responsible } = await supabase
+      .from('users')
+      .select('name, email')
+      .eq('id', inspection.responsible_id)
+      .single();
+    
+    responsibleData = responsible;
   }
 
   // Buscar respostas da inspeção com questões
@@ -101,8 +112,8 @@ export async function generateReportDTO(inspectionId: string): Promise<ReportDTO
       description: inspection.checklist?.description
     },
     inspector: {
-      name: inspection.responsible?.name || 'Não informado',
-      email: inspection.responsible?.email
+      name: responsibleData?.name || 'Não informado',
+      email: responsibleData?.email
     },
     summary,
     responses: processedResponses,

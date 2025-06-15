@@ -1,3 +1,4 @@
+
 import React from "react";
 import { DataCard } from "@/components/ui/data-card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,7 @@ import { BadgeStatus } from "@/components/ui/badge-status";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { CalendarIcon, ClipboardList, MapPin, Eye, MoreHorizontal, Trash, FileText, Calendar } from "lucide-react";
 import { InspectionDetails } from "@/types/newChecklist";
-import { formatDistance } from "date-fns";
+import { formatDistance, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   DropdownMenu,
@@ -145,7 +146,7 @@ export function InspectionCard({
         <div className="flex items-center justify-between pt-3 border-t">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Calendar className="w-3 h-3" />
-            <span>{format(new Date(inspection.created_at), "dd/MM/yyyy", { locale: ptBR })}</span>
+            <span>{format(new Date(inspection.createdAt), "dd/MM/yyyy", { locale: ptBR })}</span>
             {inspection.location && (
               <>
                 <MapPin className="w-3 h-3 ml-2" />
