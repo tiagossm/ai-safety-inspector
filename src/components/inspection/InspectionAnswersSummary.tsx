@@ -1,12 +1,12 @@
 
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { MediaRenderer } from "@/components/media/MediaRenderer";
 import { ActionPlanModalInline } from "./ActionPlanModalInline";
 import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
 import { ActionPlanInlineSummary } from "./ActionPlanInlineSummary";
 import { ResponseInputRenderer } from "./question-parts/ResponseInputRenderer";
+import { MediaAttachments } from "./question-inputs/MediaAttachments";
 
 interface InspectionAnswersSummaryProps {
   questions: any[];
@@ -25,6 +25,14 @@ export function InspectionAnswersSummary({ questions, responses }: InspectionAns
     );
   }
 
+  const handleOpenPreview = (url: string) => {
+    // Função vazia para readOnly
+  };
+
+  const handleOpenAnalysis = (url: string, questionText?: string) => {
+    // Função vazia para readOnly
+  };
+
   return (
     <div className="space-y-6">
       {questions.map((question) => {
@@ -32,12 +40,13 @@ export function InspectionAnswersSummary({ questions, responses }: InspectionAns
         const notes = response.comment ?? "";
         const mediaUrls: string[] = response.mediaUrls || [];
         const actionPlan = response.actionPlan;
+        const mediaAnalysisResults = response.mediaAnalysisResults || {};
 
         // Prepara o response no formato esperado pelo ResponseInputRenderer
         const formattedResponse = {
           value: response.value,
           mediaUrls: mediaUrls,
-          mediaAnalysisResults: response.mediaAnalysisResults || {},
+          mediaAnalysisResults: mediaAnalysisResults,
           comment: notes,
           actionPlan: actionPlan,
           ...response
@@ -64,6 +73,21 @@ export function InspectionAnswersSummary({ questions, responses }: InspectionAns
                   {!!actionPlan && <ActionPlanInlineSummary actionPlan={actionPlan} />}
                 </div>
               </div>
+
+              {/* Exibe mídias anexadas se houver */}
+              {mediaUrls && mediaUrls.length > 0 && (
+                <div className="pt-1">
+                  <p className="text-xs text-muted-foreground mb-1">Mídias anexadas:</p>
+                  <MediaAttachments
+                    mediaUrls={mediaUrls}
+                    onOpenPreview={handleOpenPreview}
+                    onOpenAnalysis={handleOpenAnalysis}
+                    readOnly={true}
+                    questionText={question.text || question.pergunta}
+                    analysisResults={mediaAnalysisResults}
+                  />
+                </div>
+              )}
 
               {notes && (
                 <div className="pt-1">
