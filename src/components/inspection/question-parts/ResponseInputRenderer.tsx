@@ -53,58 +53,60 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   const mediaUrls = safeResponse.mediaUrls;
   const mediaAnalysisResults = safeResponse.mediaAnalysisResults;
 
-  // Estados centralizados para modais
+  // Estados centralizados para modais (apenas se não for readOnly)
   const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
   const [isActionPlanDialogOpen, setIsActionPlanDialogOpen] = useState(false);
   const [ia5W2Hplan, setIa5W2Hplan] = useState<Plan5W2H | null>(null);
 
-  // <<<<<< NOVO - handler que abre modal de análise com TODAS mídias >>>>>>
+  // Handlers (apenas se não for readOnly)
   const handleOpenAnalysisConsolidated = useCallback(() => {
-    setIsAnalysisOpen(true);
-  }, []);
+    if (!readOnly) setIsAnalysisOpen(true);
+  }, [readOnly]);
 
-  // --- NOVO: Corrigir/implementar handleAdd5W2HActionPlan e handleOpenActionPlan
   const handleAdd5W2HActionPlan = useCallback((plan: Plan5W2H) => {
-    setIa5W2Hplan(plan);
-    setIsActionPlanDialogOpen(true);
-  }, []);
+    if (!readOnly) {
+      setIa5W2Hplan(plan);
+      setIsActionPlanDialogOpen(true);
+    }
+  }, [readOnly]);
 
   const handleOpenActionPlan = useCallback(() => {
-    setIsActionPlanDialogOpen(true);
-  }, []);
+    if (!readOnly) setIsActionPlanDialogOpen(true);
+  }, [readOnly]);
 
   // Handler de mídia centralizado
   const handleMediaChange = useCallback((urls: string[]) => {
-    const updatedResponse = { ...safeResponse, mediaUrls: urls };
-    onResponseChange(updatedResponse);
-    if (onMediaChange) onMediaChange(urls);
-  }, [safeResponse, onResponseChange, onMediaChange]);
+    if (!readOnly) {
+      const updatedResponse = { ...safeResponse, mediaUrls: urls };
+      onResponseChange(updatedResponse);
+      if (onMediaChange) onMediaChange(urls);
+    }
+  }, [safeResponse, onResponseChange, onMediaChange, readOnly]);
 
-  // Modificado: ao passar para o MediaAnalysisDialog, envia mediaType correto para .webm áudio
+  // // ... keep existing code (getPrimaryMediaType function)
   const getPrimaryMediaType = () => {
     if (!mediaUrls || mediaUrls.length === 0) return undefined;
     const url = mediaUrls[0];
     if (!url) return undefined;
     const ext = url.split('.').pop()?.toLowerCase() || "";
     if (ext === "webm") {
-      // Heurística do MediaAttachmentRenderer
       if (url.toLowerCase().includes('/audio/') || url.toLowerCase().endsWith('audio.webm')) {
         return "audio";
       }
       return "video";
     }
-    // Restante: texto de fallback
     if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) return "audio";
     if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].includes(ext)) return "image";
     if (ext === "pdf") return "pdf";
     return undefined;
   };
 
-  // Handler para salvar análise e atualizar response
+  // // ... keep existing code (handleAnalysisComplete function)
   const handleAnalysisComplete = useCallback((url: string, result: MediaAnalysisResult) => {
+    if (readOnly) return;
+    
     console.log(`[ResponseInputRenderer] Análise completa para ${url}`, result);
 
-    // Garante que não existe referência circular ou deep response indexado:
     const cleanResult: MediaAnalysisResult = JSON.parse(JSON.stringify(result));
 
     const updatedResults = {
@@ -117,7 +119,6 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
       mediaAnalysisResults: updatedResults
     };
 
-    // Nunca enviar funções, nunca incluir subChecklistResponses, manter apenas fields esperados
     delete updatedResponse.subChecklistResponses;
     if (updatedResponse.mediaAnalysisResults) {
       Object.values(updatedResponse.mediaAnalysisResults).forEach((val: any) => {
@@ -128,10 +129,10 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     }
 
     onResponseChange(updatedResponse);
-  }, [mediaAnalysisResults, safeResponse, onResponseChange]);
+  }, [mediaAnalysisResults, safeResponse, onResponseChange, readOnly]);
 
-  // Componentes de modal centralizados
-  const actionPlanDialog = (
+  // Componentes de modal centralizados (apenas se não for readOnly)
+  const actionPlanDialog = !readOnly ? (
     <ActionPlan5W2HDialog
       open={isActionPlanDialogOpen}
       onOpenChange={setIsActionPlanDialogOpen}
@@ -145,10 +146,9 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
       iaSuggestions={mediaAnalysisResults}
       ia5W2Hplan={ia5W2Hplan}
     />
-  );
+  ) : null;
 
-  // NOVO: Passar todas as mídias para o dialog e garantir análise única
-  const mediaAnalysisDialog = (
+  const mediaAnalysisDialog = !readOnly ? (
     <MediaAnalysisDialog
       open={isAnalysisOpen}
       onOpenChange={setIsAnalysisOpen}
@@ -165,7 +165,34 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
       onAnalysisComplete={handleAnalysisComplete}
       onAdd5W2HActionPlan={handleAdd5W2HActionPlan}
     />
-  );
+  ) : null;
+
+  // Componente de botões padrão (apenas se não for readOnly)
+  const standardActionButtons = !readOnly ? (
+    <StandardActionButtons
+      question={question}
+      readOnly={readOnly}
+      onOpenAnalysis={handleOpenAnalysisConsolidated}
+      onActionPlanClick={handleOpenActionPlan}
+      mediaUrls={mediaUrls}
+      mediaAnalysisResults={mediaAnalysisResults}
+      dummyProp="UniqueKeyForProps20250615"
+    />
+  ) : null;
+
+  // Componente de upload de mídia (apenas se não for readOnly)
+  const mediaUploadInput = !readOnly ? (
+    <MediaUploadInput
+      mediaUrls={mediaUrls}
+      onMediaChange={handleMediaChange}
+      allowsPhoto={question.allowsPhoto || question.permite_foto || false}
+      allowsVideo={question.allowsVideo || question.permite_video || false}
+      allowsAudio={question.allowsAudio || question.permite_audio || false}
+      allowsFiles={question.allowsFiles || question.permite_files || false}
+      readOnly={readOnly}
+      questionText={question.text || question.pergunta || ""}
+    />
+  ) : null;
 
   switch (responseType) {
     case "yes_no":
@@ -177,25 +204,8 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             onResponseChange={onResponseChange}
             readOnly={readOnly}
           />
-          <StandardActionButtons
-            question={question}
-            readOnly={readOnly}
-            onOpenAnalysis={handleOpenAnalysisConsolidated}
-            onActionPlanClick={handleOpenActionPlan}
-            mediaUrls={mediaUrls}
-            mediaAnalysisResults={mediaAnalysisResults}
-            dummyProp="UniqueKeyForProps20250615"
-          />
-          <MediaUploadInput
-            mediaUrls={mediaUrls}
-            onMediaChange={handleMediaChange}
-            allowsPhoto={question.allowsPhoto || question.permite_foto || false}
-            allowsVideo={question.allowsVideo || question.permite_video || false}
-            allowsAudio={question.allowsAudio || question.permite_audio || false}
-            allowsFiles={question.allowsFiles || question.permite_files || false}
-            readOnly={readOnly}
-            questionText={question.text || question.pergunta || ""}
-          />
+          {standardActionButtons}
+          {mediaUploadInput}
           {mediaAnalysisDialog}
           {actionPlanDialog}
         </div>
@@ -210,25 +220,8 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             onResponseChange={onResponseChange}
             readOnly={readOnly}
           />
-          <StandardActionButtons
-            question={question}
-            readOnly={readOnly}
-            onOpenAnalysis={handleOpenAnalysisConsolidated}
-            onActionPlanClick={handleOpenActionPlan}
-            mediaUrls={mediaUrls}
-            mediaAnalysisResults={mediaAnalysisResults}
-            dummyProp="UniqueKeyForProps20250615"
-          />
-          <MediaUploadInput
-            mediaUrls={mediaUrls}
-            onMediaChange={handleMediaChange}
-            allowsPhoto={question.allowsPhoto || question.permite_foto || false}
-            allowsVideo={question.allowsVideo || question.permite_video || false}
-            allowsAudio={question.allowsAudio || question.permite_audio || false}
-            allowsFiles={question.allowsFiles || question.permite_files || false}
-            readOnly={readOnly}
-            questionText={question.text || question.pergunta || ""}
-          />
+          {standardActionButtons}
+          {mediaUploadInput}
           {mediaAnalysisDialog}
           {actionPlanDialog}
         </div>
@@ -242,25 +235,8 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             onChange={val => onResponseChange({ ...safeResponse, value: val })}
             readOnly={readOnly}
           />
-          <StandardActionButtons
-            question={question}
-            readOnly={readOnly}
-            onOpenAnalysis={handleOpenAnalysisConsolidated}
-            onActionPlanClick={handleOpenActionPlan}
-            mediaUrls={mediaUrls}
-            mediaAnalysisResults={mediaAnalysisResults}
-            dummyProp="UniqueKeyForProps20250615"
-          />
-          <MediaUploadInput
-            mediaUrls={mediaUrls}
-            onMediaChange={handleMediaChange}
-            allowsPhoto={question.allowsPhoto || question.permite_foto || false}
-            allowsVideo={question.allowsVideo || question.permite_video || false}
-            allowsAudio={question.allowsAudio || question.permite_audio || false}
-            allowsFiles={question.allowsFiles || question.permite_files || false}
-            readOnly={readOnly}
-            questionText={question.text || question.pergunta || ""}
-          />
+          {standardActionButtons}
+          {mediaUploadInput}
           {mediaAnalysisDialog}
           {actionPlanDialog}
         </div>
@@ -282,25 +258,8 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             }
             readOnly={readOnly}
           />
-          <StandardActionButtons
-            question={question}
-            readOnly={readOnly}
-            onOpenAnalysis={handleOpenAnalysisConsolidated}
-            onActionPlanClick={handleOpenActionPlan}
-            mediaUrls={mediaUrls}
-            mediaAnalysisResults={mediaAnalysisResults}
-            dummyProp="UniqueKeyForProps20250615"
-          />
-          <MediaUploadInput
-            mediaUrls={mediaUrls}
-            onMediaChange={handleMediaChange}
-            allowsPhoto={question.allowsPhoto || question.permite_foto || false}
-            allowsVideo={question.allowsVideo || question.permite_video || false}
-            allowsAudio={question.allowsAudio || question.permite_audio || false}
-            allowsFiles={question.allowsFiles || question.permite_files || false}
-            readOnly={readOnly}
-            questionText={question.text || question.pergunta || ""}
-          />
+          {standardActionButtons}
+          {mediaUploadInput}
           {mediaAnalysisDialog}
           {actionPlanDialog}
         </div>
@@ -316,25 +275,8 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             onChange={val => onResponseChange({ ...safeResponse, value: val })}
             readOnly={readOnly}
           />
-          <StandardActionButtons
-            question={question}
-            readOnly={readOnly}
-            onOpenAnalysis={handleOpenAnalysisConsolidated}
-            onActionPlanClick={handleOpenActionPlan}
-            mediaUrls={mediaUrls}
-            mediaAnalysisResults={mediaAnalysisResults}
-            dummyProp="UniqueKeyForProps20250615"
-          />
-          <MediaUploadInput
-            mediaUrls={mediaUrls}
-            onMediaChange={handleMediaChange}
-            allowsPhoto={question.allowsPhoto || question.permite_foto || false}
-            allowsVideo={question.allowsVideo || question.permite_video || false}
-            allowsAudio={question.allowsAudio || question.permite_audio || false}
-            allowsFiles={question.allowsFiles || question.permite_files || false}
-            readOnly={readOnly}
-            questionText={question.text || question.pergunta || ""}
-          />
+          {standardActionButtons}
+          {mediaUploadInput}
           {mediaAnalysisDialog}
           {actionPlanDialog}
         </div>
@@ -352,25 +294,8 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             allowsAudio={question.allowsAudio}
             allowsFiles={question.allowsFiles}
           />
-          <StandardActionButtons
-            question={question}
-            readOnly={readOnly}
-            onOpenAnalysis={handleOpenAnalysisConsolidated}
-            onActionPlanClick={handleOpenActionPlan}
-            mediaUrls={mediaUrls}
-            mediaAnalysisResults={mediaAnalysisResults}
-            dummyProp="UniqueKeyForProps20250615"
-          />
-          <MediaUploadInput
-            mediaUrls={mediaUrls}
-            onMediaChange={handleMediaChange}
-            allowsPhoto={question.allowsPhoto || question.permite_foto || false}
-            allowsVideo={question.allowsVideo || question.permite_video || false}
-            allowsAudio={question.allowsAudio || question.permite_audio || false}
-            allowsFiles={question.allowsFiles || question.permite_files || false}
-            readOnly={readOnly}
-            questionText={question.text || question.pergunta || ""}
-          />
+          {standardActionButtons}
+          {mediaUploadInput}
           {mediaAnalysisDialog}
           {actionPlanDialog}
         </div>
@@ -383,12 +308,14 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             value={safeResponse.value || ""}
             onChange={val => onResponseChange({ ...safeResponse, value: val })}
           />
-          <StandardActionButtons
-            question={question}
-            readOnly={readOnly}
-            onActionPlanClick={handleOpenActionPlan}
-            dummyProp="UniqueKeyForProps20250615"
-          />
+          {!readOnly && (
+            <StandardActionButtons
+              question={question}
+              readOnly={readOnly}
+              onActionPlanClick={handleOpenActionPlan}
+              dummyProp="UniqueKeyForProps20250615"
+            />
+          )}
           {actionPlanDialog}
         </div>
       );
@@ -401,12 +328,14 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             onChange={val => onResponseChange({ ...safeResponse, value: val })}
             readOnly={readOnly}
           />
-          <StandardActionButtons
-            question={question}
-            readOnly={readOnly}
-            onActionPlanClick={handleOpenActionPlan}
-            dummyProp="UniqueKeyForProps20250615"
-          />
+          {!readOnly && (
+            <StandardActionButtons
+              question={question}
+              readOnly={readOnly}
+              onActionPlanClick={handleOpenActionPlan}
+              dummyProp="UniqueKeyForProps20250615"
+            />
+          )}
           {actionPlanDialog}
         </div>
       );
@@ -419,12 +348,14 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             onChange={val => onResponseChange({ ...safeResponse, value: val })}
             readOnly={readOnly}
           />
-          <StandardActionButtons
-            question={question}
-            readOnly={readOnly}
-            onActionPlanClick={handleOpenActionPlan}
-            dummyProp="UniqueKeyForProps20250615"
-          />
+          {!readOnly && (
+            <StandardActionButtons
+              question={question}
+              readOnly={readOnly}
+              onActionPlanClick={handleOpenActionPlan}
+              dummyProp="UniqueKeyForProps20250615"
+            />
+          )}
           {actionPlanDialog}
         </div>
       );
@@ -437,12 +368,14 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             onChange={val => onResponseChange({ ...safeResponse, value: val })}
             readOnly={readOnly}
           />
-          <StandardActionButtons
-            question={question}
-            readOnly={readOnly}
-            onActionPlanClick={handleOpenActionPlan}
-            dummyProp="UniqueKeyForProps20250615"
-          />
+          {!readOnly && (
+            <StandardActionButtons
+              question={question}
+              readOnly={readOnly}
+              onActionPlanClick={handleOpenActionPlan}
+              dummyProp="UniqueKeyForProps20250615"
+            />
+          )}
           {actionPlanDialog}
         </div>
       );
