@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { generateQRCode } from "./qrCodeService";
 import { ReportDTO, MediaByType, MediaItem, InspectionSummary, ActionPlanItem } from "@/types/reportDto";
@@ -32,19 +31,25 @@ export async function generateReportDTO(inspectionId: string): Promise<ReportDTO
     responsibleData = responsible;
   }
 
-  // Buscar respostas da inspeção com questões
+  // Buscar respostas da inspeção com questões - removendo ordenação problemática
   const { data: responses, error: responsesError } = await supabase
     .from('checklist_item_responses')
     .select(`
       *,
       checklist_item:checklist_item_id(pergunta, ordem, tipo_resposta)
     `)
-    .eq('inspection_id', inspectionId)
-    .order('checklist_item.ordem');
+    .eq('inspection_id', inspectionId);
 
   if (responsesError) {
     throw new Error(`Erro ao buscar respostas: ${responsesError.message}`);
   }
+
+  // Ordenar as respostas manualmente após receber os dados
+  const sortedResponses = responses?.sort((a, b) => {
+    const orderA = a.checklist_item?.ordem || 0;
+    const orderB = b.checklist_item?.ordem || 0;
+    return orderA - orderB;
+  }) || [];
 
   // Buscar assinaturas
   const { data: signatures } = await supabase
@@ -57,7 +62,7 @@ export async function generateReportDTO(inspectionId: string): Promise<ReportDTO
   const allMedia: MediaItem[] = [];
   let totalCompliant = 0;
 
-  for (const response of responses || []) {
+  for (const response of sortedResponses) {
     const extractedData = extractResponseData(response);
     
     // Determinar se é conforme
@@ -90,11 +95,11 @@ export async function generateReportDTO(inspectionId: string): Promise<ReportDTO
 
   // Calcular resumo
   const summary: InspectionSummary = {
-    conformityPercent: responses?.length ? Math.round((totalCompliant / responses.length) * 100) : 0,
-    totalNc: responses?.length ? responses.length - totalCompliant : 0,
+    conformityPercent: sortedResponses?.length ? Math.round((totalCompliant / sortedResponses.length) * 100) : 0,
+    totalNc: sortedResponses?.length ? sortedResponses.length - totalCompliant : 0,
     totalMedia: allMedia.length,
-    totalQuestions: responses?.length || 0,
-    completedQuestions: responses?.length || 0
+    totalQuestions: sortedResponses?.length || 0,
+    completedQuestions: sortedResponses?.length || 0
   };
 
   // Gerar plano de ação para itens não conformes
