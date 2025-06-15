@@ -1,3 +1,4 @@
+
 import React from "react";
 import { getFileType, getFilenameFromUrl } from "@/utils/fileUtils";
 import { determineSpecificFileType } from "@/utils/fileTypeUtils";
@@ -79,6 +80,8 @@ export const MediaAttachmentRenderer = ({
 }: MediaAttachmentRendererProps) => {
   if (!urls || urls.length === 0) return null;
 
+  console.log('[MediaAttachmentRenderer] Renderizando URLs:', urls);
+
   // Função de download única
   const handleDownload = (url: string, filename: string) => {
     try {
@@ -103,7 +106,7 @@ export const MediaAttachmentRenderer = ({
         analysisResults={analysisResults}
         onOpenPreview={onOpenPreview}
         onOpenAnalysis={onOpenAnalysis}
-        onDelete={onDelete}
+        onDelete={readOnly ? undefined : onDelete}
         readOnly={readOnly}
         questionText={questionText}
         columns={Math.min(5, Math.ceil(Math.sqrt(urls.length)))}
@@ -138,9 +141,9 @@ export const MediaAttachmentRenderer = ({
               index={index}
               fileName={fileName}
               onOpenPreview={onOpenPreview}
-              onOpenAnalysis={onOpenAnalysis}
+              onOpenAnalysis={readOnly ? () => {} : onOpenAnalysis}
               readOnly={readOnly}
-              onDelete={onDelete}
+              onDelete={readOnly ? undefined : onDelete}
               hasAnalysis={hasAnalysis}
               questionText={questionText}
               smallSize={smallSize}
@@ -165,9 +168,9 @@ export const MediaAttachmentRenderer = ({
               fileName={fileName}
               onOpenPreview={onOpenPreview}
               // Passa mediaType='audio' explicitamente no callback!
-              onOpenAnalysis={onOpenAnalysis}
+              onOpenAnalysis={readOnly ? () => {} : onOpenAnalysis}
               readOnly={readOnly}
-              onDelete={onDelete}
+              onDelete={readOnly ? undefined : onDelete}
               onDownload={handleDownload}
               hasAnalysis={hasAnalysis}
               questionText={questionText}
@@ -189,9 +192,9 @@ export const MediaAttachmentRenderer = ({
               fileName={fileName}
               onOpenPreview={onOpenPreview}
               // Passa mediaType='video' explicitamente
-              onOpenAnalysis={onOpenAnalysis}
+              onOpenAnalysis={readOnly ? () => {} : onOpenAnalysis}
               readOnly={readOnly}
-              onDelete={onDelete}
+              onDelete={readOnly ? undefined : onDelete}
               hasAnalysis={hasAnalysis}
               questionText={questionText}
               smallSize={smallSize}

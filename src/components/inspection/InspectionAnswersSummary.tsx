@@ -26,7 +26,7 @@ export function InspectionAnswersSummary({ questions, responses }: InspectionAns
   }
 
   const handleOpenPreview = (url: string) => {
-    // Função vazia para readOnly
+    window.open(url, '_blank');
   };
 
   const handleOpenAnalysis = (url: string, questionText?: string) => {
@@ -37,9 +37,21 @@ export function InspectionAnswersSummary({ questions, responses }: InspectionAns
     <div className="space-y-6">
       {questions.map((question) => {
         const response = responses?.[question.id] || {};
-        const notes = response.comment ?? "";
-        const mediaUrls: string[] = response.mediaUrls || [];
-        const actionPlan = response.actionPlan;
+        const notes = response.comment ?? response.comments ?? "";
+        
+        // Garantir que mediaUrls seja sempre um array
+        let mediaUrls: string[] = [];
+        if (Array.isArray(response.mediaUrls)) {
+          mediaUrls = response.mediaUrls;
+        } else if (Array.isArray(response.media_urls)) {
+          mediaUrls = response.media_urls;
+        } else if (typeof response.mediaUrls === 'string') {
+          mediaUrls = [response.mediaUrls];
+        } else if (typeof response.media_urls === 'string') {
+          mediaUrls = [response.media_urls];
+        }
+
+        const actionPlan = response.actionPlan || response.action_plan;
         const mediaAnalysisResults = response.mediaAnalysisResults || {};
 
         // Prepara o response no formato esperado pelo ResponseInputRenderer
@@ -74,7 +86,7 @@ export function InspectionAnswersSummary({ questions, responses }: InspectionAns
                 </div>
               </div>
 
-              {/* Exibe mídias anexadas se houver */}
+              {/* Exibe mídias anexadas se houver - usando componente independente */}
               {mediaUrls && mediaUrls.length > 0 && (
                 <div className="pt-1">
                   <p className="text-xs text-muted-foreground mb-1">Mídias anexadas:</p>
