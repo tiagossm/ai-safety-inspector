@@ -8,7 +8,10 @@ import { ActionPlanButton } from "./response-types/components/ActionPlanButton";
 import { MediaAnalysisButton } from "./response-types/components/MediaAnalysisButton";
 import { ActionPlan5W2HDialog } from "@/components/action-plans/ActionPlan5W2HDialog";
 
-// ADICIONA PROPRIEDADE 'dummyProp' para forçar a build invalidar completamente
+/**
+ * Interface oficial dos props dos botões universais
+ * ATENÇÃO: Sempre importe diretamente desse arquivo, nunca de um barrel ou index.ts
+ */
 export interface StandardActionButtonsProps {
   question: any;
   inspectionId?: string;
@@ -24,6 +27,7 @@ export interface StandardActionButtonsProps {
   dummyProp?: "UniqueKeyForProps20250615";
 }
 
+// ATENÇÃO: Sempre utilize o export named abaixo!
 export function StandardActionButtons(props: StandardActionButtonsProps) {
   const {
     question,
@@ -85,4 +89,3 @@ export function StandardActionButtons(props: StandardActionButtonsProps) {
     </>
   );
 }
-
