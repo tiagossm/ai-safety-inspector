@@ -7,7 +7,7 @@ import { MediaPreviewDialog } from "@/components/media/MediaPreviewDialog";
 import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
 import { getFileType } from "@/utils/fileUtils";
 import { MediaAttachments } from "./MediaAttachments";
-import { MediaAnalysisResult } from "@/hooks/useMediaAnalysis";
+import { MediaAnalysisResult, Plan5W2H } from "@/hooks/useMediaAnalysis";
 
 interface MediaUploadInputProps {
   mediaUrls: string[];
@@ -19,6 +19,7 @@ interface MediaUploadInputProps {
   readOnly?: boolean;
   questionText?: string;
   onSaveAnalysis?: (url: string, result: MediaAnalysisResult) => void;
+  onApplyAISuggestion?: (plan: Plan5W2H) => void;
   analysisResults?: Record<string, MediaAnalysisResult>;
 }
 
@@ -32,6 +33,7 @@ export function MediaUploadInput({
   readOnly = false,
   questionText,
   onSaveAnalysis,
+  onApplyAISuggestion,
   analysisResults = {}
 }: MediaUploadInputProps) {
   const [mediaDialogOpen, setMediaDialogOpen] = useState(false);
@@ -132,6 +134,7 @@ export function MediaUploadInput({
         onAnalysisComplete={handleAnalysisComplete}
         multimodalAnalysis={true}
         additionalMediaUrls={mediaUrls.filter(url => url !== selectedMedia)}
+        onAdd5W2HActionPlan={onApplyAISuggestion}
       />
       
       <MediaAttachments
@@ -142,6 +145,7 @@ export function MediaUploadInput({
         readOnly={readOnly}
         questionText={questionText}
         onSaveAnalysis={onSaveAnalysis}
+        onApplyAISuggestion={onApplyAISuggestion}
         analysisResults={analysisResults}
       />
     </div>
