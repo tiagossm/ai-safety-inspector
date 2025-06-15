@@ -34,7 +34,7 @@ export function InspectionAnswersSummary({ questions, responses }: InspectionAns
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {questions.map((question) => {
         const response = responses?.[question.id] || {};
         console.log(`[InspectionAnswersSummary] Processando questão ${question.id}:`, response);
@@ -45,9 +45,9 @@ export function InspectionAnswersSummary({ questions, responses }: InspectionAns
         return (
           <Card key={question.id} className="p-4">
             <div className="space-y-3">
-              {/* Cabeçalho da questão */}
+              {/* Cabeçalho da questão - compacto */}
               <div className="border-b border-gray-100 pb-2">
-                <h3 className="font-medium text-gray-900 leading-tight">
+                <h3 className="font-medium text-gray-900 leading-tight text-sm">
                   {question.text || question.pergunta}
                 </h3>
               </div>

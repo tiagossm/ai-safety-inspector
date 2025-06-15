@@ -5,6 +5,7 @@ import { determineSpecificFileType } from "@/utils/fileTypeUtils";
 import { toast } from "sonner";
 import { ImageRenderer, AudioRenderer, VideoRenderer, DocumentRenderer, GenericFileRenderer } from "./MediaTypeRenderer";
 import { MediaGallery } from "./MediaGalleryGrid";
+import { SimpleThumbnailRenderer } from "./SimpleThumbnailRenderer";
 import { FileText, FileAudio, FileVideo, FileImage, ExternalLink } from "lucide-react";
 
 // Layout responsivo flexível otimizado
@@ -101,6 +102,17 @@ export const MediaAttachmentRenderer = ({
 
   console.log('[MediaAttachmentRenderer] Renderizando URLs:', urls);
 
+  // Se está em modo readOnly e smallSize, usar o renderer simplificado
+  if (readOnly && smallSize) {
+    return (
+      <SimpleThumbnailRenderer 
+        urls={urls}
+        onOpenPreview={onOpenPreview}
+        maxItems={4}
+      />
+    );
+  }
+
   // Função de download única
   const handleDownload = (url: string, filename: string) => {
     try {
@@ -171,7 +183,7 @@ export const MediaAttachmentRenderer = ({
         }
 
         // PDF e outros documentos - placeholder compacto
-        if (specificFileType === "pdf" || fileType === "document") {
+        if (specificFileType === "pdf" || specificFileType === "word" || specificFileType === "excel") {
           return (
             <CompactFilePreview 
               key={url} 

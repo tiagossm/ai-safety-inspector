@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MediaAttachmentRenderer } from '@/components/media/renderers/MediaAttachmentRenderer';
+import { SimpleThumbnailRenderer } from '@/components/media/renderers/SimpleThumbnailRenderer';
 
 interface CompactResponseDisplayProps {
   question: any;
@@ -55,33 +55,28 @@ export function CompactResponseDisplay({
   const responseValue = response?.value;
   const mediaUrls = response?.mediaUrls || [];
   const comment = response?.comment || response?.comments || "";
-  const mediaAnalysisResults = response?.mediaAnalysisResults || {};
   
   const formattedValue = formatResponseValue(question, responseValue);
   
   return (
-    <div className="space-y-2">
-      {/* Resposta principal */}
-      <div className="flex flex-col md:flex-row md:items-start md:gap-2">
-        <span className="text-muted-foreground text-sm min-w-[70px]">Resposta:</span>
-        <div className="flex-1">
-          <span className="text-sm font-medium">{formattedValue}</span>
+    <div className="space-y-1.5">
+      {/* Resposta principal - layout inline otimizado */}
+      <div className="flex items-start gap-3">
+        <span className="text-muted-foreground text-xs font-medium min-w-[60px] pt-0.5">Resposta:</span>
+        <div className="flex-1 min-w-0">
+          <span className="text-sm font-medium text-gray-900">{formattedValue}</span>
         </div>
       </div>
 
-      {/* Mídias - renderização compacta */}
+      {/* Mídias - renderização inline compacta */}
       {mediaUrls.length > 0 && (
-        <div className="flex flex-col md:flex-row md:items-start md:gap-2">
-          <span className="text-muted-foreground text-xs min-w-[70px]">Mídias:</span>
-          <div className="flex-1">
-            <MediaAttachmentRenderer
+        <div className="flex items-start gap-3">
+          <span className="text-muted-foreground text-xs font-medium min-w-[60px] pt-0.5">Mídias:</span>
+          <div className="flex-1 min-w-0">
+            <SimpleThumbnailRenderer
               urls={mediaUrls}
               onOpenPreview={onOpenPreview}
-              onOpenAnalysis={onOpenAnalysis}
-              readOnly={true}
-              questionText={question.text || question.pergunta}
-              analysisResults={mediaAnalysisResults}
-              smallSize={true}
+              maxItems={4}
             />
           </div>
         </div>
@@ -89,10 +84,10 @@ export function CompactResponseDisplay({
 
       {/* Comentários */}
       {comment && (
-        <div className="flex flex-col md:flex-row md:items-start md:gap-2">
-          <span className="text-muted-foreground text-xs min-w-[70px]">Observações:</span>
-          <div className="flex-1">
-            <p className="text-xs text-gray-800 leading-relaxed">{comment}</p>
+        <div className="flex items-start gap-3">
+          <span className="text-muted-foreground text-xs font-medium min-w-[60px] pt-0.5">Observ.:</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-gray-700 leading-relaxed">{comment}</p>
           </div>
         </div>
       )}
