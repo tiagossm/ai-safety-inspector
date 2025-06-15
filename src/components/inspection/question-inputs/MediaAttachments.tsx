@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { X, ZoomIn, Download, Sparkles, Heart } from "lucide-react";
 import { MediaPreviewDialog } from "@/components/media/MediaPreviewDialog";
@@ -63,7 +64,7 @@ export function MediaAttachments({
     setIsPlaying(!isPlaying);
   };
   
-  const handleAnalysisComplete = (result: MediaAnalysisResult) => {
+  const handleAnalysisComplete = (url: string, result: MediaAnalysisResult) => {
     if (onSaveAnalysis && activeAnalysisUrl) {
       const resultWithContext = {
         ...result,
@@ -134,7 +135,7 @@ export function MediaAttachments({
         questionText={questionText}
         onAnalysisComplete={handleAnalysisComplete}
         additionalMediaUrls={mediaUrls}
-        onAddActionPlan={onApplyAISuggestion}  // <-- ESSA LINHA É O PULO DO GATO!
+        onAddActionPlan={onApplyAISuggestion}
       />
     </>
   );

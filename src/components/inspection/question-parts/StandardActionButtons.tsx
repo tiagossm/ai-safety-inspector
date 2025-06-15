@@ -73,8 +73,8 @@ export function StandardActionButtons(props: StandardActionButtonsProps) {
     setIsActionPlanDialogOpen(true);
   }, []);
 
-  // Handler para salvar análise e atualizar response
-  const handleAnalysisComplete = useCallback((result: MediaAnalysisResult) => {
+  // Handler para salvar análise e atualizar response - corrigido para aceitar url e result
+  const handleAnalysisComplete = useCallback((url: string, result: MediaAnalysisResult) => {
     if (selectedMediaUrl && response) {
       const updatedResults = { 
         ...mediaAnalysisResults, 

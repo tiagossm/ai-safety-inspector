@@ -65,7 +65,7 @@ export function MediaUploadInput({
     setAnalysisDialogOpen(true);
   }, []);
 
-  const handleAnalysisComplete = useCallback((result: MediaAnalysisResult) => {
+  const handleAnalysisComplete = useCallback((url: string, result: MediaAnalysisResult) => {
     if (onSaveAnalysis && selectedMedia) {
       onSaveAnalysis(selectedMedia, result);
     }

@@ -1,3 +1,4 @@
+
 import React, { useCallback, useState } from "react";
 import { StandardActionButtons, StandardActionButtonsProps } from "./StandardActionButtons";
 import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
@@ -133,7 +134,6 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           <YesNoResponseInput
             question={question}
             response={safeResponse}
-            inspectionId={inspectionId}
             onResponseChange={onResponseChange}
             readOnly={readOnly}
           />
@@ -311,7 +311,6 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             allowsVideo={question.allowsVideo}
             allowsAudio={question.allowsAudio}
             allowsFiles={question.allowsFiles}
-            readOnly={readOnly}
           />
           <StandardActionButtons
             question={question}

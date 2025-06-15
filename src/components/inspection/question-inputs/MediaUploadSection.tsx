@@ -1,3 +1,4 @@
+
 import React, { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -123,7 +124,7 @@ export function MediaUploadSection({
     setAnalysisDialogOpen(true);
   }, []);
 
-  const handleAnalysisComplete = (result: MediaAnalysisResult) => {
+  const handleAnalysisComplete = (url: string, result: MediaAnalysisResult) => {
     if (onSaveAnalysis && selectedMedia) {
       onSaveAnalysis(selectedMedia, result);
     }
@@ -211,8 +212,7 @@ export function MediaUploadSection({
         mediaType={selectedMediaType}
         questionText={questionText}
         onAnalysisComplete={handleAnalysisComplete}
-          onAddActionPlan={onApplyAISuggestion}
-
+        onAddActionPlan={onApplyAISuggestion}
       />
       {planoAcao.length > 0 && (
         <ul className="mt-2">
