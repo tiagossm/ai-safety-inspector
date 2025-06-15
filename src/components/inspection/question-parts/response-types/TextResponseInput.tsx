@@ -14,21 +14,23 @@ export const TextResponseInput: React.FC<TextResponseInputProps> = ({
   onResponseChange,
   readOnly = false
 }) => {
-  
+  const value = response?.value ?? '';
+
+  // Só atualiza se mudar de fato o texto
   const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (readOnly) return;
-    onResponseChange({ 
-      ...response, 
-      value: e.target.value 
-    });
-  }, [readOnly, response, onResponseChange]);
+    const newText = e.target.value;
+    if (newText !== value) {
+      onResponseChange({ ...response, value: newText });
+    }
+  }, [readOnly, response, value, onResponseChange]);
 
   return (
     <textarea
       className="w-full border rounded p-2 text-sm"
       rows={3}
       placeholder="Digite sua resposta..."
-      value={response?.value || ''}
+      value={value}
       onChange={handleTextChange}
       disabled={readOnly}
     />

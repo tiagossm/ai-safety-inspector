@@ -19,21 +19,28 @@ export function ResponseInput({
   actionPlan,
   onSaveActionPlan
 }: ResponseInputProps) {
-  // Se não vier objeto, constrói o padrão
-  const responseObject = typeof value === 'object'
-    ? value
-    : { value: value, mediaUrls: [] };
+  // Garantir que responseObject seja sempre o mesmo caso o value não mude
+  const responseObject = React.useMemo(() => {
+    if (typeof value === 'object' && value !== null) {
+      return value;
+    }
+    return { value, mediaUrls: [] };
+  }, [value]);
 
-  const handleValueChange = useCallback((newValue: any) => {
-    onChange(newValue);
-  }, [onChange]);
+  const handleValueChange = React.useCallback((newValue: any) => {
+    if (typeof newValue === "object" && newValue !== null) {
+      onChange(newValue);
+    } else {
+      onChange({ ...responseObject, value: newValue });
+    }
+  }, [responseObject, onChange]);
 
-  const handleMediaChange = useCallback((urls: string[]) => {
+  const handleMediaChange = React.useCallback((urls: string[]) => {
     onChange({
       ...responseObject,
       mediaUrls: urls
     });
-  }, [onChange, responseObject]);
+  }, [responseObject, onChange]);
 
   return (
     <ResponseInputRenderer

@@ -1,4 +1,3 @@
-
 import React, { useCallback, useEffect } from "react";
 import { InspectionHeader } from "@/components/inspection/InspectionHeader";
 import { QuestionGroups } from "@/components/inspection/QuestionGroups";
@@ -82,36 +81,24 @@ export function InspectionLayout({
   const displayGroups = groups.length > 0 ? groups : [DEFAULT_GROUP];
   const effectiveCurrentGroupId = currentGroupId || (displayGroups.length > 0 ? displayGroups[0].id : null);
 
-  const handleQuestionResponseChange = useCallback(
+  // Handler responsável para atualização de respostas das perguntas
+  const handleQuestionResponseChange = React.useCallback(
     (questionId: string, data: any) => {
-      console.log("[InspectionLayout] handleQuestionResponseChange:", questionId, data);
       setResponses((prev) => {
         const current = prev[questionId] || {};
-        
-        // Ensuring mediaUrls is always an array
-        const mediaUrls = data.mediaUrls || current.mediaUrls || [];
-        
-        // Creating a completely new object to ensure React detects the change
-        const updated = {
-          ...current,
-          ...data,
-          mediaUrls: [...mediaUrls] // Clone the array to ensure reference change
-        };
-        
-        console.log("[InspectionLayout] Atualizando resposta:", questionId, updated);
 
-        if (onResponseChange) {
-          onResponseChange(questionId, updated);
-        }
-        
-        if (onMediaChange && data.mediaUrls) {
-          onMediaChange(questionId, [...data.mediaUrls]); // Clone array here too
+        // Só atualiza se o valor mudou de fato
+        if (JSON.stringify(current) === JSON.stringify(data)) {
+          return prev;
         }
 
-        // Return completely new object with updated question
+        const next = { ...current, ...data };
+        if (onResponseChange) onResponseChange(questionId, next);
+        if (onMediaChange && data.mediaUrls) onMediaChange(questionId, [...data.mediaUrls]);
+
         return {
           ...prev,
-          [questionId]: updated
+          [questionId]: next
         };
       });
     },
@@ -184,23 +171,16 @@ export function InspectionLayout({
               {filteredQuestions.length > 0 ? (
                 <div className="space-y-6">
                   {filteredQuestions.map((question, index) => {
-                    // Get response safely (or empty object)
+                    // Pegue a resposta sem clone extra!
                     const response = responses[question.id] || {};
-                    
-                    // Ensure mediaUrls is always an array
-                    const mediaUrls = response.mediaUrls || [];
-                    
-                    // Create a reactive key that includes both the question ID, media URLs, and response value
-                    const key = `${question.id}-${JSON.stringify(mediaUrls)}-${response.value !== undefined ? String(response.value) : ""}`;
-                    
-                    console.log('[InspectionLayout] Renderizando Question:', question.id, key, mediaUrls);
-
+                    // Usar apenas question.id como key!
+                    const key = `${question.id}`;
                     return (
                       <InspectionQuestion
                         key={key}
                         question={question}
                         index={index}
-                        response={{...response}} // Clone to ensure refs differ
+                        response={response}
                         onResponseChange={(data) => handleQuestionResponseChange(question.id, data)}
                         onOpenSubChecklist={onOpenSubChecklist && question.hasSubChecklist ? () => onOpenSubChecklist(question.id) : undefined}
                         allQuestions={questions}
