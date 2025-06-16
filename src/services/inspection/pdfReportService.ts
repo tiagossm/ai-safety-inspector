@@ -1,3 +1,4 @@
+
 import { pdf, Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import { supabase } from "@/integrations/supabase/client";
 import { generateReportDTO } from "../reportDtoService";
@@ -312,7 +313,7 @@ export async function generateInspectionPDF(
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const fileName = `${inspectionId}.pdf`;
-    const filePath = `reports/${year}/${month}/${fileName}`;
+    const filePath = `${year}/${month}/${fileName}`;
     
     // Fazer upload para Supabase Storage
     const { data: uploadData, error: uploadError } = await supabase.storage
@@ -336,7 +337,7 @@ export async function generateInspectionPDF(
       throw new Error(`Erro ao gerar URL: ${urlError.message}`);
     }
     
-    // Calcular SHA-256 do arquivo
+    // Calcular SHA-256 do arquivo usando SubtleCrypto (compatível com browser)
     const sha256 = await calculateSHA256(pdfBlob);
     
     console.log(`[PDF Report] PDF gerado com sucesso: ${filePath}`);
@@ -355,7 +356,7 @@ export async function generateInspectionPDF(
 }
 
 /**
- * Calcula o hash SHA-256 de um blob
+ * Calcula o hash SHA-256 de um blob usando SubtleCrypto (compatível com browser)
  */
 async function calculateSHA256(blob: Blob): Promise<string> {
   const buffer = await blob.arrayBuffer();
