@@ -1,7 +1,7 @@
 
 import React from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
-import { ResponseTypeSelector } from "@/components/common/ResponseTypeSelector";
+import { ResponseTypeSelector } from "@/components/ui/response-type-selector";
 import { StandardResponseType } from "@/types/responseTypes";
 
 interface ResponseTypeSectionProps {
@@ -48,6 +48,7 @@ export function ResponseTypeSection({
         value={currentResponseType}
         onChange={handleResponseTypeChange}
         showDescriptions
+        size="default"
       />
     </div>
   );

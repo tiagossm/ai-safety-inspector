@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -5,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Trash2 } from "lucide-react";
-import { ResponseTypeSelector } from "@/components/common/ResponseTypeSelector";
+import { ResponseTypeSelector } from "@/components/ui/response-type-selector";
 import { 
   StandardResponseType,
   convertToDatabaseType,
@@ -71,6 +72,7 @@ export function QuestionItem({ index, question, onRemove, onChange }: QuestionIt
                 value={frontendType}
                 onChange={handleResponseTypeChange}
                 showDescriptions={true}
+                size="default"
               />
             </div>
             

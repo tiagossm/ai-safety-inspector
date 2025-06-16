@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
@@ -8,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { ResponseTypeSelector } from "@/components/common/ResponseTypeSelector";
+import { ResponseTypeSelector } from "@/components/ui/response-type-selector";
 import { StandardResponseType, convertToFrontendType, convertToDatabaseType } from "@/types/responseTypes";
 
 // Definindo o tipo ChecklistItem localmente
@@ -125,6 +124,7 @@ const ChecklistItemEdit: React.FC = () => {
               value={tipoResposta}
               onChange={setTipoResposta}
               showDescriptions={true}
+              size="default"
             />
           </div>
 
