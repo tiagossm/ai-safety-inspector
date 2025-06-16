@@ -1,142 +1,93 @@
 
-/**
- * Versão com força de cache 2025-06-15 - UniqueKeyForProps
- * Se você vir esse comentário, está na versão correta da interface!!!
- */
-import React, { useState, useCallback } from "react";
-import { ActionPlanButton } from "./response-types/components/ActionPlanButton";
-import { MediaAnalysisButton } from "./response-types/components/MediaAnalysisButton";
-import { ActionPlan5W2HDialog } from "@/components/action-plans/ActionPlan5W2HDialog";
-import { MediaAnalysisDialog } from "@/components/media/MediaAnalysisDialog";
-import { MediaAnalysisResult, Plan5W2H } from "@/hooks/useMediaAnalysis";
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { Search, ClipboardEdit, Camera, MessageCircle } from "lucide-react";
 
-/**
- * Interface oficial dos props dos botões universais
- * ATENÇÃO: Sempre importe diretamente desse arquivo, nunca de um barrel ou index.ts
- */
 export interface StandardActionButtonsProps {
   question: any;
-  inspectionId?: string;
-  response?: any;
-  actionPlan?: any;
-  onSaveActionPlan?: (data: any) => Promise<void>;
-  mediaUrls?: string[];
   readOnly?: boolean;
-  mediaAnalysisResults?: Record<string, any>;
   onOpenAnalysis?: () => void;
   onActionPlanClick?: () => void;
-  /** Não utilizar, apenas para forçar atualização de tipos! */
-  dummyProp?: "UniqueKeyForProps20250615";
+  onCommentClick?: () => void;
+  onMediaClick?: () => void;
+  mediaUrls?: string[];
+  mediaAnalysisResults?: Record<string, any>;
+  dummyProp?: string; // Para garantir re-renderização quando necessário
 }
 
-export function StandardActionButtons(props: StandardActionButtonsProps) {
-  const {
-    question,
-    inspectionId,
-    response,
-    actionPlan,
-    onSaveActionPlan,
-    mediaUrls = [],
-    readOnly = false,
-    mediaAnalysisResults = {},
-    onOpenAnalysis,
-    onActionPlanClick,
-  } = props;
+export function StandardActionButtons({
+  question,
+  readOnly = false,
+  onOpenAnalysis,
+  onActionPlanClick,
+  onCommentClick,
+  onMediaClick,
+  mediaUrls = [],
+  mediaAnalysisResults = {},
+  dummyProp
+}: StandardActionButtonsProps) {
+  if (readOnly) return null;
 
-  const [isActionPlanDialogOpen, setIsActionPlanDialogOpen] = useState(false);
-  const [isAnalysisOpen, setIsAnalysisOpen] = useState(false);
-  const [selectedMediaUrl, setSelectedMediaUrl] = useState<string | null>(null);
-  const [ia5W2Hplan, setIa5W2Hplan] = useState<Plan5W2H | null>(null);
-
-  // Abertura do modal 5W2H
-  const handleOpenActionPlan = useCallback(() => {
-    if (onActionPlanClick) {
-      onActionPlanClick();
-    } else {
-      setIa5W2Hplan(null);
-      setIsActionPlanDialogOpen(true);
-    }
-  }, [onActionPlanClick]);
-
-  // Abertura análise IA centralizada
-  const handleOpenAnalysis = useCallback(() => {
-    if (onOpenAnalysis) {
-      onOpenAnalysis();
-    } else if (mediaUrls && mediaUrls.length > 0) {
-      setSelectedMediaUrl(mediaUrls[0]);
-      setIsAnalysisOpen(true);
-    }
-  }, [onOpenAnalysis, mediaUrls]);
-
-  const handleAdd5W2HActionPlan = useCallback((plan: Plan5W2H) => {
-    setIa5W2Hplan(plan);
-    setIsActionPlanDialogOpen(true);
-  }, []);
-
-  // Handler para salvar análise e atualizar response - corrigido para aceitar url e result
-  const handleAnalysisComplete = useCallback((url: string, result: MediaAnalysisResult) => {
-    if (selectedMediaUrl && response) {
-      const updatedResults = { 
-        ...mediaAnalysisResults, 
-        [selectedMediaUrl]: result 
-      };
-      
-      // Atualizar via response se disponível
-      if (response.onResponseChange) {
-        response.onResponseChange({
-          ...response,
-          mediaAnalysisResults: updatedResults
-        });
-      }
-    }
-  }, [selectedMediaUrl, mediaAnalysisResults, response]);
+  const hasMediaForAnalysis = mediaUrls && mediaUrls.length > 0;
+  const hasAnalysisResults = Object.keys(mediaAnalysisResults).length > 0;
 
   return (
-    <>
-      <div className="flex flex-wrap gap-2 mt-2 mb-1">
-        <ActionPlanButton
-          onActionPlanClick={handleOpenActionPlan}
-          readOnly={readOnly}
-        />
-        {(question?.allowsPhoto || question?.allowsVideo || question?.permite_foto || question?.permite_video) && (
-          <MediaAnalysisButton onOpenAnalysis={handleOpenAnalysis} />
-        )}
-      </div>
-      
-      {/* Modal 5W2H quando não há handler externo */}
-      {!onActionPlanClick && (
-        <ActionPlan5W2HDialog
-          open={isActionPlanDialogOpen}
-          onOpenChange={setIsActionPlanDialogOpen}
-          questionId={question?.id}
-          inspectionId={inspectionId}
-          existingPlan={actionPlan}
-          onSave={async (data: any) => {
-            await onSaveActionPlan?.(data);
-            setIsActionPlanDialogOpen(false);
-          }}
-          iaSuggestions={mediaAnalysisResults}
-          ia5W2Hplan={ia5W2Hplan}
-        />
+    <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-100">
+      {/* Botão de Análise com IA */}
+      {hasMediaForAnalysis && onOpenAnalysis && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onOpenAnalysis}
+          className="flex items-center gap-1 text-xs bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+        >
+          <Search className="h-3.5 w-3.5" />
+          {hasAnalysisResults ? "Ver Análise IA" : "Analisar com IA"}
+        </Button>
       )}
 
-      {/* Modal de análise IA quando não há handler externo */}
-      {!onOpenAnalysis && (
-        <MediaAnalysisDialog
-          open={isAnalysisOpen}
-          onOpenChange={setIsAnalysisOpen}
-          mediaUrl={selectedMediaUrl}
-          questionText={question.text || question.pergunta || ""}
-          userAnswer={
-            response?.value === true ? "Sim" : 
-            response?.value === false ? "Não" : ""
-          }
-          multimodalAnalysis={true}
-          additionalMediaUrls={mediaUrls.filter((url) => url !== selectedMediaUrl)}
-          onAnalysisComplete={handleAnalysisComplete}
-          onAdd5W2HActionPlan={handleAdd5W2HActionPlan}
-        />
+      {/* Botão de Plano de Ação */}
+      {onActionPlanClick && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onActionPlanClick}
+          className="flex items-center gap-1 text-xs bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+        >
+          <ClipboardEdit className="h-3.5 w-3.5" />
+          Plano de Ação
+        </Button>
       )}
-    </>
+
+      {/* Botão de Comentário */}
+      {onCommentClick && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onCommentClick}
+          className="flex items-center gap-1 text-xs bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100"
+        >
+          <MessageCircle className="h-3.5 w-3.5" />
+          Comentário
+        </Button>
+      )}
+
+      {/* Botão de Mídia */}
+      {onMediaClick && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onMediaClick}
+          className="flex items-center gap-1 text-xs bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+        >
+          <Camera className="h-3.5 w-3.5" />
+          {mediaUrls.length > 0 ? `Mídia (${mediaUrls.length})` : "Adicionar Mídia"}
+        </Button>
+      )}
+    </div>
   );
 }
