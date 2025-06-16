@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { UnifiedResponseInput } from './UnifiedResponseInput';
+import React, { useCallback } from 'react';
+import { ResponseInputRenderer } from './ResponseInputRenderer';
 
 interface ResponseInputProps {
   question: any;
@@ -43,7 +43,7 @@ export function ResponseInput({
   }, [responseObject, onChange]);
 
   return (
-    <UnifiedResponseInput
+    <ResponseInputRenderer
       question={question}
       response={responseObject}
       inspectionId={inspectionId}
