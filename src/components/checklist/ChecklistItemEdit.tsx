@@ -5,11 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { getErrorMessage } from '@/utils/errors';
+import { ResponseTypeSelector } from "@/components/common/ResponseTypeSelector";
+import { StandardResponseType, convertToFrontendType, convertToDatabaseType } from "@/types/responseTypes";
 
 // Definindo o tipo ChecklistItem localmente
 interface ChecklistItem {
@@ -36,7 +36,7 @@ const ChecklistItemEdit: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [checklistItem, setChecklistItem] = useState<ChecklistItem | null>(null);
   const [pergunta, setPergunta] = useState('');
-  const [tipoResposta, setTipoResposta] = useState('');
+  const [tipoResposta, setTipoResposta] = useState<StandardResponseType>('yes_no');
   const [obrigatorio, setObrigatorio] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -54,7 +54,8 @@ const ChecklistItemEdit: React.FC = () => {
         if (data) {
           setChecklistItem(data);
           setPergunta(data.pergunta);
-          setTipoResposta(data.tipo_resposta);
+          // Converter tipo do banco para frontend
+          setTipoResposta(convertToFrontendType(data.tipo_resposta));
           setObrigatorio(data.obrigatorio);
         }
       } catch (error) {
@@ -73,11 +74,15 @@ const ChecklistItemEdit: React.FC = () => {
     setIsLoading(true);
 
     try {
+      // Converter tipo do frontend para o banco
+      const dbTipoResposta = convertToDatabaseType(tipoResposta);
+      console.log(`ChecklistItemEdit: Enviando tipo para backend: ${tipoResposta} -> ${dbTipoResposta}`);
+      
       const { error } = await supabase
         .from('checklist_itens')
         .update({
           pergunta,
-          tipo_resposta: tipoResposta,
+          tipo_resposta: dbTipoResposta,
           obrigatorio
         })
         .eq('id', id);
@@ -91,19 +96,6 @@ const ChecklistItemEdit: React.FC = () => {
       setIsLoading(false);
     }
   };
-
-  const tiposResposta = [
-    'sim/não',
-    'numérico',
-    'texto',
-    'assinatura',
-    'seleção múltipla',
-    'yes_no',
-    'multiple_choice',
-    'imagem',
-    'time',
-    'date'
-  ];
 
   if (isLoading && !checklistItem) {
     return <div className="p-4 text-center">Carregando...</div>;
@@ -129,21 +121,11 @@ const ChecklistItemEdit: React.FC = () => {
 
           <div className="space-y-2">
             <Label htmlFor="tipoResposta">Tipo de Resposta</Label>
-            <Select
+            <ResponseTypeSelector
               value={tipoResposta}
-              onValueChange={setTipoResposta}
-            >
-              <SelectTrigger id="tipoResposta">
-                <SelectValue placeholder="Selecione um tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                {tiposResposta.map((tipo) => (
-                  <SelectItem key={tipo} value={tipo}>
-                    {tipo}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onChange={setTipoResposta}
+              showDescriptions={true}
+            />
           </div>
 
           <div className="flex items-center space-x-2">

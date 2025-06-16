@@ -25,10 +25,14 @@ const RESPONSE_TYPE_OPTIONS = [
 ] as const;
 
 export function ResponseTypeSelector({ value, onChange, showDescriptions = false }: ResponseTypeSelectorProps) {
+  const selectedOption = RESPONSE_TYPE_OPTIONS.find(option => option.value === value);
+  
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger>
-        <SelectValue placeholder="Selecione o tipo de resposta" />
+        <SelectValue placeholder="Selecione o tipo de resposta">
+          {selectedOption?.label || "Selecione o tipo de resposta"}
+        </SelectValue>
       </SelectTrigger>
       <SelectContent>
         {RESPONSE_TYPE_OPTIONS.map((option) => (
