@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -178,13 +177,20 @@ export function QuestionItem({
     toast.success(`${subitemsToAdd.length} subitens gerados com sucesso`);
   };
 
-  const responseTypeOptions = [
-    { value: "yes_no", label: "Sim/Não" },
+  const RESPONSE_TYPES = [
     { value: "text", label: "Texto" },
-    { value: "multiple_choice", label: "Múltipla Escolha" },
     { value: "numeric", label: "Numérico" },
-    { value: "photo", label: "Foto" },
-    { value: "signature", label: "Assinatura" }
+    { value: "yes_no", label: "Sim / Não" },
+    { value: "dropdown", label: "Lista Suspensa" },
+    { value: "multiple_choice", label: "Seleção Múltipla" },
+    { value: "multiple_select", label: "Caixas de Seleção" },
+    { value: "grid_radio", label: "Grade Rádio" },
+    { value: "grid_checkbox", label: "Grade Checkbox" },
+    { value: "rating", label: "Avaliação" },
+    { value: "date", label: "Data" },
+    { value: "time", label: "Hora" },
+    { value: "datetime", label: "Data e Hora" },
+    { value: "paragraph", label: "Parágrafo" },
   ];
 
   return (
@@ -240,7 +246,7 @@ export function QuestionItem({
                     <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
                   <SelectContent>
-                    {responseTypeOptions.map((option) => (
+                    {RESPONSE_TYPES.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>
@@ -454,7 +460,7 @@ export function QuestionItem({
                       parentId={question.id}
                     />
                   ))
-                )}
+                }
               </div>
             </div>
           </CollapsibleContent>
