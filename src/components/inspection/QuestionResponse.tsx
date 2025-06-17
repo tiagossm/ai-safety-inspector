@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { ChecklistQuestion } from "@/types/newChecklist";
 import { Input } from "@/components/ui/input";
@@ -16,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { SubChecklistButton } from "@/components/new-checklist/question-editor/SubChecklistButton";
 import { toast } from "sonner";
-import { ResponseTypeSelector } from "@/components/ui/response-type-selector";
+import { ResponseTypeSelector } from "@/components/common/ResponseTypeSelector";
 import {
   StandardResponseType,
   convertToFrontendType,
@@ -193,7 +194,6 @@ export function QuestionEditor({
               value={frontendResponseType}
               onChange={handleResponseTypeChange}
               showDescriptions
-              size="default"
             />
 
             {requiresOptions && !hasValidOptions && (
