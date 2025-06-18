@@ -1,3 +1,4 @@
+
 import { useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -11,6 +12,7 @@ import { useChecklistInitialization } from "./useChecklistInitialization";
 import { useChecklistComputedProperties } from "./useChecklistComputedProperties";
 import { useChecklistActions } from "./useChecklistActions";
 import { useChecklistErrorHandler } from "./useChecklistErrorHandler";
+import { ChecklistQuestion } from "@/types/newChecklist";
 
 export function useChecklistEditorContext() {
   const navigate = useNavigate();

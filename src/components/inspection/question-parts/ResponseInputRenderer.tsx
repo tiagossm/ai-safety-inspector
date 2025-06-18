@@ -296,8 +296,6 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         </div>
       );
 
-    case "multiple_select":
-    case "checkbox":
     case "checkboxes":
       return (
         <div className="space-y-4">
