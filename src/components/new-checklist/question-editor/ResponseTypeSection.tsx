@@ -13,7 +13,7 @@ export function ResponseTypeSection({
   question,
   onUpdate
 }: ResponseTypeSectionProps) {
-  // Garantir que sempre temos um tipo válido
+  // Garantir que sempre temos um tipo válido (valor em inglês)
   const currentResponseType = question.responseType || "yes_no";
   
   const handleResponseTypeChange = (newType: StandardResponseType) => {
