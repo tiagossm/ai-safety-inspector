@@ -8,14 +8,15 @@ interface ResponseTypeSelectorProps {
   onChange: (value: StandardResponseType) => void;
 }
 
-const RESPONSE_TYPE_OPTIONS = [
-  { value: "yes_no", label: "Sim/Não" },
+// Array padronizado com values em inglês e labels em português
+const RESPONSE_TYPES = [
   { value: "text", label: "Texto" },
   { value: "paragraph", label: "Parágrafo" },
+  { value: "numeric", label: "Numérico" },
+  { value: "yes_no", label: "Sim/Não" },
+  { value: "dropdown", label: "Lista Suspensa" },
   { value: "multiple_choice", label: "Múltipla Escolha" },
   { value: "checkboxes", label: "Caixas de Seleção" },
-  { value: "dropdown", label: "Lista Suspensa" },
-  { value: "numeric", label: "Numérico" },
   { value: "date", label: "Data" },
   { value: "time", label: "Hora" },
   { value: "datetime", label: "Data e Hora" },
@@ -24,7 +25,7 @@ const RESPONSE_TYPE_OPTIONS = [
 ] as const;
 
 export function ResponseTypeSelector({ value, onChange }: ResponseTypeSelectorProps) {
-  const selectedOption = RESPONSE_TYPE_OPTIONS.find(option => option.value === value);
+  const selectedOption = RESPONSE_TYPES.find(option => option.value === value);
   
   return (
     <Select value={value} onValueChange={onChange}>
@@ -33,8 +34,8 @@ export function ResponseTypeSelector({ value, onChange }: ResponseTypeSelectorPr
           {selectedOption?.label || "Selecione"}
         </SelectValue>
       </SelectTrigger>
-      <SelectContent>
-        {RESPONSE_TYPE_OPTIONS.map(option => (
+      <SelectContent className="bg-white z-50">
+        {RESPONSE_TYPES.map(option => (
           <SelectItem key={option.value} value={option.value}>
             {option.label}
           </SelectItem>

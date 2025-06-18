@@ -17,26 +17,29 @@ export function ResponseTypeSection({
   const currentResponseType = question.responseType || "yes_no";
   
   const handleResponseTypeChange = (newType: StandardResponseType) => {
-    console.log("Alterando tipo de resposta de", currentResponseType, "para", newType);
-    
-    // Criar um novo objeto para garantir que o React detecte a mudança
-    const updatedQuestion: ChecklistQuestion = { 
-      ...question, 
-      responseType: newType 
-    };
-    
-    // Se o novo tipo não requer opções, limpar as opções existentes
-    if (!["multiple_choice", "checkboxes", "dropdown"].includes(newType)) {
-      updatedQuestion.options = [];
+    // Só dispara update quando realmente há mudança
+    if (newType !== currentResponseType) {
+      console.log("Alterando tipo de resposta de", currentResponseType, "para", newType);
+      
+      // Criar um novo objeto para garantir que o React detecte a mudança
+      const updatedQuestion: ChecklistQuestion = { 
+        ...question, 
+        responseType: newType 
+      };
+      
+      // Se o novo tipo não requer opções, limpar as opções existentes
+      if (!["multiple_choice", "checkboxes", "dropdown"].includes(newType)) {
+        updatedQuestion.options = [];
+      }
+      // Se o novo tipo requer opções e não há opções, criar opções padrão
+      else if (["multiple_choice", "checkboxes", "dropdown"].includes(newType) && 
+               (!updatedQuestion.options || updatedQuestion.options.length === 0)) {
+        updatedQuestion.options = ["Opção 1", "Opção 2"];
+      }
+      
+      console.log("Pergunta atualizada:", updatedQuestion);
+      onUpdate(updatedQuestion);
     }
-    // Se o novo tipo requer opções e não há opções, criar opções padrão
-    else if (["multiple_choice", "checkboxes", "dropdown"].includes(newType) && 
-             (!updatedQuestion.options || updatedQuestion.options.length === 0)) {
-      updatedQuestion.options = ["Opção 1", "Opção 2"];
-    }
-    
-    console.log("Pergunta atualizada:", updatedQuestion);
-    onUpdate(updatedQuestion);
   };
 
   return (

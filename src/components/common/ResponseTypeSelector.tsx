@@ -9,14 +9,15 @@ interface ResponseTypeSelectorProps {
   showDescriptions?: boolean;
 }
 
-const RESPONSE_TYPE_OPTIONS = [
-  { value: "yes_no", label: "Sim/Não", description: "Resposta binária simples" },
+// Array padronizado com values em inglês e labels em português
+const RESPONSE_TYPES = [
   { value: "text", label: "Texto", description: "Resposta em texto livre" },
   { value: "paragraph", label: "Parágrafo", description: "Texto longo com múltiplas linhas" },
+  { value: "numeric", label: "Numérico", description: "Valores numéricos" },
+  { value: "yes_no", label: "Sim/Não", description: "Resposta binária simples" },
+  { value: "dropdown", label: "Lista Suspensa", description: "Seleção em dropdown" },
   { value: "multiple_choice", label: "Múltipla Escolha", description: "Seleção única entre opções" },
   { value: "checkboxes", label: "Caixas de Seleção", description: "Múltiplas seleções" },
-  { value: "dropdown", label: "Lista Suspensa", description: "Seleção em dropdown" },
-  { value: "numeric", label: "Numérico", description: "Valores numéricos" },
   { value: "date", label: "Data", description: "Seleção de data" },
   { value: "time", label: "Hora", description: "Seleção de horário" },
   { value: "datetime", label: "Data e Hora", description: "Data e hora combinadas" },
@@ -25,7 +26,7 @@ const RESPONSE_TYPE_OPTIONS = [
 ] as const;
 
 export function ResponseTypeSelector({ value, onChange, showDescriptions = false }: ResponseTypeSelectorProps) {
-  const selectedOption = RESPONSE_TYPE_OPTIONS.find(option => option.value === value);
+  const selectedOption = RESPONSE_TYPES.find(option => option.value === value);
   
   return (
     <Select value={value} onValueChange={onChange}>
@@ -34,8 +35,8 @@ export function ResponseTypeSelector({ value, onChange, showDescriptions = false
           {selectedOption?.label || "Selecione o tipo de resposta"}
         </SelectValue>
       </SelectTrigger>
-      <SelectContent>
-        {RESPONSE_TYPE_OPTIONS.map((option) => (
+      <SelectContent className="bg-white z-50">
+        {RESPONSE_TYPES.map((option) => (
           <SelectItem key={option.value} value={option.value}>
             <div className="flex flex-col">
               <span>{option.label}</span>
