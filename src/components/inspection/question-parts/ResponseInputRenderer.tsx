@@ -17,6 +17,7 @@ import { PhotoInput } from "@/components/inspection/question-inputs/PhotoInput";
 import { SignatureInput } from "@/components/checklist/SignatureInput";
 import { SimpleTextInput } from "./response-types/SimpleTextInput";
 import { MultipleChoiceResponseInput } from "./response-types/MultipleChoiceResponseInput";
+import { MultipleSelectResponseInput } from "./response-types/MultipleSelectResponseInput";
 import { convertToFrontendType } from "@/types/responseTypes";
 import { MediaAnalysisResult, Plan5W2H } from "@/hooks/useMediaAnalysis";
 import { ActionPlan5W2HDialog } from "@/components/action-plans/ActionPlan5W2HDialog";
@@ -42,9 +43,65 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   onSaveActionPlan,
   readOnly = false
 }) => {
-  // Tentar pegar o tipo de resposta de diferentes campos possíveis
-  const rawResponseType = question.responseType || question.tipo_resposta || "text";
-  const responseType = convertToFrontendType(rawResponseType);
+  // Obter o tipo de resposta - priorizar campo tipo_resposta do banco
+  const rawResponseType = question.tipo_resposta || question.responseType || "text";
+  
+  // Mapeamento direto dos tipos do banco para garantir renderização correta
+  const getResponseTypeComponent = (tipo: string) => {
+    // Normalizar para lowercase para comparação
+    const normalizedType = tipo.toLowerCase().trim();
+    
+    console.log(`[ResponseInputRenderer] Tipo original: "${tipo}" | Normalizado: "${normalizedType}"`);
+    
+    switch (normalizedType) {
+      case 'paragraph':
+      case 'paragrafo':
+        return 'paragraph';
+      case 'text':
+      case 'texto':
+        return 'text';
+      case 'numeric':
+      case 'number':
+      case 'numerico':
+        return 'numeric';
+      case 'yes_no':
+      case 'sim_nao':
+      case 'boolean':
+        return 'yes_no';
+      case 'dropdown':
+      case 'select':
+      case 'lista':
+        return 'dropdown';
+      case 'multiple_choice':
+      case 'multipla_escolha':
+      case 'radio':
+        return 'multiple_choice';
+      case 'multiple_select':
+      case 'checkboxes':
+      case 'caixas_selecao':
+        return 'multiple_select';
+      case 'date':
+      case 'data':
+        return 'date';
+      case 'time':
+      case 'hora':
+        return 'time';
+      case 'datetime':
+      case 'data_hora':
+        return 'datetime';
+      case 'photo':
+      case 'foto':
+        return 'photo';
+      case 'signature':
+      case 'assinatura':
+        return 'signature';
+      default:
+        console.warn(`[ResponseInputRenderer] Tipo não reconhecido: ${tipo}, usando fallback 'text'`);
+        return 'text';
+    }
+  };
+
+  const responseType = getResponseTypeComponent(rawResponseType);
 
   // Garantir estrutura consistente do response
   const safeResponse = {
@@ -198,15 +255,14 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
 
   console.log(`[ResponseInputRenderer] Renderizando tipo: ${responseType} para pergunta:`, question.text || question.pergunta);
 
-  // Switch principal baseado no tipo de resposta
+  // Switch principal baseado no tipo de resposta mapeado
   switch (responseType) {
-    case "yes_no":
+    case "paragraph":
       return (
         <div className="space-y-4">
-          <YesNoResponseInput
-            question={question}
-            response={safeResponse}
-            onResponseChange={onResponseChange}
+          <ParagraphResponseInput
+            value={safeResponse.value}
+            onChange={val => onResponseChange({ ...safeResponse, value: val })}
             readOnly={readOnly}
           />
           {standardActionButtons}
@@ -231,11 +287,13 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         </div>
       );
 
-    case "paragraph":
+    case "numeric":
       return (
         <div className="space-y-4">
-          <ParagraphResponseInput
+          <NumberResponseInput
+            question={question}
             value={safeResponse.value}
+            response={safeResponse}
             onChange={val => onResponseChange({ ...safeResponse, value: val })}
             readOnly={readOnly}
           />
@@ -246,14 +304,13 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         </div>
       );
 
-    case "numeric":
+    case "yes_no":
       return (
         <div className="space-y-4">
-          <NumberResponseInput
+          <YesNoResponseInput
             question={question}
-            value={safeResponse.value}
             response={safeResponse}
-            onChange={val => onResponseChange({ ...safeResponse, value: val })}
+            onResponseChange={onResponseChange}
             readOnly={readOnly}
           />
           {standardActionButtons}
@@ -296,15 +353,14 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         </div>
       );
 
-    case "checkboxes":
+    case "multiple_select":
       return (
         <div className="space-y-4">
-          <MultipleChoiceResponseInput
+          <MultipleSelectResponseInput
             question={question}
             value={safeResponse.value}
             onChange={val => onResponseChange({ ...safeResponse, value: val })}
             readOnly={readOnly}
-            allowMultiple={true}
           />
           {standardActionButtons}
           {mediaUploadInput}
@@ -412,7 +468,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
       );
 
     default:
-      console.warn(`[ResponseInputRenderer] Tipo de resposta não suportado: ${responseType}`);
+      console.error(`[ResponseInputRenderer] Tipo de resposta não suportado: ${responseType}`);
       return (
         <div className="p-4 border border-red-300 bg-red-50 rounded-md">
           <p className="text-red-700">
@@ -420,6 +476,9 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           </p>
           <p className="text-xs text-gray-600 mt-1">
             Tipo original: {rawResponseType}
+          </p>
+          <p className="text-xs text-gray-600">
+            Tipos suportados: paragraph, text, numeric, yes_no, dropdown, multiple_choice, multiple_select, date, time, datetime, photo, signature
           </p>
         </div>
       );
