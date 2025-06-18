@@ -1,3 +1,4 @@
+
 import React, { useCallback, useState } from "react";
 import { StandardActionButtons, StandardActionButtonsProps } from "./StandardActionButtons";
 import { MediaUploadInput } from "@/components/inspection/question-inputs/MediaUploadInput";
@@ -14,6 +15,8 @@ import { TimeInput } from "@/components/inspection/question-inputs/TimeInput";
 import { NumberResponseInput } from "./response-types/NumberResponseInput";
 import { PhotoInput } from "@/components/inspection/question-inputs/PhotoInput";
 import { SignatureInput } from "@/components/checklist/SignatureInput";
+import { SimpleTextInput } from "./response-types/SimpleTextInput";
+import { MultipleChoiceResponseInput } from "./response-types/MultipleChoiceResponseInput";
 import { convertToFrontendType } from "@/types/responseTypes";
 import { MediaAnalysisResult, Plan5W2H } from "@/hooks/useMediaAnalysis";
 import { ActionPlan5W2HDialog } from "@/components/action-plans/ActionPlan5W2HDialog";
@@ -39,6 +42,7 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
   onSaveActionPlan,
   readOnly = false
 }) => {
+  // Tentar pegar o tipo de resposta de diferentes campos possíveis
   const rawResponseType = question.responseType || question.tipo_resposta || "text";
   const responseType = convertToFrontendType(rawResponseType);
 
@@ -83,7 +87,6 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     }
   }, [safeResponse, onResponseChange, onMediaChange, readOnly]);
 
-  // // ... keep existing code (getPrimaryMediaType function)
   const getPrimaryMediaType = () => {
     if (!mediaUrls || mediaUrls.length === 0) return undefined;
     const url = mediaUrls[0];
@@ -101,7 +104,6 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     return undefined;
   };
 
-  // // ... keep existing code (handleAnalysisComplete function)
   const handleAnalysisComplete = useCallback((url: string, result: MediaAnalysisResult) => {
     if (readOnly) return;
     
@@ -194,6 +196,9 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     />
   ) : null;
 
+  console.log(`[ResponseInputRenderer] Renderizando tipo: ${responseType} para pergunta:`, question.text || question.pergunta);
+
+  // Switch principal baseado no tipo de resposta
   switch (responseType) {
     case "yes_no":
       return (
@@ -214,10 +219,9 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
     case "text":
       return (
         <div className="space-y-4">
-          <TextResponseInput
-            question={question}
-            response={safeResponse}
-            onResponseChange={onResponseChange}
+          <SimpleTextInput
+            value={safeResponse.value}
+            onChange={val => onResponseChange({ ...safeResponse, value: val })}
             readOnly={readOnly}
           />
           {standardActionButtons}
@@ -233,25 +237,6 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
           <ParagraphResponseInput
             value={safeResponse.value}
             onChange={val => onResponseChange({ ...safeResponse, value: val })}
-            readOnly={readOnly}
-          />
-          {standardActionButtons}
-          {mediaUploadInput}
-          {mediaAnalysisDialog}
-          {actionPlanDialog}
-        </div>
-      );
-
-    case "multiple_choice":
-    case "multiple_select":
-    case "checkbox":
-    case "checkboxes":
-      return (
-        <div className="space-y-4">
-          <CheckboxesResponseInput
-            question={question}
-            response={safeResponse}
-            onResponseChange={onResponseChange}
             readOnly={readOnly}
           />
           {standardActionButtons}
@@ -278,44 +263,6 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         </div>
       );
 
-    case "photo":
-      return (
-        <div className="space-y-4">
-          <PhotoInput
-            mediaUrls={mediaUrls}
-            onAddMedia={() => {}}
-            onDeleteMedia={url => handleMediaChange(mediaUrls.filter((mediaUrl: any) => mediaUrl !== url))}
-            allowsPhoto={true}
-            allowsVideo={question.allowsVideo}
-            allowsAudio={question.allowsAudio}
-            allowsFiles={question.allowsFiles}
-          />
-          {standardActionButtons}
-          {mediaUploadInput}
-          {mediaAnalysisDialog}
-          {actionPlanDialog}
-        </div>
-      );
-
-    case "signature":
-      return (
-        <div className="space-y-4">
-          <SignatureInput
-            value={safeResponse.value || ""}
-            onChange={val => onResponseChange({ ...safeResponse, value: val })}
-          />
-          {!readOnly && (
-            <StandardActionButtons
-              question={question}
-              readOnly={readOnly}
-              onActionPlanClick={handleOpenActionPlan}
-              dummyProp="UniqueKeyForProps20250615"
-            />
-          )}
-          {actionPlanDialog}
-        </div>
-      );
-
     case "dropdown":
       return (
         <div className="space-y-4">
@@ -324,6 +271,42 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
             value={safeResponse.value}
             onChange={val => onResponseChange({ ...safeResponse, value: val })}
             readOnly={readOnly}
+          />
+          {standardActionButtons}
+          {mediaUploadInput}
+          {mediaAnalysisDialog}
+          {actionPlanDialog}
+        </div>
+      );
+
+    case "multiple_choice":
+      return (
+        <div className="space-y-4">
+          <MultipleChoiceResponseInput
+            question={question}
+            value={safeResponse.value}
+            onChange={val => onResponseChange({ ...safeResponse, value: val })}
+            readOnly={readOnly}
+            allowMultiple={false}
+          />
+          {standardActionButtons}
+          {mediaUploadInput}
+          {mediaAnalysisDialog}
+          {actionPlanDialog}
+        </div>
+      );
+
+    case "multiple_select":
+    case "checkbox":
+    case "checkboxes":
+      return (
+        <div className="space-y-4">
+          <MultipleChoiceResponseInput
+            question={question}
+            value={safeResponse.value}
+            onChange={val => onResponseChange({ ...safeResponse, value: val })}
+            readOnly={readOnly}
+            allowMultiple={true}
           />
           {standardActionButtons}
           {mediaUploadInput}
@@ -392,11 +375,53 @@ export const ResponseInputRenderer: React.FC<ResponseInputRendererProps> = ({
         </div>
       );
 
+    case "photo":
+      return (
+        <div className="space-y-4">
+          <PhotoInput
+            mediaUrls={mediaUrls}
+            onAddMedia={() => {}}
+            onDeleteMedia={url => handleMediaChange(mediaUrls.filter((mediaUrl: any) => mediaUrl !== url))}
+            allowsPhoto={true}
+            allowsVideo={question.allowsVideo}
+            allowsAudio={question.allowsAudio}
+            allowsFiles={question.allowsFiles}
+          />
+          {standardActionButtons}
+          {mediaUploadInput}
+          {mediaAnalysisDialog}
+          {actionPlanDialog}
+        </div>
+      );
+
+    case "signature":
+      return (
+        <div className="space-y-4">
+          <SignatureInput
+            value={safeResponse.value || ""}
+            onChange={val => onResponseChange({ ...safeResponse, value: val })}
+          />
+          {!readOnly && (
+            <StandardActionButtons
+              question={question}
+              readOnly={readOnly}
+              onActionPlanClick={handleOpenActionPlan}
+              dummyProp="UniqueKeyForProps20250615"
+            />
+          )}
+          {actionPlanDialog}
+        </div>
+      );
+
     default:
+      console.warn(`[ResponseInputRenderer] Tipo de resposta não suportado: ${responseType}`);
       return (
         <div className="p-4 border border-red-300 bg-red-50 rounded-md">
           <p className="text-red-700">
             Tipo de resposta não suportado: {responseType}
+          </p>
+          <p className="text-xs text-gray-600 mt-1">
+            Tipo original: {rawResponseType}
           </p>
         </div>
       );
